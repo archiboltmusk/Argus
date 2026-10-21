@@ -498,24 +498,38 @@ fn play_external(
     app.opener().open_url(url, player).map_err(err)
 }
 
+/// mpv's video output thread calls back into the main thread while the
+/// player starts (and for some commands), so these must never run on the
+/// main thread. Sync Tauri commands do; an async command on a blocking
+/// worker doesn't. Doing otherwise deadlocks the whole app (seen in 0.2.31).
 #[tauri::command]
-fn player_load(
+async fn player_load(
     app: tauri::AppHandle,
-    s: State<'_, AppState>,
     url: String,
     start: f64,
     session: player::Session,
 ) -> CmdResult<()> {
-    s.player.load(&app, &url, start, session)
+    tauri::async_runtime::spawn_blocking(move || {
+        app.state::<AppState>()
+            .player
+            .load(&app, &url, start, session)
+    })
+    .await
+    .map_err(err)?
 }
 
 #[tauri::command]
-fn player_command(
-    app: tauri::AppHandle,
-    s: State<'_, AppState>,
-    command: player::Command,
-) -> CmdResult<()> {
-    s.player.command(&app, command)
+fn player_reset_crash(app: tauri::AppHandle) {
+    player::reset_crash(&app);
+}
+
+#[tauri::command]
+async fn player_command(app: tauri::AppHandle, command: player::Command) -> CmdResult<()> {
+    tauri::async_runtime::spawn_blocking(move || {
+        app.state::<AppState>().player.command(&app, command)
+    })
+    .await
+    .map_err(err)?
 }
 
 #[tauri::command]
@@ -664,6 +678,7 @@ pub fn run() {
             resolve_stream,
             play_external,
             player_load,
+            player_reset_crash,
             player_command,
             player_tracks,
             player_clock,

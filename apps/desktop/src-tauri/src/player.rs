@@ -135,6 +135,24 @@ impl Player {
         if let Some(m) = self.mpv.get() {
             return Ok(m.clone());
         }
+        // A marker left from a previous run means the app died while mpv was
+        // starting or drawing its first frame. Don't take the app down again:
+        // callers fall back to an external player until the user retries.
+        let marker = app.path().app_data_dir().ok().map(|d| {
+            let _ = std::fs::create_dir_all(&d);
+            d.join(CRASH_MARKER)
+        });
+        if marker.as_ref().is_some_and(|m| m.exists()) {
+            return Err(CRASHED.into());
+        }
+        if let Some(m) = &marker {
+            let _ = std::fs::write(m, b"starting");
+        }
+        // mpv aborts or misparses numbers unless LC_NUMERIC is "C", and
+        // AppKit/WebKit may have switched the process to the user's locale.
+        set_c_numeric_locale();
+        // The video view must be visible while mpv creates its GL surface.
+        set_video_visible(app, true);
         let wid = lock(&self.wid).map(|w| w.to_string());
         let log = app.path().app_log_dir().ok().map(|d| {
             let _ = std::fs::create_dir_all(&d);
@@ -158,7 +176,9 @@ impl Player {
             .as_ref()
             .map(|p| format!("ytdl_hook-ytdl_path={}", p.display()));
         let mut opts: Vec<(&str, &str)> = vec![
-            ("vo", "gpu-next"),
+            // `gpu` (OpenGL/Cocoa) is the stable path for embedding into a
+            // view via `wid`; `gpu-next` is not.
+            ("vo", "gpu"),
             ("hwdec", "auto-safe"),
             ("idle", "yes"),
             ("force-window", "yes"),
@@ -169,7 +189,7 @@ impl Player {
             ("osc", "no"),
             ("ytdl", if ytdl_path.is_some() { "yes" } else { "no" }),
             // HDR: let mpv tell macOS the content's colorspace (EDR passthrough).
-            ("target-colorspace-hint", "yes"),
+            ("target-colorspace-hint", "no"),
             ("sub-auto", "fuzzy"),
             ("cache", "yes"),
             ("demuxer-max-bytes", "200MiB"),
@@ -186,7 +206,15 @@ impl Player {
         if let Some(l) = log.as_deref() {
             opts.push(("log-file", l));
         }
-        let mpv = Arc::new(Mpv::new(&opts)?);
+        let mpv = match Mpv::new(&opts) {
+            Ok(m) => Arc::new(m),
+            Err(e) => {
+                if let Some(m) = &marker {
+                    let _ = std::fs::remove_file(m);
+                }
+                return Err(e);
+            }
+        };
         for p in ["time-pos", "duration", "speed", "sub-delay"] {
             mpv.observe_double(p);
         }
@@ -439,6 +467,27 @@ fn read_tracks(mpv: &Mpv) -> Vec<Track> {
         .collect()
 }
 
+const CRASH_MARKER: &str = "player-init.marker";
+/// Error text the UI recognises to switch to an external player.
+pub const CRASHED: &str = "BUILTIN_PLAYER_CRASHED";
+
+extern "C" {
+    fn setlocale(category: i32, locale: *const std::ffi::c_char) -> *mut std::ffi::c_char;
+}
+
+fn set_c_numeric_locale() {
+    // LC_NUMERIC is 4 on macOS and Linux libc.
+    // SAFETY: valid NUL-terminated string; called before mpv starts its threads.
+    unsafe { setlocale(4, c"C".as_ptr()) };
+}
+
+/// Clears the crash marker so the built-in player is tried again.
+pub fn reset_crash(app: &AppHandle) {
+    if let Ok(d) = app.path().app_data_dir() {
+        let _ = std::fs::remove_file(d.join(CRASH_MARKER));
+    }
+}
+
 fn set_video_visible(app: &AppHandle, visible: bool) {
     #[cfg(target_os = "macos")]
     {
@@ -462,6 +511,12 @@ fn event_loop(mpv: &Mpv, app: &AppHandle, session: &Mutex<Option<Session>>, cloc
         let now = Instant::now();
         match event {
             Event::Shutdown => return,
+            Event::PlaybackRestart => {
+                // First frame shown: native playback works on this Mac.
+                if let Ok(d) = app.path().app_data_dir() {
+                    let _ = std::fs::remove_file(d.join(CRASH_MARKER));
+                }
+            }
             Event::FileLoaded => {
                 let tracks = read_tracks(mpv);
                 if let Some(s) = lock(session).clone() {
