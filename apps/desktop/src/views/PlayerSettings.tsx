@@ -6,12 +6,12 @@ import { api } from "../api";
 export type PlayerPrefs = {
   audioLangs: string; subLangs: string; subSize: number; subColor: string; subOutlineColor: string;
   subPosition: number; subOutline: number; subBold: boolean; hwdec: "auto-safe" | "no";
-  volume: number; autoNext: boolean; ytdl: boolean;
+  volume: number; autoNext: boolean; ytdl: boolean; skipButton: boolean; autoSkip: boolean;
 };
 export const PLAYER_PREFS_KEY = "player.prefs";
 export const DEFAULT_PLAYER_PREFS: PlayerPrefs = {
   audioLangs: "", subLangs: "", subSize: 55, subColor: "#FFFFFF", subOutlineColor: "#000000",
-  subPosition: 100, subOutline: 3, subBold: false, hwdec: "auto-safe", volume: 100, autoNext: true, ytdl: false,
+  subPosition: 100, subOutline: 3, subBold: false, hwdec: "auto-safe", volume: 100, autoNext: true, ytdl: false, skipButton: true, autoSkip: false,
 };
 
 export async function loadPlayerPrefs(profile: number): Promise<PlayerPrefs> {
@@ -76,6 +76,8 @@ export function PlayerSettings({ profile, onSaved }: { profile: number; onSaved:
         </select>
       </label>
       <label className="check"><input type="checkbox" checked={p.autoNext} onChange={(e) => set("autoNext", e.target.checked)} />Play the next episode automatically</label>
+      <label className="check"><input type="checkbox" checked={p.skipButton} onChange={(e) => set("skipButton", e.target.checked)} />Show "Skip intro / recap / credits" when the file has chapter markers</label>
+      <label className="check"><input type="checkbox" checked={p.autoSkip} onChange={(e) => set("autoSkip", e.target.checked)} />Skip them automatically</label>
       <label className="check">
         <input type="checkbox" checked={p.ytdl} onChange={(e) => set("ytdl", e.target.checked)} />
         Open YouTube and other page links with my yt-dlp {ytdlpFound ? "(found)" : "(not installed — brew install yt-dlp)"}

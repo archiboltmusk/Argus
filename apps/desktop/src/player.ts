@@ -28,6 +28,8 @@ export type Track = {
   external: boolean;
 };
 
+export type Segment = { kind: "intro" | "recap" | "outro"; start: number; end: number | null };
+
 export type Session = {
   profile: number;
   itemId: string;
@@ -51,12 +53,15 @@ export type PlayerCommand =
   | { type: "setSpeed"; speed: number }
   | { type: "setVolume"; volume: number }
   | { type: "setDownmix"; enabled: boolean }
+  | { type: "abLoop"; a: number | null; b: number | null }
+  | { type: "screenshot" }
   | { type: "stop" };
 
 type State = {
   visible: boolean;
   clock: Clock;
   tracks: Track[];
+  segments: Segment[];
   stalled: boolean;
   ended: { eof: boolean; error?: string } | null;
   /** Ranked streams for this title and which one is playing, for fallback. */
@@ -67,7 +72,7 @@ type State = {
 
 const EMPTY_CLOCK: Clock = { position: 0, duration: 0, paused: false, buffering: false, bufferPercent: 0, speed: 1, subDelayMs: 0 };
 
-let state: State = { visible: false, clock: EMPTY_CLOCK, tracks: [], stalled: false, ended: null, streams: [], current: 0, session: null };
+let state: State = { visible: false, clock: EMPTY_CLOCK, tracks: [], segments: [], stalled: false, ended: null, streams: [], current: 0, session: null };
 const subs = new Set<() => void>();
 
 function set(patch: Partial<State>) {
@@ -94,6 +99,7 @@ export function startPlayerEvents() {
     }
   });
   listen<Track[]>("player://tracks", (e) => set({ tracks: e.payload }));
+  listen<Segment[]>("player://segments", (e) => set({ segments: e.payload }));
   listen<boolean>("player://visible", (e) => {
     document.documentElement.classList.toggle("playing", e.payload);
     set({ visible: e.payload });
@@ -109,7 +115,7 @@ export function usePlayer<T>(select: (s: State) => T): T {
 export const player = {
   get: () => state,
   load: (url: string, start: number, session: Session, streams: RankedStream[], current: number) => {
-    set({ session, streams, current, stalled: false, ended: null, tracks: [], clock: EMPTY_CLOCK });
+    set({ session, streams, current, stalled: false, ended: null, tracks: [], segments: [], clock: EMPTY_CLOCK });
     return invoke<void>("player_load", { url, start, session });
   },
   command: (command: PlayerCommand) => invoke<void>("player_command", { command }),

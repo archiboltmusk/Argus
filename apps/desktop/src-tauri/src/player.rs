@@ -13,6 +13,7 @@ use argus_core::player::{
     choose_tracks, set_sub_offset_ms, sub_offset_ms, PlayerPrefs, Throttle, Track, TrackPrefs,
     SUB_OFFSET_STEP_MS,
 };
+use argus_core::skip::{self, Chapter};
 use argus_core::sources::tracker::{scrobble_action, ScrobbleAction, WatchKey};
 use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, Emitter, Manager};
@@ -86,6 +87,13 @@ pub enum Command {
     SetDownmix {
         enabled: bool,
     },
+    /// Loop between two points; `None` clears the loop.
+    AbLoop {
+        a: Option<f64>,
+        b: Option<f64>,
+    },
+    /// Saves the current frame (without subtitles) to the Pictures folder.
+    Screenshot,
     Stop,
 }
 
@@ -282,6 +290,19 @@ impl Player {
                 "audio-channels",
                 if enabled { "stereo" } else { "auto-safe" },
             ),
+            Command::AbLoop { a, b } => {
+                let fmt = |v: Option<f64>| v.map_or("no".to_string(), |s| format!("{s:.3}"));
+                mpv.set("ab-loop-a", &fmt(a))?;
+                mpv.set("ab-loop-b", &fmt(b))
+            }
+            Command::Screenshot => {
+                let dir = std::env::var("HOME")
+                    .map(|h| format!("{h}/Pictures"))
+                    .unwrap_or_else(|_| "/tmp".into());
+                mpv.set("screenshot-directory", &dir)?;
+                mpv.set("screenshot-template", "Argus %F %P")?;
+                mpv.command(&["screenshot", "video"])
+            }
             Command::Stop => {
                 self.save_progress(app);
                 if let Some(s) = lock(&self.session).clone() {
@@ -459,6 +480,11 @@ fn event_loop(mpv: &Mpv, app: &AppHandle, session: &Mutex<Option<Session>>, cloc
                     let _ = mpv.set("sub-delay", &format!("{:.3}", ms as f64 / 1000.0));
                 }
                 let _ = app.emit("player://tracks", &tracks);
+                let chapters: Vec<Chapter> = mpv
+                    .get_string("chapter-list")
+                    .and_then(|j| serde_json::from_str(&j).ok())
+                    .unwrap_or_default();
+                let _ = app.emit("player://segments", skip::segments(&chapters));
                 if let Some(s) = lock(session).clone() {
                     last_paused = false;
                     scrobble(app, &s, &lock(clock).clone(), ScrobbleAction::Start);

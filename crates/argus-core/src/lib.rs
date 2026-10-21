@@ -11,6 +11,7 @@ pub mod library;
 pub mod model;
 pub mod player;
 pub mod ranking;
+pub mod skip;
 pub mod sources;
 pub mod torrent;
 pub mod trust;

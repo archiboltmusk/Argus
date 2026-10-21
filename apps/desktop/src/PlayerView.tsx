@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState } from "react";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { api } from "./api";
-import { formatTime, player, usePlayer, type Track } from "./player";
+import { formatTime, player, usePlayer, type Segment, type Track } from "./player";
 import { DEFAULT_KEYS } from "./keys";
 import { loadKeys } from "./views/Hotkeys";
-import { loadPlayerPrefs } from "./views/PlayerSettings";
+import { loadPlayerPrefs, DEFAULT_PLAYER_PREFS, type PlayerPrefs } from "./views/PlayerSettings";
 
 function trackLabel(t: Track) {
   const parts = [t.lang?.toUpperCase(), t.title, t.codec?.toUpperCase(), t.channels ? `${t.channels}ch` : null, t.forced ? "Forced" : null, t.external ? "External" : null];
@@ -49,6 +49,10 @@ export function PlayerView({ profile, onClose, onError, onNextEpisode }: {
   const [downmix, setDownmix] = useState(false);
   const [idle, setIdle] = useState(false);
   const idleTimer = useRef<number>(undefined);
+  const [prefs, setPrefs] = useState<PlayerPrefs>(DEFAULT_PLAYER_PREFS);
+  const segments = usePlayer((s) => s.segments);
+  const [loop, setLoop] = useState<{ a: number | null; b: number | null }>({ a: null, b: null });
+  const [sleepMin, setSleepMin] = useState(0);
   const volume = useRef(100);
   const setVolume = (v: number) => {
     volume.current = Math.min(130, Math.max(0, v));
@@ -58,7 +62,7 @@ export function PlayerView({ profile, onClose, onError, onNextEpisode }: {
 
   useEffect(() => {
     loadKeys(profile).then(setKeys);
-    loadPlayerPrefs(profile).then((p) => { volume.current = p.volume; });
+    loadPlayerPrefs(profile).then((p) => { volume.current = p.volume; setPrefs(p); });
   }, [profile]);
 
   useEffect(() => {
@@ -91,6 +95,8 @@ export function PlayerView({ profile, onClose, onError, onNextEpisode }: {
         speedUp: () => c({ type: "setSpeed", speed: Math.min(4, +(speed + 0.25).toFixed(2)) }),
         speedDown: () => c({ type: "setSpeed", speed: Math.max(0.25, +(speed - 0.25).toFixed(2)) }),
         speedReset: () => c({ type: "setSpeed", speed: 1 }),
+        abLoop: () => cycleLoop(),
+        screenshot: () => c({ type: "screenshot" }).then(() => onError("Screenshot saved to Pictures")),
         subEarlier: () => c({ type: "subDelayStep", steps: -1 }),
         subLater: () => c({ type: "subDelayStep", steps: 1 }),
         fullscreen: async () => {
@@ -105,6 +111,31 @@ export function PlayerView({ profile, onClose, onError, onNextEpisode }: {
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [keys, speed, profile, onClose, onError]);
+
+  /** First press sets A, second sets B and starts looping, third clears. */
+  function cycleLoop() {
+    const pos = player.get().clock.position;
+    const next = loop.a === null ? { a: pos, b: null } : loop.b === null ? { a: loop.a, b: pos } : { a: null, b: null };
+    setLoop(next);
+    return player.command({ type: "abLoop", ...next });
+  }
+
+  // Sleep timer: stop playback after N minutes.
+  useEffect(() => {
+    if (!sleepMin) return;
+    const t = window.setTimeout(() => { player.command({ type: "stop" }).then(onClose); setSleepMin(0); }, sleepMin * 60_000);
+    return () => window.clearTimeout(t);
+  }, [sleepMin, onClose]);
+
+  // Clear the loop and sleep timer when a new file loads.
+  useEffect(() => { setLoop({ a: null, b: null }); }, [title]);
+
+  const active: Segment | undefined = segments.find((s) => position >= s.start && (s.end === null ? duration - position > 5 : position < s.end - 1));
+  useEffect(() => {
+    if (!prefs.autoSkip || !active) return;
+    // Skip once per segment; the position check above stops it re-triggering after the jump.
+    player.command({ type: "seek", seconds: active.end ?? Math.max(duration - 1, 0) });
+  }, [active?.start, prefs.autoSkip]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const poke = () => {
     setIdle(false);
@@ -136,6 +167,12 @@ export function PlayerView({ profile, onClose, onError, onNextEpisode }: {
         </div>
       )}
 
+      {prefs.skipButton && active && (
+        <button className="skip-btn primary" onClick={() => player.command({ type: "seek", seconds: active.end ?? Math.max(duration - 1, 0) })}>
+          Skip {active.kind === "intro" ? "intro" : active.kind === "recap" ? "recap" : "credits"} ›
+        </button>
+      )}
+
       <div className="player-bottom" onClick={(e) => e.stopPropagation()}>
         <input
           className="seek"
@@ -156,6 +193,14 @@ export function PlayerView({ profile, onClose, onError, onNextEpisode }: {
           {subDelay !== 0 && <span className="small muted">Subs {subDelay > 0 ? "+" : ""}{subDelay} ms</span>}
           <button onClick={() => setMenu(menu === "audio" ? null : "audio")}>Audio</button>
           <button onClick={() => setMenu(menu === "subs" ? null : "subs")}>Subtitles</button>
+          <button className={loop.a !== null ? "primary" : ""} title="A-B loop" onClick={() => cycleLoop()}>
+            {loop.a === null ? "A-B" : loop.b === null ? `A ${formatTime(loop.a)}` : "Looping"}
+          </button>
+          <button title="Save screenshot" onClick={() => player.command({ type: "screenshot" }).then(() => onError("Screenshot saved to Pictures"))}>📷</button>
+          <select value={sleepMin} onChange={(e) => setSleepMin(Number(e.target.value))} aria-label="Sleep timer" title="Sleep timer">
+            <option value={0}>Sleep: off</option>
+            {[15, 30, 45, 60, 90].map((m) => <option key={m} value={m}>Stop in {m} min</option>)}
+          </select>
           <select value={speed} onChange={(e) => player.command({ type: "setSpeed", speed: Number(e.target.value) })} aria-label="Speed">
             {[0.5, 0.75, 1, 1.25, 1.5, 2].map((s) => <option key={s} value={s}>{s}×</option>)}
           </select>
