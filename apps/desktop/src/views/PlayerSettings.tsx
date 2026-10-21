@@ -29,8 +29,10 @@ const LANGS: [string, string][] = [
 export function PlayerSettings({ profile, onSaved }: { profile: number; onSaved: () => void }) {
   const [p, setP] = useState<PlayerPrefs>(DEFAULT_PLAYER_PREFS);
   const [ytdlpFound, setYtdlpFound] = useState(false);
+  const [openSubs, setOpenSubs] = useState(true);
   useEffect(() => {
     loadPlayerPrefs(profile).then(setP);
+    api.getSetting(profile, "subs.opensubtitles").then((v) => setOpenSubs(v !== "off")).catch(() => {});
     invoke<boolean>("ytdlp_available").then(setYtdlpFound).catch(() => {});
   }, [profile]);
 
@@ -76,6 +78,7 @@ export function PlayerSettings({ profile, onSaved }: { profile: number; onSaved:
         </select>
       </label>
       <label className="check"><input type="checkbox" checked={p.autoNext} onChange={(e) => set("autoNext", e.target.checked)} />Play the next episode automatically</label>
+      <label className="check"><input type="checkbox" checked={openSubs} onChange={(e) => setOpenSubs(e.target.checked)} />Also fetch subtitles from OpenSubtitles (no account needed)</label>
       <label className="check"><input type="checkbox" checked={p.skipButton} onChange={(e) => set("skipButton", e.target.checked)} />Show "Skip intro / recap / credits" when the file has chapter markers</label>
       <label className="check"><input type="checkbox" checked={p.autoSkip} onChange={(e) => set("autoSkip", e.target.checked)} />Skip them automatically</label>
       <label className="check">
@@ -83,7 +86,7 @@ export function PlayerSettings({ profile, onSaved }: { profile: number; onSaved:
         Open YouTube and other page links with my yt-dlp {ytdlpFound ? "(found)" : "(not installed — brew install yt-dlp)"}
       </label>
       {p.ytdl && <div className="small muted">Takes effect after restarting Argus.</div>}
-      <button className="primary" onClick={() => api.setSetting(profile, PLAYER_PREFS_KEY, JSON.stringify(p)).then(onSaved)}>Save player settings</button>
+      <button className="primary" onClick={() => Promise.all([api.setSetting(profile, PLAYER_PREFS_KEY, JSON.stringify(p)), api.setSetting(profile, "subs.opensubtitles", openSubs ? "on" : "off")]).then(onSaved)}>Save player settings</button>
     </section>
   );
 }

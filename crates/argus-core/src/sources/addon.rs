@@ -279,6 +279,29 @@ impl AddonClient {
             .ok_or_else(|| Error::NotFound(format!("{kind}/{id}")))
     }
 
+    /// Subtitles from one addon base URL, for sources that aren't installed.
+    pub async fn subtitles_at(
+        &self,
+        base_url: &str,
+        name: &str,
+        kind: &str,
+        id: &str,
+        extra: &[(&str, &str)],
+    ) -> Vec<Subtitle> {
+        let url = resource_url(base_url, "subtitles", kind, id, extra);
+        let subs = self
+            .get_json::<SubtitlesResponse>(&url)
+            .await
+            .map(|r| r.subtitles)
+            .unwrap_or_default();
+        subs.into_iter()
+            .map(|mut s| {
+                s.origin = Some(name.to_string());
+                s
+            })
+            .collect()
+    }
+
     /// Subtitles from every capable addon. `extra` may carry `videoHash`,
     /// `videoSize` and `filename` (OpenSubtitles-style matching).
     pub async fn subtitles(
