@@ -209,6 +209,73 @@ async fn catalog_page(
     s.addons.catalog(a, &kind, &id, &extra).await.map_err(err)
 }
 
+fn meta_key(s: &AppState, profile: i64, key: &str) -> CmdResult<Option<String>> {
+    Ok(s.lib
+        .setting(profile, key)
+        .map_err(err)?
+        .map(|k| k.trim().to_string())
+        .filter(|k| !k.is_empty()))
+}
+
+/// Rows for the Movies and Shows rooms from the user's TMDB key. Empty
+/// without a key; the UI explains how to add one.
+#[tauri::command]
+async fn room_rows(
+    s: State<'_, AppState>,
+    profile: i64,
+    room: argus_core::sources::rooms::Room,
+) -> CmdResult<Vec<CatalogRow>> {
+    use argus_core::sources::rooms::{rows_for, Tmdb, TMDB_KEY_SETTING};
+    let Some(key) = meta_key(&s, profile, TMDB_KEY_SETTING)? else {
+        return Ok(Vec::new());
+    };
+    let tmdb = Tmdb::new(s.http.clone(), &key);
+    let calls = rows_for(room).into_iter().map(|spec| {
+        let tmdb = &tmdb;
+        async move {
+            let items = tmdb.row(room, &spec).await.unwrap_or_default();
+            CatalogRow {
+                addon: "TMDB".into(),
+                title: spec.title,
+                kind: String::new(),
+                id: spec.path,
+                items,
+            }
+        }
+    });
+    Ok(join_all(calls)
+        .await
+        .into_iter()
+        .filter(|r| !r.items.is_empty())
+        .collect())
+}
+
+/// IMDb, Rotten Tomatoes, Metascore and awards for the detail page.
+#[tauri::command]
+async fn ratings(
+    s: State<'_, AppState>,
+    profile: i64,
+    imdb: String,
+) -> CmdResult<Option<argus_core::sources::rooms::Ratings>> {
+    let Some(key) = meta_key(&s, profile, argus_core::sources::rooms::OMDB_KEY_SETTING)? else {
+        return Ok(None);
+    };
+    if !imdb.starts_with("tt") {
+        return Ok(None);
+    }
+    argus_core::sources::rooms::omdb(&s.http, &key, &imdb)
+        .await
+        .map_err(err)
+}
+
+/// Whether a TMDB key works, for the settings screen.
+#[tauri::command]
+async fn check_tmdb_key(s: State<'_, AppState>, key: String) -> CmdResult<bool> {
+    Ok(argus_core::sources::rooms::Tmdb::new(s.http.clone(), &key)
+        .validate()
+        .await)
+}
+
 #[tauri::command]
 fn watched_videos(s: State<'_, AppState>, profile: i64, item_id: String) -> CmdResult<Vec<String>> {
     s.lib.watched_videos(profile, &item_id).map_err(err)
@@ -587,6 +654,9 @@ pub fn run() {
             remove_addon,
             reorder_addons,
             home_rows,
+            room_rows,
+            ratings,
+            check_tmdb_key,
             search,
             meta,
             streams,
