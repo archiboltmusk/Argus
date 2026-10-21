@@ -20,6 +20,8 @@ serde_json.workspace = true
 tokio.workspace = true
 tauri-plugin-updater = "2"
 tauri-plugin-process = "2"
+librqbit = { version = "9", default-features = false, features = ["rust-tls", "http-api", "tracing-subscriber-utils"] }
+librqbit-dualstack-sockets = "0.7"
 
 [target.'cfg(target_os = "macos")'.dependencies]
 argus-mac-video = { path = "../../../crates/argus-mac-video" }

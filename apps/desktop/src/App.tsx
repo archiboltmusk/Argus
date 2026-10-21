@@ -234,7 +234,7 @@ function Detail({ profile, item, onError }: { profile: number; item: MetaPreview
               <span className="badges">{badges(info).map((b) => <span key={b} className="badge">{b}</span>)}</span>
               <strong>{s.name ?? s.origin}</strong>
               <span className="muted">{s.description}</span>
-              <span className="small muted">{s.origin}{s.infoHash && info.cached !== true ? " · needs debrid" : ""}{playing === i ? " · opening…" : ""}</span>
+              <span className="small muted">{s.origin}{s.infoHash && info.cached !== true ? " · P2P" : ""}{playing === i ? " · opening…" : ""}</span>
             </button>
           ))}
         </section>

@@ -4,6 +4,7 @@
 mod mpv;
 mod player;
 mod signin;
+mod torrent;
 
 use std::time::Duration;
 
@@ -23,6 +24,7 @@ pub(crate) struct AppState {
     http: argus_core::reqwest::Client,
     addons: AddonClient,
     player: player::Player,
+    torrents: torrent::TorrentEngine,
 }
 
 /// Commands return strings as errors so the UI can show them directly.
@@ -240,20 +242,21 @@ async fn streams(
     Ok(prefs.rank(list))
 }
 
-/// Turns any stream into a URL a player can open (debrid for torrents).
+/// Turns any stream into a URL a player can open. Torrents go through
+/// debrid when the profile has one, otherwise the in-process engine.
 #[tauri::command]
 async fn resolve_stream(s: State<'_, AppState>, profile: i64, stream: Stream) -> CmdResult<String> {
     if let Some(url) = stream.url.clone().or_else(|| stream.external_url.clone()) {
         return Ok(url);
     }
     if stream.info_hash.is_some() {
-        let debrid = debrid_for(&s, profile)
-            .await?
-            .ok_or("Torrent streams need a debrid account. Add one in Settings.")?;
-        return debrid
-            .resolve(&stream, Duration::from_secs(20))
-            .await
-            .map_err(err);
+        if let Some(debrid) = debrid_for(&s, profile).await? {
+            return debrid
+                .resolve(&stream, Duration::from_secs(20))
+                .await
+                .map_err(err);
+        }
+        return s.torrents.stream_url(&stream).await;
     }
     if let Some(yt) = stream.yt_id {
         return Ok(format!("https://www.youtube.com/watch?v={yt}"));
@@ -408,6 +411,7 @@ pub fn run() {
                 addons: AddonClient::new(http.clone()),
                 http,
                 player: player::Player::default(),
+                torrents: torrent::TorrentEngine::new(app.path().app_cache_dir()?.join("torrents")),
             });
             #[cfg(target_os = "macos")]
             if let Some(win) = app.get_webview_window("main") {
