@@ -56,7 +56,20 @@ export type Addon = {
   manifest: { id: string; name: string; version: string; description?: string; logo?: string; types: string[] };
 };
 
-export type Profile = { id: number; name: string };
+export type Profile = { id: number; name: string; has_pin: boolean; kids: boolean };
+
+export type LibraryItem = { item_id: string; kind: string; name: string; poster?: string; added_at: number };
+
+export type CalendarEntry = {
+  date: string;
+  showId: string;
+  showName: string;
+  poster?: string;
+  videoId: string;
+  season?: number;
+  episode?: number;
+  title: string;
+};
 
 export type Progress = {
   item_id: string;
@@ -73,7 +86,17 @@ export type CatalogRow = { addon: string; title: string; kind: string; id: strin
 
 export const api = {
   profiles: () => invoke<Profile[]>("profiles"),
-  createProfile: (name: string) => invoke<Profile>("create_profile", { name }),
+  createProfile: (name: string, kids = false) => invoke<Profile>("create_profile", { name, kids }),
+  deleteProfile: (profile: number) => invoke<void>("delete_profile", { profile }),
+  renameProfile: (profile: number, name: string) => invoke<void>("rename_profile", { profile, name }),
+  setPin: (profile: number, pin: string | null) => invoke<void>("set_pin", { profile, pin }),
+  checkPin: (profile: number, pin: string) => invoke<boolean>("check_pin", { profile, pin }),
+  library: (profile: number) => invoke<LibraryItem[]>("library", { profile }),
+  addToLibrary: (profile: number, item: LibraryItem) => invoke<void>("add_to_library", { profile, item }),
+  removeFromLibrary: (profile: number, itemId: string) => invoke<void>("remove_from_library", { profile, itemId }),
+  calendar: (profile: number) => invoke<CalendarEntry[]>("calendar", { profile }),
+  getAppSetting: (key: string) => invoke<string | null>("get_app_setting", { key }),
+  setAppSetting: (key: string, value: string) => invoke<void>("set_app_setting", { key, value }),
   addons: (profile: number) => invoke<Addon[]>("addons", { profile }),
   installAddon: (profile: number, url: string) => invoke<Addon>("install_addon", { profile, url }),
   removeAddon: (profile: number, baseUrl: string) => invoke<void>("remove_addon", { profile, baseUrl }),

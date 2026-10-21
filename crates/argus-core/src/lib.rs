@@ -3,7 +3,9 @@
 //! Every frontend (desktop, mobile, TV, web) talks to this crate, so behaviour
 //! stays identical across devices and bugs get fixed once.
 
+pub mod episodes;
 pub mod error;
+pub mod fallback;
 pub mod library;
 pub mod model;
 pub mod ranking;

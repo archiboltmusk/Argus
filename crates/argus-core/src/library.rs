@@ -8,7 +8,7 @@ use rusqlite::{params, Connection, OptionalExtension};
 use serde::{Deserialize, Serialize};
 
 use crate::sources::addon::{Addon, Manifest};
-use crate::Result;
+use crate::{Error, Result};
 
 const MIGRATIONS: &[&str] = &[
     // v1
@@ -46,7 +46,28 @@ const MIGRATIONS: &[&str] = &[
     );
     INSERT INTO profiles (name) VALUES ('Default');
     "#,
+    // v2: profile PIN + kids mode, saved library, app-wide feature toggles
+    r#"
+    ALTER TABLE profiles ADD COLUMN pin_hash TEXT;
+    ALTER TABLE profiles ADD COLUMN kids INTEGER NOT NULL DEFAULT 0;
+    CREATE TABLE library_items (
+        profile_id INTEGER NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+        item_id TEXT NOT NULL,
+        kind TEXT NOT NULL,
+        name TEXT NOT NULL,
+        poster TEXT,
+        added_at INTEGER NOT NULL DEFAULT (unixepoch()),
+        PRIMARY KEY (profile_id, item_id)
+    );
+    CREATE TABLE app_settings (
+        key TEXT PRIMARY KEY,
+        value TEXT NOT NULL
+    );
+    "#,
 ];
+
+/// Spec feature 9: "up to 8 profiles".
+pub const MAX_PROFILES: usize = 8;
 
 /// Items past this fraction count as watched and leave Continue Watching.
 pub const WATCHED_THRESHOLD: f64 = 0.92;
@@ -55,6 +76,31 @@ pub const WATCHED_THRESHOLD: f64 = 0.92;
 pub struct Profile {
     pub id: i64,
     pub name: String,
+    #[serde(default)]
+    pub has_pin: bool,
+    #[serde(default)]
+    pub kids: bool,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct LibraryItem {
+    pub item_id: String,
+    pub kind: String,
+    pub name: String,
+    pub poster: Option<String>,
+    pub added_at: i64,
+}
+
+/// PINs are a parental gate, not account security: 4 digits can't resist
+/// brute force whatever the hash. Hashing just keeps them out of plain view.
+fn hash_pin(profile_id: i64, pin: &str) -> String {
+    use sha2::{Digest, Sha256};
+    let digest = Sha256::digest(format!("argus-pin:{profile_id}:{pin}").as_bytes());
+    digest.iter().map(|b| format!("{b:02x}")).collect()
+}
+
+fn valid_pin(pin: &str) -> bool {
+    pin.len() == 4 && pin.bytes().all(|b| b.is_ascii_digit())
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -115,26 +161,82 @@ impl Library {
 
     pub fn profiles(&self) -> Result<Vec<Profile>> {
         let db = self.db();
-        let mut stmt = db.prepare_cached("SELECT id, name FROM profiles ORDER BY id")?;
+        let mut stmt = db.prepare_cached(
+            "SELECT id, name, pin_hash IS NOT NULL, kids FROM profiles ORDER BY id",
+        )?;
         let rows = stmt.query_map([], |r| {
             Ok(Profile {
                 id: r.get(0)?,
                 name: r.get(1)?,
+                has_pin: r.get(2)?,
+                kids: r.get(3)?,
             })
         })?;
         Ok(rows.collect::<Result<_, _>>()?)
     }
 
-    pub fn create_profile(&self, name: &str) -> Result<Profile> {
+    pub fn create_profile(&self, name: &str, kids: bool) -> Result<Profile> {
+        let name = name.trim();
+        if name.is_empty() || name.chars().count() > 32 {
+            return Err(Error::Invalid(
+                "Profile name must be 1-32 characters".into(),
+            ));
+        }
+        if self.profiles()?.len() >= MAX_PROFILES {
+            return Err(Error::Invalid(format!("At most {MAX_PROFILES} profiles")));
+        }
         let db = self.db();
-        db.execute("INSERT INTO profiles (name) VALUES (?1)", [name])?;
+        db.execute(
+            "INSERT INTO profiles (name, kids) VALUES (?1, ?2)",
+            params![name, kids],
+        )?;
         Ok(Profile {
             id: db.last_insert_rowid(),
             name: name.to_string(),
+            has_pin: false,
+            kids,
         })
     }
 
+    pub fn rename_profile(&self, id: i64, name: &str) -> Result<()> {
+        self.db().execute(
+            "UPDATE profiles SET name = ?1 WHERE id = ?2",
+            params![name.trim(), id],
+        )?;
+        Ok(())
+    }
+
+    /// `None` removes the PIN.
+    pub fn set_pin(&self, id: i64, pin: Option<&str>) -> Result<()> {
+        let hash = match pin {
+            Some(p) if !valid_pin(p) => return Err(Error::Invalid("PIN must be 4 digits".into())),
+            Some(p) => Some(hash_pin(id, p)),
+            None => None,
+        };
+        self.db().execute(
+            "UPDATE profiles SET pin_hash = ?1 WHERE id = ?2",
+            params![hash, id],
+        )?;
+        Ok(())
+    }
+
+    /// True when the profile has no PIN or the PIN matches.
+    pub fn check_pin(&self, id: i64, pin: &str) -> Result<bool> {
+        let stored: Option<String> = self
+            .db()
+            .query_row("SELECT pin_hash FROM profiles WHERE id = ?1", [id], |r| {
+                r.get(0)
+            })
+            .optional()?
+            .flatten();
+        Ok(stored.is_none_or(|h| h == hash_pin(id, pin)))
+    }
+
+    /// The last profile can't be deleted; the app always needs one.
     pub fn delete_profile(&self, id: i64) -> Result<()> {
+        if self.profiles()?.len() <= 1 {
+            return Err(Error::Invalid("Can't delete the only profile".into()));
+        }
         self.db()
             .execute("DELETE FROM profiles WHERE id = ?1", [id])?;
         Ok(())
@@ -246,6 +348,64 @@ impl Library {
     }
 }
 
+impl Library {
+    pub fn add_to_library(&self, profile: i64, item: &LibraryItem) -> Result<()> {
+        self.db().execute(
+            "INSERT INTO library_items (profile_id, item_id, kind, name, poster) VALUES (?1, ?2, ?3, ?4, ?5)
+             ON CONFLICT (profile_id, item_id) DO UPDATE SET name = excluded.name, poster = excluded.poster",
+            params![profile, item.item_id, item.kind, item.name, item.poster],
+        )?;
+        Ok(())
+    }
+
+    pub fn remove_from_library(&self, profile: i64, item_id: &str) -> Result<()> {
+        self.db().execute(
+            "DELETE FROM library_items WHERE profile_id = ?1 AND item_id = ?2",
+            params![profile, item_id],
+        )?;
+        Ok(())
+    }
+
+    pub fn library(&self, profile: i64) -> Result<Vec<LibraryItem>> {
+        let db = self.db();
+        let mut stmt = db.prepare_cached(
+            "SELECT item_id, kind, name, poster, added_at FROM library_items
+             WHERE profile_id = ?1 ORDER BY added_at DESC",
+        )?;
+        let rows = stmt.query_map([profile], |r| {
+            Ok(LibraryItem {
+                item_id: r.get(0)?,
+                kind: r.get(1)?,
+                name: r.get(2)?,
+                poster: r.get(3)?,
+                added_at: r.get(4)?,
+            })
+        })?;
+        Ok(rows.collect::<Result<_, _>>()?)
+    }
+
+    /// App-wide settings (feature toggles, window state), not per profile.
+    pub fn app_setting(&self, key: &str) -> Result<Option<String>> {
+        Ok(self
+            .db()
+            .query_row(
+                "SELECT value FROM app_settings WHERE key = ?1",
+                [key],
+                |r| r.get(0),
+            )
+            .optional()?)
+    }
+
+    pub fn set_app_setting(&self, key: &str, value: &str) -> Result<()> {
+        self.db().execute(
+            "INSERT INTO app_settings (key, value) VALUES (?1, ?2)
+             ON CONFLICT (key) DO UPDATE SET value = excluded.value",
+            params![key, value],
+        )?;
+        Ok(())
+    }
+}
+
 const PROGRESS_SELECT: &str =
     "SELECT item_id, video_id, kind, name, poster, position_s, duration_s, updated_at FROM progress";
 
@@ -324,12 +484,54 @@ mod tests {
     }
 
     #[test]
+    fn profile_limits_and_pins() {
+        let lib = Library::in_memory().unwrap();
+        let first = lib.profiles().unwrap()[0].id;
+        assert!(lib.delete_profile(first).is_err(), "last profile stays");
+        for i in 1..MAX_PROFILES {
+            lib.create_profile(&format!("P{i}"), false).unwrap();
+        }
+        assert!(lib.create_profile("one too many", false).is_err());
+
+        assert!(lib.set_pin(first, Some("12a4")).is_err());
+        lib.set_pin(first, Some("1234")).unwrap();
+        assert!(lib.profiles().unwrap()[0].has_pin);
+        assert!(lib.check_pin(first, "1234").unwrap());
+        assert!(!lib.check_pin(first, "0000").unwrap());
+        lib.set_pin(first, None).unwrap();
+        assert!(lib.check_pin(first, "anything").unwrap());
+    }
+
+    #[test]
+    fn library_and_app_settings() {
+        let lib = Library::in_memory().unwrap();
+        let p = lib.profiles().unwrap()[0].id;
+        let item = LibraryItem {
+            item_id: "tt1".into(),
+            kind: "series".into(),
+            name: "Show".into(),
+            poster: None,
+            added_at: 0,
+        };
+        lib.add_to_library(p, &item).unwrap();
+        lib.add_to_library(p, &item).unwrap();
+        assert_eq!(lib.library(p).unwrap().len(), 1);
+        lib.remove_from_library(p, "tt1").unwrap();
+        assert!(lib.library(p).unwrap().is_empty());
+        lib.set_app_setting("feature.watch_party", "off").unwrap();
+        assert_eq!(
+            lib.app_setting("feature.watch_party").unwrap().as_deref(),
+            Some("off")
+        );
+    }
+
+    #[test]
     fn profiles_are_isolated_and_migrations_rerun_safely() {
         let dir = tempfile::tempdir().unwrap();
         let path = dir.path().join("argus.db");
         {
             let lib = Library::open(&path).unwrap();
-            let kid = lib.create_profile("Kids").unwrap();
+            let kid = lib.create_profile("Kids", true).unwrap();
             lib.set_setting(kid.id, "subs.lang", "en").unwrap();
         }
         let lib = Library::open(&path).unwrap();

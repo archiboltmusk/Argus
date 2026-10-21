@@ -15,6 +15,8 @@ pub enum Error {
         source_name: String,
         message: String,
     },
+    #[error("{0}")]
+    Invalid(String),
     #[error("not found: {0}")]
     NotFound(String),
 }
