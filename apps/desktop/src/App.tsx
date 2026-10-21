@@ -7,11 +7,14 @@ import { api, CINEMETA_URL, type Addon, type CatalogRow, type Meta, type MetaPre
 import { Accounts } from "./views/Accounts";
 import { Calendar } from "./views/Calendar";
 import { Library, LibraryButton } from "./views/Library";
+import { LiveTV } from "./views/LiveTV";
+import { Sources } from "./views/Sources";
 import { Poster } from "./views/Poster";
 import { ManageProfiles, ProfileGate } from "./views/Profiles";
 import { AUTOPLAY_KEY, StreamPrefs } from "./views/StreamPrefs";
 
-type Page = "home" | "search" | "library" | "calendar" | "addons" | "settings";
+type Page = "home" | "search" | "library" | "calendar" | "live" | "addons" | "settings";
+const PAGE_LABEL: Record<Page, string> = { home: "Home", search: "Search", library: "Library", calendar: "Calendar", live: "Live TV", addons: "Sources", settings: "Settings" };
 type View = { name: Page } | { name: "detail"; item: MetaPreview };
 /** Kids profiles can't change sources or settings. */
 const KIDS_HIDDEN: Page[] = ["addons", "settings"];
@@ -45,10 +48,10 @@ export default function App() {
     );
   }
   const open = (item: MetaPreview) => setView({ name: "detail", item });
-  const pages: Page[] = ["home", "search", "library", "calendar", "addons", "settings"];
+  const pages: Page[] = ["home", "search", "library", "calendar", "live", "addons", "settings"];
   const nav = pages.filter((n) => !(profile.kids && KIDS_HIDDEN.includes(n))).map((n) => (
     <button key={n} className={view.name === n ? "nav active" : "nav"} onClick={() => setView({ name: n })}>
-      {n[0].toUpperCase() + n.slice(1)}
+      {PAGE_LABEL[n]}
     </button>
   ));
 
@@ -66,7 +69,13 @@ export default function App() {
         {view.name === "search" && <Search profile={profile.id} onOpen={open} />}
         {view.name === "library" && <Library profile={profile.id} onOpen={open} />}
         {view.name === "calendar" && <Calendar profile={profile.id} onOpen={open} />}
-        {view.name === "addons" && <Addons profile={profile.id} onError={setToast} />}
+        {view.name === "live" && <LiveTV profile={profile.id} onError={showError} onGoSources={() => setView({ name: "addons" })} />}
+        {view.name === "addons" && (
+          <>
+            <Addons profile={profile.id} onError={setToast} />
+            <Sources profile={profile.id} onError={showError} onSaved={() => setToast("Saved")} />
+          </>
+        )}
         {view.name === "settings" && (
           <>
             <Accounts profile={profile.id} onError={showError} />

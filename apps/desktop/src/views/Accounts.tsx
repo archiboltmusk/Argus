@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { openUrl } from "@tauri-apps/plugin-opener";
 
-type Service = "realdebrid" | "alldebrid" | "trakt" | "simkl";
+type Service = "realdebrid" | "alldebrid" | "trakt" | "simkl" | "plex";
 type DeviceCode = { deviceCode: string; userCode: string; verificationUrl: string; intervalS: number; expiresInS: number };
 
 const SERVICES: { id: Service; name: string; what: string }[] = [
@@ -10,14 +10,16 @@ const SERVICES: { id: Service; name: string; what: string }[] = [
   { id: "alldebrid", name: "AllDebrid", what: "Instant cached streams" },
   { id: "trakt", name: "Trakt", what: "Scrobbling and watch history" },
   { id: "simkl", name: "Simkl", what: "Scrobbling and watch history" },
+  { id: "plex", name: "Plex", what: "Sign in to add your Plex server" },
 ];
 
 /** Settings section: sign in by approving a code on the provider's site. */
-export function Accounts({ profile, onError }: { profile: number; onError: (s: string) => void }) {
+export function Accounts({ profile, onError, only, onChange }: { profile: number; onError: (s: string) => void; only?: Service[]; onChange?: () => void }) {
   const [signedIn, setSignedIn] = useState<Service[]>([]);
   const [pending, setPending] = useState<{ service: Service; code: DeviceCode } | null>(null);
   const timer = useRef<number>(undefined);
-  const refresh = () => invoke<Service[]>("signins", { profile }).then(setSignedIn).catch(() => {});
+  const refresh = () => invoke<Service[]>("signins", { profile }).then((s) => { setSignedIn(s); onChange?.(); }).catch(() => {});
+  const services = SERVICES.filter((s) => (only ? only.includes(s.id) : s.id !== "plex"));
 
   useEffect(() => { refresh(); return () => window.clearTimeout(timer.current); }, [profile]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -46,9 +48,9 @@ export function Accounts({ profile, onError }: { profile: number; onError: (s: s
 
   return (
     <section>
-      <h3>Accounts</h3>
+      {!only && <h3>Accounts</h3>}
       <ul className="addons">
-        {SERVICES.map((s) => (
+        {services.map((s) => (
           <li key={s.id}>
             <div>
               <strong>{s.name}</strong>
