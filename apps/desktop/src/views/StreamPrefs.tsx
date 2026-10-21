@@ -56,7 +56,9 @@ export function StreamPrefs({ profile, onSaved }: { profile: number; onSaved: ()
   const apply = (f: SavedFilter) => { setP({ ...DEFAULTS, ...f.prefs }); setKeywords((f.prefs.excludeKeywords ?? []).join(", ")); };
 
   const save = async () => {
-    const next = { ...p, excludeKeywords: keywords.split(",").map((k) => k.trim()).filter(Boolean) };
+    // The Languages page edits these two; keep whatever it saved last.
+    const latest = await api.getSetting(profile, "streams.prefs").then((j) => (j ? JSON.parse(j) : {})).catch(() => ({}));
+    const next = { ...p, excludeKeywords: keywords.split(",").map((k) => k.trim()).filter(Boolean), languages: latest.languages ?? [], onlyMyLanguages: latest.onlyMyLanguages ?? false };
     await api.setSetting(profile, "streams.prefs", JSON.stringify(next));
     await api.setSetting(profile, AUTOPLAY_KEY, autoplay ? "on" : "off");
     await api.setSetting(profile, PICKER_KEY, JSON.stringify(picker));

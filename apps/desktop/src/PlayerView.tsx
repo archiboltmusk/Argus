@@ -51,18 +51,22 @@ export function PlayerView({ profile, onClose, onError, onNextEpisode }: {
   const idleTimer = useRef<number>(undefined);
   const [prefs, setPrefs] = useState<PlayerPrefs>(DEFAULT_PLAYER_PREFS);
   const segments = usePlayer((s) => s.segments);
+  const playerSession = usePlayer((s) => s.session);
   const [loop, setLoop] = useState<{ a: number | null; b: number | null }>({ a: null, b: null });
   const [sleepMin, setSleepMin] = useState(0);
   const volume = useRef(100);
+  const [vol, setVol] = useState(100);
+  const [aspect, setAspect] = useState("auto");
   const setVolume = (v: number) => {
-    volume.current = Math.min(130, Math.max(0, v));
+    volume.current = Math.min(prefs.volumeMax, Math.max(0, v));
+    setVol(volume.current);
     return player.command({ type: "setVolume", volume: volume.current });
   };
   const premute = useRef(100);
 
   useEffect(() => {
     loadKeys(profile).then(setKeys);
-    loadPlayerPrefs(profile).then((p) => { volume.current = p.volume; setPrefs(p); });
+    loadPlayerPrefs(profile).then((p) => { volume.current = p.volume; setVol(p.volume); setAspect(p.aspect); setPrefs(p); });
   }, [profile]);
 
   useEffect(() => {
@@ -199,6 +203,8 @@ export function PlayerView({ profile, onClose, onError, onNextEpisode }: {
           <button onClick={() => player.command({ type: "seekRelative", seconds: -10 })}>−10</button>
           <button onClick={() => player.command({ type: "seekRelative", seconds: 10 })}>+10</button>
           <span className="time">{formatTime(position)} / {formatTime(duration)}</span>
+          <button title={vol > 0 ? "Mute" : "Unmute"} onClick={() => setVolume(vol > 0 ? 0 : premute.current || 100)}>{vol === 0 ? "🔇" : vol < 60 ? "🔉" : "🔊"}</button>
+          <input className="vol" type="range" min={0} max={prefs.volumeMax} value={vol} onChange={(e) => { if (vol > 0) premute.current = vol; setVolume(Number(e.target.value)); }} aria-label="Volume" />
           <span className="spacer" />
           {subDelay !== 0 && <span className="small muted">Subs {subDelay > 0 ? "+" : ""}{subDelay} ms</span>}
           <button onClick={() => setMenu(menu === "audio" ? null : "audio")}>Audio</button>
@@ -206,10 +212,16 @@ export function PlayerView({ profile, onClose, onError, onNextEpisode }: {
           <button className={loop.a !== null ? "primary" : ""} title="A-B loop" onClick={() => cycleLoop()}>
             {loop.a === null ? "A-B" : loop.b === null ? `A ${formatTime(loop.a)}` : "Looping"}
           </button>
+          {playerSession?.kind === "series" && <button title="Next episode" onClick={onNextEpisode}>⏭</button>}
+          <button title="Try another stream" onClick={() => switchToNext(profile, onError)}>⇄ Source</button>
+          <button title="Fullscreen" onClick={() => getCurrentWindow().isFullscreen().then((f) => getCurrentWindow().setFullscreen(!f))}>⛶</button>
           <button title="Save screenshot" onClick={() => player.command({ type: "screenshot" }).then(() => onError("Screenshot saved to Pictures"))}>📷</button>
           <select value={sleepMin} onChange={(e) => setSleepMin(Number(e.target.value))} aria-label="Sleep timer" title="Sleep timer">
             <option value={0}>Sleep: off</option>
             {[15, 30, 45, 60, 90].map((m) => <option key={m} value={m}>Stop in {m} min</option>)}
+          </select>
+          <select value={aspect} onChange={(e) => { setAspect(e.target.value); player.command({ type: "aspect", mode: e.target.value }); }} aria-label="Aspect ratio" title="Aspect ratio">
+            {[["auto", "Aspect: auto"], ["16:9", "16:9"], ["4:3", "4:3"], ["21:9", "21:9"], ["fill", "Fill"], ["stretch", "Stretch"]].map(([v, n]) => <option key={v} value={v}>{n}</option>)}
           </select>
           <select value={speed} onChange={(e) => player.command({ type: "setSpeed", speed: Number(e.target.value) })} aria-label="Speed">
             {[0.5, 0.75, 1, 1.25, 1.5, 2].map((s) => <option key={s} value={s}>{s}×</option>)}

@@ -107,6 +107,9 @@ pub struct PlayerPrefs {
     pub dual_subs: bool,
     /// Pick tracks inside the file before downloaded ones.
     pub prefer_embedded: bool,
+    /// Words that keep an audio track from being picked automatically
+    /// ("commentary, descriptive"), matched in the track title.
+    pub audio_avoid: String,
     /// Show forced subtitles when the audio is in the original language.
     pub forced_subs: bool,
     /// Don't turn subtitles on by default.
@@ -140,7 +143,7 @@ impl Default for PlayerPrefs {
             volume_max: 200,
             audio_device: "auto".into(),
             quality: "balanced".into(),
-            renderer: "gpu".into(),
+            renderer: "gpu-next".into(),
             simple_color: false,
             brightness: 0,
             contrast: 0,
@@ -158,6 +161,7 @@ impl Default for PlayerPrefs {
             hide_sdh: false,
             dual_subs: false,
             prefer_embedded: false,
+            audio_avoid: "commentary, audio description, descriptive".into(),
             forced_subs: true,
             subs_start_off: false,
         }
@@ -336,23 +340,7 @@ impl PlayerPrefs {
             props.push(("target-trc", "bt.1886".into()));
             props.push(("dither-depth", "8".into()));
         }
-        let (aspect, panscan) = match self.aspect.as_str() {
-            "16:9" | "4:3" | "21:9" => (self.aspect.clone(), "0"),
-            "fill" => ("-1".into(), "1"),
-            "stretch" => ("-1".into(), "0"),
-            _ => ("-1".into(), "0"),
-        };
-        props.push(("video-aspect-override", aspect));
-        props.push(("panscan", panscan.into()));
-        props.push((
-            "keepaspect",
-            if self.aspect == "stretch" {
-                "no"
-            } else {
-                "yes"
-            }
-            .into(),
-        ));
+        props.extend(aspect_properties(&self.aspect));
         let mut af = Vec::new();
         if self.normalize {
             af.push("dynaudnorm=f=250:g=15");
@@ -375,6 +363,23 @@ impl PlayerPrefs {
         ));
         props
     }
+}
+
+/// mpv properties for an aspect mode: `auto`, `16:9`, `4:3`, `21:9`, `fill` or `stretch`.
+pub fn aspect_properties(mode: &str) -> [(&'static str, String); 3] {
+    let (aspect, panscan) = match mode {
+        "16:9" | "4:3" | "21:9" => (mode.to_string(), "0"),
+        "fill" => ("-1".to_string(), "1"),
+        _ => ("-1".to_string(), "0"),
+    };
+    [
+        ("video-aspect-override", aspect),
+        ("panscan", panscan.into()),
+        (
+            "keepaspect",
+            if mode == "stretch" { "no" } else { "yes" }.into(),
+        ),
+    ]
 }
 
 fn is_device_name(d: &str) -> bool {
@@ -568,6 +573,47 @@ pub fn choose_tracks(tracks: &[Track], prefs: &TrackPrefs) -> (Option<i64>, Opti
     (audio.map(|t| t.id), wanted.or_else(forced).map(|t| t.id))
 }
 
+/// Audio track for a file: what the user picked for this show, else the
+/// preferred languages in order, else the file's default. Tracks whose
+/// title holds an "avoid" word (commentary, audio description) are only used
+/// when nothing else exists.
+pub fn choose_audio(
+    tracks: &[Track],
+    remembered: Option<&TrackPrefs>,
+    prefs: &PlayerPrefs,
+) -> Option<i64> {
+    let avoid: Vec<String> = prefs
+        .audio_avoid
+        .split(',')
+        .map(|w| w.trim().to_lowercase())
+        .filter(|w| !w.is_empty())
+        .collect();
+    let audio = || tracks.iter().filter(|t| t.kind == "audio");
+    let clean = |t: &&Track| {
+        let title = t.title.as_deref().unwrap_or("").to_lowercase();
+        !avoid.iter().any(|w| title.contains(w))
+    };
+    let lang_is = |t: &Track, l: &str| t.lang.as_deref().is_some_and(|tl| same_lang(tl, l));
+    let mut langs: Vec<String> = Vec::new();
+    if let Some(l) = remembered.and_then(|r| r.audio_lang.clone()) {
+        langs.push(l);
+    }
+    langs.extend(
+        prefs
+            .audio_langs
+            .split(',')
+            .map(|l| l.trim().to_string())
+            .filter(|l| !l.is_empty()),
+    );
+    langs
+        .iter()
+        .find_map(|l| audio().filter(clean).find(|t| lang_is(t, l)))
+        .or_else(|| audio().filter(clean).find(|t| t.default))
+        .or_else(|| audio().find(clean))
+        .or_else(|| audio().next())
+        .map(|t| t.id)
+}
+
 /// Subtitle choice for a file: `(primary, secondary)` track ids.
 ///
 /// A show the user already picked subtitles for uses that memory (including
@@ -733,6 +779,33 @@ mod tests {
                 ("deband".to_string(), "yes".to_string()),
             ]
         );
+    }
+
+    #[test]
+    fn audio_choice_follows_priority_and_skips_commentary() {
+        let mut commentary = t(1, "audio", "eng", false, true);
+        commentary.title = Some("Director's Commentary".into());
+        let tracks = vec![
+            commentary,
+            t(2, "audio", "jpn", false, false),
+            t(3, "audio", "eng", false, false),
+        ];
+        let prefs = PlayerPrefs {
+            audio_langs: "eng".into(),
+            ..Default::default()
+        };
+        assert_eq!(choose_audio(&tracks, None, &prefs), Some(3));
+        let jp = PlayerPrefs {
+            audio_langs: "jpn,eng".into(),
+            ..Default::default()
+        };
+        assert_eq!(choose_audio(&tracks, None, &jp), Some(2));
+        // The show's remembered language wins over the list.
+        let mem = TrackPrefs {
+            audio_lang: Some("eng".into()),
+            ..Default::default()
+        };
+        assert_eq!(choose_audio(&tracks, Some(&mem), &jp), Some(3));
     }
 
     #[test]
