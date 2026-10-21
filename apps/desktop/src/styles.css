@@ -145,3 +145,4 @@ input[type="range"] { padding: 0; }
 .stack button { text-align: left; }
 textarea { font-family: ui-monospace, Menlo, monospace; width: 100%; }
 .clamp { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.player .vol { width: 90px; flex: none; }

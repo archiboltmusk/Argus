@@ -52,6 +52,7 @@ export type PlayerCommand =
   | { type: "addSub"; url: string; lang?: string }
   | { type: "setSpeed"; speed: number }
   | { type: "setVolume"; volume: number }
+  | { type: "aspect"; mode: string }
   | { type: "setDownmix"; enabled: boolean }
   | { type: "abLoop"; a: number | null; b: number | null }
   | { type: "screenshot" }

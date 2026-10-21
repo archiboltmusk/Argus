@@ -78,7 +78,7 @@ export function PlaybackSettings({ profile, onSaved }: { profile: number; onSave
       <div>Hardware acceleration</div>
       {seg("hwdec", [["auto-safe", "Auto"], ["force", "Force on"], ["no", "Off (use CPU)"]])}
       <div>Renderer <span className="small muted">(applies after restarting Argus)</span></div>
-      {seg("renderer", [["gpu", "GPU (compatibility)"], ["gpu-next", "GPU next"]])}
+      {seg("renderer", [["gpu-next", "GPU next"], ["gpu", "GPU (compatibility)"]])}
       <label className="check"><input type="checkbox" checked={p.simpleColor} onChange={(e) => save({ simpleColor: e.target.checked })} />Simple color mode (8-bit SDR for older graphics cards; disables HDR)</label>
 
       <h3>Playback: picture adjustments</h3>

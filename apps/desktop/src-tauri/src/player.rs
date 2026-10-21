@@ -10,7 +10,7 @@ use std::time::{Duration, Instant};
 use argus_core::fallback::StallDetector;
 use argus_core::library::Progress;
 use argus_core::player::{
-    choose_subs, choose_tracks, set_sub_offset_ms, sub_offset_ms, PlayerPrefs, Throttle, Track,
+    choose_audio, choose_subs, set_sub_offset_ms, sub_offset_ms, PlayerPrefs, Throttle, Track,
     TrackPrefs, SUB_OFFSET_STEP_MS,
 };
 use argus_core::skip::{self, Chapter};
@@ -83,6 +83,10 @@ pub enum Command {
     SetVolume {
         volume: f64,
     },
+    /// `auto`, `16:9`, `4:3`, `21:9`, `fill` or `stretch`.
+    Aspect {
+        mode: String,
+    },
     /// Stereo downmix for laptop speakers/headphones (spec feature 7).
     SetDownmix {
         enabled: bool,
@@ -154,6 +158,14 @@ impl Player {
         // The video view must be visible while mpv creates its GL surface.
         set_video_visible(app, true);
         let wid = lock(&self.wid).map(|w| w.to_string());
+        #[cfg(target_os = "macos")]
+        if wid.is_none() {
+            // Without the video view mpv would open its own window with no controls.
+            if let Some(m) = &marker {
+                let _ = std::fs::remove_file(m);
+            }
+            return Err("The video surface isn't ready; opening in an external player".into());
+        }
         let log = app.path().app_log_dir().ok().map(|d| {
             let _ = std::fs::create_dir_all(&d);
             d.join("mpv.log").to_string_lossy().into_owned()
@@ -182,14 +194,16 @@ impl Player {
                 .renderer
                 .as_str()
             {
-                "gpu-next" => "gpu-next",
-                _ => "gpu",
+                "gpu" => "gpu",
+                _ => "gpu-next",
             }
         };
         let mut opts: Vec<(&str, &str)> = vec![
-            // `gpu` is the stable path for embedding into a view via `wid`;
-            // `gpu-next` is opt-in under Settings > Playback > Renderer.
             ("vo", vo),
+            // The Metal/Vulkan context embeds into our `wid` view. The OpenGL
+            // (cocoa) context ignores `wid` and opens its own window with no
+            // controls, so never let mpv fall back to it.
+            ("gpu-context", "macvk"),
             ("hwdec", "auto-safe"),
             ("idle", "yes"),
             ("force-window", "yes"),
@@ -199,7 +213,7 @@ impl Player {
             ("input-vo-keyboard", "no"),
             ("osc", "no"),
             ("ytdl", if ytdl_path.is_some() { "yes" } else { "no" }),
-            // HDR: let mpv tell macOS the content's colorspace (EDR passthrough).
+            // Safe at init; HDR passthrough/tone mapping is applied from settings per file.
             ("target-colorspace-hint", "no"),
             ("sub-auto", "fuzzy"),
             ("cache", "yes"),
@@ -342,12 +356,18 @@ impl Player {
             Command::AddSub { url, lang } => {
                 mpv.command(&["sub-add", &url, "auto", "", lang.as_deref().unwrap_or("")])
             }
+            Command::Aspect { mode } => {
+                for (name, value) in argus_core::player::aspect_properties(&mode) {
+                    mpv.set(name, &value)?;
+                }
+                Ok(())
+            }
             Command::SetSpeed { speed } => {
                 mpv.set("speed", &speed.clamp(0.25, 4.0).to_string())?;
                 self.remember(app, |p, _| p.speed = Some(speed))
             }
             Command::SetVolume { volume } => {
-                mpv.set("volume", &volume.clamp(0.0, 130.0).to_string())
+                mpv.set("volume", &volume.clamp(0.0, 600.0).to_string())
             }
             Command::SetDownmix { enabled } => mpv.set(
                 "audio-channels",
@@ -558,12 +578,12 @@ fn event_loop(mpv: &Mpv, app: &AppHandle, session: &Mutex<Option<Session>>, cloc
                     let st = app.state::<AppState>();
                     let prefs =
                         TrackPrefs::load(&st.lib, s.profile, &s.video_id).unwrap_or_default();
-                    let (aid, _) = choose_tracks(&tracks, &prefs);
+                    let player_prefs = PlayerPrefs::load(&st.lib, s.profile).unwrap_or_default();
+                    let remembered = TrackPrefs::load_remembered(&st.lib, s.profile, &s.video_id);
+                    let aid = choose_audio(&tracks, remembered.as_ref(), &player_prefs);
                     if let Some(a) = aid {
                         let _ = mpv.set("aid", &a.to_string());
                     }
-                    let player_prefs = PlayerPrefs::load(&st.lib, s.profile).unwrap_or_default();
-                    let remembered = TrackPrefs::load_remembered(&st.lib, s.profile, &s.video_id);
                     let audio =
                         aid.and_then(|a| tracks.iter().find(|t| t.kind == "audio" && t.id == a));
                     let (sid, secondary) =

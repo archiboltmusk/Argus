@@ -58,6 +58,49 @@ pub struct StreamInfo {
     pub seeders: Option<u32>,
     /// Some(true) when the addon or a debrid cache check says it is instant.
     pub cached: Option<bool>,
+    /// Audio languages named in the release, as ISO 639-2 codes ("eng").
+    /// Empty when the release doesn't say; `multi` marks multi-audio.
+    #[serde(default)]
+    pub languages: Vec<String>,
+}
+
+const LANGUAGE_WORDS: &[(&str, &[&str])] = &[
+    ("eng", &["english", "🇬🇧", "🇺🇸"]),
+    ("hin", &["hindi", "🇮🇳"]),
+    (
+        "spa",
+        &["spanish", "español", "castellano", "latino", "🇪🇸", "🇲🇽"],
+    ),
+    ("fre", &["french", "français", "vostfr", "truefrench", "🇫🇷"]),
+    ("ger", &["german", "deutsch", "🇩🇪"]),
+    ("ita", &["italian", "italiano", "🇮🇹"]),
+    ("por", &["portuguese", "português", "🇵🇹", "🇧🇷"]),
+    ("rus", &["russian", "🇷🇺"]),
+    ("jpn", &["japanese", "🇯🇵"]),
+    ("kor", &["korean", "🇰🇷"]),
+    ("chi", &["chinese", "mandarin", "cantonese", "🇨🇳"]),
+    ("ara", &["arabic", "🇸🇦"]),
+    ("tur", &["turkish", "🇹🇷"]),
+    ("pol", &["polish", "🇵🇱"]),
+    ("dut", &["dutch", "🇳🇱"]),
+    ("swe", &["swedish", "🇸🇪"]),
+    ("tam", &["tamil"]),
+    ("tel", &["telugu"]),
+];
+
+fn detect_languages(lower: &str) -> Vec<String> {
+    let mut out: Vec<String> = LANGUAGE_WORDS
+        .iter()
+        .filter(|(_, words)| words.iter().any(|w| lower.contains(w)))
+        .map(|(code, _)| code.to_string())
+        .collect();
+    if ["multi", "dual audio", "dual-audio"]
+        .iter()
+        .any(|w| lower.contains(w))
+    {
+        out.push("multi".into());
+    }
+    out
 }
 
 fn re(cell: &'static OnceLock<Regex>, pattern: &str) -> &'static Regex {
@@ -206,6 +249,7 @@ impl StreamInfo {
             size_bytes,
             seeders,
             cached,
+            languages: detect_languages(&lower),
         }
     }
 }
@@ -232,6 +276,10 @@ pub struct Preferences {
     pub order: Order,
     /// How long to wait for each addon before moving on (seconds).
     pub addon_wait_secs: u32,
+    /// Audio languages to favour, best first (ISO 639-2: "eng", "hin").
+    pub languages: Vec<String>,
+    /// Hide streams that name only other audio languages.
+    pub only_my_languages: bool,
 }
 
 /// Which kind of stream wins ties in the list.
@@ -270,6 +318,8 @@ impl Default for Preferences {
             source: SourcePref::default(),
             order: Order::default(),
             addon_wait_secs: 6,
+            languages: Vec::new(),
+            only_my_languages: false,
         }
     }
 }
@@ -288,6 +338,16 @@ impl Preferences {
             return false;
         }
         if self.hide_cam && i.release == Release::Cam {
+            return false;
+        }
+        if self.only_my_languages
+            && !self.languages.is_empty()
+            && !i.languages.is_empty()
+            && !i
+                .languages
+                .iter()
+                .any(|l| l == "multi" || self.languages.contains(l))
+        {
             return false;
         }
         if self.cached_only && s.info_hash.is_some() && i.cached != Some(true) {
@@ -351,6 +411,14 @@ impl Preferences {
             Release::Unknown => 0,
             Release::Cam => -5_000,
         };
+        // Favoured audio languages: first choice counts most.
+        if let Some(rank) = self
+            .languages
+            .iter()
+            .position(|l| i.languages.iter().any(|x| x == l))
+        {
+            score += 20_000 - (rank as i64) * 3_000;
+        }
         let direct = i.cached == Some(true) || s.url.is_some();
         score += match self.source {
             SourcePref::Debrid if direct => 100_000,
@@ -425,6 +493,31 @@ mod tests {
         }
         .rank(list);
         assert_eq!(addon[0].stream.name.as_deref(), Some("a"));
+    }
+
+    #[test]
+    fn language_preference_ranks_and_filters() {
+        let list = vec![
+            s("a", "Movie.2024.1080p.WEB-DL.Hindi", true),
+            s("b", "Movie.2024.1080p.WEB-DL.English", true),
+            s("c", "Movie.2024.720p.WEB-DL", true),
+            s("d", "Movie.2024.720p.MULTi", true),
+        ];
+        let want = |only| Preferences {
+            languages: vec!["eng".into()],
+            only_my_languages: only,
+            ..Default::default()
+        };
+        let ranked = want(false).rank(list.clone());
+        assert_eq!(ranked[0].stream.name.as_deref(), Some("b"));
+        let only: Vec<_> = want(true)
+            .rank(list)
+            .iter()
+            .filter_map(|r| r.stream.name.clone())
+            .collect();
+        // Hindi-only is hidden; unknown and multi-audio stay.
+        assert!(!only.contains(&"a".to_string()));
+        assert!(only.contains(&"c".to_string()) && only.contains(&"d".to_string()));
     }
 
     #[test]
