@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { PlayerView } from "./PlayerView";
+import { UpdateBanner, UpdateSettings } from "./updates";
 import { startPlayerEvents } from "./player";
 import { play as startPlayback, playNextEpisode } from "./playback";
 import { api, CINEMETA_URL, type Addon, type CatalogRow, type Meta, type MetaPreview, type Profile, type Progress, type RankedStream, type StreamInfo, type Video } from "./api";
@@ -45,7 +46,12 @@ export default function App() {
         {view.name === "home" && <Home profile={profile.id} onOpen={open} onGoAddons={() => setView({ name: "addons" })} />}
         {view.name === "search" && <Search profile={profile.id} onOpen={open} />}
         {view.name === "addons" && <Addons profile={profile.id} onError={setToast} />}
-        {view.name === "settings" && <Settings profile={profile.id} onSaved={() => setToast("Saved")} />}
+        {view.name === "settings" && (
+          <>
+            <Settings profile={profile.id} onSaved={() => setToast("Saved")} />
+            <UpdateSettings />
+          </>
+        )}
         {view.name === "detail" && <Detail profile={profile.id} item={view.item} onError={setToast} />}
       </main>
       <PlayerView
@@ -54,6 +60,7 @@ export default function App() {
         onError={setToast}
         onNextEpisode={() => playNextEpisode(profile.id).catch((e) => setToast(errText(e)))}
       />
+      <UpdateBanner />
       {toast && <div className="toast" role="status">{toast}</div>}
     </div>
   );

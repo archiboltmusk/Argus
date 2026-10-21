@@ -82,6 +82,27 @@ jobs:
           cache: pnpm
       - run: brew install mpv dylibbundler
       - run: pnpm install --frozen-lockfile
+      # Non-PR builds feed the beta channel: version MAJOR.MINOR.<run number>
+      # so every main build is newer than the last for the updater.
+      # The updater public key comes from the TAURI_UPDATER_PUBKEY repo variable
+      # so the keypair can be rotated without a code change.
+      - name: Set beta version and updater key
+        if: github.event_name != 'pull_request'
+        env:
+          PUBKEY: ${{ vars.TAURI_UPDATER_PUBKEY }}
+        run: |
+          if [ -z "$PUBKEY" ]; then
+            echo "::error::Add the TAURI_UPDATER_PUBKEY repo variable to publish updates"; exit 1
+          fi
+          node -e '
+            const f = "apps/desktop/src-tauri/tauri.conf.json";
+            const c = JSON.parse(require("fs").readFileSync(f, "utf8"));
+            const [maj, min] = c.version.split(".");
+            c.version = `${maj}.${min}.${process.env.GITHUB_RUN_NUMBER}`;
+            c.plugins.updater.pubkey = process.env.PUBKEY.trim();
+            require("fs").writeFileSync(f, JSON.stringify(c, null, 2));
+            console.log("version", c.version);
+          '
       - run: cargo clippy -p argus-desktop -p argus-mac-video --target ${{ matrix.target }} -- -D warnings
       # Unsigned until an Apple Developer ID is added as a repo secret.
       - run: pnpm --filter desktop tauri build --target ${{ matrix.target }} --bundles app
@@ -104,6 +125,48 @@ jobs:
           ln -s /Applications dist-dmg/Applications
           hdiutil create -volname Argus -srcfolder dist-dmg -ov -format UDZO "Argus-${{ matrix.arch }}.dmg"
           du -h "Argus-${{ matrix.arch }}.dmg"
+      - name: Sign the update bundle and write latest.json
+        if: github.event_name != 'pull_request'
+        env:
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          if [ -z "$TAURI_SIGNING_PRIVATE_KEY" ]; then
+            echo "::error::Add the TAURI_SIGNING_PRIVATE_KEY repo secret to publish updates"; exit 1
+          fi
+          # Built from the bundled, codesigned app so updates carry libmpv too.
+          tar -czf "Argus-${{ matrix.arch }}.app.tar.gz" -C dist-dmg Argus.app
+          pnpm --filter desktop tauri signer sign "$PWD/Argus-${{ matrix.arch }}.app.tar.gz"
+          VERSION=$(node -p 'require("./apps/desktop/src-tauri/tauri.conf.json").version')
+          SIG=$(cat "Argus-${{ matrix.arch }}.app.tar.gz.sig")
+          URL="https://github.com/${{ github.repository }}/releases/download/beta/Argus-${{ matrix.arch }}.app.tar.gz"
+          node -e '
+            const [version, sig, url, sha] = process.argv.slice(1);
+            const out = {
+              version,
+              notes: `Beta build ${version} (${sha.slice(0, 7)})`,
+              pub_date: new Date().toISOString(),
+              platforms: { "darwin-aarch64": { signature: sig, url } },
+            };
+            require("fs").writeFileSync("latest.json", JSON.stringify(out, null, 2));
+          ' "$VERSION" "$SIG" "$URL" "$GITHUB_SHA"
+          cat latest.json
+      # Rolling beta channel: the in-app updater reads beta/latest.json.
+      - if: github.event_name != 'pull_request'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: beta
+          name: Argus beta
+          prerelease: true
+          make_latest: false
+          files: |
+            Argus-${{ matrix.arch }}.dmg
+            Argus-${{ matrix.arch }}.app.tar.gz
+            latest.json
+          body: |
+            Rolling beta. Installed copies of Argus 0.2+ update themselves from here (Settings → Updates).
+            First install: download the .dmg. Apple Silicon only. Unsigned build: right-click Argus.app → Open the first time.
       - uses: actions/upload-artifact@v4
         with:
           name: Argus-macOS-${{ matrix.arch }}
