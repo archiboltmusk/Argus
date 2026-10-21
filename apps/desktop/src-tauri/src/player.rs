@@ -10,8 +10,8 @@ use std::time::{Duration, Instant};
 use argus_core::fallback::StallDetector;
 use argus_core::library::Progress;
 use argus_core::player::{
-    choose_tracks, set_sub_offset_ms, sub_offset_ms, PlayerPrefs, Throttle, Track, TrackPrefs,
-    SUB_OFFSET_STEP_MS,
+    choose_subs, choose_tracks, set_sub_offset_ms, sub_offset_ms, PlayerPrefs, Throttle, Track,
+    TrackPrefs, SUB_OFFSET_STEP_MS,
 };
 use argus_core::skip::{self, Chapter};
 use argus_core::sources::tracker::{scrobble_action, ScrobbleAction, WatchKey};
@@ -319,6 +319,7 @@ impl Player {
             Command::SetSub { id } => {
                 mpv.set("sid", &id.map_or("no".into(), |i| i.to_string()))?;
                 self.remember(app, |p, t| {
+                    p.subs_chosen = true;
                     p.sub_lang = id.and_then(|i| lang_of(t, "sub", i))
                 })
             }
@@ -557,11 +558,21 @@ fn event_loop(mpv: &Mpv, app: &AppHandle, session: &Mutex<Option<Session>>, cloc
                     let st = app.state::<AppState>();
                     let prefs =
                         TrackPrefs::load(&st.lib, s.profile, &s.video_id).unwrap_or_default();
-                    let (aid, sid) = choose_tracks(&tracks, &prefs);
+                    let (aid, _) = choose_tracks(&tracks, &prefs);
                     if let Some(a) = aid {
                         let _ = mpv.set("aid", &a.to_string());
                     }
+                    let player_prefs = PlayerPrefs::load(&st.lib, s.profile).unwrap_or_default();
+                    let remembered = TrackPrefs::load_remembered(&st.lib, s.profile, &s.video_id);
+                    let audio =
+                        aid.and_then(|a| tracks.iter().find(|t| t.kind == "audio" && t.id == a));
+                    let (sid, secondary) =
+                        choose_subs(&tracks, remembered.as_ref(), &player_prefs, audio);
                     let _ = mpv.set("sid", &sid.map_or("no".into(), |i| i.to_string()));
+                    let _ = mpv.set(
+                        "secondary-sid",
+                        &secondary.map_or("no".into(), |i| i.to_string()),
+                    );
                     if let Some(sp) = prefs.speed {
                         let _ = mpv.set("speed", &sp.to_string());
                     }

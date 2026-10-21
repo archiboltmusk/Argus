@@ -18,6 +18,8 @@ pub struct TrackPrefs {
     /// `None` = subtitles off.
     pub sub_lang: Option<String>,
     pub secondary_sub_lang: Option<String>,
+    /// The user picked (or turned off) subtitles for this show themselves.
+    pub subs_chosen: bool,
     pub speed: Option<f64>,
 }
 
@@ -87,6 +89,28 @@ pub struct PlayerPrefs {
     pub buffer: String,
     /// Extra mpv options, one `key=value` per line.
     pub mpv_conf: String,
+    /// `outline`, `shadow` or `box` behind subtitle text.
+    pub sub_style: String,
+    /// Text opacity, 10-100.
+    pub sub_opacity: u32,
+    /// `left`, `center` or `right` (plain-text subtitles).
+    pub sub_align: String,
+    /// Font family; empty = mpv default.
+    pub sub_font: String,
+    /// Styled (ASS) subtitles: `keep` their look, `resize` to my size, or `mine` = my style.
+    pub ass_mode: String,
+    /// Scale embedded subtitles with the window so sizes stay consistent.
+    pub sub_scale_window: bool,
+    /// Hide `[music]`/sound descriptions for the deaf and hard of hearing.
+    pub hide_sdh: bool,
+    /// Show two subtitle languages at once (first and second preferred).
+    pub dual_subs: bool,
+    /// Pick tracks inside the file before downloaded ones.
+    pub prefer_embedded: bool,
+    /// Show forced subtitles when the audio is in the original language.
+    pub forced_subs: bool,
+    /// Don't turn subtitles on by default.
+    pub subs_start_off: bool,
 }
 
 impl Default for PlayerPrefs {
@@ -125,6 +149,17 @@ impl Default for PlayerPrefs {
             sharpen: 0.0,
             buffer: "auto".into(),
             mpv_conf: String::new(),
+            sub_style: "outline".into(),
+            sub_opacity: 100,
+            sub_align: "center".into(),
+            sub_font: String::new(),
+            ass_mode: "keep".into(),
+            sub_scale_window: true,
+            hide_sdh: false,
+            dual_subs: false,
+            prefer_embedded: false,
+            forced_subs: true,
+            subs_start_off: false,
         }
     }
 }
@@ -162,7 +197,6 @@ impl PlayerPrefs {
             ("alang", langs(&self.audio_langs)),
             ("slang", langs(&self.sub_langs)),
             ("sub-font-size", self.sub_size.clamp(20, 120).to_string()),
-            ("sub-color", color(&self.sub_color, "#FFFFFF")),
             (
                 "sub-border-color",
                 color(&self.sub_outline_color, "#000000"),
@@ -225,6 +259,51 @@ impl PlayerPrefs {
                 },
             ),
         ];
+        let opacity = self.sub_opacity.clamp(10, 100);
+        let alpha = (opacity * 255 / 100) as u8;
+        let text = color(&self.sub_color, "#FFFFFF");
+        props.push(("sub-color", format!("#{alpha:02X}{}", &text[1..])));
+        let (border_style, shadow) = match self.sub_style.as_str() {
+            "shadow" => ("outline-and-shadow", "2"),
+            "box" => ("opaque-box", "0"),
+            _ => ("outline-and-shadow", "0"),
+        };
+        props.push(("sub-border-style", border_style.into()));
+        props.push(("sub-shadow-offset", shadow.into()));
+        props.push((
+            "sub-align-x",
+            match self.sub_align.as_str() {
+                "left" => "left",
+                "right" => "right",
+                _ => "center",
+            }
+            .into(),
+        ));
+        props.push((
+            "sub-font",
+            if is_device_name(&self.sub_font) {
+                self.sub_font.clone()
+            } else {
+                String::new()
+            },
+        ));
+        props.push((
+            "sub-ass-override",
+            match self.ass_mode.as_str() {
+                "mine" => "force",
+                "resize" => "scale",
+                _ => "no",
+            }
+            .into(),
+        ));
+        props.push((
+            "sub-scale-by-window",
+            if self.sub_scale_window { "yes" } else { "no" }.into(),
+        ));
+        props.push((
+            "sub-filter-sdh",
+            if self.hide_sdh { "yes" } else { "no" }.into(),
+        ));
         let (scale, dscale, cscale, deband, dither) = match self.quality.as_str() {
             "weak" => ("bilinear", "bilinear", "bilinear", "no", "no"),
             "max" => (
@@ -380,6 +459,14 @@ impl TrackPrefs {
             .unwrap_or_default())
     }
 
+    /// What the user picked for this show, or `None` if they never did.
+    pub fn load_remembered(lib: &Library, profile: i64, video_id: &str) -> Option<Self> {
+        lib.setting(profile, &Self::key(video_id))
+            .ok()
+            .flatten()
+            .and_then(|j| serde_json::from_str(&j).ok())
+    }
+
     pub fn save(&self, lib: &Library, profile: i64, video_id: &str) -> Result<()> {
         lib.set_setting(profile, &Self::key(video_id), &serde_json::to_string(self)?)
     }
@@ -481,6 +568,65 @@ pub fn choose_tracks(tracks: &[Track], prefs: &TrackPrefs) -> (Option<i64>, Opti
     (audio.map(|t| t.id), wanted.or_else(forced).map(|t| t.id))
 }
 
+/// Subtitle choice for a file: `(primary, secondary)` track ids.
+///
+/// A show the user already picked subtitles for uses that memory (including
+/// "off"); otherwise the preferred languages from settings apply. Forced
+/// subtitles in the audio language stay on for foreign-dialogue scenes.
+pub fn choose_subs(
+    tracks: &[Track],
+    remembered: Option<&TrackPrefs>,
+    prefs: &PlayerPrefs,
+    audio: Option<&Track>,
+) -> (Option<i64>, Option<i64>) {
+    let subs = || tracks.iter().filter(|t| t.kind == "sub");
+    let lang_is = |t: &Track, l: &str| t.lang.as_deref().is_some_and(|tl| same_lang(tl, l));
+    let global: Vec<&str> = prefs
+        .sub_langs
+        .split(',')
+        .map(str::trim)
+        .filter(|l| !l.is_empty())
+        .collect();
+    let (first, second): (Option<String>, Option<String>) =
+        match remembered.filter(|r| r.subs_chosen) {
+            Some(r) => (r.sub_lang.clone(), r.secondary_sub_lang.clone()),
+            None if prefs.subs_start_off => (None, None),
+            None => (
+                global.first().map(|s| s.to_string()),
+                global.get(1).map(|s| s.to_string()),
+            ),
+        };
+    let best = |lang: &str, skip: Option<i64>| {
+        subs()
+            .filter(|t| lang_is(t, lang) && Some(t.id) != skip)
+            .min_by_key(|t| {
+                (
+                    t.forced,
+                    prefs.prefer_embedded && t.external,
+                    !t.default,
+                    t.external,
+                )
+            })
+            .map(|t| t.id)
+    };
+    let audio_lang = audio.and_then(|a| a.lang.as_deref());
+    let forced = || {
+        if !prefs.forced_subs {
+            return None;
+        }
+        subs()
+            .find(|t| t.forced && audio_lang.is_none_or(|al| lang_is(t, al)))
+            .map(|t| t.id)
+    };
+    let primary = first.as_deref().and_then(|l| best(l, None)).or_else(forced);
+    let secondary = if prefs.dual_subs {
+        second.as_deref().and_then(|l| best(l, primary))
+    } else {
+        None
+    };
+    (primary, secondary)
+}
+
 /// Playback clock: the player pushes every position update here, and
 /// subscribers (UI, scrobbler, progress saver) pull at their own rate.
 /// This keeps per-frame updates out of React state (Harbor's freeze bug).
@@ -520,7 +666,7 @@ mod tests {
         assert!(p.auto_next && p.sub_outline == 3);
         let props: std::collections::HashMap<_, _> = p.mpv_properties().into_iter().collect();
         assert_eq!(props["sub-font-size"], "70");
-        assert_eq!(props["sub-color"], "#FFFFFF");
+        assert_eq!(props["sub-color"], "#FFFFFFFF");
         assert_eq!(props["alang"], "eng,jpn");
         assert_eq!(props["hwdec"], "auto-safe");
     }
@@ -587,6 +733,37 @@ mod tests {
                 ("deband".to_string(), "yes".to_string()),
             ]
         );
+    }
+
+    #[test]
+    fn subtitle_choice_uses_settings_then_memory() {
+        let tracks = vec![
+            t(1, "audio", "jpn", false, true),
+            t(2, "sub", "eng", false, false),
+            t(3, "sub", "spa", false, false),
+            t(4, "sub", "eng", true, false),
+        ];
+        let mut on = PlayerPrefs {
+            sub_langs: "eng,spa".into(),
+            dual_subs: true,
+            ..Default::default()
+        };
+        let audio = tracks.first();
+        // First play of a show: preferred languages, second one as the extra track.
+        assert_eq!(choose_subs(&tracks, None, &on, audio), (Some(2), Some(3)));
+        // Dual off: only one.
+        on.dual_subs = false;
+        assert_eq!(choose_subs(&tracks, None, &on, audio), (Some(2), None));
+        // Start off: no subtitles, but forced ones in the audio language still show.
+        on.subs_start_off = true;
+        assert_eq!(choose_subs(&tracks, None, &on, audio), (None, None));
+        // Remembered "off" beats settings.
+        let off = TrackPrefs {
+            subs_chosen: true,
+            ..Default::default()
+        };
+        on.subs_start_off = false;
+        assert_eq!(choose_subs(&tracks, Some(&off), &on, audio), (None, None));
     }
 
     fn t(id: i64, kind: &str, lang: &str, forced: bool, default: bool) -> Track {
