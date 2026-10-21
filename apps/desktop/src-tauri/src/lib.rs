@@ -370,7 +370,19 @@ async fn streams(
             ..Default::default()
         });
     let addons = s.lib.addons(profile).map_err(err)?;
-    let mut list = s.addons.streams(&addons, &kind, &id).await;
+    let prefs: Preferences = s
+        .lib
+        .setting(profile, SETTING_STREAM_PREFS)
+        .map_err(err)?
+        .and_then(|j| serde_json::from_str(&j).ok())
+        .unwrap_or_default();
+    let wait = std::time::Duration::from_secs(u64::from(prefs.addon_wait_secs.clamp(2, 30)));
+    let mut list = s
+        .addons
+        .clone()
+        .with_timeout(wait)
+        .streams(&addons, &kind, &id)
+        .await;
     if let Some(debrid) = debrid_for(&s, profile).await? {
         let hashes: Vec<String> = list.iter().filter_map(|x| x.info_hash.clone()).collect();
         // A failed cache check only loses the "instant" badge; never block streams on it.
@@ -378,12 +390,6 @@ async fn streams(
             apply_cache(&mut list, &cached, debrid.provider());
         }
     }
-    let prefs: Preferences = s
-        .lib
-        .setting(profile, SETTING_STREAM_PREFS)
-        .map_err(err)?
-        .and_then(|j| serde_json::from_str(&j).ok())
-        .unwrap_or_default();
     let mut ranked = prefs.rank_for(list, argus_core::trust::Want::from_video_id(&id));
     if let Some(stream) = offline {
         let info = StreamInfo::parse(&stream);

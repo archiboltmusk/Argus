@@ -26,7 +26,7 @@ import { setRpdbKey } from "./views/Poster";
 import { TorrentSettings } from "./views/TorrentSettings";
 import { Poster } from "./views/Poster";
 import { ManageProfiles, ProfileGate } from "./views/Profiles";
-import { AUTOPLAY_KEY, StreamPrefs } from "./views/StreamPrefs";
+import { AUTOPLAY_KEY, StreamPrefs, loadPicker, DEFAULT_PICKER, type PickerPrefs } from "./views/StreamPrefs";
 
 type Page = "home" | "discover" | "movies" | "shows" | "search" | "library" | "calendar" | "live" | "downloads" | "addons" | "settings";
 const PAGE_LABEL: Record<Page, string> = { home: "Home", discover: "Discover", movies: "Movies", shows: "Shows", search: "Search", library: "Library", calendar: "Calendar", live: "Live TV", downloads: "Downloads", addons: "Sources", settings: "Settings" };
@@ -225,6 +225,8 @@ function Detail({ profile, item, onError, onToast }: { profile: number; item: Me
   const mark = (ids: string[], on: boolean) =>
     api.setWatched(profile, item.id, ids, on).then(() => setWatched((w) => { const n = new Set(w); ids.forEach((i) => (on ? n.add(i) : n.delete(i))); return n; })).catch((e) => onError(errText(e)));
   useEffect(() => { api.getSetting(profile, AUTOPLAY_KEY).then((v) => setAutoplay(v === "on")); }, [profile]);
+  const [picker, setPicker] = useState<PickerPrefs>(DEFAULT_PICKER);
+  useEffect(() => { loadPicker(profile).then(setPicker); }, [profile]);
 
   useEffect(() => {
     api.meta(profile, item.type, item.id).then(setMeta).catch(() => setMeta({ ...item }));
@@ -313,7 +315,7 @@ function Detail({ profile, item, onError, onToast }: { profile: number; item: Me
               <button className="stream" disabled={playing !== null} onClick={() => play(i)}>
                 <span className="badges">{badges(info).map((b) => <span key={b} className="badge">{b}</span>)}</span>
                 <strong>{s.name ?? s.origin}</strong>
-                <span className="muted">{s.description}</span>
+                {picker.layout === "full" && picker.showRelease && <span className={picker.fullDescription ? "muted" : "muted clamp"}>{s.description}</span>}
                 <span className="small muted">{s.origin}{s.infoHash && info.cached !== true ? " · P2P" : ""}{playing === i ? " · opening…" : ""}</span>
               </button>
               {s.origin !== "Downloads" && (
