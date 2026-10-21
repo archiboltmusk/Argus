@@ -10,7 +10,7 @@ unified library, and it plays all of them in one high-quality player.
 Argus ships with **no content and no built-in sources**. You connect the addons,
 accounts, servers and playlists you already use and have rights to.
 
-Platforms: **macOS first** (signed `.dmg`), then Windows, Linux, web, Android/iOS and TV
+Platforms: **macOS first** (Apple Silicon, signed `.dmg`), then Windows, Linux, web, Android/iOS and TV
 (Android TV/Fire TV, tvOS, webOS, Tizen).
 
 ---
@@ -125,7 +125,7 @@ switch off in Settings, and it can be removed from the build entirely if it prov
 
 ### Performance budgets
 
-- Cold start to interactive home: < 1.5 s (M1), < 3 s (2018 Intel)
+- Cold start to interactive home: < 1.5 s (M1)
 - Click Play to first frame: < 2 s on cached debrid, < 3 s on direct HTTP
 - RAM: < 250 MB idle, < 600 MB during 4K playback
 - `.dmg` < 60 MB, with no Node runtime bundled
@@ -175,5 +175,5 @@ cargo test -p argus-core -- --ignored     # live tests against public addons
 pnpm build:mac                            # build a .dmg (on macOS)
 ```
 
-Every push builds unsigned Apple Silicon and Intel `.dmg` files in GitHub Actions (CI → artifacts).
+Every push builds an unsigned Apple Silicon `.dmg` in GitHub Actions (CI → artifacts).
 To open an unsigned build the first time, right-click the app and choose Open.

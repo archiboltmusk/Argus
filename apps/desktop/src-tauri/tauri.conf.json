@@ -18,19 +18,37 @@
         "minWidth": 900,
         "minHeight": 560,
         "titleBarStyle": "Overlay",
-        "hiddenTitle": true
+        "hiddenTitle": true,
+        "transparent": true,
+        "label": "main"
       }
     ],
     "security": {
       "csp": "default-src 'self'; img-src 'self' https: http: data:; style-src 'self' 'unsafe-inline'; connect-src 'self' ipc: http://ipc.localhost"
-    }
+    },
+    "macOSPrivateApi": true
   },
   "bundle": {
     "active": true,
-    "targets": ["dmg", "app", "msi", "nsis", "appimage", "deb"],
+    "targets": [
+      "dmg",
+      "app",
+      "msi",
+      "nsis",
+      "appimage",
+      "deb"
+    ],
     "category": "Entertainment",
     "shortDescription": "Fast streaming hub for your own sources",
-    "icon": ["icons/32x32.png", "icons/128x128.png", "icons/128x128@2x.png", "icons/icon.icns", "icons/icon.ico"],
-    "macOS": { "minimumSystemVersion": "11.0" }
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ],
+    "macOS": {
+      "minimumSystemVersion": "11.0"
+    }
   }
 }

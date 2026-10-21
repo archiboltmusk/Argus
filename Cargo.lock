@@ -71,12 +71,22 @@ name = "argus-desktop"
 version = "0.1.0"
 dependencies = [
  "argus-core",
+ "argus-mac-video",
  "serde",
  "serde_json",
  "tauri",
  "tauri-build",
  "tauri-plugin-opener",
  "tokio",
+]
+
+[[package]]
+name = "argus-mac-video"
+version = "0.1.0"
+dependencies = [
+ "objc2",
+ "objc2-app-kit",
+ "objc2-foundation",
 ]
 
 [[package]]

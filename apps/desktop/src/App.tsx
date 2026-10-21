@@ -1,5 +1,8 @@
 import { useCallback, useEffect, useState } from "react";
-import { api, CINEMETA_URL, type Addon, type CatalogRow, type Meta, type MetaPreview, type Profile, type Progress, type RankedStream, type Stream, type StreamInfo, type Video } from "./api";
+import { PlayerView } from "./PlayerView";
+import { startPlayerEvents } from "./player";
+import { play as startPlayback, playNextEpisode } from "./playback";
+import { api, CINEMETA_URL, type Addon, type CatalogRow, type Meta, type MetaPreview, type Profile, type Progress, type RankedStream, type StreamInfo, type Video } from "./api";
 
 type View = { name: "home" | "search" | "addons" | "settings" } | { name: "detail"; item: MetaPreview };
 
@@ -13,6 +16,7 @@ export default function App() {
   const [toast, setToast] = useState<string | null>(null);
 
   useEffect(() => {
+    startPlayerEvents();
     api.profiles().then((p) => setProfile(p[0] ?? null)).catch((e) => setToast(errText(e)));
   }, []);
 
@@ -44,6 +48,12 @@ export default function App() {
         {view.name === "settings" && <Settings profile={profile.id} onSaved={() => setToast("Saved")} />}
         {view.name === "detail" && <Detail profile={profile.id} item={view.item} onError={setToast} />}
       </main>
+      <PlayerView
+        profile={profile.id}
+        onClose={() => undefined}
+        onError={setToast}
+        onNextEpisode={() => playNextEpisode(profile.id).catch((e) => setToast(errText(e)))}
+      />
       {toast && <div className="toast" role="status">{toast}</div>}
     </div>
   );
@@ -143,17 +153,17 @@ function Detail({ profile, item, onError }: { profile: number; item: MetaPreview
     api.streams(profile, item.type, videoId).then(setStreams).catch((e) => onError(errText(e)));
   }, [profile, item.type, videoId, onError]);
 
-  const play = useCallback(async (s: Stream, i: number) => {
+  const play = useCallback(async (i: number) => {
+    if (!streams || !videoId) return;
     setPlaying(i);
     try {
-      const url = await api.resolveStream(profile, s);
-      await api.playExternal(profile, url);
+      await startPlayback(profile, { item, videoId }, streams, i);
     } catch (e) {
       onError(errText(e));
     } finally {
       setPlaying(null);
     }
-  }, [profile, onError]);
+  }, [profile, onError, streams, videoId, item]);
 
   const m = meta ?? item;
   const seasons = new Map<number, Video[]>();
@@ -184,7 +194,7 @@ function Detail({ profile, item, onError }: { profile: number; item: MetaPreview
           {streams === null && <div className="muted">Asking your addons…</div>}
           {streams?.length === 0 && <div className="muted">No addon returned a stream for this title.</div>}
           {streams?.map(({ stream: s, info }, i) => (
-            <button key={i} className="stream" disabled={playing !== null} onClick={() => play(s, i)}>
+            <button key={i} className="stream" disabled={playing !== null} onClick={() => play(i)}>
               <span className="badges">{badges(info).map((b) => <span key={b} className="badge">{b}</span>)}</span>
               <strong>{s.name ?? s.origin}</strong>
               <span className="muted">{s.description}</span>
@@ -274,7 +284,8 @@ const SETTINGS = [
   { key: "debrid.alldebrid.key", label: "AllDebrid API key", type: "password", hint: "alldebrid.com/apikeys" },
   { key: "debrid.premiumize.key", label: "Premiumize API key", type: "password", hint: "premiumize.me/account" },
   { key: "debrid.torbox.key", label: "TorBox API key", type: "password", hint: "torbox.app/settings" },
-  { key: "player.external", label: "External player app", type: "text", hint: "IINA, VLC, or empty for system default" },
+  { key: "player.mode", label: "Player", type: "text", hint: "builtin (default) or external" },
+  { key: "player.external", label: "External player app", type: "text", hint: "IINA, VLC, Infuse, or empty for system default" },
 ] as const;
 
 function Settings({ profile, onSaved }: { profile: number; onSaved: () => void }) {

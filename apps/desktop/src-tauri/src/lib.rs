@@ -1,6 +1,9 @@
 //! Thin Tauri shell: every command forwards to `argus-core`. No business
 //! logic here, so mobile and TV shells can reuse the core unchanged.
 
+mod mpv;
+mod player;
+
 use std::time::Duration;
 
 use argus_core::episodes::{self, CalendarEntry};
@@ -14,10 +17,11 @@ use serde::Serialize;
 use tauri::{Manager, State};
 use tauri_plugin_opener::OpenerExt;
 
-struct AppState {
+pub(crate) struct AppState {
     lib: Library,
     http: argus_core::reqwest::Client,
     addons: AddonClient,
+    player: player::Player,
 }
 
 /// Commands return strings as errors so the UI can show them directly.
@@ -250,21 +254,115 @@ async fn resolve_stream(s: State<'_, AppState>, profile: i64, stream: Stream) ->
     Err("This stream has no playable source.".into())
 }
 
-/// Hands the URL to the user's chosen player (IINA, VLC...) or the OS default.
-/// The built-in libmpv player replaces this as the default in a later step.
+/// Hands the URL to an external player (spec feature 11), starting at
+/// `start` seconds where the player supports it. Empty setting = OS default.
 #[tauri::command]
 fn play_external(
     app: tauri::AppHandle,
     s: State<'_, AppState>,
     profile: i64,
     url: String,
+    start: Option<f64>,
 ) -> CmdResult<()> {
     let player = s
         .lib
         .setting(profile, SETTING_PLAYER)
         .map_err(err)?
-        .filter(|p| !p.is_empty());
+        .filter(|p| !p.trim().is_empty());
+    let start = start.unwrap_or(0.0).max(0.0);
+    #[cfg(target_os = "macos")]
+    if let Some(p) = player.as_deref() {
+        let lower = p.to_ascii_lowercase();
+        let flag = if lower.contains("iina") {
+            Some(format!("--mpv-start=+{start:.0}"))
+        } else if lower.contains("vlc") {
+            Some(format!("--start-time={start:.0}"))
+        } else {
+            None
+        };
+        if lower.contains("infuse") {
+            let enc: String = argus_core::reqwest::Url::parse_with_params(
+                "infuse://x-callback-url/play",
+                &[("url", &url)],
+            )
+            .map_err(err)?
+            .into();
+            return app.opener().open_url(enc, None::<&str>).map_err(err);
+        }
+        let mut cmd = std::process::Command::new("open");
+        cmd.args(["-na", p, "--args"]);
+        if let Some(f) = flag {
+            cmd.arg(f);
+        }
+        cmd.arg(&url).spawn().map_err(err)?;
+        return Ok(());
+    }
+    let _ = start;
     app.opener().open_url(url, player).map_err(err)
+}
+
+#[tauri::command]
+fn player_load(
+    app: tauri::AppHandle,
+    s: State<'_, AppState>,
+    url: String,
+    start: f64,
+    session: player::Session,
+) -> CmdResult<()> {
+    s.player.load(&app, &url, start, session)
+}
+
+#[tauri::command]
+fn player_command(
+    app: tauri::AppHandle,
+    s: State<'_, AppState>,
+    command: player::Command,
+) -> CmdResult<()> {
+    s.player.command(&app, command)
+}
+
+#[tauri::command]
+fn player_tracks(s: State<'_, AppState>) -> Vec<argus_core::player::Track> {
+    s.player.tracks()
+}
+
+#[tauri::command]
+fn player_clock(s: State<'_, AppState>) -> player::Clock {
+    s.player.clock()
+}
+
+/// Subtitles from addons for the playing video (spec feature 6).
+#[tauri::command]
+async fn subtitles(
+    s: State<'_, AppState>,
+    profile: i64,
+    kind: String,
+    id: String,
+    filename: Option<String>,
+) -> CmdResult<Vec<argus_core::model::Subtitle>> {
+    let addons = s.lib.addons(profile).map_err(err)?;
+    let extra: Vec<(&str, &str)> = filename
+        .as_deref()
+        .map(|f| vec![("filename", f)])
+        .unwrap_or_default();
+    Ok(s.addons.subtitles(&addons, &kind, &id, &extra).await)
+}
+
+/// Next episode after `video_id`, for auto-queue (spec feature 10).
+#[tauri::command]
+async fn next_episode(
+    s: State<'_, AppState>,
+    profile: i64,
+    item_id: String,
+    video_id: String,
+) -> CmdResult<Option<argus_core::model::Video>> {
+    let addons = s.lib.addons(profile).map_err(err)?;
+    let meta = s
+        .addons
+        .meta(&addons, "series", &item_id)
+        .await
+        .map_err(err)?;
+    Ok(episodes::next_episode(&meta, &video_id, &episodes::today_utc()).cloned())
 }
 
 #[tauri::command]
@@ -300,7 +398,16 @@ pub fn run() {
                 lib,
                 addons: AddonClient::new(http.clone()),
                 http,
+                player: player::Player::default(),
             });
+            #[cfg(target_os = "macos")]
+            if let Some(win) = app.get_webview_window("main") {
+                // Video view sits behind the transparent webview.
+                let content = win.ns_view()?;
+                if let Some(view) = unsafe { argus_mac_video::attach_video_view(content) } {
+                    app.state::<AppState>().player.set_wid(view as usize);
+                }
+            }
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
@@ -326,6 +433,12 @@ pub fn run() {
             streams,
             resolve_stream,
             play_external,
+            player_load,
+            player_command,
+            player_tracks,
+            player_clock,
+            subtitles,
+            next_episode,
             continue_watching,
             save_progress,
             get_setting,

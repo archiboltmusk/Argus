@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["crates/argus-core", "apps/desktop/src-tauri"]
+members = ["crates/argus-core", "crates/argus-mac-video", "apps/desktop/src-tauri"]
 default-members = ["crates/argus-core"]
 
 [workspace.package]

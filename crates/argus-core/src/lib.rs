@@ -9,6 +9,7 @@ pub mod error;
 pub mod fallback;
 pub mod library;
 pub mod model;
+pub mod player;
 pub mod ranking;
 pub mod sources;
 
