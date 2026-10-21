@@ -49,7 +49,28 @@
     ],
     "macOS": {
       "minimumSystemVersion": "11.0"
-    }
+    },
+    "fileAssociations": [
+      {
+        "ext": [
+          "mkv",
+          "mp4",
+          "avi",
+          "mov",
+          "m4v",
+          "webm",
+          "ts",
+          "m2ts",
+          "wmv",
+          "flv",
+          "mpg",
+          "mpeg"
+        ],
+        "name": "Video",
+        "role": "Viewer",
+        "mimeType": "video/*"
+      }
+    ]
   },
   "plugins": {
     "updater": {

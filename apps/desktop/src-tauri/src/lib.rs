@@ -187,6 +187,49 @@ async fn home_rows(s: State<'_, AppState>, profile: i64) -> CmdResult<Vec<Catalo
     Ok(rows)
 }
 
+/// One page of any addon catalog, with Stremio-style extras (genre, skip).
+#[tauri::command]
+async fn catalog_page(
+    s: State<'_, AppState>,
+    profile: i64,
+    addon: String,
+    kind: String,
+    id: String,
+    extra: Vec<(String, String)>,
+) -> CmdResult<Vec<MetaPreview>> {
+    let addons = s.lib.addons(profile).map_err(err)?;
+    let a = addons
+        .iter()
+        .find(|a| a.base_url == addon)
+        .ok_or("That addon was removed")?;
+    let extra: Vec<(&str, &str)> = extra
+        .iter()
+        .map(|(k, v)| (k.as_str(), v.as_str()))
+        .collect();
+    s.addons.catalog(a, &kind, &id, &extra).await.map_err(err)
+}
+
+#[tauri::command]
+fn watched_videos(s: State<'_, AppState>, profile: i64, item_id: String) -> CmdResult<Vec<String>> {
+    s.lib.watched_videos(profile, &item_id).map_err(err)
+}
+
+#[tauri::command]
+fn set_watched(
+    s: State<'_, AppState>,
+    profile: i64,
+    item_id: String,
+    video_ids: Vec<String>,
+    watched: bool,
+) -> CmdResult<()> {
+    for v in &video_ids {
+        s.lib
+            .set_watched(profile, &item_id, v, watched)
+            .map_err(err)?;
+    }
+    Ok(())
+}
+
 #[tauri::command]
 async fn search(
     s: State<'_, AppState>,
@@ -312,6 +355,26 @@ pub(crate) async fn resolve(s: &AppState, profile: i64, stream: Stream) -> CmdRe
         return Ok(format!("https://www.youtube.com/watch?v={yt}"));
     }
     Err("This stream has no playable source.".into())
+}
+
+/// "Open file / URL / magnet": anything the user pastes or picks becomes a
+/// playable URL (magnets go through debrid or the in-process engine).
+#[tauri::command]
+async fn resolve_input(s: State<'_, AppState>, profile: i64, input: String) -> CmdResult<String> {
+    let input = input.trim();
+    if input.starts_with("magnet:") {
+        let stream = Stream::from_magnet(input).ok_or("That magnet link isn't valid")?;
+        return resolve(&s, profile, stream).await;
+    }
+    if input.starts_with("http://")
+        || input.starts_with("https://")
+        || input.starts_with("rtmp://")
+        || input.starts_with("rtsp://")
+        || std::path::Path::new(input).is_absolute()
+    {
+        return Ok(input.to_string());
+    }
+    Err("Paste a link, a magnet, or choose a file".into())
 }
 
 /// Hands the URL to an external player (spec feature 11), starting at
@@ -522,6 +585,11 @@ pub fn run() {
             live::set_live_sources,
             live::live_channels,
             live::live_guide,
+            resolve_input,
+            catalog_page,
+            watched_videos,
+            set_watched,
+            player::ytdlp_available,
             downloads::download_start,
             downloads::download_list,
             downloads::download_pause,
@@ -529,6 +597,22 @@ pub fn run() {
             downloads::download_remove,
             downloads::download_settings,
         ])
-        .run(tauri::generate_context!())
-        .expect("error while running Argus");
+        .build(tauri::generate_context!())
+        .expect("error while building Argus")
+        .run(|app, event| {
+            // Finder "Open With Argus" / double-clicking a video.
+            #[cfg(target_os = "macos")]
+            if let tauri::RunEvent::Opened { urls } = event {
+                let files: Vec<String> = urls
+                    .iter()
+                    .filter_map(|u| u.to_file_path().ok())
+                    .map(|p| p.to_string_lossy().into_owned())
+                    .collect();
+                if !files.is_empty() {
+                    let _ = tauri::Emitter::emit(app, "open-files", files);
+                }
+            }
+            #[cfg(not(target_os = "macos"))]
+            let _ = (app, event);
+        });
 }

@@ -160,6 +160,33 @@ pub struct Stream {
 }
 
 impl Stream {
+    /// Parses a pasted `magnet:` link (hex or base32 info hash).
+    pub fn from_magnet(link: &str) -> Option<Stream> {
+        let u = url::Url::parse(link.trim())
+            .ok()
+            .filter(|u| u.scheme() == "magnet")?;
+        let mut hash = None;
+        let mut name = None;
+        let mut sources = Vec::new();
+        for (k, v) in u.query_pairs() {
+            match k.as_ref() {
+                "xt" => hash = v.strip_prefix("urn:btih:").map(str::to_string),
+                "dn" => name = Some(v.into_owned()),
+                "tr" => sources.push(format!("tracker:{v}")),
+                _ => {}
+            }
+        }
+        let hash = hash?;
+        let hex = hash.len() == 40 && hash.chars().all(|c| c.is_ascii_hexdigit());
+        let b32 = hash.len() == 32 && hash.chars().all(|c| c.is_ascii_alphanumeric());
+        (hex || b32).then(|| Stream {
+            info_hash: Some(hash.to_ascii_lowercase()),
+            name,
+            sources,
+            ..Default::default()
+        })
+    }
+
     /// Magnet link for a torrent stream, including the addon's trackers.
     pub fn magnet(&self) -> Option<String> {
         let hash = self.info_hash.as_deref()?;
@@ -207,6 +234,20 @@ impl Meta {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn parses_pasted_magnets() {
+        let h = "0123456789abcdef0123456789abcdef01234567";
+        let s = Stream::from_magnet(&format!(
+            "magnet:?xt=urn:btih:{h}&dn=My+Film&tr=udp%3A%2F%2Ft.example%3A1%2Fannounce"
+        ))
+        .unwrap();
+        assert_eq!(s.info_hash.as_deref(), Some(h));
+        assert_eq!(s.name.as_deref(), Some("My Film"));
+        assert_eq!(s.sources, vec!["tracker:udp://t.example:1/announce"]);
+        assert!(Stream::from_magnet("magnet:?xt=urn:btih:nothash").is_none());
+        assert!(Stream::from_magnet("https://example.com").is_none());
+    }
 
     #[test]
     fn magnet_carries_addon_trackers_only() {

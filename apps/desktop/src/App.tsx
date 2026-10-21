@@ -1,22 +1,27 @@
 import { useCallback, useEffect, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
+import { listen } from "@tauri-apps/api/event";
+import { getCurrentWebview } from "@tauri-apps/api/webview";
 import { PlayerView } from "./PlayerView";
 import { UpdateBanner, UpdateSettings } from "./updates";
-import { startPlayerEvents } from "./player";
+import { player, startPlayerEvents } from "./player";
 import { play as startPlayback, playNextEpisode } from "./playback";
 import { api, CINEMETA_URL, type Addon, type CatalogRow, type Meta, type MetaPreview, type Profile, type Progress, type RankedStream, type StreamInfo, type Video } from "./api";
 import { Accounts } from "./views/Accounts";
 import { Calendar } from "./views/Calendar";
+import { Discover } from "./views/Discover";
 import { Downloads } from "./views/Downloads";
 import { Library, LibraryButton } from "./views/Library";
 import { LiveTV } from "./views/LiveTV";
 import { Sources } from "./views/Sources";
+import { OpenMedia } from "./views/Open";
+import { PlayerSettings, loadPlayerPrefs } from "./views/PlayerSettings";
 import { Poster } from "./views/Poster";
 import { ManageProfiles, ProfileGate } from "./views/Profiles";
 import { AUTOPLAY_KEY, StreamPrefs } from "./views/StreamPrefs";
 
-type Page = "home" | "search" | "library" | "calendar" | "live" | "downloads" | "addons" | "settings";
-const PAGE_LABEL: Record<Page, string> = { home: "Home", search: "Search", library: "Library", calendar: "Calendar", live: "Live TV", downloads: "Downloads", addons: "Sources", settings: "Settings" };
+type Page = "home" | "discover" | "search" | "library" | "calendar" | "live" | "downloads" | "addons" | "settings";
+const PAGE_LABEL: Record<Page, string> = { home: "Home", discover: "Discover", search: "Search", library: "Library", calendar: "Calendar", live: "Live TV", downloads: "Downloads", addons: "Sources", settings: "Settings" };
 type View = { name: Page } | { name: "detail"; item: MetaPreview };
 /** Kids profiles can't change sources or settings. */
 const KIDS_HIDDEN: Page[] = ["addons", "settings"];
@@ -32,6 +37,19 @@ export default function App() {
 
   const [gate, setGate] = useState(0);
   useEffect(() => { startPlayerEvents(); }, []);
+
+  // Files dropped on the window, or opened from Finder, play right away.
+  useEffect(() => {
+    if (!profile) return;
+    const playFile = (path: string) =>
+      player.load(path, 0, { profile: profile.id, itemId: `open:${path}`, kind: "other", name: path.split("/").pop() ?? path, videoId: path, fileKey: path }, [], 0)
+        .catch((e) => setToast(errText(e)));
+    const subs = [
+      getCurrentWebview().onDragDropEvent((e) => { if (e.payload.type === "drop" && e.payload.paths[0]) playFile(e.payload.paths[0]); }),
+      listen<string[]>("open-files", (e) => e.payload[0] && playFile(e.payload[0])),
+    ];
+    return () => { subs.forEach((s) => s.then((off) => off())); };
+  }, [profile]);
   const enter = useCallback((p: Profile) => { setProfile(p); setView({ name: "home" }); }, []);
   const showError = useCallback((e: unknown) => setToast(errText(e)), []);
 
@@ -50,7 +68,7 @@ export default function App() {
     );
   }
   const open = (item: MetaPreview) => setView({ name: "detail", item });
-  const pages: Page[] = ["home", "search", "library", "calendar", "live", "downloads", "addons", "settings"];
+  const pages: Page[] = ["home", "discover", "search", "library", "calendar", "live", "downloads", "addons", "settings"];
   const nav = pages.filter((n) => !(profile.kids && KIDS_HIDDEN.includes(n))).map((n) => (
     <button key={n} className={view.name === n ? "nav active" : "nav"} onClick={() => setView({ name: n })}>
       {PAGE_LABEL[n]}
@@ -67,7 +85,9 @@ export default function App() {
         </button>
       </aside>
       <main className="content">
+        {view.name === "home" && <OpenMedia profile={profile.id} onError={showError} />}
         {view.name === "home" && <Home profile={profile.id} onOpen={open} onGoAddons={() => setView({ name: "addons" })} />}
+        {view.name === "discover" && <Discover profile={profile.id} onOpen={open} onError={showError} />}
         {view.name === "search" && <Search profile={profile.id} onOpen={open} />}
         {view.name === "library" && <Library profile={profile.id} onOpen={open} />}
         {view.name === "calendar" && <Calendar profile={profile.id} onOpen={open} />}
@@ -83,6 +103,7 @@ export default function App() {
           <>
             <Accounts profile={profile.id} onError={showError} />
             <StreamPrefs profile={profile.id} onSaved={() => setToast("Saved")} />
+            <PlayerSettings profile={profile.id} onSaved={() => setToast("Saved")} />
             <Settings profile={profile.id} onSaved={() => setToast("Saved")} />
             <UpdateSettings />
             <ManageProfiles current={profile} onError={showError} onChanged={() => api.profiles().then((ps) => setProfile(ps.find((p) => p.id === profile.id) ?? profile))} />
@@ -94,7 +115,7 @@ export default function App() {
         profile={profile.id}
         onClose={() => undefined}
         onError={setToast}
-        onNextEpisode={() => playNextEpisode(profile.id).catch((e) => setToast(errText(e)))}
+        onNextEpisode={() => loadPlayerPrefs(profile.id).then((p) => p.autoNext && playNextEpisode(profile.id)).catch((e) => setToast(errText(e)))}
       />
       <UpdateBanner />
       {toast && <div className="toast" role="status">{toast}</div>}
@@ -176,8 +197,12 @@ function Detail({ profile, item, onError, onToast }: { profile: number; item: Me
   const [videoId, setVideoId] = useState<string | null>(item.type === "movie" ? item.id : null);
   const [streams, setStreams] = useState<RankedStream[] | null>(null);
   const [playing, setPlaying] = useState<number | null>(null);
+  const [watched, setWatched] = useState<Set<string>>(new Set());
   const [autoplay, setAutoplay] = useState(false);
   const [picked, setPicked] = useState(false);
+  useEffect(() => { api.watchedVideos(profile, item.id).then((l) => setWatched(new Set(l))).catch(() => {}); }, [profile, item.id, playing]);
+  const mark = (ids: string[], on: boolean) =>
+    api.setWatched(profile, item.id, ids, on).then(() => setWatched((w) => { const n = new Set(w); ids.forEach((i) => (on ? n.add(i) : n.delete(i))); return n; })).catch((e) => onError(errText(e)));
   useEffect(() => { api.getSetting(profile, AUTOPLAY_KEY).then((v) => setAutoplay(v === "on")); }, [profile]);
 
   useEffect(() => {
@@ -218,16 +243,27 @@ function Detail({ profile, item, onError, onToast }: { profile: number; item: Me
     <div className="detail">
       {m.background && <div className="backdrop" style={{ backgroundImage: `url(${m.background})` }} />}
       <h1>{m.name}</h1>
-      <div className="actions"><LibraryButton profile={profile} item={m} /></div>
+      <div className="actions">
+        <LibraryButton profile={profile} item={m} />
+        {item.type === "movie" && <button onClick={() => mark([item.id], !watched.has(item.id))}>{watched.has(item.id) ? "✓ Watched" : "Mark watched"}</button>}
+      </div>
       <div className="muted">{[m.releaseInfo, meta?.runtime, m.imdbRating && `IMDb ${m.imdbRating}`].filter(Boolean).join(" · ")}</div>
       {m.description && <p className="desc">{m.description}</p>}
       {[...seasons.entries()].sort(([a], [b]) => a - b).map(([s, eps]) => (
         <details key={s} open={s === 1}>
-          <summary>{s === 0 ? "Specials" : `Season ${s}`}</summary>
+          <summary>
+            {s === 0 ? "Specials" : `Season ${s}`} <span className="small muted">{eps.filter((v) => watched.has(v.id)).length}/{eps.length} watched</span>
+          </summary>
+          <button className="link" onClick={() => { const all = eps.every((v) => watched.has(v.id)); mark(eps.map((v) => v.id), !all); }}>
+            {eps.every((v) => watched.has(v.id)) ? "Mark season unwatched" : "Mark season watched"}
+          </button>
           {eps.map((v) => (
-            <button key={v.id} className={videoId === v.id ? "ep active" : "ep"} onClick={() => { setVideoId(v.id); setPicked(true); }}>
-              {v.episode ? `${v.episode}. ` : ""}{v.title}
-            </button>
+            <div key={v.id} className="ep-row">
+              <button className={`${videoId === v.id ? "ep active" : "ep"}${watched.has(v.id) ? " watched" : ""}`} onClick={() => { setVideoId(v.id); setPicked(true); }}>
+                {watched.has(v.id) && <span className="check-mark">✓</span>}{v.episode ? `${v.episode}. ` : ""}{v.title}
+              </button>
+              <button className="small" title={watched.has(v.id) ? "Mark unwatched" : "Mark watched"} onClick={() => mark([v.id], !watched.has(v.id))}>{watched.has(v.id) ? "Unwatch" : "Watched"}</button>
+            </div>
           ))}
         </details>
       ))}

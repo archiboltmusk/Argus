@@ -10,7 +10,7 @@ use std::time::{Duration, Instant};
 use argus_core::fallback::StallDetector;
 use argus_core::library::Progress;
 use argus_core::player::{
-    choose_tracks, set_sub_offset_ms, sub_offset_ms, Throttle, Track, TrackPrefs,
+    choose_tracks, set_sub_offset_ms, sub_offset_ms, PlayerPrefs, Throttle, Track, TrackPrefs,
     SUB_OFFSET_STEP_MS,
 };
 use serde::{Deserialize, Serialize};
@@ -122,7 +122,7 @@ impl Player {
     }
 
     /// Creates mpv on first use (keeps app start fast) and starts the event thread.
-    fn mpv(&self, app: &AppHandle) -> Result<Arc<Mpv>, String> {
+    fn mpv(&self, app: &AppHandle, profile: i64) -> Result<Arc<Mpv>, String> {
         if let Some(m) = self.mpv.get() {
             return Ok(m.clone());
         }
@@ -131,6 +131,23 @@ impl Player {
             let _ = std::fs::create_dir_all(&d);
             d.join("mpv.log").to_string_lossy().into_owned()
         });
+        // Page URLs (YouTube etc.) play through the user's own yt-dlp, if
+        // they turned it on and have it installed. GUI apps don't inherit
+        // the shell PATH, so look in the usual places.
+        let ytdl_path = {
+            let st = app.state::<AppState>();
+            let on = st
+                .lib
+                .setting(profile, PlayerPrefs::KEY)
+                .ok()
+                .flatten()
+                .and_then(|j| serde_json::from_str::<PlayerPrefs>(&j).ok())
+                .is_some_and(|p| p.ytdl);
+            on.then(find_ytdlp).flatten()
+        };
+        let ytdl_opt = ytdl_path
+            .as_ref()
+            .map(|p| format!("ytdl_hook-ytdl_path={}", p.display()));
         let mut opts: Vec<(&str, &str)> = vec![
             ("vo", "gpu-next"),
             ("hwdec", "auto-safe"),
@@ -141,7 +158,7 @@ impl Player {
             ("input-default-bindings", "no"),
             ("input-vo-keyboard", "no"),
             ("osc", "no"),
-            ("ytdl", "no"),
+            ("ytdl", if ytdl_path.is_some() { "yes" } else { "no" }),
             // HDR: let mpv tell macOS the content's colorspace (EDR passthrough).
             ("target-colorspace-hint", "yes"),
             ("sub-auto", "fuzzy"),
@@ -151,6 +168,9 @@ impl Player {
             ("network-timeout", "15"),
             ("user-agent", argus_core::USER_AGENT),
         ];
+        if let Some(o) = ytdl_opt.as_deref() {
+            opts.push(("script-opts", o));
+        }
         if let Some(w) = wid.as_deref() {
             opts.push(("wid", w));
         }
@@ -187,13 +207,23 @@ impl Player {
         start: f64,
         session: Session,
     ) -> Result<(), String> {
-        let mpv = self.mpv(app)?;
+        let session_profile = session.profile;
+        let mpv = self.mpv(app, session_profile)?;
         self.save_progress(app); // previous item, if any
         *lock(&self.session) = Some(session);
         *lock(&self.clock) = Clock {
             speed: 1.0,
             ..Clock::default()
         };
+        // Stremio-style settings, applied before each file so changes take
+        // effect on the next play without restarting.
+        let st = app.state::<AppState>();
+        for (name, value) in PlayerPrefs::load(&st.lib, session_profile)
+            .unwrap_or_default()
+            .mpv_properties()
+        {
+            let _ = mpv.set(name, &value);
+        }
         let opts = format!("start={start:.1}");
         mpv.command_async(&["loadfile", url, "replace", "-1", &opts])?;
         set_video_visible(app, true);
@@ -299,7 +329,7 @@ fn lang_of(tracks: &[Track], kind: &str, id: i64) -> Option<String> {
 
 fn save_progress(app: &AppHandle, s: &Session, c: &Clock) {
     // Live channels have no resume point.
-    if c.duration <= 0.0 || s.kind == "tv" {
+    if c.duration <= 0.0 || s.kind == "tv" || s.kind == "other" {
         return;
     }
     let st = app.state::<AppState>();
@@ -452,4 +482,22 @@ fn event_loop(mpv: &Mpv, app: &AppHandle, session: &Mutex<Option<Session>>, cloc
             }
         }
     }
+}
+
+/// yt-dlp from the usual install locations (a GUI app has no shell PATH).
+fn find_ytdlp() -> Option<std::path::PathBuf> {
+    [
+        "/opt/homebrew/bin/yt-dlp",
+        "/usr/local/bin/yt-dlp",
+        "/usr/bin/yt-dlp",
+    ]
+    .iter()
+    .map(std::path::PathBuf::from)
+    .find(|p| p.exists())
+}
+
+/// Whether the user's yt-dlp is installed, for the settings screen.
+#[tauri::command]
+pub fn ytdlp_available() -> bool {
+    find_ytdlp().is_some()
 }
