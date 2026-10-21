@@ -10,6 +10,8 @@ export type PlayerPrefs = {
   aspect: string; normalize: boolean; eq: string; tonemap: boolean; nextPromptSecs: number; skipHideSecs: number;
   stereoDownmix: boolean; volumeMax: number; audioDevice: string; quality: string; renderer: string; simpleColor: boolean;
   brightness: number; contrast: number; saturation: number; gamma: number; sharpen: number; buffer: string; mpvConf: string;
+  subStyle: string; subOpacity: number; subAlign: string; subFont: string; assMode: string; subScaleWindow: boolean;
+  hideSdh: boolean; dualSubs: boolean; preferEmbedded: boolean; forcedSubs: boolean; subsStartOff: boolean;
 };
 export const PLAYER_PREFS_KEY = "player.prefs";
 export const DEFAULT_PLAYER_PREFS: PlayerPrefs = {
@@ -18,6 +20,8 @@ export const DEFAULT_PLAYER_PREFS: PlayerPrefs = {
   aspect: "auto", normalize: false, eq: "off", tonemap: false, nextPromptSecs: 0, skipHideSecs: 0,
   stereoDownmix: false, volumeMax: 200, audioDevice: "auto", quality: "balanced", renderer: "gpu", simpleColor: false,
   brightness: 0, contrast: 0, saturation: 0, gamma: 0, sharpen: 0, buffer: "auto", mpvConf: "",
+  subStyle: "outline", subOpacity: 100, subAlign: "center", subFont: "", assMode: "keep", subScaleWindow: true,
+  hideSdh: false, dualSubs: false, preferEmbedded: false, forcedSubs: true, subsStartOff: false,
 };
 
 /** Saves one change on top of whatever is stored, so pages that edit the same prefs don't overwrite each other. */

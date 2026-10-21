@@ -17,6 +17,7 @@ import { Sources } from "./views/Sources";
 import { OpenMedia } from "./views/Open";
 import { PlayerSettings, loadPlayerPrefs } from "./views/PlayerSettings";
 import { PlaybackSettings } from "./views/PlaybackSettings";
+import { SubtitleSettings } from "./views/SubtitleSettings";
 import { Hotkeys } from "./views/Hotkeys";
 import { StremioAccount } from "./views/StremioAccount";
 import { Room } from "./views/Room";
@@ -117,6 +118,7 @@ export default function App() {
             <StreamPrefs profile={profile.id} onSaved={() => setToast("Saved")} />
             <PlayerSettings profile={profile.id} onSaved={() => setToast("Saved")} />
             <PlaybackSettings profile={profile.id} onSaved={() => setToast("Saved")} />
+            <SubtitleSettings profile={profile.id} onSaved={() => setToast("Saved")} />
             <StremioAccount profile={profile.id} onError={showError} onSaved={() => setToast("Imported")} />
             <MetadataKeys profile={profile.id} onSaved={() => setToast("Saved")} onError={showError} />
             <Hotkeys profile={profile.id} onSaved={() => setToast("Saved")} />
