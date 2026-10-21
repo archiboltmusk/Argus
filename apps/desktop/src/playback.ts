@@ -21,6 +21,21 @@ export async function play(profile: number, target: PlayTarget, streams: RankedS
   if (mode === "external") {
     return invoke<void>("play_external", { profile, url, start });
   }
+  try {
+    await loadBuiltin(url, start, target, r, streams, index, profile);
+  } catch (e) {
+    // The built-in player crashed last time or failed to start: hand off to
+    // IINA/VLC/the system player so playback still works.
+    await invoke<void>("play_external", { profile, url, start });
+    throw new Error(
+      String(e).includes("BUILTIN_PLAYER_CRASHED")
+        ? "Built-in player crashed last time, so this opened in your external player. Retry it in Settings > Player."
+        : `Built-in player failed (${e}); opened in your external player.`,
+    );
+  }
+}
+
+async function loadBuiltin(url: string, start: number, target: PlayTarget, r: RankedStream, streams: RankedStream[], index: number, profile: number) {
   await player.load(
     url,
     start,

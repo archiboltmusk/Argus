@@ -110,6 +110,7 @@ export function PlayerSettings({ profile, onSaved }: { profile: number; onSaved:
         Open YouTube and other page links with my yt-dlp {ytdlpFound ? "(found)" : "(not installed — brew install yt-dlp)"}
       </label>
       {p.ytdl && <div className="small muted">Takes effect after restarting Argus.</div>}
+      <button onClick={() => invoke<void>("player_reset_crash").then(onSaved)}>Retry the built-in player (after a crash)</button>
       <button className="primary" onClick={() => Promise.all([api.setSetting(profile, PLAYER_PREFS_KEY, JSON.stringify(p)), api.setSetting(profile, "subs.opensubtitles", openSubs ? "on" : "off")]).then(onSaved)}>Save player settings</button>
     </section>
   );
