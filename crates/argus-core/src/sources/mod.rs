@@ -9,4 +9,6 @@ pub mod epg;
 pub mod iptv;
 pub mod jellyfin;
 pub mod local;
+pub mod plex;
+pub mod tmdb;
 pub mod tracker;
