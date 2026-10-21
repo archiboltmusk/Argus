@@ -17,7 +17,7 @@ Platforms: **macOS first** (Apple Silicon, signed `.dmg`), then Windows, Linux, 
 
 ## Why another streaming hub?
 
-Stremio, Nuvio and Harbor all speak the same addon protocol, so addons alone don't set a
+Stremio, Nuvio and Argus all speak the same addon protocol, so addons alone don't set a
 hub apart. The difference is whether things keep working. Argus is built around the bugs
 users hit most in those apps:
 
@@ -177,3 +177,11 @@ pnpm build:mac                            # build a .dmg (on macOS)
 
 Every push builds an unsigned Apple Silicon `.dmg` in GitHub Actions (CI → artifacts).
 To open an unsigned build the first time, right-click the app and choose Open.
+
+---
+
+## Lineage
+
+Argus is built on [Harbor](https://github.com/harborstremio/harbor) (MIT) with its own
+branding, updater and packaging. Harbor-hosted services and artwork are not used.
+See [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).

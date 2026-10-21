@@ -24,22 +24,25 @@ jobs:
     name: Core (fmt, clippy, tests)
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: argus-core
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
         with:
           components: rustfmt, clippy
-          targets: aarch64-apple-darwin
       - uses: Swatinem/rust-cache@v2
-      - run: cargo fmt --all --check
-      - run: cargo clippy -p argus-core --all-targets -- -D warnings
-      - run: cargo test -p argus-core
-      - run: cargo clippy -p argus-mac-video --target aarch64-apple-darwin -- -D warnings
-        name: Type-check macOS video view
+        with:
+          workspaces: argus-core
+      - run: cargo fmt --check
+      - run: cargo clippy --all-targets
+      - run: cargo test
 
   ui:
     name: UI typecheck
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -48,7 +51,8 @@ jobs:
           node-version: 22
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - run: pnpm --filter desktop build
+      - run: pnpm run typecheck
+      - run: pnpm run build
 
   macos:
     name: macOS .dmg (${{ matrix.arch }})
@@ -73,6 +77,7 @@ jobs:
           components: clippy
       - uses: Swatinem/rust-cache@v2
         with:
+          workspaces: src-tauri
           key: ${{ matrix.target }}
           cache-on-failure: true
       - uses: pnpm/action-setup@v4
@@ -95,7 +100,7 @@ jobs:
             echo "::error::Add the TAURI_UPDATER_PUBKEY repo variable to publish updates"; exit 1
           fi
           node -e '
-            const f = "apps/desktop/src-tauri/tauri.conf.json";
+            const f = "src-tauri/tauri.conf.json";
             const c = JSON.parse(require("fs").readFileSync(f, "utf8"));
             const [maj, min] = c.version.split(".");
             c.version = `${maj}.${min}.${process.env.GITHUB_RUN_NUMBER}`;
@@ -103,9 +108,8 @@ jobs:
             require("fs").writeFileSync(f, JSON.stringify(c, null, 2));
             console.log("version", c.version);
           '
-      - run: cargo clippy -p argus-desktop -p argus-mac-video --target ${{ matrix.target }} -- -D warnings
       # Unsigned until an Apple Developer ID is added as a repo secret.
-      - run: pnpm --filter desktop tauri build --target ${{ matrix.target }} --bundles app
+      - run: pnpm tauri build --target ${{ matrix.target }} --bundles app
         env:
           # Optional: enable Trakt/Simkl sign-in (apps registered by the maintainer).
           ARGUS_TRAKT_CLIENT_ID: ${{ secrets.ARGUS_TRAKT_CLIENT_ID }}
@@ -114,7 +118,7 @@ jobs:
       - name: Bundle libmpv into the app and build the .dmg
         run: |
           set -euo pipefail
-          APP="target/${{ matrix.target }}/release/bundle/macos/Argus.app"
+          APP="src-tauri/target/${{ matrix.target }}/release/bundle/macos/Argus.app"
           EXE="$APP/Contents/MacOS/$(/usr/libexec/PlistBuddy -c 'Print CFBundleExecutable' "$APP/Contents/Info.plist")"
           # Copy libmpv and every dylib it pulls in, rewriting install names,
           # so the app runs on a Mac without Homebrew.
@@ -142,8 +146,8 @@ jobs:
           fi
           # Built from the bundled, codesigned app so updates carry libmpv too.
           tar -czf "Argus-${{ matrix.arch }}.app.tar.gz" -C dist-dmg Argus.app
-          pnpm --filter desktop tauri signer sign "$PWD/Argus-${{ matrix.arch }}.app.tar.gz"
-          VERSION=$(node -p 'require("./apps/desktop/src-tauri/tauri.conf.json").version')
+          pnpm tauri signer sign "$PWD/Argus-${{ matrix.arch }}.app.tar.gz"
+          VERSION=$(node -p 'require("./src-tauri/tauri.conf.json").version')
           SIG=$(cat "Argus-${{ matrix.arch }}.app.tar.gz.sig")
           URL="https://github.com/${{ github.repository }}/releases/download/beta/Argus-${{ matrix.arch }}.app.tar.gz"
           node -e '
