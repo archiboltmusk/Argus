@@ -2,18 +2,9 @@ import { useEffect, useRef, useState } from "react";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { api } from "./api";
 import { formatTime, player, usePlayer, type Track } from "./player";
-
-/** Default keys; users override them in Settings (stored as JSON). */
-export const DEFAULT_KEYS: Record<string, string> = {
-  togglePause: " ",
-  back10: "ArrowLeft",
-  forward10: "ArrowRight",
-  subEarlier: "z",
-  subLater: "x",
-  fullscreen: "f",
-  nextStream: "n",
-  stop: "Escape",
-};
+import { DEFAULT_KEYS } from "./keys";
+import { loadKeys } from "./views/Hotkeys";
+import { loadPlayerPrefs } from "./views/PlayerSettings";
 
 function trackLabel(t: Track) {
   const parts = [t.lang?.toUpperCase(), t.title, t.codec?.toUpperCase(), t.channels ? `${t.channels}ch` : null, t.forced ? "Forced" : null, t.external ? "External" : null];
@@ -58,9 +49,16 @@ export function PlayerView({ profile, onClose, onError, onNextEpisode }: {
   const [downmix, setDownmix] = useState(false);
   const [idle, setIdle] = useState(false);
   const idleTimer = useRef<number>(undefined);
+  const volume = useRef(100);
+  const setVolume = (v: number) => {
+    volume.current = Math.min(130, Math.max(0, v));
+    return player.command({ type: "setVolume", volume: volume.current });
+  };
+  const premute = useRef(100);
 
   useEffect(() => {
-    api.getSetting(profile, "player.keys").then((j) => j && setKeys({ ...DEFAULT_KEYS, ...JSON.parse(j) })).catch(() => {});
+    loadKeys(profile).then(setKeys);
+    loadPlayerPrefs(profile).then((p) => { volume.current = p.volume; });
   }, [profile]);
 
   useEffect(() => {
@@ -81,6 +79,18 @@ export function PlayerView({ profile, onClose, onError, onNextEpisode }: {
         togglePause: () => c({ type: "togglePause" }),
         back10: () => c({ type: "seekRelative", seconds: -10 }),
         forward10: () => c({ type: "seekRelative", seconds: 10 }),
+        back30: () => c({ type: "seekRelative", seconds: -30 }),
+        forward30: () => c({ type: "seekRelative", seconds: 30 }),
+        restart: () => c({ type: "seek", seconds: 0 }),
+        volumeUp: () => setVolume(volume.current + 5),
+        volumeDown: () => setVolume(volume.current - 5),
+        mute: () => {
+          if (volume.current > 0) premute.current = volume.current;
+          return setVolume(volume.current > 0 ? 0 : premute.current);
+        },
+        speedUp: () => c({ type: "setSpeed", speed: Math.min(4, +(speed + 0.25).toFixed(2)) }),
+        speedDown: () => c({ type: "setSpeed", speed: Math.max(0.25, +(speed - 0.25).toFixed(2)) }),
+        speedReset: () => c({ type: "setSpeed", speed: 1 }),
         subEarlier: () => c({ type: "subDelayStep", steps: -1 }),
         subLater: () => c({ type: "subDelayStep", steps: 1 }),
         fullscreen: async () => {
@@ -94,7 +104,7 @@ export function PlayerView({ profile, onClose, onError, onNextEpisode }: {
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [keys, profile, onClose, onError]);
+  }, [keys, speed, profile, onClose, onError]);
 
   const poke = () => {
     setIdle(false);

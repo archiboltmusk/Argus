@@ -16,6 +16,8 @@ import { LiveTV } from "./views/LiveTV";
 import { Sources } from "./views/Sources";
 import { OpenMedia } from "./views/Open";
 import { PlayerSettings, loadPlayerPrefs } from "./views/PlayerSettings";
+import { Hotkeys } from "./views/Hotkeys";
+import { TorrentSettings } from "./views/TorrentSettings";
 import { Poster } from "./views/Poster";
 import { ManageProfiles, ProfileGate } from "./views/Profiles";
 import { AUTOPLAY_KEY, StreamPrefs } from "./views/StreamPrefs";
@@ -104,6 +106,8 @@ export default function App() {
             <Accounts profile={profile.id} onError={showError} />
             <StreamPrefs profile={profile.id} onSaved={() => setToast("Saved")} />
             <PlayerSettings profile={profile.id} onSaved={() => setToast("Saved")} />
+            <Hotkeys profile={profile.id} onSaved={() => setToast("Saved")} />
+            <TorrentSettings profile={profile.id} onSaved={() => setToast("Saved")} />
             <Settings profile={profile.id} onSaved={() => setToast("Saved")} />
             <UpdateSettings />
             <ManageProfiles current={profile} onError={showError} onChanged={() => api.profiles().then((ps) => setProfile(ps.find((p) => p.id === profile.id) ?? profile))} />

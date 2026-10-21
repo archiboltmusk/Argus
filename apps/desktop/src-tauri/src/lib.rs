@@ -349,7 +349,13 @@ pub(crate) async fn resolve(s: &AppState, profile: i64, stream: Stream) -> CmdRe
                 .await
                 .map_err(err);
         }
-        return s.torrents.stream_url(&stream).await;
+        let prefs = argus_core::torrent::TorrentPrefs::parse(
+            s.lib
+                .setting(profile, argus_core::torrent::SETTING_KEY)
+                .map_err(err)?
+                .as_deref(),
+        );
+        return s.torrents.stream_url(&stream, &prefs).await;
     }
     if let Some(yt) = stream.yt_id {
         return Ok(format!("https://www.youtube.com/watch?v={yt}"));
