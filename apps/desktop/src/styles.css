@@ -63,3 +63,30 @@ summary { cursor: pointer; font-weight: 600; padding: 4px 0; }
 .toast { position: fixed; bottom: 20px; right: 20px; background: var(--panel); border: 1px solid var(--line); padding: 10px 14px; border-radius: 8px; max-width: 420px; }
 .badges { display: flex; flex-wrap: wrap; gap: 4px; }
 .badge { font-size: 11px; padding: 1px 6px; border-radius: 4px; background: var(--line); }
+
+/* Player: the webview turns transparent so mpv's native view shows through. */
+html.playing, html.playing body { background: transparent; }
+html.playing .app { visibility: hidden; }
+.player { position: fixed; inset: 0; display: flex; flex-direction: column; justify-content: space-between; color: #fff; z-index: 10; }
+.player.idle { cursor: none; }
+.player.idle .player-top, .player.idle .player-bottom { opacity: 0; }
+.player-top, .player-bottom { transition: opacity 0.3s; background: linear-gradient(rgba(0,0,0,0.6), transparent); padding: 36px 20px 20px; display: flex; gap: 12px; align-items: center; }
+.player-bottom { background: linear-gradient(transparent, rgba(0,0,0,0.7)); flex-direction: column; align-items: stretch; padding: 20px; }
+.player-title { font-weight: 600; }
+.player-center { flex: 1; display: grid; place-items: center; }
+.player button { background: rgba(255,255,255,0.12); border-color: transparent; color: #fff; }
+.player-controls { display: flex; align-items: center; gap: 8px; }
+.player-controls select { background: rgba(255,255,255,0.12); color: #fff; border: none; border-radius: 6px; padding: 6px; }
+.spacer { flex: 1; }
+.time { font-variant-numeric: tabular-nums; }
+.seek { width: 100%; accent-color: var(--accent); }
+.menu { display: flex; flex-direction: column; gap: 4px; max-height: 40vh; overflow-y: auto; background: rgba(0,0,0,0.75); padding: 10px; border-radius: 10px; align-self: flex-end; min-width: 280px; }
+.menu button { text-align: left; }
+.sub-row { display: flex; gap: 4px; }
+.sub-row button:first-child { flex: 1; }
+.sub-delay { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 6px; }
+.check { display: flex; gap: 6px; align-items: center; padding: 4px; }
+.check input { width: auto; }
+.stall { background: rgba(0,0,0,0.75); padding: 16px 20px; border-radius: 12px; text-align: center; }
+.spinner { width: 42px; height: 42px; border: 3px solid rgba(255,255,255,0.25); border-top-color: #fff; border-radius: 50%; animation: spin 0.9s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
