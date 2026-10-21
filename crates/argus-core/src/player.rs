@@ -48,6 +48,10 @@ pub struct PlayerPrefs {
     pub auto_next: bool,
     /// Let mpv resolve YouTube/other page URLs with the user's own yt-dlp.
     pub ytdl: bool,
+    /// Show a Skip button over intros, recaps and credits found in chapters.
+    pub skip_button: bool,
+    /// Jump over them without asking.
+    pub auto_skip: bool,
 }
 
 impl Default for PlayerPrefs {
@@ -65,6 +69,8 @@ impl Default for PlayerPrefs {
             volume: 100,
             auto_next: true,
             ytdl: false,
+            skip_button: true,
+            auto_skip: false,
         }
     }
 }

@@ -12,6 +12,8 @@ export const ACTIONS: [id: string, label: string, def: string][] = [
   ["speedUp", "Faster", "]"],
   ["speedDown", "Slower", "["],
   ["speedReset", "Normal speed", "\\"],
+  ["abLoop", "A-B loop (set A, set B, clear)", "b"],
+  ["screenshot", "Save a screenshot", "s"],
   ["subEarlier", "Subtitles earlier", "z"],
   ["subLater", "Subtitles later", "x"],
   ["fullscreen", "Fullscreen", "f"],
