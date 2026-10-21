@@ -1,10 +1,23 @@
 import { useCallback, useEffect, useState } from "react";
 import { PlayerView } from "./PlayerView";
+import { UpdateBanner, UpdateSettings } from "./updates";
 import { startPlayerEvents } from "./player";
 import { play as startPlayback, playNextEpisode } from "./playback";
 import { api, CINEMETA_URL, type Addon, type CatalogRow, type Meta, type MetaPreview, type Profile, type Progress, type RankedStream, type StreamInfo, type Video } from "./api";
+import { Accounts } from "./views/Accounts";
+import { Calendar } from "./views/Calendar";
+import { Library, LibraryButton } from "./views/Library";
+import { LiveTV } from "./views/LiveTV";
+import { Sources } from "./views/Sources";
+import { Poster } from "./views/Poster";
+import { ManageProfiles, ProfileGate } from "./views/Profiles";
+import { AUTOPLAY_KEY, StreamPrefs } from "./views/StreamPrefs";
 
-type View = { name: "home" | "search" | "addons" | "settings" } | { name: "detail"; item: MetaPreview };
+type Page = "home" | "search" | "library" | "calendar" | "live" | "addons" | "settings";
+const PAGE_LABEL: Record<Page, string> = { home: "Home", search: "Search", library: "Library", calendar: "Calendar", live: "Live TV", addons: "Sources", settings: "Settings" };
+type View = { name: Page } | { name: "detail"; item: MetaPreview };
+/** Kids profiles can't change sources or settings. */
+const KIDS_HIDDEN: Page[] = ["addons", "settings"];
 
 function errText(e: unknown) {
   return typeof e === "string" ? e : e instanceof Error ? e.message : "Something went wrong";
@@ -15,10 +28,10 @@ export default function App() {
   const [view, setView] = useState<View>({ name: "home" });
   const [toast, setToast] = useState<string | null>(null);
 
-  useEffect(() => {
-    startPlayerEvents();
-    api.profiles().then((p) => setProfile(p[0] ?? null)).catch((e) => setToast(errText(e)));
-  }, []);
+  const [gate, setGate] = useState(0);
+  useEffect(() => { startPlayerEvents(); }, []);
+  const enter = useCallback((p: Profile) => { setProfile(p); setView({ name: "home" }); }, []);
+  const showError = useCallback((e: unknown) => setToast(errText(e)), []);
 
   useEffect(() => {
     if (!toast) return;
@@ -26,11 +39,19 @@ export default function App() {
     return () => clearTimeout(t);
   }, [toast]);
 
-  if (!profile) return <div className="center muted">Loading…</div>;
+  if (!profile) {
+    return (
+      <>
+        <ProfileGate key={gate} onEnter={enter} onError={showError} />
+        {toast && <div className="toast" role="status">{toast}</div>}
+      </>
+    );
+  }
   const open = (item: MetaPreview) => setView({ name: "detail", item });
-  const nav = (["home", "search", "addons", "settings"] as const).map((n) => (
+  const pages: Page[] = ["home", "search", "library", "calendar", "live", "addons", "settings"];
+  const nav = pages.filter((n) => !(profile.kids && KIDS_HIDDEN.includes(n))).map((n) => (
     <button key={n} className={view.name === n ? "nav active" : "nav"} onClick={() => setView({ name: n })}>
-      {n[0].toUpperCase() + n.slice(1)}
+      {PAGE_LABEL[n]}
     </button>
   ));
 
@@ -39,13 +60,31 @@ export default function App() {
       <aside className="sidebar" data-tauri-drag-region>
         <div className="brand">Argus</div>
         {nav}
-        <div className="profile muted">{profile.name}</div>
+        <button className="profile nav" title="Switch profile" onClick={() => { setProfile(null); setGate((g) => g + 1); }}>
+          <span className="avatar-circle small-circle">{profile.name[0]?.toUpperCase()}</span> {profile.name}
+        </button>
       </aside>
       <main className="content">
         {view.name === "home" && <Home profile={profile.id} onOpen={open} onGoAddons={() => setView({ name: "addons" })} />}
         {view.name === "search" && <Search profile={profile.id} onOpen={open} />}
-        {view.name === "addons" && <Addons profile={profile.id} onError={setToast} />}
-        {view.name === "settings" && <Settings profile={profile.id} onSaved={() => setToast("Saved")} />}
+        {view.name === "library" && <Library profile={profile.id} onOpen={open} />}
+        {view.name === "calendar" && <Calendar profile={profile.id} onOpen={open} />}
+        {view.name === "live" && <LiveTV profile={profile.id} onError={showError} onGoSources={() => setView({ name: "addons" })} />}
+        {view.name === "addons" && (
+          <>
+            <Addons profile={profile.id} onError={setToast} />
+            <Sources profile={profile.id} onError={showError} onSaved={() => setToast("Saved")} />
+          </>
+        )}
+        {view.name === "settings" && (
+          <>
+            <Accounts profile={profile.id} onError={showError} />
+            <StreamPrefs profile={profile.id} onSaved={() => setToast("Saved")} />
+            <Settings profile={profile.id} onSaved={() => setToast("Saved")} />
+            <UpdateSettings />
+            <ManageProfiles current={profile} onError={showError} onChanged={() => api.profiles().then((ps) => setProfile(ps.find((p) => p.id === profile.id) ?? profile))} />
+          </>
+        )}
         {view.name === "detail" && <Detail profile={profile.id} item={view.item} onError={setToast} />}
       </main>
       <PlayerView
@@ -54,17 +93,9 @@ export default function App() {
         onError={setToast}
         onNextEpisode={() => playNextEpisode(profile.id).catch((e) => setToast(errText(e)))}
       />
+      <UpdateBanner />
       {toast && <div className="toast" role="status">{toast}</div>}
     </div>
-  );
-}
-
-function Poster({ item, onOpen }: { item: MetaPreview; onOpen: (m: MetaPreview) => void }) {
-  return (
-    <button className="poster" onClick={() => onOpen(item)} title={item.name}>
-      {item.poster ? <img src={item.poster} alt="" loading="lazy" decoding="async" /> : <div className="poster-fallback">{item.name}</div>}
-      <span className="poster-name">{item.name}</span>
-    </button>
   );
 }
 
@@ -142,6 +173,9 @@ function Detail({ profile, item, onError }: { profile: number; item: MetaPreview
   const [videoId, setVideoId] = useState<string | null>(item.type === "movie" ? item.id : null);
   const [streams, setStreams] = useState<RankedStream[] | null>(null);
   const [playing, setPlaying] = useState<number | null>(null);
+  const [autoplay, setAutoplay] = useState(false);
+  const [picked, setPicked] = useState(false);
+  useEffect(() => { api.getSetting(profile, AUTOPLAY_KEY).then((v) => setAutoplay(v === "on")); }, [profile]);
 
   useEffect(() => {
     api.meta(profile, item.type, item.id).then(setMeta).catch(() => setMeta({ ...item }));
@@ -165,6 +199,11 @@ function Detail({ profile, item, onError }: { profile: number; item: MetaPreview
     }
   }, [profile, onError, streams, videoId, item]);
 
+  // Picking an episode with auto-play on starts the top-ranked stream.
+  useEffect(() => {
+    if (picked && autoplay && streams?.length) { setPicked(false); play(0); }
+  }, [picked, autoplay, streams, play]);
+
   const m = meta ?? item;
   const seasons = new Map<number, Video[]>();
   meta?.videos?.forEach((v) => {
@@ -176,13 +215,14 @@ function Detail({ profile, item, onError }: { profile: number; item: MetaPreview
     <div className="detail">
       {m.background && <div className="backdrop" style={{ backgroundImage: `url(${m.background})` }} />}
       <h1>{m.name}</h1>
+      <div className="actions"><LibraryButton profile={profile} item={m} /></div>
       <div className="muted">{[m.releaseInfo, meta?.runtime, m.imdbRating && `IMDb ${m.imdbRating}`].filter(Boolean).join(" · ")}</div>
       {m.description && <p className="desc">{m.description}</p>}
       {[...seasons.entries()].sort(([a], [b]) => a - b).map(([s, eps]) => (
         <details key={s} open={s === 1}>
           <summary>{s === 0 ? "Specials" : `Season ${s}`}</summary>
           {eps.map((v) => (
-            <button key={v.id} className={videoId === v.id ? "ep active" : "ep"} onClick={() => setVideoId(v.id)}>
+            <button key={v.id} className={videoId === v.id ? "ep active" : "ep"} onClick={() => { setVideoId(v.id); setPicked(true); }}>
               {v.episode ? `${v.episode}. ` : ""}{v.title}
             </button>
           ))}
@@ -193,12 +233,17 @@ function Detail({ profile, item, onError }: { profile: number; item: MetaPreview
           <h3>Streams</h3>
           {streams === null && <div className="muted">Asking your addons…</div>}
           {streams?.length === 0 && <div className="muted">No addon returned a stream for this title.</div>}
+          {!!streams?.length && (
+            <button className="primary play-best" disabled={playing !== null} onClick={() => play(0)}>
+              ▶ Play best · {badges(streams[0].info).slice(0, 3).join(" · ") || streams[0].stream.origin}
+            </button>
+          )}
           {streams?.map(({ stream: s, info }, i) => (
             <button key={i} className="stream" disabled={playing !== null} onClick={() => play(i)}>
               <span className="badges">{badges(info).map((b) => <span key={b} className="badge">{b}</span>)}</span>
               <strong>{s.name ?? s.origin}</strong>
               <span className="muted">{s.description}</span>
-              <span className="small muted">{s.origin}{s.infoHash && info.cached !== true ? " · needs debrid" : ""}{playing === i ? " · opening…" : ""}</span>
+              <span className="small muted">{s.origin}{s.infoHash && info.cached !== true ? " · P2P" : ""}{playing === i ? " · opening…" : ""}</span>
             </button>
           ))}
         </section>
@@ -280,8 +325,7 @@ function Addons({ profile, onError }: { profile: number; onError: (s: string) =>
 }
 
 const SETTINGS = [
-  { key: "debrid.realdebrid.key", label: "Real-Debrid API key", type: "password", hint: "real-debrid.com/apitoken" },
-  { key: "debrid.alldebrid.key", label: "AllDebrid API key", type: "password", hint: "alldebrid.com/apikeys" },
+  { key: "debrid.realdebrid.key", label: "Real-Debrid API key (or sign in above)", type: "password", hint: "real-debrid.com/apitoken" },
   { key: "debrid.premiumize.key", label: "Premiumize API key", type: "password", hint: "premiumize.me/account" },
   { key: "debrid.torbox.key", label: "TorBox API key", type: "password", hint: "torbox.app/settings" },
   { key: "player.mode", label: "Player", type: "text", hint: "builtin (default) or external" },

@@ -4,7 +4,7 @@
 use serde::Deserialize;
 
 use super::debrid::DeviceCode;
-use crate::model::{MediaType, MetaPreview};
+use crate::model::{MediaType, Meta, MetaPreview, Video};
 use crate::{Error, Result};
 
 const PRODUCT: &str = "Argus";
@@ -166,6 +166,14 @@ pub struct Item {
     pub view_count: Option<u32>,
     #[serde(default)]
     pub view_offset: Option<u64>,
+    /// Episodes: season number.
+    #[serde(default)]
+    pub parent_index: Option<u32>,
+    /// Episodes: episode number.
+    #[serde(default)]
+    pub index: Option<u32>,
+    #[serde(default)]
+    pub originally_available_at: Option<String>,
 }
 
 #[derive(Clone)]
@@ -273,6 +281,45 @@ impl Plex {
             .filter(|x| x.kind == "movie" || x.kind == "show")
             .map(|x| self.to_preview(x))
             .collect())
+    }
+
+    /// Details for one item; shows include all their episodes.
+    pub async fn meta(&self, id: &str) -> Result<Meta> {
+        let key = Self::rating_key(id);
+        let i: Items = self.get(&format!("/library/metadata/{key}"), &[]).await?;
+        let item = i
+            .metadata
+            .into_iter()
+            .next()
+            .ok_or_else(|| Error::NotFound(format!("Plex item {key}")))?;
+        let is_show = item.kind == "show";
+        let mut meta = Meta {
+            preview: self.to_preview(item),
+            runtime: None,
+            cast: vec![],
+            director: vec![],
+            videos: vec![],
+        };
+        if is_show {
+            let eps: Items = self
+                .get(&format!("/library/metadata/{key}/allLeaves"), &[])
+                .await?;
+            meta.videos = eps
+                .metadata
+                .into_iter()
+                .map(|e| Video {
+                    thumbnail: self.image(e.thumb.as_deref()),
+                    id: Self::item_id(&e.rating_key),
+                    title: e.title,
+                    released: e.originally_available_at,
+                    season: e.parent_index,
+                    episode: e.index,
+                    number: None,
+                    overview: e.summary,
+                })
+                .collect();
+        }
+        Ok(meta)
     }
 
     /// Direct-play URL for a movie/episode's first part.

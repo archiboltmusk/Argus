@@ -298,7 +298,8 @@ fn lang_of(tracks: &[Track], kind: &str, id: i64) -> Option<String> {
 }
 
 fn save_progress(app: &AppHandle, s: &Session, c: &Clock) {
-    if c.duration <= 0.0 {
+    // Live channels have no resume point.
+    if c.duration <= 0.0 || s.kind == "tv" {
         return;
     }
     let st = app.state::<AppState>();

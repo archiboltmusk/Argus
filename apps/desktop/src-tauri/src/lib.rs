@@ -1,8 +1,12 @@
 //! Thin Tauri shell: every command forwards to `argus-core`. No business
 //! logic here, so mobile and TV shells can reuse the core unchanged.
 
+mod live;
 mod mpv;
 mod player;
+mod servers;
+mod signin;
+mod torrent;
 
 use std::time::Duration;
 
@@ -10,7 +14,7 @@ use argus_core::episodes::{self, CalendarEntry};
 use argus_core::futures::future::join_all;
 use argus_core::library::{Library, LibraryItem, Profile, Progress};
 use argus_core::model::{Meta, MetaPreview, Stream};
-use argus_core::ranking::{Preferences, RankedStream};
+use argus_core::ranking::{Preferences, RankedStream, StreamInfo};
 use argus_core::sources::addon::{Addon, AddonClient};
 use argus_core::sources::debrid::{apply_cache, Debrid, Provider};
 use serde::Serialize;
@@ -22,6 +26,9 @@ pub(crate) struct AppState {
     http: argus_core::reqwest::Client,
     addons: AddonClient,
     player: player::Player,
+    torrents: torrent::TorrentEngine,
+    local: servers::LocalCache,
+    live: live::LiveCache,
 }
 
 /// Commands return strings as errors so the UI can show them directly.
@@ -172,11 +179,10 @@ async fn home_rows(s: State<'_, AppState>, profile: i64) -> CmdResult<Vec<Catalo
                 }
             })
     });
-    Ok(join_all(calls)
-        .await
-        .into_iter()
-        .filter(|r| !r.items.is_empty())
-        .collect())
+    let (rows, addon_rows) = tokio::join!(servers::rows(&s, profile), join_all(calls));
+    let mut rows = rows.unwrap_or_default();
+    rows.extend(addon_rows.into_iter().filter(|r| !r.items.is_empty()));
+    Ok(rows)
 }
 
 #[tauri::command]
@@ -186,18 +192,33 @@ async fn search(
     query: String,
 ) -> CmdResult<Vec<MetaPreview>> {
     let addons = s.lib.addons(profile).map_err(err)?;
-    Ok(s.addons.search(&addons, query.trim()).await)
+    let query = query.trim();
+    let (own, found) = tokio::join!(
+        servers::search(&s, profile, query),
+        s.addons.search(&addons, query)
+    );
+    let mut out = own.unwrap_or_default();
+    out.extend(found);
+    Ok(out)
 }
 
 #[tauri::command]
 async fn meta(s: State<'_, AppState>, profile: i64, kind: String, id: String) -> CmdResult<Meta> {
+    if let Some(m) = servers::meta(&s, profile, &id).await {
+        return m;
+    }
     let addons = s.lib.addons(profile).map_err(err)?;
     s.addons.meta(&addons, &kind, &id).await.map_err(err)
 }
 
 /// First debrid provider the profile has signed in to, in a fixed order.
-fn debrid_for(s: &AppState, profile: i64) -> CmdResult<Option<Debrid>> {
+async fn debrid_for(s: &AppState, profile: i64) -> CmdResult<Option<Debrid>> {
     for p in Provider::ALL {
+        if p == Provider::RealDebrid {
+            if let Some(token) = signin::realdebrid_token(s, profile).await? {
+                return Ok(Some(Debrid::new(p, s.http.clone(), token)));
+            }
+        }
         if let Some(key) = s.lib.setting(profile, &p.setting_key()).map_err(err)? {
             if !key.trim().is_empty() {
                 return Ok(Some(Debrid::new(p, s.http.clone(), key.trim())));
@@ -216,9 +237,18 @@ async fn streams(
     kind: String,
     id: String,
 ) -> CmdResult<Vec<RankedStream>> {
+    if let Some(stream) = servers::stream(&s, profile, &id).await {
+        let stream = stream?;
+        let info = StreamInfo::parse(&stream);
+        return Ok(vec![RankedStream {
+            stream,
+            info,
+            score: 0,
+        }]);
+    }
     let addons = s.lib.addons(profile).map_err(err)?;
     let mut list = s.addons.streams(&addons, &kind, &id).await;
-    if let Some(debrid) = debrid_for(&s, profile)? {
+    if let Some(debrid) = debrid_for(&s, profile).await? {
         let hashes: Vec<String> = list.iter().filter_map(|x| x.info_hash.clone()).collect();
         // A failed cache check only loses the "instant" badge; never block streams on it.
         if let Ok(cached) = debrid.cache_check(&hashes).await {
@@ -234,19 +264,21 @@ async fn streams(
     Ok(prefs.rank(list))
 }
 
-/// Turns any stream into a URL a player can open (debrid for torrents).
+/// Turns any stream into a URL a player can open. Torrents go through
+/// debrid when the profile has one, otherwise the in-process engine.
 #[tauri::command]
 async fn resolve_stream(s: State<'_, AppState>, profile: i64, stream: Stream) -> CmdResult<String> {
     if let Some(url) = stream.url.clone().or_else(|| stream.external_url.clone()) {
         return Ok(url);
     }
     if stream.info_hash.is_some() {
-        let debrid = debrid_for(&s, profile)?
-            .ok_or("Torrent streams need a debrid account. Add one in Settings.")?;
-        return debrid
-            .resolve(&stream, Duration::from_secs(20))
-            .await
-            .map_err(err);
+        if let Some(debrid) = debrid_for(&s, profile).await? {
+            return debrid
+                .resolve(&stream, Duration::from_secs(20))
+                .await
+                .map_err(err);
+        }
+        return s.torrents.stream_url(&stream).await;
     }
     if let Some(yt) = stream.yt_id {
         return Ok(format!("https://www.youtube.com/watch?v={yt}"));
@@ -389,6 +421,9 @@ fn set_setting(s: State<'_, AppState>, profile: i64, key: String, value: String)
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
+        .plugin(tauri_plugin_updater::Builder::new().build())
+        .plugin(tauri_plugin_process::init())
+        .plugin(tauri_plugin_dialog::init())
         .setup(|app| {
             let dir = app.path().app_data_dir()?;
             std::fs::create_dir_all(&dir)?;
@@ -399,6 +434,9 @@ pub fn run() {
                 addons: AddonClient::new(http.clone()),
                 http,
                 player: player::Player::default(),
+                local: servers::LocalCache::default(),
+                live: live::LiveCache::default(),
+                torrents: torrent::TorrentEngine::new(app.path().app_cache_dir()?.join("torrents")),
             });
             #[cfg(target_os = "macos")]
             if let Some(win) = app.get_webview_window("main") {
@@ -443,6 +481,18 @@ pub fn run() {
             save_progress,
             get_setting,
             set_setting,
+            signin::signins,
+            signin::signin_start,
+            signin::signin_poll,
+            signin::signout,
+            servers::server_status,
+            servers::jellyfin_login,
+            servers::server_signout,
+            servers::set_local_folders,
+            live::live_sources,
+            live::set_live_sources,
+            live::live_channels,
+            live::live_guide,
         ])
         .run(tauri::generate_context!())
         .expect("error while running Argus");

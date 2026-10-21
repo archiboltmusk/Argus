@@ -150,9 +150,31 @@ pub struct Stream {
     /// Which Argus source produced this stream (set by Argus, not by addons).
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub origin: Option<String>,
+    /// Torrent peer sources from the addon: `tracker:<url>` and `dht:<hash>`.
+    #[serde(
+        default,
+        deserialize_with = "null_default",
+        skip_serializing_if = "Vec::is_empty"
+    )]
+    pub sources: Vec<String>,
 }
 
 impl Stream {
+    /// Magnet link for a torrent stream, including the addon's trackers.
+    pub fn magnet(&self) -> Option<String> {
+        let hash = self.info_hash.as_deref()?;
+        let mut m = format!("magnet:?xt=urn:btih:{hash}");
+        for t in self
+            .sources
+            .iter()
+            .filter_map(|s| s.strip_prefix("tracker:"))
+        {
+            m.push_str("&tr=");
+            m.push_str(&url::form_urlencoded::byte_serialize(t.as_bytes()).collect::<String>());
+        }
+        Some(m)
+    }
+
     /// Directly playable by a media player without extra resolution steps.
     pub fn is_direct(&self) -> bool {
         self.url.is_some()
@@ -185,6 +207,19 @@ impl Meta {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn magnet_carries_addon_trackers_only() {
+        let s: Stream = serde_json::from_str(
+            r#"{"infoHash":"abc","sources":["tracker:udp://t.example:1337/announce","dht:abc"]}"#,
+        )
+        .unwrap();
+        assert_eq!(
+            s.magnet().unwrap(),
+            "magnet:?xt=urn:btih:abc&tr=udp%3A%2F%2Ft.example%3A1337%2Fannounce"
+        );
+        assert_eq!(Stream::default().magnet(), None);
+    }
 
     #[test]
     fn tolerates_nulls_and_duplicate_episode_fields() {
