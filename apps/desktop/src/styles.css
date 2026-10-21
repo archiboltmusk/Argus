@@ -130,3 +130,7 @@ input[type="range"] { padding: 0; }
 .ep.watched { opacity: 0.6; }
 .ep-row { display: flex; gap: 4px; align-items: center; }
 .ep-row .ep { flex: 1; }
+
+.hotkeys { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 6px 24px; margin: 8px 0 12px; }
+.hotkey-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.hotkey-row button { min-width: 84px; }

@@ -3,11 +3,13 @@
 //! serves files over a loopback-only HTTP endpoint that mpv reads with seeks.
 
 use std::collections::HashSet;
+use std::num::NonZeroU32;
 use std::path::PathBuf;
 use std::sync::Arc;
 use std::time::Duration;
 
 use argus_core::model::Stream;
+use argus_core::torrent::TorrentPrefs;
 use librqbit::http_api::{HttpApi, HttpApiOptions};
 use librqbit::{AddTorrent, AddTorrentOptions, AddTorrentResponse, Api, Session, SessionOptions};
 use librqbit_dualstack_sockets::socket::MaybeDualstackSocket;
@@ -72,9 +74,20 @@ impl TorrentEngine {
 
     /// Adds the torrent (only the chosen file downloads) and returns a
     /// loopback URL that supports Range requests.
-    pub async fn stream_url(&self, stream: &Stream) -> Result<String, String> {
+    pub async fn stream_url(
+        &self,
+        stream: &Stream,
+        prefs: &TorrentPrefs,
+    ) -> Result<String, String> {
         let magnet = stream.magnet().ok_or("Not a torrent stream")?;
         let (session, port) = self.start().await?;
+        session
+            .ratelimits
+            .set_download_bps(prefs.download_bps().and_then(NonZeroU32::new));
+        session
+            .ratelimits
+            .set_upload_bps(prefs.upload_bps().and_then(NonZeroU32::new));
+        self.trim_cache(session, prefs.cache_bytes()).await;
         let opts = AddTorrentOptions {
             overwrite: true,
             ..Default::default()
@@ -112,6 +125,38 @@ impl TorrentEngine {
             "http://127.0.0.1:{port}/torrents/{id}/stream/{idx}"
         ))
     }
+}
+
+impl TorrentEngine {
+    /// Drops every earlier torrent (and its files) once the cache outgrows
+    /// the user's limit, so streaming never fills the disk.
+    async fn trim_cache(&self, session: &Arc<Session>, limit: u64) {
+        if dir_size(&self.dir).await <= limit {
+            return;
+        }
+        let ids: Vec<usize> = session.with_torrents(|it| it.map(|(id, _)| id).collect());
+        for id in ids {
+            let _ = session.delete(id.into(), true).await;
+        }
+    }
+}
+
+async fn dir_size(dir: &std::path::Path) -> u64 {
+    let mut total = 0;
+    let mut stack = vec![dir.to_path_buf()];
+    while let Some(d) = stack.pop() {
+        let Ok(mut rd) = tokio::fs::read_dir(&d).await else {
+            continue;
+        };
+        while let Ok(Some(e)) = rd.next_entry().await {
+            match e.metadata().await {
+                Ok(m) if m.is_dir() => stack.push(e.path()),
+                Ok(m) => total += m.len(),
+                Err(_) => {}
+            }
+        }
+    }
+    total
 }
 
 /// Largest video file, falling back to the largest file.
