@@ -13,7 +13,7 @@ serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 thiserror = "2"
 tokio = { version = "1", features = ["rt-multi-thread", "macros", "sync", "time"] }
-reqwest = { version = "0.13", default-features = false, features = ["json", "rustls", "gzip", "http2", "form", "query"] }
+reqwest = { version = "0.13", default-features = false, features = ["json", "rustls", "gzip", "http2", "form", "query", "multipart"] }
 url = "2"
 
 [profile.release]

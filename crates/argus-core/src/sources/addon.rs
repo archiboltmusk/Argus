@@ -9,7 +9,7 @@ use futures::future::join_all;
 use serde::{Deserialize, Serialize};
 use url::Url;
 
-use crate::model::{Meta, MetaPreview, Stream};
+use crate::model::{Meta, MetaPreview, Stream, Subtitle};
 use crate::{Error, Result};
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -186,6 +186,12 @@ struct StreamsResponse {
     streams: Vec<Stream>,
 }
 
+#[derive(Deserialize)]
+struct SubtitlesResponse {
+    #[serde(default)]
+    subtitles: Vec<Subtitle>,
+}
+
 #[derive(Clone)]
 pub struct AddonClient {
     http: reqwest::Client,
@@ -196,7 +202,7 @@ impl AddonClient {
     pub fn new(http: reqwest::Client) -> Self {
         Self {
             http,
-            per_addon_timeout: Duration::from_secs(8),
+            per_addon_timeout: Duration::from_secs(6),
         }
     }
 
@@ -273,7 +279,37 @@ impl AddonClient {
             .ok_or_else(|| Error::NotFound(format!("{kind}/{id}")))
     }
 
-    /// Streams from every capable addon, tagged with origin, best quality first.
+    /// Subtitles from every capable addon. `extra` may carry `videoHash`,
+    /// `videoSize` and `filename` (OpenSubtitles-style matching).
+    pub async fn subtitles(
+        &self,
+        addons: &[Addon],
+        kind: &str,
+        id: &str,
+        extra: &[(&str, &str)],
+    ) -> Vec<Subtitle> {
+        let calls = addons
+            .iter()
+            .filter(|a| a.manifest.handles("subtitles", kind, id))
+            .map(|a| async move {
+                let url = resource_url(&a.base_url, "subtitles", kind, id, extra);
+                let subs = self
+                    .get_json::<SubtitlesResponse>(&url)
+                    .await
+                    .map(|r| r.subtitles)
+                    .unwrap_or_default();
+                subs.into_iter()
+                    .map(|mut s| {
+                        s.origin = Some(a.manifest.name.clone());
+                        s
+                    })
+                    .collect::<Vec<_>>()
+            });
+        join_all(calls).await.into_iter().flatten().collect()
+    }
+
+    /// Streams from every capable addon in priority order, tagged with origin.
+    /// Rank them with [`crate::ranking::Preferences::rank`].
     pub async fn streams(&self, addons: &[Addon], kind: &str, id: &str) -> Vec<Stream> {
         let calls = addons
             .iter()
@@ -293,9 +329,7 @@ impl AddonClient {
                     })
                     .collect::<Vec<_>>()
             });
-        let mut all: Vec<Stream> = join_all(calls).await.into_iter().flatten().collect();
-        all.sort_by_key(|s| std::cmp::Reverse((s.is_direct(), s.quality_rank())));
-        all
+        join_all(calls).await.into_iter().flatten().collect()
     }
 }
 

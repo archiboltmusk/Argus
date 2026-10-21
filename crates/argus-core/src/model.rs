@@ -157,27 +157,19 @@ impl Stream {
     pub fn is_direct(&self) -> bool {
         self.url.is_some()
     }
+}
 
-    /// Best-effort quality rank parsed from the stream label, higher is better.
-    pub fn quality_rank(&self) -> u8 {
-        let label = format!(
-            "{} {}",
-            self.name.as_deref().unwrap_or_default(),
-            self.description.as_deref().unwrap_or_default()
-        )
-        .to_ascii_lowercase();
-        if label.contains("2160") || label.contains("4k") {
-            4
-        } else if label.contains("1080") {
-            3
-        } else if label.contains("720") {
-            2
-        } else if label.contains("480") {
-            1
-        } else {
-            0
-        }
-    }
+/// External subtitle track from an addon (`subtitles` resource).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Subtitle {
+    #[serde(default)]
+    pub id: String,
+    pub url: String,
+    /// ISO 639-2 code as sent by the addon (e.g. "eng").
+    pub lang: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub origin: Option<String>,
 }
 
 impl Meta {
@@ -216,11 +208,11 @@ mod tests {
     }
 
     #[test]
-    fn stream_title_alias_and_quality() {
+    fn stream_title_alias() {
         let s: Stream =
-            serde_json::from_str(r#"{"url":"http://x","name":"Src","title":"Movie 2160p HDR"}"#)
+            serde_json::from_str(r#"{"url":"http://x","name":"Src","title":"Movie 2160p"}"#)
                 .unwrap();
         assert!(s.is_direct());
-        assert_eq!(s.quality_rank(), 4);
+        assert_eq!(s.description.as_deref(), Some("Movie 2160p"));
     }
 }

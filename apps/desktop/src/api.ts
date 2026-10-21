@@ -37,6 +37,20 @@ export type Stream = {
   behaviorHints: { notWebReady: boolean; bingeGroup?: string; filename?: string; videoSize?: number };
 };
 
+export type StreamInfo = {
+  resolution: number;
+  hdr: "none" | "hlg" | "hdr10" | "hdr10plus" | "dolbyvision";
+  codec: "av1" | "hevc" | "h264" | "other";
+  release: "remux" | "bluray" | "web" | "hdtv" | "cam" | "unknown";
+  audio?: string;
+  channels?: string;
+  sizeBytes?: number;
+  seeders?: number;
+  cached?: boolean;
+};
+
+export type RankedStream = { stream: Stream; info: StreamInfo; score: number };
+
 export type Addon = {
   base_url: string;
   manifest: { id: string; name: string; version: string; description?: string; logo?: string; types: string[] };
@@ -67,7 +81,7 @@ export const api = {
   homeRows: (profile: number) => invoke<CatalogRow[]>("home_rows", { profile }),
   search: (profile: number, query: string) => invoke<MetaPreview[]>("search", { profile, query }),
   meta: (profile: number, kind: string, id: string) => invoke<Meta>("meta", { profile, kind, id }),
-  streams: (profile: number, kind: string, id: string) => invoke<Stream[]>("streams", { profile, kind, id }),
+  streams: (profile: number, kind: string, id: string) => invoke<RankedStream[]>("streams", { profile, kind, id }),
   resolveStream: (profile: number, stream: Stream) => invoke<string>("resolve_stream", { profile, stream }),
   playExternal: (profile: number, url: string) => invoke<void>("play_external", { profile, url }),
   continueWatching: (profile: number) => invoke<Progress[]>("continue_watching", { profile }),

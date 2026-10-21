@@ -1,29 +1,12 @@
-//! Debrid services turn a torrent info-hash into a direct HTTPS link.
-//! Real-Debrid first; others (AllDebrid, Premiumize, TorBox) plug into [`Debrid`].
+//! Real-Debrid: https://api.real-debrid.com
 
 use std::time::Duration;
 
 use serde::Deserialize;
 
+use super::{magnet, pick_file, DebridFile, DeviceCode, OAuthToken};
 use crate::model::Stream;
 use crate::{Error, Result};
-
-pub fn magnet(info_hash: &str) -> String {
-    format!("magnet:?xt=urn:btih:{}", info_hash.to_ascii_lowercase())
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum Debrid {
-    RealDebrid { api_key: String },
-}
-
-impl Debrid {
-    pub fn name(&self) -> &'static str {
-        match self {
-            Self::RealDebrid { .. } => "Real-Debrid",
-        }
-    }
-}
 
 #[derive(Debug, Deserialize)]
 struct AddMagnet {
@@ -138,9 +121,17 @@ impl RealDebrid {
             .ok_or_else(|| Error::source("Real-Debrid", "stream has no info hash"))?;
         let id = self.add_magnet(hash).await?;
         let info = self.info(&id).await?;
-        let file = pick_file(&info.files, stream.file_idx)
+        let files: Vec<DebridFile> = info
+            .files
+            .iter()
+            .map(|f| DebridFile {
+                path: f.path.clone(),
+                bytes: f.bytes,
+            })
+            .collect();
+        let pos = pick_file(&files, stream.file_idx)
             .ok_or_else(|| Error::source("Real-Debrid", "no video file in torrent"))?;
-        self.select_file(&id, file).await?;
+        self.select_file(&id, info.files[pos].id).await?;
 
         let deadline = tokio::time::Instant::now() + wait;
         loop {
@@ -171,60 +162,114 @@ impl RealDebrid {
     }
 }
 
-const VIDEO_EXT: &[&str] = &["mkv", "mp4", "avi", "mov", "m4v", "webm", "ts", "wmv"];
-
-/// Uses the addon's `fileIdx` when valid, otherwise the largest video file.
-/// RD file ids are 1-based; Stremio `fileIdx` is 0-based.
-pub fn pick_file(files: &[TorrentFile], file_idx: Option<u32>) -> Option<u32> {
-    let is_video = |f: &&TorrentFile| {
-        f.path
-            .rsplit('.')
-            .next()
-            .is_some_and(|e| VIDEO_EXT.contains(&e.to_ascii_lowercase().as_str()))
-    };
-    if let Some(idx) = file_idx {
-        if let Some(f) = files.iter().find(|f| f.id == idx + 1).filter(is_video) {
-            return Some(f.id);
-        }
-    }
-    files
-        .iter()
-        .filter(is_video)
-        .max_by_key(|f| f.bytes)
-        .map(|f| f.id)
-}
-
-#[cfg(test)]
-mod tests {
+/// Device-code sign-in (spec: "OAuth/device-code sign-in"). Uses Real-Debrid's
+/// public client id for open-source apps, so users never paste API keys.
+pub mod oauth {
     use super::*;
 
-    fn f(id: u32, path: &str, bytes: u64) -> TorrentFile {
-        TorrentFile {
-            id,
-            path: path.into(),
-            bytes,
-            selected: 0,
+    const OAUTH: &str = "https://api.real-debrid.com/oauth/v2";
+    const OPEN_SOURCE_CLIENT_ID: &str = "X245A4XAIBGVM";
+
+    #[derive(Deserialize)]
+    struct Code {
+        device_code: String,
+        user_code: String,
+        interval: u64,
+        expires_in: u64,
+        verification_url: String,
+    }
+
+    #[derive(Deserialize)]
+    struct Credentials {
+        client_id: String,
+        client_secret: String,
+    }
+
+    #[derive(Deserialize)]
+    struct Token {
+        access_token: String,
+        refresh_token: String,
+        expires_in: i64,
+    }
+
+    pub async fn start(http: &reqwest::Client) -> Result<DeviceCode> {
+        let c: Code = http
+            .get(format!("{OAUTH}/device/code"))
+            .query(&[
+                ("client_id", OPEN_SOURCE_CLIENT_ID),
+                ("new_credentials", "yes"),
+            ])
+            .send()
+            .await?
+            .error_for_status()?
+            .json()
+            .await?;
+        Ok(DeviceCode {
+            device_code: c.device_code,
+            user_code: c.user_code,
+            verification_url: c.verification_url,
+            interval_s: c.interval.max(1),
+            expires_in_s: c.expires_in,
+        })
+    }
+
+    /// One poll. `Ok(None)` while the user hasn't approved yet.
+    pub async fn poll(http: &reqwest::Client, code: &DeviceCode) -> Result<Option<OAuthToken>> {
+        let resp = http
+            .get(format!("{OAUTH}/device/credentials"))
+            .query(&[
+                ("client_id", OPEN_SOURCE_CLIENT_ID),
+                ("code", code.device_code.as_str()),
+            ])
+            .send()
+            .await?;
+        if !resp.status().is_success() {
+            return Ok(None);
         }
+        let creds: Credentials = resp.json().await?;
+        exchange(
+            http,
+            &creds.client_id,
+            &creds.client_secret,
+            &code.device_code,
+        )
+        .await
+        .map(Some)
     }
 
-    #[test]
-    fn picks_requested_or_largest_video() {
-        let files = vec![
-            f(1, "/sample.mkv", 10),
-            f(2, "/Movie.mkv", 900),
-            f(3, "/movie.nfo", 2000),
-        ];
-        assert_eq!(pick_file(&files, None), Some(2));
-        assert_eq!(pick_file(&files, Some(0)), Some(1));
-        assert_eq!(
-            pick_file(&files, Some(2)),
-            Some(2),
-            "fileIdx on a non-video falls back"
+    pub async fn refresh(http: &reqwest::Client, token: &OAuthToken) -> Result<OAuthToken> {
+        let (id, secret) = (
+            token.client_id.as_deref().unwrap_or_default(),
+            token.client_secret.as_deref().unwrap_or_default(),
         );
+        exchange(http, id, secret, &token.refresh_token).await
     }
 
-    #[test]
-    fn magnet_is_lowercase() {
-        assert_eq!(magnet("ABC"), "magnet:?xt=urn:btih:abc");
+    async fn exchange(
+        http: &reqwest::Client,
+        client_id: &str,
+        secret: &str,
+        code: &str,
+    ) -> Result<OAuthToken> {
+        let t: Token = http
+            .post(format!("{OAUTH}/token"))
+            .form(&[
+                ("client_id", client_id),
+                ("client_secret", secret),
+                ("code", code),
+                ("grant_type", "http://oauth.net/grant_type/device/1.0"),
+            ])
+            .send()
+            .await?
+            .error_for_status()?
+            .json()
+            .await?;
+        Ok(OAuthToken {
+            access_token: t.access_token,
+            refresh_token: t.refresh_token,
+            expires_at: super::super::now() + t.expires_in,
+            client_id: Some(client_id.to_string()),
+            client_secret: Some(secret.to_string()),
+        })
     }
 }

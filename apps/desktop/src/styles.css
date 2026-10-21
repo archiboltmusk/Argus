@@ -61,3 +61,5 @@ summary { cursor: pointer; font-weight: 600; padding: 4px 0; }
 .settings { display: grid; gap: 14px; max-width: 480px; }
 .settings label { display: grid; gap: 6px; }
 .toast { position: fixed; bottom: 20px; right: 20px; background: var(--panel); border: 1px solid var(--line); padding: 10px 14px; border-radius: 8px; max-width: 420px; }
+.badges { display: flex; flex-wrap: wrap; gap: 4px; }
+.badge { font-size: 11px; padding: 1px 6px; border-radius: 4px; background: var(--line); }

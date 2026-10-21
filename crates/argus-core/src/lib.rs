@@ -6,6 +6,7 @@
 pub mod error;
 pub mod library;
 pub mod model;
+pub mod ranking;
 pub mod sources;
 
 pub use error::{Error, Result};

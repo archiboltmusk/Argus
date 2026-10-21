@@ -6,8 +6,9 @@ use std::time::Duration;
 use argus_core::futures::future::join_all;
 use argus_core::library::{Library, Profile, Progress};
 use argus_core::model::{Meta, MetaPreview, Stream};
+use argus_core::ranking::{Preferences, RankedStream};
 use argus_core::sources::addon::{Addon, AddonClient};
-use argus_core::sources::debrid::RealDebrid;
+use argus_core::sources::debrid::{apply_cache, Debrid, Provider};
 use serde::Serialize;
 use tauri::{Manager, State};
 use tauri_plugin_opener::OpenerExt;
@@ -35,7 +36,7 @@ struct CatalogRow {
     items: Vec<MetaPreview>,
 }
 
-const SETTING_RD_KEY: &str = "debrid.realdebrid.key";
+const SETTING_STREAM_PREFS: &str = "streams.prefs";
 const SETTING_PLAYER: &str = "player.external";
 
 #[tauri::command]
@@ -118,15 +119,43 @@ async fn meta(s: State<'_, AppState>, profile: i64, kind: String, id: String) ->
     s.addons.meta(&addons, &kind, &id).await.map_err(err)
 }
 
+/// First debrid provider the profile has signed in to, in a fixed order.
+fn debrid_for(s: &AppState, profile: i64) -> CmdResult<Option<Debrid>> {
+    for p in Provider::ALL {
+        if let Some(key) = s.lib.setting(profile, &p.setting_key()).map_err(err)? {
+            if !key.trim().is_empty() {
+                return Ok(Some(Debrid::new(p, s.http.clone(), key.trim())));
+            }
+        }
+    }
+    Ok(None)
+}
+
+/// Streams from all addons, cache-checked on debrid, filtered by the
+/// profile's pinned preferences and ranked best-first.
 #[tauri::command]
 async fn streams(
     s: State<'_, AppState>,
     profile: i64,
     kind: String,
     id: String,
-) -> CmdResult<Vec<Stream>> {
+) -> CmdResult<Vec<RankedStream>> {
     let addons = s.lib.addons(profile).map_err(err)?;
-    Ok(s.addons.streams(&addons, &kind, &id).await)
+    let mut list = s.addons.streams(&addons, &kind, &id).await;
+    if let Some(debrid) = debrid_for(&s, profile)? {
+        let hashes: Vec<String> = list.iter().filter_map(|x| x.info_hash.clone()).collect();
+        // A failed cache check only loses the "instant" badge; never block streams on it.
+        if let Ok(cached) = debrid.cache_check(&hashes).await {
+            apply_cache(&mut list, &cached, debrid.provider());
+        }
+    }
+    let prefs: Preferences = s
+        .lib
+        .setting(profile, SETTING_STREAM_PREFS)
+        .map_err(err)?
+        .and_then(|j| serde_json::from_str(&j).ok())
+        .unwrap_or_default();
+    Ok(prefs.rank(list))
 }
 
 /// Turns any stream into a URL a player can open (debrid for torrents).
@@ -136,10 +165,9 @@ async fn resolve_stream(s: State<'_, AppState>, profile: i64, stream: Stream) ->
         return Ok(url);
     }
     if stream.info_hash.is_some() {
-        let key = s.lib.setting(profile, SETTING_RD_KEY).map_err(err)?.ok_or(
-            "Torrent streams need a debrid account. Add your Real-Debrid key in Settings.",
-        )?;
-        return RealDebrid::new(s.http.clone(), key)
+        let debrid = debrid_for(&s, profile)?
+            .ok_or("Torrent streams need a debrid account. Add one in Settings.")?;
+        return debrid
             .resolve(&stream, Duration::from_secs(20))
             .await
             .map_err(err);

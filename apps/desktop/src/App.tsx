@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { api, CINEMETA_URL, type Addon, type CatalogRow, type Meta, type MetaPreview, type Profile, type Progress, type Stream, type Video } from "./api";
+import { api, CINEMETA_URL, type Addon, type CatalogRow, type Meta, type MetaPreview, type Profile, type Progress, type RankedStream, type Stream, type StreamInfo, type Video } from "./api";
 
 type View = { name: "home" | "search" | "addons" | "settings" } | { name: "detail"; item: MetaPreview };
 
@@ -130,7 +130,7 @@ function Search({ profile, onOpen }: { profile: number; onOpen: (m: MetaPreview)
 function Detail({ profile, item, onError }: { profile: number; item: MetaPreview; onError: (s: string) => void }) {
   const [meta, setMeta] = useState<Meta | null>(null);
   const [videoId, setVideoId] = useState<string | null>(item.type === "movie" ? item.id : null);
-  const [streams, setStreams] = useState<Stream[] | null>(null);
+  const [streams, setStreams] = useState<RankedStream[] | null>(null);
   const [playing, setPlaying] = useState<number | null>(null);
 
   useEffect(() => {
@@ -183,17 +183,35 @@ function Detail({ profile, item, onError }: { profile: number; item: MetaPreview
           <h3>Streams</h3>
           {streams === null && <div className="muted">Asking your addons…</div>}
           {streams?.length === 0 && <div className="muted">No addon returned a stream for this title.</div>}
-          {streams?.map((s, i) => (
+          {streams?.map(({ stream: s, info }, i) => (
             <button key={i} className="stream" disabled={playing !== null} onClick={() => play(s, i)}>
+              <span className="badges">{badges(info).map((b) => <span key={b} className="badge">{b}</span>)}</span>
               <strong>{s.name ?? s.origin}</strong>
               <span className="muted">{s.description}</span>
-              <span className="small muted">{s.origin}{s.infoHash ? " · needs debrid" : ""}{playing === i ? " · opening…" : ""}</span>
+              <span className="small muted">{s.origin}{s.infoHash && info.cached !== true ? " · needs debrid" : ""}{playing === i ? " · opening…" : ""}</span>
             </button>
           ))}
         </section>
       )}
     </div>
   );
+}
+
+const HDR_LABEL: Record<StreamInfo["hdr"], string | null> = { none: null, hlg: "HLG", hdr10: "HDR10", hdr10plus: "HDR10+", dolbyvision: "Dolby Vision" };
+
+/** Facts shown on a stream card so users can choose before pressing play. */
+function badges(i: StreamInfo): string[] {
+  const gb = i.sizeBytes ? `${(i.sizeBytes / 2 ** 30).toFixed(1)} GB` : null;
+  return [
+    i.cached ? "⚡ Instant" : null,
+    i.resolution ? (i.resolution >= 2160 ? "4K" : `${i.resolution}p`) : null,
+    HDR_LABEL[i.hdr],
+    i.codec !== "other" ? i.codec.toUpperCase() : null,
+    i.release === "remux" ? "REMUX" : null,
+    [i.audio, i.channels].filter(Boolean).join(" ") || null,
+    gb,
+    i.seeders != null && !i.cached ? `${i.seeders} seeds` : null,
+  ].filter((b): b is string => !!b);
 }
 
 function Addons({ profile, onError }: { profile: number; onError: (s: string) => void }) {
@@ -253,6 +271,9 @@ function Addons({ profile, onError }: { profile: number; onError: (s: string) =>
 
 const SETTINGS = [
   { key: "debrid.realdebrid.key", label: "Real-Debrid API key", type: "password", hint: "real-debrid.com/apitoken" },
+  { key: "debrid.alldebrid.key", label: "AllDebrid API key", type: "password", hint: "alldebrid.com/apikeys" },
+  { key: "debrid.premiumize.key", label: "Premiumize API key", type: "password", hint: "premiumize.me/account" },
+  { key: "debrid.torbox.key", label: "TorBox API key", type: "password", hint: "torbox.app/settings" },
   { key: "player.external", label: "External player app", type: "text", hint: "IINA, VLC, or empty for system default" },
 ] as const;
 
