@@ -11,9 +11,10 @@ type Prefs = {
   preferHevc: boolean;
   excludeKeywords: string[];
   cachedOnly: boolean;
+  safety: "strict" | "balanced" | "off";
 };
 
-const DEFAULTS: Prefs = { maxResolution: null, minResolution: null, maxSizeGb: null, hideCam: true, allowHdr: true, preferHevc: false, excludeKeywords: [], cachedOnly: false };
+const DEFAULTS: Prefs = { maxResolution: null, minResolution: null, maxSizeGb: null, hideCam: true, allowHdr: true, preferHevc: false, excludeKeywords: [], cachedOnly: false, safety: "balanced" };
 const RESOLUTIONS = [480, 720, 1080, 2160];
 export const AUTOPLAY_KEY = "streams.autoplay";
 
@@ -58,6 +59,13 @@ export function StreamPrefs({ profile, onSaved }: { profile: number; onSaved: ()
       </label>
       <label>Hide streams containing
         <input placeholder="e.g. hindi, 3D, HC" value={keywords} onChange={(e) => setKeywords(e.target.value)} />
+      </label>
+      <label>Stream safety filter
+        <select value={p.safety} onChange={(e) => setP({ ...p, safety: e.target.value as Prefs["safety"] })}>
+          <option value="strict">Strict: also hide extras and undersized files</option>
+          <option value="balanced">Balanced: hide fakes, samples and wrong episodes</option>
+          <option value="off">Off: show everything</option>
+        </select>
       </label>
       {check("hideCam", "Hide CAM and TS releases")}
       {check("allowHdr", "Allow HDR and Dolby Vision")}

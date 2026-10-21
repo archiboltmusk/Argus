@@ -13,6 +13,7 @@ pub mod player;
 pub mod ranking;
 pub mod sources;
 pub mod torrent;
+pub mod trust;
 
 pub use error::{Error, Result};
 // Re-exported so every shell uses the exact same versions as the core.
