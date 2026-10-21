@@ -153,7 +153,15 @@ impl PlayerPrefs {
         };
         props.push(("video-aspect-override", aspect));
         props.push(("panscan", panscan.into()));
-        props.push(("keepaspect", if self.aspect == "stretch" { "no" } else { "yes" }.into()));
+        props.push((
+            "keepaspect",
+            if self.aspect == "stretch" {
+                "no"
+            } else {
+                "yes"
+            }
+            .into(),
+        ));
         let mut af = Vec::new();
         if self.normalize {
             af.push("dynaudnorm=f=250:g=15");
@@ -166,8 +174,14 @@ impl PlayerPrefs {
             _ => {}
         }
         props.push(("af", af.join(",")));
-        props.push(("tone-mapping", if self.tonemap { "bt.2390" } else { "auto" }.into()));
-        props.push(("target-colorspace-hint", if self.tonemap { "no" } else { "auto" }.into()));
+        props.push((
+            "tone-mapping",
+            if self.tonemap { "bt.2390" } else { "auto" }.into(),
+        ));
+        props.push((
+            "target-colorspace-hint",
+            if self.tonemap { "no" } else { "auto" }.into(),
+        ));
         props
     }
 }
@@ -347,10 +361,17 @@ mod tests {
         assert_eq!(m["panscan"], "1");
         assert_eq!(m["tone-mapping"], "bt.2390");
         assert!(m["af"].starts_with("dynaudnorm") && m["af"].contains("equalizer"));
-        let d: std::collections::HashMap<_, _> = PlayerPrefs::default().mpv_properties().into_iter().collect();
+        let d: std::collections::HashMap<_, _> = PlayerPrefs::default()
+            .mpv_properties()
+            .into_iter()
+            .collect();
         assert_eq!(d["af"], "");
         assert_eq!(d["video-aspect-override"], "-1");
-        let bad = PlayerPrefs { aspect: "9:1;x".into(), eq: "../x".into(), ..Default::default() };
+        let bad = PlayerPrefs {
+            aspect: "9:1;x".into(),
+            eq: "../x".into(),
+            ..Default::default()
+        };
         let b: std::collections::HashMap<_, _> = bad.mpv_properties().into_iter().collect();
         assert_eq!(b["video-aspect-override"], "-1");
         assert_eq!(b["af"], "");
