@@ -3,7 +3,7 @@
 
 use argus_core::sources::debrid::{alldebrid, now, realdebrid, DeviceCode, OAuthToken, Provider};
 use argus_core::sources::plex;
-use argus_core::sources::tracker::{simkl_auth, trakt_auth};
+use argus_core::sources::tracker::{simkl_auth, trakt_auth, Service as TrackerService, Tracker};
 use serde::{Deserialize, Serialize};
 use tauri::State;
 
@@ -159,4 +159,43 @@ pub async fn realdebrid_token(s: &AppState, profile: i64) -> CmdResult<Option<St
             .map_err(err)?;
     }
     Ok(Some(token.access_token))
+}
+
+/// A ready tracker client for a signed-in Trakt/Simkl account, refreshing
+/// an expiring Trakt token first. `None` when signed out or not configured.
+pub async fn tracker(s: &AppState, profile: i64, service: Service) -> Option<Tracker> {
+    let raw = s
+        .lib
+        .setting(profile, service.token_key())
+        .ok()
+        .flatten()
+        .filter(|v| !v.is_empty())?;
+    match service {
+        Service::Trakt => {
+            let (id, secret) = (TRAKT_ID.filter(|v| !v.is_empty())?, TRAKT_SECRET?);
+            let mut token = serde_json::from_str::<OAuthToken>(&raw).ok()?;
+            if token.expires_at - 60 < now() {
+                token = trakt_auth::refresh(&s.http, id, secret, &token)
+                    .await
+                    .ok()?;
+                let json = serde_json::to_string(&token).ok()?;
+                s.lib
+                    .set_setting(profile, service.token_key(), &json)
+                    .ok()?;
+            }
+            Some(Tracker::new(
+                s.http.clone(),
+                TrackerService::Trakt,
+                id,
+                &token.access_token,
+            ))
+        }
+        Service::Simkl => Some(Tracker::new(
+            s.http.clone(),
+            TrackerService::Simkl,
+            SIMKL_ID.filter(|v| !v.is_empty())?,
+            &raw,
+        )),
+        _ => None,
+    }
 }

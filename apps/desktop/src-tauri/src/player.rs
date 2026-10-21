@@ -13,11 +13,12 @@ use argus_core::player::{
     choose_tracks, set_sub_offset_ms, sub_offset_ms, PlayerPrefs, Throttle, Track, TrackPrefs,
     SUB_OFFSET_STEP_MS,
 };
+use argus_core::sources::tracker::{scrobble_action, ScrobbleAction, WatchKey};
 use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, Emitter, Manager};
 
 use crate::mpv::{Event, Mpv, Value};
-use crate::AppState;
+use crate::{signin, AppState};
 
 /// What is playing, set by the UI on load. Used for progress and memory.
 #[derive(Debug, Clone, Deserialize, Serialize)]
@@ -283,6 +284,15 @@ impl Player {
             ),
             Command::Stop => {
                 self.save_progress(app);
+                if let Some(s) = lock(&self.session).clone() {
+                    let c = self.clock();
+                    scrobble(
+                        app,
+                        &s,
+                        &c,
+                        scrobble_action(false, c.position / c.duration.max(1.0)),
+                    );
+                }
                 *lock(&self.session) = None;
                 set_video_visible(app, false);
                 mpv.command(&["stop"])
@@ -325,6 +335,27 @@ fn lang_of(tracks: &[Track], kind: &str, id: i64) -> Option<String> {
         .iter()
         .find(|t| t.kind == kind && t.id == id)
         .and_then(|t| t.lang.clone())
+}
+
+/// Tells Trakt/Simkl what is playing. Fire-and-forget so the mpv thread
+/// never waits on the network; does nothing when signed out.
+fn scrobble(app: &AppHandle, s: &Session, c: &Clock, action: ScrobbleAction) {
+    if c.duration <= 0.0 || !(s.kind == "movie" || s.kind == "series") {
+        return;
+    }
+    let Some(key) = WatchKey::parse(&s.video_id) else {
+        return;
+    };
+    let fraction = c.position / c.duration;
+    let (app, profile) = (app.clone(), s.profile);
+    tauri::async_runtime::spawn(async move {
+        let st = app.state::<AppState>();
+        for svc in [signin::Service::Trakt, signin::Service::Simkl] {
+            if let Some(t) = signin::tracker(&st, profile, svc).await {
+                let _ = t.scrobble(action, &key, fraction).await;
+            }
+        }
+    });
 }
 
 fn save_progress(app: &AppHandle, s: &Session, c: &Clock) {
@@ -404,6 +435,7 @@ fn event_loop(mpv: &Mpv, app: &AppHandle, session: &Mutex<Option<Session>>, cloc
     let mut ui = Throttle::new(Duration::from_millis(250));
     let mut saver = Throttle::new(Duration::from_secs(10));
     let mut stall = StallDetector::default();
+    let mut last_paused = true;
     loop {
         let event = mpv.wait_event(0.5);
         let now = Instant::now();
@@ -427,6 +459,10 @@ fn event_loop(mpv: &Mpv, app: &AppHandle, session: &Mutex<Option<Session>>, cloc
                     let _ = mpv.set("sub-delay", &format!("{:.3}", ms as f64 / 1000.0));
                 }
                 let _ = app.emit("player://tracks", &tracks);
+                if let Some(s) = lock(session).clone() {
+                    last_paused = false;
+                    scrobble(app, &s, &lock(clock).clone(), ScrobbleAction::Start);
+                }
             }
             Event::EndFile { eof, error } => {
                 if let Some(s) = lock(session).clone() {
@@ -435,6 +471,12 @@ fn event_loop(mpv: &Mpv, app: &AppHandle, session: &Mutex<Option<Session>>, cloc
                         c.position = c.duration;
                     }
                     save_progress(app, &s, &c);
+                    let action = if eof {
+                        ScrobbleAction::Stop
+                    } else {
+                        scrobble_action(false, c.position / c.duration.max(1.0))
+                    };
+                    scrobble(app, &s, &c, action);
                 }
                 let _ = app.emit(
                     "player://ended",
@@ -451,7 +493,20 @@ fn event_loop(mpv: &Mpv, app: &AppHandle, session: &Mutex<Option<Session>>, cloc
                     ("duration", Value::Double(v)) => c.duration = v,
                     ("speed", Value::Double(v)) => c.speed = v,
                     ("sub-delay", Value::Double(v)) => c.sub_delay_ms = (v * 1000.0).round() as i64,
-                    ("pause", Value::Flag(v)) => c.paused = v,
+                    ("pause", Value::Flag(v)) => {
+                        c.paused = v;
+                        if v != last_paused {
+                            last_paused = v;
+                            if let Some(s) = lock(session).clone() {
+                                scrobble(
+                                    app,
+                                    &s,
+                                    &c,
+                                    scrobble_action(!v, c.position / c.duration.max(1.0)),
+                                );
+                            }
+                        }
+                    }
                     ("paused-for-cache", Value::Flag(v)) => {
                         c.buffering = v;
                         if v {
