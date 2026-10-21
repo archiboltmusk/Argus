@@ -5,6 +5,8 @@
 
 pub mod addon;
 pub mod debrid;
+pub mod epg;
 pub mod iptv;
 pub mod jellyfin;
 pub mod local;
+pub mod tracker;
