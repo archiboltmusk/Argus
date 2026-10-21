@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>app.argus.desktop</id>
+  <name>Argus</name>
+  <summary>A Stremio client built for adventure</summary>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>MIT</project_license>
+  <developer id="site.argus">
+    <name>Argus Developers</name>
+  </developer>
+  <description>
+    <p>Argus is a desktop media client for browsing and playing content from Stremio addons.</p>
+  </description>
+  <launchable type="desktop-id">app.argus.desktop.desktop</launchable>
+  <provides>
+    <binary>argus</binary>
+    <mediatype>x-scheme-handler/argus</mediatype>
+    <mediatype>x-scheme-handler/stremio</mediatype>
+  </provides>
+  <url type="homepage">https://github.com/archiboltmusk/Argus/</url>
+  <url type="bugtracker">https://github.com/archiboltmusk/Argus/issues</url>
+  <content_rating type="oars-1.1" />
+  <releases>
+    <release version="0.9.21" date="2026-07-13" />
+  </releases>
+</component>

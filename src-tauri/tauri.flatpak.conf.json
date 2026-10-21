@@ -1,0 +1,8 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "identifier": "site.argus.Argus",
+  "bundle": {
+    "active": false,
+    "externalBin": []
+  }
+}

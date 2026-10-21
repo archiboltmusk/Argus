@@ -87,6 +87,8 @@ jobs:
           cache: pnpm
       - run: brew install mpv dylibbundler
       - run: pnpm install --frozen-lockfile
+      # Bundled fonts (CJK subset) are fetched with pinned checksums, not committed.
+      - run: pnpm run setup:fonts
       # Non-PR builds feed the beta channel: version MAJOR.MINOR.<run number>
       # so every main build is newer than the last for the updater.
       # The updater public key comes from the TAURI_UPDATER_PUBKEY repo variable
