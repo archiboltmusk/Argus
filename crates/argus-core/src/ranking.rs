@@ -226,6 +226,33 @@ pub struct Preferences {
     pub cached_only: bool,
     /// How hard to filter placeholders, fakes and wrong episodes.
     pub safety: Safety,
+    /// Which kind of source to put first.
+    pub source: SourcePref,
+    /// Best-first by score, or exactly as the addons returned them.
+    pub order: Order,
+    /// How long to wait for each addon before moving on (seconds).
+    pub addon_wait_secs: u32,
+}
+
+/// Which kind of stream wins ties in the list.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum SourcePref {
+    /// No preference.
+    #[default]
+    Both,
+    /// Direct links and debrid-cached streams first.
+    Debrid,
+    /// Torrent streams first.
+    P2p,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum Order {
+    #[default]
+    Rank,
+    Addon,
 }
 
 impl Default for Preferences {
@@ -240,6 +267,9 @@ impl Default for Preferences {
             exclude_keywords: Vec::new(),
             cached_only: false,
             safety: Safety::default(),
+            source: SourcePref::default(),
+            order: Order::default(),
+            addon_wait_secs: 6,
         }
     }
 }
@@ -321,6 +351,12 @@ impl Preferences {
             Release::Unknown => 0,
             Release::Cam => -5_000,
         };
+        let direct = i.cached == Some(true) || s.url.is_some();
+        score += match self.source {
+            SourcePref::Debrid if direct => 100_000,
+            SourcePref::P2p if s.info_hash.is_some() && s.url.is_none() => 100_000,
+            _ => 0,
+        };
         // Seeders matter only for uncached torrents; log-scaled so 5000 ≈ 50.
         if i.cached != Some(true) && s.info_hash.is_some() {
             score += i
@@ -350,7 +386,9 @@ impl Preferences {
             })
             .filter(|r| self.allows(&r.stream, &r.info, want))
             .collect();
-        out.sort_by_key(|r| std::cmp::Reverse(r.score));
+        if self.order == Order::Rank {
+            out.sort_by_key(|r| std::cmp::Reverse(r.score));
+        }
         out
     }
 }
@@ -367,6 +405,26 @@ mod tests {
             url: (!hash).then(|| "http://x".into()),
             ..Default::default()
         }
+    }
+
+    #[test]
+    fn source_preference_and_addon_order() {
+        let list = vec![s("a", "1080p", true), s("b", "720p", false)];
+        let both = Preferences::default().rank(list.clone());
+        // Direct URL wins by default (playable now).
+        assert_eq!(both[0].stream.name.as_deref(), Some("b"));
+        let p2p = Preferences {
+            source: SourcePref::P2p,
+            ..Default::default()
+        }
+        .rank(list.clone());
+        assert_eq!(p2p[0].stream.name.as_deref(), Some("a"));
+        let addon = Preferences {
+            order: Order::Addon,
+            ..Default::default()
+        }
+        .rank(list);
+        assert_eq!(addon[0].stream.name.as_deref(), Some("a"));
     }
 
     #[test]
