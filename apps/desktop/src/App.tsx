@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { invoke } from "@tauri-apps/api/core";
 import { PlayerView } from "./PlayerView";
 import { UpdateBanner, UpdateSettings } from "./updates";
 import { startPlayerEvents } from "./player";
@@ -6,6 +7,7 @@ import { play as startPlayback, playNextEpisode } from "./playback";
 import { api, CINEMETA_URL, type Addon, type CatalogRow, type Meta, type MetaPreview, type Profile, type Progress, type RankedStream, type StreamInfo, type Video } from "./api";
 import { Accounts } from "./views/Accounts";
 import { Calendar } from "./views/Calendar";
+import { Downloads } from "./views/Downloads";
 import { Library, LibraryButton } from "./views/Library";
 import { LiveTV } from "./views/LiveTV";
 import { Sources } from "./views/Sources";
@@ -13,8 +15,8 @@ import { Poster } from "./views/Poster";
 import { ManageProfiles, ProfileGate } from "./views/Profiles";
 import { AUTOPLAY_KEY, StreamPrefs } from "./views/StreamPrefs";
 
-type Page = "home" | "search" | "library" | "calendar" | "live" | "addons" | "settings";
-const PAGE_LABEL: Record<Page, string> = { home: "Home", search: "Search", library: "Library", calendar: "Calendar", live: "Live TV", addons: "Sources", settings: "Settings" };
+type Page = "home" | "search" | "library" | "calendar" | "live" | "downloads" | "addons" | "settings";
+const PAGE_LABEL: Record<Page, string> = { home: "Home", search: "Search", library: "Library", calendar: "Calendar", live: "Live TV", downloads: "Downloads", addons: "Sources", settings: "Settings" };
 type View = { name: Page } | { name: "detail"; item: MetaPreview };
 /** Kids profiles can't change sources or settings. */
 const KIDS_HIDDEN: Page[] = ["addons", "settings"];
@@ -48,7 +50,7 @@ export default function App() {
     );
   }
   const open = (item: MetaPreview) => setView({ name: "detail", item });
-  const pages: Page[] = ["home", "search", "library", "calendar", "live", "addons", "settings"];
+  const pages: Page[] = ["home", "search", "library", "calendar", "live", "downloads", "addons", "settings"];
   const nav = pages.filter((n) => !(profile.kids && KIDS_HIDDEN.includes(n))).map((n) => (
     <button key={n} className={view.name === n ? "nav active" : "nav"} onClick={() => setView({ name: n })}>
       {PAGE_LABEL[n]}
@@ -69,6 +71,7 @@ export default function App() {
         {view.name === "search" && <Search profile={profile.id} onOpen={open} />}
         {view.name === "library" && <Library profile={profile.id} onOpen={open} />}
         {view.name === "calendar" && <Calendar profile={profile.id} onOpen={open} />}
+        {view.name === "downloads" && <Downloads profile={profile.id} onError={showError} />}
         {view.name === "live" && <LiveTV profile={profile.id} onError={showError} onGoSources={() => setView({ name: "addons" })} />}
         {view.name === "addons" && (
           <>
@@ -85,7 +88,7 @@ export default function App() {
             <ManageProfiles current={profile} onError={showError} onChanged={() => api.profiles().then((ps) => setProfile(ps.find((p) => p.id === profile.id) ?? profile))} />
           </>
         )}
-        {view.name === "detail" && <Detail profile={profile.id} item={view.item} onError={setToast} />}
+        {view.name === "detail" && <Detail profile={profile.id} item={view.item} onError={setToast} onToast={setToast} />}
       </main>
       <PlayerView
         profile={profile.id}
@@ -168,7 +171,7 @@ function Search({ profile, onOpen }: { profile: number; onOpen: (m: MetaPreview)
   );
 }
 
-function Detail({ profile, item, onError }: { profile: number; item: MetaPreview; onError: (s: string) => void }) {
+function Detail({ profile, item, onError, onToast }: { profile: number; item: MetaPreview; onError: (s: string) => void; onToast: (s: string) => void }) {
   const [meta, setMeta] = useState<Meta | null>(null);
   const [videoId, setVideoId] = useState<string | null>(item.type === "movie" ? item.id : null);
   const [streams, setStreams] = useState<RankedStream[] | null>(null);
@@ -239,12 +242,21 @@ function Detail({ profile, item, onError }: { profile: number; item: MetaPreview
             </button>
           )}
           {streams?.map(({ stream: s, info }, i) => (
-            <button key={i} className="stream" disabled={playing !== null} onClick={() => play(i)}>
-              <span className="badges">{badges(info).map((b) => <span key={b} className="badge">{b}</span>)}</span>
-              <strong>{s.name ?? s.origin}</strong>
-              <span className="muted">{s.description}</span>
-              <span className="small muted">{s.origin}{s.infoHash && info.cached !== true ? " · P2P" : ""}{playing === i ? " · opening…" : ""}</span>
-            </button>
+            <div key={i} className="stream-row">
+              <button className="stream" disabled={playing !== null} onClick={() => play(i)}>
+                <span className="badges">{badges(info).map((b) => <span key={b} className="badge">{b}</span>)}</span>
+                <strong>{s.name ?? s.origin}</strong>
+                <span className="muted">{s.description}</span>
+                <span className="small muted">{s.origin}{s.infoHash && info.cached !== true ? " · P2P" : ""}{playing === i ? " · opening…" : ""}</span>
+              </button>
+              {s.origin !== "Downloads" && (
+                <button className="dl" title="Download for offline" onClick={() => videoId && invoke("download_start", {
+                  profile,
+                  item: { itemId: item.id, videoId, kind: item.type, name: meta?.name ?? item.name, poster: item.poster },
+                  stream: s,
+                }).then(() => onToast("Downloading — see Downloads")).catch((e) => onError(errText(e)))}>⬇</button>
+              )}
+            </div>
           ))}
         </section>
       )}
