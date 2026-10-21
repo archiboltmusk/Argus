@@ -175,5 +175,5 @@ cargo test -p argus-core -- --ignored     # live tests against public addons
 pnpm build:mac                            # build a .dmg (on macOS)
 ```
 
-Every push builds an unsigned universal `.dmg` in GitHub Actions (CI → artifacts).
+Every push builds unsigned Apple Silicon and Intel `.dmg` files in GitHub Actions (CI → artifacts).
 To open an unsigned build the first time, right-click the app and choose Open.
