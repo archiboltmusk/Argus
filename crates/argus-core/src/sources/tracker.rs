@@ -255,6 +255,36 @@ pub mod trakt_auth {
         expires_in: i64,
     }
 
+    /// Trakt tokens last ~90 days; swap the refresh token for a new pair.
+    pub async fn refresh(
+        http: &reqwest::Client,
+        client_id: &str,
+        secret: &str,
+        token: &OAuthToken,
+    ) -> Result<OAuthToken> {
+        let t: Token = http
+            .post("https://api.trakt.tv/oauth/token")
+            .json(&json!({
+                "refresh_token": token.refresh_token,
+                "client_id": client_id,
+                "client_secret": secret,
+                "grant_type": "refresh_token",
+                "redirect_uri": "urn:ietf:wg:oauth:2.0:oob",
+            }))
+            .send()
+            .await?
+            .error_for_status()?
+            .json()
+            .await?;
+        Ok(OAuthToken {
+            access_token: t.access_token,
+            refresh_token: t.refresh_token,
+            expires_at: now() + t.expires_in,
+            client_id: None,
+            client_secret: None,
+        })
+    }
+
     pub async fn start(http: &reqwest::Client, client_id: &str) -> Result<DeviceCode> {
         let c: Code = http
             .post("https://api.trakt.tv/oauth/device/code")

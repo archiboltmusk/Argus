@@ -64,6 +64,17 @@ const MIGRATIONS: &[&str] = &[
         value TEXT NOT NULL
     );
     "#,
+    // v3: per-episode watched marks (progress keeps only the latest episode)
+    r#"
+    CREATE TABLE watched (
+        profile_id INTEGER NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+        item_id TEXT NOT NULL,
+        video_id TEXT NOT NULL,
+        watched_at INTEGER NOT NULL DEFAULT (unixepoch()),
+        PRIMARY KEY (profile_id, video_id)
+    );
+    CREATE INDEX watched_item ON watched(profile_id, item_id);
+    "#,
 ];
 
 /// Spec feature 9: "up to 8 profiles".
@@ -303,7 +314,50 @@ impl Library {
                updated_at = excluded.updated_at",
             params![profile, p.item_id, p.video_id, p.kind, p.name, p.poster, p.position_s, p.duration_s],
         )?;
+        // Finishing an episode marks it watched, so season lists stay accurate
+        // even after the next episode replaces it in `progress`.
+        if p.duration_s > 0.0 && p.position_s >= p.duration_s * WATCHED_THRESHOLD {
+            self.set_watched(profile, &p.item_id, &p.video_id, true)?;
+        }
         Ok(())
+    }
+
+    /// Manual or automatic watched mark for one episode or movie.
+    pub fn set_watched(
+        &self,
+        profile: i64,
+        item_id: &str,
+        video_id: &str,
+        watched: bool,
+    ) -> Result<()> {
+        let db = self.db();
+        if watched {
+            db.execute(
+                "INSERT OR IGNORE INTO watched (profile_id, item_id, video_id) VALUES (?1, ?2, ?3)",
+                params![profile, item_id, video_id],
+            )?;
+        } else {
+            db.execute(
+                "DELETE FROM watched WHERE profile_id = ?1 AND video_id = ?2",
+                params![profile, video_id],
+            )?;
+            // An unwatched mark must also drop it from Continue Watching.
+            db.execute(
+                "DELETE FROM progress WHERE profile_id = ?1 AND item_id = ?2 AND video_id = ?3",
+                params![profile, item_id, video_id],
+            )?;
+        }
+        Ok(())
+    }
+
+    /// Video ids of this title the profile has finished.
+    pub fn watched_videos(&self, profile: i64, item_id: &str) -> Result<Vec<String>> {
+        let db = self.db();
+        let mut stmt = db.prepare_cached(
+            "SELECT video_id FROM watched WHERE profile_id = ?1 AND item_id = ?2",
+        )?;
+        let rows = stmt.query_map(params![profile, item_id], |r| r.get(0))?;
+        Ok(rows.collect::<std::result::Result<_, _>>()?)
     }
 
     pub fn progress(&self, profile: i64, item_id: &str) -> Result<Option<Progress>> {
@@ -446,6 +500,28 @@ mod tests {
             duration_s: 1000.0,
             updated_at: 0,
         }
+    }
+
+    #[test]
+    fn finished_episodes_stay_watched_after_the_next_one_starts() {
+        let lib = Library::in_memory().unwrap();
+        let p = lib.profiles().unwrap()[0].id;
+        let prog = |video: &str, pos: f64| Progress {
+            item_id: "tt1".into(),
+            video_id: video.into(),
+            kind: "series".into(),
+            name: "Show".into(),
+            poster: None,
+            position_s: pos,
+            duration_s: 100.0,
+            updated_at: 0,
+        };
+        lib.save_progress(p, &prog("tt1:1:1", 95.0)).unwrap();
+        lib.save_progress(p, &prog("tt1:1:2", 40.0)).unwrap();
+        assert_eq!(lib.watched_videos(p, "tt1").unwrap(), vec!["tt1:1:1"]);
+        lib.set_watched(p, "tt1", "tt1:1:2", true).unwrap();
+        lib.set_watched(p, "tt1", "tt1:1:1", false).unwrap();
+        assert_eq!(lib.watched_videos(p, "tt1").unwrap(), vec!["tt1:1:2"]);
     }
 
     #[test]

@@ -117,3 +117,16 @@ select { font: inherit; color: inherit; background: var(--panel); border: 1px so
 .channel img, .channel-logo { width: 48px; height: 48px; object-fit: contain; border-radius: 6px; background: var(--line); display: grid; place-items: center; flex: none; }
 .channel-text { display: grid; gap: 2px; min-width: 0; }
 .channel-text > * { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.stream-row { display: flex; gap: 6px; align-items: stretch; }
+.stream-row .stream { flex: 1; }
+.dl { align-self: stretch; margin: 6px 0; }
+.sub-preview { background: #223; padding: 14px; border-radius: 8px; text-align: center; }
+input[type="color"] { width: 36px; height: 28px; padding: 0; border: none; background: none; }
+input[type="range"] { padding: 0; }
+.open-bar { margin: 0 0 20px; }
+.open-bar input { flex: 1; }
+.more { display: block; margin: 20px auto; }
+.ep .check-mark { color: #4ade80; margin-right: 6px; }
+.ep.watched { opacity: 0.6; }
+.ep-row { display: flex; gap: 4px; align-items: center; }
+.ep-row .ep { flex: 1; }

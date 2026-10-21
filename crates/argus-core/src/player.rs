@@ -21,6 +21,109 @@ pub struct TrackPrefs {
     pub speed: Option<f64>,
 }
 
+/// Stremio/Harbor-style player settings, stored per profile as JSON under
+/// `player.prefs`. Every field has a sensible default so a missing or old
+/// blob never breaks playback.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", default)]
+pub struct PlayerPrefs {
+    /// Preferred audio languages, comma-separated ISO codes ("eng,jpn").
+    pub audio_langs: String,
+    /// Preferred subtitle languages; empty = no automatic subtitles.
+    pub sub_langs: String,
+    /// Subtitle size in mpv points (default 55 ≈ Stremio "100%").
+    pub sub_size: u32,
+    /// `#RRGGBB`.
+    pub sub_color: String,
+    pub sub_outline_color: String,
+    /// 0 (top) to 100 (bottom).
+    pub sub_position: u32,
+    /// Outline thickness 0-8.
+    pub sub_outline: u32,
+    pub sub_bold: bool,
+    /// `auto-safe` (hardware) or `no` (software).
+    pub hwdec: String,
+    pub volume: u32,
+    /// Start the next episode automatically when one ends.
+    pub auto_next: bool,
+    /// Let mpv resolve YouTube/other page URLs with the user's own yt-dlp.
+    pub ytdl: bool,
+}
+
+impl Default for PlayerPrefs {
+    fn default() -> Self {
+        Self {
+            audio_langs: String::new(),
+            sub_langs: String::new(),
+            sub_size: 55,
+            sub_color: "#FFFFFF".into(),
+            sub_outline_color: "#000000".into(),
+            sub_position: 100,
+            sub_outline: 3,
+            sub_bold: false,
+            hwdec: "auto-safe".into(),
+            volume: 100,
+            auto_next: true,
+            ytdl: false,
+        }
+    }
+}
+
+impl PlayerPrefs {
+    pub const KEY: &'static str = "player.prefs";
+
+    pub fn load(lib: &Library, profile: i64) -> Result<Self> {
+        Ok(lib
+            .setting(profile, Self::KEY)?
+            .and_then(|j| serde_json::from_str(&j).ok())
+            .unwrap_or_default())
+    }
+
+    /// mpv `name=value` pairs for these settings. Colors are validated so a
+    /// bad value can't reach mpv.
+    pub fn mpv_properties(&self) -> Vec<(&'static str, String)> {
+        let color = |c: &str, fallback: &str| {
+            let ok =
+                c.len() == 7 && c.starts_with('#') && c[1..].chars().all(|x| x.is_ascii_hexdigit());
+            if ok {
+                c.to_string()
+            } else {
+                fallback.to_string()
+            }
+        };
+        let langs = |l: &str| {
+            l.split(',')
+                .map(str::trim)
+                .filter(|x| !x.is_empty() && x.chars().all(|c| c.is_ascii_alphabetic() || c == '-'))
+                .collect::<Vec<_>>()
+                .join(",")
+        };
+        vec![
+            ("alang", langs(&self.audio_langs)),
+            ("slang", langs(&self.sub_langs)),
+            ("sub-font-size", self.sub_size.clamp(20, 120).to_string()),
+            ("sub-color", color(&self.sub_color, "#FFFFFF")),
+            (
+                "sub-border-color",
+                color(&self.sub_outline_color, "#000000"),
+            ),
+            ("sub-pos", self.sub_position.clamp(0, 100).to_string()),
+            ("sub-border-size", self.sub_outline.clamp(0, 8).to_string()),
+            ("sub-bold", if self.sub_bold { "yes" } else { "no" }.into()),
+            (
+                "hwdec",
+                if self.hwdec == "no" {
+                    "no"
+                } else {
+                    "auto-safe"
+                }
+                .into(),
+            ),
+            ("volume", self.volume.clamp(0, 130).to_string()),
+        ]
+    }
+}
+
 /// Show id from a video id: `tt0903747:1:2` → `tt0903747`.
 pub fn show_key(video_id: &str) -> &str {
     video_id.split(':').next().unwrap_or(video_id)
@@ -168,6 +271,20 @@ impl Throttle {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn prefs_defaults_survive_partial_json_and_bad_values() {
+        let p: PlayerPrefs = serde_json::from_str(
+            r##"{"subSize":70,"subColor":"red; osd","audioLangs":"eng, jpn,;rm"}"##,
+        )
+        .unwrap();
+        assert!(p.auto_next && p.sub_outline == 3);
+        let props: std::collections::HashMap<_, _> = p.mpv_properties().into_iter().collect();
+        assert_eq!(props["sub-font-size"], "70");
+        assert_eq!(props["sub-color"], "#FFFFFF");
+        assert_eq!(props["alang"], "eng,jpn");
+        assert_eq!(props["hwdec"], "auto-safe");
+    }
 
     fn t(id: i64, kind: &str, lang: &str, forced: bool, default: bool) -> Track {
         Track {

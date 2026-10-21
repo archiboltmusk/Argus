@@ -51,9 +51,11 @@ export type StreamInfo = {
 
 export type RankedStream = { stream: Stream; info: StreamInfo; score: number };
 
+export type CatalogDef = { type: string; id: string; name?: string; extra: { name: string; isRequired: boolean; options?: string[] }[] };
+
 export type Addon = {
   base_url: string;
-  manifest: { id: string; name: string; version: string; description?: string; logo?: string; types: string[] };
+  manifest: { id: string; name: string; version: string; description?: string; logo?: string; types: string[]; catalogs: CatalogDef[] };
 };
 
 export type Profile = { id: number; name: string; has_pin: boolean; kids: boolean };
@@ -101,6 +103,12 @@ export const api = {
   installAddon: (profile: number, url: string) => invoke<Addon>("install_addon", { profile, url }),
   removeAddon: (profile: number, baseUrl: string) => invoke<void>("remove_addon", { profile, baseUrl }),
   reorderAddons: (profile: number, baseUrls: string[]) => invoke<void>("reorder_addons", { profile, baseUrls }),
+  catalogPage: (profile: number, addon: string, kind: string, id: string, extra: [string, string][]) =>
+    invoke<MetaPreview[]>("catalog_page", { profile, addon, kind, id, extra }),
+  watchedVideos: (profile: number, itemId: string) => invoke<string[]>("watched_videos", { profile, itemId }),
+  setWatched: (profile: number, itemId: string, videoIds: string[], watched: boolean) =>
+    invoke<void>("set_watched", { profile, itemId, videoIds, watched }),
+  resolveInput: (profile: number, input: string) => invoke<string>("resolve_input", { profile, input }),
   homeRows: (profile: number) => invoke<CatalogRow[]>("home_rows", { profile }),
   search: (profile: number, query: string) => invoke<MetaPreview[]>("search", { profile, query }),
   meta: (profile: number, kind: string, id: string) => invoke<Meta>("meta", { profile, kind, id }),
