@@ -2,6 +2,7 @@
 //! on the provider's site instead of pasting API keys.
 
 use argus_core::sources::debrid::{alldebrid, now, realdebrid, DeviceCode, OAuthToken, Provider};
+use argus_core::sources::plex;
 use argus_core::sources::tracker::{simkl_auth, trakt_auth};
 use serde::{Deserialize, Serialize};
 use tauri::State;
@@ -21,6 +22,7 @@ pub enum Service {
     AllDebrid,
     Trakt,
     Simkl,
+    Plex,
 }
 
 impl Service {
@@ -30,6 +32,7 @@ impl Service {
             Self::AllDebrid => "debrid.alldebrid.key",
             Self::Trakt => "tracker.trakt.token",
             Self::Simkl => "tracker.simkl.token",
+            Self::Plex => "server.plex",
         }
     }
 }
@@ -68,6 +71,7 @@ pub async fn signin_start(s: State<'_, AppState>, service: Service) -> CmdResult
         Service::AllDebrid => alldebrid::pin::start(&s.http).await,
         Service::Trakt => trakt_auth::start(&s.http, configured(TRAKT_ID, "Trakt")?).await,
         Service::Simkl => simkl_auth::start(&s.http, configured(SIMKL_ID, "Simkl")?).await,
+        Service::Plex => plex::auth::start(&s.http, &crate::servers::device_id(&s)?).await,
     }
     .map_err(err)
 }
@@ -99,6 +103,18 @@ pub async fn signin_poll(
         Service::Simkl => simkl_auth::poll(&s.http, configured(SIMKL_ID, "Simkl")?, &code)
             .await
             .map_err(err)?,
+        Service::Plex => {
+            let device = crate::servers::device_id(&s)?;
+            return match plex::auth::poll(&s.http, &device, &code)
+                .await
+                .map_err(err)?
+            {
+                Some(token) => crate::servers::finish_plex_signin(&s, profile, &token)
+                    .await
+                    .map(|_| true),
+                None => Ok(false),
+            };
+        }
     };
     let Some(value) = value else { return Ok(false) };
     s.lib

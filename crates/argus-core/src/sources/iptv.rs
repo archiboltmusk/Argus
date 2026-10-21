@@ -117,6 +117,16 @@ impl Xtream {
         )
     }
 
+    /// The provider's XMLTV guide for its channels.
+    pub fn epg_url(&self) -> String {
+        format!(
+            "{}/xmltv.php?username={}&password={}",
+            self.server(),
+            enc(&self.username),
+            enc(&self.password)
+        )
+    }
+
     pub fn live_url(&self, stream_id: u64, ext: &str) -> String {
         format!(
             "{}/live/{}/{}/{}.{}",

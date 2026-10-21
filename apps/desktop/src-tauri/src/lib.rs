@@ -1,8 +1,10 @@
 //! Thin Tauri shell: every command forwards to `argus-core`. No business
 //! logic here, so mobile and TV shells can reuse the core unchanged.
 
+mod live;
 mod mpv;
 mod player;
+mod servers;
 mod signin;
 mod torrent;
 
@@ -12,7 +14,7 @@ use argus_core::episodes::{self, CalendarEntry};
 use argus_core::futures::future::join_all;
 use argus_core::library::{Library, LibraryItem, Profile, Progress};
 use argus_core::model::{Meta, MetaPreview, Stream};
-use argus_core::ranking::{Preferences, RankedStream};
+use argus_core::ranking::{Preferences, RankedStream, StreamInfo};
 use argus_core::sources::addon::{Addon, AddonClient};
 use argus_core::sources::debrid::{apply_cache, Debrid, Provider};
 use serde::Serialize;
@@ -25,6 +27,8 @@ pub(crate) struct AppState {
     addons: AddonClient,
     player: player::Player,
     torrents: torrent::TorrentEngine,
+    local: servers::LocalCache,
+    live: live::LiveCache,
 }
 
 /// Commands return strings as errors so the UI can show them directly.
@@ -175,11 +179,10 @@ async fn home_rows(s: State<'_, AppState>, profile: i64) -> CmdResult<Vec<Catalo
                 }
             })
     });
-    Ok(join_all(calls)
-        .await
-        .into_iter()
-        .filter(|r| !r.items.is_empty())
-        .collect())
+    let (rows, addon_rows) = tokio::join!(servers::rows(&s, profile), join_all(calls));
+    let mut rows = rows.unwrap_or_default();
+    rows.extend(addon_rows.into_iter().filter(|r| !r.items.is_empty()));
+    Ok(rows)
 }
 
 #[tauri::command]
@@ -189,11 +192,21 @@ async fn search(
     query: String,
 ) -> CmdResult<Vec<MetaPreview>> {
     let addons = s.lib.addons(profile).map_err(err)?;
-    Ok(s.addons.search(&addons, query.trim()).await)
+    let query = query.trim();
+    let (own, found) = tokio::join!(
+        servers::search(&s, profile, query),
+        s.addons.search(&addons, query)
+    );
+    let mut out = own.unwrap_or_default();
+    out.extend(found);
+    Ok(out)
 }
 
 #[tauri::command]
 async fn meta(s: State<'_, AppState>, profile: i64, kind: String, id: String) -> CmdResult<Meta> {
+    if let Some(m) = servers::meta(&s, profile, &id).await {
+        return m;
+    }
     let addons = s.lib.addons(profile).map_err(err)?;
     s.addons.meta(&addons, &kind, &id).await.map_err(err)
 }
@@ -224,6 +237,15 @@ async fn streams(
     kind: String,
     id: String,
 ) -> CmdResult<Vec<RankedStream>> {
+    if let Some(stream) = servers::stream(&s, profile, &id).await {
+        let stream = stream?;
+        let info = StreamInfo::parse(&stream);
+        return Ok(vec![RankedStream {
+            stream,
+            info,
+            score: 0,
+        }]);
+    }
     let addons = s.lib.addons(profile).map_err(err)?;
     let mut list = s.addons.streams(&addons, &kind, &id).await;
     if let Some(debrid) = debrid_for(&s, profile).await? {
@@ -411,6 +433,8 @@ pub fn run() {
                 addons: AddonClient::new(http.clone()),
                 http,
                 player: player::Player::default(),
+                local: servers::LocalCache::default(),
+                live: live::LiveCache::default(),
                 torrents: torrent::TorrentEngine::new(app.path().app_cache_dir()?.join("torrents")),
             });
             #[cfg(target_os = "macos")]
@@ -460,6 +484,14 @@ pub fn run() {
             signin::signin_start,
             signin::signin_poll,
             signin::signout,
+            servers::server_status,
+            servers::jellyfin_login,
+            servers::server_signout,
+            servers::set_local_folders,
+            live::live_sources,
+            live::set_live_sources,
+            live::live_channels,
+            live::live_guide,
         ])
         .run(tauri::generate_context!())
         .expect("error while running Argus");

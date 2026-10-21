@@ -5,6 +5,8 @@ use std::path::{Path, PathBuf};
 
 use serde::{Deserialize, Serialize};
 
+use crate::model::{MediaType, Meta, MetaPreview, Video};
+
 pub const VIDEO_EXT: &[&str] = &[
     "mkv", "mp4", "avi", "mov", "m4v", "webm", "ts", "wmv", "m2ts",
 ];
@@ -128,9 +130,96 @@ pub async fn scan(root: PathBuf) -> std::io::Result<Vec<LocalFile>> {
     .map_err(std::io::Error::other)
 }
 
+/// Groups scanned files into titles: one movie per standalone file, one
+/// series per show name with its episodes as videos. Ids are `local:<path>`
+/// for playable files and `localshow:<name>` for series.
+pub fn to_metas(files: &[LocalFile]) -> Vec<Meta> {
+    let mut movies = Vec::new();
+    let mut shows: std::collections::BTreeMap<String, Meta> = Default::default();
+    for f in files {
+        let path = f.path.to_string_lossy();
+        let p = &f.parsed;
+        match (p.season, p.episode) {
+            (Some(season), Some(episode)) => {
+                let key = p.title.to_lowercase();
+                let show = shows.entry(key.clone()).or_insert_with(|| Meta {
+                    preview: preview(
+                        format!("localshow:{key}"),
+                        MediaType::Series,
+                        &p.title,
+                        None,
+                    ),
+                    runtime: None,
+                    cast: vec![],
+                    director: vec![],
+                    videos: vec![],
+                });
+                show.videos.push(Video {
+                    id: format!("local:{path}"),
+                    title: format!("Episode {episode}"),
+                    released: None,
+                    season: Some(season),
+                    episode: Some(episode),
+                    number: None,
+                    thumbnail: None,
+                    overview: None,
+                });
+            }
+            _ => movies.push(Meta {
+                preview: preview(format!("local:{path}"), MediaType::Movie, &p.title, p.year),
+                runtime: None,
+                cast: vec![],
+                director: vec![],
+                videos: vec![],
+            }),
+        }
+    }
+    for show in shows.values_mut() {
+        show.videos.sort_by_key(|v| (v.season, v.episode));
+    }
+    movies.extend(shows.into_values());
+    movies
+}
+
+fn preview(id: String, kind: MediaType, title: &str, year: Option<u16>) -> MetaPreview {
+    MetaPreview {
+        id,
+        kind,
+        name: title.to_string(),
+        poster: None,
+        background: None,
+        logo: None,
+        description: None,
+        release_info: year.map(|y| y.to_string()),
+        imdb_rating: None,
+        genres: vec![],
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn groups_episodes_into_shows() {
+        let f = |p: &str| LocalFile {
+            path: PathBuf::from(p),
+            size: 1,
+            parsed: parse_filename(p.rsplit('/').next().unwrap()),
+        };
+        let metas = to_metas(&[
+            f("/m/The.Matrix.1999.1080p.mkv"),
+            f("/tv/Show.Name.S01E02.mkv"),
+            f("/tv/Show.Name.S01E01.mkv"),
+        ]);
+        assert_eq!(metas.len(), 2);
+        assert_eq!(metas[0].preview.id, "local:/m/The.Matrix.1999.1080p.mkv");
+        assert_eq!(metas[0].preview.release_info.as_deref(), Some("1999"));
+        let show = &metas[1];
+        assert_eq!(show.preview.kind, MediaType::Series);
+        assert_eq!(show.videos[0].id, "local:/tv/Show.Name.S01E01.mkv");
+        assert_eq!(show.videos[1].episode, Some(2));
+    }
 
     #[test]
     fn parses_movie() {
