@@ -316,7 +316,7 @@ async fn streams(
         .map_err(err)?
         .and_then(|j| serde_json::from_str(&j).ok())
         .unwrap_or_default();
-    let mut ranked = prefs.rank(list);
+    let mut ranked = prefs.rank_for(list, argus_core::trust::Want::from_video_id(&id));
     if let Some(stream) = offline {
         let info = StreamInfo::parse(&stream);
         ranked.insert(

@@ -8,6 +8,7 @@ use regex::Regex;
 use serde::{Deserialize, Serialize};
 
 use crate::model::Stream;
+use crate::trust::{reject, Safety, Want};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
@@ -223,6 +224,8 @@ pub struct Preferences {
     pub exclude_keywords: Vec<String>,
     /// Only show streams that are instant on debrid (torrents need debrid anyway).
     pub cached_only: bool,
+    /// How hard to filter placeholders, fakes and wrong episodes.
+    pub safety: Safety,
 }
 
 impl Default for Preferences {
@@ -236,6 +239,7 @@ impl Default for Preferences {
             prefer_hevc: false,
             exclude_keywords: Vec::new(),
             cached_only: false,
+            safety: Safety::default(),
         }
     }
 }
@@ -249,7 +253,10 @@ pub struct RankedStream {
 }
 
 impl Preferences {
-    fn allows(&self, s: &Stream, i: &StreamInfo) -> bool {
+    fn allows(&self, s: &Stream, i: &StreamInfo, want: Want) -> bool {
+        if reject(self.safety, s, i, want).is_some() {
+            return false;
+        }
         if self.hide_cam && i.release == Release::Cam {
             return false;
         }
@@ -326,6 +333,11 @@ impl Preferences {
     /// Filters and orders streams best-first. Stable for equal scores, so
     /// addon priority order breaks ties.
     pub fn rank(&self, streams: Vec<Stream>) -> Vec<RankedStream> {
+        self.rank_for(streams, Want::default())
+    }
+
+    /// Like [`rank`](Self::rank), also dropping streams for another episode.
+    pub fn rank_for(&self, streams: Vec<Stream>, want: Want) -> Vec<RankedStream> {
         let mut out: Vec<RankedStream> = streams
             .into_iter()
             .map(|stream| {
@@ -336,7 +348,7 @@ impl Preferences {
                     info,
                 }
             })
-            .filter(|r| self.allows(&r.stream, &r.info))
+            .filter(|r| self.allows(&r.stream, &r.info, want))
             .collect();
         out.sort_by_key(|r| std::cmp::Reverse(r.score));
         out
