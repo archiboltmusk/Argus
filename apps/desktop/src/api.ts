@@ -84,6 +84,8 @@ export type Progress = {
   updated_at: number;
 };
 
+export type Ratings = { imdb?: string; rottenTomatoes?: string; metascore?: string; awards?: string };
+
 export type CatalogRow = { addon: string; title: string; kind: string; id: string; items: MetaPreview[] };
 
 export const api = {
@@ -109,6 +111,8 @@ export const api = {
   setWatched: (profile: number, itemId: string, videoIds: string[], watched: boolean) =>
     invoke<void>("set_watched", { profile, itemId, videoIds, watched }),
   resolveInput: (profile: number, input: string) => invoke<string>("resolve_input", { profile, input }),
+  roomRows: (profile: number, room: "movies" | "shows") => invoke<CatalogRow[]>("room_rows", { profile, room }),
+  ratings: (profile: number, imdb: string) => invoke<Ratings | null>("ratings", { profile, imdb }),
   homeRows: (profile: number) => invoke<CatalogRow[]>("home_rows", { profile }),
   search: (profile: number, query: string) => invoke<MetaPreview[]>("search", { profile, query }),
   meta: (profile: number, kind: string, id: string) => invoke<Meta>("meta", { profile, kind, id }),

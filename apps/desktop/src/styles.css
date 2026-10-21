@@ -136,3 +136,6 @@ input[type="range"] { padding: 0; }
 .hotkey-row button { min-width: 84px; }
 
 .skip-btn { position: absolute; right: 32px; bottom: 120px; z-index: 5; padding: 10px 18px; font-size: 15px; }
+
+.ratings { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 8px 0; }
+.chip { background: var(--panel, rgba(255,255,255,.08)); border-radius: 999px; padding: 3px 10px; font-size: 13px; }

@@ -6,7 +6,7 @@ import { PlayerView } from "./PlayerView";
 import { UpdateBanner, UpdateSettings } from "./updates";
 import { player, startPlayerEvents } from "./player";
 import { play as startPlayback, playNextEpisode } from "./playback";
-import { api, CINEMETA_URL, type Addon, type CatalogRow, type Meta, type MetaPreview, type Profile, type Progress, type RankedStream, type StreamInfo, type Video } from "./api";
+import { api, CINEMETA_URL, type Addon, type CatalogRow, type Meta, type MetaPreview, type Profile, type Progress, type Ratings, type RankedStream, type StreamInfo, type Video } from "./api";
 import { Accounts } from "./views/Accounts";
 import { Calendar } from "./views/Calendar";
 import { Discover } from "./views/Discover";
@@ -17,13 +17,16 @@ import { Sources } from "./views/Sources";
 import { OpenMedia } from "./views/Open";
 import { PlayerSettings, loadPlayerPrefs } from "./views/PlayerSettings";
 import { Hotkeys } from "./views/Hotkeys";
+import { Room } from "./views/Room";
+import { MetadataKeys } from "./views/MetadataKeys";
+import { setRpdbKey } from "./views/Poster";
 import { TorrentSettings } from "./views/TorrentSettings";
 import { Poster } from "./views/Poster";
 import { ManageProfiles, ProfileGate } from "./views/Profiles";
 import { AUTOPLAY_KEY, StreamPrefs } from "./views/StreamPrefs";
 
-type Page = "home" | "discover" | "search" | "library" | "calendar" | "live" | "downloads" | "addons" | "settings";
-const PAGE_LABEL: Record<Page, string> = { home: "Home", discover: "Discover", search: "Search", library: "Library", calendar: "Calendar", live: "Live TV", downloads: "Downloads", addons: "Sources", settings: "Settings" };
+type Page = "home" | "discover" | "movies" | "shows" | "search" | "library" | "calendar" | "live" | "downloads" | "addons" | "settings";
+const PAGE_LABEL: Record<Page, string> = { home: "Home", discover: "Discover", movies: "Movies", shows: "Shows", search: "Search", library: "Library", calendar: "Calendar", live: "Live TV", downloads: "Downloads", addons: "Sources", settings: "Settings" };
 type View = { name: Page } | { name: "detail"; item: MetaPreview };
 /** Kids profiles can't change sources or settings. */
 const KIDS_HIDDEN: Page[] = ["addons", "settings"];
@@ -52,7 +55,11 @@ export default function App() {
     ];
     return () => { subs.forEach((s) => s.then((off) => off())); };
   }, [profile]);
-  const enter = useCallback((p: Profile) => { setProfile(p); setView({ name: "home" }); }, []);
+  const enter = useCallback((p: Profile) => {
+    setProfile(p);
+    setView({ name: "home" });
+    api.getSetting(p.id, "meta.rpdb.key").then((k) => setRpdbKey(k ?? "")).catch(() => {});
+  }, []);
   const showError = useCallback((e: unknown) => setToast(errText(e)), []);
 
   useEffect(() => {
@@ -70,7 +77,7 @@ export default function App() {
     );
   }
   const open = (item: MetaPreview) => setView({ name: "detail", item });
-  const pages: Page[] = ["home", "discover", "search", "library", "calendar", "live", "downloads", "addons", "settings"];
+  const pages: Page[] = ["home", "discover", "movies", "shows", "search", "library", "calendar", "live", "downloads", "addons", "settings"];
   const nav = pages.filter((n) => !(profile.kids && KIDS_HIDDEN.includes(n))).map((n) => (
     <button key={n} className={view.name === n ? "nav active" : "nav"} onClick={() => setView({ name: n })}>
       {PAGE_LABEL[n]}
@@ -89,6 +96,7 @@ export default function App() {
       <main className="content">
         {view.name === "home" && <OpenMedia profile={profile.id} onError={showError} />}
         {view.name === "home" && <Home profile={profile.id} onOpen={open} onGoAddons={() => setView({ name: "addons" })} />}
+        {(view.name === "movies" || view.name === "shows") && <Room profile={profile.id} room={view.name} onOpen={open} onGoSettings={() => setView({ name: "settings" })} />}
         {view.name === "discover" && <Discover profile={profile.id} onOpen={open} onError={showError} />}
         {view.name === "search" && <Search profile={profile.id} onOpen={open} />}
         {view.name === "library" && <Library profile={profile.id} onOpen={open} />}
@@ -106,6 +114,7 @@ export default function App() {
             <Accounts profile={profile.id} onError={showError} />
             <StreamPrefs profile={profile.id} onSaved={() => setToast("Saved")} />
             <PlayerSettings profile={profile.id} onSaved={() => setToast("Saved")} />
+            <MetadataKeys profile={profile.id} onSaved={() => setToast("Saved")} onError={showError} />
             <Hotkeys profile={profile.id} onSaved={() => setToast("Saved")} />
             <TorrentSettings profile={profile.id} onSaved={() => setToast("Saved")} />
             <Settings profile={profile.id} onSaved={() => setToast("Saved")} />
@@ -204,6 +213,8 @@ function Detail({ profile, item, onError, onToast }: { profile: number; item: Me
   const [watched, setWatched] = useState<Set<string>>(new Set());
   const [autoplay, setAutoplay] = useState(false);
   const [picked, setPicked] = useState(false);
+  const [ratings, setRatings] = useState<Ratings | null>(null);
+  useEffect(() => { setRatings(null); api.ratings(profile, item.id).then(setRatings).catch(() => {}); }, [profile, item.id]);
   useEffect(() => { api.watchedVideos(profile, item.id).then((l) => setWatched(new Set(l))).catch(() => {}); }, [profile, item.id, playing]);
   const mark = (ids: string[], on: boolean) =>
     api.setWatched(profile, item.id, ids, on).then(() => setWatched((w) => { const n = new Set(w); ids.forEach((i) => (on ? n.add(i) : n.delete(i))); return n; })).catch((e) => onError(errText(e)));
@@ -252,6 +263,14 @@ function Detail({ profile, item, onError, onToast }: { profile: number; item: Me
         {item.type === "movie" && <button onClick={() => mark([item.id], !watched.has(item.id))}>{watched.has(item.id) ? "✓ Watched" : "Mark watched"}</button>}
       </div>
       <div className="muted">{[m.releaseInfo, meta?.runtime, m.imdbRating && `IMDb ${m.imdbRating}`].filter(Boolean).join(" · ")}</div>
+      {ratings && (
+        <div className="ratings">
+          {ratings.imdb && <span className="chip">IMDb {ratings.imdb}</span>}
+          {ratings.rottenTomatoes && <span className="chip">🍅 {ratings.rottenTomatoes}</span>}
+          {ratings.metascore && <span className="chip">Metascore {ratings.metascore}</span>}
+          {ratings.awards && <span className="small muted">{ratings.awards}</span>}
+        </div>
+      )}
       {m.description && <p className="desc">{m.description}</p>}
       {[...seasons.entries()].sort(([a], [b]) => a - b).map(([s, eps]) => (
         <details key={s} open={s === 1}>
