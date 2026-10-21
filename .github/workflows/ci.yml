@@ -106,6 +106,11 @@ jobs:
       - run: cargo clippy -p argus-desktop -p argus-mac-video --target ${{ matrix.target }} -- -D warnings
       # Unsigned until an Apple Developer ID is added as a repo secret.
       - run: pnpm --filter desktop tauri build --target ${{ matrix.target }} --bundles app
+        env:
+          # Optional: enable Trakt/Simkl sign-in (apps registered by the maintainer).
+          ARGUS_TRAKT_CLIENT_ID: ${{ secrets.ARGUS_TRAKT_CLIENT_ID }}
+          ARGUS_TRAKT_CLIENT_SECRET: ${{ secrets.ARGUS_TRAKT_CLIENT_SECRET }}
+          ARGUS_SIMKL_CLIENT_ID: ${{ secrets.ARGUS_SIMKL_CLIENT_ID }}
       - name: Bundle libmpv into the app and build the .dmg
         run: |
           set -euo pipefail

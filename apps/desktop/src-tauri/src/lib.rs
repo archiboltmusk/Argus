@@ -3,6 +3,7 @@
 
 mod mpv;
 mod player;
+mod signin;
 
 use std::time::Duration;
 
@@ -196,8 +197,13 @@ async fn meta(s: State<'_, AppState>, profile: i64, kind: String, id: String) ->
 }
 
 /// First debrid provider the profile has signed in to, in a fixed order.
-fn debrid_for(s: &AppState, profile: i64) -> CmdResult<Option<Debrid>> {
+async fn debrid_for(s: &AppState, profile: i64) -> CmdResult<Option<Debrid>> {
     for p in Provider::ALL {
+        if p == Provider::RealDebrid {
+            if let Some(token) = signin::realdebrid_token(s, profile).await? {
+                return Ok(Some(Debrid::new(p, s.http.clone(), token)));
+            }
+        }
         if let Some(key) = s.lib.setting(profile, &p.setting_key()).map_err(err)? {
             if !key.trim().is_empty() {
                 return Ok(Some(Debrid::new(p, s.http.clone(), key.trim())));
@@ -218,7 +224,7 @@ async fn streams(
 ) -> CmdResult<Vec<RankedStream>> {
     let addons = s.lib.addons(profile).map_err(err)?;
     let mut list = s.addons.streams(&addons, &kind, &id).await;
-    if let Some(debrid) = debrid_for(&s, profile)? {
+    if let Some(debrid) = debrid_for(&s, profile).await? {
         let hashes: Vec<String> = list.iter().filter_map(|x| x.info_hash.clone()).collect();
         // A failed cache check only loses the "instant" badge; never block streams on it.
         if let Ok(cached) = debrid.cache_check(&hashes).await {
@@ -241,7 +247,8 @@ async fn resolve_stream(s: State<'_, AppState>, profile: i64, stream: Stream) ->
         return Ok(url);
     }
     if stream.info_hash.is_some() {
-        let debrid = debrid_for(&s, profile)?
+        let debrid = debrid_for(&s, profile)
+            .await?
             .ok_or("Torrent streams need a debrid account. Add one in Settings.")?;
         return debrid
             .resolve(&stream, Duration::from_secs(20))
@@ -445,6 +452,10 @@ pub fn run() {
             save_progress,
             get_setting,
             set_setting,
+            signin::signins,
+            signin::signin_start,
+            signin::signin_poll,
+            signin::signout,
         ])
         .run(tauri::generate_context!())
         .expect("error while running Argus");
