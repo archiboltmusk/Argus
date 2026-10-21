@@ -4,6 +4,23 @@ import { invoke } from "@tauri-apps/api/core";
 import { api, type MetaPreview, type RankedStream } from "./api";
 import { player } from "./player";
 
+/** What a starting playback is waiting on, shown next to the spinner. */
+let stage: string | null = null;
+const stageListeners = new Set<() => void>();
+const setStage = (v: string | null) => { stage = v; stageListeners.forEach((f) => f()); };
+export const playStage = {
+  get: () => stage,
+  subscribe: (f: () => void) => { stageListeners.add(f); return () => { stageListeners.delete(f); }; },
+};
+
+const LOG_HINT = "Logs: ~/Library/Logs/app.argus.desktop/mpv.log";
+
+function withTimeout<T>(p: Promise<T>, ms: number, what: string): Promise<T> {
+  let t: number;
+  const timeout = new Promise<never>((_, rej) => { t = window.setTimeout(() => rej(new Error(`${what} took longer than ${ms / 1000}s and was stopped. Try another stream. ${LOG_HINT}`)), ms); });
+  return Promise.race([p, timeout]).finally(() => window.clearTimeout(t));
+}
+
 export type PlayTarget = { item: MetaPreview; videoId: string };
 
 /** Resume point for this exact video, or 0. */
@@ -14,15 +31,25 @@ async function resumeAt(profile: number, itemId: string, videoId: string): Promi
 }
 
 export async function play(profile: number, target: PlayTarget, streams: RankedStream[], index: number) {
+  try {
+    setStage("Resolving the stream (debrid and torrent links can take a moment)…");
+    await playInner(profile, target, streams, index);
+  } finally {
+    setStage(null);
+  }
+}
+
+async function playInner(profile: number, target: PlayTarget, streams: RankedStream[], index: number) {
   const r = streams[index];
-  const url = await api.resolveStream(profile, r.stream);
+  const url = await withTimeout(api.resolveStream(profile, r.stream), 90_000, "Resolving the stream");
   const start = await resumeAt(profile, target.item.id, target.videoId);
+  setStage("Starting the player…");
   const mode = (await api.getSetting(profile, "player.mode")) ?? "builtin";
   if (mode === "external") {
     return invoke<void>("play_external", { profile, url, start });
   }
   try {
-    await loadBuiltin(url, start, target, r, streams, index, profile);
+    await withTimeout(loadBuiltin(url, start, target, r, streams, index, profile), 30_000, "Starting the built-in player");
   } catch (e) {
     // The built-in player crashed last time or failed to start: hand off to
     // IINA/VLC/the system player so playback still works.

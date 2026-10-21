@@ -64,6 +64,29 @@ pub struct PlayerPrefs {
     pub next_prompt_secs: u32,
     /// Hide the Skip button after this many seconds (0 = keep it).
     pub skip_hide_secs: u32,
+    /// Mix surround sound down to stereo.
+    pub stereo_downmix: bool,
+    /// How far the volume bar can boost past 100 (100-600).
+    pub volume_max: u32,
+    /// mpv `audio-device` name; `auto` follows the system output.
+    pub audio_device: String,
+    /// `weak`, `balanced` or `max`.
+    pub quality: String,
+    /// `gpu` or `gpu-next`; read when the player starts.
+    pub renderer: String,
+    /// Convert to 8-bit SDR for old graphics cards (disables HDR).
+    pub simple_color: bool,
+    /// -100..=100 each.
+    pub brightness: i32,
+    pub contrast: i32,
+    pub saturation: i32,
+    pub gamma: i32,
+    /// 0.0..=2.0 edge sharpening.
+    pub sharpen: f32,
+    /// `auto`, `small`, `medium`, `large` or `maximum`.
+    pub buffer: String,
+    /// Extra mpv options, one `key=value` per line.
+    pub mpv_conf: String,
 }
 
 impl Default for PlayerPrefs {
@@ -89,6 +112,19 @@ impl Default for PlayerPrefs {
             tonemap: false,
             next_prompt_secs: 0,
             skip_hide_secs: 0,
+            stereo_downmix: false,
+            volume_max: 200,
+            audio_device: "auto".into(),
+            quality: "balanced".into(),
+            renderer: "gpu".into(),
+            simple_color: false,
+            brightness: 0,
+            contrast: 0,
+            saturation: 0,
+            gamma: 0,
+            sharpen: 0.0,
+            buffer: "auto".into(),
+            mpv_conf: String::new(),
         }
     }
 }
@@ -136,15 +172,91 @@ impl PlayerPrefs {
             ("sub-bold", if self.sub_bold { "yes" } else { "no" }.into()),
             (
                 "hwdec",
-                if self.hwdec == "no" {
-                    "no"
+                match self.hwdec.as_str() {
+                    "no" => "no",
+                    "force" => "videotoolbox",
+                    _ => "auto-safe",
+                }
+                .into(),
+            ),
+            ("volume", self.volume.clamp(0, 600).to_string()),
+            ("volume-max", self.volume_max.clamp(100, 600).to_string()),
+            (
+                "audio-channels",
+                if self.stereo_downmix {
+                    "stereo"
                 } else {
                     "auto-safe"
                 }
                 .into(),
             ),
-            ("volume", self.volume.clamp(0, 130).to_string()),
+            ("brightness", self.brightness.clamp(-100, 100).to_string()),
+            ("contrast", self.contrast.clamp(-100, 100).to_string()),
+            ("saturation", self.saturation.clamp(-100, 100).to_string()),
+            ("gamma", self.gamma.clamp(-100, 100).to_string()),
+            (
+                "demuxer-max-bytes",
+                match self.buffer.as_str() {
+                    "small" => "50MiB",
+                    "medium" => "150MiB",
+                    "large" => "400MiB",
+                    "maximum" => "800MiB",
+                    _ => "200MiB",
+                }
+                .into(),
+            ),
+            (
+                "demuxer-readahead-secs",
+                match self.buffer.as_str() {
+                    "small" => "15",
+                    "medium" => "45",
+                    "large" => "120",
+                    "maximum" => "300",
+                    _ => "60",
+                }
+                .into(),
+            ),
+            (
+                "audio-device",
+                if is_device_name(&self.audio_device) {
+                    self.audio_device.clone()
+                } else {
+                    "auto".into()
+                },
+            ),
         ];
+        let (scale, dscale, cscale, deband, dither) = match self.quality.as_str() {
+            "weak" => ("bilinear", "bilinear", "bilinear", "no", "no"),
+            "max" => (
+                "ewa_lanczossharp",
+                "mitchell",
+                "ewa_lanczossharp",
+                "yes",
+                "auto",
+            ),
+            _ => ("spline36", "mitchell", "bilinear", "no", "auto"),
+        };
+        props.extend([
+            ("scale", scale.to_string()),
+            ("dscale", dscale.to_string()),
+            ("cscale", cscale.to_string()),
+            ("deband", deband.to_string()),
+            ("dither-depth", dither.to_string()),
+        ]);
+        let sharpen = self.sharpen.clamp(0.0, 2.0);
+        props.push((
+            "vf",
+            if sharpen > 0.0 {
+                format!("lavfi=[unsharp=5:5:{sharpen:.2}]")
+            } else {
+                String::new()
+            },
+        ));
+        if self.simple_color {
+            props.push(("target-prim", "bt.709".into()));
+            props.push(("target-trc", "bt.1886".into()));
+            props.push(("dither-depth", "8".into()));
+        }
         let (aspect, panscan) = match self.aspect.as_str() {
             "16:9" | "4:3" | "21:9" => (self.aspect.clone(), "0"),
             "fill" => ("-1".into(), "1"),
@@ -168,9 +280,9 @@ impl PlayerPrefs {
         }
         match self.eq.as_str() {
             "night" => af.push("acompressor=threshold=-24dB:ratio=6:attack=20:release=250"),
-            "voice" => af.push("equalizer=f=2500:t=q:w=1:g=5,equalizer=f=150:t=q:w=1:g=-4"),
+            "vocal" => af.push("equalizer=f=2500:t=q:w=1:g=5,equalizer=f=150:t=q:w=1:g=-4"),
             "bass" => af.push("equalizer=f=80:t=q:w=1:g=6"),
-            "treble" => af.push("equalizer=f=8000:t=q:w=1:g=5"),
+            "lessbass" => af.push("equalizer=f=100:t=q:w=1:g=-6"),
             _ => {}
         }
         props.push(("af", af.join(",")));
@@ -183,6 +295,71 @@ impl PlayerPrefs {
             if self.tonemap { "no" } else { "auto" }.into(),
         ));
         props
+    }
+}
+
+fn is_device_name(d: &str) -> bool {
+    !d.is_empty()
+        && d.len() <= 200
+        && d.chars()
+            .all(|c| c.is_ascii_alphanumeric() || "/._:-~ ".contains(c))
+}
+
+/// Options that could run code or change files, so mpv.conf may not set them.
+const BLOCKED_OPTIONS: &[&str] = &[
+    "script",
+    "scripts",
+    "load-scripts",
+    "script-opts",
+    "input-ipc-server",
+    "input-conf",
+    "input-commands",
+    "include",
+    "config",
+    "wid",
+    "log-file",
+    "ytdl-raw-options",
+    "ytdl-format",
+    "ytdl",
+    "watch-later-directory",
+    "screenshot-directory",
+    "screenshot-template",
+    "use-filedir-conf",
+    "icc-cache-dir",
+    "gpu-shader-cache-dir",
+    "cache-dir",
+    "dump-stats",
+    "stream-dump",
+    "o",
+];
+
+/// Parses the "mpv.conf" setting: `key=value` lines, `#` comments, blocked
+/// and malformed lines dropped. Later lines win in mpv, so order is kept.
+pub fn parse_mpv_conf(text: &str) -> Vec<(String, String)> {
+    text.lines()
+        .filter_map(|l| {
+            let l = l.trim();
+            if l.is_empty() || l.starts_with('#') {
+                return None;
+            }
+            let (k, v) = l.split_once('=').unwrap_or((l, "yes"));
+            let (k, v) = (k.trim().trim_start_matches("--"), v.trim());
+            let ok = !k.is_empty()
+                && k.chars()
+                    .all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || "-_/".contains(c))
+                && !BLOCKED_OPTIONS.contains(&k)
+                && !k.starts_with("script-")
+                && !k.starts_with("ytdl-")
+                && !v.contains('\0');
+            ok.then(|| (k.to_string(), v.to_string()))
+        })
+        .collect()
+}
+
+impl PlayerPrefs {
+    /// The user's own mpv.conf lines; applied after everything else.
+    pub fn extra_properties(&self) -> Vec<(String, String)> {
+        parse_mpv_conf(&self.mpv_conf)
     }
 }
 
@@ -375,6 +552,41 @@ mod tests {
         let b: std::collections::HashMap<_, _> = bad.mpv_properties().into_iter().collect();
         assert_eq!(b["video-aspect-override"], "-1");
         assert_eq!(b["af"], "");
+    }
+
+    #[test]
+    fn playback_tuning_maps_and_mpv_conf_is_filtered() {
+        let p = PlayerPrefs {
+            stereo_downmix: true,
+            volume_max: 900,
+            brightness: 250,
+            quality: "max".into(),
+            buffer: "large".into(),
+            sharpen: 0.5,
+            hwdec: "force".into(),
+            audio_device: "coreaudio/Bad;Device".into(),
+            ..Default::default()
+        };
+        let m: std::collections::HashMap<_, _> = p.mpv_properties().into_iter().collect();
+        assert_eq!(m["audio-channels"], "stereo");
+        assert_eq!(m["volume-max"], "600");
+        assert_eq!(m["brightness"], "100");
+        assert_eq!(m["scale"], "ewa_lanczossharp");
+        assert_eq!(m["demuxer-max-bytes"], "400MiB");
+        assert_eq!(m["hwdec"], "videotoolbox");
+        assert_eq!(m["audio-device"], "auto");
+        assert!(m["vf"].contains("unsharp"));
+        let conf = parse_mpv_conf(
+            "tone-mapping=hable\n# c\nscript=/tmp/x.lua\n--sub-scale=1.2\nwid=1\nBad Key=1\ndeband",
+        );
+        assert_eq!(
+            conf,
+            vec![
+                ("tone-mapping".to_string(), "hable".to_string()),
+                ("sub-scale".to_string(), "1.2".to_string()),
+                ("deband".to_string(), "yes".to_string()),
+            ]
+        );
     }
 
     fn t(id: i64, kind: &str, lang: &str, forced: bool, default: bool) -> Track {
