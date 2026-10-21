@@ -137,6 +137,10 @@ export function PlayerView({ profile, onClose, onError, onNextEpisode }: {
     player.command({ type: "seek", seconds: active.end ?? Math.max(duration - 1, 0) });
   }, [active?.start, prefs.autoSkip]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  const showSkip = !!active && (!prefs.skipHideSecs || position - active.start < prefs.skipHideSecs);
+  const remaining = duration - position;
+  const nextPrompt = prefs.nextPromptSecs > 0 && duration > 0 && remaining > 1 && remaining <= prefs.nextPromptSecs;
+
   const poke = () => {
     setIdle(false);
     window.clearTimeout(idleTimer.current);
@@ -167,7 +171,13 @@ export function PlayerView({ profile, onClose, onError, onNextEpisode }: {
         </div>
       )}
 
-      {prefs.skipButton && active && (
+      {nextPrompt && (
+        <button className="skip-btn primary next-ep" onClick={() => player.command({ type: "seek", seconds: Math.max(duration - 0.5, 0) })}>
+          Next episode in {Math.ceil(remaining)}s ›
+        </button>
+      )}
+
+      {prefs.skipButton && active && showSkip && (
         <button className="skip-btn primary" onClick={() => player.command({ type: "seek", seconds: active.end ?? Math.max(duration - 1, 0) })}>
           Skip {active.kind === "intro" ? "intro" : active.kind === "recap" ? "recap" : "credits"} ›
         </button>

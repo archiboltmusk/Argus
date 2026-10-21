@@ -7,11 +7,13 @@ export type PlayerPrefs = {
   audioLangs: string; subLangs: string; subSize: number; subColor: string; subOutlineColor: string;
   subPosition: number; subOutline: number; subBold: boolean; hwdec: "auto-safe" | "no";
   volume: number; autoNext: boolean; ytdl: boolean; skipButton: boolean; autoSkip: boolean;
+  aspect: string; normalize: boolean; eq: string; tonemap: boolean; nextPromptSecs: number; skipHideSecs: number;
 };
 export const PLAYER_PREFS_KEY = "player.prefs";
 export const DEFAULT_PLAYER_PREFS: PlayerPrefs = {
   audioLangs: "", subLangs: "", subSize: 55, subColor: "#FFFFFF", subOutlineColor: "#000000",
   subPosition: 100, subOutline: 3, subBold: false, hwdec: "auto-safe", volume: 100, autoNext: true, ytdl: false, skipButton: true, autoSkip: false,
+  aspect: "auto", normalize: false, eq: "off", tonemap: false, nextPromptSecs: 0, skipHideSecs: 0,
 };
 
 export async function loadPlayerPrefs(profile: number): Promise<PlayerPrefs> {
@@ -81,6 +83,28 @@ export function PlayerSettings({ profile, onSaved }: { profile: number; onSaved:
       <label className="check"><input type="checkbox" checked={openSubs} onChange={(e) => setOpenSubs(e.target.checked)} />Also fetch subtitles from OpenSubtitles (no account needed)</label>
       <label className="check"><input type="checkbox" checked={p.skipButton} onChange={(e) => set("skipButton", e.target.checked)} />Show "Skip intro / recap / credits" when the file has chapter markers</label>
       <label className="check"><input type="checkbox" checked={p.autoSkip} onChange={(e) => set("autoSkip", e.target.checked)} />Skip them automatically</label>
+      <label>Hide the Skip button after
+        <select value={p.skipHideSecs} onChange={(e) => set("skipHideSecs", Number(e.target.value))}>
+          {[[0, "Never"], [5, "5 seconds"], [10, "10 seconds"], [15, "15 seconds"]].map(([v, n]) => <option key={v} value={v}>{n}</option>)}
+        </select>
+      </label>
+      <label>Next-episode prompt
+        <select value={p.nextPromptSecs} onChange={(e) => set("nextPromptSecs", Number(e.target.value))}>
+          {[[0, "Off"], [30, "30 s before end"], [45, "45 s"], [60, "1 min"], [90, "1.5 min"], [120, "2 min"]].map(([v, n]) => <option key={v} value={v}>{n}</option>)}
+        </select>
+      </label>
+      <label>Aspect ratio
+        <select value={p.aspect} onChange={(e) => set("aspect", e.target.value)}>
+          {[["auto", "Auto"], ["16:9", "16:9"], ["4:3", "4:3"], ["21:9", "21:9"], ["fill", "Fill (crop)"], ["stretch", "Stretch"]].map(([v, n]) => <option key={v} value={v}>{n}</option>)}
+        </select>
+      </label>
+      <label className="check"><input type="checkbox" checked={p.normalize} onChange={(e) => set("normalize", e.target.checked)} />Normalize audio (even out loud and quiet scenes)</label>
+      <label>Audio profile
+        <select value={p.eq} onChange={(e) => set("eq", e.target.value)}>
+          {[["off", "Off"], ["night", "Night mode"], ["voice", "Voice boost"], ["bass", "Bass boost"], ["treble", "Treble boost"]].map(([v, n]) => <option key={v} value={v}>{n}</option>)}
+        </select>
+      </label>
+      <label className="check"><input type="checkbox" checked={p.tonemap} onChange={(e) => set("tonemap", e.target.checked)} />Convert HDR to SDR (for non-HDR displays)</label>
       <label className="check">
         <input type="checkbox" checked={p.ytdl} onChange={(e) => set("ytdl", e.target.checked)} />
         Open YouTube and other page links with my yt-dlp {ytdlpFound ? "(found)" : "(not installed — brew install yt-dlp)"}

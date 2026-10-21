@@ -52,6 +52,18 @@ pub struct PlayerPrefs {
     pub skip_button: bool,
     /// Jump over them without asking.
     pub auto_skip: bool,
+    /// `auto`, `16:9`, `4:3`, `21:9`, `fill` (crop to fill) or `stretch`.
+    pub aspect: String,
+    /// Even out loud and quiet scenes.
+    pub normalize: bool,
+    /// `off`, `night`, `voice`, `bass` or `treble`.
+    pub eq: String,
+    /// Convert HDR to SDR for non-HDR displays.
+    pub tonemap: bool,
+    /// Seconds before the end to offer "Next episode" (0 = no prompt).
+    pub next_prompt_secs: u32,
+    /// Hide the Skip button after this many seconds (0 = keep it).
+    pub skip_hide_secs: u32,
 }
 
 impl Default for PlayerPrefs {
@@ -71,6 +83,12 @@ impl Default for PlayerPrefs {
             ytdl: false,
             skip_button: true,
             auto_skip: false,
+            aspect: "auto".into(),
+            normalize: false,
+            eq: "off".into(),
+            tonemap: false,
+            next_prompt_secs: 0,
+            skip_hide_secs: 0,
         }
     }
 }
@@ -104,7 +122,7 @@ impl PlayerPrefs {
                 .collect::<Vec<_>>()
                 .join(",")
         };
-        vec![
+        let mut props = vec![
             ("alang", langs(&self.audio_langs)),
             ("slang", langs(&self.sub_langs)),
             ("sub-font-size", self.sub_size.clamp(20, 120).to_string()),
@@ -126,7 +144,31 @@ impl PlayerPrefs {
                 .into(),
             ),
             ("volume", self.volume.clamp(0, 130).to_string()),
-        ]
+        ];
+        let (aspect, panscan) = match self.aspect.as_str() {
+            "16:9" | "4:3" | "21:9" => (self.aspect.clone(), "0"),
+            "fill" => ("-1".into(), "1"),
+            "stretch" => ("-1".into(), "0"),
+            _ => ("-1".into(), "0"),
+        };
+        props.push(("video-aspect-override", aspect));
+        props.push(("panscan", panscan.into()));
+        props.push(("keepaspect", if self.aspect == "stretch" { "no" } else { "yes" }.into()));
+        let mut af = Vec::new();
+        if self.normalize {
+            af.push("dynaudnorm=f=250:g=15");
+        }
+        match self.eq.as_str() {
+            "night" => af.push("acompressor=threshold=-24dB:ratio=6:attack=20:release=250"),
+            "voice" => af.push("equalizer=f=2500:t=q:w=1:g=5,equalizer=f=150:t=q:w=1:g=-4"),
+            "bass" => af.push("equalizer=f=80:t=q:w=1:g=6"),
+            "treble" => af.push("equalizer=f=8000:t=q:w=1:g=5"),
+            _ => {}
+        }
+        props.push(("af", af.join(",")));
+        props.push(("tone-mapping", if self.tonemap { "bt.2390" } else { "auto" }.into()));
+        props.push(("target-colorspace-hint", if self.tonemap { "no" } else { "auto" }.into()));
+        props
     }
 }
 
@@ -290,6 +332,28 @@ mod tests {
         assert_eq!(props["sub-color"], "#FFFFFF");
         assert_eq!(props["alang"], "eng,jpn");
         assert_eq!(props["hwdec"], "auto-safe");
+    }
+
+    #[test]
+    fn video_and_audio_prefs_map_to_mpv() {
+        let p = PlayerPrefs {
+            aspect: "fill".into(),
+            normalize: true,
+            eq: "bass".into(),
+            tonemap: true,
+            ..Default::default()
+        };
+        let m: std::collections::HashMap<_, _> = p.mpv_properties().into_iter().collect();
+        assert_eq!(m["panscan"], "1");
+        assert_eq!(m["tone-mapping"], "bt.2390");
+        assert!(m["af"].starts_with("dynaudnorm") && m["af"].contains("equalizer"));
+        let d: std::collections::HashMap<_, _> = PlayerPrefs::default().mpv_properties().into_iter().collect();
+        assert_eq!(d["af"], "");
+        assert_eq!(d["video-aspect-override"], "-1");
+        let bad = PlayerPrefs { aspect: "9:1;x".into(), eq: "../x".into(), ..Default::default() };
+        let b: std::collections::HashMap<_, _> = bad.mpv_properties().into_iter().collect();
+        assert_eq!(b["video-aspect-override"], "-1");
+        assert_eq!(b["af"], "");
     }
 
     fn t(id: i64, kind: &str, lang: &str, forced: bool, default: bool) -> Track {

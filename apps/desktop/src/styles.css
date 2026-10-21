@@ -139,3 +139,4 @@ input[type="range"] { padding: 0; }
 
 .ratings { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 8px 0; }
 .chip { background: var(--panel, rgba(255,255,255,.08)); border-radius: 999px; padding: 3px 10px; font-size: 13px; }
+.skip-btn.next-ep { bottom: 176px; }
