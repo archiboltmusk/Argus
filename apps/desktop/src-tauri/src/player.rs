@@ -175,10 +175,21 @@ impl Player {
         let ytdl_opt = ytdl_path
             .as_ref()
             .map(|p| format!("ytdl_hook-ytdl_path={}", p.display()));
+        let vo = {
+            let st = app.state::<AppState>();
+            match PlayerPrefs::load(&st.lib, profile)
+                .unwrap_or_default()
+                .renderer
+                .as_str()
+            {
+                "gpu-next" => "gpu-next",
+                _ => "gpu",
+            }
+        };
         let mut opts: Vec<(&str, &str)> = vec![
-            // `gpu` (OpenGL/Cocoa) is the stable path for embedding into a
-            // view via `wid`; `gpu-next` is not.
-            ("vo", "gpu"),
+            // `gpu` is the stable path for embedding into a view via `wid`;
+            // `gpu-next` is opt-in under Settings > Playback > Renderer.
+            ("vo", vo),
             ("hwdec", "auto-safe"),
             ("idle", "yes"),
             ("force-window", "yes"),
@@ -255,16 +266,39 @@ impl Player {
         // Stremio-style settings, applied before each file so changes take
         // effect on the next play without restarting.
         let st = app.state::<AppState>();
-        for (name, value) in PlayerPrefs::load(&st.lib, session_profile)
-            .unwrap_or_default()
-            .mpv_properties()
-        {
+        let prefs = PlayerPrefs::load(&st.lib, session_profile).unwrap_or_default();
+        for (name, value) in prefs.mpv_properties() {
             let _ = mpv.set(name, &value);
+        }
+        // The user's own mpv.conf lines win over everything above.
+        for (name, value) in prefs.extra_properties() {
+            let _ = mpv.set(&name, &value);
         }
         let opts = format!("start={start:.1}");
         mpv.command_async(&["loadfile", url, "replace", "-1", &opts])?;
         set_video_visible(app, true);
         Ok(())
+    }
+
+    /// Output devices as `(mpv name, description)`; empty until mpv has started.
+    pub fn audio_devices(&self) -> Vec<(String, String)> {
+        let Some(json) = self
+            .mpv
+            .get()
+            .and_then(|m| m.get_string("audio-device-list"))
+        else {
+            return Vec::new();
+        };
+        serde_json::from_str::<Vec<serde_json::Value>>(&json)
+            .unwrap_or_default()
+            .iter()
+            .filter_map(|d| {
+                Some((
+                    d.get("name")?.as_str()?.to_string(),
+                    d.get("description")?.as_str()?.to_string(),
+                ))
+            })
+            .collect()
     }
 
     pub fn command(&self, app: &AppHandle, cmd: Command) -> Result<(), String> {

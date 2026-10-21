@@ -1,11 +1,11 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, useSyncExternalStore } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { getCurrentWebview } from "@tauri-apps/api/webview";
 import { PlayerView } from "./PlayerView";
 import { UpdateBanner, UpdateSettings } from "./updates";
 import { player, startPlayerEvents } from "./player";
-import { play as startPlayback, playNextEpisode } from "./playback";
+import { play as startPlayback, playNextEpisode, playStage } from "./playback";
 import { api, CINEMETA_URL, type Addon, type CatalogRow, type Meta, type MetaPreview, type Profile, type Progress, type Ratings, type RankedStream, type StreamInfo, type Video } from "./api";
 import { Accounts } from "./views/Accounts";
 import { Calendar } from "./views/Calendar";
@@ -16,6 +16,7 @@ import { LiveTV } from "./views/LiveTV";
 import { Sources } from "./views/Sources";
 import { OpenMedia } from "./views/Open";
 import { PlayerSettings, loadPlayerPrefs } from "./views/PlayerSettings";
+import { PlaybackSettings } from "./views/PlaybackSettings";
 import { Hotkeys } from "./views/Hotkeys";
 import { StremioAccount } from "./views/StremioAccount";
 import { Room } from "./views/Room";
@@ -115,6 +116,7 @@ export default function App() {
             <Accounts profile={profile.id} onError={showError} />
             <StreamPrefs profile={profile.id} onSaved={() => setToast("Saved")} />
             <PlayerSettings profile={profile.id} onSaved={() => setToast("Saved")} />
+            <PlaybackSettings profile={profile.id} onSaved={() => setToast("Saved")} />
             <StremioAccount profile={profile.id} onError={showError} onSaved={() => setToast("Imported")} />
             <MetadataKeys profile={profile.id} onSaved={() => setToast("Saved")} onError={showError} />
             <Hotkeys profile={profile.id} onSaved={() => setToast("Saved")} />
@@ -232,6 +234,7 @@ function Detail({ profile, item, onError, onToast }: { profile: number; item: Me
     api.streams(profile, item.type, videoId).then(setStreams).catch((e) => onError(errText(e)));
   }, [profile, item.type, videoId, onError]);
 
+  const stage = useSyncExternalStore(playStage.subscribe, playStage.get);
   const play = useCallback(async (i: number) => {
     if (!streams || !videoId) return;
     setPlaying(i);
@@ -296,6 +299,7 @@ function Detail({ profile, item, onError, onToast }: { profile: number; item: Me
         <section>
           <h3>Streams</h3>
           {streams === null && <div className="muted">Asking your addons…</div>}
+          {playing !== null && stage && <div className="muted" role="status">{stage}</div>}
           {streams?.length === 0 && <div className="muted">No addon returned a stream for this title.</div>}
           {!!streams?.length && (
             <button className="primary play-best" disabled={playing !== null} onClick={() => play(0)}>

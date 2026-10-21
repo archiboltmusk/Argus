@@ -8,13 +8,24 @@ export type PlayerPrefs = {
   subPosition: number; subOutline: number; subBold: boolean; hwdec: "auto-safe" | "no";
   volume: number; autoNext: boolean; ytdl: boolean; skipButton: boolean; autoSkip: boolean;
   aspect: string; normalize: boolean; eq: string; tonemap: boolean; nextPromptSecs: number; skipHideSecs: number;
+  stereoDownmix: boolean; volumeMax: number; audioDevice: string; quality: string; renderer: string; simpleColor: boolean;
+  brightness: number; contrast: number; saturation: number; gamma: number; sharpen: number; buffer: string; mpvConf: string;
 };
 export const PLAYER_PREFS_KEY = "player.prefs";
 export const DEFAULT_PLAYER_PREFS: PlayerPrefs = {
   audioLangs: "", subLangs: "", subSize: 55, subColor: "#FFFFFF", subOutlineColor: "#000000",
   subPosition: 100, subOutline: 3, subBold: false, hwdec: "auto-safe", volume: 100, autoNext: true, ytdl: false, skipButton: true, autoSkip: false,
   aspect: "auto", normalize: false, eq: "off", tonemap: false, nextPromptSecs: 0, skipHideSecs: 0,
+  stereoDownmix: false, volumeMax: 200, audioDevice: "auto", quality: "balanced", renderer: "gpu", simpleColor: false,
+  brightness: 0, contrast: 0, saturation: 0, gamma: 0, sharpen: 0, buffer: "auto", mpvConf: "",
 };
+
+/** Saves one change on top of whatever is stored, so pages that edit the same prefs don't overwrite each other. */
+export async function patchPlayerPrefs(profile: number, patch: Partial<PlayerPrefs>): Promise<PlayerPrefs> {
+  const next = { ...(await loadPlayerPrefs(profile)), ...patch };
+  await api.setSetting(profile, PLAYER_PREFS_KEY, JSON.stringify(next));
+  return next;
+}
 
 export async function loadPlayerPrefs(profile: number): Promise<PlayerPrefs> {
   const j = await api.getSetting(profile, PLAYER_PREFS_KEY).catch(() => null);
@@ -26,6 +37,12 @@ const LANGS: [string, string][] = [
   ["por", "Portuguese"], ["rus", "Russian"], ["jpn", "Japanese"], ["kor", "Korean"], ["chi", "Chinese"], ["hin", "Hindi"],
   ["ara", "Arabic"], ["tur", "Turkish"], ["pol", "Polish"], ["dut", "Dutch"], ["swe", "Swedish"],
 ];
+
+const OWN: (keyof PlayerPrefs)[] = [
+  "audioLangs", "subLangs", "subSize", "subColor", "subOutlineColor", "subPosition", "subOutline", "subBold",
+  "volume", "autoNext", "ytdl", "skipButton", "autoSkip", "aspect", "tonemap", "nextPromptSecs", "skipHideSecs",
+];
+const ownFields = (p: PlayerPrefs) => Object.fromEntries(OWN.map((k) => [k, p[k]])) as Partial<PlayerPrefs>;
 
 /** Settings section: how video, audio and subtitles behave. */
 export function PlayerSettings({ profile, onSaved }: { profile: number; onSaved: () => void }) {
@@ -73,12 +90,6 @@ export function PlayerSettings({ profile, onSaved }: { profile: number; onSaved:
       <label>Default volume ({p.volume}%)
         <input type="range" min={0} max={130} value={p.volume} onChange={(e) => set("volume", Number(e.target.value))} />
       </label>
-      <label>Video decoding
-        <select value={p.hwdec} onChange={(e) => set("hwdec", e.target.value as PlayerPrefs["hwdec"])}>
-          <option value="auto-safe">Hardware (recommended)</option>
-          <option value="no">Software (if video glitches)</option>
-        </select>
-      </label>
       <label className="check"><input type="checkbox" checked={p.autoNext} onChange={(e) => set("autoNext", e.target.checked)} />Play the next episode automatically</label>
       <label className="check"><input type="checkbox" checked={openSubs} onChange={(e) => setOpenSubs(e.target.checked)} />Also fetch subtitles from OpenSubtitles (no account needed)</label>
       <label className="check"><input type="checkbox" checked={p.skipButton} onChange={(e) => set("skipButton", e.target.checked)} />Show "Skip intro / recap / credits" when the file has chapter markers</label>
@@ -98,12 +109,6 @@ export function PlayerSettings({ profile, onSaved }: { profile: number; onSaved:
           {[["auto", "Auto"], ["16:9", "16:9"], ["4:3", "4:3"], ["21:9", "21:9"], ["fill", "Fill (crop)"], ["stretch", "Stretch"]].map(([v, n]) => <option key={v} value={v}>{n}</option>)}
         </select>
       </label>
-      <label className="check"><input type="checkbox" checked={p.normalize} onChange={(e) => set("normalize", e.target.checked)} />Normalize audio (even out loud and quiet scenes)</label>
-      <label>Audio profile
-        <select value={p.eq} onChange={(e) => set("eq", e.target.value)}>
-          {[["off", "Off"], ["night", "Night mode"], ["voice", "Voice boost"], ["bass", "Bass boost"], ["treble", "Treble boost"]].map(([v, n]) => <option key={v} value={v}>{n}</option>)}
-        </select>
-      </label>
       <label className="check"><input type="checkbox" checked={p.tonemap} onChange={(e) => set("tonemap", e.target.checked)} />Convert HDR to SDR (for non-HDR displays)</label>
       <label className="check">
         <input type="checkbox" checked={p.ytdl} onChange={(e) => set("ytdl", e.target.checked)} />
@@ -111,7 +116,7 @@ export function PlayerSettings({ profile, onSaved }: { profile: number; onSaved:
       </label>
       {p.ytdl && <div className="small muted">Takes effect after restarting Argus.</div>}
       <button onClick={() => invoke<void>("player_reset_crash").then(onSaved)}>Retry the built-in player (after a crash)</button>
-      <button className="primary" onClick={() => Promise.all([api.setSetting(profile, PLAYER_PREFS_KEY, JSON.stringify(p)), api.setSetting(profile, "subs.opensubtitles", openSubs ? "on" : "off")]).then(onSaved)}>Save player settings</button>
+      <button className="primary" onClick={() => Promise.all([patchPlayerPrefs(profile, ownFields(p)), api.setSetting(profile, "subs.opensubtitles", openSubs ? "on" : "off")]).then(onSaved)}>Save player settings</button>
     </section>
   );
 }

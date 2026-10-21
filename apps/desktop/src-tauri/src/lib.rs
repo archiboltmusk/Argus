@@ -519,6 +519,11 @@ async fn player_load(
 }
 
 #[tauri::command]
+fn player_audio_devices(s: State<'_, AppState>) -> Vec<(String, String)> {
+    s.player.audio_devices()
+}
+
+#[tauri::command]
 fn player_reset_crash(app: tauri::AppHandle) {
     player::reset_crash(&app);
 }
@@ -679,6 +684,7 @@ pub fn run() {
             play_external,
             player_load,
             player_reset_crash,
+            player_audio_devices,
             player_command,
             player_tracks,
             player_clock,
