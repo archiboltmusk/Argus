@@ -474,7 +474,30 @@ async fn subtitles(
         .as_deref()
         .map(|f| vec![("filename", f)])
         .unwrap_or_default();
-    Ok(s.addons.subtitles(&addons, &kind, &id, &extra).await)
+    let builtin = s
+        .lib
+        .setting(profile, argus_core::subtitles::OPENSUBTITLES_SETTING)
+        .map_err(err)?
+        .is_none_or(|v| v != "off");
+    let (mut list, builtin_list) =
+        argus_core::futures::join!(s.addons.subtitles(&addons, &kind, &id, &extra), async {
+            if builtin {
+                s.addons
+                    .subtitles_at(
+                        argus_core::subtitles::OPENSUBTITLES_URL,
+                        "OpenSubtitles",
+                        &kind,
+                        &id,
+                        &extra,
+                    )
+                    .await
+            } else {
+                Vec::new()
+            }
+        });
+    list.extend(builtin_list);
+    let prefs = argus_core::player::PlayerPrefs::load(&s.lib, profile).map_err(err)?;
+    Ok(argus_core::subtitles::select(list, &prefs.sub_langs, 3))
 }
 
 /// Next episode after `video_id`, for auto-queue (spec feature 10).

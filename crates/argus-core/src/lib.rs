@@ -13,6 +13,7 @@ pub mod player;
 pub mod ranking;
 pub mod skip;
 pub mod sources;
+pub mod subtitles;
 pub mod torrent;
 pub mod trust;
 
