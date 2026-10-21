@@ -17,6 +17,7 @@ import { Sources } from "./views/Sources";
 import { OpenMedia } from "./views/Open";
 import { PlayerSettings, loadPlayerPrefs } from "./views/PlayerSettings";
 import { Hotkeys } from "./views/Hotkeys";
+import { StremioAccount } from "./views/StremioAccount";
 import { Room } from "./views/Room";
 import { MetadataKeys } from "./views/MetadataKeys";
 import { setRpdbKey } from "./views/Poster";
@@ -114,6 +115,7 @@ export default function App() {
             <Accounts profile={profile.id} onError={showError} />
             <StreamPrefs profile={profile.id} onSaved={() => setToast("Saved")} />
             <PlayerSettings profile={profile.id} onSaved={() => setToast("Saved")} />
+            <StremioAccount profile={profile.id} onError={showError} onSaved={() => setToast("Imported")} />
             <MetadataKeys profile={profile.id} onSaved={() => setToast("Saved")} onError={showError} />
             <Hotkeys profile={profile.id} onSaved={() => setToast("Saved")} />
             <TorrentSettings profile={profile.id} onSaved={() => setToast("Saved")} />

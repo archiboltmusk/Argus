@@ -7,6 +7,7 @@ mod mpv;
 mod player;
 mod servers;
 mod signin;
+mod stremio;
 mod torrent;
 
 use std::time::Duration;
@@ -676,6 +677,10 @@ pub fn run() {
             signin::signin_start,
             signin::signin_poll,
             signin::signout,
+            stremio::stremio_signed_in,
+            stremio::stremio_login,
+            stremio::stremio_logout,
+            stremio::stremio_import,
             servers::server_status,
             servers::jellyfin_login,
             servers::server_signout,

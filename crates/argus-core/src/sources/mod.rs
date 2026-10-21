@@ -11,5 +11,6 @@ pub mod jellyfin;
 pub mod local;
 pub mod plex;
 pub mod rooms;
+pub mod stremio;
 pub mod tmdb;
 pub mod tracker;
