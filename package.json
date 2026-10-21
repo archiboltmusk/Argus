@@ -1,0 +1,11 @@
+{
+  "name": "argus",
+  "private": true,
+  "packageManager": "pnpm@10.0.0",
+  "scripts": {
+    "dev": "pnpm --filter desktop tauri dev",
+    "build:mac": "pnpm --filter desktop tauri build --bundles dmg",
+    "typecheck": "pnpm -r typecheck",
+    "test": "cargo test --workspace --exclude argus-desktop"
+  }
+}

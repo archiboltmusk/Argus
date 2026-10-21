@@ -1,0 +1,22 @@
+[workspace]
+resolver = "2"
+members = ["crates/argus-core", "apps/desktop/src-tauri"]
+default-members = ["crates/argus-core"]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+repository = "https://github.com/archiboltmusk/Argus"
+
+[workspace.dependencies]
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+thiserror = "2"
+tokio = { version = "1", features = ["rt-multi-thread", "macros", "sync", "time", "fs", "io-util", "net"] }
+reqwest = { version = "0.13", default-features = false, features = ["json", "rustls", "gzip", "http2", "form", "query", "multipart", "stream"] }
+url = "2"
+
+[profile.release]
+lto = "thin"
+codegen-units = 1
+strip = true

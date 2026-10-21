@@ -1,0 +1,17 @@
+{
+  "id": "com.linvo.cinemeta",
+  "version": "3.0.13",
+  "name": "Cinemeta",
+  "description": "The official addon for movie and series catalogs",
+  "types": ["movie", "series"],
+  "resources": [
+    "catalog",
+    { "name": "meta", "types": ["movie", "series"], "idPrefixes": ["tt"] },
+    { "name": "addon_catalog", "types": ["all"], "idPrefixes": [] }
+  ],
+  "catalogs": [
+    { "type": "movie", "id": "top", "extra": [{ "name": "search" }, { "name": "genre", "options": ["Action", "Drama"] }, { "name": "skip" }] },
+    { "type": "series", "id": "top", "extra": [{ "name": "search" }, { "name": "skip" }] },
+    { "type": "movie", "id": "imdbRating", "extra": [{ "name": "genre", "isRequired": false }] }
+  ]
+}

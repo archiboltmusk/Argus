@@ -1,0 +1,20 @@
+[package]
+name = "argus-desktop"
+description = "Argus desktop app (macOS first, then Windows/Linux)"
+version.workspace = true
+edition.workspace = true
+
+[lib]
+name = "argus_desktop_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+argus-core = { path = "../../../crates/argus-core" }
+tauri = { version = "2", features = [] }
+tauri-plugin-opener = "2"
+serde.workspace = true
+serde_json.workspace = true
+tokio.workspace = true
