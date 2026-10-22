@@ -74,7 +74,7 @@ export function StremioRow({
         {(badges.length > 0 || match || stream.edition || dubSub || stream.url) && (
           <div className="flex flex-wrap items-center gap-1.5">
             <HostMatchChip match={match} />
-            <StreamHostChip url={stream.url} />
+            <StreamHostChip url={stream.url} stream={stream} />
             {dubSub && <DubSubPill kind={dubSub} size="sm" />}
             {badges.map((k) => (
               <FormatBadge key={k} kind={k} size="sm" />
