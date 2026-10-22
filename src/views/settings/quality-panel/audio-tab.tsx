@@ -5,6 +5,7 @@ import { useT } from "@/lib/i18n";
 import { listMpvAudioDevices, type MpvAudioDevice } from "@/lib/player/mpv";
 import { SettingRow } from "../kit";
 import { Section, Segmented, ToggleRow } from "../shared";
+import { PASSTHROUGH_CODECS, sanitizePassthroughCodecs, type PassthroughCodec } from "@/lib/player/passthrough";
 import { AudioProfilePreview } from "./audio-profile-preview";
 import { VolumeBoostPreview } from "./volume-boost-preview";
 
@@ -37,6 +38,38 @@ export function AudioTab() {
         value={settings.mpvDownmixStereo}
         onChange={(v) => update({ mpvDownmixStereo: v })}
       />
+      <ToggleRow
+        label={t("Bitstream passthrough")}
+        sub={t("Send Dolby Digital, Dolby Digital Plus (Atmos), TrueHD and DTS to an AV receiver over HDMI or optical without decoding. Volume boost, the normalizer and sound profiles cannot change a bitstream, and passthrough needs an output device that accepts it. Leave off for speakers or headphones.")}
+        value={settings.mpvPassthrough}
+        onChange={(v) => update({ mpvPassthrough: v })}
+      />
+      {settings.mpvPassthrough && (
+        <SettingRow wide label={t("Passthrough formats")} desc={t("Only the ticked formats are sent as-is. The rest are decoded normally.")}>
+          <div className="flex flex-wrap gap-x-5 gap-y-2">
+            {PASSTHROUGH_CODECS.map((c) => {
+              const active = sanitizePassthroughCodecs(settings.mpvPassthroughCodecs);
+              const on = active.includes(c.id);
+              return (
+                <label key={c.id} className="flex items-center gap-2 text-[12.5px] text-ink">
+                  <input
+                    type="checkbox"
+                    checked={on}
+                    onChange={() =>
+                      update({
+                        mpvPassthroughCodecs: (on
+                          ? active.filter((x) => x !== c.id)
+                          : [...active, c.id]) as PassthroughCodec[],
+                      })
+                    }
+                  />
+                  {t(c.label)}
+                </label>
+              );
+            })}
+          </div>
+        </SettingRow>
+      )}
       <SettingRow
         wide
         label={t("Sound profile")}

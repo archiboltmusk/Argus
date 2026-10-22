@@ -15,6 +15,7 @@ import {
   SIMKL_WATCHED_RATIO,
 } from "./config";
 import { getSession } from "./session";
+import { useIncognito } from "@/lib/incognito";
 
 type Snap = {
   status: string;
@@ -40,7 +41,7 @@ function srcInfo(src: PlayerSrc): ScrobbleInfo {
 export function useSimklScrobble({ src, snap }: { src: PlayerSrc; snap: Snap }): void {
   const { isConnected } = useSimkl();
   const { settings } = useSettings();
-  const enabled = isConnected && settings.simklScrobbleEnabled;
+  const enabled = isConnected && settings.simklScrobbleEnabled && !useIncognito();
   const lastActionRef = useRef<LastAction>(null);
   const lastKeyRef = useRef<string | null>(null);
   const infoRef = useRef<ScrobbleInfo>(srcInfo(src));

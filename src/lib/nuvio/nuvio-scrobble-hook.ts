@@ -4,6 +4,7 @@ import { isNuvioProviderActive, markWatchedInNuvio, pushWatchProgressToNuvio, re
 import { readActiveProfileIdentity } from "@/lib/profiles";
 import { getPlaybackPosition } from "@/lib/player/playback-clock";
 import type { PlayerSrc } from "@/lib/view";
+import { isIncognito } from "@/lib/incognito";
 
 type Snap = {
   status: string;
@@ -49,7 +50,7 @@ export function useNuvioScrobble({
   };
 
   const doPush = async (reason: string) => {
-    if (!isNuvioSignedIn() || !isNuvioProviderActive() || isPushingRef.current) return;
+    if (!isNuvioSignedIn() || !isNuvioProviderActive() || isIncognito() || isPushingRef.current) return;
     const currentSnap = snapRef.current;
     const clockPos = getPlaybackPosition();
     const effectivePos = Number.isFinite(clockPos) && clockPos > 0 ? clockPos : currentSnap.positionSec;
@@ -97,7 +98,7 @@ export function useNuvioScrobble({
 
   // Active playback interval checking clock position directly (since snap.positionSec doesn't rerender every second)
   useEffect(() => {
-    if (!isNuvioSignedIn() || !isNuvioProviderActive()) return;
+    if (!isNuvioSignedIn() || !isNuvioProviderActive() || isIncognito()) return;
     if (snap.status !== "playing") return;
 
     const id = window.setInterval(() => {
@@ -130,7 +131,7 @@ export function useNuvioScrobble({
 
   // Immediate flush on pause
   useEffect(() => {
-    if (!isNuvioSignedIn() || !isNuvioProviderActive()) return;
+    if (!isNuvioSignedIn() || !isNuvioProviderActive() || isIncognito()) return;
     if (snap.status === "paused") {
       const clockPos = getPlaybackPosition();
       if (clockPos >= 3 && Math.abs(clockPos - lastPushedPosRef.current) >= 1) {

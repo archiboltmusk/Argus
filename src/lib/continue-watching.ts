@@ -16,6 +16,7 @@ import {
   type ExternalCwSource,
   type LibraryItem,
 } from "@/lib/stremio";
+import { useIncognito } from "@/lib/incognito";
 
 export type CwCard = {
   id: string;
@@ -168,8 +169,10 @@ export function useContinueWatching(excludeId?: string, limit = 12): CwCard[] {
 
   useEffect(() => subscribeLocalCw(() => setLocalVersion((v) => v + 1)), []);
 
+  const incognito = useIncognito();
   return useMemo(() => {
     void localVersion;
+    if (incognito) return [];
     const disabledSources = new Set<ExternalCwSource>();
     if (!cwSources.simkl) disabledSources.add("simkl");
     if (!cwSources.trakt) disabledSources.add("trakt");
@@ -206,5 +209,5 @@ export function useContinueWatching(excludeId?: string, limit = 12): CwCard[] {
       if (out.length >= limit) break;
     }
     return out;
-  }, [items, externalCw, localVersion, excludeId, limit, hideSharedCw, cwSources, activeProfile?.id]);
+  }, [items, externalCw, localVersion, excludeId, limit, hideSharedCw, cwSources, activeProfile?.id, incognito]);
 }

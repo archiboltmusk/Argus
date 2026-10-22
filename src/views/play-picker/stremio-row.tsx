@@ -1,4 +1,5 @@
 import { Check, Download } from "lucide-react";
+import { StreamSpeedButton } from "@/components/player/stream-speed-button";
 import { Play } from "@/components/icons/play-filled";
 import { AddonLogo } from "@/components/addon-logo";
 import { CopyLinkButton, resolveStreamLink } from "@/components/player/copy-link-button";
@@ -88,6 +89,7 @@ export function StremioRow({
         )}
       </div>
       <div className="flex shrink-0 items-center gap-2 self-center">
+        <StreamSpeedButton stream={stream} />
         {link && <CopyLinkButton url={link} size={16} className="h-9 w-9" />}
         <button
           type="button"

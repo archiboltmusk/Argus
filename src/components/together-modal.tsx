@@ -1,4 +1,4 @@
-import { Check, Copy, LogOut, MousePointer2, Plus } from "lucide-react";
+import { Bookmark, Check, Copy, LogOut, MousePointer2, Plus } from "lucide-react";
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { createPortal } from "react-dom";
 import type { Meta } from "@/lib/cinemeta";
@@ -79,6 +79,7 @@ export function TogetherPopover({
   const [copied, setCopied] = useState(false);
   const [view, setView] = useState<"default" | "link">("default");
   const cursorKnob = useKnobAnim(settings.togetherShareCursors);
+  const extrasKnob = useKnobAnim(settings.togetherChatExtras);
 
   useEffect(() => {
     setDraftName(displayName);
@@ -450,6 +451,32 @@ export function TogetherPopover({
                       ? "translate-x-4 rtl:-translate-x-4"
                       : "translate-x-0"
                   } ${cursorKnob}`}
+                />
+              </span>
+            </button>
+
+            <button
+              onClick={() => update({ togetherChatExtras: !settings.togetherChatExtras })}
+              className="flex h-10 items-center justify-between gap-2 rounded-lg bg-white/[0.06] px-3 text-[12.5px] text-ink-muted transition-colors hover:bg-white/[0.10] hover:text-ink"
+              aria-pressed={settings.togetherChatExtras}
+              title={t("Reactions, bold and italic text, and time-coded notes that mark the seek bar. Others on older versions just see plain text.")}
+            >
+              <span className="flex items-center gap-2">
+                <Bookmark size={13} strokeWidth={1.9} />
+                {t("Reactions and shared notes")}
+              </span>
+              <span
+                aria-hidden
+                className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full px-0.5 transition-colors ${
+                  settings.togetherChatExtras ? "bg-accent" : "bg-edge"
+                }`}
+              >
+                <span
+                  className={`block h-4 w-4 rounded-full bg-white shadow-sm ${
+                    settings.togetherChatExtras
+                      ? "translate-x-4 rtl:-translate-x-4"
+                      : "translate-x-0"
+                  } ${extrasKnob}`}
                 />
               </span>
             </button>

@@ -79,6 +79,14 @@ export function DownloadsSection() {
           value={settings.downloadCreateFolders}
           onChange={(v) => update({ downloadCreateFolders: v })}
         />
+        <ToggleRow
+          label={t("Plex and Kodi naming")}
+          sub={t(
+            "Names files like Show (Year)/Season 01/Show - S01E02 - Title.mkv and Movie (Year)/Movie (Year).mkv so a media server finds them without renaming. Replaces the folder option above.",
+          )}
+          value={settings.downloadNaming === "plex"}
+          onChange={(v) => update({ downloadNaming: v ? "plex" : "default" })}
+        />
       </DownloadLocation>
       <DownloadLocation
         title={t("eBooks")}

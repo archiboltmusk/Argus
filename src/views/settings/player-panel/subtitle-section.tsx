@@ -15,6 +15,7 @@ import { ROW_ACTION, ROW_ACTION_DANGER, ROW_DESC, SettingGroup, SettingRow, Sett
 import { usePageActions } from "../page-actions";
 import { ChoiceBlock } from "./choice";
 import { previewFamily } from "./internals";
+import { SubtitleAdvancedGroups } from "./subtitle-advanced";
 
 const SLIDER_WRAP = "flex h-11 w-full max-w-[520px] items-center gap-4";
 const SLIDER_VALUE = "w-[64px] shrink-0 text-end text-[15.5px] tabular-nums text-ink-muted";
@@ -396,6 +397,8 @@ export function SubtitleStylePanel() {
           />
         )}
       </SettingGroup>
+
+      <SubtitleAdvancedGroups />
 
       <SettingGroup label={t("Sound descriptions")}>
         <ToggleRow

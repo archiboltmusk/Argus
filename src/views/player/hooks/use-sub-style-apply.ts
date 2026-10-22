@@ -70,6 +70,9 @@ export function useSubStyleApply(params: {
     settings.subBoxOpacity,
     settings.subBoxColor,
     settings.subBold,
+    settings.subShadowBlur,
+    settings.subMarginX,
+    settings.subAssStyleOverrides,
   ]);
 
   useEffect(() => () => resetRtxVideoState(), [bridgeKey]);

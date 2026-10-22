@@ -4,6 +4,7 @@ import { TRAKT_API_BASE, TRAKT_API_VERSION, TRAKT_CLIENT_ID } from "./config";
 import { getSession } from "./session";
 import { getPlaybackPosition } from "@/lib/player/playback-clock";
 import type { PlayerSrc } from "@/lib/view";
+import { useIncognito } from "@/lib/incognito";
 
 type Snap = {
   status: string;
@@ -19,7 +20,8 @@ const STUB_MAX_SEC = 150;
 const WATCHED_MARK_PCT = 90;
 
 export function useTraktScrobble({ src, snap }: { src: PlayerSrc; snap: Snap }): void {
-  const { isConnected, resolveTarget, scrobble } = useTrakt();
+  const { isConnected: traktConnected, resolveTarget, scrobble } = useTrakt();
+  const isConnected = traktConnected && !useIncognito();
   const lastActionRef = useRef<LastAction>(null);
   const lastKeyRef = useRef<string | null>(null);
   const prevIdentityRef = useRef({ metaId: src.meta.id, episode: src.episode });

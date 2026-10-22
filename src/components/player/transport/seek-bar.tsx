@@ -1,4 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useSharedMarks } from "@/lib/together/shared-marks";
+import { formatTimestamp } from "@/lib/together/chat-extras";
 import { useSettings } from "@/lib/settings";
 import {
   usePlaybackPositionGated,
@@ -57,6 +59,7 @@ export function SeekBar({
     [fullyCached, settings.seekBarFill, cacheFill, downloaded],
   );
   const skipSegments = useSkipSegmentsView();
+  const sharedMarks = useSharedMarks();
   const segmentSpans = useMemo(
     () =>
       skipSegments
@@ -187,6 +190,17 @@ export function SeekBar({
           hovered={hover != null}
           segments={segmentSpans}
         />
+        {sharedMarks.map((mark, index) =>
+          durationSec > 0 && mark.sec >= 0 && mark.sec <= durationSec ? (
+            <span
+              key={`shared-${mark.sec}-${index}`}
+              title={`${mark.name}: ${mark.note || formatTimestamp(mark.sec)}`}
+              aria-hidden
+              className="pointer-events-none absolute top-1/2 z-[3] h-3.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-amber-300 shadow-[0_0_3px_rgba(0,0,0,0.8)]"
+              style={{ left: `${(mark.sec / durationSec) * 100}%`, width: 3 }}
+            />
+          ) : null,
+        )}
         {settings.seekBarChapters !== false &&
           durationSec > 0 &&
           chapters

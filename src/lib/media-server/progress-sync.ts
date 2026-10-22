@@ -10,6 +10,7 @@ import type {
   MediaServerItem,
   MediaServerProgress,
 } from "./types";
+import { isIncognito } from "@/lib/incognito";
 
 type Snap = { status: string; positionSec: number; durationSec: number };
 
@@ -55,6 +56,7 @@ async function targets(
 }
 
 async function report(src: PlayerSrc, snap: Snap, watched: boolean) {
+  if (isIncognito()) return;
   const progress: MediaServerProgress = {
     positionMs: Math.max(0, Math.round(getPlaybackPosition() * 1000)),
     durationMs: snap.durationSec > 0 ? Math.round(snap.durationSec * 1000) : undefined,

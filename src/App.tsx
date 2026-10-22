@@ -86,6 +86,8 @@ import { WebhookLoopMount } from "@/components/webhook-loop-mount";
 import { ListToastHost } from "@/components/lists/list-toast";
 import { DiagnosticsConsentHost } from "@/components/diagnostics/diagnostics-consent-host";
 import { AnnouncementGlobal } from "@/components/announcement-global";
+import { IncognitoPill } from "@/components/incognito-pill";
+import { togglePanic } from "@/lib/incognito/panic";
 import { TogetherChatToast } from "@/components/together-chat-toast";
 import { TogetherCursors } from "@/components/together-cursors";
 import { TogetherHostLeavingPrompt } from "@/components/together-host-leaving-prompt";
@@ -559,6 +561,7 @@ export function App({ onReady }: { onReady?: () => void }) {
                                                       </Profiled>
                                                       <PageContextNavigationDialogs />
                                                       <AnnouncementGlobal />
+                                                      <IncognitoPill />
                                                       <WatchLocalModal />
                                                       <LocalEpisodesModal />
                                                       <LocalVersionsModal />
@@ -1271,6 +1274,19 @@ function Shell({ onReady }: { onReady?: () => void }) {
     window.addEventListener("keydown", onKey, true);
     return () => window.removeEventListener("keydown", onKey, true);
   }, [settings.quickProfileSwitch, settings.hotkeys, player, allProfiles, activeProfileId, selectProfile, openPicker]);
+
+  useEffect(() => {
+    if (!settings.panicModeEnabled) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (!shouldHandleGlobalKeyboardEvent(e)) return;
+      if (findHotkeyMatch(e, settings.hotkeys ?? {}, "Global") !== "globalPanic") return;
+      e.preventDefault();
+      e.stopPropagation();
+      if (!e.repeat) void togglePanic();
+    };
+    window.addEventListener("keydown", onKey, true);
+    return () => window.removeEventListener("keydown", onKey, true);
+  }, [settings.panicModeEnabled, settings.hotkeys]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {

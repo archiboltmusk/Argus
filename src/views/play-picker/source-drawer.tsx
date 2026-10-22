@@ -1,4 +1,5 @@
 import { ChevronDown, Download, ExternalLink, Loader2, Zap } from "lucide-react";
+import { StreamSpeedButton } from "@/components/player/stream-speed-button";
 import { Play } from "@/components/icons/play-filled";
 import { useEffect, useMemo, useState } from "react";
 import { AddonLogo, AddonLogoStack } from "@/components/addon-logo";
@@ -235,6 +236,7 @@ function SourceRow({
         </div>
         <div className="flex shrink-0 flex-col items-end gap-2 pt-0.5">
           <div className="flex items-center gap-3">
+            <StreamSpeedButton stream={stream} />
             {link && <CopyLinkButton url={link} />}
             <HostMatchChip match={match} />
             {stream.audioLanguages.filter((l) => l.toLowerCase() !== "unknown").length > 0 && (
