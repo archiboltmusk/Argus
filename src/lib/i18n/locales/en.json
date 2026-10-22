@@ -4642,5 +4642,7 @@
   "Zoom {pct}%": "Zoom {pct}%",
   "Zoom in": "Zoom in",
   "Zoom out": "Zoom out",
-  "العربية": "العربية"
+  "العربية": "العربية",
+  "{count}% match": "{count}% match",
+  "Try next subtitle": "Try next subtitle"
 }

@@ -15,6 +15,8 @@ import {
   subtitleSearchImdbId,
 } from "@/lib/subtitles/autoload";
 import { pickDesiredSubtitleTrack } from "@/lib/subtitles/track-selection";
+import { clearAutoSub, describeAutoSub, setAutoSub } from "@/lib/subtitles/auto-candidates";
+import type { SubResult } from "@/lib/subtitles/types";
 
 export function useTrackAutoload(params: {
   bridgeRef: RefObject<PlayerBridge | null>;
@@ -105,6 +107,7 @@ export function useTrackAutoload(params: {
     const rawLangs = resolveLangPreference(settings.preferredSubLangs, settings.preferredLanguages);
     const langs = subIsAnime ? rawLangs : rawLangs.filter((l) => !isJapanese(l));
     autoSubLoadKeyRef.current = key;
+    clearAutoSub();
     void (async () => {
       console.info("[subs/autoload] starting", {
         imdbId: searchImdbId,
@@ -150,13 +153,36 @@ export function useTrackAutoload(params: {
       }
       const matches = results.filter((r) => langScore(r.lang ?? "", langs) >= 0);
       console.info(`[subs/autoload] ${matches.length} match preferred langs`);
-      const loaded = await loadFirstWorkingSubtitle(matches, async (r) => {
+      const loadCandidate = async (r: SubResult, select = false) => {
         if (autoSubLoadKeyRef.current !== key) return false;
-        return b.addSubtitle(r.url, r.lang, labelForTrack(r), false, {
+        return b.addSubtitle(r.url, r.lang, labelForTrack(r), select, {
           format: r.format,
           encoding: r.encoding,
         });
-      });
+      };
+      const loaded = await loadFirstWorkingSubtitle(matches, (r) => loadCandidate(r));
+      if (loaded && autoSubLoadKeyRef.current === key) {
+        let at = matches.indexOf(loaded);
+        const publish = () =>
+          setAutoSub({
+            label: describeAutoSub(matches[at]),
+            matchScore: matches[at].matchScore ?? null,
+            index: at,
+            total: matches.length,
+            tryNext: async () => {
+              for (let i = at + 1; i < matches.length; i++) {
+                if (autoSubLoadKeyRef.current !== key) return false;
+                if (await loadCandidate(matches[i], true)) {
+                  at = i;
+                  publish();
+                  return true;
+                }
+              }
+              return false;
+            },
+          });
+        publish();
+      }
       console.info(
         `[subs/autoload] ${loaded ? "loaded best available subtitle" : "no subtitle loaded"}`,
       );

@@ -1,5 +1,6 @@
 import { memo } from "react";
 import { Anime4kIndicator } from "@/components/player/anime4k-indicator";
+import { SubMatchPill } from "@/components/player/sub-match-pill";
 import { SvpIndicator } from "@/components/player/svp-indicator";
 import { StatsOverlay } from "@/components/player/stats-overlay";
 import { SubStyleBar } from "@/components/player/sub-style-bar";
@@ -68,6 +69,7 @@ export const StageOverlays = memo(function StageOverlays({
           suppressed={topVolumeShowing}
         />
       )}
+      {!pipMode && <SubMatchPill chromeVisible={chromeVisible} />}
       {!pipMode && (
         <SvpIndicator engine={engine} chromeVisible={chromeVisible} suppressed={topVolumeShowing} />
       )}
