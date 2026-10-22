@@ -1,0 +1,11 @@
+[Desktop Entry]
+Name=Argus
+Comment=A Stremio client built for adventure
+Exec=argus %U
+Icon=app.argus.desktop
+Terminal=false
+Type=Application
+Categories=AudioVideo;Video;Player;
+MimeType=x-scheme-handler/argus;x-scheme-handler/stremio;
+StartupNotify=true
+StartupWMClass=app.argus.desktop

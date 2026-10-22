@@ -1,0 +1,681 @@
+import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
+import { LogIn, LogOut, Pencil, Search, Settings as SettingsLucide, Users } from "lucide-react";
+import { createPortal } from "react-dom";
+import { ArgusMark } from "@/components/icons/argus-mark";
+import { CatAvatar } from "@/components/icons/cat-avatar";
+import { ThreeLiquidGlassSurface } from "@/components/ThreeLiquidGlassSurface";
+import { AuthModal } from "@/components/auth-modal";
+import { ParentalPinModal } from "@/components/parental-pin-modal";
+import { TvModalClose } from "@/components/tv-modal-close";
+import { TogetherButton } from "@/chrome/topbar";
+import { useAuth } from "@/lib/auth";
+import { useT } from "@/lib/i18n";
+import { useTvFocusScope } from "@/lib/keyboard-navigation";
+import { useProfiles } from "@/lib/profiles";
+import { useSearch } from "@/lib/search-context";
+import {
+  effectiveBinding,
+  eventToBinding,
+  formatBindingForDisplay,
+  shouldHandleGlobalKeyboardEvent,
+} from "@/lib/hotkeys";
+import { useSettings } from "@/lib/settings";
+import { getThemeById } from "@/lib/theme";
+import { useParental } from "@/lib/parental";
+import { useView, type View } from "@/lib/view";
+import { close, minimize, toggleMaximize, useMaximized } from "@/lib/window";
+import { OverflowNav, type NavEntry } from "@/chrome/nav-overflow";
+import { HoverNavIcon } from "@/chrome/hover-nav-icon";
+import { NAV_ITEMS, applyNavCustomization, type NavItem } from "@/chrome/nav-items";
+
+const IS_TAURI = typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
+
+export function RoyalTopbar() {
+  const { view, setView, chromeHidden } = useView();
+  const { locked, unlock, hiddenTabs } = useParental();
+  const { settings } = useSettings();
+  const { setOpen: setSearchOpen } = useSearch();
+  const t = useT();
+  const [pinFor, setPinFor] = useState<View | null>(null);
+  const maxed = useMaximized();
+
+  const themePreset =
+    settings.theme.preset !== "custom" ? getThemeById(settings.theme.preset) : null;
+  const customMark = themePreset?.logo?.mark ?? null;
+
+  const items = applyNavCustomization(NAV_ITEMS, settings.navCustomization);
+
+  const isVisible = (item: NavItem) => {
+    if (item.view === "vod" && !settings.showPlaylistsTab) return false;
+    if (item.hideKey && settings.hideContent[item.hideKey]) return false;
+    if (locked && item.parentalKey && hiddenTabs[item.parentalKey]) return false;
+    return true;
+  };
+
+  const navigate = (item: NavItem) => {
+    const needsPin =
+      locked && (item.pinGated || (item.parentalKey && hiddenTabs[item.parentalKey]));
+    if (needsPin) setPinFor(item.view);
+    else setView(item.view);
+  };
+
+  const barItems = items.filter((i) => i.id !== "settings" && i.id !== "kids");
+  const navEntries: NavEntry[] = barItems.filter(isVisible).map((item) => {
+    const active = view === item.view;
+    const label = t(item.label);
+    return {
+      key: item.id,
+      label,
+      active,
+      onSelect: () => navigate(item),
+      node: (
+        <button
+          type="button"
+          data-argus-nav={item.view}
+          onClick={() => navigate(item)}
+          aria-label={label}
+          title={label}
+          className={`relative flex h-9 items-center gap-2 whitespace-nowrap rounded-md px-2.5 text-[13.5px] font-medium leading-none transition-colors duration-150 ${
+            active ? "text-accent" : "text-ink-muted hover:text-ink"
+          }`}
+        >
+          {active && (
+            <span
+              aria-hidden
+              className="absolute inset-0 -z-10 rounded-md bg-accent-soft ring-1 ring-[color-mix(in_srgb,var(--color-accent)_22%,transparent)]"
+            />
+          )}
+          <span className="grid h-[18px] w-[18px] place-items-center [&_svg]:h-[18px] [&_svg]:w-[18px]">
+            <HoverNavIcon render={item.render} />
+          </span>
+          <span className="hidden xl:inline">{label}</span>
+        </button>
+      ),
+    };
+  });
+
+  return (
+    <>
+      <header
+        aria-hidden={chromeHidden}
+        className={`fixed inset-x-0 top-0 z-[60] flex h-20 items-center px-4 transition-[opacity,transform] duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+          chromeHidden
+            ? "pointer-events-none -translate-y-1.5 opacity-0"
+            : "translate-y-0 opacity-100"
+        }`}
+      >
+        <ThreeLiquidGlassSurface
+          data-tauri-drag-region
+          data-tv-top-chrome
+          radius="10px"
+          intensity={0.1}
+          shaderRadius={0.58}
+          refractionStrength={1.42}
+          lensStrength={1.05}
+          interactive={false}
+          alwaysActive
+          className="argus-royal-bar pointer-events-auto h-14 w-full rounded-[10px] border border-white/[0.14]"
+          contentClassName="grid h-full w-full min-w-0 grid-cols-[1fr_auto] items-center gap-3 overflow-visible ps-3.5 pe-2"
+          style={{
+            background: "rgba(255,255,255,0.001)",
+            overflow: "visible",
+            boxShadow:
+              "inset 0 1px 0 rgba(255,255,255,0.15), inset 0 -1px 0 rgba(110,185,255,0.05)",
+          }}
+        >
+          <div className="flex min-w-0 items-center gap-2.5">
+            <button
+              type="button"
+              onClick={() => setView("home")}
+              className="flex shrink-0 items-center gap-2.5 text-ink"
+              aria-label={t("chrome.argusHome")}
+            >
+              {customMark ? (
+                <img src={customMark} alt="" draggable={false} className="h-7 w-7 object-contain" />
+              ) : (
+                <ArgusMark className="h-7 w-7" />
+              )}
+              <span
+                className="hidden text-[18px] font-medium uppercase leading-none tracking-[0.14em] text-ink lg:inline"
+                style={{ fontFamily: "var(--font-display)" }}
+              >
+                Argus
+              </span>
+            </button>
+
+            <Filigree />
+
+            <OverflowNav
+              entries={navEntries}
+              gapPx={2}
+              className="flex-1"
+              moreClassName="relative flex h-9 items-center gap-1.5 whitespace-nowrap rounded-md px-2.5 text-[13.5px] font-medium leading-none text-ink-muted transition-colors duration-150 hover:text-ink"
+            />
+          </div>
+
+          <div className="flex shrink-0 items-center gap-1.5">
+            <SearchPill onOpen={() => setSearchOpen(true)} />
+            {view !== "live" && <TogetherButton variant="ghost" />}
+            <RoyalProfileMenu
+              onOpenSettings={() => setView("settings")}
+              settingsActive={view === "settings"}
+            />
+            {IS_TAURI && !settings.useNativeTitleBar && (
+              <div className="ms-0.5 flex items-center gap-1">
+                <WinBtn onClick={minimize} label={t("chrome.minimize")}>
+                  <path
+                    d="M3 6.5h7"
+                    stroke="currentColor"
+                    strokeWidth="1.4"
+                    strokeLinecap="round"
+                  />
+                </WinBtn>
+                <WinBtn
+                  onClick={toggleMaximize}
+                  label={maxed ? t("chrome.restore") : t("chrome.maximize")}
+                >
+                  {maxed ? (
+                    <>
+                      <rect
+                        x="2.5"
+                        y="4.5"
+                        width="6"
+                        height="6"
+                        stroke="currentColor"
+                        strokeWidth="1.4"
+                        rx="1"
+                      />
+                      <path
+                        d="M5 4.5V3a.5.5 0 0 1 .5-.5h5a.5.5 0 0 1 .5.5v5a.5.5 0 0 1-.5.5H9"
+                        stroke="currentColor"
+                        strokeWidth="1.4"
+                        fill="none"
+                      />
+                    </>
+                  ) : (
+                    <rect
+                      x="3"
+                      y="3"
+                      width="7"
+                      height="7"
+                      stroke="currentColor"
+                      strokeWidth="1.4"
+                      rx="1.2"
+                    />
+                  )}
+                </WinBtn>
+                <WinBtn onClick={close} label={t("common.close")} danger>
+                  <path
+                    d="M3.5 3.5l6 6M9.5 3.5l-6 6"
+                    stroke="currentColor"
+                    strokeWidth="1.4"
+                    strokeLinecap="round"
+                  />
+                </WinBtn>
+              </div>
+            )}
+          </div>
+        </ThreeLiquidGlassSurface>
+      </header>
+      {pinFor !== null && (
+        <ParentalPinModal
+          mode={{
+            kind: "unlock",
+            onUnlock: () => {
+              const v = pinFor;
+              setPinFor(null);
+              if (v) setView(v);
+            },
+            onCancel: () => setPinFor(null),
+          }}
+          verify={unlock}
+        />
+      )}
+    </>
+  );
+}
+
+function Filigree() {
+  return (
+    <span
+      aria-hidden
+      className="argus-royal-filigree relative mx-1 h-6 w-px shrink-0 overflow-hidden"
+    >
+      <span className="absolute inset-0 bg-[color-mix(in_srgb,var(--color-accent)_42%,transparent)]" />
+      <span className="argus-royal-glint absolute inset-x-0 top-0 h-1.5 bg-[linear-gradient(to_bottom,transparent,color-mix(in_srgb,var(--color-accent)_85%,white),transparent)]" />
+    </span>
+  );
+}
+
+function SearchPill({ onOpen }: { onOpen: () => void }) {
+  const { settings } = useSettings();
+  const t = useT();
+  const binding = effectiveBinding("globalSearchFocus", settings.hotkeys ?? {});
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (!shouldHandleGlobalKeyboardEvent(e)) return;
+      if (eventToBinding(e) !== binding) return;
+      e.preventDefault();
+      onOpen();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [binding, onOpen]);
+
+  return (
+    <button
+      type="button"
+      onClick={onOpen}
+      aria-label={t("common.search")}
+      className="group hidden h-9 items-center gap-2.5 rounded-full border border-[color-mix(in_srgb,var(--color-accent)_16%,var(--color-edge))] bg-surface/50 ps-3 pe-2 text-ink-subtle transition-colors duration-150 hover:border-[color-mix(in_srgb,var(--color-accent)_42%,transparent)] hover:bg-surface/80 hover:text-ink-muted sm:flex"
+    >
+      <Search size={14} strokeWidth={2.2} />
+      <span className="hidden text-[12.5px] leading-none md:inline">{t("common.search")}</span>
+      <kbd className="ms-2 hidden items-center rounded-[5px] border border-edge-soft bg-elevated/60 px-1.5 py-0.5 font-mono text-[10px] font-semibold uppercase leading-none text-ink-subtle md:flex">
+        {formatBindingForDisplay(binding)}
+      </kbd>
+    </button>
+  );
+}
+
+function WinBtn({
+  onClick,
+  label,
+  danger,
+  children,
+}: {
+  onClick: () => void;
+  label: string;
+  danger?: boolean;
+  children: ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-label={label}
+      title={label}
+      className={`flex h-8 w-8 items-center justify-center rounded-md border border-transparent text-ink-subtle transition-colors duration-150 hover:bg-elevated ${
+        danger
+          ? "hover:border-[color-mix(in_srgb,var(--color-danger)_45%,transparent)] hover:text-danger"
+          : "hover:border-[color-mix(in_srgb,var(--color-accent)_40%,transparent)] hover:text-ink"
+      }`}
+    >
+      <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+        {children}
+      </svg>
+    </button>
+  );
+}
+
+function RoyalProfileMenu({
+  onOpenSettings,
+  settingsActive,
+}: {
+  onOpenSettings: () => void;
+  settingsActive: boolean;
+}) {
+  const { user, signOut } = useAuth();
+  const { settings } = useSettings();
+  const { profiles, activeProfile, openPicker, selectProfile } = useProfiles();
+  const t = useT();
+  const [open, setOpen] = useState(false);
+  const [authOpen, setAuthOpen] = useState(false);
+  const wrapRef = useRef<HTMLDivElement>(null);
+  const popoverPortalRef = useRef<HTMLDivElement>(null);
+
+  const [popoverPosition, setPopoverPosition] = useState({
+    top: 0,
+    left: 0,
+    visibility: "hidden" as "hidden" | "visible",
+  });
+
+  useTvFocusScope(open, popoverPortalRef);
+
+  useEffect(() => {
+    if (!open) return;
+
+    const onDown = (event: MouseEvent) => {
+      const target = event.target as Node;
+      const insideButton = wrapRef.current?.contains(target) ?? false;
+      const insidePopover = popoverPortalRef.current?.contains(target) ?? false;
+
+      if (!insideButton && !insidePopover) {
+        setOpen(false);
+      }
+    };
+
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", onDown);
+    document.addEventListener("keydown", onKey);
+
+    return () => {
+      document.removeEventListener("mousedown", onDown);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [open]);
+
+  useLayoutEffect(() => {
+    if (!open) return;
+
+    const anchor = wrapRef.current;
+    const popover = popoverPortalRef.current;
+
+    if (!anchor || !popover) return;
+
+    let frameId: number | null = null;
+
+    const updatePosition = () => {
+      if (frameId != null) {
+        cancelAnimationFrame(frameId);
+      }
+
+      frameId = requestAnimationFrame(() => {
+        const anchorRect = anchor.getBoundingClientRect();
+        const popoverRect = popover.getBoundingClientRect();
+        const viewportPadding = 12;
+        const gap = -1;
+
+        let top = anchorRect.bottom + gap;
+        let left = anchorRect.right - popoverRect.width;
+
+        top = Math.max(
+          viewportPadding,
+          Math.min(top, window.innerHeight - popoverRect.height - viewportPadding),
+        );
+
+        left = Math.max(
+          viewportPadding,
+          Math.min(left, window.innerWidth - popoverRect.width - viewportPadding),
+        );
+
+        setPopoverPosition({
+          top,
+          left,
+          visibility: "visible",
+        });
+      });
+    };
+
+    updatePosition();
+
+    const resizeObserver = new ResizeObserver(updatePosition);
+    resizeObserver.observe(anchor);
+    resizeObserver.observe(popover);
+
+    window.addEventListener("resize", updatePosition);
+    window.addEventListener("scroll", updatePosition, true);
+
+    return () => {
+      if (frameId != null) {
+        cancelAnimationFrame(frameId);
+      }
+
+      resizeObserver.disconnect();
+      window.removeEventListener("resize", updatePosition);
+      window.removeEventListener("scroll", updatePosition, true);
+    };
+  }, [open]);
+
+  const name =
+    activeProfile?.name ?? user?.fullname ?? user?.email?.split("@")[0] ?? t("profile.fallback");
+  const color = activeProfile?.color ?? "#f08032";
+  const avatarSrc = activeProfile?.avatar ?? settings.argusAvatar ?? user?.avatar ?? null;
+  const otherProfiles = profiles.filter((p) => p.id !== activeProfile?.id);
+
+  const sizing = open ? "h-14 gap-2 ps-1 pe-3" : "h-9 gap-2 ps-1 pe-3";
+  const glassRadius = open ? "8px 8px 0 0" : "9999px";
+
+  const glassChrome = open
+    ? `
+        z-[51]
+        argus-together-surface
+        border border-white/[0.18] border-b-0
+        text-white
+        [text-shadow:0_1px_2px_rgba(0,0,0,0.72)]
+      `
+    : `
+        border border-white/[0.12]
+        text-white/[0.88]
+        [text-shadow:0_1px_2px_rgba(0,0,0,0.68)]
+        hover:border-white/[0.22]
+        hover:text-white
+      `;
+
+  const dismiss = (run: () => void) => {
+    setOpen(false);
+    run();
+  };
+
+  return (
+    <div
+      ref={wrapRef}
+      className={`relative ${open ? "argus-wt-wrap flex flex-col self-stretch justify-end" : ""}`}
+    >
+      <ThreeLiquidGlassSurface
+        radius={glassRadius}
+        shaderRadius={1}
+        intensity={0.1}
+        style={{
+          background: open ? "rgba(8,12,18,0.15)" : "rgba(255,255,255,0.028)",
+          boxShadow: open
+            ? "inset 0 1px 0 rgba(255,255,255,0.17)"
+            : "inset 0 1px 0 rgba(255,255,255,0.10)",
+        }}
+        className={`
+          relative inline-flex
+          transition-colors duration-150
+          ${glassChrome}
+          ${open ? "argus-wt-tab" : ""}
+        `}
+        contentClassName="h-full w-full"
+      >
+        <button
+          type="button"
+          data-tauri-drag-region="false"
+          aria-label={name}
+          onClick={() => setOpen((current) => !current)}
+          data-open={String(open)}
+          aria-haspopup="menu"
+          aria-expanded={open}
+          className={`
+            argus-together-btn
+            argus-profile-btn
+            relative flex items-center
+            rounded-[inherit]
+            border-0 bg-transparent
+            outline-none
+            transition-colors duration-150
+            ${sizing}
+          `}
+        >
+          <span
+            className="
+              flex h-7 w-7 shrink-0
+              items-center justify-center
+              overflow-hidden rounded-full
+              ring-1 ring-white/25
+            "
+            style={{ background: color }}
+          >
+            {avatarSrc ? (
+              <img
+                src={avatarSrc}
+                alt=""
+                className="h-full w-full object-cover"
+                draggable={false}
+              />
+            ) : (
+              <CatAvatar className="h-full w-full" />
+            )}
+          </span>
+
+          <span className="hidden max-w-[8rem] truncate text-white/[0.96] [text-shadow:0_1px_2px_rgba(0,0,0,0.72)] md:inline">
+            {name}
+          </span>
+        </button>
+      </ThreeLiquidGlassSurface>
+
+      {open &&
+        typeof document !== "undefined" &&
+        createPortal(
+          <div
+            ref={popoverPortalRef}
+            data-tv-focus-scope
+            data-tauri-drag-region="false"
+            data-profile-dropdown-portal
+            className="
+              argus-wt-modal
+              fixed z-[300]
+              isolate
+              w-60
+              pointer-events-auto
+            "
+            style={{
+              top: popoverPosition.top,
+              left: popoverPosition.left,
+              visibility: popoverPosition.visibility,
+            }}
+          >
+            <ThreeLiquidGlassSurface
+              role="menu"
+              aria-label={name}
+              radius="16px"
+              shaderRadius={0.3}
+              intensity={0.1}
+              refractionStrength={1.42}
+              lensStrength={1.05}
+              interactive={false}
+              alwaysActive
+              style={{
+                background: "rgba(7,11,17,0.18)",
+                overflow: "hidden",
+                borderStartEndRadius: 0,
+                boxShadow:
+                  "inset 0 1px 0 rgba(255,255,255,0.18), inset 0 -1px 0 rgba(110,185,255,0.07), 0 24px 60px -20px rgba(0,0,0,0.76)",
+              }}
+              className="
+                argus-together-surface
+                argus-profile-dropdown
+                w-full overflow-hidden
+                border border-white/15
+                border-t-0
+                shadow-[0_20px_50px_-15px_rgba(0,0,0,0.8)]
+                animate-popover-in
+              "
+              contentClassName="
+                flex w-full flex-col
+                overflow-hidden
+                text-white/[0.94]
+                [text-shadow:0_1px_2px_rgba(0,0,0,0.66)]
+              "
+            >
+              <TvModalClose onClose={() => setOpen(false)} label={t("common.close")} />
+              <div className="border-b border-white/[0.14] px-4 py-3">
+                <div
+                  className="text-[14px] leading-tight text-ink"
+                  style={{ fontFamily: "var(--font-display)" }}
+                >
+                  {name}
+                </div>
+                {user?.email && (
+                  <div className="truncate pt-0.5 text-[11.5px] text-ink-subtle">{user.email}</div>
+                )}
+              </div>
+
+              {otherProfiles.length > 0 && (
+                <div className="flex flex-col gap-0.5 border-b border-white/[0.14] p-1.5">
+                  <span className="px-2.5 pb-1 pt-1 text-[10px] font-bold uppercase tracking-[0.16em] text-ink-subtle">
+                    {t("profile.switch")}
+                  </span>
+                  {otherProfiles.map((p) => (
+                    <button
+                      key={p.id}
+                      type="button"
+                      data-tauri-drag-region="false"
+                      onClick={() =>
+                        dismiss(() =>
+                          p.passwordHash
+                            ? openPicker({ kind: "unlock", profileId: p.id })
+                            : selectProfile(p.id),
+                        )
+                      }
+                      className="mx-1 flex items-center gap-2 rounded-xl border border-transparent px-2 py-1.5 text-start transition-colors hover:border-white/[0.14] hover:bg-white/[0.10]"
+                    >
+                      <span
+                        className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[10px] font-bold text-canvas"
+                        style={{ background: p.color }}
+                      >
+                        {p.name.slice(0, 1).toUpperCase()}
+                      </span>
+                      <span className="truncate text-[12.5px] text-ink">{p.name}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              <div className="flex flex-col py-1">
+                <MenuItem onClick={() => dismiss(() => openPicker({ kind: "list" }))}>
+                  <Users size={13} strokeWidth={2.2} /> {t("profile.whoWatching")}
+                </MenuItem>
+                {activeProfile && (
+                  <MenuItem
+                    onClick={() =>
+                      dismiss(() => openPicker({ kind: "edit", profileId: activeProfile.id }))
+                    }
+                  >
+                    <Pencil size={13} strokeWidth={2.2} /> {t("Edit profile")}
+                  </MenuItem>
+                )}
+                <MenuItem active={settingsActive} onClick={() => dismiss(onOpenSettings)}>
+                  <SettingsLucide size={13} strokeWidth={2.2} /> {t("nav.settings")}
+                </MenuItem>
+                {user ? (
+                  <MenuItem bordered onClick={() => dismiss(signOut)}>
+                    <LogOut size={13} strokeWidth={2.2} /> {t("Sign out")}
+                  </MenuItem>
+                ) : (
+                  <MenuItem bordered onClick={() => dismiss(() => setAuthOpen(true))}>
+                    <LogIn size={13} strokeWidth={2.2} /> {t("profile.signIn")}
+                  </MenuItem>
+                )}
+              </div>
+            </ThreeLiquidGlassSurface>
+          </div>,
+          document.body,
+        )}
+
+      {authOpen && <AuthModal onClose={() => setAuthOpen(false)} />}
+    </div>
+  );
+}
+
+function MenuItem({
+  onClick,
+  active,
+  bordered,
+  children,
+}: {
+  onClick: () => void;
+  active?: boolean;
+  bordered?: boolean;
+  children: ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`flex items-center gap-2.5 px-4 py-2.5 text-start text-[13px] transition-colors hover:bg-elevated hover:text-ink ${
+        bordered ? "mt-1 border-t border-edge-soft pt-3" : ""
+      } ${active ? "text-accent" : "text-ink-muted"}`}
+    >
+      {children}
+    </button>
+  );
+}
