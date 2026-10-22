@@ -19,6 +19,7 @@ import { getSession, setSession, subscribeSession } from "./session";
 import { stremioIdToTraktTarget, type TraktEpisodeRef } from "./ids";
 import { scrobblePause, scrobbleStart, scrobbleStop } from "./scrobble";
 import { pushWatched } from "./history";
+import { flushPendingWatched } from "./pending-queue";
 import type { DeviceCode, TraktSession, TraktTarget } from "./types";
 
 export type ConnectState =
@@ -68,6 +69,14 @@ export function TraktProvider({ children }: { children: ReactNode }) {
       pollHandleRef.current?.cancel();
     };
   }, []);
+
+  useEffect(() => {
+    if (!session) return;
+    const flush = () => void flushPendingWatched(pushWatched);
+    flush();
+    window.addEventListener("online", flush);
+    return () => window.removeEventListener("online", flush);
+  }, [session]);
 
   const beginConnect = useCallback(async () => {
     pollHandleRef.current?.cancel();
