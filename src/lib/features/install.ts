@@ -1,5 +1,6 @@
 import { invoke } from "@tauri-apps/api/core";
-import { useSyncExternalStore } from "react";
+import { useMemo, useSyncExternalStore } from "react";
+import { useSettings } from "@/lib/settings";
 
 export type InstallFeatureKey = "plugins" | "games" | "music" | "ebook" | "manga";
 export type InstallFeatures = Record<InstallFeatureKey, boolean>;
@@ -50,6 +51,17 @@ function subscribe(listener: () => void) {
   };
 }
 
+/** The installer's choice, narrowed further by the module toggles in Settings. */
 export function useInstallFeatures(): InstallFeatures {
-  return useSyncExternalStore(subscribe, () => snapshot, () => ALL_ON);
+  const installed = useSyncExternalStore(subscribe, () => snapshot, () => ALL_ON);
+  const { settings } = useSettings();
+  return useMemo(
+    () => ({
+      ...installed,
+      games: installed.games && settings.gamesEnabled,
+      music: installed.music && settings.musicEnabled,
+      ebook: installed.ebook && settings.ebookEnabled,
+    }),
+    [installed, settings.gamesEnabled, settings.musicEnabled, settings.ebookEnabled],
+  );
 }

@@ -220,6 +220,9 @@ export type Settings = {
   bigPicturePlayerUi: "tenFoot" | "desktop";
   capabilityMatching: boolean;
   p2pUploadEnabled: boolean;
+  gamesEnabled: boolean;
+  musicEnabled: boolean;
+  ebookEnabled: boolean;
   communityAddonDirectories: boolean;
   metadataFusion: boolean;
   internetArchive: boolean;

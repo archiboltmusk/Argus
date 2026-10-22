@@ -27,12 +27,8 @@ test("source-backed artwork and provenance survive save/reload and collections",
   assert.deepEqual(collectionGame(game), sourceListingGame(game));
   assert.equal(readSavedGames("different-profile").length, 0);
 });
-test("source snapshots require the exact published page and game name", () => {
-  const page = "https://rutracker.org/forum/viewtopic.php?t=6914600";
-  assert.ok(sourcePageSnapshot(page, "Echoes of Polis / Эхо Полиса [P] [RUS] (2026, RTS)")?.portrait);
-  assert.equal(sourcePageSnapshot(page, "Echoes of Polis 2 [P] [RUS] (2026, RTS)"), undefined);
-  assert.equal(sourcePageSnapshot(page + "0", game.name), undefined);
-  assert.equal(sourcePageSnapshot("https://other.example/forum/viewtopic.php?t=6914600", game.name), undefined);
+test("no source page snapshots are bundled", () => {
+  assert.equal(sourcePageSnapshot("https://tracker.example/topic/1", game.name), undefined);
 });
 test("saved source metadata rejects active URLs, mixed identities and oversized identity keys", () => {
   for (const value of [{ ...game, steamId: 10 }, { ...game, igdbId: 20 }, { ...game, id: "source:" + "x".repeat(501) }, { ...game, capsule: "javascript:alert(1)" }, { ...game, sourceListing: { ...game.sourceListing, page: "file:///private" } }]) assert.equal(sourceListingGame(value), null);

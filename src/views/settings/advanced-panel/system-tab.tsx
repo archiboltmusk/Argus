@@ -1,6 +1,6 @@
 import { useT } from "@/lib/i18n";
 import { useSettings } from "@/lib/settings";
-import { Section, Segmented } from "../shared";
+import { Section, Segmented, ToggleRow } from "../shared";
 import { TrayRow } from "../tray-row";
 import { DownloadsSection } from "../player-panel";
 import { DesktopOnlyBlock, isTauri } from "../player-panel/internals";
@@ -13,6 +13,32 @@ export function SystemTab() {
   const isWindows = typeof navigator !== "undefined" && navigator.userAgent.includes("Windows");
   return (
     <>
+      <Section
+        title={t("Modules")}
+        subtitle={t(
+          "Turn whole areas of Argus on or off. Argus ships no game, ROM or streaming sources; Games only manages what you add yourself.",
+        )}
+      >
+        <ToggleRow
+          label={t("Games")}
+          sub={t("Game library, launchers, emulation and downloads you add yourself.")}
+          value={settings.gamesEnabled}
+          onChange={(gamesEnabled) => update({ gamesEnabled })}
+        />
+        <ToggleRow
+          label={t("Music")}
+          sub={t("Local music library, queue, playlists and lyrics.")}
+          value={settings.musicEnabled}
+          onChange={(musicEnabled) => update({ musicEnabled })}
+        />
+        <ToggleRow
+          label={t("Books")}
+          sub={t("EPUB and PDF reader.")}
+          value={settings.ebookEnabled}
+          onChange={(ebookEnabled) => update({ ebookEnabled })}
+        />
+      </Section>
+
       <Section
         title={t("Downloads")}
         subtitle={t(
