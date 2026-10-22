@@ -1,5 +1,5 @@
 import { useSyncExternalStore } from "react";
-import { pushOutcome, statusOf, type AddonHealth, type HealthStatus } from "./health";
+import { pushOutcome, reliabilityScore, statusOf, type AddonHealth, type HealthStatus } from "./health";
 
 const KEY = "argus.addonHealth.v1";
 
@@ -38,6 +38,21 @@ export function recordAddonOutcome(addonId: string, ok: boolean, ms: number, rea
 
 export function addonStatus(addonId: string): HealthStatus {
   return statusOf(load()[addonId]);
+}
+
+export function addonScore(addonId: string): number | null {
+  return reliabilityScore(load()[addonId]);
+}
+
+export function useAddonScore(addonId: string): number | null {
+  return useSyncExternalStore(
+    (cb) => {
+      listeners.add(cb);
+      return () => listeners.delete(cb);
+    },
+    () => addonScore(addonId),
+    () => null,
+  );
 }
 
 export function clearAddonHealth(addonId: string) {

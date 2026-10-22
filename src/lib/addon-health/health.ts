@@ -32,6 +32,14 @@ export function statusOf(h: AddonHealth | undefined): HealthStatus {
   return "healthy";
 }
 
+/** 0-100 from recent success rate and speed; null until there are enough samples. */
+export function reliabilityScore(h: AddonHealth | undefined): number | null {
+  if ((h?.outcomes.length ?? 0) < MIN_SAMPLES) return null;
+  const median = medianMs(h);
+  const slow = median == null ? 0 : Math.min(20, Math.max(0, (median - 1500) / 250));
+  return Math.max(0, Math.round(100 - failureRate(h) * 80 - slow));
+}
+
 export function medianMs(h: AddonHealth | undefined): number | null {
   const ok = (h?.outcomes ?? []).filter((o) => o.ok).map((o) => o.ms);
   if (ok.length === 0) return null;

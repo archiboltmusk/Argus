@@ -503,6 +503,16 @@ export type Settings = {
   englishTitleFallback: boolean;
   /** Hotkey that cycles to the next profile; protected profiles still ask for their PIN. */
   quickProfileSwitch: boolean;
+  /** Detect crash loops and offer safe mode. */
+  selfHeal: boolean;
+  /** Encrypted backup sync to a server the user runs. */
+  e2eSyncEnabled: boolean;
+  e2eSyncEndpoint: string;
+  e2eSyncPassphrase: string;
+  /** Pre-test the top streams so the first pick starts without a probe wait. */
+  zeroWaitPlayback: boolean;
+  /** Mood and natural-language terms in library search. */
+  smartLibrarySearch: boolean;
   webdavEnabled: boolean;
   webdavUrl: string;
   webdavUser: string;

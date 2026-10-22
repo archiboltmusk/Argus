@@ -1,6 +1,6 @@
 import { ArrowUpDown, Columns2, Rows3, Settings2 } from "lucide-react";
 import { useState } from "react";
-import { useAddonStatus } from "@/lib/addon-health/store";
+import { useAddonScore, useAddonStatus } from "@/lib/addon-health/store";
 import { AddonLogo, resolveAddonLogo } from "@/components/addon-logo";
 import { HoverTooltip } from "@/components/hover-tooltip";
 import { isAddonEnabled, setAddonEnabled } from "@/lib/addon-store";
@@ -171,6 +171,7 @@ function InstalledRow({
   const t = useT();
   const r = resolved;
   const health = useAddonStatus(idOf(r));
+  const score = useAddonScore(idOf(r));
   const [busy, setBusy] = useState(false);
   const [enabled, setEnabled] = useState(() => isAddonEnabled(r.transportUrl));
   const isConfigurable =
@@ -236,6 +237,11 @@ function InstalledRow({
           {enabled ? subtitleFromManifest(r) : t("Off · catalogs and streams hidden")}
           {enabled && health === "failing" && (
             <span className="ms-2 font-semibold text-danger">{t("Not responding")}</span>
+          )}
+          {enabled && score != null && (
+            <span className="ms-2 tabular-nums text-ink-muted" title={t("Reliability score from your recent requests")}>
+              {score}
+            </span>
           )}
           {enabled && health === "degraded" && (
             <span className="ms-2 font-semibold text-amber-300">{t("Unreliable")}</span>

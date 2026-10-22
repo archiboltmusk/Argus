@@ -1,4 +1,5 @@
 import { Bookmark, RefreshCw } from "lucide-react";
+import { smartMatch } from "@/lib/smart-search";
 import { memo, useCallback, type RefObject } from "react";
 import { type Meta } from "@/lib/cinemeta";
 import { useSettings } from "@/lib/settings";
@@ -143,11 +144,14 @@ export function applyFilter<T extends { meta: Meta }>(
   items: T[],
   type: TypeKey,
   query: string,
+  smart = false,
 ): T[] {
   const q = query.trim().toLowerCase();
   return items.filter((it) => {
     if (type !== "all" && it.meta.type !== type) return false;
-    if (q && !(it.meta.name ?? "").toLowerCase().includes(q)) return false;
+    if (q && !(it.meta.name ?? "").toLowerCase().includes(q)) {
+      if (!smart || !smartMatch(it.meta, q)) return false;
+    }
     return true;
   });
 }

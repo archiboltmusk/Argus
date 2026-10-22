@@ -1,4 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { preflightCheck } from "@/lib/streams/preflight";
+import { markStreamDead } from "@/lib/dead-streams";
 import {
   ArrowDownToLine,
   ArrowUp,
@@ -417,6 +419,20 @@ export function PlayPicker({
     episode?.season,
   ]);
 
+  // Zero-wait: probe the best few direct links now so the first pick skips the probe wait.
+  useEffect(() => {
+    if (!settings.zeroWaitPlayback || !filteredPicker) return;
+    const urls = [filteredPicker.primary, ...filteredPicker.all]
+      .map((st) => st?.url)
+      .filter((u): u is string => !!u && /^https?:\/\//i.test(u));
+    for (const url of [...new Set(urls)].slice(0, 3)) {
+      void preflightCheck(url)
+        .then((r) => {
+          if (!r.ok && r.reason === "stub") markStreamDead({ url }, "preflight_stub", 15 * 60 * 1000);
+        })
+        .catch(() => {});
+    }
+  }, [filteredPicker, settings.zeroWaitPlayback]);
   const anyAddonRanked = useMemo(() => (addons ?? []).some((a) => isAddonRanked(a)), [addons]);
   const addonOrderMode = settings.streamSort === "addon" || anyAddonRanked;
   const displayStreams = useMemo(() => {

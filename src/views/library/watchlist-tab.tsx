@@ -384,7 +384,10 @@ export function WatchlistTab({
     setFlat((v) => !v);
   }, []);
   const counts = useMemo(() => countByType(merged), [merged]);
-  const visible = useMemo(() => applyFilter(merged, type, query), [merged, type, query]);
+  const visible = useMemo(
+    () => applyFilter(merged, type, query, settings.smartLibrarySearch),
+    [merged, type, query, settings.smartLibrarySearch],
+  );
   const groups = useMemo(() => {
     if (settings.librarySort !== "recent") return sortedGroups(visible, settings.librarySort);
     if (flat)
