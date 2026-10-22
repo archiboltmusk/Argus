@@ -895,6 +895,13 @@ static BAD_DUB_RX: Lazy<Regex> = Lazy::new(|| {
     Regex::new(r"(?i)[\s._\-\[(](?:rus|ukr|pol|tur|ita)[\s._-]?dub(?:bed)?\b").unwrap()
 });
 
+/// Addons often put the file host only in the row label ("HDHub4u · PixelDrain")
+/// while the URL is a redirect or proxy. Match the host's leading name there.
+fn label_mentions_host(label_lower: &str, host: &str) -> bool {
+    let token = host.trim_start_matches("www.").split('.').next().unwrap_or("");
+    token.len() >= 4 && label_lower.contains(token)
+}
+
 fn stream_haystack(s: &ParsedStream) -> String {
     let mut parts: Vec<&str> = Vec::new();
     if let Some(n) = &s.stream.name {
@@ -1146,15 +1153,19 @@ pub fn score_stream(
         }
     }
 
-    if let Some(host) = parsed.stream.url.as_deref().and_then(url_host) {
-        if opts
-            .preferred_hosts
-            .iter()
-            .any(|h| host == *h || host.ends_with(&format!(".{h}")))
-        {
+    if !opts.preferred_hosts.is_empty() {
+        let url_host = parsed.stream.url.as_deref().and_then(url_host);
+        let label = stream_haystack(&parsed).to_lowercase();
+        let hit = opts.preferred_hosts.iter().find(|h| {
+            url_host
+                .as_deref()
+                .is_some_and(|host| host == h.as_str() || host.ends_with(&format!(".{h}")))
+                || label_mentions_host(&label, h)
+        });
+        if let Some(h) = hit {
             score += 12.0;
             reasons.push(ScoreReason {
-                signal: format!("host-pref:{}", host),
+                signal: format!("host-pref:{}", h),
                 delta: 12.0,
             });
         }
@@ -2082,6 +2093,22 @@ mod tests {
         assert_eq!(
             boosted - score_stream(p, &empty_opts(), &corpus).score,
             12.0
+        );
+        let mut labelled = base_parsed();
+        labelled.stream.url = Some("https://proxy.example.net/r/abc".to_string());
+        labelled.stream.name = Some("PenguPlay 1080p HDHub4u \u{b7} PixelDrain".to_string());
+        let hosts = ScoreOptions {
+            preferred_hosts: vec!["pixeldrain.com".to_string()],
+            ..Default::default()
+        };
+        let label_boost = score_stream(labelled.clone(), &hosts, &corpus).score
+            - score_stream(labelled, &empty_opts(), &corpus).score;
+        assert_eq!(label_boost, 12.0);
+        let mut other = base_parsed();
+        other.stream.name = Some("PenguPlay 1080p HDHub4u \u{b7} FSL".to_string());
+        assert_eq!(
+            score_stream(other.clone(), &hosts, &corpus).score,
+            score_stream(other, &empty_opts(), &corpus).score
         );
         assert_eq!(
             url_host("https://user@Example.COM:80/a?b"),

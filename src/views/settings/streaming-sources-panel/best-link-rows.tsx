@@ -1,4 +1,5 @@
 import { useSettings } from "@/lib/settings";
+import { parseHostList } from "@/lib/streams/dead-links";
 import { useT } from "@/lib/i18n";
 import { Section, ToggleRow } from "../shared";
 
@@ -11,7 +12,9 @@ function ListField({
   value,
   placeholder,
   onChange,
+  suggestion,
 }: {
+  suggestion?: string;
   label: string;
   hint: string;
   value: string;
@@ -30,6 +33,15 @@ function ListField({
         placeholder={placeholder}
         className={inputClass}
       />
+      {suggestion && !parseHostList(value).includes(suggestion) && (
+        <button
+          type="button"
+          onClick={() => onChange(value.trim() ? `${value.trim()}, ${suggestion}` : suggestion)}
+          className="w-fit rounded-full bg-ink/[0.06] px-3 py-1 text-[12px] font-medium text-ink-muted hover:text-ink"
+        >
+          + {suggestion}
+        </button>
+      )}
     </div>
   );
 }
@@ -64,6 +76,7 @@ export function BestLinkRows() {
         )}
         value={settings.preferredHosts}
         placeholder="pixeldrain.com"
+        suggestion="pixeldrain.com"
         onChange={(v) => update({ preferredHosts: v })}
       />
       <ToggleRow

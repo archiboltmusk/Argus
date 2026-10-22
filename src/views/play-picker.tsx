@@ -1,4 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { matchedPreferredHost } from "@/lib/streams/preferred-host";
+import { parseHostList } from "@/lib/streams/dead-links";
 import { preflightCheck } from "@/lib/streams/preflight";
 import { markStreamDead } from "@/lib/dead-streams";
 import {
@@ -422,9 +424,15 @@ export function PlayPicker({
   // Zero-wait: probe the best few direct links now so the first pick skips the probe wait.
   useEffect(() => {
     if (!settings.zeroWaitPlayback || !filteredPicker) return;
+    const preferred = parseHostList(settings.preferredHosts);
     const urls = [filteredPicker.primary, ...filteredPicker.all]
-      .map((st) => st?.url)
-      .filter((u): u is string => !!u && /^https?:\/\//i.test(u));
+      .filter((st) => !!st?.url && /^https?:\/\//i.test(st.url))
+      .sort(
+        (a, b) =>
+          Number(matchedPreferredHost(b!, preferred) != null) -
+          Number(matchedPreferredHost(a!, preferred) != null),
+      )
+      .map((st) => st!.url as string);
     for (const url of [...new Set(urls)].slice(0, 3)) {
       void preflightCheck(url)
         .then((r) => {
@@ -432,7 +440,7 @@ export function PlayPicker({
         })
         .catch(() => {});
     }
-  }, [filteredPicker, settings.zeroWaitPlayback]);
+  }, [filteredPicker, settings.zeroWaitPlayback, settings.preferredHosts]);
   const anyAddonRanked = useMemo(() => (addons ?? []).some((a) => isAddonRanked(a)), [addons]);
   const addonOrderMode = settings.streamSort === "addon" || anyAddonRanked;
   const displayStreams = useMemo(() => {

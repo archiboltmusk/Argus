@@ -2,12 +2,20 @@ import { Pin } from "lucide-react";
 import { useSettings } from "@/lib/settings";
 import { useT } from "@/lib/i18n";
 import { parseHostList, streamHost } from "@/lib/streams/dead-links";
+import { matchedPreferredHost } from "@/lib/streams/preferred-host";
 
 /** Shows where a direct link is hosted and lets the user pin that host as preferred. */
-export function StreamHostChip({ url }: { url: string | null | undefined }) {
+export function StreamHostChip({
+  url,
+  stream,
+}: {
+  url: string | null | undefined;
+  stream?: { name?: string | null; title?: string | null; description?: string | null };
+}) {
   const t = useT();
   const { settings, update } = useSettings();
-  const host = streamHost(url);
+  const matched = matchedPreferredHost({ url, ...stream }, parseHostList(settings.preferredHosts));
+  const host = matched ?? streamHost(url);
   if (!host) return null;
   const bare = host.replace(/^www\./, "");
   const pinned = parseHostList(settings.preferredHosts).some(
