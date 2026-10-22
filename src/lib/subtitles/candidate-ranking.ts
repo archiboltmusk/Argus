@@ -7,6 +7,19 @@ import {
 import { streamTagsOf, type StreamHints } from "./stream-hints";
 import type { SubResult } from "./types";
 
+let sourceOrder: string[] = [];
+
+/** Preferred provider order from Settings; earlier wins ties. Empty = off. */
+export function setSubtitleSourceOrder(order: string[] | undefined) {
+  sourceOrder = order ?? [];
+}
+
+function sourceOrderRank(result: SubResult): number {
+  if (sourceOrder.length === 0) return 0;
+  const i = sourceOrder.indexOf(result.source);
+  return i === -1 ? 0 : sourceOrder.length - i;
+}
+
 export function subtitleText(result: SubResult): string {
   return `${result.release ?? ""} ${result.title ?? ""} ${result.url ?? ""}`;
 }
@@ -62,6 +75,8 @@ export function compareSubtitleMatch(
   if (confidence !== 0) return confidence;
   if (aMatch.sourceRank !== bMatch.sourceRank) return bMatch.sourceRank - aMatch.sourceRank;
   if (aMatch.score !== bMatch.score) return bMatch.score - aMatch.score;
+  const order = sourceOrderRank(b) - sourceOrderRank(a);
+  if (order !== 0) return order;
   const downloads = (b.downloads ?? 0) - (a.downloads ?? 0);
   if (downloads !== 0) return downloads;
   return (a.title || "").localeCompare(b.title || "");

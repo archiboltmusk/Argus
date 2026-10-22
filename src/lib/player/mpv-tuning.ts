@@ -40,6 +40,9 @@ export function compileMpvOptions(s: Settings, opts?: { anime4k?: boolean }): st
   if (s.mpvHwdec === "on") lines.push("hwdec=yes");
   else if (s.mpvHwdec === "off") lines.push("hwdec=no");
   lines.push(...bufferMpvLines(bufferSizeFor(s)));
+  // Locks video to the display refresh and resamples audio to match, which removes
+  // the judder 24 fps film shows on a 60 Hz panel. mpv cannot change the OS refresh rate.
+  if (s.mpvDisplaySync) lines.push("video-sync=display-resample");
   if (s.mpvDownmixStereo) lines.push("audio-channels=stereo");
   if (s.audioDevice && s.audioDevice !== "auto") lines.push(`audio-device=${s.audioDevice}`);
   if (s.playerDisplayPanel === "oled" && s.playerHdrToSdr) lines.push("target-contrast=inf");

@@ -15,6 +15,7 @@ import { loadBgImage, saveBgImage } from "@/lib/theme-storage";
 import { effectiveTmdbLanguage, setTmdbLanguage } from "@/lib/providers/tmdb/tmdb-client";
 import { setPosterBaseUrl } from "@/lib/providers/rpdb";
 import { setMdblistBatchKey } from "@/lib/providers/mdblist-batch";
+import { setSubtitleSourceOrder } from "@/lib/subtitles/candidate-ranking";
 import { setUiLanguage } from "@/lib/i18n";
 import { makeSafeTauriUnlisten } from "@/lib/tauri-unlisten";
 import { STORAGE_KEY } from "./settings/defaults";
@@ -111,6 +112,7 @@ export function SettingsProvider({
   }, [settings.uiLanguage, settings.region]);
 
   setTmdbLanguage(settings.tmdbLanguage);
+  setSubtitleSourceOrder(settings.subSourceOrder);
 
   const lastSavedImageRef = useRef<{ profileId: string; image: string | null }>({
     profileId: sourceRef.current.profileId,

@@ -1,6 +1,7 @@
 import { useSettings } from "@/lib/settings";
 import { useT } from "@/lib/i18n";
 import { Section, ToggleRow } from "../shared";
+import { WebDavSection } from "../webdav-section";
 import { IndexersSection } from "../indexers-section";
 
 export function ExtraSourcesRows() {
@@ -30,12 +31,19 @@ export function ExtraSourcesRows() {
           onChange={(communityAddonDirectories) => update({ communityAddonDirectories })}
         />
       </Section>
+      <WebDavSection />
       <Section title={t("Title matching")}>
         <ToggleRow
           label={t("Match alternate and regional titles")}
           sub={t("Looks up other names for a title (TMDB, TVmaze, AniList) so differently named releases still match.")}
           value={settings.metadataFusion}
           onChange={(metadataFusion) => update({ metadataFusion })}
+        />
+        <ToggleRow
+          label={t("English title fallback")}
+          sub={t("When a title is in a non-Latin script, also show its English name on the detail page. Needs alternate-title matching.")}
+          value={settings.englishTitleFallback}
+          onChange={(englishTitleFallback) => update({ englishTitleFallback })}
         />
       </Section>
     </>

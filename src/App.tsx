@@ -1247,6 +1247,24 @@ function Shell({ onReady }: { onReady?: () => void }) {
     };
   }, [player, settings.hotkeys, update]);
 
+  const { profiles: allProfiles, activeId: activeProfileId, selectProfile, openPicker } = useProfiles();
+  useEffect(() => {
+    if (!settings.quickProfileSwitch) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (!shouldHandleGlobalKeyboardEvent(e)) return;
+      if (findHotkeyMatch(e, settings.hotkeys ?? {}, "Global") !== "globalProfileNext") return;
+      e.preventDefault();
+      if (player || e.repeat || allProfiles.length < 2) return;
+      e.stopPropagation();
+      const i = allProfiles.findIndex((p) => p.id === activeProfileId);
+      const next = allProfiles[(i + 1) % allProfiles.length];
+      // selectProfile refuses a locked profile; hand it to the picker's PIN prompt instead.
+      if (!selectProfile(next.id)) openPicker({ kind: "unlock", profileId: next.id });
+    };
+    window.addEventListener("keydown", onKey, true);
+    return () => window.removeEventListener("keydown", onKey, true);
+  }, [settings.quickProfileSwitch, settings.hotkeys, player, allProfiles, activeProfileId, selectProfile, openPicker]);
+
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (!shouldHandleGlobalKeyboardEvent(e)) return;

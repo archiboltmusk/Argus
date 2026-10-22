@@ -31,7 +31,17 @@ function LogoLayer({
   );
 }
 
-export function TitlePlate({ title, logo, loading }: { title: string; logo?: string; loading: boolean }) {
+export function TitlePlate({
+  title,
+  logo,
+  loading,
+  englishTitle,
+}: {
+  title: string;
+  logo?: string;
+  loading: boolean;
+  englishTitle?: string | null;
+}) {
   const [failed, setFailed] = useState<Set<string>>(() => new Set());
   const active = logo && !failed.has(logo) ? logo : undefined;
   const [layers, setLayers] = useState<{ id: number; url: string }[]>([]);
@@ -72,6 +82,9 @@ export function TitlePlate({ title, logo, loading }: { title: string; logo?: str
       >
         {title}
       </h1>
+      {englishTitle && (
+        <p className="mt-2 text-[20px] font-medium text-ink-muted">{englishTitle}</p>
+      )}
       {layers.map((l) => (
         <LogoLayer
           key={l.id}

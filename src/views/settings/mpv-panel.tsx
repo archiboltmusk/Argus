@@ -83,6 +83,15 @@ export function MpvPanel() {
             </SettingRow>
           </Section>
 
+          <Section title={t("Motion")}>
+            <ToggleRow
+              label={t("Match playback to the display")}
+              sub={t("Syncs video to your screen's refresh rate to reduce judder in 24 fps films. Argus cannot change the screen's refresh rate itself. Applies to the next video you play.")}
+              value={settings.mpvDisplaySync}
+              onChange={(mpvDisplaySync) => update({ mpvDisplaySync })}
+            />
+          </Section>
+
           <Section
             title={t("Compatibility")}
             subtitle={t("Try these if video shows a black screen, incorrect colors, or other picture problems.")}
