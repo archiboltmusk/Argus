@@ -229,6 +229,9 @@ export type Settings = {
   indexers: import("@/lib/streams/indexer-feed").Indexer[];
   addonHealthTracking: boolean;
   capabilityMatching: boolean;
+  bestLinkScoring: boolean;
+  preferredReleaseGroups: string;
+  deadLinkDemotion: boolean;
   addonHealthProbes: boolean;
   streamCacheRetentionHours: number;
   streamCacheMaxGb: number;

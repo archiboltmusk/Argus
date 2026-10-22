@@ -127,6 +127,7 @@ export function AdvancedPanel() {
         )}
       >
         <CapabilityRow />
+        <BestLinkRows />
         <MetadataFusionRow />
         <ExternalPlayerRow />
         <MoreLikeThisRow />
@@ -259,6 +260,41 @@ function CapabilityRow() {
       value={settings.capabilityMatching}
       onChange={(v) => update({ capabilityMatching: v })}
     />
+  );
+}
+
+function BestLinkRows() {
+  const t = useT();
+  const { settings, update } = useSettings();
+  return (
+    <>
+      <ToggleRow
+        label={t("Prefer smooth, trusted releases")}
+        sub={t("Rank releases with a bitrate that plays cleanly (4K 14-30 Mbps, 1080p 4-8 Mbps), boost your preferred groups, and demote regional dubs that replace the original speech.")}
+        value={settings.bestLinkScoring}
+        onChange={(v) => update({ bestLinkScoring: v })}
+      />
+      <div className="flex flex-col gap-2 px-1 py-2">
+        <div className="text-[14px] font-medium text-ink">{t("Preferred release groups")}</div>
+        <div className="text-[12.5px] text-ink-muted">
+          {t("Comma-separated, for example FLUX, NTb, QxR. These get a bonus when Argus picks the top stream.")}
+        </div>
+        <input
+          type="text"
+          autoComplete="off"
+          value={settings.preferredReleaseGroups}
+          onChange={(e) => update({ preferredReleaseGroups: e.target.value })}
+          placeholder="FLUX, NTb, QxR"
+          className="h-10 w-full max-w-sm rounded-xl bg-canvas/60 px-3 text-[13px] text-ink ring-1 ring-edge-soft outline-none focus:ring-accent"
+        />
+      </div>
+      <ToggleRow
+        label={t("Demote links that fail fast")}
+        sub={t("If you back out of a stream within 20 seconds twice, Argus ranks it lower next time. Stored on this device only.")}
+        value={settings.deadLinkDemotion}
+        onChange={(v) => update({ deadLinkDemotion: v })}
+      />
+    </>
   );
 }
 

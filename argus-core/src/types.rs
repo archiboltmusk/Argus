@@ -352,4 +352,26 @@ pub struct ScoreOptions {
     pub prefer_single_audio_track: bool,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub prefer_addon_id: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub capabilities: Option<ScoreCapabilities>,
+    /// Extra release groups the user prefers (upper-case).
+    #[serde(default)]
+    pub preferred_groups: Vec<String>,
+    /// Reward bitrates that play smoothly without bloat.
+    #[serde(default)]
+    pub bitrate_sweet_spot: bool,
+    /// Demote regional dubs that replace the original speech.
+    #[serde(default)]
+    pub penalize_dubs: bool,
+    /// Info hashes this device saw fail or abandoned within seconds (lower-case).
+    #[serde(default)]
+    pub demoted_hashes: Vec<String>,
+}
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ScoreCapabilities {
+    pub hdr_display: bool,
+    /// "mpv" tone-maps and handles Dolby Vision itself; "html5" cannot.
+    pub engine: String,
 }

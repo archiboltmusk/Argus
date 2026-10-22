@@ -117,6 +117,33 @@ export function scoreStream(
     reasons.push({ signal: `group:${s.releaseGroupNormalized}`, delta: 2 });
   }
 
+  if (s.releaseGroupNormalized && opts.preferredGroups?.includes(s.releaseGroupNormalized)) {
+    score += 8;
+    reasons.push({ signal: `group-pref:${s.releaseGroupNormalized}`, delta: 8 });
+  }
+
+  if (opts.bitrateSweetSpot && s.size && opts.runtimeMinutes) {
+    const mbps = (s.size * 8) / (opts.runtimeMinutes * 60) / 1_000_000;
+    const [lo, hi] = s.resolution === "4K" ? [14, 30] : s.resolution === "1080p" ? [4, 8] : [0, 0];
+    if (mbps >= lo && mbps <= hi && hi > 0) {
+      score += 6;
+      reasons.push({ signal: `bitrate-sweet-spot:${Math.round(mbps)}Mbps`, delta: 6 });
+    }
+  }
+
+  if (opts.penalizeDubs) {
+    const hay = [s.name, s.title, s.description].filter(Boolean).join(" \n ");
+    if (/[\s._\-[(](?:rus|ukr|pol|tur|ita)[\s._-]?dub(?:bed)?\b/i.test(hay)) {
+      score -= 40;
+      reasons.push({ signal: "regional-dub", delta: -40 });
+    }
+  }
+
+  if (s.infoHash && opts.demotedHashes?.includes(s.infoHash.toLowerCase())) {
+    score -= 200;
+    reasons.push({ signal: "dead-link", delta: -200 });
+  }
+
   if (
     opts.preferredReleaseGroup &&
     s.releaseGroupNormalized &&
