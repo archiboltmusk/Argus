@@ -178,6 +178,7 @@ export const DEFAULT: Settings = {
   torrentFullDownload: false,
   p2pAutoConsent: false,
   p2pUploadEnabled: false,
+  communityAddonDirectories: false,
   streamCacheRetentionHours: 24,
   streamCacheMaxGb: 0,
   deleteWatchedDownloads: false,

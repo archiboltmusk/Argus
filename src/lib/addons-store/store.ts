@@ -5,6 +5,7 @@ import { useAuth } from "@/lib/auth";
 import { userAddons } from "@/lib/addons";
 import { fetchInstalledAddons } from "@/lib/addon-store";
 import { listAddons } from "@/lib/providers/stremio-addons";
+import { loadStoredSettings } from "@/lib/settings/load";
 import { queryKeys } from "@/lib/query/keys";
 import { isAdultText } from "./adult-filter";
 import { fetchCommunityAddons, fetchManifest } from "./community";
@@ -238,7 +239,10 @@ export async function fetchInstalledAddonsPair(authKey: string | null) {
 export async function fetchAddonsDirectory() {
   const [community, saList] = await Promise.all([
     fetchCommunityAddons().catch(() => [] as Addon[]),
-    listAddons({ limit: 200, sort_by: "stars", order: "desc" })
+    (loadStoredSettings().communityAddonDirectories
+      ? listAddons({ limit: 200, sort_by: "stars", order: "desc" })
+      : Promise.resolve({ addons: [] as Awaited<ReturnType<typeof listAddons>>["addons"] })
+    )
       .then((r) =>
         r.addons.map((a): Addon => ({ manifest: a.manifest, transportUrl: a.manifestUrl })),
       )

@@ -20,6 +20,8 @@ import {
   type OmdbBudget,
   omdbBudget as readOmdbBudget,
 } from "@/lib/providers/omdb";
+import { useQueryClient } from "@tanstack/react-query";
+import { queryKeys } from "@/lib/query/keys";
 import { useSettings } from "@/lib/settings";
 import {
   repairStremioLibrary,
@@ -46,7 +48,7 @@ import { BuildFeedback } from "./build-feedback";
 import { RollbackRow } from "./rollback-row";
 import { PrivacyRow } from "./privacy-row";
 import { TrayRow } from "./tray-row";
-import { Section } from "./shared";
+import { Section, ToggleRow } from "./shared";
 import { Signature } from "./signature";
 import { CustomCodeCard, DownloadsSection } from "./player-panel";
 import { DesktopOnlyBlock } from "./player-panel/internals";
@@ -96,6 +98,15 @@ export function AdvancedPanel() {
         )}
       >
         <DownloadsSection />
+      </Section>
+
+      <Section
+        title={t("Addon directories")}
+        subtitle={t(
+          "Argus ships with no addons. Turn this on to browse public addon directories run by third parties. You are responsible for the addons you install.",
+        )}
+      >
+        <CommunityDirectoriesRow />
       </Section>
 
       <Section
@@ -181,6 +192,26 @@ export function AdvancedPanel() {
 
       <Signature />
     </>
+  );
+}
+
+function CommunityDirectoriesRow() {
+  const t = useT();
+  const { settings, update } = useSettings();
+  const qc = useQueryClient();
+  return (
+    <ToggleRow
+      label={t("Browse community addon directories")}
+      sub={t("Off by default. Fetches public addon lists from third-party directories when you open the addon store.")}
+      value={settings.communityAddonDirectories}
+      onChange={(v) => {
+        update({ communityAddonDirectories: v });
+        window.setTimeout(
+          () => void qc.invalidateQueries({ queryKey: queryKeys.addons.directory() }),
+          0,
+        );
+      }}
+    />
   );
 }
 
