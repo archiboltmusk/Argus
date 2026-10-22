@@ -28,6 +28,14 @@ export function SystemTab() {
           onChange={(smartLibrarySearch) => update({ smartLibrarySearch })}
         />
       </Section>
+      <Section title={t("Living room")}>
+        <ToggleRow
+          label={t("Living-room mode")}
+          sub={t("Starts in the remote-friendly Big Picture interface with keyboard, remote and gamepad focus navigation. Control it from your phone with Remote in Account.")}
+          value={settings.bigPictureAutoStart && settings.tvNavigation}
+          onChange={(v) => update({ bigPictureAutoStart: v, tvNavigation: v || settings.tvNavigation })}
+        />
+      </Section>
       <SelfHealSection />
       <E2eSyncSection />
       <Section
