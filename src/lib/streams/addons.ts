@@ -21,9 +21,6 @@ import {
 } from "./plugins/addon";
 import type { StreamRequestContext } from "./plugins/types";
 import type { Stream } from "./types";
-import { resourceUrl } from "@/lib/stremio-protocol";
-import { addonStatus, recordAddonOutcome } from "@/lib/addon-health/store";
-import { loadStoredSettings } from "@/lib/settings/load";
 
 const TIMEOUT_MS_FAST = 8000;
 const TIMEOUT_MS_SLOW = 22000;

@@ -1,8 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { ChevronDown } from "lucide-react";
-import { TvModalClose } from "@/components/tv-modal-close";
 import { useT } from "@/lib/i18n";
-import { useTvFocusScope } from "@/lib/keyboard-navigation";
 
 export type NavEntry = {
   key: string;
@@ -101,18 +99,23 @@ export function OverflowNav({
 }
 
 function MoreMenu({ entries, buttonClassName }: { entries: NavEntry[]; buttonClassName: string }) {
-  const t = useT();
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
-  useTvFocusScope(open, ref);
 
   useEffect(() => {
     if (!open) return;
     const onDown = (e: MouseEvent) => {
       if (!ref.current?.contains(e.target as Node)) setOpen(false);
     };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setOpen(false);
+    };
     document.addEventListener("mousedown", onDown);
-    return () => document.removeEventListener("mousedown", onDown);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onDown);
+      document.removeEventListener("keydown", onKey);
+    };
   }, [open]);
 
   const anyActive = entries.some((e) => e.active);
@@ -126,11 +129,7 @@ function MoreMenu({ entries, buttonClassName }: { entries: NavEntry[]; buttonCla
         onClick={() => setOpen((o) => !o)}
       />
       {open && (
-        <div
-          data-tv-focus-scope
-          className="absolute start-0 top-[calc(100%+8px)] z-50 flex min-w-[184px] flex-col overflow-hidden rounded-xl border border-edge bg-canvas/95 p-1 shadow-[0_18px_50px_-15px_rgba(0,0,0,0.7)] backdrop-blur-2xl"
-        >
-          <TvModalClose onClose={() => setOpen(false)} label={t("common.close")} />
+        <div className="absolute start-0 top-[calc(100%+8px)] z-50 flex min-w-[184px] flex-col overflow-hidden rounded-xl border border-edge bg-canvas/95 p-1 shadow-[0_18px_50px_-15px_rgba(0,0,0,0.7)] backdrop-blur-2xl">
           {entries.map((e) => (
             <button
               key={e.key}

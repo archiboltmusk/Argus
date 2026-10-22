@@ -25,7 +25,7 @@ export function WindowControls() {
           <rect x="3" y="3" width="7" height="7" stroke="currentColor" strokeWidth="1.4" rx="1.2" />
         )}
       </Ctl>
-      <Ctl label={t("common.close")} onClick={close} danger windowClose>
+      <Ctl label={t("common.close")} onClick={close} danger>
         <path d="M3.5 3.5l6 6M9.5 3.5l-6 6" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
       </Ctl>
     </div>
@@ -36,13 +36,11 @@ function Ctl({
   label,
   onClick,
   danger,
-  windowClose,
   children,
 }: {
   label: string;
   onClick: () => void;
   danger?: boolean;
-  windowClose?: boolean;
   children: ReactNode;
 }) {
   return (
@@ -52,7 +50,6 @@ function Ctl({
       title={label}
       onClick={onClick}
       data-tauri-drag-region="false"
-      data-argus-window-close={windowClose ? "" : undefined}
       className={`flex h-9 w-9 items-center justify-center rounded-full bg-elevated/85 text-ink-muted ring-1 ring-edge-soft/60 backdrop-blur-md transition-colors hover:text-ink ${
         danger ? "hover:bg-danger hover:text-white" : "hover:bg-raised"
       }`}

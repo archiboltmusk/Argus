@@ -76,7 +76,7 @@ async function verify(payload: string, sigB64: string): Promise<boolean> {
   }
 }
 
-function b64(value: string): Uint8Array<ArrayBuffer> {
+function b64(value: string): Uint8Array {
   const bin = atob(value);
   const out = new Uint8Array(bin.length);
   for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);

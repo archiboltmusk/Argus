@@ -1,4 +1,3 @@
-mod airplay;
 #[cfg(desktop)]
 mod ytmusic;
 // Modules that build on every target, desktop and Android alike. Nothing in
@@ -641,7 +640,6 @@ fn install_maximize_guard(app: &tauri::AppHandle) {
 // Opt-in geometry-only diagnostics: never log player URLs or account data.
 #[cfg(windows)]
 fn log_main_geometry(app: &tauri::AppHandle, reason: &'static str) {
-            external_player::open_in_external_player,
     use tauri::Manager;
     static ENABLED: std::sync::OnceLock<bool> = std::sync::OnceLock::new();
     if !*ENABLED.get_or_init(|| std::env::var_os("ARGUS_WINDOW_DIAGNOSTICS").is_some()) {
@@ -1839,19 +1837,11 @@ pub fn run() {
             torrent_engine::torrent_engine_restart,
             torrent_engine::torrent_engine_hard_reset,
             torrent_engine::torrent_engine_set_options,
-            torrent_engine::torrent_engine_set_upload,
             transcode::cast_ffmpeg_present,
             streams::streams_run_pipeline,
             streams::streams_parse,
             streams::streams_core_version,
             local_lib::argus_scan_folder,
-            music::music_index,
-            music::music_scan,
-            music::music_cover,
-            music::music_lyrics,
-            music::music_lyrics_store,
-            music::music_peaks,
-            music::music_playable_path,
             tray::tray_set_prefs,
             tray::tray_set_custom_themes,
             #[cfg(windows)]

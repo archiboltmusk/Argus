@@ -64,13 +64,9 @@ export function KidsStreamSwitcher({
         />
       </div>
 
-      <div
-        data-tv-focus-scope
-        className="relative flex w-full max-w-[620px] flex-col items-center gap-6 text-center text-white"
-      >
+      <div className="relative flex w-full max-w-[620px] flex-col items-center gap-6 text-center text-white">
         <button
           onClick={onClose}
-          data-tv-modal-close
           aria-label={t("Close")}
           className="absolute -top-1 end-0 flex h-12 w-12 items-center justify-center rounded-full bg-white/15 text-white ring-2 ring-white/30 transition-colors hover:bg-white/25"
         >

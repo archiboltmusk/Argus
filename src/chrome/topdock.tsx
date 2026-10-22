@@ -61,7 +61,6 @@ export function TopDock() {
         item.id !== "settings" &&
         item.id !== "kids" &&
         (item.view !== "vod" || settings.showPlaylistsTab) &&
-        (item.view !== "music" || settings.musicEnabled) &&
         (!item.hideKey || !settings.hideContent[item.hideKey]) &&
         (!item.parentalKey || !locked || !hiddenTabs[item.parentalKey]),
     )

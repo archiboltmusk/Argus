@@ -61,10 +61,7 @@ const TV_GENRE_NAME = new Map<number, string>(
   Object.entries(TV_GENRES).map(([name, id]) => [id, name]),
 );
 
-export function genresFromIds(
-  ids: number[] | undefined,
-  kind: "movie" | "tv",
-): string[] | undefined {
+function genresFromIds(ids: number[] | undefined, kind: "movie" | "tv"): string[] | undefined {
   if (!ids || ids.length === 0) return undefined;
   const lookup = kind === "movie" ? MOVIE_GENRE_NAME : TV_GENRE_NAME;
   const names: string[] = [];

@@ -115,6 +115,8 @@ export function OnboardingModal() {
               <div key={step} className="animate-step-in">
                 {step === "language" && <LanguageStep />}
                 {step === "welcome" && <WelcomeStep />}
+                {step === "layout" && <LayoutStep />}
+                {step === "tmdb" && <TmdbStep />}
                 {step === "stremio" && <StremioStep />}
                 {step === "streaming" && <StreamingStep />}
                 {step === "subtitles" && <SubtitlesStep />}

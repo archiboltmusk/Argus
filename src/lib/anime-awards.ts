@@ -37,21 +37,6 @@ export function awardFranchiseKey(title: string): string {
   return animeFranchiseKey(stripAwardSequelNumber(stripFranchiseSuffix(title)));
 }
 
-export function stripAwardSequelNumber(base: string): string {
-  const m = base.match(/(?<!\S)(\d{1,2})$/);
-  if (!m || m.index === undefined) return base;
-  const n = Number(m[1]);
-  if (n < 2 || n > 20) return base;
-  const head = base.slice(0, m.index).replace(/[\s:.\-]+$/, "");
-  if (!/[A-Za-z]/.test(head)) return base;
-  if (/\b(?:No|Vol|Ver|Chapter|Part|Cour|Ep|Episode)\.?$/i.test(head)) return base;
-  return head;
-}
-
-export function awardFranchiseKey(title: string): string {
-  return animeFranchiseKey(stripAwardSequelNumber(stripFranchiseSuffix(title)));
-}
-
 export type AwardSourceId = "crunchyroll" | "taaf" | "jmaf" | "r_anime" | "animation_kobe";
 
 export type AwardWin = {

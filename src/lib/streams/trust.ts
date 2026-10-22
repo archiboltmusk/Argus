@@ -209,7 +209,7 @@ function checkOne(
   }
 
   if (strict && opts.kind === "movie" && opts.expectedTitle && s.parsedTitle) {
-    if (!anyTitleMatches(opts, s.parsedTitle, s.year)) {
+    if (!titleMatches(opts.expectedTitle, s.parsedTitle, s.year, opts.expectedYear ?? null)) {
       return "title-mismatch";
     }
   }
@@ -270,7 +270,7 @@ function checkOne(
   }
 
   if (strict && opts.kind === "series" && !opts.isAnime && opts.expectedTitle && s.parsedTitle) {
-    if (!anyTitleMatches(opts, s.parsedTitle, s.year)) {
+    if (!titleMatches(opts.expectedTitle, s.parsedTitle, s.year, opts.expectedYear ?? null)) {
       return "title-mismatch";
     }
   }
@@ -425,25 +425,13 @@ function countOverlap(words: string[], lookup: Set<string>): number {
       continue;
     }
     for (const l of lookup) {
-      if (
-        (w.length >= 4 && l.length >= 4 && (w.startsWith(l) || l.startsWith(w))) ||
-        tokensEquivalent(w, l)
-      ) {
+      if (w.length >= 4 && l.length >= 4 && (w.startsWith(l) || l.startsWith(w))) {
         hits++;
         break;
       }
     }
   }
   return hits;
-}
-
-function anyTitleMatches(opts: TrustOptions, parsed: string, parsedYear: number | null): boolean {
-  const year = opts.expectedYear ?? null;
-  if (titleMatches(opts.expectedTitle ?? "", parsed, parsedYear, year)) return true;
-  for (const alias of opts.expectedAliases?.() ?? []) {
-    if (titleMatches(alias, parsed, parsedYear, year)) return true;
-  }
-  return false;
 }
 
 export function titleMatches(

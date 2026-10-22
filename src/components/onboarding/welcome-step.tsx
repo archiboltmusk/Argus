@@ -12,7 +12,14 @@ export function WelcomeStep() {
             className="font-display text-[44px] font-medium leading-none tracking-tight"
             style={{ transform: "translateY(2px)" }}
           >
-            Argus
+            Harb
+            <span
+              className="inline-block"
+              style={{ transform: "rotate(7deg)", transformOrigin: "50% 65%" }}
+            >
+              o
+            </span>
+            r
           </span>
         </div>
         <p className="text-[15.5px] leading-relaxed text-ink-muted">
@@ -26,11 +33,6 @@ export function WelcomeStep() {
         <Bullet title={t("Yours")}>{t("Your Stremio library + addons sync in untouched.")}</Bullet>
         <Bullet title={t("Quiet")}>{t("No telemetry, no servers, no bundled keys.")}</Bullet>
       </div>
-      <p className="text-[12.5px] leading-relaxed text-ink-subtle">
-        {t(
-          "Argus ships with no streaming sources. You are responsible for the addons and sources you add and for following the laws where you live.",
-        )}
-      </p>
     </div>
   );
 }

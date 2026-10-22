@@ -208,7 +208,6 @@ function ScrollableNav({
   const t = useT();
   const { open: openContextMenu } = useContextMenu();
   const openEmptyMenu = (e: React.MouseEvent) => {
-    if (item.view === "music" && !settings.musicEnabled) return false;
     if ((e.target as HTMLElement).closest("button")) return;
     openContextMenu(e, { kind: "nav" });
   };

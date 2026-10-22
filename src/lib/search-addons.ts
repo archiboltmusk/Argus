@@ -1,7 +1,6 @@
 import { isCollectionCatalog, type Addon, type CatalogDef } from "./addons";
 import type { Meta } from "./cinemeta";
 import { safeFetch } from "./safe-fetch";
-import { parseMetas, resourceUrl } from "./stremio-protocol";
 
 const CAP_PER_CATALOG = 20;
 const MAX_CATALOGS = 24;

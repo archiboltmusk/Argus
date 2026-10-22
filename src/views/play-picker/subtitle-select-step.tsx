@@ -50,14 +50,10 @@ export function SubtitleSelectStep({
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        e.preventDefault();
-        e.stopPropagation();
-        onCancel();
-      }
+      if (e.key === "Escape") onCancel();
     };
-    window.addEventListener("keydown", onKey, true);
-    return () => window.removeEventListener("keydown", onKey, true);
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
   }, [onCancel]);
 
   const start = () => {
@@ -90,7 +86,7 @@ export function SubtitleSelectStep({
   const total = results?.length ?? 0;
 
   return (
-    <main data-tv-focus-scope className="absolute inset-0 z-50 flex flex-col overflow-hidden bg-canvas">
+    <main className="absolute inset-0 z-50 flex flex-col overflow-hidden bg-canvas">
       <BackdropLayer src={src.episode?.still || src.meta.background || src.meta.poster} />
       <div
         aria-hidden
@@ -103,7 +99,6 @@ export function SubtitleSelectStep({
           <button
             type="button"
             onClick={onCancel}
-            data-tv-modal-close
             aria-label={t("Back")}
             className="mt-1 flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-elevated/70 text-ink-muted ring-1 ring-edge-soft backdrop-blur transition-colors hover:bg-raised hover:text-ink"
           >

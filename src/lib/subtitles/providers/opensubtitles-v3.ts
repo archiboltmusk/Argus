@@ -2,7 +2,6 @@ import { dinfo, dwarn } from "@/lib/debug";
 import { safeFetch } from "@/lib/safe-fetch";
 import type { SubResult, SubSearchQuery } from "../types";
 import { normalizeLang } from "../language";
-import { parseSubtitles, resourceUrl } from "@/lib/stremio-protocol";
 import {
   classifyProviderSubtitleMetadata,
   type ProviderSubtitleFlags,

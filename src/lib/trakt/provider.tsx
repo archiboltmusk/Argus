@@ -19,7 +19,6 @@ import { getSession, setSession, subscribeSession } from "./session";
 import { subscribeSecretsReady } from "@/lib/secret-store";
 import { stremioIdToTraktTarget, type TraktEpisodeRef } from "./ids";
 import { commitPlaybackState, commitWatchedEpisode } from "./resolve";
-import { flushPendingWatched } from "./pending-queue";
 import { armOnlineFlush, flushPendingStops, recordPendingStop } from "./pending-sync";
 import type { DeviceCode, TraktSession, TraktTarget } from "./types";
 import { activeProfileId } from "@/lib/active-profile-id";
@@ -75,14 +74,6 @@ export function TraktProvider({ children }: { children: ReactNode }) {
       pollHandleRef.current?.cancel();
     };
   }, []);
-
-  useEffect(() => {
-    if (!session) return;
-    const flush = () => void flushPendingWatched(pushWatched);
-    flush();
-    window.addEventListener("online", flush);
-    return () => window.removeEventListener("online", flush);
-  }, [session]);
 
   const beginConnect = useCallback(async () => {
     pollHandleRef.current?.cancel();

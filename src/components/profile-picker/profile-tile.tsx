@@ -8,13 +8,11 @@ export function ProfileTile({
   onSelect,
   onEdit,
   size = "lg",
-  initialFocus = false,
 }: {
   profile: Profile;
   onSelect: () => void;
   onEdit?: () => void;
   size?: "sm" | "md" | "lg";
-  initialFocus?: boolean;
 }) {
   const t = useT();
   const dim = size === "lg" ? "h-24 w-24" : size === "md" ? "h-16 w-16" : "h-12 w-12";
@@ -30,7 +28,6 @@ export function ProfileTile({
           onClick={onSelect}
           className="block cursor-pointer rounded-full outline-none"
           aria-label={t("Switch to {name}", { name: profile.name })}
-          data-tv-initial-focus={initialFocus || undefined}
         >
           <span
             className={`relative flex ${dim} items-center justify-center overflow-hidden rounded-full bg-elevated ${ring} transition-all duration-200 group-hover:scale-[1.04]`}

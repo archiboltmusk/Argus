@@ -5,7 +5,6 @@ import { userAddons } from "@/lib/addons";
 import { fetchInstalledAddons } from "@/lib/addon-store";
 import { listAddons } from "@/lib/providers/stremio-addons";
 import { isAdultText } from "./adult-filter";
-import { loadStoredSettings } from "@/lib/settings/load";
 import { fetchCommunityAddons, fetchManifest } from "./community";
 import { CURATED_ADDONS, type CuratedEntry } from "./curated";
 

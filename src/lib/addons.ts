@@ -1,6 +1,5 @@
 import { cachedCatalogRow, type CatalogLoad } from "@/lib/addon-catalog-cache";
 import { runLanes } from "@/lib/run-lanes";
-import { parseMeta, parseMetas, resourceUrl, type ExtraArg } from "./stremio-protocol";
 import { addonConfigurationKey } from "@/lib/addon-configuration-key";
 import { allowDirectHost, safeFetch as fetch } from "@/lib/safe-fetch";
 import type { AddonOrigin, Meta } from "./cinemeta";
@@ -346,7 +345,9 @@ function requiredCatalogExtras(cat: CatalogDef): Array<{ name: string; value: st
 function catalogRequestUrl(base: string, cat: CatalogDef): string | null {
   const extras = requiredCatalogExtras(cat);
   if (extras === null) return null;
-  return resourceUrl({ base, resource: "catalog", type: cat.type, id: cat.id, extra: extras });
+  if (extras.length === 0) return `${base}/catalog/${cat.type}/${cat.id}.json`;
+  const parts = extras.map((e) => `${encodeURIComponent(e.name)}=${encodeURIComponent(e.value)}`);
+  return `${base}/catalog/${cat.type}/${cat.id}/${parts.join("&")}.json`;
 }
 
 export function isCollectionCatalog(c: { type?: string; id?: string; name?: string }): boolean {
@@ -449,10 +450,11 @@ export async function loadAddonRows(
 }
 
 export async function fetchAddonMeta(base: string, type: string, id: string): Promise<Meta | null> {
-  const res = await fetchWithTimeout(resourceUrl({ base, resource: "meta", type, id }));
+  const res = await fetchWithTimeout(`${base}/meta/${type}/${encodeURIComponent(id)}.json`);
   if (!res || !res.ok) return null;
   try {
-    return parseMeta<Meta>(await res.json());
+    const json = await res.json();
+    return (json.meta ?? null) as Meta | null;
   } catch {
     return null;
   }
@@ -465,12 +467,15 @@ export async function fetchAddonCatalogPage(
   skip: number,
   extras?: Array<{ name: string; value: string }>,
 ): Promise<Meta[]> {
-  const extra: ExtraArg[] = [...(extras ?? [])];
-  if (skip > 0) extra.push({ name: "skip", value: skip });
-  const res = await fetchWithTimeout(resourceUrl({ base, resource: "catalog", type, id, extra }));
+  const parts: string[] = [];
+  for (const e of extras ?? []) parts.push(`${encodeURIComponent(e.name)}=${encodeURIComponent(e.value)}`);
+  if (skip > 0) parts.push(`skip=${skip}`);
+  const seg = parts.length ? `/${parts.join("&")}` : "";
+  const res = await fetchWithTimeout(`${base}/catalog/${type}/${id}${seg}.json`);
   if (!res || !res.ok) return [];
   try {
-    return parseMetas<Meta>(await res.json());
+    const json = await res.json();
+    return (json.metas ?? []) as Meta[];
   } catch {
     return [];
   }

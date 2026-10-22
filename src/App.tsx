@@ -78,7 +78,6 @@ import { CustomCodeMount } from "@/components/custom-code-mount";
 import { MemoryHud } from "@/components/memory-hud";
 import { Profiled } from "@/components/profiled";
 import { OfflineBanner } from "@/chrome/offline-banner";
-import { readActiveStremioAuthKey } from "@/lib/auth";
 
 const MobileShell = lazy(() =>
   import("@/views/mobile/mobile-shell").then((m) => ({ default: m.MobileShell })),
@@ -206,8 +205,6 @@ import { startMediaSessionWindowTracking } from "@/lib/media-session";
 const importAnime = () => import("@/views/anime");
 const importCalendar = () => import("@/views/calendar");
 const importWrapped = () => import("@/views/wrapped");
-const importSports = () => import("@/views/sports");
-const importManga = () => import("@/views/manga");
 const importDetail = () => import("@/views/detail");
 const importAddons = () => import("@/views/addons");
 const importDiscover = () => import("@/views/discover");
@@ -270,7 +267,6 @@ const FeedView = lazy(() => import("@/views/feed").then((m) => ({ default: m.Fee
 const GroupsView = lazy(() => import("@/views/groups").then((m) => ({ default: m.GroupsView })));
 const GroupView = lazy(() => import("@/views/group").then((m) => ({ default: m.GroupView })));
 const CollectionView = lazy(() => importCollection().then((m) => ({ default: m.CollectionView })));
-const MusicView = lazy(() => importMusic().then((m) => ({ default: m.MusicView })));
 const AddonCollectionView = lazy(() =>
   import("@/views/addon-collection").then((m) => ({ default: m.AddonCollectionView })),
 );
@@ -621,16 +617,6 @@ function TogetherFloater() {
 function AutoDownloadRunner() {
   useAutoDownloadRunner();
   return null;
-  useEffect(() => {
-    void import("@/lib/skip-intro/theintrodb").then((m) => m.setTheIntroDbApiKey(settings.theIntroDbKey));
-  }, [settings.theIntroDbKey]);
-  useEffect(() => {
-    if (!settings.addonHealthProbes) return;
-    const timer = window.setTimeout(() => {
-      void import("@/lib/addon-health/probe").then((m) => m.runAddonProbes(readActiveStremioAuthKey()));
-    }, 60_000);
-    return () => window.clearTimeout(timer);
-  }, [settings.addonHealthProbes]);
 }
 
 function FeaturedListsSyncRunner() {
@@ -1444,9 +1430,7 @@ function Shell({ onReady }: { onReady?: () => void }) {
 
   useEffect(() => {
     if (topKind === "anime" && settings.hideContent.anime) setView("home");
-    if (topKind === "sports" && !settings.sportsPage) setView("home");
-    if (topKind === "manga" && settings.hideContent.manga) setView("home");
-  }, [topKind, settings.hideContent.anime, settings.hideContent.manga, settings.sportsPage, setView]);
+  }, [topKind, settings.hideContent.anime, setView]);
 
   useEffect(() => {
     if (!kid || player) return;
@@ -1503,8 +1487,6 @@ function Shell({ onReady }: { onReady?: () => void }) {
   const addonsTop = topKind === "addons" || topKind === "addon-detail";
   const calendarTop = topKind === "calendar";
   const wrappedTop = topKind === "wrapped";
-  const sportsTop = topKind === "sports";
-  const mangaTop = topKind === "manga";
   const queueTop = topKind === "queue";
   const serviceTop = topKind === "service";
   const homeTop = topKind === "home";
@@ -1515,7 +1497,6 @@ function Shell({ onReady }: { onReady?: () => void }) {
   const musicTop = topKind === "music" && installFeatures.music;
   const gamesTop = topKind === "games" && installFeatures.games;
   const [gamesNavigationOpen, setGamesNavigationOpen] = useState(false);
-  const musicTop = topKind === "music";
 
   useEffect(() => {
     if (!gamesTop) setGamesNavigationOpen(false);
@@ -1618,8 +1599,6 @@ function Shell({ onReady }: { onReady?: () => void }) {
     stackKinds.includes("calendar") && stackKinds.includes("games"),
   );
   const wrappedAlive = useIdleEvict(wrappedTop);
-  const sportsAlive = useIdleEvict(sportsTop);
-  const mangaAlive = useIdleEvict(mangaTop);
   const queueAlive = useKeepAlive(queueTop, queueTop);
   const serviceAlive = useKeepAlive(serviceTop, serviceTop && !!service);
   const detailAlive = useKeepAlive(detailTop, !!meta);
@@ -1648,7 +1627,6 @@ function Shell({ onReady }: { onReady?: () => void }) {
   const matchDetailAlive = useKeepAlive(matchDetailTop, !!matchDetailGame);
   const filterAlive = useKeepAlive(filterTop, !!filter);
   const brandsAlive = useKeepAlive(brandsTop, !!brands);
-  const musicAlive = useKeepAlive(musicTop, musicTop);
   const gridAlive = useKeepAlive(gridTop, !!grid, stackKinds.includes("grid"));
   const awardAlive = useKeepAlive(awardTop, awardTop);
   const animeAwardAlive = useKeepAlive(animeAwardTop, animeAwardTop && !!animeAwardSource);
@@ -1747,20 +1725,6 @@ function Shell({ onReady }: { onReady?: () => void }) {
           )}
           {!playerActive && !pickerTop && layout === "cinematic" && !immersive && (
             <div className={gamesTop ? "games-library-back" : "contents"}>
-        {sportsAlive && (
-          <div className={layer(sportsTop)}>
-            <Suspense fallback={null}>
-              <SportsView active={sportsTop} />
-            </Suspense>
-          </div>
-        )}
-        {mangaAlive && (
-          <div className={layer(mangaTop)}>
-            <Suspense fallback={null}>
-              <MangaView active={mangaTop} />
-            </Suspense>
-          </div>
-        )}
               <FloatingBack offsetTop={92} />
             </div>
           )}
@@ -1810,13 +1774,6 @@ function Shell({ onReady }: { onReady?: () => void }) {
                 <Suspense fallback={null}>
                   <AnimeView active={animeTop} />
                 </Suspense>
-        {musicAlive && (
-          <div className={layer(musicTop)}>
-            <Suspense fallback={null}>
-              <MusicView active={musicTop} />
-            </Suspense>
-          </div>
-        )}
               </div>
             )}
             {discoverAlive && (

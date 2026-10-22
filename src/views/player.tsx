@@ -75,7 +75,6 @@ import { useAbLoop } from "./player/hooks/use-ab-loop";
 import { useAutoNextEpisode } from "./player/hooks/use-auto-next-episode";
 import { NextEpisodePrefetch } from "./player/next-episode-prefetch";
 import { useStillWatching } from "./player/hooks/use-still-watching";
-import { MoreLikeThis } from "@/components/player/more-like-this";
 import { useStartedNearEnd } from "./player/hooks/use-started-near-end";
 import { useFrameGrab } from "./player/hooks/use-frame-grab";
 import { useClipRecorder } from "./player/hooks/use-clip-recorder";
@@ -1031,14 +1030,6 @@ function NativePlayerView({ src }: { src: PlayerSrc }) {
     const url = swapped ? liveUrl : (transcodedUrl ?? src.url);
     if (!url) return;
     reloadBusyRef.current = true;
-      <MoreLikeThis
-        meta={src.meta}
-        durationSec={snap.durationSec}
-        hasNext={adjacent.next != null}
-        onPick={(m) => {
-          void closePlayer().then(() => openMeta(m));
-        }}
-      />
     const wasPlaying = snapRef.current.status === "playing";
     const resumeAt = isLiveLike ? 0 : Math.max(0, getPlaybackPosition());
     showSyncToast("ok", t("Reloading the stream…"));

@@ -33,8 +33,6 @@ import { AnilistTab } from "./library/anilist-tab";
 import { HistoryTab } from "./library/history-tab";
 import { LocalTab } from "./library/local-tab";
 import { MalTab } from "./library/mal-tab";
-import { GroupsTab } from "./library/groups-tab";
-import { BooksTab } from "./books/books-tab";
 import { MyListsTab } from "./library/my-lists-tab";
 import { MyGroupsTab } from "./library/my-groups-tab";
 import { FavoritesTab } from "./library/favorites-tab";
@@ -88,9 +86,7 @@ function readSavedTab(): Tab {
 }
 
 export function LibraryView({ active }: { active: boolean }) {
-  const [savedTab, setTab] = useState<Tab>(readSavedTab);
-  const { settings } = useSettings();
-  const tab: Tab = savedTab === "books" && !settings.ebookReader ? "watchlist" : savedTab;
+  const [tab, setTab] = useState<Tab>(readSavedTab);
   const { settings } = useSettings();
   const { isConnected: traktConnected } = useTrakt();
   const { isConnected: anilistConnected } = useAnilist();
@@ -144,7 +140,7 @@ export function LibraryView({ active }: { active: boolean }) {
         ? "Browsing their watchlist"
         : tab === "history"
           ? "Browsing their watch history"
-          : tab === "lists" || tab === "groups"
+          : tab === "lists"
             ? "Browsing their lists"
             : tab === "trakt"
               ? "Browsing their Trakt library"
@@ -154,8 +150,6 @@ export function LibraryView({ active }: { active: boolean }) {
                   ? "Browsing their Letterboxd library"
                   : tab === "mal"
                     ? "Browsing their MyAnimeList library"
-              : tab === "books"
-                ? "Reading a book"
                     : "Browsing their Stremio library";
     return pushActivityHint({ details: label, state: "Library" });
   }, [active, tab]);
@@ -330,12 +324,6 @@ function Header({
           <Star size={14} strokeWidth={2.2} />
           {t("Favorites")}
         </TabBtn>
-        {settings.libraryGroupsEnabled && (
-          <TabBtn active={tab === "groups"} onClick={() => onTab("groups")}>
-            <Layers size={14} strokeWidth={2.2} />
-            {t("Groups")}
-          </TabBtn>
-        )}
         {traktConnected && (
           <TabBtn active={tab === "trakt"} onClick={() => onTab("trakt")}>
             <img src={traktLogo} alt="" className="h-3.5 w-3.5 object-contain" />
@@ -368,12 +356,6 @@ function Header({
               className="h-3.5 w-3.5 rounded-[3px] object-contain"
             />
             PMDB
-          </TabBtn>
-        )}
-        {settings.ebookReader && (
-          <TabBtn active={tab === "books"} onClick={() => onTab("books")}>
-            <BookOpen size={14} strokeWidth={2.2} />
-            {t("Books")}
           </TabBtn>
         )}
         {lbConnected && (

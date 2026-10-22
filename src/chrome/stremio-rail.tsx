@@ -41,7 +41,6 @@ export function StremioRail() {
   const visible = items.filter((item) => {
     if (item.id === "kids") return false;
     if (item.view === "vod" && !settings.showPlaylistsTab) return false;
-    if (item.view === "music" && !settings.musicEnabled) return false;
     if (item.hideKey && settings.hideContent[item.hideKey]) return false;
     if (locked && item.parentalKey && hiddenTabs[item.parentalKey]) return false;
     return true;
@@ -52,7 +51,6 @@ export function StremioRail() {
       <aside
         data-tv-focus-scope={editing || undefined}
         aria-hidden={chromeHidden}
-        data-tv-nav-zone
         className={`relative z-[60] flex w-20 shrink-0 flex-col transition-[opacity,transform] duration-[320ms] ease-[cubic-bezier(0.32,0.72,0.24,1)] ${
           chromeHidden
             ? "pointer-events-none -translate-x-2 rtl:translate-x-2 opacity-0"

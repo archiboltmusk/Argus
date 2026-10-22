@@ -12,8 +12,6 @@ import lotMovies from "@/assets/lottie/nav/movies.json";
 import lotMusic from "@/assets/lottie/nav/music.json";
 import lotShows from "@/assets/lottie/nav/shows.json";
 import lotAnime from "@/assets/lottie/nav/anime.json";
-import { MusicNavIcon } from "@/chrome/music-nav-icon";
-import { MangaIcon } from "@/components/icons/manga-icon";
 import lotManga from "@/assets/lottie/nav/manga.json";
 import lotEbook from "@/assets/lottie/nav/ebook.json";
 import lotLiveTv from "@/assets/lottie/nav/live-tv.json";
@@ -104,13 +102,6 @@ const NAV_ITEMS_ALL: NavItem[] = [
       <NavLottie data={lotHome} hovered={hovered} fallback={<HomeIcon active={active} />} />
     ),
     view: "home",
-  },
-  {
-    id: "manga",
-    label: "nav.manga",
-    render: (active) => <MangaIcon active={active} />,
-    view: "manga",
-    hideKey: "manga",
   },
   {
     id: "discover",
@@ -294,12 +285,6 @@ const NAV_ITEMS_ALL: NavItem[] = [
       />
     ),
     view: "downloads",
-  },
-  {
-    id: "music",
-    label: "nav.music",
-    render: (active) => <MusicNavIcon active={active} />,
-    view: "music",
   },
   {
     id: "addons",

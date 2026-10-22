@@ -130,9 +130,8 @@ export function TransportKids({
             <SeekBtn dir={-1} onClick={() => onSeekStep(-10)} label={t("Back 10s")} />
             <button
               onClick={onPlayPause}
-              data-player-play-pause
               aria-label={playing ? t("Pause") : t("Play")}
-              className="relative flex h-24 w-24 shrink-0 items-center justify-center rounded-full bg-white text-[#1f8f88] shadow-[0_14px_36px_-10px_rgba(0,0,0,0.7)] transition-transform hover:scale-105 active:scale-95"
+              className="flex h-24 w-24 shrink-0 items-center justify-center rounded-full bg-white text-[#1f8f88] shadow-[0_14px_36px_-10px_rgba(0,0,0,0.7)] transition-transform hover:scale-105 active:scale-95"
             >
               {playing ? (
                 <Pause size={46} strokeWidth={0} fill="currentColor" />

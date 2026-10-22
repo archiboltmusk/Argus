@@ -78,11 +78,3 @@ export function LibraryPanel({
     </>
   );
 }
-        <ToggleRow
-          label={t("Sports page")}
-          sub={t(
-            "Adds a Sports page with daily schedules and live scores from ESPN, reachable from Live TV. Streams come only from playlists you add yourself; Argus ships none. Off by default.",
-          )}
-          value={settings.sportsPage}
-          onChange={(v) => update({ sportsPage: v })}
-        />

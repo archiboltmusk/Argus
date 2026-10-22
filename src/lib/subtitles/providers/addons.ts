@@ -3,7 +3,6 @@ import { isLocalNetworkUrl } from "@/lib/local-network";
 import { safeFetch as fetch, safeFetchLocal } from "@/lib/safe-fetch";
 import { dlog } from "@/lib/debug";
 import type { SubResult, SubSearchQuery } from "../types";
-import { parseSubtitles, resourceUrl, type ExtraArg } from "@/lib/stremio-protocol";
 import { isPlausibleLang, normalizeLang } from "../language";
 import { withSubtitleTimeout } from "../autoload";
 import {
@@ -32,6 +31,10 @@ type RawAddonSub = ProviderSubtitleFlags & {
   label?: string;
   addon?: string;
 };
+
+function transportBase(transportUrl: string): string {
+  return transportUrl.replace(/\/manifest\.json$/i, "").replace(/\/$/, "");
+}
 
 function contentId(q: SubSearchQuery): string | null {
   const base =
@@ -187,7 +190,7 @@ export async function searchAddons(
     return [];
   }
 
-  const extra = extraArgs(q);
+  const extra = extraSegment(q);
   const settled = await Promise.all(
     targets.map(async ({ addon, id }) => {
       const result = await withSubtitleTimeout(

@@ -3,7 +3,6 @@ import { Play } from "@/components/icons/play-filled";
 import { useEffect, useMemo, useState } from "react";
 import { AddonLogo, AddonLogoStack } from "@/components/addon-logo";
 import { CopyLinkButton, resolveStreamLink } from "@/components/player/copy-link-button";
-import { ExternalPlayerButton } from "@/components/player/external-player-button";
 import { FlagStack } from "@/components/flag";
 import { FormatBadge, RuleBadges } from "@/components/format-badge";
 import { HostMatchChip } from "@/components/host-match-chip";
@@ -211,7 +210,6 @@ function SourceRow({
       >
         <div className="flex min-w-0 flex-1 flex-col gap-1.5">
           <div className="flex min-w-0 items-center gap-2">
-          {link && <ExternalPlayerButton url={link} />}
             <p className="min-w-0 truncate font-mono text-[14px] text-ink">{title}</p>
             <EditionChip stream={stream} />
           </div>

@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::time::Duration;
 use tokio::process::Command;
 
-use crate::transcode::locate_sync_ffmpeg;
+use crate::transcode::locate_ffmpeg;
 
 use super::vad;
 
@@ -50,7 +50,7 @@ pub async fn speech_intervals(
     start_sec: f32,
     len_sec: f32,
 ) -> Result<Vec<(f32, f32)>, String> {
-    let Some(ff) = locate_sync_ffmpeg() else {
+    let Some(ff) = locate_ffmpeg() else {
         return Err("ffmpeg not found".into());
     };
     let mut cmd = Command::new(&ff);

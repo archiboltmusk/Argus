@@ -12,8 +12,6 @@ export type AutoSyncResult = {
   offsetSec: number;
   ratio: number;
   confidence: number;
-  /** [fitted time, residual offset] pairs from per-segment alignment. */
-  anchors?: Array<[number, number]>;
   fitWindowIds?: string[];
 };
 

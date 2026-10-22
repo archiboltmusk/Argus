@@ -423,7 +423,6 @@ export const Hero = memo(function Hero({
             onMouseLeave={() => setOverControls(false)}
           >
             <button
-              data-tv-initial-focus
               onClick={(e) => {
                 e.stopPropagation();
                 openMeta({ ...meta, logo: logo ?? meta.logo });

@@ -310,10 +310,7 @@ impl ProxyState {
                     };
                 }
                 Err(e) => {
-                    eprintln!(
-                        "[argus::proxy] HLS register failed ({}); falling back to direct transcode",
-                        e
-                    );
+                    eprintln!("[argus::proxy] HLS register failed ({}); falling back to direct transcode", e);
                 }
             }
         }

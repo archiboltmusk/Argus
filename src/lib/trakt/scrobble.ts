@@ -1,6 +1,5 @@
 import { traktRequest, TraktApiError } from "./client";
 import type { ScrobbleAction, TraktTarget } from "./types";
-import { queueWatched } from "./pending-queue";
 
 export type ScrobbleOutcome = "recorded" | "already-recorded" | "failed";
 
@@ -25,15 +24,6 @@ function scrobbleBody(target: TraktTarget, progress: number) {
   return { show: { ids: target.ids }, progress: clamped };
 }
 
-/** Same bar the player uses to treat a stop as "watched". */
-const QUEUE_MIN_PROGRESS = 70;
-
-/** Network errors and server-side failures are worth retrying later; client errors are not. */
-function isQueueable(error: unknown): boolean {
-  if (error instanceof TraktApiError) return error.status >= 500 || error.status === 429;
-  return true;
-}
-
 async function send(
   action: ScrobbleAction,
   target: TraktTarget,
@@ -54,9 +44,6 @@ async function send(
       if (attempt === 0 && action === "stop") {
         await new Promise((r) => setTimeout(r, 800));
         continue;
-      }
-      if (action === "stop" && progress >= QUEUE_MIN_PROGRESS && isQueueable(error)) {
-        queueWatched(target);
       }
       return "failed";
     }

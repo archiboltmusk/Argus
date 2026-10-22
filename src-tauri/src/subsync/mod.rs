@@ -11,8 +11,6 @@ pub mod scorer;
 pub mod torrent_sync;
 mod url_guard;
 mod vad;
-    /// (time in the fitted timeline, residual offset) pairs; empty when the global fit is enough.
-    pub anchors: Vec<[f32; 2]>,
 
 #[cfg(feature = "asr-whisper")]
 mod asr_whisper;
@@ -85,21 +83,10 @@ pub async fn sync_subtitle(
 
     let cue_pairs: Vec<(f32, f32)> = cues.iter().map(|c| (c[0], c[1])).collect();
     let res = correlate::solve(&audio, &cue_pairs, duration_sec, conf_min.unwrap_or(0.55));
-    Ok(res.map(|r| {
-        let anchors = if duration_sec >= 900.0 {
-            correlate::local_anchors(&audio, &cue_pairs, r.ratio, r.offset_sec, duration_sec)
-                .into_iter()
-                .map(|a| [a.t, a.offset_sec])
-                .collect()
-        } else {
-            Vec::new()
-        };
-        SyncOut {
-            offset_sec: r.offset_sec,
-            ratio: r.ratio,
-            confidence: r.confidence,
-            anchors,
-        }
+    Ok(res.map(|r| SyncOut {
+        offset_sec: r.offset_sec,
+        ratio: r.ratio,
+        confidence: r.confidence,
         fit_window_ids: used_fit_windows
             .iter()
             .map(|window| window.id.to_string())
