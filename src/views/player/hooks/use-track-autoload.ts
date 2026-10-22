@@ -138,6 +138,7 @@ export function useTrackAutoload(params: {
             release: src.streamRef?.title ?? src.streamRef?.parsedTitle ?? null,
             source: src.streamRef?.source ?? null,
             resolution: src.streamRef?.resolution ?? null,
+            videoHash: videoHash ?? null,
           },
         },
       );

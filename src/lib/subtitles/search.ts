@@ -19,6 +19,8 @@ export type StreamHints = {
   source?: string | null;
   resolution?: string | null;
   preferHearingImpaired?: boolean;
+  fps?: number | null;
+  videoHash?: string | null;
 };
 
 export async function searchSubtitles(
@@ -88,8 +90,22 @@ function sourceTokens(source: string | null | undefined): string[] {
   return [s];
 }
 
+const MATCH_FULL_SCORE = 260;
+const RELEASE_TOKEN_RX = /[a-z0-9]+/g;
+const NOISE_TOKENS = new Set(["the", "and", "mkv", "mp4", "avi", "srt", "www", "com"]);
+
+function releaseTokens(text: string | null | undefined): Set<string> {
+  const out = new Set<string>();
+  for (const t of (text ?? "").toLowerCase().match(RELEASE_TOKEN_RX) ?? []) {
+    if (t.length >= 3 && !NOISE_TOKENS.has(t)) out.add(t);
+  }
+  return out;
+}
+
 function streamMatchScore(r: SubResult, hints: StreamHints | undefined): number {
   if (!hints) return 0;
+  if (hints.videoHash && r.hash && r.hash.toLowerCase() === hints.videoHash.toLowerCase())
+    return MATCH_FULL_SCORE * 2;
   const release = extractReleaseGroup(hints.release);
   const subText = `${r.release ?? ""} ${r.title ?? ""} ${r.url ?? ""}`.toLowerCase();
   let score = 0;
@@ -105,8 +121,23 @@ function streamMatchScore(r: SubResult, hints: StreamHints | undefined): number 
     const res = hints.resolution.toLowerCase();
     if (subText.includes(res) || (res === "4k" && subText.includes("2160p"))) score += 8;
   }
+  const want = releaseTokens(hints.release);
+  if (want.size > 0) {
+    const have = releaseTokens(`${r.release ?? ""} ${r.title ?? ""}`);
+    let shared = 0;
+    for (const t of want) if (have.has(t)) shared++;
+    score += Math.round((shared / want.size) * 60);
+  }
+  if (hints.fps && r.fps) {
+    const diff = Math.abs(hints.fps - r.fps);
+    score += diff < 0.05 ? 20 : diff > 0.5 ? -30 : 0;
+  }
   if (r.hearingImpaired && !hints.preferHearingImpaired) score -= 25;
   return score;
+}
+
+function toConfidence(score: number): number {
+  return Math.max(0, Math.min(100, Math.round((score / MATCH_FULL_SCORE) * 100)));
 }
 
 function sourcePriority(source: SubResult["source"]): number {
@@ -134,8 +165,10 @@ function dedupAndRank(results: SubResult[], preferred: string[], hints?: StreamH
     seen.add(key);
     filtered.push(r);
   }
-  const interleaved = interleaveBySource(filtered, preferred, hints);
-  return interleaved;
+  if (hints) {
+    for (const r of filtered) r.matchScore = toConfidence(streamMatchScore(r, hints));
+  }
+  return interleaveBySource(filtered, preferred, hints);
 }
 
 function interleaveBySource(
