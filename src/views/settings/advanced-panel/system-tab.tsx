@@ -1,6 +1,7 @@
 import { useT } from "@/lib/i18n";
 import { useSettings } from "@/lib/settings";
 import { Section, Segmented, ToggleRow } from "../shared";
+import { E2eSyncSection, SelfHealSection } from "../self-heal-section";
 import { TrayRow } from "../tray-row";
 import { DownloadsSection } from "../player-panel";
 import { DesktopOnlyBlock, isTauri } from "../player-panel/internals";
@@ -13,6 +14,30 @@ export function SystemTab() {
   const isWindows = typeof navigator !== "undefined" && navigator.userAgent.includes("Windows");
   return (
     <>
+      <Section title={t("Speed and search")}>
+        <ToggleRow
+          label={t("Zero-wait playback")}
+          sub={t("Checks the best few direct links as soon as results arrive, so the first pick starts without a probe delay and dead links are skipped.")}
+          value={settings.zeroWaitPlayback}
+          onChange={(zeroWaitPlayback) => update({ zeroWaitPlayback })}
+        />
+        <ToggleRow
+          label={t("Mood and natural-language library search")}
+          sub={t("Search Library and Watchlist with phrases like “funny 90s” or “something scary”. Runs on this device with no model or network.")}
+          value={settings.smartLibrarySearch}
+          onChange={(smartLibrarySearch) => update({ smartLibrarySearch })}
+        />
+      </Section>
+      <Section title={t("Living room")}>
+        <ToggleRow
+          label={t("Living-room mode")}
+          sub={t("Starts in the remote-friendly Big Picture interface with keyboard, remote and gamepad focus navigation. Control it from your phone with Remote in Account.")}
+          value={settings.bigPictureAutoStart && settings.tvNavigation}
+          onChange={(v) => update({ bigPictureAutoStart: v, tvNavigation: v || settings.tvNavigation })}
+        />
+      </Section>
+      <SelfHealSection />
+      <E2eSyncSection />
       <Section
         title={t("Modules")}
         subtitle={t(

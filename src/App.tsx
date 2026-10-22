@@ -102,6 +102,8 @@ import { ThemeBackdrop } from "@/components/theme-backdrop";
 import { TopRankModal } from "@/components/top-rank-modal";
 import { AuthProvider, readActiveStremioAuthKey, useAuth } from "@/lib/auth";
 import { listMangaProgress } from "@/lib/manga-progress";
+import { useSafeMode } from "@/lib/self-heal";
+import { SafeModeBanner } from "@/components/safe-mode-banner";
 import { ProfilesProvider, useProfiles } from "@/lib/profiles";
 import { syncProfileStats } from "@/lib/social/stats-sync";
 import { useFeaturedListsSync } from "@/lib/social/use-featured-sync";
@@ -455,6 +457,7 @@ function useIdleEvict(active: boolean, pin = false): boolean {
 }
 
 export function App({ onReady }: { onReady?: () => void }) {
+  const safeMode = useSafeMode();
   return (
     <SettingsProvider syncTorrentEnginePolicy>
       <ProfilesProvider>
@@ -536,8 +539,9 @@ export function App({ onReady }: { onReady?: () => void }) {
                                                         <ActivitySyncRunner />
                                                       </AfterFirstPaint>
                                                       <AfterFirstPaint>
-                                                        <MediaServerSyncRunner />
-                                                        <AutoDownloadRunner />
+                                                        {!safeMode && <MediaServerSyncRunner />}
+                                                        {!safeMode && <AutoDownloadRunner />}
+                                                        <SafeModeBanner />
                                                         <RemindersRunner />
                                                         <GameDownloadNotificationsRunner />
                                                         <GameSourceAlertsRunner />
@@ -914,13 +918,14 @@ function Shell({ onReady }: { onReady?: () => void }) {
     chromeHidden,
   } = useView();
   const { settings, update } = useSettings();
+  const safeMode = useSafeMode();
   useEffect(() => {
-    if (!settings.addonHealthProbes) return;
+    if (!settings.addonHealthProbes || safeMode) return;
     const timer = window.setTimeout(() => {
       void import("@/lib/addon-health/probe").then((m) => m.runAddonProbes(readActiveStremioAuthKey()));
     }, 60_000);
     return () => window.clearTimeout(timer);
-  }, [settings.addonHealthProbes]);
+  }, [settings.addonHealthProbes, safeMode]);
   const searchOpen = useSearchOpen();
   const { setOpen: setSearchOpen } = useSearchActions();
   const bigPicture = useBigPicture().active;

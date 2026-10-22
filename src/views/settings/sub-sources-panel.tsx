@@ -140,6 +140,19 @@ export function SubSourcesPanel() {
         title={t("Subtitle sources")}
         subtitle={t("Choose where Argus searches for subtitles. Results from enabled sources appear together, with duplicates removed.")}
       >
+        <SettingGroup label={t("Smart subtitles")}>
+          <ToggleRow
+            label={t("Smart subtitles")}
+            sub={t("Matches by exact file hash first, then lines subtitles up with the audio using drift correction and on-device speech sync. Works from downloaded subtitles when offline.")}
+            value={
+              settings.subtitleAutoSync && settings.autoSyncDrift && settings.subtitleAutoSyncAsr
+            }
+            onChange={(v) =>
+              update({ subtitleAutoSync: v, autoSyncDrift: v, subtitleAutoSyncAsr: v })
+            }
+          />
+        </SettingGroup>
+
         <SettingGroup label={t("Result order")}>
           <ToggleRow
             label={t("Use my source order")}
