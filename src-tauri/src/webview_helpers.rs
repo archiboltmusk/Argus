@@ -72,7 +72,8 @@ pub fn install_process_failure_watchdog(app: &tauri::AppHandle, label: &str) {
     };
     let res = window.with_webview(|webview| unsafe {
         use webview2_com::Microsoft::Web::WebView2::Win32::{
-            COREWEBVIEW2_PROCESS_FAILED_KIND, COREWEBVIEW2_PROCESS_FAILED_KIND_RENDER_PROCESS_EXITED,
+            COREWEBVIEW2_PROCESS_FAILED_KIND,
+            COREWEBVIEW2_PROCESS_FAILED_KIND_RENDER_PROCESS_EXITED,
             COREWEBVIEW2_PROCESS_FAILED_KIND_RENDER_PROCESS_UNRESPONSIVE,
         };
         use webview2_com::ProcessFailedEventHandler;

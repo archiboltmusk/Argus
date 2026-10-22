@@ -34,6 +34,24 @@ fn default_max_height() -> u32 {
     1080
 }
 
+/// The slim LGPL build bundled for subtitle sync (audio decode and silence
+/// detection only). It has no video encoders or HLS/subtitle muxers, so
+/// everything else must keep using `locate_ffmpeg`.
+pub fn locate_sync_ffmpeg() -> Option<std::path::PathBuf> {
+    if cfg!(target_os = "macos") {
+        if let Some(dir) = std::env::current_exe()
+            .ok()
+            .and_then(|e| e.parent().map(|d| d.to_path_buf()))
+        {
+            let bundled = dir.join("argus-sync-ffmpeg");
+            if bundled.is_file() {
+                return Some(bundled);
+            }
+        }
+    }
+    locate_ffmpeg()
+}
+
 pub fn locate_ffmpeg() -> Option<std::path::PathBuf> {
     let mut owned: Vec<String> = Vec::new();
     if cfg!(windows) {
@@ -110,12 +128,6 @@ pub fn locate_ffmpeg() -> Option<std::path::PathBuf> {
             }
         }
     } else if cfg!(target_os = "macos") {
-        // Sidecar bundled in Argus.app/Contents/MacOS next to the main binary.
-        if let Ok(exe) = std::env::current_exe() {
-            if let Some(dir) = exe.parent() {
-                owned.push(dir.join("ffmpeg").to_string_lossy().to_string());
-            }
-        }
         for p in [
             "/opt/homebrew/bin/ffmpeg",
             "/usr/local/bin/ffmpeg",

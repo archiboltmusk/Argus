@@ -108,7 +108,11 @@ pub async fn music_peaks(path: String, buckets: usize) -> Result<Vec<f32>, Strin
 /// Returns a path the webview can play: the file itself, or a decoded WAV
 /// copy for formats the webview cannot handle (e.g. Ogg Vorbis on WebKit).
 #[tauri::command]
-pub async fn music_playable_path(app: AppHandle, path: String, id: String) -> Result<String, String> {
+pub async fn music_playable_path(
+    app: AppHandle,
+    path: String,
+    id: String,
+) -> Result<String, String> {
     let dir = music_dir(&app)?.join("wav");
     std::fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
     let out = dir.join(format!("{id}.wav"));

@@ -199,9 +199,11 @@ jobs:
           if otool -L "$EXE" "$APP"/Contents/Frameworks/*.dylib | grep -E "/opt/homebrew|/usr/local"; then
             echo "::error::App still links Homebrew paths"; exit 1
           fi
-          # Sidecar next to the main binary; locate_ffmpeg() checks there first.
-          cp ffmpeg-bin/ffmpeg "$(dirname "$EXE")/ffmpeg"
-          chmod +x "$(dirname "$EXE")/ffmpeg"
+          # Slim sync-only build next to the main binary; locate_sync_ffmpeg() uses it.
+          # Named apart from ffmpeg so transcode, casting and subtitle extraction
+          # never pick it up (it has no video encoders or HLS muxer).
+          cp ffmpeg-bin/ffmpeg "$(dirname "$EXE")/argus-sync-ffmpeg"
+          chmod +x "$(dirname "$EXE")/argus-sync-ffmpeg"
           codesign --force --deep --sign - "$APP"
           mkdir -p dist-dmg && cp -R "$APP" dist-dmg/
           ln -s /Applications dist-dmg/Applications
@@ -218,7 +220,8 @@ jobs:
             echo "::error::Add the TAURI_SIGNING_PRIVATE_KEY repo secret to publish updates"; exit 1
           fi
           # Built from the bundled, codesigned app so updates carry libmpv too.
-          tar -czf "Argus-${{ matrix.arch }}.app.tar.gz" -C dist-dmg Argus.app
+          # Max gzip level: the updater only reads tar.gz and the bundle is ~150 MB.
+          tar -cf - -C dist-dmg Argus.app | gzip -9 > "Argus-${{ matrix.arch }}.app.tar.gz"
           pnpm tauri signer sign "$PWD/Argus-${{ matrix.arch }}.app.tar.gz"
           VERSION=$(node -p 'require("./src-tauri/tauri.conf.json").version')
           SIG=$(cat "Argus-${{ matrix.arch }}.app.tar.gz.sig")
@@ -270,6 +273,33 @@ jobs:
           body: |
             Rolling beta. Installed copies of Argus 0.2+ update themselves from here (Settings → Updates).
             First install: download the .dmg. Apple Silicon only. Unsigned build: right-click Argus.app → Open the first time.
+      # Keep the last builds as their own releases and list them in
+      # versions-beta.json so Settings > Rollback can offer earlier versions.
+      - name: Update version history
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          COMMIT_MSG: ${{ github.event.head_commit.message }}
+        run: |
+          set -euo pipefail
+          [ "${{ github.ref }}" = "refs/heads/main" ] || exit 0
+          VERSION=$(jq -r .version latest.json)
+          TAG="build-$VERSION"
+          NOTES=$(printf '%s' "$COMMIT_MSG" | head -n1)
+          gh release create "$TAG" Argus-aarch64.dmg --repo "$REPO" --prerelease --latest=false \
+            --target "$GITHUB_SHA" --title "Argus $VERSION" --notes "$NOTES"
+          gh release download beta --repo "$REPO" -p versions-beta.json -O old.json || echo '{"versions":[]}' > old.json
+          jq --arg v "$VERSION" --arg n "$NOTES" --arg d "$(date -u +%FT%TZ)" \
+             --arg u "https://github.com/$REPO/releases/download/$TAG/Argus-aarch64.dmg" \
+            '{versions: ([{version:$v,date:$d,notes:$n,mac:$u,channel:"beta"}] + (.versions // [] | map(select(.version != $v))))[:10]}' \
+            old.json > versions-beta.json
+          gh release upload beta versions-beta.json --repo "$REPO" --clobber
+          # Drop build releases that fell out of the list.
+          for old in $(jq -r '.versions[]?.version' old.json); do
+            if ! jq -e --arg v "$old" '.versions[] | select(.version == $v)' versions-beta.json > /dev/null; then
+              gh release delete "build-$old" --repo "$REPO" --cleanup-tag -y || true
+            fi
+          done
       # A v* tag push, or a manual run with release_tag set, publishes the
       # .dmg as a GitHub pre-release (the tag is created if missing).
       - if: startsWith(github.ref, 'refs/tags/v') || inputs.release_tag != ''

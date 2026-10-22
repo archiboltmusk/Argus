@@ -1,3 +1,4 @@
+mod airplay;
 mod anime4k;
 mod binary_lookup;
 mod browser;
@@ -5,33 +6,33 @@ mod cast;
 mod cast_hls;
 mod cast_server;
 mod cast_subs;
-mod crash_report;
 mod cf_relay;
+mod crash_report;
 mod discord_rp;
 mod dlna;
 mod download;
 mod dvr;
+mod external_player;
 mod fonts;
 mod fullscreen;
 mod hdr_overlay;
 mod http_fetch;
 mod local_lib;
 mod modal_overlay;
-mod music;
 mod mpv;
-mod multiview;
-mod proc_mem;
-mod roku;
-#[cfg(target_os = "macos")]
-mod mpv_render_mac;
 #[cfg(target_os = "linux")]
 mod mpv_render_linux;
+#[cfg(target_os = "macos")]
+mod mpv_render_mac;
+mod multiview;
+mod music;
 mod pip;
 #[cfg(target_os = "macos")]
 mod pip_mac;
 mod power;
+mod proc_mem;
 mod process;
-mod airplay;
+mod roku;
 mod settings_store;
 mod song_id;
 mod stream_proxy;
@@ -42,7 +43,6 @@ mod subsync;
 mod svp;
 mod thumbs;
 mod torrent_engine;
-mod external_player;
 mod trailer;
 mod transcode;
 mod tray;
@@ -58,7 +58,8 @@ pub(crate) fn shutdown_services(app: &tauri::AppHandle) {
     crash_report::mark_clean_exit();
 }
 
-pub static CLOSE_FLUSH_DONE: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
+pub static CLOSE_FLUSH_DONE: std::sync::atomic::AtomicBool =
+    std::sync::atomic::AtomicBool::new(false);
 static CLOSE_IN_PROGRESS: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
 /// Tracks WebView2 TrySuspend / SetIsVisible(false) so we can recover on focus.
 #[cfg(windows)]
@@ -214,7 +215,12 @@ fn install_maximize_guard(app: &tauri::AppHandle) {
         return;
     };
     unsafe {
-        let _ = SetWindowSubclass(hwnd, Some(maxguard_subclass_proc), ARGUS_MAXGUARD_SUBCLASS_ID, 0);
+        let _ = SetWindowSubclass(
+            hwnd,
+            Some(maxguard_subclass_proc),
+            ARGUS_MAXGUARD_SUBCLASS_ID,
+            0,
+        );
     }
     eprintln!("[argus::maxguard] WM_GETMINMAXINFO work-area guard installed");
 }
@@ -374,11 +380,15 @@ fn ensure_window_on_screen(app: &tauri::AppHandle) {
     let cx = mp.x + (ms.width as i32 - ww).max(0) / 2;
     let cy = mp.y + (ms.height as i32 - wh).max(0) / 2;
     let _ = window.set_position(tauri::PhysicalPosition::new(cx, cy));
-    eprintln!("[argus::window] launched off-screen; recentered to {},{}", cx, cy);
+    eprintln!(
+        "[argus::window] launched off-screen; recentered to {},{}",
+        cx, cy
+    );
 }
 
 const MEDIA_EXTS: &[&str] = &[
-    "mkv", "mp4", "avi", "mov", "webm", "m4v", "ts", "m2ts", "mpg", "mpeg", "wmv", "flv", "ogv", "3gp",
+    "mkv", "mp4", "avi", "mov", "webm", "m4v", "ts", "m2ts", "mpg", "mpeg", "wmv", "flv", "ogv",
+    "3gp",
 ];
 
 fn media_file_from_args(args: &[String]) -> Option<String> {
@@ -437,23 +447,22 @@ pub fn run() {
     // Let a Linux development build run alongside the installed Argus app.
     // Packaged builds keep the normal single-instance behavior.
     #[cfg(not(all(target_os = "linux", debug_assertions)))]
-    let app_builder = app_builder
-        .plugin(tauri_plugin_single_instance::init(|app, args, _cwd| {
-            use tauri::{Emitter, Manager};
-            if let Some(w) = app.get_webview_window("main") {
-                let _ = w.show();
-                let _ = w.unminimize();
-                let _ = w.set_focus();
-                #[cfg(windows)]
-                force_show_foreground(&w);
-            }
-            if let Some(url) = args.iter().find(|a| a.starts_with("argus://")) {
-                let _ = app.emit("argus:stremio-deeplink", url.clone());
-            }
-            if let Some(path) = media_file_from_args(&args) {
-                let _ = app.emit("argus:open-file", path);
-            }
-        }));
+    let app_builder = app_builder.plugin(tauri_plugin_single_instance::init(|app, args, _cwd| {
+        use tauri::{Emitter, Manager};
+        if let Some(w) = app.get_webview_window("main") {
+            let _ = w.show();
+            let _ = w.unminimize();
+            let _ = w.set_focus();
+            #[cfg(windows)]
+            force_show_foreground(&w);
+        }
+        if let Some(url) = args.iter().find(|a| a.starts_with("argus://")) {
+            let _ = app.emit("argus:stremio-deeplink", url.clone());
+        }
+        if let Some(path) = media_file_from_args(&args) {
+            let _ = app.emit("argus:open-file", path);
+        }
+    }));
     let app_builder = app_builder
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_os::init())

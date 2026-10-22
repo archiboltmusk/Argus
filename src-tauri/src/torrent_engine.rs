@@ -228,7 +228,11 @@ struct EngineConfig {
 const UPLOAD_OFF_BPS: u32 = 8 * 1024;
 
 fn apply_upload_limit(session: &Session, enabled: bool) {
-    let bps = if enabled { None } else { std::num::NonZeroU32::new(UPLOAD_OFF_BPS) };
+    let bps = if enabled {
+        None
+    } else {
+        std::num::NonZeroU32::new(UPLOAD_OFF_BPS)
+    };
     session.ratelimits.set_upload_bps(bps);
 }
 

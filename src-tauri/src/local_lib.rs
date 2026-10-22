@@ -39,7 +39,11 @@ pub async fn argus_scan_folder(
                 .extension()
                 .and_then(|s| s.to_str())
                 .map(|s| s.to_ascii_lowercase());
-            if !ext.as_deref().map(|e| VIDEO_EXTS.contains(&e)).unwrap_or(false) {
+            if !ext
+                .as_deref()
+                .map(|e| VIDEO_EXTS.contains(&e))
+                .unwrap_or(false)
+            {
                 continue;
             }
             let meta = match entry.metadata() {

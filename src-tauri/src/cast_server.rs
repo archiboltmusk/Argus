@@ -24,7 +24,9 @@ fn kill_orphan_sidecars() {
     }
     #[cfg(not(windows))]
     {
-        let _ = std::process::Command::new("pkill").args(["-f", "stremio-server"]).output();
+        let _ = std::process::Command::new("pkill")
+            .args(["-f", "stremio-server"])
+            .output();
     }
 }
 
@@ -51,7 +53,9 @@ pub fn cast_server_status() -> CastServerStatus {
 
 #[tauri::command]
 pub async fn cast_server_restart(app: AppHandle) -> Result<(), String> {
-    crate::torrent_engine::start_lan_server(&app).await.map(|_| ())
+    crate::torrent_engine::start_lan_server(&app)
+        .await
+        .map(|_| ())
 }
 
 #[tauri::command]
