@@ -187,6 +187,11 @@ installed by you, and you are responsible for the sources you add and for follow
 you live. Peer-to-peer uploading (seeding) is off by default and is throttled to a trickle until you
 turn it on in Settings, with a warning.
 
+## License
+
+Argus is released under the [MIT License](LICENSE). Harbor's MIT notice is preserved in
+[THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
+
 ## Lineage
 
 Argus is built on [Harbor](https://github.com/harborstremio/harbor) (MIT) with its own
