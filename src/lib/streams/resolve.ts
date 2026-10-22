@@ -1,5 +1,7 @@
 import { safeFetch as fetch } from "@/lib/safe-fetch";
 import { dwarn } from "@/lib/debug";
+import { isWeb } from "@/lib/platform";
+import { isMixedContentSource } from "@/lib/player/web-playback";
 import { completedTorrentDownloadFor } from "@/lib/download/downloads-store";
 import { hasUncachedMarker, isP2pStream } from "./cached";
 import { streamSubtitles } from "./stream-subtitles";
@@ -88,6 +90,16 @@ async function probeIsWebPage(
 }
 
 export async function resolveStream(
+  ...args: Parameters<typeof resolveStreamForPlatform>
+): Promise<ResolveResult> {
+  const result = await resolveStreamForPlatform(...args);
+  if (result.ok && isMixedContentSource(result.data.url)) {
+    return { ok: false, code: "web-insecure-source", tried: [] };
+  }
+  return result;
+}
+
+async function resolveStreamForPlatform(
   stream: ParsedStream | ScoredStream,
   debrids: DebridStore[],
   signal: AbortSignal,
@@ -343,7 +355,7 @@ async function tryLocalEngine(
   signal: AbortSignal,
   hint?: EpisodeHint,
 ): Promise<DirectLink | null> {
-  if (!stream.infoHash || !localTorrentAllowed() || signal.aborted) return null;
+  if (isWeb() || !stream.infoHash || !localTorrentAllowed() || signal.aborted) return null;
   if (remoteStreamServerStrict()) return null;
   const addIdx =
     typeof stream.fileIdx === "number" && stream.fileIdx >= 0 ? stream.fileIdx : undefined;
@@ -456,6 +468,7 @@ function engineFailureCode(): string {
       : "remote-server-unreachable";
   }
   if (lastRemoteEngineFailure === "no-files") return "engine-no-peers";
+  if (isWeb()) return "web-needs-desktop";
   if (!localTorrentAllowed()) return "direct-torrent-disabled";
   const err = lastEngineAddError();
   if (err && /metadata timed out|no peers/i.test(err)) return "engine-no-peers";

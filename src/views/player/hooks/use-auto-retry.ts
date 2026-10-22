@@ -188,7 +188,8 @@ export function useAutoRetry(params: {
       // though mpv can read them, which previously produced a false
       // "No response" error. Keep mpv alive and let the longer startup ceiling
       // or a genuine mpv error own the visible failure state.
-      if (!instantPlay && !inRoom) {
+      // A pasted URL has no other candidates, so a retry would only open an empty picker.
+      if ((!instantPlay && !inRoom) || src.meta.id?.startsWith("url:")) {
         console.warn(`[player] manual source failed (${reason})`);
         setSourceError((prev) => prev ?? { status: 0, host: hostOf(src.url) });
         return;
