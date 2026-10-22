@@ -412,7 +412,7 @@ export const DEFAULT: Settings = {
   mpvBufferBoost: false,
   mpvBufferSize: "auto",
   mpvDownmixStereo: false,
-  mpvDisplaySync: false,
+  mpvDisplaySync: true,
   subSourceOrder: [],
   englishTitleFallback: true,
   quickProfileSwitch: false,
