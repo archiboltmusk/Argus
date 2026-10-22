@@ -13,6 +13,18 @@ type RawResponse = {
   preview?: RawSpan[];
 };
 
+let apiKey = "";
+
+// Optional personal key; raises TheIntroDB rate limits. Changing it drops the cache.
+export function setTheIntroDbApiKey(key: string): void {
+  const next = key.trim();
+  if (next === apiKey) return;
+  apiKey = next;
+  cache.clear();
+  inflight.clear();
+  coolingUntil = 0;
+}
+
 const cache = new Map<string, RawResponse | null>();
 const inflight = new Map<string, Promise<RawResponse | null>>();
 
@@ -53,7 +65,10 @@ async function fetchRaw(cacheKey: string): Promise<RawResponse | null> {
   if (pending) return pending;
   if (Date.now() < coolingUntil) return null;
   const p = (async () => {
-    const res = await fetch(`https://api.theintrodb.org/v4/media?${cacheKey}`);
+    const res = await fetch(
+      `https://api.theintrodb.org/v4/media?${cacheKey}`,
+      apiKey ? { headers: { Authorization: `Bearer ${apiKey}` } } : undefined,
+    );
     if (!res.ok) {
       // 404 means "no data for this title": cache it. Anything else is
       // transient, so back off and retry later.

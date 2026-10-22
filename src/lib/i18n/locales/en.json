@@ -4684,5 +4684,9 @@
   "Indexer URL, e.g. http://localhost:9117/api/v2.0/indexers/all/results/torznab/": "Indexer URL, e.g. http://localhost:9117/api/v2.0/indexers/all/results/torznab/",
   "Add indexer": "Add indexer",
   "Internet Archive": "Internet Archive",
-  "Search archive.org for public-domain films when you open a movie. Titles and years must match exactly.": "Search archive.org for public-domain films when you open a movie. Titles and years must match exactly."
+  "Search archive.org for public-domain films when you open a movie. Titles and years must match exactly.": "Search archive.org for public-domain films when you open a movie. Titles and years must match exactly.",
+  "More like this end screen": "More like this end screen",
+  "Suggests similar titles near the end of a movie or the last episode. Needs a TMDB key.": "Suggests similar titles near the end of a movie or the last episode. Needs a TMDB key.",
+  "TheIntroDB API key": "TheIntroDB API key",
+  "Optional. A personal key raises the rate limit for intro and credits detection.": "Optional. A personal key raises the rate limit for intro and credits detection."
 }

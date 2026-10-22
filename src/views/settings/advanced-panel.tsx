@@ -129,6 +129,8 @@ export function AdvancedPanel() {
         <CapabilityRow />
         <MetadataFusionRow />
         <ExternalPlayerRow />
+        <MoreLikeThisRow />
+        <IntroDbKeyRow />
       </Section>
 
       <Section
@@ -1041,5 +1043,53 @@ function InternetArchiveRow() {
       value={settings.internetArchive}
       onChange={(v) => update({ internetArchive: v })}
     />
+  );
+}
+
+function MoreLikeThisRow() {
+  const t = useT();
+  const { settings, update } = useSettings();
+  return (
+    <>
+      <ToggleRow
+        label={t("More like this end screen")}
+        sub={t("Suggests similar titles near the end of a movie or the last episode. Needs a TMDB key.")}
+        value={settings.moreLikeThisEndScreen}
+        onChange={(v) => update({ moreLikeThisEndScreen: v })}
+      />
+      {settings.moreLikeThisEndScreen && (
+        <Segmented
+          value={String(settings.moreLikeThisLeadSec)}
+          options={[
+            { value: "15", label: "15s" },
+            { value: "30", label: "30s" },
+            { value: "60", label: "1 min" },
+            { value: "120", label: "2 min" },
+          ]}
+          onChange={(v) => update({ moreLikeThisLeadSec: Number(v) })}
+        />
+      )}
+    </>
+  );
+}
+
+function IntroDbKeyRow() {
+  const t = useT();
+  const { settings, update } = useSettings();
+  return (
+    <div className="flex flex-col gap-2 px-1 py-2">
+      <div className="text-[14px] font-medium text-ink">{t("TheIntroDB API key")}</div>
+      <div className="text-[12.5px] text-ink-muted">
+        {t("Optional. A personal key raises the rate limit for intro and credits detection.")}
+      </div>
+      <input
+        type="password"
+        autoComplete="off"
+        value={settings.theIntroDbKey}
+        onChange={(e) => update({ theIntroDbKey: e.target.value })}
+        placeholder={t("API key")}
+        className="h-10 w-full max-w-sm rounded-xl bg-canvas/60 px-3 text-[13px] text-ink ring-1 ring-edge-soft outline-none focus:ring-accent"
+      />
+    </div>
   );
 }
