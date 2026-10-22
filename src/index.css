@@ -321,11 +321,11 @@ main[data-kids="on"]::-webkit-scrollbar-thumb:hover {
   );
 }
 
-[data-kids="on"] .argus-mark-sail {
-  fill: #6bc5ca;
-}
-[data-kids="on"] .argus-mark-hull {
+[data-kids="on"] .argus-mark-lid {
   fill: #845151;
+}
+[data-kids="on"] .argus-mark-pupil {
+  fill: #6bc5ca;
 }
 
 [data-kids="on"] .argus-row-arrow {
