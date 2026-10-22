@@ -9,8 +9,8 @@ import type { DebridStore } from "@/lib/debrid/types";
 import { useSettings } from "@/lib/settings";
 import { isAddonRanked } from "@/lib/streams/addon-detect";
 import {
-  isFilterEmpty,
-  matchesCustomFilter,
+  activeCustomFilter,
+  applyCustomFilter,
   type CustomStreamFilter,
 } from "@/lib/streams/custom-filters";
 import { filterStreamsByMode } from "@/lib/streams/mode";
@@ -123,8 +123,7 @@ export function useBpStreamFilters(params: {
   );
 
   const activeStreamFilter = useMemo(() => {
-    const f = settings.customStreamFilters.find((x) => x.id === settings.activeStreamFilterId);
-    return f && !isFilterEmpty(f) ? f : null;
+    return activeCustomFilter(settings.customStreamFilters, settings.activeStreamFilterId);
   }, [settings.customStreamFilters, settings.activeStreamFilterId]);
 
   const base = useMemo(() => {
@@ -140,9 +139,9 @@ export function useBpStreamFilters(params: {
     }
     let fellBack = false;
     if (activeStreamFilter && !hostMatch) {
-      const matched = all.filter((s) => matchesCustomFilter(s, activeStreamFilter));
-      if (matched.length > 0) all = matched;
-      else fellBack = true;
+      const applied = applyCustomFilter(all, activeStreamFilter);
+      all = applied.streams;
+      fellBack = applied.fellBack;
     }
     if (all.length === 0 && candidatePool.length > 0) {
       all = candidatePool;
