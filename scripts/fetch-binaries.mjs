@@ -110,14 +110,14 @@ const SOURCES = {
     "x86_64-unknown-linux-gnu": { kind: "tar.xz", url: `${BTBN}/ffmpeg-master-latest-linux64-gpl.tar.xz`, member: "ffmpeg" },
     "aarch64-unknown-linux-gnu": { kind: "tar.xz", url: `${BTBN}/ffmpeg-master-latest-linuxarm64-gpl.tar.xz`, member: "ffmpeg" },
     "x86_64-apple-darwin": { kind: "evermeet", infoName: "ffmpeg", member: "ffmpeg" },
-    "aarch64-apple-darwin": { kind: "evermeet", infoName: "ffmpeg", member: "ffmpeg" },
+    "aarch64-apple-darwin": { kind: "zip", url: "https://www.osxexperts.net/ffmpeg71arm.zip", member: "ffmpeg" },
     "x86_64-pc-windows-msvc": { kind: "zip", url: GYAN, member: "ffmpeg.exe" },
   },
   ffprobe: {
     "x86_64-unknown-linux-gnu": { kind: "tar.xz", url: `${BTBN}/ffmpeg-master-latest-linux64-gpl.tar.xz`, member: "ffprobe" },
     "aarch64-unknown-linux-gnu": { kind: "tar.xz", url: `${BTBN}/ffmpeg-master-latest-linuxarm64-gpl.tar.xz`, member: "ffprobe" },
     "x86_64-apple-darwin": { kind: "evermeet", infoName: "ffprobe", member: "ffprobe" },
-    "aarch64-apple-darwin": { kind: "evermeet", infoName: "ffprobe", member: "ffprobe" },
+    "aarch64-apple-darwin": { kind: "zip", url: "https://www.osxexperts.net/ffprobe71arm.zip", member: "ffprobe" },
     "x86_64-pc-windows-msvc": { kind: "zip", url: GYAN, member: "ffprobe.exe" },
   },
 };
