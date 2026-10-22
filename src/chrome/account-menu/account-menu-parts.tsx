@@ -1,3 +1,4 @@
+import { ARGUS_HOSTED } from "@/lib/config/endpoints";
 import { AvatarImage } from "@/components/avatar-image";
 import { useT } from "@/lib/i18n";
 import { type Profile } from "@/lib/profiles";
@@ -27,5 +28,6 @@ export function ProfileAvatar({
 
 export function SubtitleText({ author }: { author: Author | null }) {
   const t = useT();
+  if (!ARGUS_HOSTED) return <>{t("Local profile")}</>;
   return <>{t(author ? "Signed in to Argus" : "Signed out of Argus")}</>;
 }

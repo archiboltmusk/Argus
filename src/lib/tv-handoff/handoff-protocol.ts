@@ -7,6 +7,8 @@
  * downstream is public. Nothing here that travels downstream is a secret.
  */
 
+import { ARGUS_HOSTED } from "@/lib/config/endpoints";
+
 export const HANDOFF_MSG = "argusSetup";
 export const HANDOFF_PROTO = 1;
 
@@ -24,7 +26,9 @@ export const HANDOFF_PARAM = "setup";
 
 export type HandoffStepId = "tmdb" | "stremio" | "argus";
 
-export const HANDOFF_STEPS: readonly HandoffStepId[] = ["tmdb", "stremio", "argus"];
+export const HANDOFF_STEPS: readonly HandoffStepId[] = ARGUS_HOSTED
+  ? ["tmdb", "stremio", "argus"]
+  : ["tmdb", "stremio"];
 
 /**
  * Phone to TV only. These carry credentials and must never appear in an

@@ -1,3 +1,4 @@
+import { ARGUS_HOSTED } from "@/lib/config/endpoints";
 import { useEffect, useState } from "react";
 import {
   Bell,
@@ -322,7 +323,7 @@ export function AccountMenuPanel({
             )}
 
             {/* ARGUS SIGN OUT / SIGN IN (when not Nuvio) */}
-            {!isNuvio && (author ? (
+            {ARGUS_HOSTED && !isNuvio && (author ? (
               <button onClick={signOutArgus} className={`${ITEM} border-t border-edge-soft`}>
                 <LogOut size={14} strokeWidth={2.2} />
                 {t("Sign out of Argus")}

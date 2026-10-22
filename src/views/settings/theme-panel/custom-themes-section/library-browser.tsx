@@ -1,3 +1,4 @@
+import { ARGUS_HOSTED } from "@/lib/config/endpoints";
 import { ChevronLeft } from "../../icons";
 import { useEffect, useState } from "react";
 import { BETA_THEMES } from "@/lib/theme";
@@ -99,8 +100,12 @@ export function LibraryBrowser({
         <MarketSegmented
           items={[
             { id: "library", label: "My library", badge: unseen > 0 ? unseen : undefined },
-            { id: "community", label: "Community" },
-            { id: "mine", label: "My themes" },
+            ...(ARGUS_HOSTED
+              ? [
+                  { id: "community", label: "Community" },
+                  { id: "mine", label: "My themes" },
+                ]
+              : []),
           ]}
           active={tab}
           onSelect={(id) => setTab(id as "library" | "community" | "mine")}
@@ -108,9 +113,9 @@ export function LibraryBrowser({
       </div>
 
       <div className="flex flex-col gap-8">
-        {tab === "community" ? (
+        {tab === "community" && ARGUS_HOSTED ? (
           <CommunityStore initialTab={initialStoreTab} />
-        ) : tab === "mine" ? (
+        ) : tab === "mine" && ARGUS_HOSTED ? (
           <MyThemesDashboard />
         ) : (
           <>

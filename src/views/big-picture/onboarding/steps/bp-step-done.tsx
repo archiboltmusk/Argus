@@ -1,3 +1,4 @@
+import { ARGUS_HOSTED } from "@/lib/config/endpoints";
 import { useBpT } from "../../bp-i18n";
 import { BpDecisionNote, BpDecisionScroll, BpTick } from "../bp-step-parts";
 import { useBpOnboardFacts } from "../use-bp-onboard-facts";
@@ -29,13 +30,17 @@ export function BpStepDone() {
         ? t("Signed in as {name}", { name: facts.stremioName })
         : t("Not signed in to Stremio. Your library stays local."),
     },
-    {
-      key: "argus",
-      on: facts.argusName !== null,
-      text: facts.argusName
-        ? t("Argus account linked as {name}", { name: facts.argusName })
-        : t("No Argus account yet"),
-    },
+    ...(ARGUS_HOSTED
+      ? [
+          {
+            key: "argus",
+            on: facts.argusName !== null,
+            text: facts.argusName
+              ? t("Argus account linked as {name}", { name: facts.argusName })
+              : t("No Argus account yet"),
+          },
+        ]
+      : []),
     {
       key: "subs",
       on: facts.subLangs.length > 0,
