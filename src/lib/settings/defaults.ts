@@ -210,7 +210,7 @@ export const DEFAULT: Settings = {
   subLineSpacing: 0,
   subProvidersEnabled: { wyzie: false, opensubtitles: true, jimaku: false, addons: true },
   subShowInPip: true,
-  subtitleAutoSync: false,
+  subtitleAutoSync: true,
   subtitlesOffByDefault: false,
   preferEmbeddedSubs: false,
   subtitleAutoUpgrade: false,

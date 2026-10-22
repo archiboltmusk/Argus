@@ -4652,5 +4652,9 @@
   "Addon directories": "Addon directories",
   "Argus ships with no addons. Turn this on to browse public addon directories run by third parties. You are responsible for the addons you install.": "Argus ships with no addons. Turn this on to browse public addon directories run by third parties. You are responsible for the addons you install.",
   "Browse community addon directories": "Browse community addon directories",
-  "Off by default. Fetches public addon lists from third-party directories when you open the addon store.": "Off by default. Fetches public addon lists from third-party directories when you open the addon store."
+  "Off by default. Fetches public addon lists from third-party directories when you open the addon store.": "Off by default. Fetches public addon lists from third-party directories when you open the addon store.",
+  "Syncing subtitles to speech": "Syncing subtitles to speech",
+  "Synced": "Synced",
+  "Auto-sync subtitles to speech": "Auto-sync subtitles to speech",
+  "In the background, match each subtitle line to when it is spoken, correcting offsets, framerate drift and edited cuts. Needs ffmpeg installed. Playback starts immediately and subtitles snap into place when ready.": "In the background, match each subtitle line to when it is spoken, correcting offsets, framerate drift and edited cuts. Needs ffmpeg installed. Playback starts immediately and subtitles snap into place when ready."
 }
