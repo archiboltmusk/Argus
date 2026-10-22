@@ -8,6 +8,13 @@ export const ARGUS_API_BASE = resolveBase(
   "https://argus.invalid",
 );
 
+/**
+ * False while no Argus server is configured. Argus-account sign-in, handles, profile
+ * sync and community features all need one, so their UI stays hidden until
+ * VITE_ARGUS_API_BASE points at a real deployment.
+ */
+export const ARGUS_HOSTED = !new URL(ARGUS_API_BASE).hostname.endsWith(".invalid");
+
 export const ARGUS_TRAKT_BASE = resolveBase(
   import.meta.env.VITE_ARGUS_TRAKT_BASE,
   ARGUS_API_BASE,

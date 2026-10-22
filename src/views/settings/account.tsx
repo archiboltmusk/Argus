@@ -11,6 +11,7 @@ import { StartupDefaults } from "./account/startup-defaults";
 import { SettingsScopeCard } from "./account/settings-scope-card";
 import { StremioCard } from "./account/stremio-card";
 import { SyncedAddonsCard } from "./account/synced-addons-card";
+import { ARGUS_HOSTED } from "@/lib/config/endpoints";
 import { ArgusAccountPanel } from "@/views/account/argus-account-panel";
 
 import { NuvioCard } from "./account/nuvio-card";
@@ -64,7 +65,7 @@ export function AccountStub() {
   const tabs = [
     { id: "you" as const, label: t("Your profile") },
     { id: "profiles" as const, label: t("Profiles") },
-    { id: "argus" as const, label: t("Argus account") },
+    ...(ARGUS_HOSTED ? [{ id: "argus" as const, label: t("Argus account") }] : []),
     { id: "provider" as const, label: t("Account provider") },
     ...(isNuvio
       ? [{ id: "nuvio" as const, label: t("Nuvio") }]
@@ -147,7 +148,7 @@ export function AccountStub() {
         {tab === "provider" && <AccountProviderPanel />}
         {tab === "you" && <IdentityTab />}
         {tab === "profiles" && <ProfilesTab />}
-        {tab === "argus" && <ArgusAccountPanel />}
+        {tab === "argus" && ARGUS_HOSTED && <ArgusAccountPanel />}
         {tab === "stremio" && <StremioTab />}
         {tab === "nuvio" && <NuvioTab />}
       </div>

@@ -1,3 +1,4 @@
+import { ARGUS_HOSTED } from "@/lib/config/endpoints";
 import { useMemo, useState } from "react";
 import { useSettings } from "@/lib/settings";
 import { useT } from "@/lib/i18n";
@@ -11106,6 +11107,7 @@ export function useNavSearch(trimmed: string) {
         (o.feature !== "games" || gamesEnabled) &&
         (o.feature !== "library" || libraryEnabled) &&
         (o.label !== "Experimental builds" || experimentalAccess) &&
+        (o.tab !== "argus" || ARGUS_HOSTED) &&
         matchesSettingsSearch(
           trimmed,
           o.anchorTitle ? [o.label, o.anchorTitle] : [o.label],

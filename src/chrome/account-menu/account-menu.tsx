@@ -1,3 +1,4 @@
+import { ARGUS_HOSTED } from "@/lib/config/endpoints";
 import { ArgusAccountDialog } from "@/views/account/argus-account-dialog";
 import { ParentalPinModal } from "@/components/parental-pin-modal";
 import { useT } from "@/lib/i18n";
@@ -116,7 +117,7 @@ export function AccountMenu({
           >
             <div className="truncate text-[14.5px] font-medium tracking-tight text-ink">{name}</div>
             <div className="text-[12px] text-ink-subtle">
-              {!author && !kid && !collapsed ? (
+              {ARGUS_HOSTED && !author && !kid && !collapsed ? (
                 <button
                   type="button"
                   onClick={ctrl.openArgusAuth}

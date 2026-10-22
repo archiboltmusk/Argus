@@ -1,3 +1,4 @@
+import { ARGUS_HOSTED } from "@/lib/config/endpoints";
 import tmdbMark from "@/assets/addon-logos/tmdb.png";
 
 export type BpOnboardStepId =
@@ -37,7 +38,7 @@ export type BpOnboardStep = {
 // The phone offer sits second so the three screens that need typing are
 // adjacent and the user picks the phone up once. Splash and welcome are gone:
 // they wrote nothing, and Big Picture already owns its front door in BpIntro.
-export const BP_ONBOARD_STEPS: readonly BpOnboardStep[] = [
+const ALL_BP_ONBOARD_STEPS: readonly BpOnboardStep[] = [
   {
     id: "language",
     eyebrow: "Language",
@@ -130,5 +131,9 @@ export const BP_ONBOARD_STEPS: readonly BpOnboardStep[] = [
     primary: "Start watching",
   },
 ];
+
+export const BP_ONBOARD_STEPS: readonly BpOnboardStep[] = ALL_BP_ONBOARD_STEPS.filter(
+  (s) => ARGUS_HOSTED || s.id !== "argus",
+);
 
 export const BP_ONBOARD_LAST = BP_ONBOARD_STEPS.length - 1;

@@ -6,6 +6,7 @@ import letterboxdLogo from "@/assets/addon-logos/letterboxd.png";
 import publicmetadbLogo from "@/assets/publicmetadb.svg";
 import nuvioLogo from "@/assets/nuvio.png";
 import stremioLogo from "@/assets/stremio.png";
+import { ARGUS_HOSTED } from "@/lib/config/endpoints";
 import type { SectionId } from "./shared";
 
 export type TabEntry = { id: string; label: string; icon: string; img?: string };
@@ -14,7 +15,7 @@ export const SECTION_TABS: Partial<Record<SectionId, TabEntry[]>> = {
   account: [
     { id: "you", label: "Your profile", icon: "UserRound" },
     { id: "profiles", label: "Profiles", icon: "Users" },
-    { id: "argus", label: "Argus account", icon: "Argus" },
+    ...(ARGUS_HOSTED ? [{ id: "argus", label: "Argus account", icon: "Argus" }] : []),
     { id: "provider", label: "Account provider", icon: "RefreshCw" },
     { id: "stremio", label: "Stremio", icon: "Play", img: stremioLogo },
     { id: "nuvio", label: "Nuvio", icon: "Play", img: nuvioLogo },
