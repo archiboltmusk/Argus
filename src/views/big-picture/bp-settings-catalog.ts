@@ -4,6 +4,7 @@ import type { StreamingService } from "@/lib/settings";
 import type { Settings } from "@/lib/settings/types";
 import { ALL_LANGUAGE_NAMES } from "@/lib/subtitles/language";
 import { mediaServerConnections } from "@/lib/media-server/connections";
+import { isAndroid, isAndroidTv } from "@/lib/platform";
 
 export type BpCatId =
   | "picture"
@@ -383,6 +384,17 @@ export function bpSettingsControls(
       value: boolValue(s.bigPictureAutoStart),
       options: onOff(t),
     },
+    ...(isAndroid() && !isAndroidTv()
+      ? ([
+          {
+            kind: "options",
+            id: "phoneLayout",
+            label: t("Phone layout (restart to apply)"),
+            value: boolValue(s.androidPhoneLayout),
+            options: onOff(t),
+          },
+        ] as BpControl[])
+      : []),
     { kind: "action", id: "leave", label: t("Leave Big Picture") },
   ];
 }

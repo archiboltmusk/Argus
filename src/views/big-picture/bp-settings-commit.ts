@@ -121,6 +121,7 @@ export function useBpSettingsWriter(): BpSettingsWriter {
         return;
       }
       if (id === "autoStart") update({ bigPictureAutoStart: on });
+      if (id === "phoneLayout") update({ androidPhoneLayout: on });
     },
     [settings.preferredSubLangs, toggleStreaming, update],
   );

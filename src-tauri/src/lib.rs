@@ -90,6 +90,10 @@ mod fullscreen;
 #[cfg(desktop)]
 mod games;
 #[cfg(desktop)]
+mod video_archive;
+#[cfg(desktop)]
+mod video_archive_command;
+#[cfg(desktop)]
 mod argus_lan;
 #[cfg(desktop)]
 mod hdr_overlay;
@@ -1527,6 +1531,7 @@ pub fn run() {
             installer_handoff::modify_probe,
             installer_handoff::modify_open,
             install_features::install_features,
+            video_archive_command::archive_extract_video,
             power::power_inhibit,
             argus_set_webview_memory_low,
             argus_set_webview_visible,

@@ -196,6 +196,8 @@ export const DEFAULT: Settings = {
   addonConformanceChecks: true,
   addonTestAll: true,
   usenetNzbAdd: false,
+  playFromArchives: false,
+  androidPhoneLayout: true,
   bestLinkScoring: true,
   preferredReleaseGroups: "",
   preferredHosts: "",
