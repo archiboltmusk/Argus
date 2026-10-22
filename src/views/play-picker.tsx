@@ -45,7 +45,7 @@ import { continuationStream } from "@/lib/player/continue-playback";
 import { useSettings } from "@/lib/settings";
 import type { ScoredStream, Tier } from "@/lib/streams/types";
 import { isAddonRanked } from "@/lib/streams/addon-detect";
-import { isFilterEmpty, matchesCustomFilter } from "@/lib/streams/custom-filters";
+import { activeCustomFilter, applyCustomFilter } from "@/lib/streams/custom-filters";
 import { useScrollMemory, useView, type PlayEpisode, type PlayerSrc } from "@/lib/view";
 import { prefetchSegments } from "@/lib/skip-intro";
 import { exitWindowFullscreen } from "@/lib/fullscreen-state";
@@ -356,8 +356,7 @@ export function PlayPicker({
   );
 
   const activeStreamFilter = useMemo(() => {
-    const f = settings.customStreamFilters.find((x) => x.id === settings.activeStreamFilterId);
-    return f && !isFilterEmpty(f) ? f : null;
+    return activeCustomFilter(settings.customStreamFilters, settings.activeStreamFilterId);
   }, [settings.customStreamFilters, settings.activeStreamFilterId]);
 
   const filteredPicker = useMemo(() => {
@@ -377,13 +376,14 @@ export function PlayPicker({
       const cached = all.filter(isCached);
       if (cached.length > 0) all = cached;
     }
-    let allRaw = all;
     let fellBack = false;
     if (activeStreamFilter && !hostMatch) {
-      const matched = all.filter((s) => matchesCustomFilter(s, activeStreamFilter));
-      if (matched.length > 0) all = matched;
-      else fellBack = true;
+      const applied = applyCustomFilter(all, activeStreamFilter);
+      all = applied.streams;
+      fellBack = applied.fellBack;
     }
+    // Remembered-source matching must respect the saved filter too.
+    let allRaw = all;
     if (all.length === 0 && candidatePool.length > 0) {
       all = candidatePool;
       allRaw = candidatePool;

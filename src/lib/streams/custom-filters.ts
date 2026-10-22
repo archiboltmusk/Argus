@@ -170,3 +170,21 @@ export function resolveFilterName(filter: CustomStreamFilter): string {
   if (name) return name;
   return isFilterEmpty(filter) ? "My filter" : summarizeFilter(filter);
 }
+
+export function activeCustomFilter(
+  filters: CustomStreamFilter[],
+  activeId: string | null,
+): CustomStreamFilter | null {
+  const f = filters.find((x) => x.id === activeId);
+  return f && !isFilterEmpty(f) ? f : null;
+}
+
+/** Keeps streams matching the filter; when none match the list is returned unchanged with fellBack set. */
+export function applyCustomFilter<T extends ParsedStream>(
+  streams: T[],
+  filter: CustomStreamFilter | null,
+): { streams: T[]; fellBack: boolean } {
+  if (!filter) return { streams, fellBack: false };
+  const matched = streams.filter((s) => matchesCustomFilter(s, filter));
+  return matched.length > 0 ? { streams: matched, fellBack: false } : { streams, fellBack: true };
+}

@@ -115,10 +115,17 @@ export function useBpStreamPlay(params: {
   );
 
   const filteredPicker = useMemo(
-    () =>
-      s.result
-        ? { all: s.streams, allRaw: s.result.picker.all, primary: s.result.picker.primary }
-        : null,
+    () => {
+      if (!s.result) return null;
+      // Remembered-source matching must respect the saved filter too.
+      const shown = new Set(s.streams);
+      const allRaw = s.result.picker.all.filter((x) => shown.has(x));
+      return {
+        all: s.streams,
+        allRaw: allRaw.length > 0 ? allRaw : s.result.picker.all,
+        primary: s.result.picker.primary,
+      };
+    },
     [s.result, s.streams],
   );
 
