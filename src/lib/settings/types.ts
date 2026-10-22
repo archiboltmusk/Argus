@@ -476,7 +476,8 @@ export type Settings = {
   customHoverId: string;
   mdblistKey: string;
   auddKey: string;
-  songIdProvider: "audd" | "ai";
+  songIdProvider: "audd" | "ai" | "acoustid";
+  acoustidKey: string;
   songIdAiKey: string;
   songIdAiModel: string;
   aiSearchKey: string;

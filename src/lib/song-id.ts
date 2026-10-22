@@ -41,12 +41,111 @@ export function isIdentifying(): boolean {
   return busy;
 }
 
+export type SongIdProvider = "audd" | "ai" | "acoustid";
+
 export type SongIdOptions = {
-  provider: "audd" | "ai";
+  provider: SongIdProvider;
   auddKey: string;
   aiKey: string;
   aiModel: string;
+  acoustidKey: string;
 };
+
+export function songIdOptions(s: {
+  songIdProvider: SongIdProvider;
+  auddKey?: string;
+  songIdAiKey?: string;
+  songIdAiModel?: string;
+  acoustidKey?: string;
+}): SongIdOptions {
+  return {
+    provider: s.songIdProvider,
+    auddKey: s.auddKey ?? "",
+    aiKey: s.songIdAiKey ?? "",
+    aiModel: s.songIdAiModel ?? "",
+    acoustidKey: s.acoustidKey ?? "",
+  };
+}
+
+const KEY_LABEL: Record<SongIdProvider, () => string> = {
+  audd: () => t("Missing AudD key"),
+  ai: () => t("Missing Gemini API key"),
+  acoustid: () => t("Missing AcoustID key"),
+};
+
+function activeKey(opts: SongIdOptions): string {
+  const keys: Record<SongIdProvider, string> = {
+    audd: opts.auddKey,
+    ai: opts.aiKey,
+    acoustid: opts.acoustidKey,
+  };
+  return (keys[opts.provider] ?? "").trim();
+}
+
+function reportFailure(e: unknown): void {
+  console.error("song-id failed", e);
+  const detail = typeof e === "string" ? e : ((e as Error)?.message ?? String(e));
+  toast({
+    kind: "error",
+    title: t("Song identification failed"),
+    body: detail.trim().slice(0, 260) || undefined,
+  });
+}
+
+export async function identifyFile(opts: SongIdOptions): Promise<void> {
+  if (busy) return;
+  const key = activeKey(opts);
+  if (!key) {
+    toast({
+      kind: "error",
+      title: KEY_LABEL[opts.provider](),
+      body: t("Add it in Settings → Library & metadata"),
+    });
+    return;
+  }
+  const { open } = await import("@tauri-apps/plugin-dialog");
+  const picked = await open({
+    multiple: false,
+    directory: false,
+    filters: [
+      {
+        name: t("Audio and video"),
+        extensions: [
+          "mp3",
+          "flac",
+          "m4a",
+          "aac",
+          "ogg",
+          "opus",
+          "wav",
+          "wma",
+          "mp4",
+          "mkv",
+          "mov",
+          "webm",
+        ],
+      },
+    ],
+  });
+  if (typeof picked !== "string") return;
+  busy = true;
+  toast({ kind: "info", title: t("Listening…") });
+  try {
+    showResult(
+      await invoke<SongResult>("recognize_file", {
+        path: picked,
+        provider: opts.provider,
+        apiKey: key,
+        model: opts.aiModel.trim() || null,
+        startSec: null,
+      }),
+    );
+  } catch (e) {
+    reportFailure(e);
+  } finally {
+    busy = false;
+  }
+}
 
 function showResult(res: SongResult): void {
   const head = res ? res.title || res.artist : "";
@@ -67,12 +166,20 @@ function showResult(res: SongResult): void {
 
 export async function identifyNowPlaying(opts: SongIdOptions): Promise<void> {
   if (busy) return;
+  if (opts.provider === "acoustid") {
+    toast({
+      kind: "error",
+      title: t("AcoustID identifies files"),
+      body: t("Use Identify a file in Settings, or switch to AudD or Gemini for live playback."),
+    });
+    return;
+  }
   const useAi = opts.provider === "ai";
-  const key = ((useAi ? opts.aiKey : opts.auddKey) ?? "").trim();
+  const key = activeKey(opts);
   if (!key) {
     toast({
       kind: "error",
-      title: useAi ? t("Missing Gemini API key") : t("Missing AudD key"),
+      title: KEY_LABEL[opts.provider](),
       body: t("Add it in Settings → Library & metadata"),
     });
     return;
@@ -89,13 +196,7 @@ export async function identifyNowPlaying(opts: SongIdOptions): Promise<void> {
       : await invoke<SongResult>("recognize_now_playing", { apiToken: key, seconds: 7 });
     showResult(res);
   } catch (e) {
-    console.error("song-id failed", e);
-    const detail = typeof e === "string" ? e : ((e as Error)?.message ?? String(e));
-    toast({
-      kind: "error",
-      title: t("Song identification failed"),
-      body: detail.trim().slice(0, 260) || undefined,
-    });
+    reportFailure(e);
   } finally {
     busy = false;
   }

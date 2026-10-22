@@ -1862,6 +1862,7 @@ pub fn run() {
             stremio_auth::stremio_auth_start,
             song_id::recognize_now_playing,
             song_id::recognize_now_playing_ai,
+            song_id::recognize_file,
             app_icon::set_app_icon,
             deeplink_set_stremio,
             deeplink_is_stremio_registered,
