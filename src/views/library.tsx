@@ -1,4 +1,4 @@
-import { BarChart3, Bookmark, Clock, HardDrive, Layers } from "lucide-react";
+import { BarChart3, BookOpen, Bookmark, Clock, HardDrive, Layers } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import traktLogo from "@/assets/trakt.svg";
 import anilistLogo from "@/assets/anilist.png";
@@ -19,6 +19,7 @@ import { HistoryTab } from "./library/history-tab";
 import { LocalTab } from "./library/local-tab";
 import { MalTab } from "./library/mal-tab";
 import { GroupsTab } from "./library/groups-tab";
+import { BooksTab } from "./books/books-tab";
 import { MyListsTab } from "./library/my-lists-tab";
 import { TabBtn, type Tab } from "./library/shared";
 import { SimklTab } from "./library/simkl-tab";
@@ -42,7 +43,8 @@ function readSavedTab(): Tab {
       v === "anilist" ||
       v === "simkl" ||
       v === "letterboxd" ||
-      v === "mal"
+      v === "mal" ||
+      v === "books"
     )
       return v;
   } catch {}
@@ -50,8 +52,9 @@ function readSavedTab(): Tab {
 }
 
 export function LibraryView({ active }: { active: boolean }) {
-  const [tab, setTab] = useState<Tab>(readSavedTab);
+  const [savedTab, setTab] = useState<Tab>(readSavedTab);
   const { settings } = useSettings();
+  const tab: Tab = savedTab === "books" && !settings.ebookReader ? "watchlist" : savedTab;
   const { isConnected: traktConnected } = useTrakt();
   const { isConnected: anilistConnected } = useAnilist();
   const { isConnected: malConnected } = useMal();
@@ -104,6 +107,8 @@ export function LibraryView({ active }: { active: boolean }) {
                 ? "Browsing their Letterboxd library"
               : tab === "mal"
                 ? "Browsing their MyAnimeList library"
+              : tab === "books"
+                ? "Reading a book"
                 : "Browsing their Stremio library";
     return pushActivityHint({ details: label, state: "Library" });
   }, [active, tab]);
@@ -133,6 +138,7 @@ export function LibraryView({ active }: { active: boolean }) {
         {tab === "simkl" && simklConnected && <SimklTab />}
         {tab === "letterboxd" && lb.isActive && <LetterboxdTab />}
         {tab === "mal" && malConnected && <MalTab />}
+        {tab === "books" && settings.ebookReader && <BooksTab />}
       </div>
     </main>
   );
@@ -227,6 +233,12 @@ function Header({
           <TabBtn active={tab === "simkl"} onClick={() => onTab("simkl")}>
             <img src={simklLogo} alt="" className="h-3.5 w-3.5 object-contain" />
             Simkl
+          </TabBtn>
+        )}
+        {settings.ebookReader && (
+          <TabBtn active={tab === "books"} onClick={() => onTab("books")}>
+            <BookOpen size={14} strokeWidth={2.2} />
+            {t("Books")}
           </TabBtn>
         )}
         {lbConnected && (

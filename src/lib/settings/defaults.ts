@@ -183,6 +183,7 @@ export const DEFAULT: Settings = {
   metadataFusion: true,
   externalPlayer: "off",
   internetArchive: false,
+  ebookReader: false,
   libraryGroupsEnabled: false,
   libraryGroups: [],
   theIntroDbKey: "",
