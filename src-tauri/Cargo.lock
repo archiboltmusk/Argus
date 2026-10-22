@@ -138,6 +138,128 @@ dependencies = [
 ]
 
 [[package]]
+name = "argus"
+version = "0.4.0"
+dependencies = [
+ "anyhow",
+ "argus-core",
+ "argus-install-recovery",
+ "argus-udfread",
+ "async-trait",
+ "axum",
+ "base64 0.22.1",
+ "core-foundation 0.10.1",
+ "core-video",
+ "crc32fast",
+ "discord-rich-presence",
+ "dunce",
+ "encoding_rs",
+ "flate2",
+ "futures",
+ "futures-util",
+ "gilrs",
+ "gtk",
+ "hadris-iso",
+ "hound",
+ "httpdate",
+ "image",
+ "kothok-edge-tts",
+ "leveldb-sys",
+ "libc",
+ "libmpv2",
+ "libmpv2-sys",
+ "librespot-core",
+ "librespot-metadata",
+ "librespot-oauth",
+ "librespot-playback",
+ "librqbit",
+ "lofty",
+ "md5",
+ "mdns-sd",
+ "minisign-verify",
+ "ndarray",
+ "notify-rust",
+ "objc2",
+ "objc2-app-kit",
+ "objc2-foundation",
+ "objc2-web-kit",
+ "ort",
+ "parking_lot",
+ "plist",
+ "png 0.17.16",
+ "quick-xml 0.38.4",
+ "realfft",
+ "regex",
+ "reqwest 0.12.28",
+ "rusqlite",
+ "rust_cast",
+ "rustls",
+ "serde",
+ "serde_json",
+ "sevenz-rust2",
+ "sha1",
+ "sha2",
+ "socket2 0.5.10",
+ "tar",
+ "tauri",
+ "tauri-build",
+ "tauri-plugin-clipboard-manager",
+ "tauri-plugin-deep-link",
+ "tauri-plugin-dialog",
+ "tauri-plugin-fs",
+ "tauri-plugin-http",
+ "tauri-plugin-notification",
+ "tauri-plugin-opener",
+ "tauri-plugin-os",
+ "tauri-plugin-process",
+ "tauri-plugin-shell",
+ "tauri-plugin-single-instance",
+ "tauri-plugin-updater",
+ "tauri-plugin-window-state",
+ "tokio",
+ "tokio-util",
+ "trash",
+ "unrar_sys",
+ "url",
+ "uuid 1.23.1",
+ "walkdir",
+ "wasapi",
+ "webview2-com",
+ "whisper-rs",
+ "window-vibrancy 0.6.0",
+ "windows 0.62.2",
+ "yaml-rust2",
+ "zbus",
+ "zeroize",
+ "zip",
+]
+
+[[package]]
+name = "argus-core"
+version = "0.1.0"
+dependencies = [
+ "js-sys",
+ "once_cell",
+ "regex",
+ "serde",
+ "serde-wasm-bindgen",
+ "serde_json",
+ "unicode-normalization",
+ "wasm-bindgen",
+]
+
+[[package]]
+name = "argus-install-recovery"
+version = "0.1.0"
+
+[[package]]
+name = "argus-udfread"
+version = "0.1.0"
+dependencies = [
+ "cc",
+]
+
+[[package]]
 name = "arraydeque"
 version = "0.5.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2564,128 +2686,6 @@ dependencies = [
  "cfg-if",
  "crunchy",
  "zerocopy",
-]
-
-[[package]]
-name = "argus"
-version = "1.0.1"
-dependencies = [
- "anyhow",
- "async-trait",
- "axum",
- "base64 0.22.1",
- "core-foundation 0.10.1",
- "core-video",
- "crc32fast",
- "discord-rich-presence",
- "dunce",
- "encoding_rs",
- "flate2",
- "futures",
- "futures-util",
- "gilrs",
- "gtk",
- "hadris-iso",
- "argus-core",
- "argus-install-recovery",
- "argus-udfread",
- "hound",
- "httpdate",
- "image",
- "kothok-edge-tts",
- "leveldb-sys",
- "libc",
- "libmpv2",
- "libmpv2-sys",
- "librespot-core",
- "librespot-metadata",
- "librespot-oauth",
- "librespot-playback",
- "librqbit",
- "lofty",
- "md5",
- "mdns-sd",
- "minisign-verify",
- "ndarray",
- "notify-rust",
- "objc2",
- "objc2-app-kit",
- "objc2-foundation",
- "objc2-web-kit",
- "ort",
- "parking_lot",
- "plist",
- "png 0.17.16",
- "quick-xml 0.38.4",
- "realfft",
- "regex",
- "reqwest 0.12.28",
- "rusqlite",
- "rust_cast",
- "rustls",
- "serde",
- "serde_json",
- "sevenz-rust2",
- "sha1",
- "sha2",
- "socket2 0.5.10",
- "tar",
- "tauri",
- "tauri-build",
- "tauri-plugin-clipboard-manager",
- "tauri-plugin-deep-link",
- "tauri-plugin-dialog",
- "tauri-plugin-fs",
- "tauri-plugin-http",
- "tauri-plugin-notification",
- "tauri-plugin-opener",
- "tauri-plugin-os",
- "tauri-plugin-process",
- "tauri-plugin-shell",
- "tauri-plugin-single-instance",
- "tauri-plugin-updater",
- "tauri-plugin-window-state",
- "tokio",
- "tokio-util",
- "trash",
- "unrar_sys",
- "url",
- "uuid 1.23.1",
- "walkdir",
- "wasapi",
- "webview2-com",
- "whisper-rs",
- "window-vibrancy 0.6.0",
- "windows 0.62.2",
- "yaml-rust2",
- "zbus",
- "zeroize",
- "zip",
-]
-
-[[package]]
-name = "argus-core"
-version = "0.1.0"
-dependencies = [
- "js-sys",
- "once_cell",
- "regex",
- "serde",
- "serde-wasm-bindgen",
- "serde_json",
- "unicode-normalization",
- "wasm-bindgen",
-]
-
-[[package]]
-name = "argus-install-recovery"
-version = "0.1.0"
-
-[[package]]
-name = "argus-udfread"
-version = "0.1.0"
-dependencies = [
- "cc",
 ]
 
 [[package]]
