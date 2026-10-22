@@ -221,6 +221,8 @@ export type Settings = {
   metadataFusion: boolean;
   externalPlayer: "off" | "iina" | "vlc" | "mpv";
   internetArchive: boolean;
+  libraryGroupsEnabled: boolean;
+  libraryGroups: import("@/lib/library-groups/types").LibraryGroup[];
   theIntroDbKey: string;
   moreLikeThisEndScreen: boolean;
   moreLikeThisLeadSec: number;

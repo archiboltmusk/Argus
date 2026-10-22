@@ -18,6 +18,7 @@ import { AnilistTab } from "./library/anilist-tab";
 import { HistoryTab } from "./library/history-tab";
 import { LocalTab } from "./library/local-tab";
 import { MalTab } from "./library/mal-tab";
+import { GroupsTab } from "./library/groups-tab";
 import { MyListsTab } from "./library/my-lists-tab";
 import { TabBtn, type Tab } from "./library/shared";
 import { SimklTab } from "./library/simkl-tab";
@@ -36,6 +37,7 @@ function readSavedTab(): Tab {
       v === "history" ||
       v === "local" ||
       v === "lists" ||
+      v === "groups" ||
       v === "trakt" ||
       v === "anilist" ||
       v === "simkl" ||
@@ -49,6 +51,7 @@ function readSavedTab(): Tab {
 
 export function LibraryView({ active }: { active: boolean }) {
   const [tab, setTab] = useState<Tab>(readSavedTab);
+  const { settings } = useSettings();
   const { isConnected: traktConnected } = useTrakt();
   const { isConnected: anilistConnected } = useAnilist();
   const { isConnected: malConnected } = useMal();
@@ -64,8 +67,9 @@ export function LibraryView({ active }: { active: boolean }) {
   }, [tab]);
 
   useEffect(() => {
+    if (tab === "groups" && !settings.libraryGroupsEnabled) setTab("watchlist");
     if (tab === "trakt" && !traktConnected) setTab("watchlist");
-  }, [tab, traktConnected]);
+  }, [tab, traktConnected, settings.libraryGroupsEnabled]);
 
   useEffect(() => {
     if (tab === "anilist" && !anilistConnected) setTab("watchlist");
@@ -90,7 +94,7 @@ export function LibraryView({ active }: { active: boolean }) {
         ? "Browsing their watchlist"
         : tab === "history"
           ? "Browsing their watch history"
-          : tab === "lists"
+          : tab === "lists" || tab === "groups"
             ? "Browsing their lists"
             : tab === "trakt"
             ? "Browsing their Trakt library"
@@ -123,6 +127,7 @@ export function LibraryView({ active }: { active: boolean }) {
         {tab === "history" && <HistoryTab />}
         {tab === "local" && <LocalTab />}
         {tab === "lists" && <MyListsTab />}
+        {tab === "groups" && settings.libraryGroupsEnabled && <GroupsTab />}
         {tab === "trakt" && traktConnected && <TraktTab />}
         {tab === "anilist" && anilistConnected && <AnilistTab />}
         {tab === "simkl" && simklConnected && <SimklTab />}
@@ -194,6 +199,12 @@ function Header({
           <Layers size={14} strokeWidth={2.2} />
           {t("My Lists")}
         </TabBtn>
+        {settings.libraryGroupsEnabled && (
+          <TabBtn active={tab === "groups"} onClick={() => onTab("groups")}>
+            <Layers size={14} strokeWidth={2.2} />
+            {t("Groups")}
+          </TabBtn>
+        )}
         {traktConnected && (
           <TabBtn active={tab === "trakt"} onClick={() => onTab("trakt")}>
             <img src={traktLogo} alt="" className="h-3.5 w-3.5 object-contain" />

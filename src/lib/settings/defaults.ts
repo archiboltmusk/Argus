@@ -183,6 +183,8 @@ export const DEFAULT: Settings = {
   metadataFusion: true,
   externalPlayer: "off",
   internetArchive: false,
+  libraryGroupsEnabled: false,
+  libraryGroups: [],
   theIntroDbKey: "",
   moreLikeThisEndScreen: false,
   moreLikeThisLeadSec: 30,
