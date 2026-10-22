@@ -27,7 +27,7 @@ export type WebhookTrigger =
   | { event: "fromTraktWatchlist" }
   | { event: "liveTvEvent"; channelIds?: string[]; favoritesOnly?: boolean; leadMinutes?: number };
 
-export type ContentCategory = "anime" | "liveTv" | "sports" | "adult";
+export type ContentCategory = "anime" | "liveTv" | "sports" | "adult" | "manga";
 
 export type ContentFilters = Record<ContentCategory, boolean>;
 export type LetterboxdSettings = {

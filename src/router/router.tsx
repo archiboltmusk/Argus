@@ -53,6 +53,7 @@ const routeTree = rootRoute.addChildren([
   tabRoute("/addons"),
   tabRoute("/settings"),
   tabRoute("/wrapped"),
+  tabRoute("/manga"),
   createRoute({
     getParentRoute: () => rootRoute,
     path: "/detail/$type/$id",

@@ -49,6 +49,7 @@ import { RollbackRow } from "./rollback-row";
 import { PrivacyRow } from "./privacy-row";
 import { MusicRows } from "./music-section";
 import { TrayRow } from "./tray-row";
+import { MangaSettings } from "@/views/manga/settings-section";
 import { IndexersSection } from "./indexers-section";
 import { Section, Segmented, ToggleRow } from "./shared";
 import { Signature } from "./signature";
@@ -121,6 +122,8 @@ export function AdvancedPanel() {
         <InternetArchiveRow />
         <MusicRows />
       </Section>
+
+      <MangaSettings />
 
       <Section
         title={t("Quality matching")}
