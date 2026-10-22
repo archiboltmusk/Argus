@@ -50,6 +50,7 @@ import { PrivacyRow } from "./privacy-row";
 import { TrayRow } from "./tray-row";
 import { MangaSettings } from "@/views/manga/settings-section";
 import { IndexersSection } from "./indexers-section";
+import { EbookSection } from "./ebook-section";
 import { Section, Segmented, ToggleRow } from "./shared";
 import { Signature } from "./signature";
 import { CustomCodeCard, DownloadsSection } from "./player-panel";
@@ -122,6 +123,8 @@ export function AdvancedPanel() {
       </Section>
 
       <MangaSettings />
+
+      <EbookSection />
 
       <Section
         title={t("Quality matching")}
