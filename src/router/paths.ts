@@ -18,6 +18,7 @@ export const VIEW_PATH: Record<View, string> = {
   addons: "/addons",
   settings: "/settings",
   wrapped: "/wrapped",
+  sports: "/sports",
   manga: "/manga",
 };
 

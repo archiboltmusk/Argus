@@ -409,6 +409,7 @@ export const DEFAULT: Settings = {
   musicEnabled: false,
   musicFolders: [],
   musicOnlineLyrics: false,
+  sportsPage: false,
   feedLocaleBias: true,
   uiLanguage: "en",
   cropMode: "fit",

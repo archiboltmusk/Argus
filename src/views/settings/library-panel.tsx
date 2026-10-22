@@ -157,6 +157,14 @@ export function LibraryPanel({
           preview={<HomeRowPreview kind="playlists-tab" />}
         />
         <ToggleRow
+          label={t("Sports page")}
+          sub={t(
+            "Adds a Sports page with daily schedules and live scores from ESPN, reachable from Live TV. Streams come only from playlists you add yourself; Argus ships none. Off by default.",
+          )}
+          value={settings.sportsPage}
+          onChange={(v) => update({ sportsPage: v })}
+        />
+        <ToggleRow
           label={t("Keep anime in the Anime room only")}
           sub={t(
             "Hides anime from the Home Continue Watching row. It still appears in the Anime tab's own Continue Watching.",

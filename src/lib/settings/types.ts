@@ -474,6 +474,7 @@ export type Settings = {
   musicEnabled: boolean;
   musicFolders: string[];
   musicOnlineLyrics: boolean;
+  sportsPage: boolean;
   feedLocaleBias: boolean;
   uiLanguage: UiLanguage;
   cropMode: string;
