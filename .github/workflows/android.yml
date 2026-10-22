@@ -72,6 +72,14 @@ jobs:
       # Release APKs come out unsigned and cannot be installed. Sign with the
       # ANDROID_KEYSTORE_* secrets when set so updates over an older install
       # work; otherwise fall back to a throwaway key (fresh installs only).
+      # cc-rs swallows the compiler's own diagnostics; replay the first failing unit.
+      - name: Diagnose native build failure
+        if: failure()
+        run: |
+          echo "NDK_HOME=$NDK_HOME"; ls "$ANDROID_HOME/ndk"
+          CXX=$(ls "$ANDROID_HOME"/ndk/*/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android24-clang++ | head -n1)
+          cd src-tauri/vendor/unrar_sys
+          "$CXX" -DANDROID -std=c++14 -stdlib=libc++ -D_FILE_OFFSET_BITS=64 -DRARDLL -fsyntax-only vendor/unrar/extinfo.cpp 2>&1 | head -40
       - name: Sign APK
         env:
           KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
