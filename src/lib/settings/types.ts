@@ -217,6 +217,11 @@ export type Settings = {
   p2pAutoConsent: boolean;
   p2pUploadEnabled: boolean;
   communityAddonDirectories: boolean;
+  advancedSettings: boolean;
+  metadataFusion: boolean;
+  externalPlayer: "off" | "iina" | "vlc" | "mpv";
+  internetArchive: boolean;
+  indexers: import("@/lib/streams/indexer-feed").Indexer[];
   addonHealthTracking: boolean;
   capabilityMatching: boolean;
   addonHealthProbes: boolean;

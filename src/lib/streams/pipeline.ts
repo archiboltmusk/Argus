@@ -2,6 +2,9 @@ import type { Addon } from "@/lib/addons";
 import { dlog } from "@/lib/debug";
 import type { DebridStore } from "@/lib/debrid/types";
 import { fetchAddonStreams, type StreamRequest } from "./addons";
+import { fetchArchiveStreams } from "./archive";
+import type { Indexer } from "./indexer-feed";
+import { fetchIndexerStreams } from "./indexers";
 import { enhanceAnimeStreams } from "./anitomy";
 import { fetchLibraryStreams, type LibraryQuery } from "./library";
 import { parseStream } from "./parser";
@@ -66,6 +69,8 @@ export type PipelineInput = {
   query: LibraryQuery;
   addons: Addon[];
   debrids: DebridStore[];
+  indexers?: Indexer[];
+  internetArchive?: boolean;
   trust?: TrustOptions;
   score: ScoreOptions;
   isAnime?: boolean;
@@ -117,7 +122,11 @@ export async function runPipeline(
     }),
     presets.length > 0
       ? Promise.resolve(presets)
-      : fetchAddonStreams(input.addons, input.request, signal, emitPartial),
+      : Promise.all([
+          fetchAddonStreams(input.addons, input.request, signal, emitPartial),
+          fetchIndexerStreams(input.indexers ?? [], input.query, signal),
+          input.internetArchive ? fetchArchiveStreams(input.query, signal) : Promise.resolve([]),
+        ]).then((parts) => parts.flat()),
   ]);
   if (librarySettled.status === "fulfilled") library = librarySettled.value;
   const addonStreams = addonSettled.status === "fulfilled" ? addonSettled.value : [];
@@ -224,7 +233,7 @@ async function runCorePipeline(
     const { invoke } = await import("@tauri-apps/api/core");
     const result = (await invoke("streams_run_pipeline", {
       streams: parsed,
-      trustOpts,
+      trustOpts: { ...trustOpts, expectedAliases: trustOpts.expectedAliases?.() ?? [] },
       scoreOpts,
     })) as { picker: RankedPicker; rejected: Rejection[] };
     return result;

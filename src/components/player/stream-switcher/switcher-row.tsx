@@ -1,6 +1,7 @@
 import { Loader2, Zap } from "lucide-react";
 import { AddonLogo } from "@/components/addon-logo";
 import { CopyLinkButton, resolveStreamLink } from "@/components/player/copy-link-button";
+import { ExternalPlayerButton } from "@/components/player/external-player-button";
 import { FlagStack } from "@/components/flag";
 import { FormatBadge, streamBadges } from "@/components/format-badge";
 import type { ScoredStream } from "@/lib/streams/types";
@@ -118,6 +119,7 @@ export function SwitcherRow({
             </span>
           )}
           {link && !resolving && <CopyLinkButton url={link} />}
+          {link && !resolving && <ExternalPlayerButton url={link} />}
           {resolving && <Loader2 size={13} className="animate-spin text-ink-muted" />}
         </div>
       </button>

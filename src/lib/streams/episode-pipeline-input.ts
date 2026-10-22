@@ -7,6 +7,7 @@ import type { PlayEpisode } from "@/lib/view";
 import type { PipelineInput } from "./pipeline";
 import type { Stream } from "./types";
 import { detectScoreCapabilities } from "@/lib/capabilities";
+import { cachedAliases, loadAliases } from "@/lib/metadata-fusion/aliases";
 
 function runtimeMinutes(runtime: string | number | undefined): number | undefined {
   if (runtime == null) return undefined;
@@ -71,6 +72,14 @@ export function buildEpisodePipelineInput(params: {
     episode && typeof effSeason === "number" && typeof effEpisode === "number" && effEpisode > 1
       ? readPlayback(meta.id, effSeason, effEpisode - 1)?.releaseGroup ?? undefined
       : undefined;
+  if (imdbId) {
+    void loadAliases(
+      imdbId,
+      meta.name,
+      episode || meta.type === "series" ? "series" : "movie",
+      animeReq,
+    );
+  }
   return {
     request: {
       type: requestType,
@@ -86,11 +95,14 @@ export function buildEpisodePipelineInput(params: {
     },
     addons,
     debrids,
+    indexers: settings.indexers,
+    internetArchive: settings.internetArchive,
     isAnime: animeReq,
     presetStreams: embedded.length > 0 ? embedded : undefined,
     trust: {
       kind: episode ? "series" : meta.type === "series" ? "series" : "movie",
       expectedTitle: meta.name,
+      expectedAliases: () => cachedAliases(imdbId),
       releaseDate: meta.releaseDate ?? null,
       expectedYear: parseInt(meta.releaseInfo ?? "", 10) || null,
       expectedSeason: effSeason ?? null,

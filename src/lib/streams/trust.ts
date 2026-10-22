@@ -1,9 +1,13 @@
+import { tokensEquivalent } from "@/lib/title-match";
 import type { ParsedStream, Resolution } from "./types";
 export type { Resolution };
 
 export type TrustOptions = {
   kind?: "movie" | "series";
   expectedTitle?: string | null;
+  // Alternate and regional titles, read when each stream is judged so a
+  // late metadata lookup still applies.
+  expectedAliases?: () => string[];
   expectedYear?: number | null;
   expectedSeason?: number | null;
   expectedEpisode?: number | null;
@@ -181,7 +185,7 @@ function checkOne(
   }
 
   if (strict && opts.kind === "movie" && opts.expectedTitle && s.parsedTitle) {
-    if (!titleMatches(opts.expectedTitle, s.parsedTitle, s.year, opts.expectedYear ?? null)) {
+    if (!anyTitleMatches(opts, s.parsedTitle, s.year)) {
       return "title-mismatch";
     }
   }
@@ -230,7 +234,7 @@ function checkOne(
   }
 
   if (strict && opts.kind === "series" && !opts.isAnime && opts.expectedTitle && s.parsedTitle) {
-    if (!titleMatches(opts.expectedTitle, s.parsedTitle, s.year, opts.expectedYear ?? null)) {
+    if (!anyTitleMatches(opts, s.parsedTitle, s.year)) {
       return "title-mismatch";
     }
   }
@@ -327,13 +331,25 @@ function countOverlap(words: string[], lookup: Set<string>): number {
       continue;
     }
     for (const l of lookup) {
-      if (w.length >= 4 && l.length >= 4 && (w.startsWith(l) || l.startsWith(w))) {
+      if (
+        (w.length >= 4 && l.length >= 4 && (w.startsWith(l) || l.startsWith(w))) ||
+        tokensEquivalent(w, l)
+      ) {
         hits++;
         break;
       }
     }
   }
   return hits;
+}
+
+function anyTitleMatches(opts: TrustOptions, parsed: string, parsedYear: number | null): boolean {
+  const year = opts.expectedYear ?? null;
+  if (titleMatches(opts.expectedTitle ?? "", parsed, parsedYear, year)) return true;
+  for (const alias of opts.expectedAliases?.() ?? []) {
+    if (titleMatches(alias, parsed, parsedYear, year)) return true;
+  }
+  return false;
 }
 
 function titleMatches(

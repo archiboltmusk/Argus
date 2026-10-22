@@ -48,7 +48,8 @@ import { BuildFeedback } from "./build-feedback";
 import { RollbackRow } from "./rollback-row";
 import { PrivacyRow } from "./privacy-row";
 import { TrayRow } from "./tray-row";
-import { Section, ToggleRow } from "./shared";
+import { IndexersSection } from "./indexers-section";
+import { Section, Segmented, ToggleRow } from "./shared";
 import { Signature } from "./signature";
 import { CustomCodeCard, DownloadsSection } from "./player-panel";
 import { DesktopOnlyBlock } from "./player-panel/internals";
@@ -110,12 +111,24 @@ export function AdvancedPanel() {
       </Section>
 
       <Section
+        title={t("Your indexers")}
+        subtitle={t(
+          "Add your own Torznab or Newznab endpoints (Jackett, Prowlarr, a Usenet indexer). Argus ships none and only searches the ones you add.",
+        )}
+      >
+        <IndexersSection />
+        <InternetArchiveRow />
+      </Section>
+
+      <Section
         title={t("Quality matching")}
         subtitle={t(
           "Argus checks what your display can show and ranks streams to match, so HDR and Dolby Vision files are not preferred on a screen that cannot use them.",
         )}
       >
         <CapabilityRow />
+        <MetadataFusionRow />
+        <ExternalPlayerRow />
       </Section>
 
       <Section
@@ -978,6 +991,55 @@ function AnimeRepairRow() {
       onClick={showRemove ? remove : scan}
       disabled={busy}
       tone={phase === "done" && removed > 0 ? "success" : undefined}
+    />
+  );
+}
+
+function MetadataFusionRow() {
+  const t = useT();
+  const { settings, update } = useSettings();
+  return (
+    <ToggleRow
+      label={t("Match alternate and regional titles")}
+      sub={t("Looks up other names for a title (TMDB, TVmaze, AniList) so differently named releases still match.")}
+      value={settings.metadataFusion}
+      onChange={(v) => update({ metadataFusion: v })}
+    />
+  );
+}
+
+function ExternalPlayerRow() {
+  const t = useT();
+  const { settings, update } = useSettings();
+  return (
+    <div className="flex flex-col gap-2 px-1 py-2">
+      <div className="text-[14px] font-medium text-ink">{t("Open streams in an external player")}</div>
+      <div className="text-[12.5px] text-ink-muted">
+        {t("Adds an Open button to stream rows that hands the link to a player you have installed.")}
+      </div>
+      <Segmented
+        value={settings.externalPlayer}
+        options={[
+          { value: "off", label: "Off" },
+          { value: "iina", label: "IINA" },
+          { value: "vlc", label: "VLC" },
+          { value: "mpv", label: "mpv" },
+        ]}
+        onChange={(v) => update({ externalPlayer: v })}
+      />
+    </div>
+  );
+}
+
+function InternetArchiveRow() {
+  const t = useT();
+  const { settings, update } = useSettings();
+  return (
+    <ToggleRow
+      label={t("Internet Archive")}
+      sub={t("Search archive.org for public-domain films when you open a movie. Titles and years must match exactly.")}
+      value={settings.internetArchive}
+      onChange={(v) => update({ internetArchive: v })}
     />
   );
 }
