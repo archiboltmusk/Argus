@@ -1689,7 +1689,8 @@ function NativePlayerView({ src }: { src: PlayerSrc }) {
         onPointerDown={(e) => {
           if (e.target !== e.currentTarget) return;
           if (
-            e.pointerType !== "mouse" ||
+            !settings.holdSpeedEnabled ||
+            (e.pointerType !== "mouse" && e.pointerType !== "touch") ||
             !e.isPrimary ||
             e.button !== 0 ||
             drawMode ||
@@ -1716,7 +1717,7 @@ function NativePlayerView({ src }: { src: PlayerSrc }) {
               return;
             }
             setMouseHoldSpeedActive(true);
-            bridgeRef.current?.setRate(Math.max(2, hold.baseRate));
+            bridgeRef.current?.setRate(Math.max(settings.holdSpeedRate, hold.baseRate));
           }, 350);
         }}
         onPointerUp={(e) => {

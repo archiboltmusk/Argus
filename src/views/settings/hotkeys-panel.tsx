@@ -13,11 +13,11 @@ import {
   type HotkeyScope,
 } from "@/lib/hotkeys";
 import { isBackKey } from "@/lib/keyboard-navigation/geometry";
-import { SEEK_STEP_OPTIONS } from "@/lib/seek-step";
+import { HOLD_SPEED_RATES, SEEK_STEP_OPTIONS } from "@/lib/seek-step";
 import { useSettings } from "@/lib/settings";
 import { useT } from "@/lib/i18n";
 import { Dropdown } from "@/components/dropdown";
-import { Section, ToggleRow } from "./shared";
+import { Section, Segmented, ToggleRow } from "./shared";
 import { ModalButton, ROW_DESC, SettingRow, SettingsModal } from "./kit";
 import { SSection } from "./ui";
 import { usePageActions } from "./page-actions";
@@ -280,6 +280,24 @@ export function HotkeysPanel() {
               value={settings.playerConfirmLeave}
               onChange={(v) => update({ playerConfirmLeave: v })}
             />
+            <ToggleRow
+              label={t("Hold to speed up")}
+              sub={t(
+                "Hold Space or the left mouse button (or a finger on touch screens) on the video to play faster. Release to go back to your normal speed.",
+              )}
+              value={settings.holdSpeedEnabled}
+              onChange={(v) => update({ holdSpeedEnabled: v })}
+            />
+            {settings.holdSpeedEnabled && (
+              <div className="flex items-center justify-between gap-4 rounded-xl border border-edge-soft bg-canvas/40 px-4 py-3">
+                <span className="text-[14px] font-medium text-ink">{t("Hold speed")}</span>
+                <Segmented
+                  value={String(settings.holdSpeedRate)}
+                  options={HOLD_SPEED_RATES.map((r) => ({ value: String(r), label: `${r}x` }))}
+                  onChange={(v) => update({ holdSpeedRate: Number(v) })}
+                />
+              </div>
+            )}
             <SeekStepRow
               label={t("Seek step")}
               sub={t("Choose how far the keyboard arrows and player seek buttons jump.")}
