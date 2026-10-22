@@ -2,6 +2,7 @@ import { dinfo, dwarn } from "@/lib/debug";
 import { safeFetch } from "@/lib/safe-fetch";
 import type { SubResult, SubSearchQuery } from "../types";
 import { normalizeLang } from "../language";
+import { parseSubtitles, resourceUrl } from "@/lib/stremio-protocol";
 
 const ENDPOINTS = [
   "https://opensubtitles.stremio.homes",
@@ -29,15 +30,14 @@ function buildId(q: SubSearchQuery): string | null {
 }
 
 async function callEndpoint(base: string, type: string, id: string): Promise<RawSub[]> {
-  const url = `${base}/subtitles/${type}/${id}.json`;
+  const url = resourceUrl({ base, resource: "subtitles", type, id });
   try {
     const res = await safeFetch(url, { headers: { Accept: "application/json" } });
     if (!res.ok) {
       dwarn(`[opensubtitles-v3] ${url} → ${res.status}`);
       return [];
     }
-    const data = (await res.json()) as { subtitles?: RawSub[] };
-    const list = Array.isArray(data?.subtitles) ? data.subtitles : [];
+    const list = parseSubtitles<RawSub>(await res.json());
     dinfo(`[opensubtitles-v3] ${url} → ${list.length} subs`);
     return list;
   } catch (e) {

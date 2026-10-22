@@ -5,6 +5,7 @@ import { isAddonRanked, isStatusOnlyAddon } from "./addon-detect";
 import { hasUncachedMarker } from "./cached";
 import { infoHashFromSources, infoHashFromUrl } from "@/lib/torrent/magnet";
 import type { Stream } from "./types";
+import { resourceUrl } from "@/lib/stremio-protocol";
 
 const TIMEOUT_MS_FAST = 8000;
 const TIMEOUT_MS_SLOW = 22000;
@@ -149,8 +150,7 @@ async function fetchOne(
   id: string,
   signal: AbortSignal,
 ): Promise<Stream[]> {
-  const base = addon.transportUrl.replace(/\/manifest\.json$/, "");
-  const url = `${base}/stream/${type}/${id}.json`;
+  const url = resourceUrl({ base: addon.transportUrl, resource: "stream", type, id });
   const limit = timeoutFor(addon);
   const ac = new AbortController();
   let timedOut = false;

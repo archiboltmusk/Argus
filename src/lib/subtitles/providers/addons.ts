@@ -3,6 +3,7 @@ import { safeFetch } from "@/lib/safe-fetch";
 import { dlog } from "@/lib/debug";
 import type { SubResult, SubSearchQuery } from "../types";
 import { normalizeLang } from "../language";
+import { parseSubtitles, resourceUrl, type ExtraArg } from "@/lib/stremio-protocol";
 
 type RawAddonSub = {
   id?: string;
@@ -11,10 +12,6 @@ type RawAddonSub = {
   m?: string;
   SubFormat?: string;
 };
-
-function transportBase(transportUrl: string): string {
-  return transportUrl.replace(/\/manifest\.json$/i, "").replace(/\/$/, "");
-}
 
 function contentId(q: SubSearchQuery): string | null {
   const base =
@@ -28,17 +25,16 @@ function contentId(q: SubSearchQuery): string | null {
   return base;
 }
 
-function extraSegment(q: SubSearchQuery): string {
-  const parts: string[] = [];
-  if (q.videoHash) parts.push(`videoHash=${encodeURIComponent(q.videoHash)}`);
-  if (q.videoSize != null) parts.push(`videoSize=${q.videoSize}`);
-  if (q.filename) parts.push(`filename=${encodeURIComponent(q.filename)}`);
-  return parts.length > 0 ? `/${parts.join("&")}` : "";
+function extraArgs(q: SubSearchQuery): ExtraArg[] {
+  const extra: ExtraArg[] = [];
+  if (q.videoHash) extra.push({ name: "videoHash", value: q.videoHash });
+  if (q.videoSize != null) extra.push({ name: "videoSize", value: q.videoSize });
+  if (q.filename) extra.push({ name: "filename", value: q.filename });
+  return extra;
 }
 
-async function callOne(addon: Addon, type: string, id: string, extra: string): Promise<RawAddonSub[]> {
-  const base = transportBase(addon.transportUrl);
-  const url = `${base}/subtitles/${type}/${id}${extra}.json`;
+async function callOne(addon: Addon, type: string, id: string, extra: ExtraArg[]): Promise<RawAddonSub[]> {
+  const url = resourceUrl({ base: addon.transportUrl, resource: "subtitles", type, id, extra });
   dlog(`[addons] Fetching from ${addon.manifest.name}: ${url}`);
   try {
     const res = await safeFetch(url, { headers: { Accept: "application/json" } });
@@ -46,8 +42,7 @@ async function callOne(addon: Addon, type: string, id: string, extra: string): P
       dlog(`[addons] ${addon.manifest.name} returned ${res.status}`);
       return [];
     }
-    const data = (await res.json()) as { subtitles?: RawAddonSub[] };
-    const subs = Array.isArray(data?.subtitles) ? data.subtitles : [];
+    const subs = parseSubtitles<RawAddonSub>(await res.json());
     dlog(`[addons] ${addon.manifest.name} returned ${subs.length} subtitles`);
     return subs;
   } catch (e) {
@@ -87,7 +82,7 @@ export async function searchAddons(
     return [];
   }
 
-  const extra = extraSegment(q);
+  const extra = extraArgs(q);
   const settled = await Promise.all(
     subAddons.map(async (addon) => {
       const result = await callOne(addon, type, id, extra);

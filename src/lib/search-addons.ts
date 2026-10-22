@@ -1,6 +1,7 @@
 import type { Addon } from "./addons";
 import type { Meta } from "./cinemeta";
 import { safeFetch } from "./safe-fetch";
+import { parseMetas, resourceUrl } from "./stremio-protocol";
 
 const CAP_PER_CATALOG = 20;
 const MAX_CATALOGS = 12;
@@ -36,12 +37,17 @@ export async function searchAddonCatalogs(
 
   const settled = await Promise.allSettled(
     targets.map(async ({ addon, type, id }) => {
-      const base = addon.transportUrl.replace(/\/manifest\.json$/, "");
-      const url = `${base}/catalog/${type}/${id}/search=${encodeURIComponent(q)}.json`;
+      const url = resourceUrl({
+        base: addon.transportUrl,
+        resource: "catalog",
+        type,
+        id,
+        extra: [{ name: "search", value: q }],
+      });
       const res = await safeFetch(url, { headers: { Accept: "application/json" } });
       if (!res.ok) return { type, metas: [] as Meta[], origin: addonOrigin(addon) };
-      const json = (await res.json()) as { metas?: Meta[] };
-      return { type, metas: (json.metas ?? []).slice(0, CAP_PER_CATALOG), origin: addonOrigin(addon) };
+      const metas = parseMetas<Meta>(await res.json());
+      return { type, metas: metas.slice(0, CAP_PER_CATALOG), origin: addonOrigin(addon) };
     }),
   );
 
@@ -107,11 +113,16 @@ export async function searchAddonGroups(addons: Addon[], query: string): Promise
       const base = origin.base;
       const settled = await Promise.allSettled(
         targets.map(async ({ type, id }) => {
-          const url = `${base}/catalog/${type}/${id}/search=${encodeURIComponent(q)}.json`;
+          const url = resourceUrl({
+            base,
+            resource: "catalog",
+            type,
+            id,
+            extra: [{ name: "search", value: q }],
+          });
           const res = await safeFetch(url, { headers: { Accept: "application/json" } });
           if (!res.ok) return [] as Meta[];
-          const json = (await res.json()) as { metas?: Meta[] };
-          return (json.metas ?? []).slice(0, CAP_PER_GROUP);
+          return parseMetas<Meta>(await res.json()).slice(0, CAP_PER_GROUP);
         }),
       );
       const seen = new Set<string>();
