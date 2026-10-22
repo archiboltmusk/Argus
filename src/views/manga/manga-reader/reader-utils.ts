@@ -44,7 +44,7 @@ export async function fetchImageObjectUrl(
   if (!resp.ok) throw new Error(`status ${resp.status}`);
   const type = resp.headers?.["content-type"] || resp.contentType || "";
   const loaded = await readImageResponse(
-    new Response(base64ToBytes(resp.body), {
+    new Response(base64ToBytes(resp.body) as BodyInit, {
       status: resp.status,
       headers: type ? { "content-type": type } : {},
     }),

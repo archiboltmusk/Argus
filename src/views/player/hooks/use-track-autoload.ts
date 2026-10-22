@@ -6,7 +6,7 @@ import { fetchSubtitlesIntoPlayer, streamHintsOf } from "@/lib/subtitles/fetch-i
 import { subtitleStreamDescriptor } from "@/lib/subtitles/provider-label";
 import { publishSubtitleSearch } from "@/components/player/subtitle-menu/subtitle-search-store";
 import { publishSubtitleContext } from "@/components/player/subtitle-menu/subtitle-context-store";
-import { readPlayerPrefs, type PerShowPrefs } from "@/lib/player-prefs";
+import { readPlayerPrefs, writePlayerPrefs, type PerShowPrefs } from "@/lib/player-prefs";
 import { playbackSourceKey, readActualPlaybackFor } from "@/lib/playback-history";
 import { playbackAudioChoice, selectPlaybackAudio } from "@/lib/player/audio-choice";
 import { tmdbImdbId } from "@/lib/providers/tmdb";
@@ -899,6 +899,29 @@ export function useTrackAutoload(params: {
   useEffect(() => {
     bridgeRef.current?.setSubDelay(readPlayerPrefs(src.meta.id)?.subDelaySec ?? 0);
   }, [src.url, src.meta.id]);
+
+  // mpv keeps audio-delay across files, so every load sets it explicitly: the
+  // remembered value for this title plus the output-latency offset.
+  const audioOffsetSec = settings.audioOutputLatencyMs / 1000;
+  const appliedAudioDelayRef = useRef<number | null>(null);
+  useEffect(() => {
+    const remembered = settings.audioDelayRemember
+      ? (readPlayerPrefs(src.meta.id)?.audioDelaySec ?? 0)
+      : 0;
+    const wanted = Math.round((remembered + audioOffsetSec) * 1000) / 1000;
+    appliedAudioDelayRef.current = wanted;
+    bridgeRef.current?.setAudioDelay(wanted);
+  }, [src.url, src.meta.id, settings.audioDelayRemember, audioOffsetSec]);
+
+  useEffect(() => {
+    if (!settings.audioDelayRemember || !src.meta.id) return;
+    const applied = appliedAudioDelayRef.current;
+    if (applied == null || Math.abs(snap.audioDelaySec - applied) < 0.0005) return;
+    appliedAudioDelayRef.current = snap.audioDelaySec;
+    writePlayerPrefs(src.meta.id, {
+      audioDelaySec: Math.round((snap.audioDelaySec - audioOffsetSec) * 1000) / 1000,
+    });
+  }, [snap.audioDelaySec, settings.audioDelayRemember, audioOffsetSec, src.meta.id]);
 
   useEffect(() => {
     if (!subsOffFor(readPlayerPrefs(src.meta.id), settings)) return;

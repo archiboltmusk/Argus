@@ -447,6 +447,13 @@ export function useKeyboardShortcuts(params: {
         writePlayerPrefs(metaId, { subDelaySec: delay });
         return;
       }
+      if (match("playerAudioDelayDown") || match("playerAudioDelayUp")) {
+        e.preventDefault();
+        const dir = match("playerAudioDelayUp") ? 1 : -1;
+        const delay = round2(snap.audioDelaySec + dir * 0.05);
+        bridgeRef.current?.setAudioDelay(delay);
+        return;
+      }
       if (match("playerStreamSwitcher") && toggleSwitcher) {
         e.preventDefault();
         toggleSwitcher();
@@ -565,6 +572,7 @@ export function useKeyboardShortcuts(params: {
     snap.rate,
     snap.durationSec,
     snap.subDelaySec,
+    snap.audioDelaySec,
     overrides,
     settings.holdSpeedEnabled,
     settings.holdSpeedRate,

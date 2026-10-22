@@ -26,7 +26,7 @@ import { generatedOfferLanguageCode } from "@/lib/subtitles/language";
 import type { SubTrack } from "./types";
 import type { SubtitleLoadMetadata } from "@/lib/subtitles/types";
 import { bufferedAhead, readAudioTracks, videoAudio } from "./audio-tracks";
-import { mapErrorCode } from "./error-map";
+import { mapErrorCode, type Html5MediaErrorCode } from "./error-map";
 import { noteSubtitleOrigin } from "@/lib/subtitles/subtitle-memory";
 import { mountCustomPip } from "./pip";
 import { finishPlaybackTrace, markPlaybackTrace } from "@/lib/perf/playback-trace";
@@ -53,6 +53,7 @@ export function createHtml5Bridge(): PlayerBridge {
   let mediaSessionBound = false;
   let pendingVolume = 1;
   let hls: Hls | null = null;
+  let hlsFatal: Html5MediaErrorCode | null = null;
   let tsPlayer: ReturnType<typeof mpegts.createPlayer> | null = null;
   let isLiveSrc = false;
   let audioProbeDone = false;
@@ -129,6 +130,10 @@ export function createHtml5Bridge(): PlayerBridge {
       snap.status = "error";
       snap.errorCode = mapErrorCode(video.error.code);
       snap.errorMessage = video.error.message || null;
+    } else if (hlsFatal) {
+      snap.status = "error";
+      snap.errorCode = hlsFatal;
+      snap.errorMessage = null;
     } else if (video.ended) {
       snap.status = "ended";
     } else if (!video.paused) {
@@ -792,6 +797,20 @@ export function createHtml5Bridge(): PlayerBridge {
         hls.attachMedia(video);
         hls.on(Hls.Events.AUDIO_TRACKS_UPDATED, refreshSnapshot);
         hls.on(Hls.Events.AUDIO_TRACK_SWITCHED, refreshSnapshot);
+        // Without this a manifest the browser can't fetch (CORS, 404, mixed
+        // content) leaves the player on its loading spinner forever.
+        let mediaRecovered = false;
+        const activeHls = hls;
+        hls.on(Hls.Events.ERROR, (_evt, data) => {
+          if (!data.fatal || hls !== activeHls) return;
+          if (data.type === Hls.ErrorTypes.MEDIA_ERROR && !mediaRecovered) {
+            mediaRecovered = true;
+            activeHls.recoverMediaError();
+            return;
+          }
+          hlsFatal = data.type === Hls.ErrorTypes.NETWORK_ERROR ? "network" : "decode";
+          refreshSnapshot();
+        });
       } else if (isTs && mpegts.isSupported()) {
         tsPlayer = mpegts.createPlayer(
           { type: "mpegts", url: src.url, isLive: isLiveSrc, cors: true },
@@ -865,6 +884,7 @@ export function createHtml5Bridge(): PlayerBridge {
       snap.status = "loading";
       snap.errorCode = null;
       snap.errorMessage = null;
+      hlsFatal = null;
       snap.noAudio = false;
       audioProbeDone = false;
       snap.positionSec = 0;
