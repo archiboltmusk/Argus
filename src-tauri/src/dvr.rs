@@ -131,6 +131,8 @@ pub async fn dvr_start(
     let output_path = out_dir.join(format!("{}.ts", base));
 
     let mut cmd = Command::new(&mpv_bin);
+    #[cfg(target_os = "macos")]
+    cmd.arg("--macos-app-activation-policy=prohibited");
     cmd.arg("--no-terminal")
         .arg("--quiet")
         .arg("--idle=no")

@@ -2561,6 +2561,9 @@ pub async fn mpv_clip_save(
     let _ = std::fs::remove_file(&out_path);
 
     let mut cmd = tokio::process::Command::new(&mpv_bin);
+    // Keep the bundled helper mpv out of the Dock (see thumbs::spawn_shadow).
+    #[cfg(target_os = "macos")]
+    cmd.arg("--macos-app-activation-policy=prohibited");
     cmd.arg("--no-terminal")
         .arg("--really-quiet")
         .arg("--no-config")
