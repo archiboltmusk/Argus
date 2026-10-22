@@ -103,6 +103,9 @@ jobs:
           tar -xf ffmpeg.tar.xz
           cd ffmpeg-7.1.1
           SSL="$(brew --prefix openssl@3)"
+          # Only the static archives, so the linker cannot pick the dylibs.
+          mkdir -p "$PWD/../ssl-static/lib"
+          cp "$SSL"/lib/libssl.a "$SSL"/lib/libcrypto.a "$PWD/../ssl-static/lib/"
           ./configure --prefix="$PWD/../ffmpeg-out" --enable-version3 \
             --disable-gpl --disable-nonfree --disable-autodetect \
             --disable-doc --disable-debug --disable-ffplay --disable-ffprobe \
@@ -111,7 +114,7 @@ jobs:
             --enable-encoder=pcm_s16le \
             --enable-network --enable-openssl \
             --extra-cflags="-I$SSL/include" \
-            --extra-ldflags="-L$SSL/lib" --pkg-config-flags=--static
+            --extra-ldflags="-L$PWD/../ssl-static/lib"
           make -j"$(sysctl -n hw.ncpu)"
           mkdir -p ../ffmpeg-bin
           cp ffmpeg ../ffmpeg-bin/ffmpeg
