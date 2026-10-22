@@ -5,7 +5,7 @@ use sha2::{Digest, Sha256};
 use std::path::Path;
 
 type Result<T> = std::result::Result<T, &'static str>;
-const ID_PREFIX: [u8; 8] = *b"ArgusSS";
+const ID_PREFIX: [u8; 8] = *b"ArgusSS\0";
 
 #[derive(Clone, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
