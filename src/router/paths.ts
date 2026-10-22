@@ -17,6 +17,7 @@ export const VIEW_PATH: Record<View, string> = {
   addons: "/addons",
   settings: "/settings",
   wrapped: "/wrapped",
+  manga: "/manga",
 };
 
 const PATH_TO_VIEW = new Map<string, View>(

@@ -12,6 +12,7 @@ import { PlaylistVodIcon } from "@/components/icons/playlist-vod-icon";
 import { SettingsIcon } from "@/components/icons/settings-icon";
 import { TvIcon } from "@/components/icons/tv-icon";
 import { KidsIcon } from "@/components/icons/kids-icon";
+import { MangaIcon } from "@/components/icons/manga-icon";
 import { DownloadsNavIcon } from "@/chrome/downloads-nav-icon";
 import type { LockableTab } from "@/lib/parental";
 import type { View } from "@/lib/view";
@@ -24,6 +25,7 @@ export type NavItemId =
   | "shows"
   | "kids"
   | "anime"
+  | "manga"
   | "live"
   | "vod"
   | "calendar"
@@ -37,7 +39,7 @@ export type NavItem = {
   label: string;
   render: (active: boolean) => ReactNode;
   view: View;
-  hideKey?: "anime" | "liveTv" | "sports";
+  hideKey?: "anime" | "liveTv" | "sports" | "manga";
   parentalKey?: LockableTab;
   pinGated?: boolean;
 };
@@ -86,6 +88,13 @@ export const NAV_ITEMS: NavItem[] = [
     view: "anime",
     hideKey: "anime",
     parentalKey: "anime",
+  },
+  {
+    id: "manga",
+    label: "nav.manga",
+    render: (active) => <MangaIcon active={active} />,
+    view: "manga",
+    hideKey: "manga",
   },
   {
     id: "live",
