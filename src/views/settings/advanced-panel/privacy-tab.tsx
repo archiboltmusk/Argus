@@ -70,6 +70,14 @@ function AddonHealthRows() {
         value={settings.addonConformanceChecks}
         onChange={(addonConformanceChecks) => update({ addonConformanceChecks })}
       />
+      <ToggleRow
+        label={t("Show a Test all addons button")}
+        sub={t(
+          "Adds a button to the installed addon list that asks each addon for a public-domain film and reports pass, slow or fail with the reason. Only runs when you press it.",
+        )}
+        value={settings.addonTestAll}
+        onChange={(addonTestAll) => update({ addonTestAll })}
+      />
     </>
   );
 }

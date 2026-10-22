@@ -1,12 +1,15 @@
-import { ArrowUpDown, Columns2, Rows3, Settings2 } from "lucide-react";
+import { ArrowUpDown, Columns2, FlaskConical, RefreshCw, Rows3, Settings2 } from "lucide-react";
 import { useState } from "react";
+import { testReasonLabel } from "@/lib/addon-health/test-addon";
 import { useAddonScore, useAddonStatus } from "@/lib/addon-health/store";
+import { useSettings } from "@/lib/settings";
 import { AddonLogo, resolveAddonLogo } from "@/components/addon-logo";
 import { HoverTooltip } from "@/components/hover-tooltip";
 import { isAddonEnabled, setAddonEnabled } from "@/lib/addon-store";
 import type { ResolvedAddon } from "@/lib/addons-store/store";
 import { useT } from "@/lib/i18n";
 import { addonKey, idOf, nameOf, subtitleFromManifest } from "./addons-utils";
+import { useAddonTests, type AddonTestState } from "./use-addon-tests";
 
 const LAYOUT_KEY = "argus.addons.installedLayout";
 
@@ -32,6 +35,8 @@ export function InstalledPane({
   onReorder?: () => void;
 }) {
   const t = useT();
+  const { settings } = useSettings();
+  const tests = useAddonTests();
   const [layout, setLayout] = useState<InstalledLayout>(readLayout);
   const switchLayout = (next: InstalledLayout) => {
     setLayout(next);
@@ -100,6 +105,17 @@ export function InstalledPane({
             </button>
           </HoverTooltip>
         </div>
+        {settings.addonTestAll && (
+          <button
+            onClick={() => tests.testAll(installed)}
+            disabled={tests.running}
+            title={t("Ask every installed addon for a public-domain film and report pass, slow or fail")}
+            className="flex h-9 shrink-0 items-center gap-1.5 rounded-full border border-edge-soft px-3 text-[11.5px] font-semibold uppercase tracking-[0.14em] text-ink-subtle transition-colors hover:border-edge hover:text-ink-muted disabled:cursor-wait disabled:opacity-60"
+          >
+            <FlaskConical size={13} strokeWidth={2.4} />
+            {tests.running ? t("Testing") : t("Test all addons")}
+          </button>
+        )}
         {onReorder && (
           <button
             onClick={onReorder}
@@ -122,6 +138,8 @@ export function InstalledPane({
               onOpen={onOpen}
               onUninstall={onUninstall}
               onManage={onManage}
+              test={tests.states[addonKey(r)]}
+              onTest={settings.addonTestAll ? tests.testOne : undefined}
             />
           ))}
         </div>
@@ -137,6 +155,8 @@ export function InstalledPane({
                   onOpen={onOpen}
                   onUninstall={onUninstall}
                   onManage={onManage}
+                  test={tests.states[addonKey(r)]}
+                  onTest={settings.addonTestAll ? tests.testOne : undefined}
                 />
               ))}
             </div>
@@ -160,6 +180,8 @@ function InstalledRow({
   onOpen,
   onUninstall,
   onManage,
+  test,
+  onTest,
 }: {
   resolved: ResolvedAddon;
   position: number;
@@ -167,6 +189,8 @@ function InstalledRow({
   onOpen: (id: string) => void;
   onUninstall: (r: ResolvedAddon) => Promise<void>;
   onManage?: (r: ResolvedAddon) => void;
+  test?: AddonTestState;
+  onTest?: (r: ResolvedAddon) => void;
 }) {
   const t = useT();
   const r = resolved;
@@ -247,7 +271,22 @@ function InstalledRow({
             <span className="ms-2 font-semibold text-amber-300">{t("Unreliable")}</span>
           )}
         </span>
+        {enabled && test && <TestLine test={test} />}
       </div>
+      {onTest && !busy && (
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onTest(r);
+          }}
+          disabled={test?.running}
+          title={t("Test this addon again")}
+          aria-label={t("Test {name} again", { name: nameOf(r) })}
+          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-ink-subtle ring-1 ring-edge-soft transition-colors hover:text-ink hover:ring-edge disabled:cursor-wait disabled:opacity-60"
+        >
+          <RefreshCw size={13} strokeWidth={2.2} className={test?.running ? "animate-spin" : ""} />
+        </button>
+      )}
       {!busy && (
         <HoverTooltip
           side="top"
@@ -305,6 +344,31 @@ function InstalledRow({
         )}
       </button>
     </div>
+  );
+}
+
+function TestLine({ test }: { test: AddonTestState }) {
+  const t = useT();
+  const { result } = test;
+  if (test.running && !result) return <span className="text-[11.5px] text-ink-subtle">{t("Testing")}...</span>;
+  if (!result) return null;
+  const tone =
+    result.status === "pass" ? "text-emerald-300" : result.status === "slow" ? "text-amber-300" : "text-danger";
+  const label = result.status === "pass" ? t("Pass") : result.status === "slow" ? t("Slow") : t("Fail");
+  const breakdown = result.steps
+    .map((s) => `${s.name} ${s.status === "fail" ? (s.reason ? testReasonLabel(s.reason) : "fail") : `${s.ms} ms`}`)
+    .join(" · ");
+  return (
+    <span className="truncate text-[11.5px] text-ink-subtle" title={breakdown}>
+      <span className={`font-semibold ${tone}`}>{label}</span>
+      <span className="ms-1.5 tabular-nums">{result.ms} ms</span>
+      {result.reason && (
+        <span className="ms-1.5">
+          {testReasonLabel(result.reason)}
+          {result.detail ? `: ${result.detail}` : ""}
+        </span>
+      )}
+    </span>
   );
 }
 

@@ -250,6 +250,7 @@ function parseStoredSettings(raw: string | null): { settings: Settings; cacheabl
       parsed._stremioDeeplinkOnByDefault = true;
     }
     parsed.addonConformanceChecks = parsed.addonConformanceChecks !== false;
+    parsed.addonTestAll = parsed.addonTestAll !== false;
     parsed.usenetNzbAdd = parsed.usenetNzbAdd === true;
     parsed.contentAdvisoryToast = parsed.contentAdvisoryToast === true;
     parsed.contentAdvisoryDetail = parsed.contentAdvisoryDetail === true;
