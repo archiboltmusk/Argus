@@ -48,6 +48,7 @@ import { BuildFeedback } from "./build-feedback";
 import { RollbackRow } from "./rollback-row";
 import { PrivacyRow } from "./privacy-row";
 import { TrayRow } from "./tray-row";
+import { MangaSettings } from "@/views/manga/settings-section";
 import { IndexersSection } from "./indexers-section";
 import { Section, Segmented, ToggleRow } from "./shared";
 import { Signature } from "./signature";
@@ -119,6 +120,8 @@ export function AdvancedPanel() {
         <IndexersSection />
         <InternetArchiveRow />
       </Section>
+
+      <MangaSettings />
 
       <Section
         title={t("Quality matching")}

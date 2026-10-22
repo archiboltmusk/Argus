@@ -309,6 +309,7 @@ export const DEFAULT: Settings = {
     liveTv: false,
     sports: false,
     adult: true,
+    manga: true,
   },
   theme: DEFAULT_THEME,
   customLogoMark: "",
