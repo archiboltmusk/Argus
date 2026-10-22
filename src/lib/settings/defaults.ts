@@ -409,6 +409,7 @@ export const DEFAULT: Settings = {
   mpvBufferBoost: false,
   mpvBufferSize: "auto",
   mpvDownmixStereo: false,
+  mpvDisplaySync: false,
   volumeBoostMax: 2,
   mpvTweaks: {},
   playerSvp: false,

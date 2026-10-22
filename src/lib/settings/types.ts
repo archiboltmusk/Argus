@@ -496,6 +496,7 @@ export type Settings = {
   mpvBufferBoost: boolean;
   mpvBufferSize: BufferSizeId;
   mpvDownmixStereo: boolean;
+  mpvDisplaySync: boolean;
   volumeBoostMax: number;
   mpvTweaks: Record<string, string>;
   playerSvp: boolean;
