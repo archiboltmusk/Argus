@@ -87,15 +87,19 @@ export default defineConfig(({ mode }) => {
       ? {
           build: {
             target: "chrome87",
-            rollupOptions: { input: { tv: "index-tv.html", main: "index.html" } },
+            rollupOptions: { input: { tv: "index-tv.html", main: "index.html" } as Record<string, string> },
           },
         }
       : web
-        ? { build: { outDir: "dist-web", rollupOptions: { input: { main: "index.html" } } } }
+        ? { build: { outDir: "dist-web", rollupOptions: { input: { main: "index.html" } as Record<string, string> } } }
         : {
             build: {
               rollupOptions: {
-                input: { main: "index.html", retro: "retro-player.html", tray: "tray.html" },
+                input: {
+                  main: "index.html",
+                  retro: "retro-player.html",
+                  tray: "tray.html",
+                } as Record<string, string>,
               },
             },
           }),
