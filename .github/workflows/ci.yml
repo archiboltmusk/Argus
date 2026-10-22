@@ -18,6 +18,8 @@ concurrency:
 
 env:
   CARGO_TERM_COLOR: always
+  # The Harbor tree is large; tsc and vite exceed the default ~2 GB heap.
+  NODE_OPTIONS: --max-old-space-size=8192
 
 jobs:
   # PRs only build the .dmg when native code or the build itself changed;
