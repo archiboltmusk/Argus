@@ -96,3 +96,41 @@ export async function torboxCloudLink(
     throw new Error("TorBox did not return a playable link");
   return url;
 }
+
+/** True for an http(s) link, the only form TorBox fetches an NZB from. */
+export function isNzbLink(value: string): boolean {
+  try {
+    const url = new URL(value.trim());
+    return url.protocol === "https:" || url.protocol === "http:";
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Asks TorBox to fetch an NZB the user supplies and download it from their own Usenet account.
+ * Argus never contacts a Usenet provider or indexer itself; the download appears in the TorBox
+ * cloud list once TorBox has finished it.
+ */
+export async function addTorboxNzbLink(
+  key: string,
+  link: string,
+  signal: AbortSignal,
+): Promise<void> {
+  const trimmed = link.trim();
+  if (!isNzbLink(trimmed)) throw new Error("Enter an http or https link to an NZB file");
+  const response = await safeFetch(`${BASE}/usenet/createusenetdownload`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${key}`,
+      Accept: "application/json",
+      "Content-Type": "application/x-www-form-urlencoded",
+    },
+    body: new URLSearchParams({ link: trimmed }),
+    signal,
+  });
+  if (response.status === 401) throw new Error("Invalid TorBox API key");
+  const body = (await response.json().catch(() => null)) as Envelope<unknown> | null;
+  if (!response.ok || !body?.success)
+    throw new Error(body?.detail || `TorBox request failed (${response.status})`);
+}

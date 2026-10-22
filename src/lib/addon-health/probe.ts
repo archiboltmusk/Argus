@@ -1,5 +1,6 @@
 import { addonAccepts, gatherCatalogAddons, type Addon } from "@/lib/addons";
 import { safeFetch } from "@/lib/safe-fetch";
+import { checkConformance } from "./conformance";
 import { recordAddonOutcome } from "./store";
 
 /** A public-domain film (Night of the Living Dead, 1968), so probes never request a real title. */
@@ -9,7 +10,7 @@ const PROBE_TIMEOUT_MS = 8000;
 const LAST_RUN_KEY = "argus.addonHealth.lastProbe";
 const EVERY_MS = 6 * 60 * 60 * 1000;
 
-async function probeOne(addon: Addon): Promise<void> {
+async function probeOne(addon: Addon, conformance: boolean): Promise<void> {
   const started = performance.now();
   const stream = addonAccepts(addon, "stream", PROBE_TYPE, PROBE_ID);
   const base = addon.transportUrl.replace(/\/manifest\.json$/, "");
@@ -18,8 +19,14 @@ async function probeOne(addon: Addon): Promise<void> {
   const timer = setTimeout(() => ac.abort(), PROBE_TIMEOUT_MS);
   try {
     const res = await safeFetch(url, { headers: { Accept: "application/json" }, signal: ac.signal });
-    await res.json();
-    recordAddonOutcome(addon.manifest.id, res.ok, Math.round(performance.now() - started), `probe-${res.status}`);
+    const body: unknown = await res.json();
+    const issues = res.ok && conformance ? checkConformance(stream ? "stream" : "manifest", body) : [];
+    recordAddonOutcome(
+      addon.manifest.id,
+      res.ok && issues.length === 0,
+      Math.round(performance.now() - started),
+      issues.length ? `schema: ${issues[0]}` : `probe-${res.status}`,
+    );
   } catch {
     recordAddonOutcome(addon.manifest.id, false, Math.round(performance.now() - started), "probe-error");
   } finally {
@@ -28,7 +35,11 @@ async function probeOne(addon: Addon): Promise<void> {
 }
 
 /** Probes installed addons at most every 6 hours, a few at a time. */
-export async function runAddonProbes(authKey: string | null, force = false): Promise<void> {
+export async function runAddonProbes(
+  authKey: string | null,
+  force = false,
+  conformance = true,
+): Promise<void> {
   try {
     const last = Number(localStorage.getItem(LAST_RUN_KEY) ?? 0);
     if (!force && Date.now() - last < EVERY_MS) return;
@@ -39,7 +50,7 @@ export async function runAddonProbes(authKey: string | null, force = false): Pro
   const addons = await gatherCatalogAddons(authKey).catch(() => [] as Addon[]);
   const queue = [...addons];
   const worker = async () => {
-    for (let a = queue.shift(); a; a = queue.shift()) await probeOne(a);
+    for (let a = queue.shift(); a; a = queue.shift()) await probeOne(a, conformance);
   };
   await Promise.all([worker(), worker(), worker()]);
 }

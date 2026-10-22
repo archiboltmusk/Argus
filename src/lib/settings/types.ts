@@ -230,6 +230,8 @@ export type Settings = {
   indexers: import("@/lib/streams/indexer-feed").Indexer[];
   addonHealthTracking: boolean;
   addonHealthProbes: boolean;
+  addonConformanceChecks: boolean;
+  usenetNzbAdd: boolean;
   screensaver: boolean;
   screensaverStyle: "ambient" | "catBoat" | "halloween" | "custom";
   screensaverMedia: ScreensaverMedia[];
