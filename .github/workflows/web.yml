@@ -21,7 +21,7 @@ on:
 
 concurrency:
   group: web-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 env:
   NODE_OPTIONS: --max-old-space-size=8192
