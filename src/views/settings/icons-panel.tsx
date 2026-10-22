@@ -79,7 +79,6 @@ const SVG_RAW = import.meta.glob(["../../assets/nav-icons/*.svg", "../../assets/
 const LOTTIE_NAV = import.meta.glob("../../assets/lottie/nav/*.json") as LazyGlob;
 const LOTTIE_MAIN = import.meta.glob("../../assets/lottie/*.json") as LazyGlob;
 const LOTTIE_APP: LazyGlob = {
-  "../../assets/argus-lottie.json": () => import("../../assets/argus-lottie.json"),
   "../../../installer/ui/assets/boot-box.json": () =>
     import("../../../installer/ui/assets/boot-box.json"),
 };
