@@ -406,6 +406,7 @@ export const DEFAULT: Settings = {
   iptvEpgOffsetHours: 0,
   sidebarCollapsed: false,
   wrappedButton: true,
+  sportsPage: false,
   feedLocaleBias: true,
   uiLanguage: "en",
   cropMode: "fit",

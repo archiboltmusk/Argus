@@ -104,6 +104,7 @@ import { ArgusRouterProvider, ViewRouterSync } from "@/router";
 const importAnime = () => import("@/views/anime");
 const importCalendar = () => import("@/views/calendar");
 const importWrapped = () => import("@/views/wrapped");
+const importSports = () => import("@/views/sports");
 const importManga = () => import("@/views/manga");
 const importDetail = () => import("@/views/detail");
 const importAddons = () => import("@/views/addons");
@@ -134,6 +135,7 @@ const importOnboarding = () => import("@/components/onboarding");
 const AnimeView = lazy(() => importAnime().then((m) => ({ default: m.AnimeView })));
 const CalendarView = lazy(() => importCalendar().then((m) => ({ default: m.CalendarView })));
 const WrappedView = lazy(() => importWrapped().then((m) => ({ default: m.WrappedView })));
+const SportsView = lazy(() => importSports().then((m) => ({ default: m.SportsView })));
 const MangaView = lazy(() => importManga().then((m) => ({ default: m.MangaView })));
 const DetailView = lazy(() => importDetail().then((m) => ({ default: m.DetailView })));
 const AddonsView = lazy(() => importAddons().then((m) => ({ default: m.AddonsView })));
@@ -877,8 +879,9 @@ function Shell({ onReady }: { onReady?: () => void }) {
 
   useEffect(() => {
     if (topKind === "anime" && settings.hideContent.anime) setView("home");
+    if (topKind === "sports" && !settings.sportsPage) setView("home");
     if (topKind === "manga" && settings.hideContent.manga) setView("home");
-  }, [topKind, settings.hideContent.anime, settings.hideContent.manga, setView]);
+  }, [topKind, settings.hideContent.anime, settings.hideContent.manga, settings.sportsPage, setView]);
 
   useEffect(() => {
     if (!kid || player) return;
@@ -930,6 +933,7 @@ function Shell({ onReady }: { onReady?: () => void }) {
   const addonsTop = topKind === "addons" || topKind === "addon-detail";
   const calendarTop = topKind === "calendar";
   const wrappedTop = topKind === "wrapped";
+  const sportsTop = topKind === "sports";
   const mangaTop = topKind === "manga";
   const queueTop = topKind === "queue";
   const serviceTop = topKind === "service";
@@ -976,6 +980,7 @@ function Shell({ onReady }: { onReady?: () => void }) {
   const addonsAlive = useIdleEvict(addonsTop);
   const calendarAlive = useIdleEvict(calendarTop);
   const wrappedAlive = useIdleEvict(wrappedTop);
+  const sportsAlive = useIdleEvict(sportsTop);
   const mangaAlive = useIdleEvict(mangaTop);
   const queueAlive = useKeepAlive(queueTop, queueTop);
   const serviceAlive = useKeepAlive(serviceTop, serviceTop && !!service);
@@ -1100,6 +1105,13 @@ function Shell({ onReady }: { onReady?: () => void }) {
           <div className={layer(wrappedTop)}>
             <Suspense fallback={null}>
               <WrappedView active={wrappedTop} />
+            </Suspense>
+          </div>
+        )}
+        {sportsAlive && (
+          <div className={layer(sportsTop)}>
+            <Suspense fallback={null}>
+              <SportsView active={sportsTop} />
             </Suspense>
           </div>
         )}
