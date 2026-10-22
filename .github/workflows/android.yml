@@ -10,10 +10,13 @@ on:
       - "index-tv.html"
       - "package.json"
       - "pnpm-lock.yaml"
+      - "scripts/android-patch-manifest.mjs"
+      - "docs/android/**"
       - ".github/workflows/android.yml"
   pull_request:
     paths:
       - "src-tauri/**"
+      - "scripts/android-patch-manifest.mjs"
       - ".github/workflows/android.yml"
   workflow_dispatch:
 
@@ -61,6 +64,8 @@ jobs:
       - run: pnpm run setup:fonts
       # src-tauri/gen/ is gitignored scaffolding; recreate it for the runner.
       - run: pnpm tauri android init --ci
+      # Cleartext to the local torrent engine and the Android TV launcher entry.
+      - run: node scripts/android-patch-manifest.mjs
       - name: Build release APK
         run: pnpm tauri android build --apk --target aarch64 --ci
       # Release APKs come out unsigned and cannot be installed. Sign with the
