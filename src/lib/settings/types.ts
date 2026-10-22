@@ -217,6 +217,8 @@ export type Settings = {
   p2pAutoConsent: boolean;
   p2pUploadEnabled: boolean;
   communityAddonDirectories: boolean;
+  advancedSettings: boolean;
+  metadataFusion: boolean;
   addonHealthTracking: boolean;
   capabilityMatching: boolean;
   addonHealthProbes: boolean;

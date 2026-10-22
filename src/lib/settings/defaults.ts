@@ -179,6 +179,8 @@ export const DEFAULT: Settings = {
   p2pAutoConsent: false,
   p2pUploadEnabled: false,
   communityAddonDirectories: false,
+  advancedSettings: false,
+  metadataFusion: true,
   addonHealthTracking: true,
   capabilityMatching: true,
   addonHealthProbes: false,

@@ -4668,5 +4668,8 @@
   "Quality matching": "Quality matching",
   "Argus checks what your display can show and ranks streams to match, so HDR and Dolby Vision files are not preferred on a screen that cannot use them.": "Argus checks what your display can show and ranks streams to match, so HDR and Dolby Vision files are not preferred on a screen that cannot use them.",
   "Match streams to my display": "Match streams to my display",
-  "On a screen without HDR, prefer SDR releases. In the web player, avoid Dolby Vision files that would show wrong colors. Audio codecs the native player cannot play are already ranked lower.": "On a screen without HDR, prefer SDR releases. In the web player, avoid Dolby Vision files that would show wrong colors. Audio codecs the native player cannot play are already ranked lower."
+  "On a screen without HDR, prefer SDR releases. In the web player, avoid Dolby Vision files that would show wrong colors. Audio codecs the native player cannot play are already ranked lower.": "On a screen without HDR, prefer SDR releases. In the web player, avoid Dolby Vision files that would show wrong colors. Audio codecs the native player cannot play are already ranked lower.",
+  "Advanced settings": "Advanced settings",
+  "Match alternate and regional titles": "Match alternate and regional titles",
+  "Looks up other names for a title (TMDB, TVmaze, AniList) so differently named releases still match.": "Looks up other names for a title (TMDB, TVmaze, AniList) so differently named releases still match."
 }

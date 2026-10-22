@@ -291,6 +291,20 @@ type NavItem = {
   keywords?: string[];
 };
 
+// Sections shown in Simple mode. Everything else appears once "Advanced
+// settings" is on; search always covers all sections.
+const SIMPLE_SECTIONS = new Set<SectionId>([
+  "basics",
+  "account",
+  "library",
+  "trakt",
+  "streaming",
+  "language",
+  "player",
+  "theme",
+  "bug",
+]);
+
 const NAV_GROUPS: Array<{ heading: string | null; items: NavItem[] }> = [
   {
     heading: null,
@@ -5372,7 +5386,7 @@ export function SettingsNav({
   active: SectionId;
   onChange: (id: SectionId, anchor?: string) => void;
 }) {
-  const { settings } = useSettings();
+  const { settings, update } = useSettings();
   const { goBack, canGoBack, setView } = useView();
   const t = useT();
   const isNew = useSettingsNew();
@@ -5408,6 +5422,18 @@ export function SettingsNav({
         (o.keywords ?? []).some((k) => k.toLowerCase().includes(trimmed)),
     );
   }, [t, trimmed]);
+
+  const showAll = settings.advancedSettings;
+  const visibleGroups = useMemo(
+    () =>
+      NAV_GROUPS.map((g) => ({
+        ...g,
+        items: showAll
+          ? g.items
+          : g.items.filter((i) => SIMPLE_SECTIONS.has(i.id) || i.id === active),
+      })).filter((g) => g.items.length > 0),
+    [showAll, active],
+  );
 
   const libraryKeys = [
     settings.tmdbKey,
@@ -5705,7 +5731,7 @@ export function SettingsNav({
           </div>
         )}
         {!matches &&
-          NAV_GROUPS.map((group, gi) => (
+          visibleGroups.map((group, gi) => (
             <div key={gi} className="flex flex-col gap-1">
               {group.heading && (
                 <div className="px-3.5 pb-1.5 pt-1 text-[10.5px] font-semibold uppercase tracking-[0.12em] text-ink-subtle/80">
@@ -5770,6 +5796,24 @@ export function SettingsNav({
               })}
             </div>
           ))}
+        {!matches && (
+          <button
+            type="button"
+            role="switch"
+            aria-checked={showAll}
+            onClick={() => update({ advancedSettings: !showAll })}
+            className="mt-1 flex w-full items-center justify-between rounded-xl px-3.5 py-3 text-start text-[13px] text-ink-muted transition-colors hover:bg-elevated/70 hover:text-ink"
+          >
+            <span>{t("Advanced settings")}</span>
+            <span
+              className={`rounded-md px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${
+                showAll ? "bg-accent/15 text-accent" : "bg-canvas/70 text-ink-subtle"
+              }`}
+            >
+              {showAll ? t("On") : t("Off")}
+            </span>
+          </button>
+        )}
       </div>
     </nav>
   );

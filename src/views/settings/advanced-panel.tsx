@@ -116,6 +116,7 @@ export function AdvancedPanel() {
         )}
       >
         <CapabilityRow />
+        <MetadataFusionRow />
       </Section>
 
       <Section
@@ -978,6 +979,19 @@ function AnimeRepairRow() {
       onClick={showRemove ? remove : scan}
       disabled={busy}
       tone={phase === "done" && removed > 0 ? "success" : undefined}
+    />
+  );
+}
+
+function MetadataFusionRow() {
+  const t = useT();
+  const { settings, update } = useSettings();
+  return (
+    <ToggleRow
+      label={t("Match alternate and regional titles")}
+      sub={t("Looks up other names for a title (TMDB, TVmaze, AniList) so differently named releases still match.")}
+      value={settings.metadataFusion}
+      onChange={(v) => update({ metadataFusion: v })}
     />
   );
 }
