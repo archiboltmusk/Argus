@@ -345,6 +345,14 @@ export function PlayerLayoutPanel() {
             update({ contentAdvisoryToast: v });
           }}
         />
+        <ToggleRow
+          label={t("Content advisory on title page")}
+          sub={t(
+            "Show the age rating and the IMDb parental guide categories (violence, profanity, substances, frightening scenes and more) with severity on a movie or show page, before you press play.",
+          )}
+          value={settings.contentAdvisoryDetail}
+          onChange={(v) => update({ contentAdvisoryDetail: v })}
+        />
         {settings.contentAdvisoryToast && (
           <Segmented
             label={t("Content advisory theme")}
