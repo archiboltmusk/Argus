@@ -340,7 +340,7 @@ export const DEFAULT: Settings = {
   secondarySubLang: "",
   subSecondaryPlacement: "top",
   subSecondaryScale: 0.85,
-  subtitleAutoSync: false,
+  subtitleAutoSync: true,
   autoSyncApplyStructural: false,
   autoSyncDrift: false,
   subtitleAutoSyncAsr: true,
