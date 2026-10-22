@@ -5,11 +5,14 @@ import { SettingRow } from "../kit";
 import { SRow } from "../ui";
 import { StreamPriorityCard } from "../stream-priority-card";
 import { useT } from "@/lib/i18n";
+import { BestLinkRows } from "./best-link-rows";
+import { ExtraSourcesRows } from "./extra-sources-rows";
 
 export function SortingTab() {
   const t = useT();
   const { settings, update } = useSettings();
   return (
+    <>
     <Section
       title={t("Result order")}
       subtitle={t(
@@ -26,6 +29,9 @@ export function SortingTab() {
         )}
       />
     </Section>
+    <BestLinkRows />
+    <ExtraSourcesRows />
+    </>
   );
 }
 

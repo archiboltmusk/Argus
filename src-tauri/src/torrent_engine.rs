@@ -346,6 +346,14 @@ async fn new_session(
             trackers: trackers::as_url_set(),
             listen_port_range: if full { Some(16881..16931) } else { None },
             enable_upnp_port_forwarding: full,
+            ratelimits: librqbit::limits::LimitsConfig {
+                upload_bps: if UPLOAD_ENABLED.load(std::sync::atomic::Ordering::Relaxed) {
+                    None
+                } else {
+                    std::num::NonZeroU32::new(UPLOAD_OFF_BPS)
+                },
+                download_bps: None,
+            },
             ..Default::default()
         },
     )
@@ -411,7 +419,17 @@ struct EngineConfig {
     dir: Option<String>,
     retention_hours: Option<u64>,
     max_gb: Option<u64>,
+    /// Uploading beyond a trickle; off unless the user opts in.
+    upload_enabled: Option<bool>,
 }
+
+/// Throttle applied while uploading is off. Not zero: a small trickle keeps peers
+/// willing to serve us, while no meaningful data is shared back.
+#[cfg(not(target_os = "android"))]
+const UPLOAD_OFF_BPS: u32 = 8 * 1024;
+
+#[cfg(not(target_os = "android"))]
+static UPLOAD_ENABLED: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
 
 #[cfg(not(target_os = "android"))]
 fn config_path(app: &AppHandle) -> Option<std::path::PathBuf> {
@@ -472,6 +490,11 @@ async fn init(app: AppHandle, cancellation: CancellationToken) -> Result<(), Str
         crate::p2p_android::DHT_QUERIES_PER_SECOND,
     );
     let cfg = read_config(&app);
+    #[cfg(not(target_os = "android"))]
+    UPLOAD_ENABLED.store(
+        cfg.upload_enabled.unwrap_or(false),
+        std::sync::atomic::Ordering::Relaxed,
+    );
     let dir = engine_dir(&app, &cfg)?;
     std::fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
     match mark_persisted_torrents_paused(&dir) {
@@ -1096,6 +1119,7 @@ pub async fn torrent_engine_set_options(
         dir: dir.map(|s| s.trim().to_string()).filter(|s| !s.is_empty()),
         retention_hours: Some(retention_hours),
         max_gb: Some(max_gb),
+        upload_enabled: read_config(&app).upload_enabled,
     };
     if let Some(p) = config_path(&app) {
         if let Some(parent) = p.parent() {
@@ -1112,6 +1136,21 @@ pub async fn torrent_engine_set_options(
         }
     }
     Ok(torrent_engine_status())
+}
+
+/// Saved for the next engine start; the session is built with the limit already applied.
+#[tauri::command]
+pub async fn torrent_engine_set_upload(app: AppHandle, enabled: bool) -> Result<(), String> {
+    let mut cfg = read_config(&app);
+    cfg.upload_enabled = Some(enabled);
+    if let Some(p) = config_path(&app) {
+        if let Some(parent) = p.parent() {
+            let _ = std::fs::create_dir_all(parent);
+        }
+        std::fs::write(&p, serde_json::to_string(&cfg).map_err(|e| e.to_string())?)
+            .map_err(|e| e.to_string())?;
+    }
+    Ok(())
 }
 
 #[tauri::command]

@@ -1,3 +1,4 @@
+import { loadStoredSettings } from "@/lib/settings/load";
 import { safeFetch as fetch } from "@/lib/safe-fetch";
 import type { Addon } from "@/lib/addons";
 
@@ -32,6 +33,7 @@ async function fetchFlatCollection(url: string): Promise<Addon[]> {
 }
 
 export async function fetchCommunityAddons(): Promise<Addon[]> {
+  if (!loadStoredSettings().communityAddonDirectories) return [];
   const out: Addon[] = [];
   const seen = new Set<string>();
   const lists = await Promise.all([

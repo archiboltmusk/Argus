@@ -501,6 +501,13 @@ export async function torrentEngineHardReset(): Promise<EngineStatus | null> {
   }
 }
 
+export async function torrentEngineSetUpload(enabled: boolean): Promise<void> {
+  if (!isTauri) return;
+  await invoke("torrent_engine_set_upload", { enabled }).catch((e) =>
+    console.warn("[engine] set upload failed", e),
+  );
+}
+
 export async function torrentEngineSetOptions(
   dir: string | null,
   retentionHours: number,

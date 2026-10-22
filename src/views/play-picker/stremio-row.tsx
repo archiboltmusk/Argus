@@ -5,6 +5,7 @@ import { CopyLinkButton, resolveStreamLink } from "@/components/player/copy-link
 import { DubSubPill, streamDubSub } from "@/components/dub-sub-pill";
 import { FormatBadge, RuleBadges, streamBadges } from "@/components/format-badge";
 import { HostMatchChip } from "@/components/host-match-chip";
+import { StreamHostChip } from "@/components/stream-host-chip";
 import { useSettings } from "@/lib/settings";
 import { useT } from "@/lib/i18n";
 import { bidiLines } from "@/lib/bidi";
@@ -70,9 +71,10 @@ export function StremioRow({
             {bidiLines(description)}
           </p>
         )}
-        {(badges.length > 0 || match || stream.edition || dubSub) && (
+        {(badges.length > 0 || match || stream.edition || dubSub || stream.url) && (
           <div className="flex flex-wrap items-center gap-1.5">
             <HostMatchChip match={match} />
+            <StreamHostChip url={stream.url} />
             {dubSub && <DubSubPill kind={dubSub} size="sm" />}
             {badges.map((k) => (
               <FormatBadge key={k} kind={k} size="sm" />

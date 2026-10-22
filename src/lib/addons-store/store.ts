@@ -5,6 +5,7 @@ import { userAddons } from "@/lib/addons";
 import { fetchInstalledAddons } from "@/lib/addon-store";
 import { listAddons } from "@/lib/providers/stremio-addons";
 import { isAdultText } from "./adult-filter";
+import { loadStoredSettings } from "@/lib/settings/load";
 import { fetchCommunityAddons, fetchManifest } from "./community";
 import { CURATED_ADDONS, type CuratedEntry } from "./curated";
 
@@ -122,7 +123,10 @@ export function useAddonsCatalog(adultsAllowed: boolean): {
 
       const [community, saList] = await Promise.all([
         fetchCommunityAddons(),
-        listAddons({ limit: 200, sort_by: "stars", order: "desc" })
+        (loadStoredSettings().communityAddonDirectories
+          ? listAddons({ limit: 200, sort_by: "stars", order: "desc" })
+          : Promise.resolve({ addons: [] as Awaited<ReturnType<typeof listAddons>>["addons"] })
+        )
           .then((r) =>
             r.addons.map((a): Addon => ({ manifest: a.manifest, transportUrl: a.manifestUrl })),
           )

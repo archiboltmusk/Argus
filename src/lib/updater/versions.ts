@@ -1,8 +1,7 @@
 import { isMacDesktop, isWindowsDesktop } from "@/lib/platform";
 import { safeFetch } from "@/lib/safe-fetch";
-import { ARGUS_API_BASE } from "@/lib/config/endpoints";
 
-const INDEX_URL = `${ARGUS_API_BASE}/updates/versions-beta.json`;
+const INDEX_URL = "https://github.com/archiboltmusk/Argus/releases/download/beta/versions-beta.json";
 
 export type VersionEntry = {
   version: string;

@@ -32,8 +32,7 @@ const STEPS: StepId[] = [
   "splash",
   "language",
   "welcome",
-  "layout",
-  "tmdb",
+  // Layout and the TMDB key live in Settings; first run stays short.
   "stremio",
   "streaming",
   "subtitles",

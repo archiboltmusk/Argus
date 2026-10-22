@@ -192,7 +192,7 @@ jobs:
             const [version, sig, url, sha] = process.argv.slice(1);
             const out = {
               version,
-              notes: `Beta build ${version} (${sha.slice(0, 7)})`,
+              notes: `Argus ${version} (${sha.slice(0, 7)})`,
               pub_date: new Date().toISOString(),
               platforms: { "darwin-aarch64": { signature: sig, url } },
             };
@@ -354,7 +354,7 @@ jobs:
 
   # Publishes as soon as the .dmg and every check have passed.
   publish:
-    name: Publish beta
+    name: Publish release
     needs: [core, ui, macos]
     if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
@@ -365,19 +365,20 @@ jobs:
       - uses: actions/download-artifact@v5
         with:
           name: Argus-macOS-aarch64
-      # Rolling beta channel: the in-app updater reads beta/latest.json.
+      # Stable release feed. The tag keeps its original name so installs that already
+      # point the updater at beta/latest.json keep updating.
       - uses: softprops/action-gh-release@v2
         with:
           tag_name: beta
-          name: Argus beta
-          prerelease: true
-          make_latest: false
+          name: Argus 1.0
+          prerelease: false
+          make_latest: true
           files: |
             Argus-aarch64.dmg
             Argus-aarch64.app.tar.gz
             latest.json
           body: |
-            Rolling beta. Installed copies of Argus 0.2+ update themselves from here (Settings → Updates).
+            Argus 1.0, latest stable build. Installed copies of Argus update themselves from here (Settings → Updates).
             First install: download the .dmg. Apple Silicon only. Unsigned build: right-click Argus.app → Open the first time.
       # Keep the last builds as their own releases and list them in
       # versions-beta.json so Settings > Rollback can offer earlier versions.
@@ -392,7 +393,7 @@ jobs:
           VERSION=$(jq -r .version latest.json)
           TAG="build-$VERSION"
           NOTES=$(printf '%s' "$COMMIT_MSG" | head -n1)
-          gh release create "$TAG" Argus-aarch64.dmg --repo "$REPO" --prerelease --latest=false \
+          gh release create "$TAG" Argus-aarch64.dmg --repo "$REPO" --latest=false \
             --target "$GITHUB_SHA" --title "Argus $VERSION" --notes "$NOTES"
           gh release download beta --repo "$REPO" -p versions-beta.json -O old.json || echo '{"versions":[]}' > old.json
           jq --arg v "$VERSION" --arg n "$NOTES" --arg d "$(date -u +%FT%TZ)" \
@@ -415,7 +416,7 @@ jobs:
           target_commitish: ${{ github.sha }}
           name: Argus ${{ inputs.release_tag || github.ref_name }}
           files: Argus-aarch64.dmg
-          prerelease: true
+          prerelease: false
           generate_release_notes: true
           body: |
             Apple Silicon (M1 or newer), macOS 11+. Unsigned build: on first launch, right-click Argus.app → Open, or run `xattr -dr com.apple.quarantine /Applications/Argus.app`.

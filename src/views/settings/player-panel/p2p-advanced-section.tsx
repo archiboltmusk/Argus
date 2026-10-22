@@ -21,6 +21,7 @@ import { useT } from "@/lib/i18n";
 import {
   torrentEngineHardReset,
   torrentEngineSetOptions,
+  torrentEngineSetUpload,
   torrentEngineStatus,
 } from "@/lib/torrent/local-engine";
 import { Section, ToggleRow } from "../shared";
@@ -279,6 +280,9 @@ export function P2PPowerToolsSection() {
   const { settings, update, torrentEnginePolicyPending, torrentEnginePolicyError } = useSettings();
   const t = useT();
   const strictRemote = !!settings.remoteStreamServerUrl && settings.remoteStreamServerStrict;
+  useEffect(() => {
+    void torrentEngineSetUpload(settings.p2pUploadEnabled);
+  }, [settings.p2pUploadEnabled]);
   const [copied, setCopied] = useState(false);
   const [opening, setOpening] = useState(false);
   const cachePath = useCachePath(settings.streamCacheDir);
@@ -370,6 +374,23 @@ export function P2PPowerToolsSection() {
           note={
             settings.torrentsDisabled
               ? t("Nothing left to confirm while P2P is disabled.")
+              : undefined
+          }
+        />
+
+        <ToggleRow
+          label={t("Share back to peers (seeding)")}
+          sub={t(
+            "Off by default: uploads are held to a trickle. Turn on to upload at full speed. Takes effect after the P2P engine restarts.",
+          )}
+          leading={<ShieldCheck size={18} strokeWidth={2.2} />}
+          value={settings.p2pUploadEnabled}
+          onChange={(v) => update({ p2pUploadEnabled: v })}
+          warn={
+            settings.p2pUploadEnabled
+              ? t(
+                  "Uploading shares data with other peers and can expose your IP address. Only enable it for content you have the right to share.",
+                )
               : undefined
           }
         />

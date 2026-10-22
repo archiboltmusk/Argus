@@ -7,6 +7,9 @@ import {
   type AddonProgress,
   type StreamRequest,
 } from "./addons";
+import { fetchArchiveStreams } from "./archive";
+import type { Indexer } from "./indexer-feed";
+import { fetchIndexerStreams } from "./indexers";
 import type { AddonRankFn } from "./addon-priority";
 import { applyStreamPriority } from "./priority-partition";
 import { enhanceAnimeStreams } from "./anitomy";
@@ -100,6 +103,8 @@ function applyAnimeEpisodeFilter(
 export type PipelineInput = {
   request: StreamRequest;
   query: LibraryQuery;
+  indexers?: Indexer[];
+  internetArchive?: boolean;
   addons: Addon[];
   debrids: DebridStore[];
   trust?: TrustOptions;
@@ -338,6 +343,14 @@ export async function runPipeline(
       : Promise.resolve([]);
 
   const presets = input.presetStreams ?? [];
+  // User-added indexers and the opt-in Internet Archive source ride alongside the addons.
+  const extraStreams: Promise<Stream[]> =
+    presets.length > 0
+      ? Promise.resolve([])
+      : Promise.all([
+          fetchIndexerStreams(input.indexers ?? [], input.query, signal),
+          input.internetArchive ? fetchArchiveStreams(input.query, signal) : Promise.resolve([]),
+        ]).then((parts) => parts.flat());
   const [librarySettled, addonSettled] = await Promise.allSettled([
     fetchLibraryStreams(input.debrids, input.query, signal, libraryListsPromise).then((s) => {
       library = s;
@@ -362,7 +375,10 @@ export async function runPipeline(
   stopPartials();
   signal.removeEventListener("abort", stopPartials);
   if (librarySettled.status === "fulfilled") library = librarySettled.value;
-  const addonStreams = addonSettled.status === "fulfilled" ? addonSettled.value : [];
+  const addonStreams = [
+    ...(addonSettled.status === "fulfilled" ? addonSettled.value : []),
+    ...(await extraStreams.catch(() => [] as Stream[])),
+  ];
   const merged = mergeAndDedupe(library, addonStreams, input.preferredAddonId);
   await cacheCheckInFlight;
   await runCacheCheck(merged);
@@ -472,7 +488,7 @@ async function runCorePipeline(
     const { invoke } = await import("@tauri-apps/api/core");
     const result = (await invoke("streams_run_pipeline", {
       streams: parsed,
-      trustOpts,
+      trustOpts: { ...trustOpts, expectedAliases: trustOpts.expectedAliases?.() ?? [] },
       scoreOpts,
     })) as { picker: RankedPicker; rejected: Rejection[] };
     return result;
