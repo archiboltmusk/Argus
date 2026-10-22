@@ -195,6 +195,7 @@ export const DEFAULT: Settings = {
   addonHealthProbes: false,
   addonConformanceChecks: true,
   usenetNzbAdd: false,
+  playFromArchives: false,
   bestLinkScoring: true,
   preferredReleaseGroups: "",
   preferredHosts: "",

@@ -1,5 +1,6 @@
 import {
   AlertTriangle,
+  Archive,
   CheckSquare,
   FolderOpen,
   FolderPlus,
@@ -35,6 +36,7 @@ import {
   type LocalSortKey,
   type SortDir,
 } from "./local-tab/toolbar";
+import { archivePlayerSrc, extractArchiveVideo, pickArchive } from "@/lib/archive-play";
 import { useSettings } from "@/lib/settings";
 import { FoldersModal } from "./local-tab/folders-modal";
 import { useLocalExport } from "./local-tab/use-local-export";
@@ -49,7 +51,7 @@ type Tr = (key: string, vars?: Record<string, string | number>) => string;
  *  modal has no scroller of its own, so it renders the plain grid instead. */
 export function LocalTab({ scrollRef }: { scrollRef?: RefObject<HTMLElement | null> }) {
   const t = useT();
-  const { openMeta } = useView();
+  const { openMeta, openPlayer } = useView();
   const items = useLocalLibrary();
   const libraryReady = useLocalLibraryReady();
   const [toast, setToast] = useState<string | null>(null);
@@ -115,6 +117,22 @@ export function LocalTab({ scrollRef }: { scrollRef?: RefObject<HTMLElement | nu
     swept.current = true;
     void autoScan();
   }, [libraryReady, settings.localAutoScan, autoScan]);
+
+  const [unpacking, setUnpacking] = useState(false);
+  const playFromArchive = useCallback(async () => {
+    const picked = await pickArchive(t("Play from archive"));
+    if (!picked) return;
+    setUnpacking(true);
+    setToast(t("Unpacking the video…"));
+    try {
+      openPlayer(archivePlayerSrc(await extractArchiveVideo(picked), picked));
+      setToast(null);
+    } catch (cause) {
+      setToast(typeof cause === "string" ? cause : t("Could not read this archive."));
+    } finally {
+      setUnpacking(false);
+    }
+  }, [openPlayer, t]);
 
   const bulkExport = useCallback(async () => {
     const list = items.filter((i) => selected.has(i.id) && i.tmdbId != null);
@@ -414,6 +432,21 @@ export function LocalTab({ scrollRef }: { scrollRef?: RefObject<HTMLElement | nu
               )}
               {scan.busy ? scanLabel(scan.progress, t) : t("Add folder")}
             </button>
+            {settings.playFromArchives && (
+              <button
+                type="button"
+                onClick={() => void playFromArchive()}
+                disabled={unpacking}
+                className="flex h-9 items-center gap-1.5 rounded-full bg-raised px-3.5 text-[12.5px] font-semibold text-ink-muted transition-colors hover:bg-elevated hover:text-ink disabled:cursor-wait disabled:opacity-60"
+              >
+                {unpacking ? (
+                  <Loader2 size={13} className="animate-spin" />
+                ) : (
+                  <Archive size={13} strokeWidth={2.2} />
+                )}
+                {t("Play from archive")}
+              </button>
+            )}
           </div>
         }
       />

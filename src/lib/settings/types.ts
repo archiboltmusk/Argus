@@ -232,6 +232,7 @@ export type Settings = {
   addonHealthProbes: boolean;
   addonConformanceChecks: boolean;
   usenetNzbAdd: boolean;
+  playFromArchives: boolean;
   screensaver: boolean;
   screensaverStyle: "ambient" | "catBoat" | "halloween" | "custom";
   screensaverMedia: ScreensaverMedia[];

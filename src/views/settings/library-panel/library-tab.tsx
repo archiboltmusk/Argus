@@ -81,6 +81,14 @@ export function LibraryTab() {
             value={settings.localAutoScan}
             onChange={(v) => update({ localAutoScan: v })}
           />
+          <ToggleRow
+            label={t("Play videos from archives")}
+            sub={t(
+              "Adds a Play from archive button to the Local tab. Argus unpacks the biggest video from a .zip, .rar, .7z or .tar file you pick into its cache, plays it, and clears old unpacked videos after three days. Password-protected archives are not supported.",
+            )}
+            value={settings.playFromArchives}
+            onChange={(v) => update({ playFromArchives: v })}
+          />
           <SettingRow
             icon={<HardDrive size={18} strokeWidth={2} />}
             label={t("Minimum file size")}
