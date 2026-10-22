@@ -453,20 +453,6 @@ type NavItem = {
   keywords?: string[];
 };
 
-// Sections shown in Simple mode. Everything else appears once "Advanced
-// settings" is on; search always covers all sections.
-const SIMPLE_SECTIONS = new Set<SectionId>([
-  "basics",
-  "account",
-  "library",
-  "trakt",
-  "streaming",
-  "language",
-  "player",
-  "theme",
-  "bug",
-]);
-
 const NAV_GROUPS: Array<{ heading: string | null; items: NavItem[] }> = [
   {
     heading: null,
@@ -11317,7 +11303,7 @@ export function SettingsTools({
   setQuery: (v: string) => void;
   onSubmit: (id: SectionId, anchor?: string, tab?: string) => void;
 }) {
-  const { settings, update } = useSettings();
+  const { settings } = useSettings();
   const navLayout = activeLayout(settings.theme);
   const showBack = navLayout === "custom";
   const { matches, optionMatches } = useNavSearch(query.trim().toLowerCase());
@@ -11375,18 +11361,6 @@ export function SettingsNav({
     return m;
   }, []);
   const { matches, optionMatches } = useNavSearch(trimmed);
-
-  const showAll = settings.advancedSettings;
-  const visibleGroups = useMemo(
-    () =>
-      NAV_GROUPS.map((g) => ({
-        ...g,
-        items: showAll
-          ? g.items
-          : g.items.filter((i) => SIMPLE_SECTIONS.has(i.id) || i.id === active),
-      })).filter((g) => g.items.length > 0),
-    [showAll, active],
-  );
 
   const libraryKeys = [
     settings.tmdbKey,
@@ -11684,21 +11658,3 @@ export function SettingsNav({
     </nav>
   );
 }
-        {!matches && (
-          <button
-            type="button"
-            role="switch"
-            aria-checked={showAll}
-            onClick={() => update({ advancedSettings: !showAll })}
-            className="mt-1 flex w-full items-center justify-between rounded-xl px-3.5 py-3 text-start text-[13px] text-ink-muted transition-colors hover:bg-elevated/70 hover:text-ink"
-          >
-            <span>{t("Advanced settings")}</span>
-            <span
-              className={`rounded-md px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${
-                showAll ? "bg-accent/15 text-accent" : "bg-canvas/70 text-ink-subtle"
-              }`}
-            >
-              {showAll ? t("On") : t("Off")}
-            </span>
-          </button>
-        )}

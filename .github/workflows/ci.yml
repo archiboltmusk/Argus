@@ -157,6 +157,8 @@ jobs:
       - run: pnpm install --frozen-lockfile
       # Bundled fonts (CJK subset) are fetched with pinned checksums, not committed.
       - run: pnpm run setup:fonts
+      # yt-dlp / ffmpeg / ffprobe sidecars declared as externalBin.
+      - run: pnpm run setup:binaries
       # Non-PR builds feed the beta channel: version MAJOR.MINOR.<run number>
       # so every main build is newer than the last for the updater.
       # The updater public key comes from the TAURI_UPDATER_PUBKEY repo variable
