@@ -1,0 +1,114 @@
+name: Android
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "src/**"
+      - "src-tauri/**"
+      - "argus-core/**"
+      - "index-tv.html"
+      - "package.json"
+      - "pnpm-lock.yaml"
+      - ".github/workflows/android.yml"
+  pull_request:
+    paths:
+      - "src-tauri/**"
+      - ".github/workflows/android.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: android-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CARGO_TERM_COLOR: always
+  NODE_OPTIONS: --max-old-space-size=8192
+  NDK_VERSION: 27.2.12479018
+
+jobs:
+  apk:
+    name: Android arm64 APK
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - uses: android-actions/setup-android@v3
+      - name: Install NDK
+        run: |
+          sdkmanager --install "ndk;${NDK_VERSION}" "platforms;android-35" "build-tools;35.0.0"
+          echo "ANDROID_NDK_HOME=$ANDROID_HOME/ndk/${NDK_VERSION}" >> "$GITHUB_ENV"
+          echo "NDK_HOME=$ANDROID_HOME/ndk/${NDK_VERSION}" >> "$GITHUB_ENV"
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-linux-android
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+          key: aarch64-linux-android
+          cache-on-failure: true
+          save-if: ${{ github.ref == 'refs/heads/main' }}
+      - uses: pnpm/action-setup@v5
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm run setup:fonts
+      # src-tauri/gen/ is gitignored scaffolding; recreate it for the runner.
+      - run: pnpm tauri android init --ci
+      - name: Build release APK
+        run: pnpm tauri android build --apk --target aarch64 --ci
+      # Release APKs come out unsigned and cannot be installed. Sign with the
+      # ANDROID_KEYSTORE_* secrets when set so updates over an older install
+      # work; otherwise fall back to a throwaway key (fresh installs only).
+      - name: Sign APK
+        env:
+          KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+        run: |
+          set -euo pipefail
+          BT="$ANDROID_HOME/build-tools/35.0.0"
+          APK=$(find src-tauri/gen/android -name '*-release-unsigned.apk' -print -quit)
+          test -n "$APK"
+          if [ -n "$KEYSTORE_B64" ]; then
+            echo "$KEYSTORE_B64" | base64 -d > "$RUNNER_TEMP/release.jks"
+            STORE_PASS="$KEYSTORE_PASSWORD"; ALIAS="$KEY_ALIAS"
+          else
+            echo "::warning::No ANDROID_KEYSTORE_BASE64 secret: signing with a throwaway key, so this APK cannot update an earlier install."
+            STORE_PASS=android; ALIAS=argus
+            keytool -genkeypair -keystore "$RUNNER_TEMP/release.jks" -storepass "$STORE_PASS" -alias "$ALIAS" \
+              -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Argus CI"
+          fi
+          "$BT/zipalign" -f -p 4 "$APK" aligned.apk
+          "$BT/apksigner" sign --ks "$RUNNER_TEMP/release.jks" --ks-pass "pass:$STORE_PASS" \
+            --ks-key-alias "$ALIAS" --out Argus-android-arm64.apk aligned.apk
+          "$BT/apksigner" verify Argus-android-arm64.apk
+          ls -la Argus-android-arm64.apk
+      - uses: actions/upload-artifact@v7
+        with:
+          name: Argus-android-arm64
+          path: Argus-android-arm64.apk
+          if-no-files-found: error
+
+  publish:
+    name: Publish APK to beta
+    needs: apk
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v5
+        with:
+          name: Argus-android-arm64
+      # Sideload only: the in-app updater is not wired on Android.
+      - env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release upload beta Argus-android-arm64.apk --repo "$GITHUB_REPOSITORY" --clobber
