@@ -9,6 +9,7 @@ import {
   SOURCE_OPTIONS,
   isFilterEmpty,
   newCustomFilter,
+  resolveFilterName,
   summarizeFilter,
   type CustomStreamFilter,
 } from "@/lib/streams/custom-filters";
@@ -217,7 +218,7 @@ export function FilterBuilder({
   const sizeInvalid = sizeBadInput || (maxSizeGb != null && (!Number.isFinite(maxSizeGb) || maxSizeGb < 0));
   const filter = { ...draft, minSeeders, maxSizeGb };
   const isEdit = initial != null;
-  const canSave = draft.name.trim().length > 0 && !seedersInvalid && !sizeInvalid;
+  const canSave = !seedersInvalid && !sizeInvalid;
   const summary = seedersInvalid || sizeInvalid
     ? t("Check the highlighted values before saving.")
     : isFilterEmpty(filter) ? t("Choose the streams you prefer.") : summarizeFilter(filter);
@@ -232,7 +233,7 @@ export function FilterBuilder({
 
   const save = () => {
     if (!canSave) return;
-    onSave({ ...filter, name: draft.name.trim() });
+    onSave({ ...filter, name: resolveFilterName(filter) });
   };
 
   return (
