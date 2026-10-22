@@ -922,10 +922,12 @@ function Shell({ onReady }: { onReady?: () => void }) {
   useEffect(() => {
     if (!settings.addonHealthProbes || safeMode) return;
     const timer = window.setTimeout(() => {
-      void import("@/lib/addon-health/probe").then((m) => m.runAddonProbes(readActiveStremioAuthKey()));
+      void import("@/lib/addon-health/probe").then((m) =>
+        m.runAddonProbes(readActiveStremioAuthKey(), false, settings.addonConformanceChecks),
+      );
     }, 60_000);
     return () => window.clearTimeout(timer);
-  }, [settings.addonHealthProbes, safeMode]);
+  }, [settings.addonHealthProbes, settings.addonConformanceChecks, safeMode]);
   const searchOpen = useSearchOpen();
   const { setOpen: setSearchOpen } = useSearchActions();
   const bigPicture = useBigPicture().active;

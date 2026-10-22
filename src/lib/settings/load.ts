@@ -249,6 +249,8 @@ function parseStoredSettings(raw: string | null): { settings: Settings; cacheabl
       parsed.stremioDeeplinkInstall = true;
       parsed._stremioDeeplinkOnByDefault = true;
     }
+    parsed.addonConformanceChecks = parsed.addonConformanceChecks !== false;
+    parsed.usenetNzbAdd = parsed.usenetNzbAdd === true;
     parsed.contentAdvisoryToast = parsed.contentAdvisoryToast === true;
     parsed.contentAdvisoryDetail = parsed.contentAdvisoryDetail === true;
     if (parsed.contentAdvisoryTheme !== "monochrome" && parsed.contentAdvisoryTheme !== "colored") {

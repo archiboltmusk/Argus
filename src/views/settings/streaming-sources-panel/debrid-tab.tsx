@@ -15,7 +15,7 @@ import {
   type AioStatusSnapshot,
   type ServiceHealth,
 } from "@/lib/streams/aiostatus";
-import { ExtLink, KeyField, Section } from "../shared";
+import { ExtLink, KeyField, Section, ToggleRow } from "../shared";
 import { SettingRow } from "../kit";
 import { SRow } from "../ui";
 import { ManualAddonCard, ServiceCard } from "../streaming-panel";
@@ -52,7 +52,7 @@ export function DebridTab({
   saveKey: (which: DebridKey, value: string) => void;
 }) {
   const t = useT();
-  const { settings, toggleStreaming } = useSettings();
+  const { settings, toggleStreaming, update } = useSettings();
   const aioHealth = useAioStatusHealth();
   return (
     <>
@@ -190,6 +190,14 @@ export function DebridTab({
             "Searches and streams directly off Easynews. No debrid needed. Just your Easynews login.",
           )}
           configureUrl="https://b89262c192b0-stremio-easynews-addon.baby-beamup.club/configure"
+        />
+        <ToggleRow
+          label={t("Add NZB links to TorBox")}
+          sub={t(
+            "Show an Add NZB box in the TorBox library. TorBox downloads the NZB from your own Usenet account; Argus bundles no indexer or provider.",
+          )}
+          value={settings.usenetNzbAdd}
+          onChange={(usenetNzbAdd) => update({ usenetNzbAdd })}
         />
       </Section>
 

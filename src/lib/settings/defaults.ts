@@ -193,6 +193,8 @@ export const DEFAULT: Settings = {
   indexers: [],
   addonHealthTracking: true,
   addonHealthProbes: false,
+  addonConformanceChecks: true,
+  usenetNzbAdd: false,
   bestLinkScoring: true,
   preferredReleaseGroups: "",
   preferredHosts: "",

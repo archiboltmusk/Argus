@@ -3,6 +3,8 @@ import { ChevronLeft, Folder, LoaderCircle, Play, RefreshCw } from "lucide-react
 import { useEffect, useMemo, useRef, useState } from "react";
 import torboxLogo from "@/assets/addon-logos/torbox.png";
 import {
+  addTorboxNzbLink,
+  isNzbLink,
   listTorboxCloud,
   torboxCloudLink,
   type CloudFile,
@@ -15,6 +17,9 @@ const formatSize = (bytes: number) => (bytes ? `${(bytes / 1024 ** 3).toFixed(2)
 
 export function TorboxTab() {
   const { settings } = useSettings();
+  const [nzbLink, setNzbLink] = useState("");
+  const [nzbBusy, setNzbBusy] = useState(false);
+  const [nzbNote, setNzbNote] = useState("");
   const { openPlayer, openSettings } = useView();
   const [items, setItems] = useState<CloudItem[]>([]);
   const [selected, setSelected] = useState<CloudItem | null>(null);
@@ -98,6 +103,21 @@ export function TorboxTab() {
     }
   };
 
+  const addNzb = async () => {
+    setNzbBusy(true);
+    setNzbNote("");
+    setError("");
+    try {
+      await addTorboxNzbLink(key, nzbLink, new AbortController().signal);
+      setNzbLink("");
+      setNzbNote("Sent to TorBox. It appears here once TorBox finishes the download.");
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Could not add this NZB");
+    } finally {
+      setNzbBusy(false);
+    }
+  };
+
   if (!key)
     return (
       <div className="rounded-2xl bg-elevated/40 p-8 text-ink-muted">
@@ -155,6 +175,31 @@ export function TorboxTab() {
         placeholder={selected ? "Search files" : "Search cloud downloads"}
         className="w-full rounded-full bg-elevated/60 px-5 py-3 text-ink outline-none placeholder:text-ink-subtle"
       />
+      {settings.usenetNzbAdd && !selected && (
+        <form
+          onSubmit={(event) => {
+            event.preventDefault();
+            void addNzb();
+          }}
+          className="flex flex-wrap items-center gap-3"
+        >
+          <input
+            type="url"
+            value={nzbLink}
+            onChange={(event) => setNzbLink(event.target.value)}
+            placeholder="Link to an NZB file, downloaded by your TorBox Usenet account"
+            className="min-w-0 flex-1 rounded-full bg-elevated/60 px-5 py-3 text-ink outline-none placeholder:text-ink-subtle"
+          />
+          <button
+            type="submit"
+            disabled={nzbBusy || !isNzbLink(nzbLink)}
+            className="rounded-full bg-ink px-5 py-2.5 text-canvas disabled:opacity-50"
+          >
+            {nzbBusy ? "Adding…" : "Add NZB"}
+          </button>
+        </form>
+      )}
+      {nzbNote && <p className="text-sm text-ink-muted">{nzbNote}</p>}
       {error && (
         <p role="alert" className="rounded-xl bg-red-500/10 p-4 text-red-300">
           {error}

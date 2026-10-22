@@ -62,6 +62,14 @@ function AddonHealthRows() {
         value={settings.addonHealthProbes}
         onChange={(addonHealthProbes) => update({ addonHealthProbes })}
       />
+      <ToggleRow
+        label={t("Check addon replies against the Stremio protocol")}
+        sub={t(
+          "When addons are checked in the background, also mark one as failing if its reply breaks the protocol, such as a stream with no source.",
+        )}
+        value={settings.addonConformanceChecks}
+        onChange={(addonConformanceChecks) => update({ addonConformanceChecks })}
+      />
     </>
   );
 }
