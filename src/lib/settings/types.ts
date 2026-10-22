@@ -219,6 +219,8 @@ export type Settings = {
   navIconAnimations: boolean;
   bigPicturePlayerUi: "tenFoot" | "desktop";
   capabilityMatching: boolean;
+  addonHealthTracking: boolean;
+  addonHealthProbes: boolean;
   screensaver: boolean;
   screensaverStyle: "ambient" | "catBoat" | "halloween" | "custom";
   screensaverMedia: ScreensaverMedia[];

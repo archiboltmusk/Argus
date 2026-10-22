@@ -100,7 +100,7 @@ import { MangaSyncToast } from "@/components/manga/manga-sync-toast";
 import { TogetherLeaveForLiveModal } from "@/components/together-leave-for-live-modal";
 import { ThemeBackdrop } from "@/components/theme-backdrop";
 import { TopRankModal } from "@/components/top-rank-modal";
-import { AuthProvider, useAuth } from "@/lib/auth";
+import { AuthProvider, readActiveStremioAuthKey, useAuth } from "@/lib/auth";
 import { listMangaProgress } from "@/lib/manga-progress";
 import { ProfilesProvider, useProfiles } from "@/lib/profiles";
 import { syncProfileStats } from "@/lib/social/stats-sync";
@@ -914,6 +914,13 @@ function Shell({ onReady }: { onReady?: () => void }) {
     chromeHidden,
   } = useView();
   const { settings, update } = useSettings();
+  useEffect(() => {
+    if (!settings.addonHealthProbes) return;
+    const timer = window.setTimeout(() => {
+      void import("@/lib/addon-health/probe").then((m) => m.runAddonProbes(readActiveStremioAuthKey()));
+    }, 60_000);
+    return () => window.clearTimeout(timer);
+  }, [settings.addonHealthProbes]);
   const searchOpen = useSearchOpen();
   const { setOpen: setSearchOpen } = useSearchActions();
   const bigPicture = useBigPicture().active;

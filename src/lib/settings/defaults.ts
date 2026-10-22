@@ -181,6 +181,8 @@ export const DEFAULT: Settings = {
   useTraktAvatar: false,
   useSimklAvatar: false,
   capabilityMatching: true,
+  addonHealthTracking: true,
+  addonHealthProbes: false,
   bestLinkScoring: true,
   preferredReleaseGroups: "",
   preferredHosts: "",
