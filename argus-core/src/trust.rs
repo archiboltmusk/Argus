@@ -303,7 +303,8 @@ fn check_one(
     if strict && kind_is_movie {
         if let Some(expected) = opts.expected_title.as_deref() {
             if !s.parsed_title.is_empty()
-                && !title_matches(
+                && !any_title_matches(
+                    opts,
                     expected,
                     &s.parsed_title,
                     s.year.map(|y| y as i32),
@@ -377,7 +378,8 @@ fn check_one(
     if strict && kind_is_series && !opts.is_anime {
         if let Some(expected) = opts.expected_title.as_deref() {
             if !s.parsed_title.is_empty()
-                && !title_matches(
+                && !any_title_matches(
+                    opts,
                     expected,
                     &s.parsed_title,
                     s.year.map(|y| y as i32),
@@ -507,6 +509,83 @@ fn year_tolerance_for(expected_year: Option<i32>) -> i32 {
     }
 }
 
+fn any_title_matches(
+    opts: &TrustOptions,
+    expected: &str,
+    parsed: &str,
+    parsed_year: Option<i32>,
+    expected_year: Option<i32>,
+) -> bool {
+    title_matches(expected, parsed, parsed_year, expected_year)
+        || opts
+            .expected_aliases
+            .iter()
+            .any(|alias| title_matches(alias, parsed, parsed_year, expected_year))
+}
+
+fn edit_distance_at_most_one(a: &[char], b: &[char]) -> bool {
+    if a == b {
+        return true;
+    }
+    if a.len().abs_diff(b.len()) > 1 {
+        return false;
+    }
+    let mut i = 0;
+    while i < a.len() && i < b.len() && a[i] == b[i] {
+        i += 1;
+    }
+    if a.len() == b.len() {
+        return a[i + 1..] == b[i + 1..]
+            || (i + 1 < a.len()
+                && a[i] == b[i + 1]
+                && a[i + 1] == b[i]
+                && a[i + 2..] == b[i + 2..]);
+    }
+    if a.len() > b.len() {
+        a[i + 1..] == b[i..]
+    } else {
+        b[i + 1..] == a[i..]
+    }
+}
+
+fn phonetic_key(token: &str) -> String {
+    let t = token
+        .replace("ph", "f")
+        .replace("ck", "k")
+        .replace('q', "k")
+        .replace(['c', 'z'], "s")
+        .replace(['w', 'v'], "v")
+        .replace('y', "i");
+    let mut dedup = String::new();
+    for c in t.chars() {
+        if !dedup.ends_with(c) {
+            dedup.push(c);
+        }
+    }
+    let mut chars = dedup.chars();
+    let first = chars.next().map(String::from).unwrap_or_default();
+    first + &chars.filter(|c| !"aeiouh".contains(*c)).collect::<String>()
+}
+
+/// Spelling variants of the same name (single typo, transliteration noise).
+/// Never fuzzes plurals or numbers: "Alien" and "Aliens" are different films.
+fn tokens_equivalent(a: &str, b: &str) -> bool {
+    if a == b {
+        return true;
+    }
+    let (ca, cb): (Vec<char>, Vec<char>) = (a.chars().collect(), b.chars().collect());
+    if ca.len() < 6 || cb.len() < 6 || ca[0] != cb[0] {
+        return false;
+    }
+    if a.chars().any(|c| c.is_ascii_digit()) || b.chars().any(|c| c.is_ascii_digit()) {
+        return false;
+    }
+    if format!("{a}s") == b || format!("{b}s") == a {
+        return false;
+    }
+    edit_distance_at_most_one(&ca, &cb) || phonetic_key(a) == phonetic_key(b)
+}
+
 fn title_matches(
     expected: &str,
     parsed: &str,
@@ -571,7 +650,9 @@ fn count_overlap(words: &[String], lookup: &HashSet<&str>) -> usize {
             continue;
         }
         for l in lookup.iter() {
-            if w.len() >= 4 && l.len() >= 4 && (w.starts_with(l) || l.starts_with(w.as_str())) {
+            if (w.len() >= 4 && l.len() >= 4 && (w.starts_with(l) || l.starts_with(w.as_str())))
+                || tokens_equivalent(w, l)
+            {
                 hits += 1;
                 break;
             }
@@ -1010,6 +1091,28 @@ mod tests {
         let result = apply_trust(vec![s], &opts);
         assert_eq!(result.rejected.len(), 1);
         assert_eq!(result.rejected[0].reason, "title-mismatch");
+    }
+
+    #[test]
+    fn fuzzy_tokens_match_spelling_variants_not_plurals() {
+        assert!(tokens_equivalent("kurosawa", "kurosava"));
+        assert!(tokens_equivalent("tarkovsky", "tarkovski"));
+        assert!(!tokens_equivalent("alien", "aliens"));
+        assert!(!tokens_equivalent("batman", "catman"));
+    }
+
+    #[test]
+    fn alias_rescues_regional_title() {
+        let mut s = base_stream();
+        s.parsed_title = "Sen to Chihiro no Kamikakushi".into();
+        s.year = Some(2001);
+        let mut opts = opts_strict();
+        opts.kind = Some("movie".into());
+        opts.expected_title = Some("Spirited Away".into());
+        opts.expected_year = Some(2001);
+        assert_eq!(apply_trust(vec![s.clone()], &opts).rejected.len(), 1);
+        opts.expected_aliases = vec!["Sen to Chihiro no Kamikakushi".into()];
+        assert_eq!(apply_trust(vec![s], &opts).rejected.len(), 0);
     }
 
     #[test]

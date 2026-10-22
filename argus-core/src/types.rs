@@ -286,6 +286,8 @@ pub struct TrustOptions {
     pub kind: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub expected_title: Option<String>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub expected_aliases: Vec<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub expected_year: Option<u16>,
     #[serde(default, skip_serializing_if = "Option::is_none")]

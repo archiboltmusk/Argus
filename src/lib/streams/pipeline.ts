@@ -224,7 +224,7 @@ async function runCorePipeline(
     const { invoke } = await import("@tauri-apps/api/core");
     const result = (await invoke("streams_run_pipeline", {
       streams: parsed,
-      trustOpts,
+      trustOpts: { ...trustOpts, expectedAliases: trustOpts.expectedAliases?.() ?? [] },
       scoreOpts,
     })) as { picker: RankedPicker; rejected: Rejection[] };
     return result;
