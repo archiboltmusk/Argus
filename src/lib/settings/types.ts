@@ -219,6 +219,9 @@ export type Settings = {
   navIconAnimations: boolean;
   bigPicturePlayerUi: "tenFoot" | "desktop";
   capabilityMatching: boolean;
+  metadataFusion: boolean;
+  internetArchive: boolean;
+  indexers: import("@/lib/streams/indexer-feed").Indexer[];
   addonHealthTracking: boolean;
   addonHealthProbes: boolean;
   screensaver: boolean;

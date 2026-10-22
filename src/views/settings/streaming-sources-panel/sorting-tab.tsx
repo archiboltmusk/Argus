@@ -6,6 +6,7 @@ import { SRow } from "../ui";
 import { StreamPriorityCard } from "../stream-priority-card";
 import { useT } from "@/lib/i18n";
 import { BestLinkRows } from "./best-link-rows";
+import { ExtraSourcesRows } from "./extra-sources-rows";
 
 export function SortingTab() {
   const t = useT();
@@ -29,6 +30,7 @@ export function SortingTab() {
       />
     </Section>
     <BestLinkRows />
+    <ExtraSourcesRows />
     </>
   );
 }
