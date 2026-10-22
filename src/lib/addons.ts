@@ -1,6 +1,6 @@
 import { safeFetch as fetch } from "@/lib/safe-fetch";
 import type { Meta } from "./cinemeta";
-import { parseMeta, parseMetas, resourceUrl } from "./stremio-protocol";
+import { parseMeta, parseMetas, resourceUrl, type ExtraArg } from "./stremio-protocol";
 import { fetchManifestAt, filterEnabled, loadInstalled } from "./addon-store";
 
 const STREMIO_API = "https://api.strem.io/api";
@@ -362,7 +362,7 @@ export async function fetchAddonCatalogPage(
   skip: number,
   extras?: Array<{ name: string; value: string }>,
 ): Promise<Meta[]> {
-  const extra = [...(extras ?? [])];
+  const extra: ExtraArg[] = [...(extras ?? [])];
   if (skip > 0) extra.push({ name: "skip", value: skip });
   const res = await fetchWithTimeout(resourceUrl({ base, resource: "catalog", type, id, extra }));
   if (!res || !res.ok) return [];
