@@ -2,7 +2,7 @@ const IMG_RE = /\.(jpe?g|png|webp|gif|avif|bmp)$/i;
 
 async function inflateRaw(data: Uint8Array): Promise<Uint8Array> {
   const ds = new DecompressionStream("deflate-raw");
-  const stream = new Blob([data]).stream().pipeThrough(ds);
+  const stream = new Blob([data as BlobPart]).stream().pipeThrough(ds);
   const buf = await new Response(stream).arrayBuffer();
   return new Uint8Array(buf);
 }

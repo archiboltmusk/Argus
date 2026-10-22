@@ -87,7 +87,7 @@ export async function createGuidePdf({game,item,article}:GuideExport,signal:Abor
     content.push({id:`guide-heading-${i}`,text:article.sections[i].title,fontSize:18,bold:true,margin:[0,18,0,9],headlineLevel:1});
     const body=htmlToPdfmake(doc.body.innerHTML,options);
     markFirstContent(body,`guide-body-${i}`);
-    content.push(Array.isArray(body)?body.filter(hasContent):body);
+    content.push((Array.isArray(body)?body.filter(hasContent):body) as Content);
   }
   content.push({text:source,link:item.url,bold:true,fontSize:9,margin:[0,22,0,5]},{text:item.url,link:item.url,color:"#375d75",fontSize:8});
   if(item.source==="pcwiki")content.push({text:"PCGamingWiki contributors · CC BY-NC-SA 3.0",link:"https://creativecommons.org/licenses/by-nc-sa/3.0/",fontSize:8,margin:[0,5,0,0]});

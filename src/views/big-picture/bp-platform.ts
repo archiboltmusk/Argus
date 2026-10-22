@@ -41,7 +41,7 @@ const desktop: BpPlatform = {
         args: { url, method: "GET", responseType: "base64", timeoutMs: 15000 },
       });
       if (!resp?.ok || !resp.body) return null;
-      return new Blob([bytesFromBase64(resp.body)], { type: resp.contentType || "image/jpeg" });
+      return new Blob([bytesFromBase64(resp.body) as BlobPart], { type: resp.contentType || "image/jpeg" });
     } catch {
       return null;
     }

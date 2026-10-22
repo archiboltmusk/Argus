@@ -31,7 +31,7 @@ export async function uploadDiagnosticsBundle(
 ): Promise<{ ok: boolean; ticket: string }> {
   const token = authToken();
   const form = new FormData();
-  form.append("bundle", new Blob([bytes], { type: "application/zip" }), `${id}.zip`);
+  form.append("bundle", new Blob([bytes as BlobPart], { type: "application/zip" }), `${id}.zip`);
   const r = await fetch(`${API}/social/me/diagnostics/${encodeURIComponent(id)}/bundle`, {
     method: "POST",
     headers: token ? { Authorization: `Bearer ${token}` } : {},
