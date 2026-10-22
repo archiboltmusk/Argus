@@ -221,6 +221,9 @@ export type Settings = {
   metadataFusion: boolean;
   externalPlayer: "off" | "iina" | "vlc" | "mpv";
   internetArchive: boolean;
+  theIntroDbKey: string;
+  moreLikeThisEndScreen: boolean;
+  moreLikeThisLeadSec: number;
   indexers: import("@/lib/streams/indexer-feed").Indexer[];
   addonHealthTracking: boolean;
   capabilityMatching: boolean;

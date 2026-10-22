@@ -75,6 +75,7 @@ import { useAnime4k } from "./player/hooks/use-anime4k";
 import { useHdrStage } from "./player/hooks/use-hdr-stage";
 import { useSdrBoostGate } from "./player/hooks/use-sdr-boost-gate";
 import { PlayerOverlayLayers, type PlayerOverlayLayersProps } from "./player/player-overlay-layers";
+import { MoreLikeThis } from "@/components/player/more-like-this";
 import { SourceErrorCard } from "./player/source-error-card";
 import { LeaveConfirmModal } from "@/components/player/leave-confirm-modal";
 import { HdrStageBridge } from "./player/hdr-stage-bridge";
@@ -87,7 +88,7 @@ import { SFX } from "@/lib/sfx";
 let hdrFallbackNoticeShown = false;
 
 export function PlayerView({ src }: { src: PlayerSrc }) {
-  const { setChromeHidden, topPath, openPicker, exitPlayback, replacePlayerSrc, exitPlayer } =
+  const { setChromeHidden, topPath, openPicker, openMeta, exitPlayback, replacePlayerSrc, exitPlayer } =
     useView();
   const { settings, update } = useSettings();
   const isKid = useActiveKid() != null;
@@ -1030,6 +1031,14 @@ export function PlayerView({ src }: { src: PlayerSrc }) {
         }}
       />
       {!hdrStageActive && <PlayerOverlayLayers {...overlayProps} />}
+      <MoreLikeThis
+        meta={src.meta}
+        durationSec={snap.durationSec}
+        hasNext={adjacent.next != null}
+        onPick={(m) => {
+          void closePlayer().then(() => openMeta(m));
+        }}
+      />
       {sourceError && (
         <SourceErrorCard
           error={sourceError}

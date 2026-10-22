@@ -517,6 +517,9 @@ function Shell({ onReady }: { onReady?: () => void }) {
   } = useView();
   const { settings, update } = useSettings();
   useEffect(() => {
+    void import("@/lib/skip-intro/theintrodb").then((m) => m.setTheIntroDbApiKey(settings.theIntroDbKey));
+  }, [settings.theIntroDbKey]);
+  useEffect(() => {
     if (!settings.addonHealthProbes) return;
     const timer = window.setTimeout(() => {
       void import("@/lib/addon-health/probe").then((m) => m.runAddonProbes(readActiveStremioAuthKey()));
