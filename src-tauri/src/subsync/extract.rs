@@ -3,7 +3,7 @@ use std::time::Duration;
 use tokio::io::{AsyncBufReadExt, BufReader};
 use tokio::process::Command;
 
-use crate::transcode::locate_ffmpeg;
+use crate::transcode::locate_sync_ffmpeg;
 
 const NOISE_DB: &str = "-30dB";
 const MIN_SILENCE: &str = "0.35";
@@ -49,7 +49,7 @@ pub async fn speech_intervals(
     start_sec: f32,
     len_sec: f32,
 ) -> Result<Vec<(f32, f32)>, String> {
-    let Some(ff) = locate_ffmpeg() else {
+    let Some(ff) = locate_sync_ffmpeg() else {
         return Err("ffmpeg not found".into());
     };
     let mut cmd = Command::new(&ff);
@@ -58,7 +58,8 @@ pub async fn speech_intervals(
         .iter()
         .find(|(k, _)| k.to_lowercase() == "user-agent")
         .map(|(_, v)| v.clone());
-    cmd.arg("-user_agent").arg(ua.unwrap_or_else(|| "Argus".into()));
+    cmd.arg("-user_agent")
+        .arg(ua.unwrap_or_else(|| "Argus".into()));
     let blob = header_blob(headers);
     if !blob.is_empty() {
         cmd.arg("-headers").arg(blob);
@@ -73,7 +74,10 @@ pub async fn speech_intervals(
         .arg("-map")
         .arg("0:a:0")
         .arg("-af")
-        .arg(format!("{},silencedetect=noise={}:d={}", SPEECH_FILTER, NOISE_DB, MIN_SILENCE))
+        .arg(format!(
+            "{},silencedetect=noise={}:d={}",
+            SPEECH_FILTER, NOISE_DB, MIN_SILENCE
+        ))
         .arg("-f")
         .arg("null")
         .arg("-");
@@ -119,7 +123,10 @@ mod tests {
     #[test]
     fn parse_after_reads_value() {
         assert_eq!(
-            parse_after("[silencedetect @ 0x1] silence_start: 12.34", "silence_start:"),
+            parse_after(
+                "[silencedetect @ 0x1] silence_start: 12.34",
+                "silence_start:"
+            ),
             Some(12.34)
         );
     }

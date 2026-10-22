@@ -199,9 +199,11 @@ jobs:
           if otool -L "$EXE" "$APP"/Contents/Frameworks/*.dylib | grep -E "/opt/homebrew|/usr/local"; then
             echo "::error::App still links Homebrew paths"; exit 1
           fi
-          # Sidecar next to the main binary; locate_ffmpeg() checks there first.
-          cp ffmpeg-bin/ffmpeg "$(dirname "$EXE")/ffmpeg"
-          chmod +x "$(dirname "$EXE")/ffmpeg"
+          # Slim sync-only build next to the main binary; locate_sync_ffmpeg() uses it.
+          # Named apart from ffmpeg so transcode, casting and subtitle extraction
+          # never pick it up (it has no video encoders or HLS muxer).
+          cp ffmpeg-bin/ffmpeg "$(dirname "$EXE")/argus-sync-ffmpeg"
+          chmod +x "$(dirname "$EXE")/argus-sync-ffmpeg"
           codesign --force --deep --sign - "$APP"
           mkdir -p dist-dmg && cp -R "$APP" dist-dmg/
           ln -s /Applications dist-dmg/Applications

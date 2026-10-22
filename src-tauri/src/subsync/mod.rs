@@ -35,7 +35,9 @@ fn windows(dur: f32) -> Vec<(f32, f32)> {
     let first = 180.0f32;
     let last = (dur - len - 120.0).max(first + len);
     let n = 5usize;
-    (0..n).map(|i| (first + (last - first) * i as f32 / (n - 1) as f32, len)).collect()
+    (0..n)
+        .map(|i| (first + (last - first) * i as f32 / (n - 1) as f32, len))
+        .collect()
 }
 
 #[tauri::command]
@@ -83,6 +85,11 @@ pub async fn sync_subtitle(
         } else {
             Vec::new()
         };
-        SyncOut { offset_sec: r.offset_sec, ratio: r.ratio, confidence: r.confidence, anchors }
+        SyncOut {
+            offset_sec: r.offset_sec,
+            ratio: r.ratio,
+            confidence: r.confidence,
+            anchors,
+        }
     }))
 }

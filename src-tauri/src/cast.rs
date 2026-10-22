@@ -1041,10 +1041,7 @@ async fn cast_load_chromecast(
             match device.receive() {
                 Ok(rust_cast::ChannelMessage::Heartbeat(_)) => {
                     if let Err(e) = device.heartbeat.pong() {
-                        eprintln!(
-                            "[argus::cast] pong failed for {}:{}: {e}",
-                            host_clone, port
-                        );
+                        eprintln!("[argus::cast] pong failed for {}:{}: {e}", host_clone, port);
                         return;
                     }
                 }

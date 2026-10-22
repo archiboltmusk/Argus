@@ -102,13 +102,22 @@ fn build_track(path: &Path, size: u64, mtime: u64) -> Track {
             if let Some(v) = tag.title().filter(|s| !s.trim().is_empty()) {
                 t.title = v.trim().to_string();
             }
-            t.artist = tag.artist().map(|s| s.trim().to_string()).unwrap_or_default();
-            t.album = tag.album().map(|s| s.trim().to_string()).unwrap_or_default();
+            t.artist = tag
+                .artist()
+                .map(|s| s.trim().to_string())
+                .unwrap_or_default();
+            t.album = tag
+                .album()
+                .map(|s| s.trim().to_string())
+                .unwrap_or_default();
             t.album_artist = tag
                 .get_string(&ItemKey::AlbumArtist)
                 .map(|s| s.trim().to_string())
                 .unwrap_or_default();
-            t.genre = tag.genre().map(|s| s.trim().to_string()).unwrap_or_default();
+            t.genre = tag
+                .genre()
+                .map(|s| s.trim().to_string())
+                .unwrap_or_default();
             t.track_no = tag.track().unwrap_or(0);
             t.disc_no = tag.disk().unwrap_or(0);
             t.year = tag.year().unwrap_or(0);
@@ -192,9 +201,15 @@ pub fn cover_bytes(path: &Path) -> Option<(Vec<u8>, String)> {
     for entry in std::fs::read_dir(dir).ok()?.filter_map(|e| e.ok()) {
         let p = entry.path();
         let stem = p.file_stem()?.to_str()?.to_ascii_lowercase();
-        let ext = p.extension().and_then(|s| s.to_str()).map(|s| s.to_ascii_lowercase());
+        let ext = p
+            .extension()
+            .and_then(|s| s.to_str())
+            .map(|s| s.to_ascii_lowercase());
         if COVER_NAMES.contains(&stem.as_str())
-            && ext.as_deref().map(|e| COVER_EXTS.contains(&e)).unwrap_or(false)
+            && ext
+                .as_deref()
+                .map(|e| COVER_EXTS.contains(&e))
+                .unwrap_or(false)
         {
             return std::fs::read(&p).ok().map(|b| (b, mime_of(&p).to_string()));
         }

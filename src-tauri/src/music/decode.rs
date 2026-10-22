@@ -34,7 +34,12 @@ fn open(path: &Path) -> Result<Open, String> {
         hint.with_extension(ext);
     }
     let probed = symphonia::default::get_probe()
-        .format(&hint, mss, &FormatOptions::default(), &MetadataOptions::default())
+        .format(
+            &hint,
+            mss,
+            &FormatOptions::default(),
+            &MetadataOptions::default(),
+        )
         .map_err(|e| e.to_string())?;
     let format = probed.format;
     let track = format
@@ -46,7 +51,11 @@ fn open(path: &Path) -> Result<Open, String> {
     let decoder = symphonia::default::get_codecs()
         .make(&track.codec_params, &DecoderOptions::default())
         .map_err(|e| e.to_string())?;
-    Ok(Open { format, decoder, track_id })
+    Ok(Open {
+        format,
+        decoder,
+        track_id,
+    })
 }
 
 /// Calls `on_chunk(sample_rate, channels, interleaved)` for each decoded packet.
@@ -56,13 +65,20 @@ fn walk(
     start_ms: u64,
     mut on_chunk: impl FnMut(u32, u16, &[f32]) -> bool,
 ) -> Result<(), String> {
-    let Open { mut format, mut decoder, track_id } = open(path)?;
+    let Open {
+        mut format,
+        mut decoder,
+        track_id,
+    } = open(path)?;
     if start_ms > 0 {
         let time = Time::new(start_ms / 1000, (start_ms % 1000) as f64 / 1000.0);
         format
             .seek(
                 SeekMode::Accurate,
-                SeekTo::Time { time, track_id: Some(track_id) },
+                SeekTo::Time {
+                    time,
+                    track_id: Some(track_id),
+                },
             )
             .map_err(|e| e.to_string())?;
         decoder.reset();
@@ -84,9 +100,8 @@ fn walk(
             Err(e) => return Err(e.to_string()),
         };
         let spec = *decoded.spec();
-        let sb = buf.get_or_insert_with(|| {
-            SampleBuffer::<f32>::new(decoded.capacity() as u64, spec)
-        });
+        let sb =
+            buf.get_or_insert_with(|| SampleBuffer::<f32>::new(decoded.capacity() as u64, spec));
         sb.copy_interleaved_ref(decoded);
         if !on_chunk(spec.rate, spec.channels.count() as u16, sb.samples()) {
             break;
@@ -97,7 +112,11 @@ fn walk(
 
 /// Decodes up to `max_ms` (all when `None`) starting at `start_ms`.
 pub fn decode_file(path: &Path, start_ms: u64, max_ms: Option<u64>) -> Result<Decoded, String> {
-    let mut out = Decoded { sample_rate: 0, channels: 0, samples: Vec::new() };
+    let mut out = Decoded {
+        sample_rate: 0,
+        channels: 0,
+        samples: Vec::new(),
+    };
     walk(path, start_ms, |rate, channels, samples| {
         out.sample_rate = rate;
         out.channels = channels;

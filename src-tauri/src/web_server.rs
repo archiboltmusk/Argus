@@ -1,7 +1,3 @@
-use std::collections::HashSet;
-use std::net::SocketAddr;
-use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
-use std::sync::{Arc, Mutex, OnceLock};
 use axum::body::Body;
 use axum::extract::ws::{Message, WebSocket, WebSocketUpgrade};
 use axum::extract::State;
@@ -9,6 +5,10 @@ use axum::http::{header, HeaderMap, HeaderName, HeaderValue, Response, StatusCod
 use axum::response::IntoResponse;
 use axum::routing::get;
 use futures_util::{SinkExt, StreamExt};
+use std::collections::HashSet;
+use std::net::SocketAddr;
+use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
+use std::sync::{Arc, Mutex, OnceLock};
 use tauri::{AppHandle, Emitter};
 use tokio::net::TcpListener;
 use tokio::sync::{broadcast, oneshot, Mutex as AsyncMutex};
@@ -117,10 +117,7 @@ async fn proxy_dev_frontend(path_and_query: &str) -> Option<Response<Body>> {
     builder.body(Body::from(bytes)).ok()
 }
 
-async fn serve_http(
-    State(state): State<ServeState>,
-    uri: axum::http::Uri,
-) -> Response<Body> {
+async fn serve_http(State(state): State<ServeState>, uri: axum::http::Uri) -> Response<Body> {
     let path_and_query = uri
         .path_and_query()
         .map(|pq| pq.as_str().to_string())

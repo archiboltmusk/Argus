@@ -54,8 +54,11 @@ fn fft_xcorr(a: &[f32], b: &[f32], max_lag: usize) -> Vec<f32> {
     if fwd.process(&mut abuf, &mut aspec).is_err() || fwd.process(&mut bbuf, &mut bspec).is_err() {
         return vec![0f32; 2 * max_lag + 1];
     }
-    let mut prod: Vec<Complex<f32>> =
-        aspec.iter().zip(bspec.iter()).map(|(&x, &y)| x * y.conj()).collect();
+    let mut prod: Vec<Complex<f32>> = aspec
+        .iter()
+        .zip(bspec.iter())
+        .map(|(&x, &y)| x * y.conj())
+        .collect();
     let mut out = inv.make_output_vec();
     if inv.process(&mut prod, &mut out).is_err() {
         return vec![0f32; 2 * max_lag + 1];
@@ -93,7 +96,11 @@ fn peak_stats(corr: &[f32]) -> (usize, f32, f32) {
             second = v;
         }
     }
-    let dominance = if second > 1e-6 { peak / second } else { f32::INFINITY };
+    let dominance = if second > 1e-6 {
+        peak / second
+    } else {
+        f32::INFINITY
+    };
     (pidx, z, dominance)
 }
 
@@ -177,8 +184,10 @@ fn local_anchors_chunked(
     total_sec: f32,
     chunk_sec: f32,
 ) -> Vec<Anchor> {
-    let fitted: Vec<(f32, f32)> =
-        cues.iter().map(|&(a, b)| (a * ratio + offset_sec, b * ratio + offset_sec)).collect();
+    let fitted: Vec<(f32, f32)> = cues
+        .iter()
+        .map(|&(a, b)| (a * ratio + offset_sec, b * ratio + offset_sec))
+        .collect();
     let max_lag = (LOCAL_MAX_LAG_SEC * GRID_HZ) as usize;
     let mut out = Vec::new();
     let mut cs = 0.0f32;
@@ -201,7 +210,10 @@ fn local_anchors_chunked(
         let lag = pidx as isize - max_lag as isize;
         let ncc = ncc_at(&amask, &bmask, lag);
         if ncc >= LOCAL_NCC_MIN && z >= LOCAL_Z_MIN {
-            out.push(Anchor { t: mid, offset_sec: lag as f32 / GRID_HZ });
+            out.push(Anchor {
+                t: mid,
+                offset_sec: lag as f32 / GRID_HZ,
+            });
         }
     }
     out
@@ -239,7 +251,11 @@ pub fn solve(
     if ncc < conf_min || z < Z_MIN || dom < DOMINANCE_MIN || offset_sec.abs() > MAX_LAG_SEC {
         return None;
     }
-    Some(SyncResult { offset_sec, ratio, confidence: ncc })
+    Some(SyncResult {
+        offset_sec,
+        ratio,
+        confidence: ncc,
+    })
 }
 
 #[cfg(test)]
@@ -247,7 +263,9 @@ mod tests {
     use super::*;
 
     fn cue_pattern() -> Vec<(f32, f32)> {
-        let gaps = [4.3f32, 6.1, 3.2, 7.4, 5.0, 3.9, 8.2, 4.7, 6.6, 3.5, 5.8, 7.1];
+        let gaps = [
+            4.3f32, 6.1, 3.2, 7.4, 5.0, 3.9, 8.2, 4.7, 6.6, 3.5, 5.8, 7.1,
+        ];
         let mut t = 5.0f32;
         let mut cues = Vec::new();
         for k in 0..26 {
@@ -280,12 +298,34 @@ mod tests {
         let cues = cue_pattern();
         let audio: Vec<(f32, f32)> = cues
             .iter()
-            .map(|&(a, b)| if a < 120.0 { (a + 2.0, b + 2.0) } else { (a + 5.0, b + 5.0) })
+            .map(|&(a, b)| {
+                if a < 120.0 {
+                    (a + 2.0, b + 2.0)
+                } else {
+                    (a + 5.0, b + 5.0)
+                }
+            })
             .collect();
         let anchors = local_anchors_chunked(&audio, &cues, 1.0, 2.0, 180.0, 90.0);
-        assert_eq!(anchors.len(), 2, "{:?}", anchors.iter().map(|a| (a.t, a.offset_sec)).collect::<Vec<_>>());
-        assert!(anchors[0].offset_sec.abs() < 0.2, "first {}", anchors[0].offset_sec);
-        assert!((anchors[1].offset_sec - 3.0).abs() < 0.2, "second {}", anchors[1].offset_sec);
+        assert_eq!(
+            anchors.len(),
+            2,
+            "{:?}",
+            anchors
+                .iter()
+                .map(|a| (a.t, a.offset_sec))
+                .collect::<Vec<_>>()
+        );
+        assert!(
+            anchors[0].offset_sec.abs() < 0.2,
+            "first {}",
+            anchors[0].offset_sec
+        );
+        assert!(
+            (anchors[1].offset_sec - 3.0).abs() < 0.2,
+            "second {}",
+            anchors[1].offset_sec
+        );
     }
 
     #[test]

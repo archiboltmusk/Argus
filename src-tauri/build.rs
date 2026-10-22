@@ -13,7 +13,10 @@ fn main() {
         let libmpv = manifest.join("libmpv");
         if libmpv.join("mpv.lib").exists() {
             println!("cargo:rustc-link-search=native={}", libmpv.display());
-            println!("cargo:rerun-if-changed={}", libmpv.join("mpv.lib").display());
+            println!(
+                "cargo:rerun-if-changed={}",
+                libmpv.join("mpv.lib").display()
+            );
         }
         if !libmpv.join("libmpv-2.dll").exists() {
             println!("cargo:warning=libmpv-2.dll not found in src-tauri/libmpv. Run `pnpm run setup:libmpv` to fetch it (needed to run and bundle Argus on Windows).");
