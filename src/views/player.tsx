@@ -1833,6 +1833,8 @@ function NativePlayerView({ src }: { src: PlayerSrc }) {
       {webErrorCode && !docked && (
         <WebErrorCard
           code={webErrorCode}
+          url={src.url}
+          title={src.title ?? src.meta.name}
           onChoose={() => openPicker(src.meta, src.episode, { autoPlay: false })}
         />
       )}
