@@ -39,7 +39,7 @@ if (existsSync(dest) && digest(readFileSync(dest)) === SHA256) {
 // libmpv in the mpv-dev archive from the same shinchiro build fetch-mpv.mjs uses.
 const DEV_RELEASE = "20261010";
 const DEV_ASSET = "mpv-dev-x86_64-20261010-git-b2c255c13e.7z";
-const DEV_SHA256 = "";
+const DEV_SHA256 = "394490ed6354c2294b87c63dfa3663b23524b5551aace9cbe35c4085682b14fa";
 
 function findFile(dir, name) {
   for (const entry of readdirSync(dir, { withFileTypes: true })) {
