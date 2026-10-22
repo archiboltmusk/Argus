@@ -898,7 +898,11 @@ static BAD_DUB_RX: Lazy<Regex> = Lazy::new(|| {
 /// Addons often put the file host only in the row label ("HDHub4u · PixelDrain")
 /// while the URL is a redirect or proxy. Match the host's leading name there.
 fn label_mentions_host(label_lower: &str, host: &str) -> bool {
-    let token = host.trim_start_matches("www.").split('.').next().unwrap_or("");
+    let token = host
+        .trim_start_matches("www.")
+        .split('.')
+        .next()
+        .unwrap_or("");
     token.len() >= 4 && label_lower.contains(token)
 }
 
