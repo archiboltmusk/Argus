@@ -131,6 +131,7 @@ export function AdvancedPanel() {
         <ExternalPlayerRow />
         <MoreLikeThisRow />
         <IntroDbKeyRow />
+        <LibraryGroupsRow />
       </Section>
 
       <Section
@@ -1091,5 +1092,18 @@ function IntroDbKeyRow() {
         className="h-10 w-full max-w-sm rounded-xl bg-canvas/60 px-3 text-[13px] text-ink ring-1 ring-edge-soft outline-none focus:ring-accent"
       />
     </div>
+  );
+}
+
+function LibraryGroupsRow() {
+  const t = useT();
+  const { settings, update } = useSettings();
+  return (
+    <ToggleRow
+      label={t("Library groups")}
+      sub={t("Adds a Groups tab to My library that combines MDBList and Trakt lists. MDBList lists need an MDBList key.")}
+      value={settings.libraryGroupsEnabled}
+      onChange={(v) => update({ libraryGroupsEnabled: v })}
+    />
   );
 }
