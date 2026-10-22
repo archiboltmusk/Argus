@@ -182,6 +182,7 @@ export const DEFAULT: Settings = {
   advancedSettings: false,
   metadataFusion: true,
   externalPlayer: "off",
+  internetArchive: false,
   indexers: [],
   addonHealthTracking: true,
   capabilityMatching: true,

@@ -2,6 +2,7 @@ import type { Addon } from "@/lib/addons";
 import { dlog } from "@/lib/debug";
 import type { DebridStore } from "@/lib/debrid/types";
 import { fetchAddonStreams, type StreamRequest } from "./addons";
+import { fetchArchiveStreams } from "./archive";
 import type { Indexer } from "./indexer-feed";
 import { fetchIndexerStreams } from "./indexers";
 import { enhanceAnimeStreams } from "./anitomy";
@@ -69,6 +70,7 @@ export type PipelineInput = {
   addons: Addon[];
   debrids: DebridStore[];
   indexers?: Indexer[];
+  internetArchive?: boolean;
   trust?: TrustOptions;
   score: ScoreOptions;
   isAnime?: boolean;
@@ -123,7 +125,8 @@ export async function runPipeline(
       : Promise.all([
           fetchAddonStreams(input.addons, input.request, signal, emitPartial),
           fetchIndexerStreams(input.indexers ?? [], input.query, signal),
-        ]).then(([fromAddons, fromIndexers]) => [...fromAddons, ...fromIndexers]),
+          input.internetArchive ? fetchArchiveStreams(input.query, signal) : Promise.resolve([]),
+        ]).then((parts) => parts.flat()),
   ]);
   if (librarySettled.status === "fulfilled") library = librarySettled.value;
   const addonStreams = addonSettled.status === "fulfilled" ? addonSettled.value : [];

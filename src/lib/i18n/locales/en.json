@@ -4682,5 +4682,7 @@
   "Torznab (torrents)": "Torznab (torrents)",
   "Newznab (Usenet)": "Newznab (Usenet)",
   "Indexer URL, e.g. http://localhost:9117/api/v2.0/indexers/all/results/torznab/": "Indexer URL, e.g. http://localhost:9117/api/v2.0/indexers/all/results/torznab/",
-  "Add indexer": "Add indexer"
+  "Add indexer": "Add indexer",
+  "Internet Archive": "Internet Archive",
+  "Search archive.org for public-domain films when you open a movie. Titles and years must match exactly.": "Search archive.org for public-domain films when you open a movie. Titles and years must match exactly."
 }

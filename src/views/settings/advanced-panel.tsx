@@ -117,6 +117,7 @@ export function AdvancedPanel() {
         )}
       >
         <IndexersSection />
+        <InternetArchiveRow />
       </Section>
 
       <Section
@@ -1027,5 +1028,18 @@ function ExternalPlayerRow() {
         onChange={(v) => update({ externalPlayer: v })}
       />
     </div>
+  );
+}
+
+function InternetArchiveRow() {
+  const t = useT();
+  const { settings, update } = useSettings();
+  return (
+    <ToggleRow
+      label={t("Internet Archive")}
+      sub={t("Search archive.org for public-domain films when you open a movie. Titles and years must match exactly.")}
+      value={settings.internetArchive}
+      onChange={(v) => update({ internetArchive: v })}
+    />
   );
 }

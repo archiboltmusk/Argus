@@ -96,6 +96,7 @@ export function buildEpisodePipelineInput(params: {
     addons,
     debrids,
     indexers: settings.indexers,
+    internetArchive: settings.internetArchive,
     isAnime: animeReq,
     presetStreams: embedded.length > 0 ? embedded : undefined,
     trust: {
