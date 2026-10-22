@@ -72,9 +72,9 @@ export async function fetchAndParseXmltv(
       if (first.value[0] === 0x1f && first.value[1] === 0x8b) {
         console.info("[epg] gzip payload detected, inflating");
         const firstChunk = first.value;
-        reader = new ReadableStream<Uint8Array>({
+        reader = new ReadableStream<Uint8Array<ArrayBuffer>>({
           start(c) {
-            c.enqueue(firstChunk);
+            c.enqueue(firstChunk as Uint8Array<ArrayBuffer>);
           },
           async pull(c) {
             const { value, done } = await rawReader.read();
@@ -89,7 +89,7 @@ export async function fetchAndParseXmltv(
                 c.error(new Error("EPG exceeds 200MB limit"));
                 return;
               }
-              c.enqueue(value);
+              c.enqueue(value as Uint8Array<ArrayBuffer>);
             }
           },
         })

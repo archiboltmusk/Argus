@@ -136,7 +136,7 @@ export function makeLocalProvider(root: string): MangaProvider {
         const bytes = await readFile(chapterId);
         const { readCbzImages } = await import("./cbz");
         const imgs = (await readCbzImages(bytes)).sort((a, b) => naturalCmp(a.name, b.name));
-        const urls = imgs.map((im) => URL.createObjectURL(new Blob([im.data], { type: mimeFor(im.name) })));
+        const urls = imgs.map((im) => URL.createObjectURL(new Blob([im.data as BlobPart], { type: mimeFor(im.name) })));
         cacheBlobs(chapterId, urls);
         return urls;
       }

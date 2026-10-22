@@ -52,7 +52,7 @@ function inlineImageResponse(src: string): Response {
     }
     bytes = values.slice(0, length);
   }
-  return new Response(bytes, { headers: { "content-type": contentType } });
+  return new Response(bytes as BodyInit, { headers: { "content-type": contentType } });
 }
 
 export async function loadContextImage(
