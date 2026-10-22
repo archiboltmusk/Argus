@@ -12,6 +12,7 @@ import { PlaylistVodIcon } from "@/components/icons/playlist-vod-icon";
 import { SettingsIcon } from "@/components/icons/settings-icon";
 import { TvIcon } from "@/components/icons/tv-icon";
 import { KidsIcon } from "@/components/icons/kids-icon";
+import { MusicNavIcon } from "@/chrome/music-nav-icon";
 import { DownloadsNavIcon } from "@/chrome/downloads-nav-icon";
 import type { LockableTab } from "@/lib/parental";
 import type { View } from "@/lib/view";
@@ -29,6 +30,7 @@ export type NavItemId =
   | "calendar"
   | "library"
   | "downloads"
+  | "music"
   | "addons"
   | "settings";
 
@@ -120,6 +122,12 @@ export const NAV_ITEMS: NavItem[] = [
     label: "nav.downloads",
     render: (active) => <DownloadsNavIcon active={active} />,
     view: "downloads",
+  },
+  {
+    id: "music",
+    label: "nav.music",
+    render: (active) => <MusicNavIcon active={active} />,
+    view: "music",
   },
   {
     id: "addons",

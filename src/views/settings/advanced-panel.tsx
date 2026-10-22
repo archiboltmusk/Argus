@@ -47,6 +47,7 @@ import { SettingsRecoverRow } from "./settings-recover-row";
 import { BuildFeedback } from "./build-feedback";
 import { RollbackRow } from "./rollback-row";
 import { PrivacyRow } from "./privacy-row";
+import { MusicRows } from "./music-section";
 import { TrayRow } from "./tray-row";
 import { IndexersSection } from "./indexers-section";
 import { Section, Segmented, ToggleRow } from "./shared";
@@ -118,6 +119,7 @@ export function AdvancedPanel() {
       >
         <IndexersSection />
         <InternetArchiveRow />
+        <MusicRows />
       </Section>
 
       <Section

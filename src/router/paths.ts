@@ -14,6 +14,7 @@ export const VIEW_PATH: Record<View, string> = {
   calendar: "/calendar",
   library: "/library",
   downloads: "/downloads",
+  music: "/music",
   addons: "/addons",
   settings: "/settings",
   wrapped: "/wrapped",
