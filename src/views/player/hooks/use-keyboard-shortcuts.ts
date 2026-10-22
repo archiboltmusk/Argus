@@ -234,13 +234,19 @@ export function useKeyboardShortcuts(params: {
         e.preventDefault();
         if (e.repeat) return;
         const h = holdRef.current;
+        if (!settings.holdSpeedEnabled) {
+          h.key = e.key;
+          h.timer = null;
+          h.engaged = false;
+          return;
+        }
         h.key = e.key;
         h.baseRate = snap.rate;
         h.timer = window.setTimeout(() => {
           h.timer = null;
           h.engaged = true;
           setHoldSpeedActive(true);
-          bridgeRef.current?.setRate(Math.max(2, h.baseRate));
+          bridgeRef.current?.setRate(Math.max(settings.holdSpeedRate, h.baseRate));
         }, 350);
         return;
       }
@@ -560,6 +566,8 @@ export function useKeyboardShortcuts(params: {
     snap.durationSec,
     snap.subDelaySec,
     overrides,
+    settings.holdSpeedEnabled,
+    settings.holdSpeedRate,
     seekBackStepSec,
     seekForwardStepSec,
     seekBackStepShortSec,

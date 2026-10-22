@@ -533,6 +533,9 @@ export type Settings = {
   playerHdrOpaqueWindow: boolean;
   playerEscExitsFullscreen: boolean;
   playerConfirmLeave: boolean;
+  /** Hold Space or the left mouse button on the video to play faster, release to restore. */
+  holdSpeedEnabled: boolean;
+  holdSpeedRate: number;
   tvNavigation: boolean;
   playerTvNavigation: boolean;
   bigPictureButton: boolean;
