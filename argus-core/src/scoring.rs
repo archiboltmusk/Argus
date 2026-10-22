@@ -891,6 +891,77 @@ fn fresh_theatrical_adjust(
     }
 }
 
+static BAD_DUB_RX: Lazy<Regex> = Lazy::new(|| {
+    Regex::new(r"(?i)[\s._\-\[(](?:rus|ukr|pol|tur|ita)[\s._-]?dub(?:bed)?\b").unwrap()
+});
+
+fn stream_haystack(s: &ParsedStream) -> String {
+    let mut parts: Vec<&str> = Vec::new();
+    if let Some(n) = &s.stream.name {
+        parts.push(n);
+    }
+    if let Some(t) = &s.stream.title {
+        parts.push(t);
+    }
+    if let Some(d) = &s.stream.description {
+        parts.push(d);
+    }
+    if let Some(bh) = &s.stream.behavior_hints {
+        for k in ["filename", "fileName"] {
+            if let Some(v) = bh.get(k).and_then(|v| v.as_str()) {
+                parts.push(v);
+            }
+        }
+    }
+    parts.join(" \n ")
+}
+
+/// Cancels the HDR bonus on screens/players that cannot show it. Mirrors the
+/// TypeScript `capabilityAdjust`.
+fn capability_adjust(s: &ParsedStream, caps: &ScoreCapabilities) -> Option<ScoreReason> {
+    let hdr = s.hdr_format?;
+    let is_dv = matches!(hdr, HdrFormat::Dv | HdrFormat::DvHdr10);
+    let base = if is_dv { 6.0 } else { 5.0 };
+    if caps.engine == "html5" && hdr == HdrFormat::Dv {
+        return Some(ScoreReason {
+            signal: "dv-unsupported".to_string(),
+            delta: -(base + 10.0),
+        });
+    }
+    if !caps.hdr_display {
+        return Some(ScoreReason {
+            signal: "sdr-display".to_string(),
+            delta: -(base + 3.0),
+        });
+    }
+    None
+}
+
+fn bitrate_mbps(s: &ParsedStream, opts: &ScoreOptions) -> Option<f64> {
+    let (size, runtime) = (s.size?, opts.runtime_minutes?);
+    if size == 0 || runtime == 0 {
+        return None;
+    }
+    Some((size as f64 * 8.0) / (runtime as f64 * 60.0) / 1_000_000.0)
+}
+
+/// Streams in the range most people finish without stutter or visible bloat.
+fn sweet_spot_points(s: &ParsedStream, opts: &ScoreOptions) -> Option<ScoreReason> {
+    let mbps = bitrate_mbps(s, opts)?;
+    let (lo, hi) = match s.resolution {
+        Resolution::UHD => (14.0, 30.0),
+        Resolution::P1080 => (4.0, 8.0),
+        _ => return None,
+    };
+    if mbps < lo || mbps > hi {
+        return None;
+    }
+    Some(ScoreReason {
+        signal: format!("bitrate-sweet-spot:{}Mbps", mbps.round() as i64),
+        delta: 6.0,
+    })
+}
+
 pub fn score_stream(
     parsed: ParsedStream,
     opts: &ScoreOptions,
@@ -940,6 +1011,14 @@ pub fn score_stream(
             signal: hdr_label(hdr).to_string(),
             delta: hdr_delta,
         });
+        if let Some(cap) = opts
+            .capabilities
+            .as_ref()
+            .and_then(|c| capability_adjust(&parsed, c))
+        {
+            score += cap.delta;
+            reasons.push(cap);
+        }
     }
 
     match parsed.codec {
@@ -1047,6 +1126,42 @@ pub fn score_stream(
             ),
             delta: 2.0,
         });
+    }
+
+    if let Some(g) = parsed.release_group_normalized.as_deref() {
+        if opts.preferred_groups.iter().any(|p| p == g) {
+            score += 8.0;
+            reasons.push(ScoreReason {
+                signal: format!("group-pref:{}", g),
+                delta: 8.0,
+            });
+        }
+    }
+
+    if opts.bitrate_sweet_spot {
+        if let Some(r) = sweet_spot_points(&parsed, opts) {
+            score += r.delta;
+            reasons.push(r);
+        }
+    }
+
+    if opts.penalize_dubs && BAD_DUB_RX.is_match(&stream_haystack(&parsed)) {
+        score -= 40.0;
+        reasons.push(ScoreReason {
+            signal: "regional-dub".to_string(),
+            delta: -40.0,
+        });
+    }
+
+    if let Some(h) = parsed.stream.info_hash.as_deref() {
+        let h = h.to_lowercase();
+        if opts.demoted_hashes.contains(&h) {
+            score -= 200.0;
+            reasons.push(ScoreReason {
+                signal: "dead-link".to_string(),
+                delta: -200.0,
+            });
+        }
     }
 
     if let (Some(preferred), Some(group)) = (
@@ -1875,6 +1990,64 @@ mod tests {
             .find(|r| r.signal == "REPACK5")
             .unwrap();
         assert_eq!(r.delta, 2.0);
+    }
+
+    #[test]
+    fn best_link_signals() {
+        let corpus = empty_corpus();
+        let base = score_stream(base_parsed(), &empty_opts(), &corpus).score;
+
+        let mut p = base_parsed();
+        p.release_group_normalized = Some("MYGROUP".to_string());
+        let opts = ScoreOptions {
+            preferred_groups: vec!["MYGROUP".to_string()],
+            ..Default::default()
+        };
+        assert_eq!(score_stream(p, &opts, &corpus).score, base + 8.0);
+
+        let mut p = base_parsed();
+        p.resolution = Resolution::P1080;
+        p.size = Some(4_500_000_000);
+        let opts = ScoreOptions {
+            runtime_minutes: Some(100),
+            bitrate_sweet_spot: true,
+            ..Default::default()
+        };
+        let off = ScoreOptions {
+            bitrate_sweet_spot: false,
+            ..opts.clone()
+        };
+        let on = score_stream(p.clone(), &opts, &corpus).score;
+        assert_eq!(on - score_stream(p, &off, &corpus).score, 6.0);
+
+        let mut p = base_parsed();
+        p.stream.title = Some("Film.2024.RUS.Dub.1080p".to_string());
+        let opts = ScoreOptions {
+            penalize_dubs: true,
+            ..Default::default()
+        };
+        assert_eq!(score_stream(p, &opts, &corpus).score, base - 40.0);
+
+        let mut p = base_parsed();
+        p.stream.info_hash = Some("ABCDEF".to_string());
+        let opts = ScoreOptions {
+            demoted_hashes: vec!["abcdef".to_string()],
+            ..Default::default()
+        };
+        assert!(score_stream(p, &opts, &corpus).score <= base - 200.0 + 60.0);
+
+        let mut p = base_parsed();
+        p.hdr_format = Some(HdrFormat::Hdr10);
+        let with = ScoreOptions {
+            capabilities: Some(ScoreCapabilities {
+                hdr_display: false,
+                engine: "mpv".into(),
+            }),
+            ..Default::default()
+        };
+        let a = score_stream(p.clone(), &with, &corpus).score;
+        let b = score_stream(p, &empty_opts(), &corpus).score;
+        assert_eq!(a - b, -8.0);
     }
 
     #[test]

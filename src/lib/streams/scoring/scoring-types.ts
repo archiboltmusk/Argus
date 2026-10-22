@@ -15,6 +15,12 @@ export type ScoreOptions = {
   preferredReleaseGroup?: string;
   respectAddonOrder?: boolean;
   capabilities?: ScoreCapabilities;
+  /** Extra preferred release groups, upper-case. */
+  preferredGroups?: string[];
+  bitrateSweetSpot?: boolean;
+  penalizeDubs?: boolean;
+  /** Lower-case info hashes this device saw fail. */
+  demotedHashes?: string[];
 };
 
 export type CorpusStats = {

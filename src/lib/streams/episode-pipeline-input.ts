@@ -7,6 +7,7 @@ import type { PlayEpisode } from "@/lib/view";
 import type { PipelineInput } from "./pipeline";
 import type { Stream } from "./types";
 import { detectScoreCapabilities } from "@/lib/capabilities";
+import { demotedHashes, parseGroupList } from "@/lib/streams/dead-links";
 import { cachedAliases, loadAliases } from "@/lib/metadata-fusion/aliases";
 
 function runtimeMinutes(runtime: string | number | undefined): number | undefined {
@@ -129,6 +130,10 @@ export function buildEpisodePipelineInput(params: {
       preferAddonId: meta.addonOrigin?.id,
       preferredReleaseGroup: prevGroup,
       respectAddonOrder: settings.streamSort === "addon",
+      preferredGroups: settings.bestLinkScoring ? parseGroupList(settings.preferredReleaseGroups) : undefined,
+      bitrateSweetSpot: settings.bestLinkScoring,
+      penalizeDubs: settings.bestLinkScoring,
+      demotedHashes: settings.deadLinkDemotion ? demotedHashes() : undefined,
       capabilities: settings.capabilityMatching
         ? detectScoreCapabilities(
             "__TAURI_INTERNALS__" in window && settings.playerEngine !== "html5" ? "mpv" : "html5",

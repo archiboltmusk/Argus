@@ -4699,5 +4699,11 @@
   "Add group": "Add group",
   "{n} lists": "{n} lists",
   "Library groups": "Library groups",
-  "Adds a Groups tab to My library that combines MDBList and Trakt lists. MDBList lists need an MDBList key.": "Adds a Groups tab to My library that combines MDBList and Trakt lists. MDBList lists need an MDBList key."
+  "Adds a Groups tab to My library that combines MDBList and Trakt lists. MDBList lists need an MDBList key.": "Adds a Groups tab to My library that combines MDBList and Trakt lists. MDBList lists need an MDBList key.",
+  "Prefer smooth, trusted releases": "Prefer smooth, trusted releases",
+  "Rank releases with a bitrate that plays cleanly (4K 14-30 Mbps, 1080p 4-8 Mbps), boost your preferred groups, and demote regional dubs that replace the original speech.": "Rank releases with a bitrate that plays cleanly (4K 14-30 Mbps, 1080p 4-8 Mbps), boost your preferred groups, and demote regional dubs that replace the original speech.",
+  "Preferred release groups": "Preferred release groups",
+  "Comma-separated, for example FLUX, NTb, QxR. These get a bonus when Argus picks the top stream.": "Comma-separated, for example FLUX, NTb, QxR. These get a bonus when Argus picks the top stream.",
+  "Demote links that fail fast": "Demote links that fail fast",
+  "If you back out of a stream within 20 seconds twice, Argus ranks it lower next time. Stored on this device only.": "If you back out of a stream within 20 seconds twice, Argus ranks it lower next time. Stored on this device only."
 }
