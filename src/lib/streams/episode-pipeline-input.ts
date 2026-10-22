@@ -6,6 +6,7 @@ import type { Settings } from "@/lib/settings";
 import type { PlayEpisode } from "@/lib/view";
 import type { PipelineInput } from "./pipeline";
 import type { Stream } from "./types";
+import { detectScoreCapabilities } from "@/lib/capabilities";
 
 function runtimeMinutes(runtime: string | number | undefined): number | undefined {
   if (runtime == null) return undefined;
@@ -116,6 +117,11 @@ export function buildEpisodePipelineInput(params: {
       preferAddonId: meta.addonOrigin?.id,
       preferredReleaseGroup: prevGroup,
       respectAddonOrder: settings.streamSort === "addon",
+      capabilities: settings.capabilityMatching
+        ? detectScoreCapabilities(
+            "__TAURI_INTERNALS__" in window && settings.playerEngine !== "html5" ? "mpv" : "html5",
+          )
+        : undefined,
     },
   };
 }

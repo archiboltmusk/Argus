@@ -763,6 +763,7 @@ pub fn run() {
             torrent_engine::torrent_engine_restart,
             torrent_engine::torrent_engine_hard_reset,
             torrent_engine::torrent_engine_set_options,
+            torrent_engine::torrent_engine_set_upload,
             transcode::cast_ffmpeg_present,
             streams::streams_run_pipeline,
             streams::streams_parse,

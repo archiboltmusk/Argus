@@ -219,6 +219,17 @@ struct EngineConfig {
     dir: Option<String>,
     retention_hours: Option<u64>,
     max_gb: Option<u64>,
+    /// Uploading to other peers beyond the minimum swarm etiquette; off unless the user opts in.
+    upload_enabled: Option<bool>,
+}
+
+/// Throttle applied while uploading is off. Not zero: a small trickle keeps peers
+/// willing to serve us, while no meaningful data is shared back.
+const UPLOAD_OFF_BPS: u32 = 8 * 1024;
+
+fn apply_upload_limit(session: &Session, enabled: bool) {
+    let bps = if enabled { None } else { std::num::NonZeroU32::new(UPLOAD_OFF_BPS) };
+    session.ratelimits.set_upload_bps(bps);
 }
 
 fn config_path(app: &AppHandle) -> Option<std::path::PathBuf> {
@@ -271,6 +282,7 @@ async fn init(app: AppHandle) -> Result<(), String> {
             }
         }
     };
+    apply_upload_limit(&session, cfg.upload_enabled.unwrap_or(false));
     let side_dht = dht_boot::build().await;
     let listener = TcpListener::bind(SocketAddr::from(([127, 0, 0, 1], 0)))
         .await
@@ -667,6 +679,7 @@ pub async fn torrent_engine_set_options(
         dir: dir.map(|s| s.trim().to_string()).filter(|s| !s.is_empty()),
         retention_hours: Some(retention_hours),
         max_gb: Some(max_gb),
+        upload_enabled: read_config(&app).upload_enabled,
     };
     if let Some(p) = config_path(&app) {
         if let Some(parent) = p.parent() {
@@ -681,6 +694,23 @@ pub async fn torrent_engine_set_options(
         init(app).await?;
     }
     Ok(torrent_engine_status())
+}
+
+#[tauri::command]
+pub async fn torrent_engine_set_upload(app: AppHandle, enabled: bool) -> Result<(), String> {
+    let mut cfg = read_config(&app);
+    cfg.upload_enabled = Some(enabled);
+    if let Some(p) = config_path(&app) {
+        if let Some(parent) = p.parent() {
+            let _ = std::fs::create_dir_all(parent);
+        }
+        std::fs::write(&p, serde_json::to_string(&cfg).map_err(|e| e.to_string())?)
+            .map_err(|e| e.to_string())?;
+    }
+    if let Some(session) = current_session() {
+        apply_upload_limit(&session, enabled);
+    }
+    Ok(())
 }
 
 #[tauri::command]

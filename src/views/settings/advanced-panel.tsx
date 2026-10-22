@@ -20,6 +20,8 @@ import {
   type OmdbBudget,
   omdbBudget as readOmdbBudget,
 } from "@/lib/providers/omdb";
+import { useQueryClient } from "@tanstack/react-query";
+import { queryKeys } from "@/lib/query/keys";
 import { useSettings } from "@/lib/settings";
 import {
   repairStremioLibrary,
@@ -46,7 +48,7 @@ import { BuildFeedback } from "./build-feedback";
 import { RollbackRow } from "./rollback-row";
 import { PrivacyRow } from "./privacy-row";
 import { TrayRow } from "./tray-row";
-import { Section } from "./shared";
+import { Section, ToggleRow } from "./shared";
 import { Signature } from "./signature";
 import { CustomCodeCard, DownloadsSection } from "./player-panel";
 import { DesktopOnlyBlock } from "./player-panel/internals";
@@ -96,6 +98,33 @@ export function AdvancedPanel() {
         )}
       >
         <DownloadsSection />
+      </Section>
+
+      <Section
+        title={t("Addon directories")}
+        subtitle={t(
+          "Argus ships with no addons. Turn this on to browse public addon directories run by third parties. You are responsible for the addons you install.",
+        )}
+      >
+        <CommunityDirectoriesRow />
+      </Section>
+
+      <Section
+        title={t("Quality matching")}
+        subtitle={t(
+          "Argus checks what your display can show and ranks streams to match, so HDR and Dolby Vision files are not preferred on a screen that cannot use them.",
+        )}
+      >
+        <CapabilityRow />
+      </Section>
+
+      <Section
+        title={t("Addon health")}
+        subtitle={t(
+          "Argus remembers, on this device only, which installed addons answer and which fail. Nothing is sent anywhere.",
+        )}
+      >
+        <AddonHealthRows />
       </Section>
 
       <Section
@@ -180,6 +209,60 @@ export function AdvancedPanel() {
       <LegalDisclaimer />
 
       <Signature />
+    </>
+  );
+}
+
+function CommunityDirectoriesRow() {
+  const t = useT();
+  const { settings, update } = useSettings();
+  const qc = useQueryClient();
+  return (
+    <ToggleRow
+      label={t("Browse community addon directories")}
+      sub={t("Off by default. Fetches public addon lists from third-party directories when you open the addon store.")}
+      value={settings.communityAddonDirectories}
+      onChange={(v) => {
+        update({ communityAddonDirectories: v });
+        window.setTimeout(
+          () => void qc.invalidateQueries({ queryKey: queryKeys.addons.directory() }),
+          0,
+        );
+      }}
+    />
+  );
+}
+
+function CapabilityRow() {
+  const t = useT();
+  const { settings, update } = useSettings();
+  return (
+    <ToggleRow
+      label={t("Match streams to my display")}
+      sub={t("On a screen without HDR, prefer SDR releases. In the web player, avoid Dolby Vision files that would show wrong colors. Audio codecs the native player cannot play are already ranked lower.")}
+      value={settings.capabilityMatching}
+      onChange={(v) => update({ capabilityMatching: v })}
+    />
+  );
+}
+
+function AddonHealthRows() {
+  const t = useT();
+  const { settings, update } = useSettings();
+  return (
+    <>
+      <ToggleRow
+        label={t("Track addon reliability")}
+        sub={t("Record whether each addon answered your requests. Addons that keep failing get a short wait instead of slowing every play, and show a status in the addon list.")}
+        value={settings.addonHealthTracking}
+        onChange={(v) => update({ addonHealthTracking: v })}
+      />
+      <ToggleRow
+        label={t("Check addons in the background")}
+        sub={t("Every few hours, ask each installed addon for a public-domain film to see whether it still works. Off by default because it contacts your addons.")}
+        value={settings.addonHealthProbes}
+        onChange={(v) => update({ addonHealthProbes: v })}
+      />
     </>
   );
 }

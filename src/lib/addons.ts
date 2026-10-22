@@ -1,5 +1,6 @@
 import { safeFetch as fetch } from "@/lib/safe-fetch";
 import type { Meta } from "./cinemeta";
+import { parseMeta, parseMetas, resourceUrl, type ExtraArg } from "./stremio-protocol";
 import { fetchManifestAt, filterEnabled, loadInstalled } from "./addon-store";
 
 const STREMIO_API = "https://api.strem.io/api";
@@ -282,9 +283,7 @@ function requiredCatalogExtras(cat: CatalogDef): Array<{ name: string; value: st
 function catalogRequestUrl(base: string, cat: CatalogDef): string | null {
   const extras = requiredCatalogExtras(cat);
   if (extras === null) return null;
-  if (extras.length === 0) return `${base}/catalog/${cat.type}/${cat.id}.json`;
-  const parts = extras.map((e) => `${encodeURIComponent(e.name)}=${encodeURIComponent(e.value)}`);
-  return `${base}/catalog/${cat.type}/${cat.id}/${parts.join("&")}.json`;
+  return resourceUrl({ base, resource: "catalog", type: cat.type, id: cat.id, extra: extras });
 }
 
 export async function loadAddonRows(
@@ -347,11 +346,10 @@ export async function loadAddonRows(
 }
 
 export async function fetchAddonMeta(base: string, type: string, id: string): Promise<Meta | null> {
-  const res = await fetchWithTimeout(`${base}/meta/${type}/${encodeURIComponent(id)}.json`);
+  const res = await fetchWithTimeout(resourceUrl({ base, resource: "meta", type, id }));
   if (!res || !res.ok) return null;
   try {
-    const json = await res.json();
-    return (json.meta ?? null) as Meta | null;
+    return parseMeta<Meta>(await res.json());
   } catch {
     return null;
   }
@@ -364,15 +362,12 @@ export async function fetchAddonCatalogPage(
   skip: number,
   extras?: Array<{ name: string; value: string }>,
 ): Promise<Meta[]> {
-  const parts: string[] = [];
-  for (const e of extras ?? []) parts.push(`${encodeURIComponent(e.name)}=${encodeURIComponent(e.value)}`);
-  if (skip > 0) parts.push(`skip=${skip}`);
-  const seg = parts.length ? `/${parts.join("&")}` : "";
-  const res = await fetchWithTimeout(`${base}/catalog/${type}/${id}${seg}.json`);
+  const extra: ExtraArg[] = [...(extras ?? [])];
+  if (skip > 0) extra.push({ name: "skip", value: skip });
+  const res = await fetchWithTimeout(resourceUrl({ base, resource: "catalog", type, id, extra }));
   if (!res || !res.ok) return [];
   try {
-    const json = await res.json();
-    return (json.metas ?? []) as Meta[];
+    return parseMetas<Meta>(await res.json());
   } catch {
     return [];
   }

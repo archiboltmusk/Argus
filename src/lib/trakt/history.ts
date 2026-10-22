@@ -66,12 +66,13 @@ export async function fetchWatchedHistory(limit = 200): Promise<HistoryItem[]> {
   });
 }
 
-export async function pushWatched(target: TraktTarget): Promise<boolean> {
+export async function pushWatched(target: TraktTarget, watchedAt?: string): Promise<boolean> {
+  const at = watchedAt ? { watched_at: watchedAt } : {};
   try {
     if (target.kind === "movie") {
       await traktRequest("/sync/history", {
         method: "POST",
-        body: { movies: [{ ids: target.ids }] },
+        body: { movies: [{ ids: target.ids, ...at }] },
       });
       return true;
     }
@@ -83,7 +84,7 @@ export async function pushWatched(target: TraktTarget): Promise<boolean> {
             {
               ids: target.show.ids,
               seasons: [
-                { number: target.season, episodes: [{ number: target.number }] },
+                { number: target.season, episodes: [{ number: target.number, ...at }] },
               ],
             },
           ],

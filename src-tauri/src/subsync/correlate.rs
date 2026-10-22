@@ -132,6 +132,81 @@ fn ncc_at(a: &[f32], b: &[f32], lag: isize) -> f32 {
     }
 }
 
+/// Residual offset (seconds) still present around `t` after the global transform.
+pub struct Anchor {
+    pub t: f32,
+    pub offset_sec: f32,
+}
+
+const CHUNK_SEC: f32 = 240.0;
+const LOCAL_MAX_LAG_SEC: f32 = 12.0;
+const LOCAL_NCC_MIN: f32 = 0.45;
+const LOCAL_Z_MIN: f32 = 4.0;
+const LOCAL_MIN_CUES: usize = 6;
+
+fn rasterize_range(intervals: &[(f32, f32)], t0: f32, len: usize) -> Vec<f32> {
+    let mut m = vec![0f32; len];
+    for &(a, b) in intervals {
+        let s = (((a - t0) * GRID_HZ).round().max(0.0)) as usize;
+        let e = (((b - t0) * GRID_HZ).round().max(0.0)) as usize;
+        for x in m.iter_mut().take(e.min(len)).skip(s.min(len)) {
+            *x = 1.0;
+        }
+    }
+    m
+}
+
+/// Refines a global fit with per-chunk residual offsets so cuts and edits that
+/// shift only part of the film (or drift that is not linear) still line up.
+/// `cues` are the original cue times; `ratio`/`offset_sec` the global fit.
+pub fn local_anchors(
+    audio: &[(f32, f32)],
+    cues: &[(f32, f32)],
+    ratio: f32,
+    offset_sec: f32,
+    total_sec: f32,
+) -> Vec<Anchor> {
+    local_anchors_chunked(audio, cues, ratio, offset_sec, total_sec, CHUNK_SEC)
+}
+
+fn local_anchors_chunked(
+    audio: &[(f32, f32)],
+    cues: &[(f32, f32)],
+    ratio: f32,
+    offset_sec: f32,
+    total_sec: f32,
+    chunk_sec: f32,
+) -> Vec<Anchor> {
+    let fitted: Vec<(f32, f32)> =
+        cues.iter().map(|&(a, b)| (a * ratio + offset_sec, b * ratio + offset_sec)).collect();
+    let max_lag = (LOCAL_MAX_LAG_SEC * GRID_HZ) as usize;
+    let mut out = Vec::new();
+    let mut cs = 0.0f32;
+    while cs < total_sec {
+        let ce = (cs + chunk_sec).min(total_sec);
+        let len = (((ce - cs) * GRID_HZ).round() as usize).max(1);
+        let in_chunk = |iv: &&(f32, f32)| iv.1 > cs && iv.0 < ce;
+        let a_iv: Vec<(f32, f32)> = audio.iter().filter(in_chunk).copied().collect();
+        let c_iv: Vec<(f32, f32)> = fitted.iter().filter(in_chunk).copied().collect();
+        let mid = (cs + ce) / 2.0;
+        let start = cs;
+        cs = ce;
+        if c_iv.len() < LOCAL_MIN_CUES || a_iv.is_empty() {
+            continue;
+        }
+        let amask = rasterize_range(&a_iv, start, len);
+        let bmask = rasterize_range(&c_iv, start, len);
+        let corr = fft_xcorr(&amask, &bmask, max_lag);
+        let (pidx, z, _dom) = peak_stats(&corr);
+        let lag = pidx as isize - max_lag as isize;
+        let ncc = ncc_at(&amask, &bmask, lag);
+        if ncc >= LOCAL_NCC_MIN && z >= LOCAL_Z_MIN {
+            out.push(Anchor { t: mid, offset_sec: lag as f32 / GRID_HZ });
+        }
+    }
+    out
+}
+
 pub fn solve(
     audio: &[(f32, f32)],
     cues: &[(f32, f32)],
@@ -198,6 +273,19 @@ mod tests {
         let audio: Vec<(f32, f32)> = cues.iter().map(|&(a, b)| (a * 1.25, b * 1.25)).collect();
         let r = solve(&audio, &cues, 340.0, 0.55).expect("should sync drift");
         assert!((r.ratio - 1.25).abs() < 1e-3, "ratio {}", r.ratio);
+    }
+
+    #[test]
+    fn local_anchors_find_mid_film_cut() {
+        let cues = cue_pattern();
+        let audio: Vec<(f32, f32)> = cues
+            .iter()
+            .map(|&(a, b)| if a < 120.0 { (a + 2.0, b + 2.0) } else { (a + 5.0, b + 5.0) })
+            .collect();
+        let anchors = local_anchors_chunked(&audio, &cues, 1.0, 2.0, 180.0, 90.0);
+        assert_eq!(anchors.len(), 2, "{:?}", anchors.iter().map(|a| (a.t, a.offset_sec)).collect::<Vec<_>>());
+        assert!(anchors[0].offset_sec.abs() < 0.2, "first {}", anchors[0].offset_sec);
+        assert!((anchors[1].offset_sec - 3.0).abs() < 0.2, "second {}", anchors[1].offset_sec);
     }
 
     #[test]

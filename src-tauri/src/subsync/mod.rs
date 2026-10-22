@@ -11,6 +11,8 @@ pub struct SyncOut {
     pub offset_sec: f32,
     pub ratio: f32,
     pub confidence: f32,
+    /// (time in the fitted timeline, residual offset) pairs; empty when the global fit is enough.
+    pub anchors: Vec<[f32; 2]>,
 }
 
 static BUSY: AtomicBool = AtomicBool::new(false);
@@ -28,10 +30,12 @@ fn windows(dur: f32) -> Vec<(f32, f32)> {
         let len = (dur * 0.9 - start).max(30.0);
         return vec![(start, len)];
     }
-    let early = (180.0f32, 600.0f32);
-    let late_len = 600.0f32;
-    let late_start = (dur - late_len - 120.0).max(early.0 + early.1);
-    vec![early, (late_start, late_len)]
+    // Spread samples across the film so local residuals (cuts, uneven drift) can be measured.
+    let len = 240.0f32;
+    let first = 180.0f32;
+    let last = (dur - len - 120.0).max(first + len);
+    let n = 5usize;
+    (0..n).map(|i| (first + (last - first) * i as f32 / (n - 1) as f32, len)).collect()
 }
 
 #[tauri::command]
@@ -70,9 +74,15 @@ pub async fn sync_subtitle(
 
     let cue_pairs: Vec<(f32, f32)> = cues.iter().map(|c| (c[0], c[1])).collect();
     let res = correlate::solve(&audio, &cue_pairs, duration_sec, conf_min.unwrap_or(0.55));
-    Ok(res.map(|r| SyncOut {
-        offset_sec: r.offset_sec,
-        ratio: r.ratio,
-        confidence: r.confidence,
+    Ok(res.map(|r| {
+        let anchors = if duration_sec >= 900.0 {
+            correlate::local_anchors(&audio, &cue_pairs, r.ratio, r.offset_sec, duration_sec)
+                .into_iter()
+                .map(|a| [a.t, a.offset_sec])
+                .collect()
+        } else {
+            Vec::new()
+        };
+        SyncOut { offset_sec: r.offset_sec, ratio: r.ratio, confidence: r.confidence, anchors }
     }))
 }

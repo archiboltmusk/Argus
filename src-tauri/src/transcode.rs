@@ -110,6 +110,12 @@ pub fn locate_ffmpeg() -> Option<std::path::PathBuf> {
             }
         }
     } else if cfg!(target_os = "macos") {
+        // Sidecar bundled in Argus.app/Contents/MacOS next to the main binary.
+        if let Ok(exe) = std::env::current_exe() {
+            if let Some(dir) = exe.parent() {
+                owned.push(dir.join("ffmpeg").to_string_lossy().to_string());
+            }
+        }
         for p in [
             "/opt/homebrew/bin/ffmpeg",
             "/usr/local/bin/ffmpeg",

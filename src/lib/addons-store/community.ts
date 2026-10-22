@@ -1,5 +1,6 @@
 import { safeFetch as fetch } from "@/lib/safe-fetch";
 import type { Addon } from "@/lib/addons";
+import { loadStoredSettings } from "@/lib/settings/load";
 
 const STREMIO_DIRECTORIES = [
   "https://v3-cinemeta.strem.io/addon_catalog/all/community.json",
@@ -32,6 +33,7 @@ async function fetchFlatCollection(url: string): Promise<Addon[]> {
 }
 
 export async function fetchCommunityAddons(): Promise<Addon[]> {
+  if (!loadStoredSettings().communityAddonDirectories) return [];
   const out: Addon[] = [];
   const seen = new Set<string>();
   const lists = await Promise.all([

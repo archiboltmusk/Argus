@@ -1,5 +1,7 @@
 import type { DebridSlug, Tier } from "../types";
 
+import type { ScoreCapabilities } from "./scoring-capability";
+
 export type ScoreOptions = {
   activeDebrids: DebridSlug[];
   preferredLanguages?: string[];
@@ -12,6 +14,7 @@ export type ScoreOptions = {
   preferAddonId?: string;
   preferredReleaseGroup?: string;
   respectAddonOrder?: boolean;
+  capabilities?: ScoreCapabilities;
 };
 
 export type CorpusStats = {

@@ -149,6 +149,13 @@ export function SubtitleStylePanel() {
       />
 
       <ToggleRow
+        label={t("Auto-sync subtitles to speech")}
+        sub={t("In the background, match each subtitle line to when it is spoken, correcting offsets, framerate drift and edited cuts. Needs ffmpeg installed. Playback starts immediately and subtitles snap into place when ready.")}
+        value={settings.subtitleAutoSync}
+        onChange={(v) => update({ subtitleAutoSync: v })}
+      />
+
+      <ToggleRow
         label={t("Show subtitles in Picture-in-Picture")}
         sub={t("Hide subtitles when the player shrinks into the floating PiP window.")}
         value={settings.subShowInPip}

@@ -1,6 +1,7 @@
 import { isTrustedGroup } from "../parser";
 import type { ParsedStream, ScoredStream, ScoreReason } from "../types";
 import { addonPriorityPoints, trustedAddonPoints } from "./scoring-addons";
+import { capabilityAdjust } from "./scoring-capability";
 import { audioPoints, playabilityPenalty } from "./scoring-audio";
 import { bitrateBudgetPenalty, expectedMinSizeBytes } from "./scoring-bitrate";
 import { isCachedOnActive } from "./scoring-debrid";
@@ -43,6 +44,11 @@ export function scoreStream(
     const hdrDelta = s.hdrFormat === "DV+HDR10" || s.hdrFormat === "DV" ? 6 : 5;
     score += hdrDelta;
     reasons.push({ signal: s.hdrFormat, delta: hdrDelta });
+    const cap = capabilityAdjust(s, opts.capabilities);
+    if (cap) {
+      score += cap.delta;
+      reasons.push(cap);
+    }
   }
 
   if (s.codec === "HEVC") {

@@ -1,4 +1,5 @@
 import { ArrowUpDown, Settings2 } from "lucide-react";
+import { useAddonStatus } from "@/lib/addon-health/store";
 import { useState } from "react";
 import { AddonLogo, resolveAddonLogo } from "@/components/addon-logo";
 import { HoverTooltip } from "@/components/hover-tooltip";
@@ -100,6 +101,7 @@ function InstalledRow({
     r.manifest?.behaviorHints?.configurable === true ||
     r.manifest?.behaviorHints?.configurationRequired === true;
   const transportUrl = r.transportUrl;
+  const health = useAddonStatus(idOf(r));
 
   const handleUninstall = async (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -146,6 +148,12 @@ function InstalledRow({
         <span className="truncate text-[14px] font-medium text-ink">{nameOf(r)}</span>
         <span className="truncate text-[11.5px] text-ink-subtle">
           {enabled ? subtitleFromManifest(r) : t("Off · catalogs and streams hidden")}
+          {enabled && health === "failing" && (
+            <span className="ms-2 font-semibold text-danger">{t("Not responding")}</span>
+          )}
+          {enabled && health === "degraded" && (
+            <span className="ms-2 font-semibold text-amber-300">{t("Unreliable")}</span>
+          )}
         </span>
       </div>
       {!busy && (
