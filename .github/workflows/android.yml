@@ -40,10 +40,11 @@ jobs:
         with:
           distribution: temurin
           java-version: "17"
-      - uses: android-actions/setup-android@v3
+      # ubuntu-latest ships the Android SDK; only the NDK and build-tools pin are installed here.
       - name: Install NDK
         run: |
-          sdkmanager --install "ndk;${NDK_VERSION}" "platforms;android-35" "build-tools;35.0.0"
+          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses >/dev/null || true
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --install "ndk;${NDK_VERSION}" "platforms;android-35" "build-tools;35.0.0"
           echo "ANDROID_NDK_HOME=$ANDROID_HOME/ndk/${NDK_VERSION}" >> "$GITHUB_ENV"
           echo "NDK_HOME=$ANDROID_HOME/ndk/${NDK_VERSION}" >> "$GITHUB_ENV"
       - uses: dtolnay/rust-toolchain@stable
