@@ -1,4 +1,4 @@
-@import "@/components/music/music-library.css";
+@import "../../components/music/music-library.css";
 
 .music-playlist-page {
   display: flex;
