@@ -17,6 +17,7 @@ mod hdr_overlay;
 mod http_fetch;
 mod local_lib;
 mod modal_overlay;
+mod music;
 mod mpv;
 mod multiview;
 mod proc_mem;
@@ -771,6 +772,13 @@ pub fn run() {
             streams::streams_parse,
             streams::streams_core_version,
             local_lib::argus_scan_folder,
+            music::music_index,
+            music::music_scan,
+            music::music_cover,
+            music::music_lyrics,
+            music::music_lyrics_store,
+            music::music_peaks,
+            music::music_playable_path,
             tray::tray_set_prefs,
             tray::tray_set_custom_themes,
             stremio_auth::stremio_auth_start,

@@ -48,6 +48,8 @@ libc = "0.2"
 base64 = "0.22"
 png = "0.17"
 hound = "3.5"
+lofty = "0.22"
+symphonia = { version = "0.5", default-features = false, features = ["mp3", "aac", "isomp4", "flac", "ogg", "vorbis", "wav", "alac", "pcm", "adpcm", "mkv", "aiff"] }
 discord-rich-presence = "1.1"
 rust_cast = { path = "vendor/rust_cast", version = "0.20" }
 mdns-sd = "0.13"

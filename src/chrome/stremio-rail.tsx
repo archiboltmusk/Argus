@@ -27,6 +27,7 @@ export function StremioRail() {
   const visible = items.filter((item) => {
     if (item.id === "kids") return false;
     if (item.view === "vod" && !settings.showPlaylistsTab) return false;
+    if (item.view === "music" && !settings.musicEnabled) return false;
     if (item.hideKey && settings.hideContent[item.hideKey]) return false;
     if (locked && item.parentalKey && hiddenTabs[item.parentalKey]) return false;
     return true;

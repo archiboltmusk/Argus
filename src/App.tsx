@@ -129,6 +129,7 @@ const importLibrary = () => import("@/views/library");
 const importLive = () => import("@/views/live");
 const importVod = () => import("@/views/playlist-vod");
 const importDownloads = () => import("@/views/downloads");
+const importMusic = () => import("@/views/music");
 const importMatchDetail = () => import("@/views/live/match-detail-view");
 const importOnboarding = () => import("@/components/onboarding");
 
@@ -170,6 +171,7 @@ const MatchDetailView = lazy(() =>
   importMatchDetail().then((m) => ({ default: m.MatchDetailView })),
 );
 const PlaylistVodView = lazy(() => importVod().then((m) => ({ default: m.PlaylistVodView })));
+const MusicView = lazy(() => importMusic().then((m) => ({ default: m.MusicView })));
 const DownloadsView = lazy(() => importDownloads().then((m) => ({ default: m.DownloadsView })));
 const OnboardingModal = lazy(() =>
   importOnboarding().then((m) => ({ default: m.OnboardingModal })),
@@ -945,6 +947,7 @@ function Shell({ onReady }: { onReady?: () => void }) {
   const liveTop = topKind === "live";
   const vodTop = topKind === "vod";
   const downloadsTop = topKind === "downloads";
+  const musicTop = topKind === "music";
   const matchDetailTop = topKind === "match-detail";
 
   const [immersive, setImmersive] = useState(false);
@@ -1010,6 +1013,7 @@ function Shell({ onReady }: { onReady?: () => void }) {
   const liveAlive = useIdleEvict(liveTop);
   const vodAlive = useIdleEvict(vodTop);
   const downloadsAlive = useIdleEvict(downloadsTop);
+  const musicAlive = useKeepAlive(musicTop, musicTop);
 
   return (
     <div data-kids={kidsTop || kid ? "on" : undefined} className="relative flex h-full">
@@ -1168,6 +1172,13 @@ function Shell({ onReady }: { onReady?: () => void }) {
           <div className={layer(downloadsTop)}>
             <Suspense fallback={null}>
               <DownloadsView />
+            </Suspense>
+          </div>
+        )}
+        {musicAlive && (
+          <div className={layer(musicTop)}>
+            <Suspense fallback={null}>
+              <MusicView active={musicTop} />
             </Suspense>
           </div>
         )}

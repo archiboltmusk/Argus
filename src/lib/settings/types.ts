@@ -472,6 +472,9 @@ export type Settings = {
   iptvEpgOffsetHours: number;
   sidebarCollapsed: boolean;
   wrappedButton: boolean;
+  musicEnabled: boolean;
+  musicFolders: string[];
+  musicOnlineLyrics: boolean;
   sportsPage: boolean;
   feedLocaleBias: boolean;
   uiLanguage: UiLanguage;

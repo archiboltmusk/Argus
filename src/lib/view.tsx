@@ -35,6 +35,7 @@ export type View =
   | "live"
   | "vod"
   | "downloads"
+  | "music"
   | "wrapped"
   | "sports"
   | "manga";
@@ -127,6 +128,7 @@ export type Frame =
   | { kind: "live" }
   | { kind: "vod" }
   | { kind: "downloads" }
+  | { kind: "music" }
   | { kind: "service"; service: StreamingService }
   | {
       kind: "meta";
@@ -175,6 +177,7 @@ const ROOT_VIEW_BY_KIND: Record<Frame["kind"], View | null> = {
   live: "live",
   vod: "vod",
   downloads: "downloads",
+  music: "music",
   service: null,
   meta: null,
   "episode-detail": null,
@@ -355,6 +358,8 @@ function frameKey(f: Frame): string {
       return "vod";
     case "downloads":
       return "downloads";
+    case "music":
+      return "music";
     case "service":
       return `service:${f.service}`;
     case "meta":
@@ -647,6 +652,11 @@ export function ViewProvider({ children }: { children: ReactNode }) {
           scrollMem.current.clear();
           rowScrollMem.current.clear();
           return [{ kind: "downloads" }];
+        }
+        if (v === "music") {
+          scrollMem.current.clear();
+          rowScrollMem.current.clear();
+          return [{ kind: "music" }];
         }
         if (v === "movies") {
           scrollMem.current.clear();

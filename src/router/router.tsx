@@ -49,6 +49,7 @@ const routeTree = rootRoute.addChildren([
   tabRoute("/calendar"),
   tabRoute("/library"),
   tabRoute("/downloads"),
+  tabRoute("/music"),
   tabRoute("/addons"),
   tabRoute("/settings"),
   tabRoute("/wrapped"),

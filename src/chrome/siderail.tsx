@@ -38,6 +38,7 @@ export function SideRail() {
   const isVisible = (item: NavItem) =>
     item.id !== "kids" &&
     (item.view !== "vod" || settings.showPlaylistsTab) &&
+    (item.view !== "music" || settings.musicEnabled) &&
     (!item.parentalKey || !locked || !hiddenTabs[item.parentalKey]);
 
   const items = applyNavCustomization(NAV_ITEMS, settings.navCustomization);

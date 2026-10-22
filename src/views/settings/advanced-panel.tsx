@@ -47,6 +47,7 @@ import { SettingsRecoverRow } from "./settings-recover-row";
 import { BuildFeedback } from "./build-feedback";
 import { RollbackRow } from "./rollback-row";
 import { PrivacyRow } from "./privacy-row";
+import { MusicRows } from "./music-section";
 import { TrayRow } from "./tray-row";
 import { MangaSettings } from "@/views/manga/settings-section";
 import { IndexersSection } from "./indexers-section";
@@ -120,6 +121,7 @@ export function AdvancedPanel() {
       >
         <IndexersSection />
         <InternetArchiveRow />
+        <MusicRows />
       </Section>
 
       <MangaSettings />
