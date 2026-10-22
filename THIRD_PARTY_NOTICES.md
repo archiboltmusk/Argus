@@ -39,3 +39,40 @@ The Windows and Linux builds bundle `ffmpeg` and `ffprobe` from the BtbN FFmpeg-
 The Books reader renders PDF files with pdfjs-dist (https://github.com/mozilla/pdf.js),
 Copyright Mozilla Foundation, used under the Apache License 2.0
 (https://www.apache.org/licenses/LICENSE-2.0).
+
+## Complete notices
+
+The complete component list (Rust crates, npm packages, bundled binaries, shaders, fonts and
+the written offer for GPL source) is shipped in the app as `THIRD-PARTY-NOTICES.txt`
+(source: `src-tauri/THIRD-PARTY-NOTICES.txt`) and under Settings, Licenses and attribution
+(source: `src/assets/licenses/`). This file only covers the items that need a statement of
+their own.
+
+## mpv / libmpv
+
+Playback uses libmpv (https://mpv.io), licensed GPL-2.0-or-later or LGPL-2.1-or-later
+depending on the build. It is loaded as a separate library. Source for the exact builds used
+is linked in `src-tauri/THIRD-PARTY-NOTICES.txt`.
+
+## Pokemon helper (GPL-3.0-or-later)
+
+`tools/pokemon-engine/` is a separate helper process built from PKHeX-based sources and
+declared GPL-3.0-or-later (see its `LICENSE` and `README.md`). It is not linked into the
+MIT-licensed application. Keep its corresponding source with any binary that is shipped.
+
+## Nuvio
+
+Nuvio (https://github.com/NuvioMedia/NuvioDesktop) is GPL-3.0. Argus interoperates with
+Nuvio's public sync API and addon protocol only. No Nuvio source code is copied into this
+repository, and none may be.
+
+## TMDB
+
+This product uses the TMDB API but is not endorsed or certified by TMDB.
+
+## Trademarks
+
+Stremio, Nuvio, Plex, Jellyfin, Trakt, Simkl, TMDB, IMDb, OpenSubtitles, Real-Debrid,
+AllDebrid, Premiumize, TorBox and other names and logos are the property of their owners and
+are used only to identify compatible services. Argus is not affiliated with or endorsed by
+them.

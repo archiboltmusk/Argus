@@ -2,6 +2,7 @@
 name = "argus-core"
 version = "0.1.0"
 edition = "2021"
+license = "MIT"
 description = "Shared protocol layer for Argus: stream parsing, trust filtering, scoring."
 
 [package.metadata.wasm-pack.profile.release]

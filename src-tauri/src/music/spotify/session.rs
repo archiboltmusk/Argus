@@ -9,6 +9,11 @@ pub const FREE_ACCOUNT: &str =
     "Spotify Free cannot stream through third party apps. Connect a Spotify Premium account.";
 pub const SIGN_IN_AGAIN: &str = "Spotify rejected the saved sign in. Connect Spotify again.";
 
+/// Off: librespot decrypts Spotify's protected audio stream, which is DRM circumvention in
+/// many jurisdictions and breaks Spotify's terms. Re-enable only after legal review.
+const PLAYBACK_ENABLED: bool = false;
+const PLAYBACK_DISABLED: &str = "Spotify playback is not available in this build.";
+
 const AUDIO_DIR: &str = "audio";
 const AUDIO_CACHE_LIMIT: u64 = 2 * 1024 * 1024 * 1024;
 const PRODUCT_INFO_TIMEOUT: Duration = Duration::from_secs(8);
@@ -73,6 +78,9 @@ pub fn build(cache: Cache, device_id: String) -> Session {
 }
 
 pub async fn connect(session: &Session, credentials: Credentials) -> Result<AccountTier, String> {
+    if !PLAYBACK_ENABLED {
+        return Err(PLAYBACK_DISABLED.to_string());
+    }
     session
         .connect(credentials, true)
         .await

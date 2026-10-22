@@ -5,9 +5,13 @@ import { useSettings } from "@/lib/settings";
 export type InstallFeatureKey = "plugins" | "games" | "music" | "ebook" | "manga";
 export type InstallFeatures = Record<InstallFeatureKey, boolean>;
 
+/** The Games module (user-added download-source catalogs and file-host automation) is not
+ * shipped in this build; re-enable only after legal review. */
+export const GAMES_SHIPPED = false;
+
 const ALL_ON: InstallFeatures = {
   plugins: true,
-  games: true,
+  games: GAMES_SHIPPED,
   music: true,
   ebook: true,
   manga: true,
@@ -19,7 +23,7 @@ const listeners = new Set<() => void>();
 
 export async function readInstallFeatures(): Promise<InstallFeatures> {
   const value = await invoke<Partial<InstallFeatures>>("install_features");
-  return { ...ALL_ON, ...value };
+  return { ...ALL_ON, ...value, games: GAMES_SHIPPED };
 }
 
 export function getInstallFeatures(): InstallFeatures {
@@ -58,7 +62,7 @@ export function useInstallFeatures(): InstallFeatures {
   return useMemo(
     () => ({
       ...installed,
-      games: installed.games && settings.gamesEnabled,
+      games: GAMES_SHIPPED && installed.games && settings.gamesEnabled,
       music: installed.music && settings.musicEnabled,
       ebook: installed.ebook && settings.ebookEnabled,
     }),

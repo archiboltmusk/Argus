@@ -185,7 +185,7 @@ To open an unsigned build the first time, right-click the app and choose Open.
 Argus ships with no streaming sources, scrapers or catalogs of any kind. Addons and plugins are
 installed by you, and you are responsible for the sources you add and for following the laws where
 you live. Peer-to-peer uploading (seeding) is off by default and is throttled to a trickle until you
-turn it on in Settings, with a warning.
+turn it on in Settings, with a warning. See [LEGAL.md](LEGAL.md).
 
 ## License
 
