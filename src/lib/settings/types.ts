@@ -240,6 +240,7 @@ export type Settings = {
   keepFullscreenOnExit: boolean;
   fullscreenRestorePosition: boolean;
   contentAdvisoryToast: boolean;
+  contentAdvisoryDetail: boolean;
   bestLinkScoring: boolean;
   preferredReleaseGroups: string;
   preferredHosts: string;

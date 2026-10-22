@@ -144,6 +144,7 @@ export const DEFAULT: Settings = {
   fullscreenRestorePosition: true,
   // Advisories interrupt playback, so they require an explicit opt-in.
   contentAdvisoryToast: false,
+  contentAdvisoryDetail: false,
   contentAdvisoryTheme: "monochrome",
   contentAdvisoryShowIgnore: true,
   playerVolumeHud: true,

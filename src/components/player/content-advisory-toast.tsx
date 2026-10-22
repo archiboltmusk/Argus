@@ -18,7 +18,7 @@ import { useSettings } from "@/lib/settings";
 export type Advisory = { category: string; severity: string };
 export type ContentAdvisoryPosition = "top-start" | "top-end" | "top-center";
 
-const SEV_RANK: Record<string, number> = { None: 0, Mild: 1, Moderate: 2, Severe: 3 };
+export const SEV_RANK: Record<string, number> = { None: 0, Mild: 1, Moderate: 2, Severe: 3 };
 
 type SeverityStyle = { text: string; bar: string };
 
@@ -36,7 +36,7 @@ const SEV_STYLE_MONO: Record<string, SeverityStyle> = {
   None: { text: "text-white/35", bar: "bg-white/30" },
 };
 
-function metaFor(category: string): { Icon: typeof Info; label: string } {
+export function metaFor(category: string): { Icon: typeof Info; label: string } {
   const normalized = category.toLowerCase();
   if (normalized.includes("sex") || normalized.includes("nudity")) {
     return { Icon: Heart, label: "Sex & Nudity" };

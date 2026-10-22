@@ -135,6 +135,7 @@ import { EpisodeDownloadButton } from "./detail/episode-download-button";
 import { HeroBackdrop } from "./detail/hero-backdrop";
 import { isTitleUpcoming } from "./detail/helpers";
 import { AccoladeBadges } from "./detail/accolade-badges";
+import { ContentAdvisoryPills } from "./detail/content-advisory-pills";
 import { HeroAwardsCorner } from "./detail/hero-awards";
 import { CrunchyrollAwardsCorner } from "./detail/crunchyroll-corner";
 import { findAnyAwardWins, parseAwardYear } from "@/lib/anime-awards";
@@ -1962,6 +1963,11 @@ export function DetailView({
         </div>
       )}
       {heroAccolades}
+      {settings.contentAdvisoryDetail && (
+        <ContentAdvisoryPills
+          imdbId={detail?.imdbId ?? (meta.id.startsWith("tt") ? meta.id : null)}
+        />
+      )}
     </>
   );
 

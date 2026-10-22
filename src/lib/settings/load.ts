@@ -250,6 +250,7 @@ function parseStoredSettings(raw: string | null): { settings: Settings; cacheabl
       parsed._stremioDeeplinkOnByDefault = true;
     }
     parsed.contentAdvisoryToast = parsed.contentAdvisoryToast === true;
+    parsed.contentAdvisoryDetail = parsed.contentAdvisoryDetail === true;
     if (parsed.contentAdvisoryTheme !== "monochrome" && parsed.contentAdvisoryTheme !== "colored") {
       parsed.contentAdvisoryTheme = DEFAULT.contentAdvisoryTheme;
     }
