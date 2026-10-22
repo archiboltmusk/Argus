@@ -95,6 +95,7 @@ import { PopIcon } from "@/components/pop-icon";
 import { useInLocalLibrary } from "@/lib/local-library";
 import { LocalLibraryBrand } from "@/components/local-library-brand";
 import { MediaServerBrand, mediaServerProviderName } from "@/components/media-server-brand";
+import { loadAliases } from "@/lib/metadata-fusion/aliases";
 import { useTitleMediaServers } from "@/hooks/use-title-media-servers";
 import { localPlayerSrc } from "@/lib/local-library/player-src";
 import { resolveLocalPlayVersions } from "@/lib/local-library/playback";
@@ -1162,6 +1163,20 @@ export function DetailView({
 
   const rawTitle = detail?.title ?? meta.name;
   const title = isAnime ? stripFranchiseSuffix(rawTitle) : rawTitle;
+  const [englishTitle, setEnglishTitle] = useState<string | null>(null);
+  useEffect(() => {
+    setEnglishTitle(null);
+    const imdbId = detail?.imdbId ?? (meta.id.startsWith("tt") ? meta.id : null);
+    if (!settings.englishTitleFallback || !imdbId || /^[\p{Script=Latin}\p{N}\p{P}\p{Z}]*$/u.test(title)) return;
+    let cancelled = false;
+    loadAliases(imdbId, title, meta.type === "movie" ? "movie" : "series", isAnime).then((list) => {
+      const latin = list.find((a) => /^[\p{Script=Latin}\p{N}\p{P}\p{Z}]+$/u.test(a));
+      if (!cancelled && latin) setEnglishTitle(latin);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [detail?.imdbId, meta.id, meta.type, title, isAnime, settings.englishTitleFallback]);
   const listSeed: ListItemInput = {
     id: meta.id,
     type: meta.type,
@@ -2002,7 +2017,7 @@ export function DetailView({
                   {tagline}
                 </p>
               )}
-              <TitlePlate title={title} logo={logo} loading={loading} />
+              <TitlePlate title={title} logo={logo} loading={loading} englishTitle={englishTitle} />
               {awardsInDescription ? (
                 <div className="mt-6 flex flex-wrap items-center gap-3 text-[13px] font-medium text-ink-muted">
                   {heroPills}

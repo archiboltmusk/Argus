@@ -243,6 +243,12 @@ export function HotkeysPanel() {
               onChange={(v) => update({ tvNavigation: v })}
             />
             <ToggleRow
+              label={t("Quick profile switch")}
+              sub={t("Press the profile hotkey to jump to the next profile. Profiles with a PIN still ask for it before opening.")}
+              value={settings.quickProfileSwitch}
+              onChange={(v) => update({ quickProfileSwitch: v })}
+            />
+            <ToggleRow
               label={t("TV navigation in player")}
               sub={t(
                 "Use arrows and Select/Space to move focus between player controls. Turn this off to keep arrows for seeking and Space for play/pause.",

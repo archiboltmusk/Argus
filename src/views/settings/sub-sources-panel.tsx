@@ -70,6 +70,15 @@ function SourceKeyField({
   );
 }
 
+const ORDER_DEFAULT = ["addon", "opensubtitles", "subdl", "subsource", "wyzie"];
+const ORDER_LABEL: Record<string, string> = {
+  addon: "Subtitle addons",
+  opensubtitles: "OpenSubtitles",
+  subdl: "SUBDL",
+  subsource: "SubSource",
+  wyzie: "Wyzie",
+};
+
 export function SubSourcesPanel() {
   const t = useT();
   const { settings, update } = useSettings();
@@ -98,6 +107,13 @@ export function SubSourcesPanel() {
     };
   }, [authKey]);
 
+  const order = settings.subSourceOrder ?? [];
+  const move = (i: number, d: -1 | 1) => {
+    const next = [...order];
+    [next[i], next[i + d]] = [next[i + d], next[i]];
+    update({ subSourceOrder: next });
+  };
+
   const setProv = (key: ProvKey, v: boolean) =>
     update({ subProvidersEnabled: { ...enabled, [key]: v } });
 
@@ -124,6 +140,47 @@ export function SubSourcesPanel() {
         title={t("Subtitle sources")}
         subtitle={t("Choose where Argus searches for subtitles. Results from enabled sources appear together, with duplicates removed.")}
       >
+        <SettingGroup label={t("Result order")}>
+          <ToggleRow
+            label={t("Use my source order")}
+            sub={t("When two subtitles match equally well, prefer the source higher in your list. Exact file matches and language still win first.")}
+            value={order.length > 0}
+            onChange={(v) => update({ subSourceOrder: v ? ORDER_DEFAULT : [] })}
+          />
+          {order.length > 0 && (
+            <Nested>
+              {order.map((key, i) => (
+                <SRow
+                  key={key}
+                  title={`${i + 1}. ${t(ORDER_LABEL[key] ?? key)}`}
+                  trailing={
+                    <span className="flex gap-2">
+                      <button
+                        type="button"
+                        disabled={i === 0}
+                        aria-label={t("Move up")}
+                        onClick={() => move(i, -1)}
+                        className="px-2 disabled:opacity-30"
+                      >
+                        ↑
+                      </button>
+                      <button
+                        type="button"
+                        disabled={i === order.length - 1}
+                        aria-label={t("Move down")}
+                        onClick={() => move(i, 1)}
+                        className="px-2 disabled:opacity-30"
+                      >
+                        ↓
+                      </button>
+                    </span>
+                  }
+                />
+              ))}
+            </Nested>
+          )}
+        </SettingGroup>
+
         <SettingGroup label={t("Built into Argus")}>
           <ToggleRow
             label={t("OpenSubtitles")}

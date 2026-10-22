@@ -497,6 +497,18 @@ export type Settings = {
   mpvBufferSize: BufferSizeId;
   mpvDownmixStereo: boolean;
   mpvDisplaySync: boolean;
+  /** Subtitle providers in preferred order (ties only); empty = off. */
+  subSourceOrder: string[];
+  /** Show an English title under non-Latin titles on the detail page. */
+  englishTitleFallback: boolean;
+  /** Hotkey that cycles to the next profile; protected profiles still ask for their PIN. */
+  quickProfileSwitch: boolean;
+  webdavEnabled: boolean;
+  webdavUrl: string;
+  webdavUser: string;
+  webdavPassword: string;
+  /** Plays from WebDAV/HTTP only: peer-to-peer is switched off. */
+  webdavOnly: boolean;
   volumeBoostMax: number;
   mpvTweaks: Record<string, string>;
   playerSvp: boolean;

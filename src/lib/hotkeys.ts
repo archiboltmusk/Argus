@@ -52,6 +52,7 @@ export type HotkeyId =
   | "globalUiScaleReset"
   | "globalSearchFocus"
   | "globalSettingsOpen"
+  | "globalProfileNext"
   | "mangaMatch";
 
 export type HotkeyDef = {
@@ -79,6 +80,14 @@ export const HOTKEYS: HotkeyDef[] = [
     label: "Open settings",
     description: "Open Argus's settings outside playback.",
     defaultBinding: "ctrl+s",
+  },
+  {
+    id: "globalProfileNext",
+    scope: "Global",
+    group: "Navigation",
+    label: "Switch to next profile",
+    description: "Cycle profiles from anywhere. A protected profile still asks for its PIN. Turn it on under Behaviour.",
+    defaultBinding: "ctrl+shift+p",
   },
   {
     id: "globalUiScaleUp",
