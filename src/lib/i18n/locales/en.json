@@ -2425,6 +2425,7 @@
   "nav.kids": "Watch",
   "nav.library": "My Library",
   "nav.live": "Live TV",
+  "nav.manga": "Manga",
   "nav.movies": "Movies",
   "nav.playlists": "Playlists",
   "nav.settings": "Settings",
@@ -4688,5 +4689,14 @@
   "More like this end screen": "More like this end screen",
   "Suggests similar titles near the end of a movie or the last episode. Needs a TMDB key.": "Suggests similar titles near the end of a movie or the last episode. Needs a TMDB key.",
   "TheIntroDB API key": "TheIntroDB API key",
-  "Optional. A personal key raises the rate limit for intro and credits detection.": "Optional. A personal key raises the rate limit for intro and credits detection."
+  "Optional. A personal key raises the rate limit for intro and credits detection.": "Optional. A personal key raises the rate limit for intro and credits detection.",
+  "Groups": "Groups",
+  "New group": "New group",
+  "Combine MDBList and Trakt lists into one shelf. Paste one list URL per line.": "Combine MDBList and Trakt lists into one shelf. Paste one list URL per line.",
+  "Group name": "Group name",
+  "One of those is not a supported MDBList or Trakt list URL.": "One of those is not a supported MDBList or Trakt list URL.",
+  "Add group": "Add group",
+  "{n} lists": "{n} lists",
+  "Library groups": "Library groups",
+  "Adds a Groups tab to My library that combines MDBList and Trakt lists. MDBList lists need an MDBList key.": "Adds a Groups tab to My library that combines MDBList and Trakt lists. MDBList lists need an MDBList key."
 }

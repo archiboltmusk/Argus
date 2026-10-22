@@ -27,7 +27,7 @@ export type WebhookTrigger =
   | { event: "fromTraktWatchlist" }
   | { event: "liveTvEvent"; channelIds?: string[]; favoritesOnly?: boolean; leadMinutes?: number };
 
-export type ContentCategory = "anime" | "liveTv" | "sports" | "adult";
+export type ContentCategory = "anime" | "liveTv" | "sports" | "adult" | "manga";
 
 export type ContentFilters = Record<ContentCategory, boolean>;
 export type LetterboxdSettings = {
@@ -221,6 +221,8 @@ export type Settings = {
   metadataFusion: boolean;
   externalPlayer: "off" | "iina" | "vlc" | "mpv";
   internetArchive: boolean;
+  libraryGroupsEnabled: boolean;
+  libraryGroups: import("@/lib/library-groups/types").LibraryGroup[];
   theIntroDbKey: string;
   moreLikeThisEndScreen: boolean;
   moreLikeThisLeadSec: number;

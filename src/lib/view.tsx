@@ -36,7 +36,8 @@ export type View =
   | "vod"
   | "downloads"
   | "wrapped"
-  | "sports";
+  | "sports"
+  | "manga";
 
 export type PlayEpisode = {
   season: number;
@@ -117,6 +118,7 @@ export type Frame =
   | { kind: "calendar" }
   | { kind: "wrapped" }
   | { kind: "sports" }
+  | { kind: "manga" }
   | { kind: "queue" }
   | { kind: "movies" }
   | { kind: "shows" }
@@ -164,6 +166,7 @@ const ROOT_VIEW_BY_KIND: Record<Frame["kind"], View | null> = {
   calendar: "calendar",
   wrapped: "wrapped",
   sports: "sports",
+  manga: "manga",
   queue: "discover",
   movies: "movies",
   shows: "shows",
@@ -334,6 +337,8 @@ function frameKey(f: Frame): string {
       return "wrapped";
     case "sports":
       return "sports";
+    case "manga":
+      return "manga";
     case "queue":
       return "queue";
     case "movies":
@@ -632,6 +637,11 @@ export function ViewProvider({ children }: { children: ReactNode }) {
           scrollMem.current.clear();
           rowScrollMem.current.clear();
           return [{ kind: "sports" }];
+        }
+        if (v === "manga") {
+          scrollMem.current.clear();
+          rowScrollMem.current.clear();
+          return [{ kind: "manga" }];
         }
         if (v === "downloads") {
           scrollMem.current.clear();

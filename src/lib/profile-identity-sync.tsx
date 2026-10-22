@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { useProfiles } from "./profiles";
 import { useSettings, type ContentFilters } from "./settings";
+import { DEFAULT } from "./settings/defaults";
 import { useTogether } from "./together/provider";
 
 function sameHideContent(a: ContentFilters, b: ContentFilters): boolean {
@@ -8,7 +9,8 @@ function sameHideContent(a: ContentFilters, b: ContentFilters): boolean {
     a.anime === b.anime &&
     a.liveTv === b.liveTv &&
     a.sports === b.sports &&
-    a.adult === b.adult
+    a.adult === b.adult &&
+    a.manga === b.manga
   );
 }
 
@@ -40,8 +42,9 @@ export function ProfileIdentitySync() {
 
   useEffect(() => {
     if (!activeProfile?.hideContent) return;
-    if (!sameHideContent(settings.hideContent, activeProfile.hideContent)) {
-      update({ hideContent: activeProfile.hideContent });
+    const profileFilters = { ...DEFAULT.hideContent, ...activeProfile.hideContent };
+    if (!sameHideContent(settings.hideContent, profileFilters)) {
+      update({ hideContent: profileFilters });
     }
   }, [activeProfile?.id, activeProfile?.hideContent]);
 
