@@ -181,6 +181,7 @@ export const DEFAULT: Settings = {
   useTraktAvatar: false,
   useSimklAvatar: false,
   capabilityMatching: true,
+  advancedSettings: false,
   p2pUploadEnabled: false,
   gamesEnabled: false,
   musicEnabled: true,

@@ -11327,6 +11327,22 @@ export function SettingsTools({
   );
 }
 
+// Sections shown in Simple mode. Everything else appears once "Advanced
+// settings" is on; search always covers all sections.
+const SIMPLE_SECTIONS = new Set<SectionId>([
+  "basics",
+  "account",
+  "trackers",
+  "library",
+  "streaming",
+  "language",
+  "subtitles",
+  "player",
+  "theme",
+  "bug",
+  "updates",
+]);
+
 export function SettingsNav({
   active,
   onChange,
@@ -11340,7 +11356,18 @@ export function SettingsNav({
   query?: string;
   setQuery?: (v: string) => void;
 }) {
-  const { settings } = useSettings();
+  const { settings, update } = useSettings();
+  const showAll = settings.advancedSettings;
+  const visibleGroups = useMemo(
+    () =>
+      TOP_GROUPS.map((g) => ({
+        ...g,
+        children: showAll
+          ? g.children
+          : g.children.filter((c) => SIMPLE_SECTIONS.has(c) || c === active),
+      })).filter((g) => g.children.length > 0),
+    [showAll, active],
+  );
   const pluginCount = useStreamPluginCount();
   const [openGroups, setOpenGroups] = useState<Set<string>>(new Set());
   const t = useT();
@@ -11565,8 +11592,8 @@ export function SettingsNav({
         </div>
       )}
       {!matches &&
-        TOP_GROUPS.map((group, gi) => {
-          const prevSection = gi > 0 ? TOP_GROUPS[gi - 1].section : null;
+        visibleGroups.map((group, gi) => {
+          const prevSection = gi > 0 ? visibleGroups[gi - 1].section : null;
           const showSection = group.section !== prevSection;
           const firstId = group.children[0];
           const meta = NAV_ITEM_BY_ID.get(firstId);
@@ -11655,6 +11682,18 @@ export function SettingsNav({
             </div>
           );
         })}
+      {!matches && (
+        <button
+          type="button"
+          role="switch"
+          aria-checked={showAll}
+          onClick={() => update({ advancedSettings: !showAll })}
+          className={`${NAV_ROW_BASE} ${NAV_OFF} mt-1 justify-between`}
+        >
+          <span className={NAV_TEXT}>{t("Advanced settings")}</span>
+          <NavChip tone={showAll ? "accent" : "muted"}>{showAll ? t("On") : t("Off")}</NavChip>
+        </button>
+      )}
     </nav>
   );
 }

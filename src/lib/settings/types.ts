@@ -219,6 +219,7 @@ export type Settings = {
   navIconAnimations: boolean;
   bigPicturePlayerUi: "tenFoot" | "desktop";
   capabilityMatching: boolean;
+  advancedSettings: boolean;
   p2pUploadEnabled: boolean;
   gamesEnabled: boolean;
   musicEnabled: boolean;
