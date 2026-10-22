@@ -164,3 +164,9 @@ export function summarizeFilter(filter: CustomStreamFilter): string {
   if (isPositive(filter.maxSizeGb)) parts.push(`<= ${filter.maxSizeGb} GB`);
   return parts.join(" / ");
 }
+
+export function resolveFilterName(filter: CustomStreamFilter): string {
+  const name = filter.name.trim();
+  if (name) return name;
+  return isFilterEmpty(filter) ? "My filter" : summarizeFilter(filter);
+}
