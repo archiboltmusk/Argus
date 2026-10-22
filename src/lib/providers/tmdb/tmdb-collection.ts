@@ -1,5 +1,8 @@
 import type { Meta } from "../../cinemeta";
-import { get, IMG } from "./tmdb-client";
+import { effectiveTmdbLanguage, get, IMG } from "./tmdb-client";
+import { loadStoredSettings } from "../../settings/load";
+import { tmdbBackdropUrl, tmdbPosterUrl } from "./tmdb-image-rungs";
+import { pickTmdbTitle, shouldUseEnglishTitle } from "./tmdb-title-fallback";
 
 export type TmdbCollection = {
   id: number;
@@ -13,11 +16,23 @@ export type TmdbCollection = {
 
 const cache = new Map<number, Promise<TmdbCollection | null>>();
 
+// A 429, a timeout or a revoked key resolves null. Memoizing that promise pins
+// the miss for the life of the process and no retry anywhere can escape it, so
+// only a hit is allowed to stay in the map.
 export function tmdbCollection(key: string, id: number): Promise<TmdbCollection | null> {
   if (!key || !Number.isFinite(id)) return Promise.resolve(null);
   const existing = cache.get(id);
   if (existing) return existing;
-  const promise = run(key, id);
+  const promise = run(key, id).then(
+    (v) => {
+      if (!v) cache.delete(id);
+      return v;
+    },
+    (err) => {
+      cache.delete(id);
+      throw err;
+    },
+  );
   cache.set(id, promise);
   return promise;
 }
@@ -25,20 +40,54 @@ export function tmdbCollection(key: string, id: number): Promise<TmdbCollection 
 async function run(key: string, id: number): Promise<TmdbCollection | null> {
   const raw = await get<any>(key, `collection/${id}`);
   if (!raw) return null;
+  const settings = loadStoredSettings();
+  const language = effectiveTmdbLanguage();
+  const rawParts: any[] = raw.parts ?? [];
+  const needsEnglish =
+    settings.translateTitles &&
+    rawParts.some((part) =>
+      shouldUseEnglishTitle({
+        localized: part.title ?? part.name ?? "",
+        original: part.original_title ?? part.original_name ?? "",
+        originalLanguage: part.original_language,
+        targetLanguage: language,
+        translateTitles: true,
+      }),
+    );
+  let englishNames: Map<number, string> | null = null;
+  if (needsEnglish) {
+    const english = await get<any>(key, `collection/${id}`, { language: "en-US" });
+    if (english) {
+      englishNames = new Map();
+      for (const part of english.parts ?? []) {
+        const title = part?.title ?? part?.name;
+        if (typeof part?.id === "number" && typeof title === "string" && title.trim()) {
+          englishNames.set(part.id, title.trim());
+        }
+      }
+    }
+  }
   const genreCounts: Record<number, number> = {};
-  for (const p of raw.parts ?? []) {
+  for (const p of rawParts) {
     for (const g of p.genre_ids ?? []) {
       genreCounts[g] = (genreCounts[g] ?? 0) + 1;
     }
   }
-  const parts: Meta[] = (raw.parts ?? [])
+  const parts: Meta[] = rawParts
     .map(
       (p: any): Meta => ({
         id: `tmdb:movie:${p.id}`,
         type: "movie",
-        name: p.title ?? p.name ?? "",
-        poster: p.poster_path ? `${IMG}/w342${p.poster_path}` : undefined,
-        background: p.backdrop_path ? `${IMG}/w780${p.backdrop_path}` : undefined,
+        name: pickTmdbTitle({
+          localized: p.title ?? p.name ?? "",
+          original: p.original_title ?? p.original_name ?? "",
+          english: englishNames?.get(p.id),
+          originalLanguage: p.original_language,
+          targetLanguage: language,
+          translateTitles: settings.translateTitles,
+        }),
+        poster: tmdbPosterUrl(p.poster_path),
+        background: tmdbBackdropUrl(p.backdrop_path),
         description: p.overview,
         releaseInfo: (p.release_date ?? "").slice(0, 4) || undefined,
         releaseDate: p.release_date || undefined,
@@ -51,7 +100,7 @@ async function run(key: string, id: number): Promise<TmdbCollection | null> {
     id: raw.id,
     name: raw.name ?? "",
     overview: raw.overview ?? "",
-    poster: raw.poster_path ? `${IMG}/w342${raw.poster_path}` : undefined,
+    poster: tmdbPosterUrl(raw.poster_path),
     backdrop: raw.backdrop_path ? `${IMG}/original${raw.backdrop_path}` : undefined,
     parts,
     genreCounts,
@@ -82,7 +131,16 @@ export function tmdbSearchCollectionId(key: string, query: string): Promise<numb
   const ck = query.toLowerCase();
   const existing = searchCache.get(ck);
   if (existing) return existing;
-  const promise = runSearch(key, query);
+  const promise = runSearch(key, query).then(
+    (v) => {
+      if (v == null) searchCache.delete(ck);
+      return v;
+    },
+    (err) => {
+      searchCache.delete(ck);
+      throw err;
+    },
+  );
   searchCache.set(ck, promise);
   return promise;
 }
@@ -119,7 +177,7 @@ export async function tmdbSearchCollections(
     .map((r) => ({
       id: r.id,
       name: r.name ?? "",
-      backdrop: r.backdrop_path ? `${IMG}/w780${r.backdrop_path}` : null,
+      backdrop: tmdbBackdropUrl(r.backdrop_path) ?? null,
     }));
   return { hits, totalPages: Math.min(raw?.total_pages ?? 0, 500) };
 }

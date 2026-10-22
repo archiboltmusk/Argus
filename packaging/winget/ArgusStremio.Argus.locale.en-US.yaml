@@ -1,0 +1,25 @@
+# yaml-language-server: $schema=https://aka.ms/winget-manifest.defaultLocale.1.10.0.schema.json
+
+PackageIdentifier: ArgusStremio.Argus
+PackageVersion: 0.9.21
+PackageLocale: en-US
+Publisher: Argus
+PublisherUrl: https://argus.invalid/
+PublisherSupportUrl: https://github.com/archiboltmusk/Argus/issues
+PackageName: Argus
+PackageUrl: https://argus.invalid/
+License: MIT
+LicenseUrl: https://github.com/archiboltmusk/Argus/blob/main/LICENSE
+Copyright: Copyright (c) Argus contributors
+ShortDescription: A Stremio client built for adventure
+Description: Argus is a desktop media client for browsing and playing content from Stremio addons.
+Moniker: argus
+Tags:
+  - media
+  - mpv
+  - player
+  - stremio
+  - video
+ReleaseNotesUrl: https://github.com/archiboltmusk/Argus/releases/tag/V0.9.21
+ManifestType: defaultLocale
+ManifestVersion: 1.10.0

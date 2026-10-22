@@ -1,0 +1,49 @@
+.argus-social-cover .argus-social-art {
+  display: block;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  user-select: none;
+}
+
+.argus-social-cover .argus-social-dot {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: argus-social-typing 1800ms ease-in-out infinite;
+}
+
+.argus-social-cover .argus-social-dot-1 {
+  animation-delay: 120ms;
+}
+
+.argus-social-cover .argus-social-dot-2 {
+  animation-delay: 240ms;
+}
+
+.argus-social-cover[data-paused="true"] .argus-social-dot {
+  animation-play-state: paused;
+}
+
+.argus-social-cover[data-active="false"] .argus-social-dot {
+  animation: none;
+}
+
+@keyframes argus-social-typing {
+  0%,
+  12%,
+  44%,
+  100% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+  28% {
+    transform: translateY(-5px);
+    opacity: 0.82;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .argus-social-cover .argus-social-dot {
+    animation: none;
+  }
+}

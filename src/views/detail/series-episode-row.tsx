@@ -1,4 +1,7 @@
-import { Check, Eye, Play } from "lucide-react";
+import { Check, Eye } from "lucide-react";
+import { EpisodeReleaseCountdown } from "@/components/episode-release-countdown";
+import { Play } from "@/components/icons/play-filled";
+import { HoverTooltip } from "@/components/hover-tooltip";
 import { useEffect, useMemo, useState } from "react";
 import { EpisodeRatingBadge } from "./episode-rating-badge";
 import { Poster } from "@/components/poster";
@@ -11,6 +14,7 @@ import { SPOILER_TEXT_CLASS, SPOILER_THUMB_CLASS, type SpoilerMask } from "@/lib
 import { useView } from "@/lib/view";
 import { useLocalAwareSeriesPlay } from "@/lib/local-library/use-series-play";
 import { useT } from "@/lib/i18n";
+import { bidiIsolate } from "@/lib/bidi";
 import { prefetchSegments } from "@/lib/skip-intro";
 import { NewBadge, UpcomingBadge } from "./badges";
 import { EpisodeDownloadButton } from "./episode-download-button";
@@ -42,7 +46,9 @@ export function EpisodeRow({
   const ratingValue = ep.imdbRating ?? ep.voteAverage;
   const ratingIsImdb = ep.imdbRating != null;
   const tmdbStill = ep.stillPath
-    ? `https://image.tmdb.org/t/p/${settings.hdEpisodeImages ? "original" : "w300"}${ep.stillPath}`
+    ? ep.stillPath.startsWith("http")
+      ? ep.stillPath
+      : `https://image.tmdb.org/t/p/${settings.hdEpisodeImages ? "original" : "w300"}${ep.stillPath}`
     : ep.stillUrl;
   const candidates = useMemo(() => {
     const seen = new Set<string>();
@@ -80,9 +86,10 @@ export function EpisodeRow({
     <div
       data-ep={ep.episodeNumber}
       data-no-card-ring
+      style={{ contentVisibility: "auto", containIntrinsicSize: "auto 160px" }}
       onContextMenu={(e) => onContextMenu?.(e, ep.seasonNumber, ep.episodeNumber, progress.watched)}
       onMouseEnter={() => prefetchSegments(meta, playEpisode)}
-      className="group flex gap-6 rounded-2xl px-4 py-5 transition-colors hover:bg-elevated/30"
+      className="group flex gap-6 rounded-lg px-4 py-5 transition-colors hover:bg-elevated/30"
     >
       <button
         onClick={() =>
@@ -119,7 +126,7 @@ export function EpisodeRow({
             {ep.episodeNumber}
           </span>
           {progress.watched && (
-            <span className="absolute end-2 top-2 flex h-6 w-6 items-center justify-center rounded-full bg-emerald-400/22 text-emerald-200 ring-1 ring-emerald-400/40 backdrop-blur-sm">
+            <span className="absolute end-2 top-2 flex h-6 w-6 items-center justify-center rounded-full bg-success/20 text-success backdrop-blur-sm">
               <Check size={12} strokeWidth={3} />
             </span>
           )}
@@ -151,13 +158,12 @@ export function EpisodeRow({
                 ep.runtime ? t("{n} min", { n: ep.runtime }) : null,
                 formatAirDate(ep.airDate) || null,
               ]
-                .filter(Boolean)
+                .filter((part): part is string => Boolean(part))
+                .map(bidiIsolate)
                 .join("  ·  ")}
             </span>
             {progress.watched && watchedAgo && (
-              <span className="text-emerald-300/85">
-                · {t("Watched {ago}", { ago: watchedAgo })}
-              </span>
+              <span className="text-success/90">· {t("Watched {ago}", { ago: watchedAgo })}</span>
             )}
             {!progress.watched && progress.ratio > 0.01 && watchedAgo && (
               <span className="text-accent/85">
@@ -165,8 +171,10 @@ export function EpisodeRow({
               </span>
             )}
           </p>
-          {ep.overview && (
+          <EpisodeReleaseCountdown date={ep.airDate} />
+          {settings.showEpisodeDescription && ep.overview && (
             <p
+              dir="auto"
               className={`line-clamp-2 text-[13.5px] leading-relaxed text-ink-muted ${
                 spoiler?.desc ? SPOILER_TEXT_CLASS : ""
               }`}
@@ -176,15 +184,16 @@ export function EpisodeRow({
           )}
         </div>
       </button>
-      <button
-        type="button"
-        onClick={() => openEpisodeDetail(meta.id, ep.seasonNumber, ep.episodeNumber, meta)}
-        aria-label={t("Episode details")}
-        title={t("Episode details")}
-        className="flex h-10 w-10 shrink-0 items-center justify-center self-center rounded-full text-ink-subtle transition-colors hover:bg-elevated hover:text-ink"
-      >
-        <Eye size={18} strokeWidth={2} />
-      </button>
+      <HoverTooltip label={t("Episode details")} align="center" className="shrink-0 self-center">
+        <button
+          type="button"
+          onClick={() => openEpisodeDetail(meta.id, ep.seasonNumber, ep.episodeNumber, meta)}
+          aria-label={t("Episode details")}
+          className="flex h-10 w-10 items-center justify-center rounded-full text-ink-subtle transition-colors hover:bg-elevated hover:text-ink"
+        >
+          <Eye size={18} strokeWidth={2} />
+        </button>
+      </HoverTooltip>
       <EpisodeDownloadButton meta={meta} episode={playEpisode} />
     </div>
   );

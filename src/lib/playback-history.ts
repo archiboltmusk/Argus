@@ -1,3 +1,9 @@
+import { useSyncExternalStore } from "react";
+import type { AddonProgress } from "./streams/addons";
+import type { PlayerSrc } from "./view";
+import type { PlaybackAudioChoice } from "./player/audio-choice";
+import { noteNotify } from "./render-cause";
+
 export type PlaybackEntry = {
   infoHash?: string | null;
   fileIdx?: number | null;
@@ -8,17 +14,134 @@ export type PlaybackEntry = {
   resolution?: string | null;
   releaseGroup?: string | null;
   source?: string | null;
+  audioLanguages?: string[] | null;
   size?: number | null;
   bingeGroup?: string | null;
   cachedSlugs?: string[];
   savedAt: number;
+  /** Written by observed player activity, never by source selection or watched edits. */
+  actual?: ActualPlayback;
 };
 
-const STORAGE_KEY = "argus.playback-history.v1";
+export type PlaybackActor = {
+  profileId: string;
+  storageProfileId: string;
+  accountId: string | null;
+};
+
+export type ActualPlayback = {
+  id: string;
+  actor: PlaybackActor;
+  playedAt: number;
+  positionMs: number;
+  durationMs: number;
+  completed: boolean;
+  src: Omit<PlayerSrc, "continuation">;
+  requiresSourceRefresh?: boolean;
+  audioTrack?: PlaybackAudioChoice;
+};
+
+export type PlaybackContinuation = {
+  id: string;
+  positionMs: number;
+  source: Omit<PlaybackEntry, "actual">;
+  sourceKey: string;
+  actor: PlaybackActor;
+  restart?: boolean;
+  audioTrack?: PlaybackAudioChoice;
+};
+
+const STORAGE_KEY_PREFIX = "argus.playback-history.v1.";
+const LEGACY_STORAGE_KEY = "argus.playback-history.v1";
+const PROFILES_KEY = "argus.profiles.v1";
 const TTL_MS = 30 * 24 * 60 * 60 * 1000;
 const MAX_ENTRIES = 200;
 
 const listeners = new Set<() => void>();
+
+export function capturePlaybackActor(): PlaybackActor {
+  const storageProfileId = activeProfileId();
+  try {
+    const state = JSON.parse(localStorage.getItem(PROFILES_KEY) ?? "null") as {
+      activeId?: string;
+    } | null;
+    const session = JSON.parse(
+      localStorage.getItem(`argus.auth.${storageProfileId}`) ?? "null",
+    ) as {
+      user?: { _id?: string };
+    } | null;
+    return {
+      profileId: state?.activeId ?? storageProfileId,
+      storageProfileId,
+      accountId: session?.user?._id ?? null,
+    };
+  } catch {
+    return { profileId: storageProfileId, storageProfileId, accountId: null };
+  }
+}
+
+export function isPlaybackActorCurrent(actor: PlaybackActor): boolean {
+  const current = capturePlaybackActor();
+  return (
+    current.profileId === actor.profileId &&
+    current.storageProfileId === actor.storageProfileId &&
+    current.accountId === actor.accountId
+  );
+}
+
+function activeProfileId(): string {
+  try {
+    const raw = localStorage.getItem(PROFILES_KEY);
+    if (!raw) return "";
+    const s = JSON.parse(raw) as {
+      activeId?: string;
+      profiles?: Array<{ id?: string; isPrimary?: boolean; shareStremioWith?: string | null }>;
+    };
+    const profiles = Array.isArray(s.profiles) ? s.profiles : [];
+    const active = profiles.find((p) => p.id === s.activeId) ?? null;
+    const own = active?.id ?? profiles.find((p) => p?.isPrimary)?.id ?? "";
+    if (!own) return "";
+    if (active && typeof active.shareStremioWith === "string" && active.shareStremioWith) {
+      const shared = profiles.find((p) => p.id === active.shareStremioWith);
+      if (shared?.id) return shared.id;
+    }
+    return own;
+  } catch {
+    return "";
+  }
+}
+
+function primaryProfileId(): string {
+  try {
+    const raw = localStorage.getItem(PROFILES_KEY);
+    const s = raw
+      ? (JSON.parse(raw) as { profiles?: Array<{ id?: string; isPrimary?: boolean }> })
+      : null;
+    const primary = s?.profiles?.find((p) => p?.isPrimary);
+    return (primary && typeof primary.id === "string" && primary.id) || activeProfileId();
+  } catch {
+    return activeProfileId();
+  }
+}
+
+function storeKey(): string {
+  const id = activeProfileId();
+  return id ? STORAGE_KEY_PREFIX + id : LEGACY_STORAGE_KEY;
+}
+
+function migrateLegacy(): void {
+  try {
+    const legacy = localStorage.getItem(LEGACY_STORAGE_KEY);
+    if (!legacy) return;
+    const pid = primaryProfileId();
+    if (!pid) return;
+    const perKey = STORAGE_KEY_PREFIX + pid;
+    if (!localStorage.getItem(perKey)) localStorage.setItem(perKey, legacy);
+    localStorage.removeItem(LEGACY_STORAGE_KEY);
+  } catch {
+    /* noop */
+  }
+}
 
 export function subscribePlayback(fn: () => void): () => void {
   listeners.add(fn);
@@ -35,8 +158,9 @@ function entryKey(metaId: string, season?: number, episode?: number): string {
 }
 
 function readAll(): Record<string, PlaybackEntry> {
+  migrateLegacy();
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    const raw = localStorage.getItem(storeKey());
     if (!raw) return {};
     const parsed = JSON.parse(raw) as Record<string, PlaybackEntry>;
     const now = Date.now();
@@ -59,15 +183,25 @@ function writeAll(map: Record<string, PlaybackEntry>): void {
       const sorted = Object.entries(map).sort((a, b) => b[1].savedAt - a[1].savedAt);
       map = Object.fromEntries(sorted.slice(0, MAX_ENTRIES));
     }
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(map));
-  } catch (e) {
-    if (e instanceof DOMException && (e.name === "QuotaExceededError" || e.code === 22)) {
-      try {
-        localStorage.removeItem(STORAGE_KEY);
-      } catch {}
-    }
+    localStorage.setItem(storeKey(), JSON.stringify(map));
+  } catch {
+    // A failed replacement must leave the last persisted source/session intact.
+    return;
   }
+  noteNotify("store:playback");
   listeners.forEach((l) => l());
+}
+
+export function playbackHistoryRawKeys(): string[] {
+  migrateLegacy();
+  try {
+    const raw = localStorage.getItem(storeKey());
+    if (!raw) return [];
+    const parsed = JSON.parse(raw) as Record<string, PlaybackEntry>;
+    return Object.keys(parsed);
+  } catch {
+    return [];
+  }
 }
 
 export function savePlayback(
@@ -88,8 +222,112 @@ export function savePlayback(
           parsedTitle: entry.parsedTitle ?? prev.parsedTitle,
           savedAt: Date.now(),
         }
-      : { ...entry, savedAt: Date.now() };
+      : { ...entry, actual: prev?.actual, savedAt: Date.now() };
   writeAll(all);
+}
+
+export function recordActualPlayback(playback: ActualPlayback): boolean {
+  if (!isPlaybackActorCurrent(playback.actor) || !validActualPlayback(playback)) return false;
+  const all = readAll();
+  const key = entryKey(
+    playback.src.meta.id,
+    playback.src.episode?.season,
+    playback.src.episode?.episode,
+  );
+  const previous = all[key];
+  const previousActual = previous?.actual;
+  // mpv can clear its track list at natural EOF. That is not a new audio
+  // choice; keep only the last observed choice from this exact session.
+  const actual =
+    playback.completed &&
+    !playback.audioTrack &&
+    previousActual?.audioTrack &&
+    validActualPlayback(previousActual) &&
+    previousActual.id === playback.id &&
+    isPlaybackActorCurrent(previousActual.actor) &&
+    playbackSourceKey(previousActual.src) === playbackSourceKey(playback.src)
+      ? { ...playback, audioTrack: previousActual.audioTrack }
+      : playback;
+  const next = {
+    ...all,
+    [key]: {
+      ...previous,
+      title: previous?.title ?? playback.src.meta.name,
+      savedAt: Math.max(previous?.savedAt ?? 0, playback.playedAt),
+      actual,
+    },
+  };
+  const entries = Object.entries(next).sort((a, b) => b[1].savedAt - a[1].savedAt);
+  try {
+    localStorage.setItem(
+      storeKey(),
+      JSON.stringify(Object.fromEntries(entries.slice(0, MAX_ENTRIES))),
+    );
+  } catch {
+    return false;
+  }
+  noteNotify("store:playback");
+  listeners.forEach((listener) => listener());
+  return true;
+}
+
+function validActualPlayback(value: ActualPlayback): boolean {
+  return (
+    !!value &&
+    typeof value.id === "string" &&
+    !!value.id &&
+    Number.isFinite(value.playedAt) &&
+    Number.isFinite(value.positionMs) &&
+    value.positionMs >= 0 &&
+    Number.isFinite(value.durationMs) &&
+    value.durationMs >= 0 &&
+    !!value.actor &&
+    typeof value.actor.storageProfileId === "string" &&
+    typeof value.src?.url === "string" &&
+    !!value.src.url &&
+    typeof value.src?.meta?.id === "string" &&
+    !!value.src.meta.id &&
+    typeof value.src.meta.name === "string"
+  );
+}
+
+export function readLastActualPlayback(): ActualPlayback | null {
+  const actor = capturePlaybackActor();
+  let last: ActualPlayback | null = null;
+  for (const entry of Object.values(readAll())) {
+    const actual = entry.actual;
+    if (
+      !actual ||
+      !validActualPlayback(actual) ||
+      actual.actor.storageProfileId !== actor.storageProfileId ||
+      actual.actor.accountId !== actor.accountId
+    )
+      continue;
+    if (!last || actual.playedAt > last.playedAt) last = actual;
+  }
+  return last;
+}
+
+export function playbackSourceKey(
+  src: Pick<PlayerSrc, "url" | "historyUrl" | "streamRef" | "homeServer">,
+): string {
+  if (src.homeServer)
+    return `server:${src.homeServer.connectionId}:${src.homeServer.itemId}:${src.homeServer.versionId}`;
+  if (src.streamRef?.infoHash)
+    return `torrent:${src.streamRef.infoHash.toLowerCase()}:${src.streamRef.fileIdx ?? ""}`;
+  return src.historyUrl ?? src.url;
+}
+
+export function readActualPlaybackFor(src: PlayerSrc): ActualPlayback | null {
+  const entry = readAll()[entryKey(src.meta.id, src.episode?.season, src.episode?.episode)]?.actual;
+  const actor = capturePlaybackActor();
+  return entry &&
+    validActualPlayback(entry) &&
+    entry.actor.storageProfileId === actor.storageProfileId &&
+    entry.actor.accountId === actor.accountId &&
+    playbackSourceKey(entry.src) === playbackSourceKey(src)
+    ? entry
+    : null;
 }
 
 export function readPlayback(
@@ -103,8 +341,53 @@ export function readPlayback(
 
 export function clearPlayback(metaId: string, season?: number, episode?: number): void {
   const all = readAll();
-  delete all[entryKey(metaId, season, episode)];
+  const key = entryKey(metaId, season, episode);
+  const actual = all[key]?.actual;
+  if (actual) all[key] = { savedAt: actual.playedAt, title: actual.src.meta.name, actual };
+  else delete all[key];
   writeAll(all);
+}
+
+function offeredBy(
+  s: { addonId?: string | null; contributors?: Array<{ id: string }> },
+  addonId: string,
+): boolean {
+  return s.addonId === addonId || s.contributors?.some((c) => c.id === addonId) === true;
+}
+
+/** True when the stream came from the given addon or one of its contributors. */
+export function streamOfferedByAddon(
+  s: { addonId?: string | null; contributors?: Array<{ id: string }> },
+  addonId: string | null | undefined,
+): boolean {
+  return !!addonId && offeredBy(s, addonId);
+}
+
+/**
+ * Pick the remembered addon's stream before a same-file stream from another
+ * addon. Debrid library copies and aggregator duplicates share the torrent hash,
+ * so a plain hash match would otherwise select whichever row came first.
+ */
+export function findPreferredSourceMatch<T extends {
+  addonId?: string | null;
+  contributors?: Array<{ id: string }>;
+  resolution?: string | null;
+  releaseGroupNormalized?: string | null;
+  audioLanguages?: string[] | null;
+}>(
+  streams: T[],
+  entry: PlaybackEntry,
+  match: (stream: T, entry: PlaybackEntry) => boolean,
+): T | null {
+  const candidates = streams.filter((s) => match(s, entry));
+  const rememberedLangs = (entry.audioLanguages ?? []).filter((l) => l !== "Multi");
+  const score = (s: T): number =>
+    (streamOfferedByAddon(s, entry.addonId) ? 4 : 0) +
+    (entry.releaseGroup && s.releaseGroupNormalized === entry.releaseGroup ? 2 : 0) +
+    (rememberedLangs.some((l) => (s.audioLanguages ?? []).includes(l)) ? 2 : 0) +
+    (entry.resolution && s.resolution === entry.resolution ? 1 : 0);
+  // Addon first, then the same release group/dub, then the quality the user picked.
+  return candidates.slice().sort((a, b) => score(b) - score(a))[0] ?? null;
 }
 
 export function streamMatchesEntry(
@@ -113,6 +396,7 @@ export function streamMatchesEntry(
     fileIdx?: number | null;
     url?: string | null;
     addonId?: string | null;
+    contributors?: Array<{ id: string }>;
     parsedTitle?: string | null;
     resolution?: string | null;
     source?: string | null;
@@ -127,7 +411,7 @@ export function streamMatchesEntry(
   }
   if (
     e.addonId &&
-    s.addonId === e.addonId &&
+    offeredBy(s, e.addonId) &&
     e.parsedTitle &&
     s.parsedTitle === e.parsedTitle &&
     e.resolution === s.resolution &&
@@ -145,7 +429,10 @@ export type WatchedSet = { ids: Set<string>; titles: Set<string> };
 
 export function watchTitleKey(name: string | null | undefined): string {
   if (!name) return "";
-  return name.toLowerCase().replace(/\(\d{4}\)/g, "").replace(/[^a-z0-9]+/g, "");
+  return name
+    .toLowerCase()
+    .replace(/\(\d{4}\)/g, "")
+    .replace(/[^a-z0-9]+/g, "");
 }
 
 export function recentlyPlayed(): WatchedSet {
@@ -162,7 +449,20 @@ export function recentlyPlayed(): WatchedSet {
   return { ids, titles };
 }
 
-export function playbackEntries(): Array<{ metaId: string; savedAt: number; title?: string; parsedTitle?: string }> {
+export function useWatchedCount(): number {
+  return useSyncExternalStore(
+    subscribePlayback,
+    () => recentlyPlayed().ids.size,
+    () => 0,
+  );
+}
+
+export function playbackEntries(): Array<{
+  metaId: string;
+  savedAt: number;
+  title?: string;
+  parsedTitle?: string;
+}> {
   const out: Array<{ metaId: string; savedAt: number; title?: string; parsedTitle?: string }> = [];
   for (const [key, entry] of Object.entries(readAll())) {
     const metaId = key.split("|")[0];
@@ -190,19 +490,92 @@ export function readLastSeriesPlayback(metaId: string): PlaybackEntry | null {
 
 export function streamMatchesSource(
   s: {
+    infoHash?: string | null;
     addonId?: string | null;
+    contributors?: Array<{ id: string }>;
     resolution?: string | null;
     source?: string | null;
     behaviorHints?: { bingeGroup?: string };
   },
   e: PlaybackEntry,
 ): boolean {
+  if (e.infoHash && s.infoHash) {
+    return s.infoHash.toLowerCase() === e.infoHash.toLowerCase();
+  }
   const sBinge = s.behaviorHints?.bingeGroup ?? null;
-  if (e.bingeGroup && sBinge) return sBinge === e.bingeGroup;    
-  return (                                                       
-    !!e.addonId &&
-    s.addonId === e.addonId &&
-    e.resolution === s.resolution &&
-    e.source === s.source
+  if (e.bingeGroup && sBinge) return sBinge === e.bingeGroup;
+  return (
+    !!e.addonId && offeredBy(s, e.addonId) && e.resolution === s.resolution && e.source === s.source
   );
+}
+
+export function streamMatchesReleaseLineage(
+  s: {
+    infoHash?: string | null;
+    addonId?: string | null;
+    contributors?: Array<{ id: string }>;
+    resolution?: string | null;
+    source?: string | null;
+    releaseGroupNormalized?: string | null;
+    behaviorHints?: { bingeGroup?: string };
+  },
+  e: PlaybackEntry,
+): boolean {
+  if (streamMatchesSource(s, e)) return true;
+  if (!e.releaseGroup || !s.releaseGroupNormalized) return false;
+  if (s.releaseGroupNormalized !== e.releaseGroup) return false;
+  if (e.addonId && !offeredBy(s, e.addonId)) return false;
+  return e.resolution === s.resolution && e.source === s.source;
+}
+
+/**
+ * Keep-same-source is more forgiving than the season lock: a per-episode addon
+ * often drops the release-group suffix on later episodes, and an aggregator may
+ * deliver the same torrent under a different contributor. In that case the
+ * addon, resolution, and source still identify the same source.
+ */
+export function streamMatchesPreferredSource(
+  s: Parameters<typeof streamMatchesReleaseLineage>[0] & {
+    audioLanguages?: string[] | null;
+  },
+  e: PlaybackEntry,
+): boolean {
+  if (streamMatchesReleaseLineage(s, e)) return true;
+  if (!e.addonId || !offeredBy(s, e.addonId)) return false;
+  // A dub is part of the source identity. Only reject when both sides name a
+  // concrete language and they have none in common; an unlabelled release must
+  // remain eligible.
+  const rememberedLangs = (e.audioLanguages ?? []).filter((l) => l !== "Multi");
+  const candidateLangs = (s.audioLanguages ?? []).filter((l) => l !== "Multi");
+  if (
+    rememberedLangs.length > 0 &&
+    candidateLangs.length > 0 &&
+    !rememberedLangs.some((l) => candidateLangs.includes(l))
+  ) {
+    return false;
+  }
+  // The user asked to keep the quality they picked. A same-group 4K episode is
+  // not a match for a remembered 1080p source; let the picker choose another
+  // 1080p stream instead.
+  if (e.resolution && s.resolution && e.resolution !== s.resolution) return false;
+  // The same release group is the strongest identity. Source tags often differ
+  // between episodes (1080p AV1 vs 1080p WEB-DL), so do not reject a same-group
+  // episode merely because its filename carries different tags.
+  if (e.releaseGroup && s.releaseGroupNormalized) {
+    return e.releaseGroup === s.releaseGroupNormalized;
+  }
+  if (e.source && s.source && e.source !== s.source) return false;
+  return true;
+}
+
+export function preferredSourceAddonPending(
+  entry: PlaybackEntry | null,
+  sourceMatched: boolean,
+  pipelineDone: boolean,
+  progress: AddonProgress,
+): boolean {
+  const addonId = entry?.addonId;
+  if (!addonId || sourceMatched || pipelineDone) return false;
+  if (!progress.queriedAddonIds.includes(addonId)) return false;
+  return !progress.settledAddonIds.includes(addonId);
 }

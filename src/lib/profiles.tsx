@@ -1,14 +1,30 @@
+import { purgeGameNotes } from "./games/game-notes";
 import {
   createContext,
   useCallback,
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from "react";
 import type { HiddenTabs } from "./lockable-tabs";
 import type { ContentFilters } from "./settings";
+import { isRemovedBuiltinAvatar } from "./avatars/catalog";
+import { deleteProfileBgImage } from "./theme-storage";
+// Concrete modules, not the barrel: it re-exports ProfileSyncRunner, and pulling the
+// whole sync layer in from the profile provider is how a cycle gets built by accident.
+import { configureRosterStore } from "./profile-sync/roster-store";
+import { noteProfileDeleted } from "./profile-sync/roster-section";
+import { refuseProfileSelect } from "./profile-sync/profile-lock";
+import type { LocalProfileLike } from "./profile-sync/types";
+import { loadNuvioState } from "./nuvio/nuvio-client";
+import {
+  clearNuvioSessionUnlocks,
+  isNuvioProfileUnlocked,
+  setActiveNuvioProfile,
+} from "./nuvio/nuvio-profiles";
 
 export const PROFILE_COLORS = [
   "#7dd3fc",
@@ -32,6 +48,104 @@ export type KidConfig = {
 };
 
 export const DEFAULT_KID: KidConfig = { age: 7, curfewMinutes: null, parentPinHash: null };
+
+// Every namespaced key a profile owns. Kept as one list because deleteProfile and the
+// sync roster apply both purge, and a key that only one of them knows about is a leak
+// that outlives the profile.
+const PROFILE_KEY_PREFIXES = [
+  "argus.games.sims.folder:",
+  "argus.games.ffxiv.center:",
+  "argus.games.eve.route:",
+  "argus.auth.",
+  "argus.games.search-view:",
+  "argus.games.download-notified.v1.",
+  "argus.theme-session.",
+  "argus.localcw.v1.",
+  "argus.localcw.private.v1.",
+  "argus.resume.private.v1.",
+  "argus.cw.dismissed.private.v1.",
+  "argus.favorites.v1.",
+  "argus.charfavorites.v1.",
+  "argus.mangafav.v1.",
+  "argus.mangaread.v1.",
+  "argus.manga.match.mal.v1.",
+  "argus.manga.match.anilist.v1.",
+  "argus.localwatchlist.v1.",
+  "argus.settings.",
+  "argus.nuvio.profile-map.",
+  "argus.trakt.session.v1.",
+  "argus.simkl.session.v1.",
+  "argus.anilist.session.v1.",
+  "argus.mal.session.v1.",
+  "argus.simkl.cache.v2.",
+  "argus.anilist.synced.v1.",
+  "argus.mal.synced.v1.",
+  "argus.moviewatched.v1.",
+  "argus.watchedFlag.v1.",
+  "argus.manualwatched.v1.",
+  "argus.manualunwatched.v1.",
+  "argus.manualwatched.meta.v1.",
+  "argus.manualwatched.dismissed.v1.",
+  "argus.manualunwatched.at.v1.",
+  "argus.manualwatched.fromremote.v1.",
+  "argus.watchevents.v1.",
+  "argus.playback-history.v1.",
+  "argus.watchlist.v1.",
+  "argus.watchlist.aggregate.v1.",
+  "argus.installed-addons.",
+  "argus.addons.disabled.",
+  "argus.stremio.freshwatched.v1.",
+];
+
+function purgeProfileStorage(id: string): void {
+  try { purgeGameNotes(id); } catch { /* Keep the existing profile cleanup best-effort. */ }
+  try {
+    for (const prefix of PROFILE_KEY_PREFIXES) localStorage.removeItem(`${prefix}${id}`);
+    localStorage.removeItem(`argus.games.search-history.v1:${encodeURIComponent(id)}`);
+    localStorage.removeItem(`argus.league.pool:${encodeURIComponent(id)}`);
+    const tftPrefix = `argus.games.tft.teams:${encodeURIComponent(id)}:`;
+    for (let index = localStorage.length - 1; index >= 0; index--) {
+      const key = localStorage.key(index);
+      if (key?.startsWith(tftPrefix)) localStorage.removeItem(key);
+    }
+  } catch {
+    /* ignore */
+  }
+}
+
+/**
+ * The wire carries no secrets and no shareStremioWith, so those come off the profile
+ * being replaced rather than being dropped. A parentPinHash lost here would silently
+ * unlock a kid profile on the device that adopted the roster.
+ */
+function adoptProfile(
+  next: LocalProfileLike,
+  prev: Profile | undefined,
+  fallbackColor: ProfileColor,
+): Profile {
+  return {
+    id: next.id,
+    name: next.name,
+    avatar: next.avatar,
+    color: next.color || prev?.color || fallbackColor,
+    isPrimary: next.isPrimary,
+    shareStremioWith: prev?.shareStremioWith ?? null,
+    passwordHash: next.passwordHash ?? prev?.passwordHash ?? null,
+    hideContent: (next.hideContent as ContentFilters | null) ?? null,
+    lockedTabs: (next.lockedTabs as HiddenTabs | null) ?? null,
+    kid: next.isPrimary
+      ? null
+      : next.kid
+        ? {
+            age: next.kid.age,
+            curfewMinutes: next.kid.curfewMinutes,
+            parentPinHash: next.kid.parentPinHash ?? prev?.kid?.parentPinHash ?? null,
+          }
+        : null,
+    settingsLinked: next.settingsLinked !== false,
+    createdAt: next.createdAt,
+  };
+}
 
 export type Profile = {
   id: string;
@@ -57,7 +171,8 @@ export type PickerView =
   | { kind: "list" }
   | { kind: "create" }
   | { kind: "edit"; profileId: string }
-  | { kind: "unlock"; profileId: string };
+  | { kind: "unlock"; profileId: string }
+  | { kind: "unlock-for-edit"; profileId: string };
 
 type ProfilesValue = {
   profiles: Profile[];
@@ -68,7 +183,8 @@ type ProfilesValue = {
   openPicker: (view?: PickerView) => void;
   setPickerView: (view: PickerView) => void;
   closePicker: () => void;
-  selectProfile: (id: string, opts?: { unlocked?: boolean }) => void;
+  /** False when the profile is locked and this call did not prove the PIN. */
+  selectProfile: (id: string, opts?: { unlocked?: boolean }) => boolean;
   sessionUnlockedIds: Set<string>;
   createProfile: (input: {
     name: string;
@@ -81,6 +197,9 @@ type ProfilesValue = {
     patch: Partial<Omit<Profile, "id" | "createdAt" | "isPrimary">>,
   ) => void;
   deleteProfile: (id: string) => void;
+  setPrimary: (id: string) => void;
+  isCurrentProfileLocked: () => boolean;
+  clearSessionUnlocks: () => void;
 };
 
 const STORAGE_KEY = "argus.profiles.v1";
@@ -207,19 +326,43 @@ function markProfileSelectedNow(): void {
   }
 }
 
-const PICKER_SESSION_KEY = "argus.pickerShown";
-function launchPickerShownThisSession(): boolean {
+// Module-level on purpose: sessionStorage can survive across app launches in the webview, which suppressed this prompt.
+let pickerPromptShownThisRun = false;
+
+export function readActiveProfileIdentity(): {
+  id: string;
+  name: string;
+  avatar: string | null;
+  color: string;
+} | null {
   try {
-    return sessionStorage.getItem(PICKER_SESSION_KEY) === "1";
+    const { profiles, activeId } = readState();
+    if (!profiles.length) return null;
+    const active =
+      profiles.find((p) => p.id === activeId) ?? profiles.find((p) => p.isPrimary) ?? profiles[0];
+    return active
+      ? { id: active.id, name: active.name, avatar: active.avatar, color: `${active.color}` }
+      : null;
   } catch {
-    return false;
+    return null;
   }
 }
-function markLaunchPickerShown(): void {
+
+export function readAllProfilesIdentity(): Array<{
+  id: string;
+  name: string;
+  avatar: string | null;
+  color: string;
+}> {
   try {
-    sessionStorage.setItem(PICKER_SESSION_KEY, "1");
+    return readState().profiles.map((p) => ({
+      id: p.id,
+      name: p.name,
+      avatar: p.avatar,
+      color: `${p.color}`,
+    }));
   } catch {
-    /* ignore */
+    return [];
   }
 }
 
@@ -231,15 +374,30 @@ function readState(): ProfilesState {
     if (!parsed || !Array.isArray(parsed.profiles)) {
       return { profiles: [], activeId: null };
     }
-    const primary = parsed.profiles.find((p) => p.isPrimary);
-    const primaryId = primary?.id ?? null;
+    if (parsed.profiles.length === 0) {
+      return { profiles: [], activeId: null };
+    }
+
+    // Determine the single true primary profile (must be adult, non-kid)
+    let primaryIndex = parsed.profiles.findIndex((p) => p.isPrimary && !p.kid);
+    if (primaryIndex === -1) {
+      primaryIndex = parsed.profiles.findIndex((p) => !p.kid);
+    }
+    if (primaryIndex === -1) {
+      primaryIndex = 0;
+    }
+    const primaryId = parsed.profiles[primaryIndex]?.id ?? null;
+
     const fallbackName = defaultPrimaryName();
     const identity = readSettingsIdentity();
     const legacyParental = readLegacyParental();
-    const migrated = parsed.profiles.map((p) => {
+    const migrated = parsed.profiles.map((p, idx) => {
       const next = { ...p };
+      const isThisPrimary = idx === primaryIndex;
+      next.isPrimary = isThisPrimary;
+
       if (typeof p.shareStremioWith === "undefined") {
-        next.shareStremioWith = p.isPrimary ? null : primaryId;
+        next.shareStremioWith = isThisPrimary ? null : primaryId;
       }
       if (typeof p.passwordHash === "undefined") {
         next.passwordHash = null;
@@ -248,9 +406,9 @@ function readState(): ProfilesState {
         next.hideContent = null;
       }
       if (typeof p.lockedTabs === "undefined") {
-        next.lockedTabs = p.isPrimary ? legacyParental.hiddenTabs : null;
+        next.lockedTabs = isThisPrimary ? legacyParental.hiddenTabs : null;
       }
-      if (typeof p.kid === "undefined" || p.kid == null) {
+      if (isThisPrimary || typeof p.kid === "undefined" || p.kid == null) {
         next.kid = null;
       } else {
         next.kid = {
@@ -259,10 +417,14 @@ function readState(): ProfilesState {
           parentPinHash: p.kid.parentPinHash ?? null,
         };
       }
-      if (p.isPrimary) {
+      if (isThisPrimary) {
         if (isPlaceholderName(p.name)) next.name = fallbackName;
         if (identity.color) next.color = identity.color;
-        if (identity.avatar != null && !identity.avatar.startsWith("/kids/avatars/")) {
+        if (
+          p.avatar == null &&
+          identity.avatar != null &&
+          !identity.avatar.startsWith("/kids/avatars/")
+        ) {
           next.avatar = identity.avatar;
         }
       }
@@ -273,9 +435,17 @@ function readState(): ProfilesState {
       ) {
         next.avatar = null;
       }
+      if (isRemovedBuiltinAvatar(next.avatar)) {
+        next.avatar = null;
+      }
       return next;
     });
-    return { profiles: migrated, activeId: parsed.activeId };
+
+    const activeId = migrated.some((p) => p.id === parsed.activeId)
+      ? parsed.activeId
+      : (migrated[primaryIndex]?.id ?? null);
+
+    return { profiles: migrated, activeId };
   } catch {
     return { profiles: [], activeId: null };
   }
@@ -299,7 +469,64 @@ function newId(): string {
   return `p_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
 }
 
+function migrateLegacyStremioAuth(profiles: Profile[]): void {
+  try {
+    if (localStorage.getItem("argus.auth.migrated.v1")) return;
+    const primary = profiles.find((p) => p.isPrimary) ?? profiles[0];
+    const legacy = localStorage.getItem("argus.auth");
+    if (primary && legacy && !localStorage.getItem(`argus.auth.${primary.id}`)) {
+      let valid = false;
+      try {
+        const parsed = JSON.parse(legacy) as { authKey?: unknown; user?: unknown };
+        valid = typeof parsed?.authKey === "string" && parsed.authKey.length > 0 && !!parsed.user;
+      } catch {
+        valid = false;
+      }
+      if (valid) localStorage.setItem(`argus.auth.${primary.id}`, legacy);
+    }
+    localStorage.setItem("argus.auth.migrated.v1", "1");
+  } catch {
+    /* ignore */
+  }
+}
+
 const Ctx = createContext<ProfilesValue | null>(null);
+
+// Auxiliary player windows follow the selected profile. They must never run the
+// application's launch selection, migration or roster persistence a second time.
+export function CompanionProfilesProvider({ children }: { children: ReactNode }) {
+  const [state, setState] = useState(readState);
+  useEffect(() => {
+    const refresh = (event: StorageEvent) => {
+      if (event.key === STORAGE_KEY || event.key === null) setState(readState());
+    };
+    window.addEventListener("storage", refresh);
+    return () => window.removeEventListener("storage", refresh);
+  }, []);
+  const value = useMemo<ProfilesValue>(() => {
+    const mainWindowOnly = (): never => {
+      throw new Error("Profile changes must be made in the main Argus window");
+    };
+    return {
+      ...state,
+      activeProfile: state.profiles.find((p) => p.id === state.activeId) ?? null,
+      pickerOpen: false,
+      pickerView: { kind: "list" },
+      sessionUnlockedIds: new Set(),
+      openPicker: mainWindowOnly,
+      setPickerView: mainWindowOnly,
+      closePicker: mainWindowOnly,
+      selectProfile: mainWindowOnly,
+      createProfile: mainWindowOnly,
+      updateProfile: mainWindowOnly,
+      deleteProfile: mainWindowOnly,
+      setPrimary: mainWindowOnly,
+      isCurrentProfileLocked: () => false,
+      clearSessionUnlocks: mainWindowOnly,
+    };
+  }, [state]);
+  return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
+}
 
 export function ProfilesProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<ProfilesState>(() => {
@@ -322,21 +549,79 @@ export function ProfilesProvider({ children }: { children: ReactNode }) {
       };
       const initial: ProfilesState = { profiles: [primary], activeId: primary.id };
       writeState(initial);
+      migrateLegacyStremioAuth(initial.profiles);
       return initial;
     }
+    migrateLegacyStremioAuth(loaded.profiles);
     const def = launchDefault(loaded.profiles);
-    return def ? { ...loaded, activeId: def.id } : loaded;
+    const resolved = def ? { ...loaded, activeId: def.id } : loaded;
+    writeState(resolved);
+    return resolved;
   });
+
   const [pickerOpen, setPickerOpen] = useState<boolean>(() => {
+    let provider = "stremio";
+    let defaultProfileId = "";
+    let nuvioDefaultId = "";
+    try {
+      const explicit = localStorage.getItem("argus.account-provider");
+      if (explicit) provider = explicit;
+      for (const key of ["argus.settings.shared", "argus.settings", "argus.settings.v1"]) {
+        const rawSettings = localStorage.getItem(key);
+        if (rawSettings) {
+          const s = JSON.parse(rawSettings);
+          if (!explicit && s.accountProvider) provider = s.accountProvider;
+          if (s.defaultProfileId) defaultProfileId = s.defaultProfileId;
+          if (s.nuvioDefaultProfileId) nuvioDefaultId = s.nuvioDefaultProfileId;
+        }
+      }
+    } catch {}
+
+    // Always challenge PIN / open picker on launch if active profile is PIN-locked
+    if (provider === "nuvio") {
+      const nuvioState = loadNuvioState();
+      const slot = nuvioState.activeProfileIndex || 1;
+      const target = nuvioState.profiles.find((p) => p.profile_index === slot);
+      if (target?.pin_enabled) {
+        return true;
+      }
+    } else {
+      const target = state.profiles.find((p) => p.id === state.activeId);
+      if (target?.passwordHash) {
+        return true;
+      }
+    }
+
+    const interval = readProfilePromptInterval();
+    if (interval === "never") return false;
+
+    if (provider === "nuvio") {
+      const nuvioState = loadNuvioState();
+      if (nuvioState.profiles.length <= 1) return false;
+      const targetDefault = nuvioDefaultId || defaultProfileId;
+      if (targetDefault) {
+        const num = Number(targetDefault);
+        const p = nuvioState.profiles.find((x) => x.profile_index === num);
+        if (p && !p.pin_enabled) {
+          setActiveNuvioProfile(num);
+          return false;
+        }
+      }
+      if (interval === "launch") {
+        const wasShown = pickerPromptShownThisRun;
+        pickerPromptShownThisRun = true;
+        return !wasShown;
+      }
+      return Date.now() - readLastProfileSelectAt() >= intervalMinutes(interval) * 60000;
+    }
+
     if (state.activeId == null) return true;
     if (state.profiles.length <= 1) return false;
     if (launchDefault(state.profiles)) return false;
-    const interval = readProfilePromptInterval();
-    if (interval === "never") return false;
     if (interval === "launch") {
-      const shownThisSession = launchPickerShownThisSession();
-      markLaunchPickerShown();
-      return !shownThisSession;
+      const wasShown = pickerPromptShownThisRun;
+      pickerPromptShownThisRun = true;
+      return !wasShown;
     }
     return Date.now() - readLastProfileSelectAt() >= intervalMinutes(interval) * 60000;
   });
@@ -344,6 +629,7 @@ export function ProfilesProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     writeState(state);
+    window.dispatchEvent(new CustomEvent("argus:profiles-updated"));
   }, [state]);
 
   const activeProfile = useMemo(
@@ -352,7 +638,60 @@ export function ProfilesProvider({ children }: { children: ReactNode }) {
   );
 
   const [sessionUnlockedIds, setSessionUnlockedIds] = useState<Set<string>>(() => new Set());
+  // Read through refs so the gate can see current state without giving selectProfile a
+  // changing identity, which several consumers put straight into their own dep arrays.
+  const profilesRef = useRef(state.profiles);
+  profilesRef.current = state.profiles;
+  const unlockedRef = useRef(sessionUnlockedIds);
+  unlockedRef.current = sessionUnlockedIds;
+
+  const isCurrentProfileLocked = useCallback(() => {
+    const isNuvio = isNuvioProviderActive();
+    if (isNuvio) {
+      const nuvioState = loadNuvioState();
+      const slot = nuvioState.activeProfileIndex || 1;
+      const target = nuvioState.profiles.find((p) => p.profile_index === slot);
+      return Boolean(target?.pin_enabled && !isNuvioProfileUnlocked(slot));
+    } else {
+      const target = profilesRef.current.find((p) => p.id === state.activeId);
+      return Boolean(target?.passwordHash && !unlockedRef.current.has(target.id));
+    }
+  }, [state.activeId]);
+
+  const clearSessionUnlocks = useCallback(() => {
+    setSessionUnlockedIds(new Set());
+    clearNuvioSessionUnlocks();
+  }, []);
+
+  // When switching account provider mode (Stremio <-> Nuvio), clear unlock state and force "Who's watching?"
+  useEffect(() => {
+    let timer: number | null = null;
+    const onProviderChange = (e: Event) => {
+      clearSessionUnlocks();
+      setPickerViewState({ kind: "list" });
+      const detail = (e as CustomEvent)?.detail;
+      if (detail?.skipPicker) return;
+      // Slight delay for smooth visual transition so UI switch settles first
+      timer = window.setTimeout(() => {
+        setPickerOpen(true);
+      }, 150);
+    };
+    window.addEventListener("argus:account-provider-changed", onProviderChange);
+    return () => {
+      window.removeEventListener("argus:account-provider-changed", onProviderChange);
+      if (timer !== null) window.clearTimeout(timer);
+    };
+  }, [clearSessionUnlocks]);
+
   const selectProfile = useCallback((id: string, opts?: { unlocked?: boolean }) => {
+    // THE GATE LIVES HERE, not in the UI. It used to be duplicated in picker-modal and
+    // use-account-menu, and RemoteOpenBridge has neither: it calls selectProfile(id)
+    // straight off a argus:remote-set-profile event, so a paired phone walked past
+    // every profile PIN including a kid profile's parent PIN. Gated callers already
+    // pass { unlocked: true } after verifying, so they are unaffected and the remote
+    // now fails closed.
+    const target = profilesRef.current.find((p) => p.id === id) ?? null;
+    if (refuseProfileSelect(target, unlockedRef.current, opts)) return false;
     if (opts?.unlocked) {
       setSessionUnlockedIds((prev) => (prev.has(id) ? prev : new Set(prev).add(id)));
     }
@@ -365,15 +704,43 @@ export function ProfilesProvider({ children }: { children: ReactNode }) {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(parsed));
       }
     } catch {}
+    window.dispatchEvent(new CustomEvent("argus:active-profile-changed", { detail: { id } }));
     setState((s) => ({ ...s, activeId: id }));
     setPickerOpen(false);
     setPickerViewState({ kind: "list" });
+    return true;
   }, []);
 
   useEffect(() => {
     const onFocus = () => {
+      if (pickerOpen) return;
       const mins = intervalMinutes(readProfilePromptInterval());
-      if (mins <= 0 || state.activeId == null || state.profiles.length <= 1) return;
+      if (mins <= 0) return;
+      let provider = "stremio";
+      try {
+        const explicit = localStorage.getItem("argus.account-provider");
+        if (explicit) provider = explicit;
+        else {
+          for (const key of ["argus.settings.shared", "argus.settings", "argus.settings.v1"]) {
+            const raw = localStorage.getItem(key);
+            if (raw) {
+              const parsed = JSON.parse(raw);
+              if (parsed.accountProvider) {
+                provider = parsed.accountProvider;
+                break;
+              }
+            }
+          }
+        }
+      } catch {}
+
+      if (provider === "nuvio") {
+        const nuvioState = loadNuvioState();
+        if (nuvioState.profiles.length <= 1) return;
+      } else {
+        if (state.activeId == null || state.profiles.length <= 1) return;
+      }
+
       if (Date.now() - readLastProfileSelectAt() >= mins * 60000) {
         setPickerViewState({ kind: "list" });
         setPickerOpen(true);
@@ -381,7 +748,7 @@ export function ProfilesProvider({ children }: { children: ReactNode }) {
     };
     window.addEventListener("focus", onFocus);
     return () => window.removeEventListener("focus", onFocus);
-  }, [state.activeId, state.profiles.length]);
+  }, [state.activeId, state.profiles.length, pickerOpen]);
 
   const openPicker = useCallback((view: PickerView = { kind: "list" }) => {
     setPickerViewState(view);
@@ -389,9 +756,13 @@ export function ProfilesProvider({ children }: { children: ReactNode }) {
   }, []);
   const setPickerView = useCallback((view: PickerView) => setPickerViewState(view), []);
   const closePicker = useCallback(() => {
+    if (isCurrentProfileLocked()) {
+      return;
+    }
     setPickerOpen(false);
     setPickerViewState({ kind: "list" });
-  }, []);
+  }, [isCurrentProfileLocked]);
+
 
   const createProfile = useCallback<ProfilesValue["createProfile"]>(
     ({ name, avatar, color, kid }) => {
@@ -424,6 +795,7 @@ export function ProfilesProvider({ children }: { children: ReactNode }) {
           ? {
               ...p,
               ...patch,
+              kid: p.isPrimary ? null : (patch.kid !== undefined ? patch.kid : p.kid),
               name: patch.name != null ? patch.name.trim().slice(0, 32) || p.name : p.name,
             }
           : p,
@@ -435,21 +807,12 @@ export function ProfilesProvider({ children }: { children: ReactNode }) {
     (id) => {
       const target = state.profiles.find((p) => p.id === id);
       if (!target || target.isPrimary) return;
-      try {
-        localStorage.removeItem(`argus.auth.${id}`);
-        localStorage.removeItem(`argus.favorites.v1.${id}`);
-        localStorage.removeItem(`argus.localwatchlist.v1.${id}`);
-        localStorage.removeItem(`argus.settings.${id}`);
-        localStorage.removeItem(`argus.trakt.session.v1.${id}`);
-        localStorage.removeItem(`argus.simkl.session.v1.${id}`);
-        localStorage.removeItem(`argus.anilist.session.v1.${id}`);
-        localStorage.removeItem(`argus.mal.session.v1.${id}`);
-        localStorage.removeItem(`argus.simkl.cache.v2.${id}`);
-        localStorage.removeItem(`argus.anilist.synced.v1.${id}`);
-        localStorage.removeItem(`argus.mal.synced.v1.${id}`);
-      } catch {
-        /* ignore */
-      }
+      // Before the purge, while the id map still resolves. Without a tombstone the
+      // delete never reaches a third device: it still holds the profile, pushes it back
+      // up, and it reappears on the two devices that deleted it.
+      noteProfileDeleted(id);
+      purgeProfileStorage(id);
+      void deleteProfileBgImage(id);
       setState((s) => {
         const profiles = s.profiles
           .filter((p) => p.id !== id)
@@ -460,6 +823,43 @@ export function ProfilesProvider({ children }: { children: ReactNode }) {
     },
     [state.profiles],
   );
+
+  // The sync roster reads and applies through the provider, never through
+  // argus.profiles.v1 directly: this component persists its own state on every change
+  // and never reads that key back, so an external write is clobbered on the next render.
+  useEffect(() => {
+    configureRosterStore({
+      read: () => profilesRef.current,
+      apply: (plan) => {
+        for (const id of plan.dropLocalIds) purgeProfileStorage(id);
+        setState((s) => {
+          const byId = new Map(s.profiles.map((p) => [p.id, p]));
+          const profiles = plan.replaceWith.map((next) =>
+            adoptProfile(next, byId.get(next.id), pickColor(s.profiles)),
+          );
+          const stillHere = profiles.some((p) => p.id === s.activeId);
+          return { profiles, activeId: stillHere ? s.activeId : (profiles[0]?.id ?? null) };
+        });
+      },
+    });
+    return () => configureRosterStore(null);
+  }, []);
+
+  const setPrimary = useCallback<ProfilesValue["setPrimary"]>((id) => {
+    setState((s) => {
+      if (!s.profiles.some((p) => p.id === id && !p.isPrimary && !p.kid)) return s;
+      return {
+        ...s,
+        profiles: s.profiles.map((p) =>
+          p.id === id
+            ? { ...p, isPrimary: true, kid: null, shareStremioWith: null }
+            : p.isPrimary
+              ? { ...p, isPrimary: false }
+              : p,
+        ),
+      };
+    });
+  }, []);
 
   const value = useMemo<ProfilesValue>(
     () => ({
@@ -476,6 +876,9 @@ export function ProfilesProvider({ children }: { children: ReactNode }) {
       createProfile,
       updateProfile,
       deleteProfile,
+      setPrimary,
+      isCurrentProfileLocked,
+      clearSessionUnlocks,
     }),
     [
       state.profiles,
@@ -491,7 +894,11 @@ export function ProfilesProvider({ children }: { children: ReactNode }) {
       createProfile,
       updateProfile,
       deleteProfile,
+      setPrimary,
+      isCurrentProfileLocked,
+      clearSessionUnlocks,
     ],
+
   );
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
@@ -503,8 +910,82 @@ export function useProfiles(): ProfilesValue {
   return v;
 }
 
+function isNuvioProviderActive(): boolean {
+  try {
+    const explicit = localStorage.getItem("argus.account-provider");
+    if (explicit === "nuvio") return true;
+    if (explicit === "stremio") return false;
+    for (const key of ["argus.settings.shared", "argus.settings", "argus.settings.v1"]) {
+      const raw = localStorage.getItem(key);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (parsed.accountProvider === "nuvio") return true;
+        if (parsed.accountProvider === "stremio") return false;
+      }
+    }
+  } catch {}
+  return false;
+}
+
 export function useActiveKid(): KidConfig | null {
   const { activeProfile } = useProfiles();
+  const [nuvioKid, setNuvioKid] = useState<KidConfig | null>(() => {
+    try {
+      if (isNuvioProviderActive()) {
+        const slot = loadNuvioState().activeProfileIndex || 1;
+        if (slot === 1) {
+          localStorage.removeItem("argus.nuvio.kid.1");
+          return null;
+        }
+        const raw = localStorage.getItem(`argus.nuvio.kid.${slot}`);
+        return raw ? JSON.parse(raw) : null;
+      }
+    } catch {}
+    return null;
+  });
+
+  useEffect(() => {
+    const update = () => {
+      try {
+        if (isNuvioProviderActive()) {
+          const slot = loadNuvioState().activeProfileIndex || 1;
+          if (slot === 1) {
+            localStorage.removeItem("argus.nuvio.kid.1");
+            setNuvioKid(null);
+            return;
+          }
+          const raw = localStorage.getItem(`argus.nuvio.kid.${slot}`);
+          setNuvioKid(raw ? JSON.parse(raw) : null);
+          return;
+        }
+      } catch {}
+      setNuvioKid(null);
+    };
+
+    window.addEventListener("argus:nuvio-profile-changed", update);
+    window.addEventListener("argus:nuvio-state-changed", update);
+    window.addEventListener("argus:nuvio-profiles-updated", update);
+    window.addEventListener("argus:account-provider-changed", update);
+    window.addEventListener("argus:settings-changed", update);
+    window.addEventListener("storage", update);
+    return () => {
+      window.removeEventListener("argus:nuvio-profile-changed", update);
+      window.removeEventListener("argus:nuvio-state-changed", update);
+      window.removeEventListener("argus:nuvio-profiles-updated", update);
+      window.removeEventListener("argus:account-provider-changed", update);
+      window.removeEventListener("argus:settings-changed", update);
+      window.removeEventListener("storage", update);
+    };
+  }, []);
+
+  if (isNuvioProviderActive()) {
+    return nuvioKid;
+  }
+
+  if (activeProfile?.isPrimary) {
+    return null;
+  }
+
   return activeProfile?.kid ?? null;
 }
 
@@ -524,4 +1005,20 @@ export function stremioSourceProfileId(active: Profile | null, profiles: Profile
   if (!active.shareStremioWith) return active.id;
   const exists = profiles.some((p) => p.id === active.shareStremioWith);
   return exists ? active.shareStremioWith : active.id;
+}
+
+export function sharesStremioStorage(
+  a: Profile | null | undefined,
+  b: Profile | null | undefined,
+  profiles: Profile[],
+): boolean {
+  if (!a || !b) return false;
+  return stremioSourceProfileId(a, profiles) === stremioSourceProfileId(b, profiles);
+}
+
+export function anyProfileSharesStremioWith(active: Profile | null, profiles: Profile[]): boolean {
+  if (!active) return false;
+  const source = stremioSourceProfileId(active, profiles);
+  if (!source) return false;
+  return profiles.some((p) => p.id !== active.id && stremioSourceProfileId(p, profiles) === source);
 }

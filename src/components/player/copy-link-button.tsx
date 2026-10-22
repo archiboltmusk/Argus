@@ -1,33 +1,29 @@
-import { Check, Copy } from "lucide-react";
+import { Check, Copy, Magnet } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useT } from "@/lib/i18n";
+import { parseMagnet, serializeMagnet } from "@/lib/torrent/magnet";
+import { trackersFromSources } from "@/lib/torrent/stremio-stream";
+import { copyText } from "@/lib/clipboard-text";
+export { copyText } from "@/lib/clipboard-text";
 
-export function resolveStreamLink(stream: { url?: string; externalUrl?: string }): string | null {
-  return stream.url ?? stream.externalUrl ?? null;
-}
-
-async function copyText(text: string): Promise<boolean> {
-  try {
-    if (navigator.clipboard?.writeText) {
-      await navigator.clipboard.writeText(text);
-      return true;
-    }
-  } catch {
-    /* fall through to legacy path */
+export function resolveStreamLink(stream: {
+  url?: string;
+  externalUrl?: string;
+  infoHash?: string;
+  fileIdx?: number;
+  sources?: string[];
+  behaviorHints?: { filename?: string };
+}): string | null {
+  if (stream.url || stream.externalUrl) return stream.url || stream.externalUrl || null;
+  const parsed = stream.infoHash ? parseMagnet(stream.infoHash) : null;
+  if (parsed) {
+    return serializeMagnet({
+      infoHash: parsed.infoHash,
+      name: stream.behaviorHints?.filename ?? null,
+      trackers: trackersFromSources(stream.sources),
+    });
   }
-  try {
-    const ta = document.createElement("textarea");
-    ta.value = text;
-    ta.style.position = "fixed";
-    ta.style.opacity = "0";
-    document.body.appendChild(ta);
-    ta.select();
-    const ok = document.execCommand("copy");
-    document.body.removeChild(ta);
-    return ok;
-  } catch {
-    return false;
-  }
+  return null;
 }
 
 export function CopyLinkButton({
@@ -42,9 +38,11 @@ export function CopyLinkButton({
   label?: string;
 }) {
   const t = useT();
-  const resolvedLabel = label ?? t("Copy link");
+  const isMagnetLink = url.startsWith("magnet:");
+  const resolvedLabel = label ?? t(isMagnetLink ? "Copy magnet link" : "Copy link");
   const [copied, setCopied] = useState(false);
   const timer = useRef<number | null>(null);
+  const Icon = isMagnetLink ? Magnet : Copy;
 
   useEffect(
     () => () => {
@@ -82,7 +80,7 @@ export function CopyLinkButton({
         copied ? "bg-success/12 text-success" : "text-ink-subtle hover:bg-canvas/60 hover:text-ink"
       } ${className}`}
     >
-      <Copy
+      <Icon
         size={size}
         strokeWidth={2}
         className={`absolute transition-all duration-200 ease-[cubic-bezier(0.34,1.56,0.64,1)] ${

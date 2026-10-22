@@ -1516,6 +1516,7 @@ mod tests {
             year_range: None,
             season: None,
             episode: None,
+            episode_end: None,
             season_pack: false,
             disc_index: None,
             repack_iteration: 0,

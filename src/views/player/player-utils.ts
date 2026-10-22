@@ -1,6 +1,8 @@
 import { createHtml5Bridge } from "@/lib/player/html5";
 import { createMpvBridge, probeMpv, type MpvRect } from "@/lib/player/mpv";
+import { createExternalMpvBridge, type ExternalMpvOptions } from "@/lib/player/external-mpv";
 import type { PlayerBridge } from "@/lib/player/bridge";
+import type { MonitorInfo } from "@/lib/monitors";
 import { isLinuxDesktop, isMacDesktop, isWindowsDesktop } from "@/lib/platform";
 
 export const SYNC_DRIFT_TOLERANCE_S = 0.6;
@@ -16,6 +18,7 @@ export const DURATION_MISMATCH_S = 4;
 export const ROOM_STALL_MS = 9000;
 export const SLOW_LOAD_MS = 50_000;
 export const STUCK_AUTORETRY_MS = 18_000;
+export const NEVER_STARTED_CEILING_MS = 45_000;
 export const BLACK_SCREEN_GRACE_MS = 6_000;
 export const MAX_AUTORETRY_ATTEMPTS = 5;
 export const CHROME_HIDE_MS_PLAYING = 1800;
@@ -57,20 +60,33 @@ export async function pickBridge(
     anime4k: boolean;
     hdrToSdr: boolean;
     rtxHdr?: boolean;
+    rtxVsr?: boolean;
     embed?: boolean;
     anime4kShaders?: string[];
     d3d11Flip?: boolean;
     macEdr?: boolean;
+    renderer?: "gpu-next" | "gpu";
+    forceYuv420p?: boolean;
     extraOptions?: string;
+    fullDownload?: boolean;
+    separateDisplay?: MonitorInfo | null;
+    separateCoverTaskbar?: boolean;
+    cacheDir?: string;
     getEmbedRect?: () => Promise<MpvRect | null> | MpvRect | null;
+    /** Set when playback runs in the user's own external mpv instead of the one inside Argus. */
+    external?: ExternalMpvOptions | null;
   },
 ): Promise<{ bridge: PlayerBridge; engine: "html5" | "mpv" }> {
+  // Set html5 so Argus does not use any of the embedded-mpv window handling.
+  if (mpvOpts.external)
+    return { bridge: createExternalMpvBridge(mpvOpts.external), engine: "html5" };
   if (want === "html5") return { bridge: createHtml5Bridge(), engine: "html5" };
   if (want === "mpv") {
     const probe = await probeMpv();
     if (probe.available) return { bridge: createMpvBridge(mpvOpts), engine: "mpv" };
     console.warn(
-      "[argus] mpv requested but libmpv probe failed; falling back to in-webview html5 decode (high memory)",
+      "[argus] mpv requested but libmpv probe failed; falling back to in-webview html5 decode (high memory). Reason:",
+      probe.error,
     );
     return { bridge: createHtml5Bridge(), engine: "html5" };
   }
@@ -80,7 +96,8 @@ export async function pickBridge(
     if (probe.available) return { bridge: createMpvBridge(mpvOpts), engine: "mpv" };
     if (isDesktop)
       console.warn(
-        "[argus] desktop libmpv probe failed; falling back to in-webview html5 decode (high memory)",
+        "[argus] desktop libmpv probe failed; falling back to in-webview html5 decode (high memory). Reason:",
+        probe.error,
       );
   }
   return { bridge: createHtml5Bridge(), engine: "html5" };

@@ -1,7 +1,33 @@
-import { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { CustomLayoutSafetyNet } from "@/chrome/custom-layout-safety-net";
+import { GAMES_IN_NAV } from "@/chrome/nav-items";
+import { GameAccessProvider } from "@/views/games/game-access-context";
+import { GameLibraryDock } from "@/views/games/game-library-dock";
+import { GameDockWelcome } from "@/views/games/game-dock-welcome";
+import { GameRouteLoading } from "@/views/games/game-route-loading";
+import { hasBackHandlers } from "@/lib/back-intercept";
+import { useSportsEnabled } from "@/lib/sports/enabled";
+import { usePlaylists } from "@/lib/iptv/playlists-store";
+import { SportsAccessGate } from "@/views/sports/access-gate";
+import { SportsEventSkeleton } from "@/views/sports/sports-skeletons";
+import { SportsReminderLoop } from "@/components/sports-reminder-loop";
+import {
+  memo,
+  Suspense,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
+import { lazyView as lazy } from "@/lib/lazy-view";
+import { startIdleAway } from "@/lib/social/idle-away";
+import { requestAppBack } from "@/lib/app-back";
 import { FloatingBack } from "@/chrome/floating-back";
+import { ensureStaticHeroArt } from "@/lib/providers/anime-hero-art-static";
+import { ensureCuratedLogos } from "@/lib/curated-logos";
+import { ensureAwardMaster } from "@/lib/anime-awards-source";
 import { WindowControls } from "@/chrome/window-controls";
+import { HybridTitleBar } from "@/chrome/hybrid-title-bar";
 import { WindowResizeEdges } from "@/chrome/window-resize-edges";
 import { MinUIDock } from "@/chrome/minui-dock";
 import { Sidebar } from "@/chrome/sidebar";
@@ -13,15 +39,23 @@ import { SideRail } from "@/chrome/siderail";
 import { StremioRail } from "@/chrome/stremio-rail";
 import { TopDock } from "@/chrome/topdock";
 import { CinematicOverlay } from "@/chrome/cinematic-overlay";
-import { Topbar } from "@/chrome/topbar";
+import { Topbar, TogetherButton } from "@/chrome/topbar";
+import { TabHotkeys } from "@/chrome/tab-hotkeys";
 import { startMaintenance, subscribeMemoryPressure } from "@/lib/maintenance";
 import { MiddleClickScroll } from "@/lib/use-middle-click-scroll";
 import { exitWindowFullscreenOnPlayerClose, toggleWindowFullscreen } from "@/lib/fullscreen-state";
 import { flushCloudSync } from "@/views/player/hooks/use-stremio-sync";
-import { PlayerRouteFallback } from "@/views/player/player-route-fallback";
+import { startWriteQueueFlusher } from "@/lib/stremio-write-queue";
+import {
+  mediaServerConnections,
+  mediaServerRefreshIntervalMs,
+  mediaServerSyncDue,
+  updateMediaServerConnection,
+} from "@/lib/media-server/connections";
+import { synchronizeMediaServer } from "@/lib/media-server/sync";
 import { setNativeMemoryActive } from "@/lib/native-memory";
 import { useOverlayPinned } from "@/lib/overlay-pin";
-import { isMobileDevice, isWeb } from "@/lib/platform";
+import { isMobileWeb, isRemoteRoute } from "@/lib/platform";
 import { makeSafeTauriUnlisten } from "@/lib/tauri-unlisten";
 import { activeLayout } from "@/lib/theme";
 import { useThemePreview } from "@/lib/theme-preview";
@@ -31,18 +65,27 @@ import { ArgusErrorBoundary } from "@/components/error-boundary";
 import { ContextMenu } from "@/components/context-menu";
 import { WatchLocalModal } from "@/components/player/watch-local-modal";
 import { LocalEpisodesModal } from "@/components/player/local-episodes-modal";
+import { LocalVersionsModal } from "@/components/player/local-versions-modal";
 import { CurfewGuard } from "@/components/curfew-guard";
 import { HoverPreview } from "@/components/hover-preview";
 import { CustomHoverCssMount } from "@/components/custom-hover-css-mount";
 import { EmbedViewportRoot } from "@/components/embed-viewport";
 import { InstallerViewportRoot } from "@/components/installer-viewport";
 import { UpdateRoot } from "@/components/update/update-root";
+import { VoyageRoot } from "@/components/voyage/voyage-root";
+import { ScreensaverRoot } from "@/components/screensaver/screensaver-root";
 import { CustomCodeMount } from "@/components/custom-code-mount";
 import { MemoryHud } from "@/components/memory-hud";
+import { Profiled } from "@/components/profiled";
 import { OfflineBanner } from "@/chrome/offline-banner";
-import { MobileNotice } from "@/components/mobile-notice";
+
+const MobileShell = lazy(() =>
+  import("@/views/mobile/mobile-shell").then((m) => ({ default: m.MobileShell })),
+);
 import { WebhookLoopMount } from "@/components/webhook-loop-mount";
 import { ListToastHost } from "@/components/lists/list-toast";
+import { DiagnosticsConsentHost } from "@/components/diagnostics/diagnostics-consent-host";
+import { AnnouncementGlobal } from "@/components/announcement-global";
 import { TogetherChatToast } from "@/components/together-chat-toast";
 import { TogetherCursors } from "@/components/together-cursors";
 import { TogetherHostLeavingPrompt } from "@/components/together-host-leaving-prompt";
@@ -53,68 +96,128 @@ import { AnilistSyncToast } from "@/components/anilist/anilist-sync-toast";
 import { AnilistAvatarSync } from "@/components/anilist/anilist-avatar-sync";
 import { MalAvatarSync } from "@/components/mal/mal-avatar-sync";
 import { MalSyncToast } from "@/components/mal/mal-sync-toast";
+import { MangaSyncToast } from "@/components/manga/manga-sync-toast";
 import { TogetherLeaveForLiveModal } from "@/components/together-leave-for-live-modal";
 import { ThemeBackdrop } from "@/components/theme-backdrop";
 import { TopRankModal } from "@/components/top-rank-modal";
-import { AuthProvider } from "@/lib/auth";
+import { AuthProvider, useAuth } from "@/lib/auth";
+import { listMangaProgress } from "@/lib/manga-progress";
 import { ProfilesProvider, useProfiles } from "@/lib/profiles";
+import { syncProfileStats } from "@/lib/social/stats-sync";
+import { useFeaturedListsSync } from "@/lib/social/use-featured-sync";
+import { useRatingsSync } from "@/lib/social/use-ratings-sync";
+import { useActivitySync } from "@/lib/social/use-activity-sync";
+import { authToken, currentAuthor } from "@/lib/theme-auth";
+import { startSessionRefresh } from "@/lib/account/session-refresh-runner";
+import { useAutoDownloadRunner } from "@/lib/auto-download/runner";
+import { RemindersRunner } from "@/lib/reminders-runner";
+import { GameDownloadNotificationsRunner } from "@/lib/games/download-notifications-runner";
+import { GameSourceAlertsRunner } from "@/lib/games/source-alerts-runner";
+import { MangaTrackingRunner } from "@/lib/manga-tracking";
+import { RemoteHostMount } from "@/lib/remote/host-mount";
+import { RemoteOpenBridge } from "@/lib/remote/remote-open-bridge";
+import { PlayOnModal } from "@/components/play-on-modal";
+import { ControllerConnectedToast } from "@/components/controller-connected-toast";
+import { GamepadRunner } from "@/components/gamepad-runner";
 import { ProfileIdentitySync } from "@/lib/profile-identity-sync";
+import { ArgusAvatarSync } from "@/components/argus-avatar-sync";
+import { ArgusNameSync } from "@/components/argus-name-sync";
 import { SettingsProfileBridge } from "@/lib/settings-profile-bridge";
 import { TrackerProfileBridge } from "@/lib/tracker-profile-bridge";
 import { ProfilePickerModal } from "@/components/profile-picker/picker-modal";
 import { WatchlistSync } from "@/lib/watchlist-sync";
 import { ContextMenuProvider } from "@/lib/context-menu";
+import { PageContextNavigationDialogs } from "@/chrome/context-page-navigation";
 import { TopRankModalProvider } from "@/lib/top-rank-modal";
 import { OnboardingProvider } from "@/lib/onboarding";
 import { RankingsProvider } from "@/lib/rankings";
 import { SettingsProvider } from "@/lib/settings";
-import { RemoteHostMount } from "@/lib/remote/host-mount";
-import { SearchProvider, useSearch } from "@/lib/search-context";
+import { SearchProvider, useSearchActions, useSearchOpen } from "@/lib/search-context";
 import { SearchOverlay } from "@/components/search/search-overlay";
 import { SearchHotkey } from "@/components/search/search-hotkey";
+import { LinkOutInterstitial } from "@/components/link-out-interstitial";
 import { TogetherProvider, useTogether } from "@/lib/together/provider";
+import { ListenTogetherProvider } from "@/lib/listen-together/provider";
 import { DvrProvider } from "@/lib/dvr/provider";
 import { FavoritesProvider } from "@/lib/iptv/favorites";
 import { MediaFavoritesProvider } from "@/lib/media-favorites";
+import { CharacterFavoritesProvider } from "@/lib/character-favorites";
+import { MangaFavoritesProvider } from "@/lib/manga-favorites";
 import { LocalWatchlistProvider } from "@/lib/local-watchlist";
 import { useSettings } from "@/lib/settings";
-import { readActiveStremioAuthKey } from "@/lib/auth";
-import { effectiveBinding, eventToBinding, shouldHandleGlobalKeyboardEvent } from "@/lib/hotkeys";
+import {
+  flushPendingTorrentRemovals,
+  reconcilePendingTorrentRemovals,
+  torrentEngineSetOptions,
+} from "@/lib/torrent/local-engine";
+import {
+  effectiveBinding,
+  eventToBinding,
+  findHotkeyMatch,
+  shouldHandleGlobalKeyboardEvent,
+} from "@/lib/hotkeys";
 import { ViewProvider, useView, type Frame, type MetaFilter, type View } from "@/lib/view";
+import { requestOpenProfile, requestEditProfile } from "@/lib/social/open-profile";
+import { openNotificationCenter } from "@/lib/social/notification-open";
+import { anchorFromElement, openAccountMenu } from "@/lib/social/account-menu-open";
+import { getUnreadCount, subscribeUnread } from "@/lib/social/unread-bridge";
+import { fetchMe } from "@/lib/account/identity";
+import { ThemeChromeBridge } from "@/components/theme-chrome-bridge";
 import type { MetaType } from "@/lib/cinemeta";
+import { profileMediaMeta } from "@/lib/social/profile-media-meta";
 import { useDiscordPresence } from "@/lib/discord/use-discord-presence";
-import { Home } from "@/views/home";
+import { useWatchShare } from "@/lib/social/watch-presence";
+import { usePluginCataloguesAvailable } from "@/lib/streams/plugins/available";
+import { SpooktoberHome } from "@/views/spooktober/spooktober-home";
+
+// Shell re-renders on its own state (idle-evict timers, memory pressure, immersive, games nav).
+// Memoizing the view stops that from cascading into a full re-render of the home feed, which the
+// profiler measured rendering ~18 times a second while the user was on other tabs.
+const MemoSpooktoberHome = memo(SpooktoberHome);
+import { MusicDock } from "@/components/music/music-dock";
+import { useInstallFeatures } from "@/lib/features/install";
+import { MusicSurprisePrompt } from "@/components/music/music-surprise-prompt";
 import { ParentalProvider } from "@/lib/parental";
 import { TraktProvider } from "@/lib/trakt/provider";
 import { AnilistProvider } from "@/lib/anilist/provider";
 import { MalProvider } from "@/lib/mal/provider";
 import { SimklProvider } from "@/lib/simkl/provider";
+import { PublicMetaDbProvider } from "@/lib/publicmetadb/provider";
 import { LetterboxdProvider } from "@/lib/stremboxd/provider";
-import { focusTvPageDefault, useKeyboardNavigation } from "@/lib/keyboard-navigation";
-import { SFX } from "@/lib/sfx";
 import {
-  onDeepLinkInstall,
-  onDeepLinkOpen,
-  onOpenLocalFile,
-  startDeepLinkBridge,
-} from "@/lib/deep-link";
-import { ArgusQueryProvider, useIdlePagePrefetch } from "@/lib/query";
-import { ArgusRouterProvider, ViewRouterSync } from "@/router";
+  useKeyboardNavigation,
+  tvFocus,
+  focusTvPageDefault,
+  isVisible,
+} from "@/lib/keyboard-navigation";
+import { enterBigPicture, useBigPicture } from "@/lib/big-picture";
+import { moveMainToMonitor } from "@/lib/monitors";
+import { BpErrorBoundary } from "@/views/big-picture/bp-error-boundary";
+import { shouldAutoStartBigPicture, shouldOfferBigPicture } from "@/views/big-picture/bp-logic";
+import { BigPictureEntryButton } from "@/views/big-picture/bp-entry-button";
+import { releaseBigPictureFullscreen } from "@/views/big-picture/use-bp-fullscreen";
+import { getNavFocusTarget } from "@/lib/keyboard-navigation/geometry";
+import { SFX } from "@/lib/sfx";
+import { startMusicTaskbarButtons, syncMusicTaskbarArtwork } from "@/lib/music/taskbar-buttons";
+import { resetMusicForProfile } from "@/lib/music/player";
+import { startMediaSessionWindowTracking } from "@/lib/media-session";
 
 const importAnime = () => import("@/views/anime");
 const importCalendar = () => import("@/views/calendar");
 const importWrapped = () => import("@/views/wrapped");
-const importSports = () => import("@/views/sports");
-const importManga = () => import("@/views/manga");
 const importDetail = () => import("@/views/detail");
 const importAddons = () => import("@/views/addons");
 const importDiscover = () => import("@/views/discover");
 const importCatalogs = () => import("@/views/catalogs");
+const importPlugins = () => import("@/views/plugins");
 const importAward = () => import("@/views/award");
 const importAnimeAward = () => import("@/views/anime-award");
+const importCuratedList = () => import("@/views/curated-list");
 const importFilter = () => import("@/views/filter");
+const importBrands = () => import("@/views/brands");
 const importGrid = () => import("@/views/grid");
 const importPerson = () => import("@/views/person");
+const importPeople = () => import("@/views/people");
 const importCollection = () => import("@/views/collection");
 const importEpisodeDetail = () => import("@/views/episode-detail");
 const importPlayPicker = () => import("@/views/play-picker");
@@ -125,38 +228,60 @@ const importQueue = () => import("@/views/queue");
 const importService = () => import("@/views/service");
 const importSettings = () => import("@/views/settings");
 const importShows = () => import("@/views/shows");
+const importMusic = () => import("@/views/music");
+const importGames = () => import("@/views/games");
 const importLibrary = () => import("@/views/library");
+const importCommunityCollections = () => import("@/views/collections/community-hub");
+const importSports = () => import("@/views/sports");
 const importLive = () => import("@/views/live");
+const importMatchDetail = () => import("@/views/live/match-detail-view");
 const importVod = () => import("@/views/playlist-vod");
 const importDownloads = () => import("@/views/downloads");
-const importMusic = () => import("@/views/music");
-const importMatchDetail = () => import("@/views/live/match-detail-view");
 const importOnboarding = () => import("@/components/onboarding");
 
 const AnimeView = lazy(() => importAnime().then((m) => ({ default: m.AnimeView })));
 const CalendarView = lazy(() => importCalendar().then((m) => ({ default: m.CalendarView })));
 const WrappedView = lazy(() => importWrapped().then((m) => ({ default: m.WrappedView })));
-const SportsView = lazy(() => importSports().then((m) => ({ default: m.SportsView })));
-const MangaView = lazy(() => importManga().then((m) => ({ default: m.MangaView })));
 const DetailView = lazy(() => importDetail().then((m) => ({ default: m.DetailView })));
 const AddonsView = lazy(() => importAddons().then((m) => ({ default: m.AddonsView })));
-const Discover = lazy(() => importDiscover().then((m) => ({ default: m.Discover })));
-const Catalogs = lazy(() => importCatalogs().then((m) => ({ default: m.Catalogs })));
+const Discover = memo(lazy(() => importDiscover().then((m) => ({ default: m.Discover }))));
+const Catalogs = memo(lazy(() => importCatalogs().then((m) => ({ default: m.Catalogs }))));
+const PluginsView = lazy(() => importPlugins().then((m) => ({ default: m.Plugins })));
 const AwardView = lazy(() => importAward().then((m) => ({ default: m.AwardView })));
 const AnimeAwardView = lazy(() => importAnimeAward().then((m) => ({ default: m.AnimeAwardView })));
+const CuratedListView = lazy(() =>
+  importCuratedList().then((m) => ({ default: m.CuratedListView })),
+);
 const FilterView = lazy(() => importFilter().then((m) => ({ default: m.FilterView })));
+const BrandsView = lazy(() => importBrands().then((m) => ({ default: m.BrandsView })));
 const GridView = lazy(() => importGrid().then((m) => ({ default: m.GridView })));
 const PersonView = lazy(() => importPerson().then((m) => ({ default: m.PersonView })));
+const PeopleView = lazy(() => importPeople().then((m) => ({ default: m.PeopleView })));
+const ProfileView = lazy(() =>
+  import("@/views/profile/profile").then((m) => ({ default: m.ProfileView })),
+);
+const SharedListView = lazy(() =>
+  import("@/views/shared-list").then((m) => ({ default: m.SharedListView })),
+);
+const FeedView = lazy(() => import("@/views/feed").then((m) => ({ default: m.FeedView })));
+const GroupsView = lazy(() => import("@/views/groups").then((m) => ({ default: m.GroupsView })));
+const GroupView = lazy(() => import("@/views/group").then((m) => ({ default: m.GroupView })));
 const CollectionView = lazy(() => importCollection().then((m) => ({ default: m.CollectionView })));
+const AddonCollectionView = lazy(() =>
+  import("@/views/addon-collection").then((m) => ({ default: m.AddonCollectionView })),
+);
 const EpisodeDetailView = lazy(() =>
   importEpisodeDetail().then((m) => ({ default: m.EpisodeDetailView })),
 );
 const CollectionsView = lazy(() =>
   import("@/views/collections").then((m) => ({ default: m.CollectionsView })),
 );
+const CommunityCollectionsView = lazy(() =>
+  importCommunityCollections().then((m) => ({ default: m.CommunityCollectionsView })),
+);
 const PlayPicker = lazy(() => importPlayPicker().then((m) => ({ default: m.PlayPicker })));
 const PlayerView = lazy(() => importPlayer().then((m) => ({ default: m.PlayerView })));
-const Movies = lazy(() => importMovies().then((m) => ({ default: m.Movies })));
+const Movies = memo(lazy(() => importMovies().then((m) => ({ default: m.Movies }))));
 const Kids = lazy(() => importKids().then((m) => ({ default: m.Kids })));
 const KidsDetailView = lazy(() =>
   import("@/views/kids-detail").then((m) => ({ default: m.KidsDetailView })),
@@ -166,82 +291,100 @@ const ServiceView = lazy(() => importService().then((m) => ({ default: m.Service
 const Settings = lazy(() => importSettings().then((m) => ({ default: m.Settings })));
 const Shows = lazy(() => importShows().then((m) => ({ default: m.Shows })));
 const LibraryView = lazy(() => importLibrary().then((m) => ({ default: m.LibraryView })));
+const MusicView = lazy(() => importMusic().then((m) => ({ default: m.MusicView })));
+const GamesView = lazy(() => importGames().then((m) => ({ default: m.GamesView })));
 const LiveView = lazy(() => importLive().then((m) => ({ default: m.LiveView })));
 const MatchDetailView = lazy(() =>
   importMatchDetail().then((m) => ({ default: m.MatchDetailView })),
 );
 const PlaylistVodView = lazy(() => importVod().then((m) => ({ default: m.PlaylistVodView })));
-const MusicView = lazy(() => importMusic().then((m) => ({ default: m.MusicView })));
+const SportsView = lazy(() => importSports().then((m) => ({ default: m.SportsView })));
 const DownloadsView = lazy(() => importDownloads().then((m) => ({ default: m.DownloadsView })));
+const MangaView = lazy(() => import("@/views/manga").then((m) => ({ default: m.MangaView })));
+const EBookView = lazy(() => import("@/views/ebook").then((m) => ({ default: m.EBookView })));
 const OnboardingModal = lazy(() =>
   importOnboarding().then((m) => ({ default: m.OnboardingModal })),
 );
+const BigPictureShell = lazy(() =>
+  import("@/views/big-picture/bp-shell").then((m) => ({ default: m.BigPictureShell })),
+);
 
-function useViewPreloader() {
+function useViewPreloader(tmdbKey: string) {
+  const keyRef = useRef(tmdbKey);
+  keyRef.current = tmdbKey;
   useEffect(() => {
     if (typeof window === "undefined") return;
     let cancelled = false;
     const win = window as Window & {
       requestIdleCallback?: (cb: () => void, opts?: { timeout?: number }) => number;
-      cancelIdleCallback?: (id: number) => void;
+      cancelIdleCallback?: (handle: number) => void;
     };
-    const schedule = (cb: () => void, timeout: number) =>
-      typeof win.requestIdleCallback === "function"
-        ? win.requestIdleCallback(cb, { timeout })
-        : window.setTimeout(cb, Math.min(timeout, 800));
-
-    // Priority: Movies/Shows chunks first — they were lazy and felt slower than Anime.
-    const priorityId = schedule(() => {
-      if (cancelled) return;
-      void importMovies();
-      void importShows();
-      void importAnime();
-      void importDiscover();
-      void importDetail();
-      void importPlayPicker();
-      void importPlayer();
-    }, 1200);
-
-    const restId = schedule(() => {
-      if (cancelled) return;
-      void importSettings();
-      void importAddons();
-      void importPerson();
-      void importFilter();
-      void importCalendar();
-      void importLive();
-      void importQueue();
-      void importAward();
-      void importAnimeAward();
-      void importService();
-      void importMatchDetail();
-      void importOnboarding();
-      void importLibrary();
-      void importCatalogs();
-      void importKids();
-      void importVod();
-      void importDownloads();
-    }, 2800);
-
+    let handle = 0;
+    const idle = typeof win.requestIdleCallback === "function";
+    const schedule = (cb: () => void) => {
+      handle = idle ? win.requestIdleCallback!(cb, { timeout: 2500 }) : window.setTimeout(cb, 1200);
+    };
+    const preloaders: Array<() => Promise<unknown>> = [
+      importDetail,
+      importPlayPicker,
+      importPlayer,
+      importSettings,
+      importDiscover,
+      importAddons,
+      importPerson,
+      importPeople,
+      importFilter,
+      importCalendar,
+      importMovies,
+      importShows,
+      importLive,
+      importAnime,
+      importQueue,
+      importAward,
+      importAnimeAward,
+      importService,
+      importOnboarding,
+      importCatalogs,
+      importPlugins,
+      importLibrary,
+      importCommunityCollections,
+      importDownloads,
+      importGrid,
+      importWrapped,
+      importKids,
+      async () => {
+        if (keyRef.current) {
+          const m = await import("@/lib/feed/pool");
+          if (!cancelled) await m.getPool(keyRef.current);
+        }
+      },
+    ];
+    let next = 0;
+    const warmNext = () => {
+      if (cancelled || next >= preloaders.length) return;
+      // One module per idle opportunity: warming every view at once evaluates
+      // unrelated feature modules and starts their storage/network work during Home boot.
+      void preloaders[next++]()
+        .catch(() => {})
+        .finally(() => {
+          if (!cancelled) schedule(warmNext);
+        });
+    };
+    schedule(warmNext);
     return () => {
       cancelled = true;
-      if (typeof win.cancelIdleCallback === "function") {
-        win.cancelIdleCallback(priorityId as number);
-        win.cancelIdleCallback(restId as number);
-      } else {
-        window.clearTimeout(priorityId);
-        window.clearTimeout(restId);
-      }
+      if (idle) win.cancelIdleCallback?.(handle);
+      else window.clearTimeout(handle);
     };
   }, []);
 }
 
-function IdlePagePrefetch() {
-  useIdlePagePrefetch();
-  return null;
-}
-
 const KEEP_ALIVE_MS = 1500;
+// How long a top-level view stays mounted after you leave it. A view keeps its whole tree, its
+// observers and its effects while hidden (`display:none` skips painting, not JavaScript), so a
+// minute of exploring left home, discover, catalogs and movies resident at once — ~34k DOM nodes,
+// with every frame and GC pass paying for all of them. Long enough that an immediate back feels
+// instant, short enough that hopping tabs stops accumulating.
 const IDLE_EVICT_MS = 10 * 1000;
 const PRESSURE_EVICT_MS = 1500;
 const UI_SCALE_MIN = 0.8;
@@ -270,6 +413,31 @@ function useKeepAlive(active: boolean, requested: boolean, pin = false): boolean
   return requested && (mounted || active || pin);
 }
 
+/**
+ * Renders children after the shell's first paint. Every background runner fires its first IPC
+ * round at mount; doing that inside the home feed's first commit put a ~630ms React work loop in
+ * the boot frame. Two frames of delay lets the shell paint before that work lands.
+ */
+function AfterFirstPaint({ children, delayMs = 0 }: { children: ReactNode; delayMs?: number }) {
+  const [ready, setReady] = useState(false);
+  useEffect(() => {
+    let second = 0;
+    let timer = 0;
+    const first = requestAnimationFrame(() => {
+      second = requestAnimationFrame(() => {
+        if (delayMs > 0) timer = window.setTimeout(() => setReady(true), delayMs);
+        else setReady(true);
+      });
+    });
+    return () => {
+      cancelAnimationFrame(first);
+      cancelAnimationFrame(second);
+      window.clearTimeout(timer);
+    };
+  }, [delayMs]);
+  return ready ? <>{children}</> : null;
+}
+
 function useIdleEvict(active: boolean, pin = false): boolean {
   const [alive, setAlive] = useState(active);
   const [pressure, setPressure] = useState(false);
@@ -287,95 +455,151 @@ function useIdleEvict(active: boolean, pin = false): boolean {
 }
 
 export function App({ onReady }: { onReady?: () => void }) {
-  if (isWeb() && isMobileDevice()) return <MobileNotice />;
   return (
-    <ArgusQueryProvider>
-      <ArgusRouterProvider>
-        <SettingsProvider>
-          <ProfilesProvider>
-            <ParentalProvider>
-              <TraktProvider>
-                <AnilistProvider>
-                  <MalProvider>
-                    <SimklProvider>
-                      <LetterboxdProvider>
-                        <RankingsProvider>
-                          <AuthProvider>
-                            <OnboardingProvider>
-                              <TogetherProvider>
-                                <ViewProvider>
-                                  <ViewRouterSync />
-                                  <IdlePagePrefetch />
+    <SettingsProvider syncTorrentEnginePolicy>
+      <ProfilesProvider>
+        <ParentalProvider>
+          <TraktProvider>
+            <AnilistProvider>
+              <MalProvider>
+                <SimklProvider>
+                  <PublicMetaDbProvider>
+                    <LetterboxdProvider>
+                      <RankingsProvider>
+                        <AuthProvider>
+                          <OnboardingProvider>
+                            <TogetherProvider>
+                              <ViewProvider>
+                                <ListenTogetherProvider>
                                   <SearchProvider>
                                     <DvrProvider>
                                       <FavoritesProvider>
                                         <MediaFavoritesProvider>
-                                          <LocalWatchlistProvider>
-                                            <ContextMenuProvider>
-                                              <TopRankModalProvider>
-                                                <ArgusErrorBoundary>
-                                                  <RemoteHostMount />
-                                                  <ProfileIdentitySync />
-                                                  <SettingsProfileBridge />
-                                                  <TrackerProfileBridge />
-                                                  <AnilistAvatarSync />
-                                                  <MalAvatarSync />
-                                                  <MiddleClickScroll />
-                                                  <ThemeBackdrop />
-                                                  <WatchlistSync />
-                                                  <Shell onReady={onReady} />
-                                                  <Suspense fallback={null}>
-                                                    <OnboardingModal />
-                                                  </Suspense>
-                                                  <TogetherInviteToast />
-                                                  <TogetherFloater />
-                                                  <TogetherHostLeavingPrompt />
-                                                  <TogetherSummonToast />
-                                                  <TogetherParticipantLeftToast />
-                                                  <AnilistSyncToast />
-                                                  <MalSyncToast />
-                                                  <ListToastHost />
-                                                  <TogetherLeaveForLiveModal />
-                                                  <TogetherLocationPublisher />
-                                                  <DiscordPresence />
-                                                  <ContextMenu />
-                                                  <WatchLocalModal />
-                                                  <LocalEpisodesModal />
-                                                  <HoverPreview />
-                                                  <CustomHoverCssMount />
-                                                  <TopRankModal />
-                                                  <ProfilePickerModal />
-                                                  <CurfewGuard />
-                                                  <SearchOverlay />
-                                                  <SearchHotkey />
-                                                  <EmbedViewportRoot />
-                                                  <InstallerViewportRoot />
-                                                  <UpdateRoot />
-                                                </ArgusErrorBoundary>
-                                                <ErrorView />
-                                                <DevErrorTrigger />
-                                              </TopRankModalProvider>
-                                            </ContextMenuProvider>
-                                          </LocalWatchlistProvider>
+                                          <CharacterFavoritesProvider>
+                                            <MangaFavoritesProvider>
+                                              <LocalWatchlistProvider>
+                                                <ContextMenuProvider>
+                                                  <TopRankModalProvider>
+                                                    <ArgusErrorBoundary>
+                                                      <ProfileIdentitySync />
+                                                      <ArgusAvatarSync />
+                                                      <ArgusNameSync />
+                                                      <SettingsProfileBridge />
+                                                      <TrackerProfileBridge />
+                                                      <AnilistAvatarSync />
+                                                      <MalAvatarSync />
+                                                      <MiddleClickScroll />
+                                                      <ThemeBackdrop />
+                                                      <Profiled id="startup.watchlist-sync">
+                                                        <WatchlistSync />
+                                                      </Profiled>
+                                                      {isMobileWeb() || isRemoteRoute() ? (
+                                                        <>
+                                                          <Suspense fallback={null}>
+                                                            <MobileShell />
+                                                          </Suspense>
+                                                          <RevealOnMount onReady={onReady} />
+                                                        </>
+                                                      ) : (
+                                                        <Profiled id="shell">
+                                                          <Shell onReady={onReady} />
+                                                        </Profiled>
+                                                      )}
+                                                      {!isMobileWeb() && !isRemoteRoute() && (
+                                                        <Suspense fallback={null}>
+                                                          <OnboardingModal />
+                                                        </Suspense>
+                                                      )}
+                                                      <TogetherInviteToast />
+                                                      <TogetherFloater />
+                                                      <TogetherHostLeavingPrompt />
+                                                      <TogetherSummonToast />
+                                                      <TogetherParticipantLeftToast />
+                                                      <AnilistSyncToast />
+                                                      <MalSyncToast />
+                                                      <MangaSyncToast tracker="anilist" />
+                                                      <MangaSyncToast tracker="mal" />
+                                                      <ListToastHost />
+                                                      <DiagnosticsConsentHost />
+                                                      <TogetherLeaveForLiveModal />
+                                                      <AfterFirstPaint>
+                                                        <TogetherLocationPublisher />
+                                                        <IdleAwayRunner />
+                                                        <SessionRefreshRunner />
+                                                        <RemoteHostMount />
+                                                        <RemoteOpenBridge />
+                                                      </AfterFirstPaint>
+                                                      <AfterFirstPaint delayMs={1500}>
+                                                        <StatsSyncRunner />
+                                                        <FeaturedListsSyncRunner />
+                                                        <RatingsSyncRunner />
+                                                        <ActivitySyncRunner />
+                                                      </AfterFirstPaint>
+                                                      <AfterFirstPaint>
+                                                        <MediaServerSyncRunner />
+                                                        <AutoDownloadRunner />
+                                                        <RemindersRunner />
+                                                        <GameDownloadNotificationsRunner />
+                                                        <GameSourceAlertsRunner />
+                                                        <MangaTrackingRunner />
+                                                      </AfterFirstPaint>
+                                                      <PlayOnModal />
+                                                      <GamepadRunner />
+                                                      <ControllerConnectedToast />
+                                                      <AfterFirstPaint>
+                                                        <DiscordPresence />
+                                                        <WatchPresenceRunner />
+                                                      </AfterFirstPaint>
+                                                      <Profiled id="startup.context-menu">
+                                                        <ContextMenu />
+                                                      </Profiled>
+                                                      <PageContextNavigationDialogs />
+                                                      <AnnouncementGlobal />
+                                                      <WatchLocalModal />
+                                                      <LocalEpisodesModal />
+                                                      <LocalVersionsModal />
+                                                      <HoverPreview />
+                                                      <CustomHoverCssMount />
+                                                      <TopRankModal />
+                                                      <ProfilePickerModal />
+                                                      <CurfewGuard />
+                                                      <Profiled id="search.overlay">
+                                                        <SearchOverlay />
+                                                      </Profiled>
+                                                      <SearchHotkey />
+                                                      <LinkOutInterstitial />
+                                                      <EmbedViewportRoot />
+                                                      <InstallerViewportRoot />
+                                                      <UpdateRoot />
+                                                      <VoyageRoot />
+                                                      <ScreensaverRoot />
+                                                    </ArgusErrorBoundary>
+                                                    <ErrorView />
+                                                    <DevErrorTrigger />
+                                                  </TopRankModalProvider>
+                                                </ContextMenuProvider>
+                                              </LocalWatchlistProvider>
+                                            </MangaFavoritesProvider>
+                                          </CharacterFavoritesProvider>
                                         </MediaFavoritesProvider>
                                       </FavoritesProvider>
                                     </DvrProvider>
                                   </SearchProvider>
-                                </ViewProvider>
-                              </TogetherProvider>
-                            </OnboardingProvider>
-                          </AuthProvider>
-                        </RankingsProvider>
-                      </LetterboxdProvider>
-                    </SimklProvider>
-                  </MalProvider>
-                </AnilistProvider>
-              </TraktProvider>
-            </ParentalProvider>
-          </ProfilesProvider>
-        </SettingsProvider>
-      </ArgusRouterProvider>
-    </ArgusQueryProvider>
+                                </ListenTogetherProvider>
+                              </ViewProvider>
+                            </TogetherProvider>
+                          </OnboardingProvider>
+                        </AuthProvider>
+                      </RankingsProvider>
+                    </LetterboxdProvider>
+                  </PublicMetaDbProvider>
+                </SimklProvider>
+              </MalProvider>
+            </AnilistProvider>
+          </TraktProvider>
+        </ParentalProvider>
+      </ProfilesProvider>
+    </SettingsProvider>
   );
 }
 
@@ -388,6 +612,147 @@ function TogetherFloater() {
       <TogetherCursors />
     </>
   );
+}
+
+function AutoDownloadRunner() {
+  useAutoDownloadRunner();
+  return null;
+}
+
+function FeaturedListsSyncRunner() {
+  useFeaturedListsSync();
+  return null;
+}
+
+function RatingsSyncRunner() {
+  useRatingsSync();
+  return null;
+}
+
+function ActivitySyncRunner() {
+  useActivitySync();
+  return null;
+}
+
+const MEDIA_SERVER_SYNC_MS = 15 * 60 * 1000;
+
+function MediaServerSyncRunner() {
+  useEffect(() => {
+    let cancelled = false;
+    let running = false;
+    const launchSynced = new Set<string>();
+    const refresh = async () => {
+      if (running) return;
+      running = true;
+      try {
+        for (const connection of mediaServerConnections().filter(
+          (entry) =>
+            mediaServerSyncDue(entry) &&
+            (entry.refreshInterval !== "launch" || !launchSynced.has(entry.id)),
+        )) {
+          if (cancelled) break;
+          if (connection.refreshInterval === "launch") launchSynced.add(connection.id);
+          await synchronizeMediaServer(connection).catch((cause) => {
+            const at = Date.now();
+            updateMediaServerConnection(
+              connection.id,
+              {
+                lastSyncResult: {
+                  ok: false,
+                  message: cause instanceof Error ? cause.message : String(cause),
+                  at,
+                },
+              },
+              connection.profileId,
+            );
+          });
+        }
+      } finally {
+        running = false;
+      }
+    };
+    const onWake = () => {
+      if (document.visibilityState === "visible") void refresh();
+    };
+    // Wake when the soonest configured interval is due (or the base cadence),
+    // so custom minute-level intervals are honored instead of a fixed 15-minute poll.
+    let timer: number | undefined;
+    const nextDelay = () => {
+      const now = Date.now();
+      let soonest = MEDIA_SERVER_SYNC_MS;
+      for (const entry of mediaServerConnections()) {
+        const interval = mediaServerRefreshIntervalMs(entry);
+        if (interval == null) continue;
+        const due = entry.lastSyncAt == null ? 0 : entry.lastSyncAt + interval - now;
+        soonest = Math.min(soonest, Math.max(0, due));
+      }
+      return Math.min(MEDIA_SERVER_SYNC_MS, Math.max(30_000, soonest));
+    };
+    const schedule = () => {
+      if (cancelled) return;
+      timer = window.setTimeout(() => void refresh().finally(schedule), nextDelay());
+    };
+    const initial = window.setTimeout(() => void refresh().finally(schedule), 2500);
+    const onProfile = () => {
+      launchSynced.clear();
+      void refresh();
+    };
+    window.addEventListener("argus:active-profile-changed", onProfile);
+    window.addEventListener("online", refresh);
+    document.addEventListener("visibilitychange", onWake);
+    return () => {
+      cancelled = true;
+      if (timer !== undefined) window.clearTimeout(timer);
+      window.clearTimeout(initial);
+      window.removeEventListener("argus:active-profile-changed", onProfile);
+      window.removeEventListener("online", refresh);
+      document.removeEventListener("visibilitychange", onWake);
+    };
+  }, []);
+  return null;
+}
+
+function SessionRefreshRunner() {
+  useEffect(startSessionRefresh, []);
+  return null;
+}
+
+function IdleAwayRunner() {
+  useEffect(() => startIdleAway(), []);
+  return null;
+}
+
+const STATS_SYNC_FIRST_MS = 4000;
+const STATS_SYNC_EVERY_MS = 600000;
+const STATS_SYNC_MIN_GAP_MS = 120000;
+
+function StatsSyncRunner() {
+  const { authKey } = useAuth();
+  const { activeId } = useProfiles();
+  useEffect(() => {
+    if (!authToken()) return;
+    const pid = activeId ?? "default";
+    let last = 0;
+    let alive = true;
+    const run = (force: boolean) => {
+      if (!alive || !authToken()) return;
+      const now = performance.now();
+      if (!force && now - last < STATS_SYNC_MIN_GAP_MS) return;
+      last = now;
+      syncProfileStats(authKey, listMangaProgress(pid).length).catch(() => {});
+    };
+    const first = window.setTimeout(() => run(true), STATS_SYNC_FIRST_MS);
+    const every = window.setInterval(() => run(false), STATS_SYNC_EVERY_MS);
+    const onFocus = () => run(false);
+    window.addEventListener("focus", onFocus);
+    return () => {
+      alive = false;
+      window.clearTimeout(first);
+      window.clearInterval(every);
+      window.removeEventListener("focus", onFocus);
+    };
+  }, [authKey, activeId]);
+  return null;
 }
 
 function TogetherLocationPublisher() {
@@ -475,6 +840,11 @@ function DiscordPresence() {
   return null;
 }
 
+function WatchPresenceRunner() {
+  useWatchShare();
+  return null;
+}
+
 function filterReactKey(f: MetaFilter): string {
   if (f.kind === "year" || f.kind === "runtime")
     return `filter-${f.kind}-${f.mediaType}-${f.value}`;
@@ -493,6 +863,13 @@ function parseDeepLinkEpisode(videoId?: string): { season: number; episode: numb
   return { season, episode };
 }
 
+function RevealOnMount({ onReady }: { onReady?: () => void }) {
+  useEffect(() => {
+    onReady?.();
+  }, [onReady]);
+  return null;
+}
+
 function Shell({ onReady }: { onReady?: () => void }) {
   const {
     topKind,
@@ -502,41 +879,66 @@ function Shell({ onReady }: { onReady?: () => void }) {
     metaEpisodeHint,
     episodeDetail,
     personId,
+    profileHandle,
+    feedOpen,
+    groupsOpen,
+    groupId,
+    listHandle,
+    listId,
+    openList,
     collectionId,
+    addonCollectionMeta,
     filter,
+    brands,
     grid,
     awardType,
     animeAwardSource,
+    curatedListId,
     picker,
     player,
     setView,
+    openSettings,
     canGoBack,
     goBack,
     canGoForward,
     goForward,
     openMeta,
+    openManga,
+    openEBook,
+    openPerson,
+    peopleInit,
     openPlayer,
-    exitPlayback,
-    exitPickerToDetail,
+    openGames,
+    openSportsEvent,
     stackKinds,
     chromeHidden,
   } = useView();
   const { settings, update } = useSettings();
-  useEffect(() => {
-    void import("@/lib/skip-intro/theintrodb").then((m) => m.setTheIntroDbApiKey(settings.theIntroDbKey));
-  }, [settings.theIntroDbKey]);
-  useEffect(() => {
-    if (!settings.addonHealthProbes) return;
-    const timer = window.setTimeout(() => {
-      void import("@/lib/addon-health/probe").then((m) => m.runAddonProbes(readActiveStremioAuthKey()));
-    }, 60_000);
-    return () => window.clearTimeout(timer);
-  }, [settings.addonHealthProbes]);
-  const { setOpen: setSearchOpen, open: searchOpen } = useSearch();
+  const searchOpen = useSearchOpen();
+  const { setOpen: setSearchOpen } = useSearchActions();
+  const bigPicture = useBigPicture().active;
+  const bigPictureBootChecked = useRef(false);
   const uiScaleRef = useRef(settings.uiScale);
   const { activeProfile } = useProfiles();
+  const activeProfileForMusic = activeProfile?.id ?? null;
   const kid = activeProfile?.kid ?? null;
   const preview = useThemePreview();
+  useEffect(() => {
+    void ensureCuratedLogos();
+    const id = window.setTimeout(() => {
+      void ensureStaticHeroArt();
+      void ensureAwardMaster();
+    }, 1500);
+    return () => window.clearTimeout(id);
+  }, []);
+  useEffect(() => {
+    void torrentEngineSetOptions(
+      settings.streamCacheDir || null,
+      settings.streamCacheRetentionHours,
+      settings.streamCacheMaxGb,
+      false,
+    );
+  }, [settings.streamCacheDir, settings.streamCacheRetentionHours, settings.streamCacheMaxGb]);
   const baseLayout = useMemo(
     () => (preview ? preview.layout : activeLayout(settings.theme)),
     [preview, settings.theme],
@@ -548,7 +950,7 @@ function Shell({ onReady }: { onReady?: () => void }) {
     layout === "nord" ||
     layout === "forest" ||
     layout === "stremio";
-  useViewPreloader();
+  useViewPreloader(settings.tmdbKey);
 
   useEffect(() => {
     if (topKind === "home") return;
@@ -556,72 +958,99 @@ function Shell({ onReady }: { onReady?: () => void }) {
   }, [onReady, topKind]);
 
   const handleTvBack = useCallback(() => {
-    if (searchOpen) {
-      setSearchOpen(false);
-      return true;
-    }
-    // Player/picker stacks can be nested (next episode pushes picker+player).
-    // Always leave playback entirely — never step back to a prior episode or
-    // re-enter the loading picker for the current one.
-    if (topKind === "player") {
-      const localBack = new Event("argus:local-back", { cancelable: true });
-      if (!window.dispatchEvent(localBack)) return true;
-      exitPlayback();
-      return true;
-    }
-    if (topKind === "picker") {
-      if (picker) exitPickerToDetail(picker.meta);
-      else exitPlayback();
-      return true;
-    }
-    if (canGoBack) {
+    if (canGoBack || topKind !== "home" || hasBackHandlers()) {
       goBack();
       return true;
     }
     return false;
-  }, [
-    searchOpen,
-    setSearchOpen,
-    topKind,
-    exitPlayback,
-    exitPickerToDetail,
-    picker,
-    canGoBack,
-    goBack,
-  ]);
+  }, [goBack, canGoBack, topKind]);
 
   const handleTvBackToNav = useCallback(() => {
     window.scrollTo({ top: 0, left: 0, behavior: "smooth" });
-    const nav = document.querySelector<HTMLElement>(
-      "[data-argus-nav][data-active], [data-argus-nav], [data-tv-nav-zone] button, [data-argus-sidebar] button",
+    requestAnimationFrame(() =>
+      requestAnimationFrame(() => {
+        const nav = getNavFocusTarget();
+        if (nav) tvFocus(nav);
+      }),
     );
-    nav?.focus({ preventScroll: true });
   }, []);
 
+  useEffect(() => {
+    void releaseBigPictureFullscreen();
+  }, []);
+
+  useEffect(() => {
+    // Autostart is a launch-only decision. Consume the check on the first run
+    // whatever the outcome, so turning the setting on later does not drop the
+    // user straight into Big Picture.
+    const alreadyBooted = bigPictureBootChecked.current;
+    bigPictureBootChecked.current = true;
+    const go = shouldAutoStartBigPicture({
+      autoStart: settings.bigPictureAutoStart,
+      alreadyBooted,
+      kidProfileActive: kid !== null,
+    });
+    if (!go) return;
+    // Move Argus onto the chosen monitor before entering Big Picture, so the
+    // fullscreen that follows binds to that display. Automatic skips the move
+    // and leaves the window where the window-state plugin restored it.
+    const display = settings.bigPictureDisplay;
+    if (display.mode === "explicit") {
+      void moveMainToMonitor(display.monitor).then(() => enterBigPicture());
+      return;
+    }
+    enterBigPicture();
+  }, [settings.bigPictureAutoStart, settings.bigPictureDisplay, kid]);
+
   useKeyboardNavigation({
-    enabled: settings.tvNavigation && !player,
+    enabled: settings.tvNavigation && !player && !picker && !bigPicture,
     wrap: false,
     onBack: handleTvBack,
     onBackToNav: handleTvBackToNav,
   });
+
   useEffect(() => {
-    if (!settings.tvNavigation || searchOpen || topKind === "player") return;
-    const id = window.requestAnimationFrame(() => focusTvPageDefault());
-    return () => window.cancelAnimationFrame(id);
-  }, [settings.tvNavigation, topKind, meta?.id, searchOpen]);
-  useEffect(() => {
-    if (settings.soundTheme) {
-      SFX.setTheme(settings.soundTheme);
+    if (!settings.tvNavigation || searchOpen || topKind === "player" || picker || bigPicture)
+      return;
+    const active = document.activeElement;
+    if (active instanceof HTMLElement && (!isVisible(active) || active === document.body)) {
+      active.blur();
     }
+    let frameId: number | null = null;
+    let timerId: number | null = null;
+    let attempts = 0;
 
+    const tryFocus = () => {
+      const current = document.activeElement;
+      if (current instanceof HTMLElement && current !== document.body && isVisible(current)) {
+        return;
+      }
+      focusTvPageDefault();
+      const after = document.activeElement;
+      if (
+        (!after || after === document.body || !isVisible(after as HTMLElement)) &&
+        attempts++ < 10
+      ) {
+        timerId = window.setTimeout(tryFocus, 100);
+      }
+    };
+
+    frameId = window.requestAnimationFrame(tryFocus);
+    return () => {
+      if (frameId !== null) window.cancelAnimationFrame(frameId);
+      if (timerId !== null) window.clearTimeout(timerId);
+    };
+  }, [settings.tvNavigation, topKind, meta?.id, searchOpen, picker, bigPicture]);
+
+  useEffect(() => {
+    SFX.setTheme(settings.soundTheme);
     const volume = settings.sfxVolume ?? 50;
-
     SFX.setVolume(volume / 100);
   }, [settings.soundTheme, settings.sfxVolume]);
 
   useEffect(() => {
+    if (settings.soundTheme === "none") return;
     const initAudio = () => SFX.init();
-
     window.addEventListener("pointerdown", initAudio, { once: true });
     window.addEventListener("keydown", initAudio, { once: true });
 
@@ -640,7 +1069,6 @@ function Shell({ onReady }: { onReady?: () => void }) {
 
       SFX.hover();
     };
-
     const onClick = (e: MouseEvent) => {
       const target = e.target as HTMLElement | null;
       if (!target) return;
@@ -652,6 +1080,7 @@ function Shell({ onReady }: { onReady?: () => void }) {
       if (!btn) return;
 
       const isCloseAction =
+        (btn.getAttribute("aria-label") || "").toLowerCase().includes("back") ||
         btn.matches(
           "[data-argus-back], [data-back], [data-close], [data-tv-modal-close], .close-btn, .back-btn",
         ) ||
@@ -682,37 +1111,25 @@ function Shell({ onReady }: { onReady?: () => void }) {
 
       SFX.click();
     };
-
     window.addEventListener("mouseover", onMouseOver);
     window.addEventListener("click", onClick, true);
-
     return () => {
       window.removeEventListener("pointerdown", initAudio);
       window.removeEventListener("keydown", initAudio);
       window.removeEventListener("mouseover", onMouseOver);
       window.removeEventListener("click", onClick, true);
     };
-  }, [handleTvBack]);
+  }, [settings.soundTheme]);
 
-  useEffect(() => startMaintenance(), []);
+  useEffect(() => {
+    startWriteQueueFlusher();
+    return startMaintenance();
+  }, []);
 
   useEffect(() => {
     const onMouseDown = (e: MouseEvent) => {
       if (e.button === 3) {
-        const localBack = new Event("argus:local-back", { cancelable: true });
-        if (!window.dispatchEvent(localBack)) {
-          e.preventDefault();
-          return;
-        }
-        if (topKind === "player" || topKind === "picker") {
-          e.preventDefault();
-          exitPlayback();
-          return;
-        }
-        if (canGoBack) {
-          e.preventDefault();
-          goBack();
-        }
+        if (requestAppBack(canGoBack || hasBackHandlers(), goBack)) e.preventDefault();
       } else if (e.button === 4 && canGoForward) {
         e.preventDefault();
         goForward();
@@ -720,7 +1137,7 @@ function Shell({ onReady }: { onReady?: () => void }) {
     };
     window.addEventListener("mousedown", onMouseDown, true);
     return () => window.removeEventListener("mousedown", onMouseDown, true);
-  }, [canGoBack, goBack, canGoForward, goForward, topKind, exitPlayback]);
+  }, [canGoBack, goBack, canGoForward, goForward]);
 
   useEffect(() => {
     uiScaleRef.current = settings.uiScale;
@@ -747,6 +1164,14 @@ function Shell({ onReady }: { onReady?: () => void }) {
       if (!shouldHandleGlobalKeyboardEvent(e)) return;
       const binding = eventToBinding(e);
       const overrides = settings.hotkeys ?? {};
+      const globalMatch = findHotkeyMatch(e, overrides, "Global");
+      if (
+        globalMatch &&
+        globalMatch !== "globalUiScaleUp" &&
+        globalMatch !== "globalUiScaleDown" &&
+        globalMatch !== "globalUiScaleReset"
+      )
+        return;
       const uiScaleUpCustom = "globalUiScaleUp" in overrides;
       const uiScaleDownCustom = "globalUiScaleDown" in overrides;
       const uiScaleResetCustom = "globalUiScaleReset" in overrides;
@@ -780,13 +1205,54 @@ function Shell({ onReady }: { onReady?: () => void }) {
       window.dispatchEvent(new Event(UI_SCALE_ACTIVITY_EVENT));
       stepUiScale(e.deltaY < 0 ? 1 : -1);
     };
-    window.addEventListener("keydown", onKey, true);
-    window.addEventListener("wheel", onWheel, { capture: true, passive: false });
-    return () => {
-      window.removeEventListener("keydown", onKey, true);
+    let wheelBound = false;
+    const bindWheel = () => {
+      if (wheelBound) return;
+      wheelBound = true;
+      window.addEventListener("wheel", onWheel, { capture: true, passive: false });
+    };
+    const unbindWheel = () => {
+      if (!wheelBound) return;
+      wheelBound = false;
       window.removeEventListener("wheel", onWheel, true);
     };
+    const onModKey = (e: KeyboardEvent) => {
+      if (usesZoomModifier(e)) bindWheel();
+      else unbindWheel();
+    };
+    const onPinchWheel = (e: WheelEvent) => {
+      if (wheelBound || !usesZoomModifier(e)) return;
+      window.dispatchEvent(new Event(UI_SCALE_ACTIVITY_EVENT));
+      stepUiScale(e.deltaY < 0 ? 1 : -1);
+    };
+    window.addEventListener("keydown", onKey, true);
+    window.addEventListener("keydown", onModKey, true);
+    window.addEventListener("keyup", onModKey, true);
+    window.addEventListener("blur", unbindWheel);
+    window.addEventListener("wheel", onPinchWheel, { passive: true });
+    return () => {
+      window.removeEventListener("keydown", onKey, true);
+      window.removeEventListener("keydown", onModKey, true);
+      window.removeEventListener("keyup", onModKey, true);
+      window.removeEventListener("blur", unbindWheel);
+      window.removeEventListener("wheel", onPinchWheel);
+      unbindWheel();
+    };
   }, [player, settings.hotkeys, update]);
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (!shouldHandleGlobalKeyboardEvent(e)) return;
+      if (findHotkeyMatch(e, settings.hotkeys ?? {}, "Global") !== "globalSettingsOpen") return;
+      e.preventDefault();
+      if (player || document.querySelector('[data-argus-multiview-active="true"]')) return;
+      e.stopPropagation();
+      if (e.repeat) return;
+      openSettings();
+    };
+    window.addEventListener("keydown", onKey, true);
+    return () => window.removeEventListener("keydown", onKey, true);
+  }, [openSettings, player, settings.hotkeys]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -803,11 +1269,19 @@ function Shell({ onReady }: { onReady?: () => void }) {
 
   useEffect(() => {
     if (typeof window === "undefined" || !("__TAURI_INTERNALS__" in window)) return;
+    void reconcilePendingTorrentRemovals();
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined" || !("__TAURI_INTERNALS__" in window)) return;
     let unlisten: (() => void) | undefined;
     let cancelled = false;
     void import("@tauri-apps/api/event").then(({ listen }) =>
       listen("argus://app-closing", async () => {
-        await flushCloudSync().catch(() => {});
+        await Promise.all([
+          flushCloudSync().catch(() => {}),
+          flushPendingTorrentRemovals().catch(() => {}),
+        ]);
         const { invoke } = await import("@tauri-apps/api/core");
         await invoke("argus_flush_done").catch(() => {});
       }).then((rawUnlisten) => {
@@ -824,13 +1298,39 @@ function Shell({ onReady }: { onReady?: () => void }) {
 
   useEffect(() => {
     const w = window as unknown as { argus?: Record<string, unknown> };
+    const tryViewMyProfile = () => {
+      const handle = currentAuthor()?.handle?.trim();
+      if (!handle) return false;
+      requestOpenProfile(handle);
+      return true;
+    };
     w.argus = {
-      ...(w.argus ?? {}),
+      ...w.argus,
       navigate: (v: string) => setView(v as View),
       back: () => goBack(),
       search: () => setSearchOpen(true),
+      openSettings: () => setView("settings"),
+      openNotifications: () => openNotificationCenter(),
+      openAccountMenu: (el?: unknown) => openAccountMenu(anchorFromElement(el)),
+      bigPicture: () => {
+        const offer = shouldOfferBigPicture({
+          kidProfileActive: kid !== null,
+          buttonEnabled: settings.bigPictureButton,
+          suppressedByChrome: false,
+        });
+        if (offer) enterBigPicture();
+      },
+      tryViewMyProfile,
+      viewMyProfile: async () => {
+        if (tryViewMyProfile()) return;
+        await fetchMe().catch(() => {});
+        tryViewMyProfile();
+      },
+      unreadCount: () => getUnreadCount(),
+      onUnread: (cb: (count: number) => void) =>
+        typeof cb === "function" ? subscribeUnread(cb) : () => {},
     };
-  }, [setView, goBack, setSearchOpen]);
+  }, [setView, goBack, setSearchOpen, kid, settings.bigPictureButton]);
 
   useEffect(() => {
     if (topKind !== "live") {
@@ -846,44 +1346,91 @@ function Shell({ onReady }: { onReady?: () => void }) {
 
   useEffect(() => {
     let dispose: (() => void) | null = null;
-    void startDeepLinkBridge().then((stopBridge) => {
-      const stopListener = onDeepLinkInstall(() => {
-        if (window.__argusInstallerOpen) return;
-        setView("addons");
-      });
-      const stopOpen = onDeepLinkOpen(({ type, id, videoId }) => {
-        const hint = parseDeepLinkEpisode(videoId);
-        openMeta(
-          { id, type: type as MetaType, name: "" },
-          hint ? { episodeHint: hint } : undefined,
-        );
-      });
-      const stopFile = onOpenLocalFile((path) => {
-        const name = (path.replace(/\\/g, "/").split("/").pop() || "Video").replace(/\.[^.]+$/, "");
-        openPlayer({
-          meta: { id: `local:${path}`, type: "movie", name },
-          url: path,
-          title: name,
-          notWebReady: true,
+    void import("@/lib/deep-link").then(
+      ({
+        startDeepLinkBridge,
+        onDeepLinkInstall,
+        onDeepLinkOpen,
+        onDeepLinkOpenList,
+        onDeepLinkOpenMusic,
+        onOpenLocalFile,
+        onOpenProfileEdit,
+        isProfileEditUrl,
+      }) => {
+        void startDeepLinkBridge().then((stopBridge) => {
+          const stopListener = onDeepLinkInstall((rawUrl) => {
+            if (window.__argusInstallerOpen) return;
+            if (isProfileEditUrl(rawUrl)) return;
+            setView("addons");
+          });
+          const stopOpen = onDeepLinkOpen(({ type, id, videoId }) => {
+            if (type === "person") {
+              const personId = Number(id);
+              if (Number.isInteger(personId) && personId > 0) openPerson(personId);
+              return;
+            }
+            if (type === "manga") {
+              openManga(id);
+              return;
+            }
+            if (type === "ebook") {
+              openEBook(id);
+              return;
+            }
+            const hint = parseDeepLinkEpisode(videoId);
+            openMeta(
+              { id, type: type as MetaType, name: "" },
+              hint ? { episodeHint: hint } : undefined,
+            );
+          });
+          const stopOpenList = onDeepLinkOpenList(({ handle, listId }) => {
+            openList(handle, listId);
+          });
+          const stopOpenMusic = onDeepLinkOpenMusic((link) => {
+            setView("music");
+            void Promise.all([
+              import("@/lib/music/navigation"),
+              import("@/lib/music/deep-link"),
+            ]).then(([{ requestMusicSearch }, { musicDeepLinkQuery }]) =>
+              requestMusicSearch(musicDeepLinkQuery(link)),
+            );
+          });
+          const stopEdit = onOpenProfileEdit(() => {
+            const handle = currentAuthor()?.handle;
+            if (handle) requestEditProfile(handle);
+          });
+          const stopFile = onOpenLocalFile((path) => {
+            const name = (path.replace(/\\/g, "/").split("/").pop() || "Video").replace(
+              /\.[^.]+$/,
+              "",
+            );
+            openPlayer({
+              meta: { id: `local:${path}`, type: "movie", name },
+              url: path,
+              title: name,
+              notWebReady: true,
+            });
+          });
+          dispose = () => {
+            stopBridge();
+            stopListener();
+            stopOpen();
+            stopOpenList();
+            stopOpenMusic();
+            stopEdit();
+            stopFile();
+          };
         });
-      });
-      dispose = () => {
-        stopBridge();
-        stopListener();
-        stopOpen();
-        stopFile();
-      };
-    });
+      },
+    );
     return () => {
       dispose?.();
     };
-  }, [setView, openMeta, openPlayer]);
+  }, [setView, openMeta, openPlayer, openList, openPerson, openManga, openEBook]);
 
   useEffect(() => {
     if (topKind === "anime" && settings.hideContent.anime) setView("home");
-    if (topKind === "sports" && !settings.sportsPage) setView("home");
-    if (topKind === "manga" && settings.hideContent.manga) setView("home");
-  }, [topKind, settings.hideContent.anime, settings.hideContent.manga, settings.sportsPage, setView]);
+  }, [topKind, settings.hideContent.anime, setView]);
 
   useEffect(() => {
     if (!kid || player) return;
@@ -899,23 +1446,26 @@ function Shell({ onReady }: { onReady?: () => void }) {
   useEffect(() => {
     if (!activeProfile) return;
     if (activeProfile.kid) {
-      // Reset to the Kids home so a page already open (e.g. an adult title and
-      // its related titles) cannot persist across the switch into a kid profile;
-      // setView("kids") clears the whole navigation stack, back history included.
       setView("kids");
     } else if (topKind === "kids") {
       setView("home");
     }
   }, [activeProfile?.id]);
 
-  const playerActive = !!player;
+  const playerActive = !!player && !player.sportsDocked && !player.pipDocked;
   useEffect(() => setNativeMemoryActive(playerActive), [playerActive]);
   useEffect(() => {
     if (!playerActive) void exitWindowFullscreenOnPlayerClose();
   }, [playerActive]);
   const pickerTop = topKind === "picker";
   const personTop = topKind === "person";
+  const profileTop = topKind === "profile";
+  const feedTop = topKind === "feed";
+  const groupsTop = topKind === "groups";
+  const groupTop = topKind === "group";
+  const listTop = topKind === "list";
   const collectionTop = topKind === "collection";
+  const addonCollectionTop = topKind === "addon-collection";
   const episodeDetailTop = topKind === "episode-detail";
   const collectionsIndexTop = topKind === "collections";
   const collectionsIndexAlive = useKeepAlive(
@@ -925,9 +1475,11 @@ function Shell({ onReady }: { onReady?: () => void }) {
   );
   const detailTop = topKind === "meta";
   const filterTop = topKind === "filter";
+  const brandsTop = topKind === "brands";
   const gridTop = topKind === "grid";
   const awardTop = topKind === "award";
   const animeAwardTop = topKind === "anime-award";
+  const curatedListTop = topKind === "curated-list";
   const settingsTop = topKind === "settings";
   const animeTop = topKind === "anime";
   const discoverTop = topKind === "discover";
@@ -935,20 +1487,56 @@ function Shell({ onReady }: { onReady?: () => void }) {
   const addonsTop = topKind === "addons" || topKind === "addon-detail";
   const calendarTop = topKind === "calendar";
   const wrappedTop = topKind === "wrapped";
-  const sportsTop = topKind === "sports";
-  const mangaTop = topKind === "manga";
   const queueTop = topKind === "queue";
   const serviceTop = topKind === "service";
   const homeTop = topKind === "home";
   const moviesTop = topKind === "movies";
   const kidsTop = topKind === "kids";
   const showsTop = topKind === "shows";
+  const installFeatures = useInstallFeatures();
+  const musicTop = topKind === "music" && installFeatures.music;
+  const gamesTop = topKind === "games" && installFeatures.games;
+  const [gamesNavigationOpen, setGamesNavigationOpen] = useState(false);
+
+  useEffect(() => {
+    if (!gamesTop) setGamesNavigationOpen(false);
+  }, [gamesTop]);
   const libraryTop = topKind === "library";
+  const collectionsHubTop = topKind === "collections-hub";
+  const sportsEnabled = useSportsEnabled();
+  const sportsTop = topKind === "sports" && sportsEnabled;
+  useEffect(() => {
+    if (!sportsEnabled && (topKind === "sports" || topKind === "match-detail")) setView("live");
+  }, [sportsEnabled, topKind, setView]);
+  const pluginCatalogues = usePluginCataloguesAvailable();
+  const pluginsTop = topKind === "plugins" && pluginCatalogues && installFeatures.plugins;
+  useEffect(() => {
+    if ((!pluginCatalogues || !installFeatures.plugins) && topKind === "plugins") setView("home");
+  }, [pluginCatalogues, installFeatures.plugins, topKind, setView]);
+  // A feature the installer was told to leave out hides its tab and cannot be reached by deep
+  // links or search results either; the choice lives in argus-install.json, not here.
+  useEffect(() => {
+    if (!installFeatures.music && topKind === "music") setView("home");
+    if (!installFeatures.games && topKind === "games") setView("home");
+    if (!installFeatures.manga && topKind === "manga") setView("home");
+    if (!installFeatures.ebook && topKind === "ebook") setView("home");
+  }, [
+    installFeatures.music,
+    installFeatures.games,
+    installFeatures.manga,
+    installFeatures.ebook,
+    topKind,
+    setView,
+  ]);
   const liveTop = topKind === "live";
+  const liveHasSources = usePlaylists().length > 0;
+  const standaloneLive = liveTop && liveHasSources;
+  const matchDetailTop = topKind === "match-detail";
   const vodTop = topKind === "vod";
   const downloadsTop = topKind === "downloads";
-  const musicTop = topKind === "music";
-  const matchDetailTop = topKind === "match-detail";
+  const mangaTop = topKind === "manga" && installFeatures.manga;
+  const ebookTop = topKind === "ebook" && installFeatures.ebook;
+  const peopleTop = topKind === "people";
 
   const [immersive, setImmersive] = useState(false);
   useEffect(() => {
@@ -973,22 +1561,58 @@ function Shell({ onReady }: { onReady?: () => void }) {
     });
   }, [topKind]);
 
-  const layer = (top: boolean) => (top ? "contents" : "hidden");
+  const layer = (top: boolean) => (top ? "contents argus-layer-active" : "hidden");
+  const parkLayer = (top: boolean) =>
+    top
+      ? "argus-layer-active flex min-h-0 min-w-0 flex-1 flex-col"
+      : "flex min-h-0 min-w-0 flex-1 flex-col absolute inset-0 invisible pointer-events-none [content-visibility:hidden]";
+
+  const layerProps = (top: boolean) => ({
+    className: layer(top),
+    inert: !top,
+    "data-layer-inactive": !top ? "" : undefined,
+  });
+
+  const parkLayerProps = (top: boolean) => ({
+    className: parkLayer(top),
+    inert: !top,
+    "data-layer-inactive": !top ? "" : undefined,
+  });
+
+  useEffect(() => startMediaSessionWindowTracking(), []);
+  useEffect(() => startMusicTaskbarButtons(), []);
+  useEffect(() => syncMusicTaskbarArtwork(), [settings.musicArtworkAppIcon]);
+  useEffect(() => resetMusicForProfile(), [activeProfileForMusic]);
 
   const overlayPinned = useOverlayPinned();
+  const homeAlive = useIdleEvict(homeTop);
   const settingsAlive = useIdleEvict(settingsTop, overlayPinned);
   const animeAlive = useIdleEvict(animeTop);
   const discoverAlive = useIdleEvict(discoverTop);
+  const musicAlive = useIdleEvict(musicTop);
+  const gamesAlive = useIdleEvict(gamesTop, stackKinds.includes("games"));
   const catalogsAlive = useIdleEvict(catalogsTop);
+  const pluginsAlive = useIdleEvict(pluginsTop);
   const addonsAlive = useIdleEvict(addonsTop);
-  const calendarAlive = useIdleEvict(calendarTop);
+  const calendarAlive = useIdleEvict(
+    calendarTop,
+    stackKinds.includes("calendar") && stackKinds.includes("games"),
+  );
   const wrappedAlive = useIdleEvict(wrappedTop);
-  const sportsAlive = useIdleEvict(sportsTop);
-  const mangaAlive = useIdleEvict(mangaTop);
   const queueAlive = useKeepAlive(queueTop, queueTop);
   const serviceAlive = useKeepAlive(serviceTop, serviceTop && !!service);
   const detailAlive = useKeepAlive(detailTop, !!meta);
   const personAlive = useKeepAlive(personTop, personId !== null);
+  const profileAlive = useKeepAlive(profileTop, profileHandle !== null);
+  const feedAlive = useKeepAlive(feedTop, feedOpen, stackKinds.includes("feed"));
+  const groupsAlive = useKeepAlive(groupsTop, groupsOpen, stackKinds.includes("groups"));
+  const groupAlive = useKeepAlive(groupTop, groupId !== null);
+  const listAlive = useKeepAlive(listTop, listHandle !== null);
+  const addonCollectionAlive = useKeepAlive(
+    addonCollectionTop,
+    !!addonCollectionMeta,
+    stackKinds.includes("addon-collection"),
+  );
   const collectionAlive = useKeepAlive(
     collectionTop,
     collectionId !== null,
@@ -999,340 +1623,645 @@ function Shell({ onReady }: { onReady?: () => void }) {
     !!episodeDetail,
     stackKinds.includes("episode-detail"),
   );
-  const { matchDetailGame } = useView();
+  const { matchDetailGame, matchDetailEventGames } = useView();
   const matchDetailAlive = useKeepAlive(matchDetailTop, !!matchDetailGame);
   const filterAlive = useKeepAlive(filterTop, !!filter);
+  const brandsAlive = useKeepAlive(brandsTop, !!brands);
   const gridAlive = useKeepAlive(gridTop, !!grid, stackKinds.includes("grid"));
   const awardAlive = useKeepAlive(awardTop, awardTop);
   const animeAwardAlive = useKeepAlive(animeAwardTop, animeAwardTop && !!animeAwardSource);
+  const curatedListAlive = useKeepAlive(curatedListTop, curatedListTop && !!curatedListId);
   const pickerAlive = useKeepAlive(pickerTop, !!picker);
   const moviesAlive = useIdleEvict(moviesTop);
   const kidsAlive = useIdleEvict(kidsTop);
   const showsAlive = useIdleEvict(showsTop);
   const libraryAlive = useIdleEvict(libraryTop);
+  const collectionsHubAlive = useIdleEvict(collectionsHubTop);
+  const sportsAlive = useIdleEvict(sportsTop);
   const liveAlive = useIdleEvict(liveTop);
   const vodAlive = useIdleEvict(vodTop);
   const downloadsAlive = useIdleEvict(downloadsTop);
-  const musicAlive = useKeepAlive(musicTop, musicTop);
+  const mangaAlive = useIdleEvict(mangaTop);
+  const ebookAlive = useIdleEvict(ebookTop);
+  const peopleAlive = useIdleEvict(peopleTop);
 
+  const quickLibraryVisible =
+    !kid && !kidsTop && !playerActive && !pickerTop && !bigPicture && !immersive && !chromeHidden;
   return (
-    <div data-kids={kidsTop || kid ? "on" : undefined} className="relative flex h-full">
-      {!settingsTop && !playerActive && !liveTop && !pickerTop && layout === "sidebar" && (
-        <Sidebar />
-      )}
-      {!settingsTop && !playerActive && !liveTop && !pickerTop && layout === "dracula" && (
-        <DraculaSidebar />
-      )}
-      {!settingsTop && !playerActive && !liveTop && !pickerTop && layout === "nord" && (
-        <NordSidebar />
-      )}
-      {!settingsTop && !playerActive && !liveTop && !pickerTop && layout === "forest" && (
-        <ForestSidebar />
-      )}
-      {!settingsTop && !playerActive && !liveTop && !pickerTop && layout === "stremio" && (
-        <StremioRail />
-      )}
-      {!settingsTop && !playerActive && !pickerTop && layout === "topdock" && <TopDock />}
-      {!settingsTop && !playerActive && !pickerTop && layout === "cinematic" && (
-        <CinematicOverlay />
-      )}
-      {!settingsTop && !playerActive && !pickerTop && layout === "royal" && <RoyalTopbar />}
-      {!settingsTop && !playerActive && !pickerTop && layout === "rail" && <SideRail />}
-      {!playerActive && !pickerTop && layout === "minui" && <MinUIDock />}
-      {!playerActive && !pickerTop && layout === "topdock" && <FloatingBack offsetTop={92} />}
-      {!playerActive && !pickerTop && layout === "cinematic" && <FloatingBack offsetTop={92} />}
-      {!playerActive && !pickerTop && layout === "royal" && <FloatingBack offsetTop={92} />}
-      {!playerActive && !pickerTop && layout === "rail" && (
-        <FloatingBack offsetLeft={settings.sidebarCollapsed ? 88 : 220} offsetTop={28} />
-      )}
-      {!playerActive && !pickerTop && layout === "custom" && (
-        <FloatingBack offsetLeft={20} offsetTop={20} />
-      )}
-      {!playerActive && !pickerTop && layout === "custom" && (
-        <div className="fixed end-3 top-3 z-[120]">
-          <WindowControls />
-        </div>
-      )}
-      {!settingsTop && !playerActive && !pickerTop && layout === "custom" && (
-        <CustomLayoutSafetyNet />
-      )}
-      {!playerActive && <WindowResizeEdges />}
+    <GameAccessProvider
+      profile={activeProfile?.id ?? "default"}
+      enabled={installFeatures.games && !kid && !bigPicture && !playerActive}
+      gamesActive={gamesTop}
+      onNavigate={openGames}
+      onLeave={goBack}
+    >
       <div
-        className={`relative flex min-h-0 min-w-0 flex-1 flex-col ${playerActive ? "invisible" : ""}`}
+        data-argus-shell
+        data-games-library={gamesTop ? "" : undefined}
+        data-games-layout={gamesTop ? layout : undefined}
+        data-games-navigation={gamesTop && gamesNavigationOpen ? "" : undefined}
+        onClickCapture={(event) => {
+          if (
+            gamesTop &&
+            gamesNavigationOpen &&
+            (event.target as Element).closest('[data-argus-nav="games"]')
+          ) {
+            event.preventDefault();
+            event.stopPropagation();
+            setGamesNavigationOpen(false);
+            requestAnimationFrame(() =>
+              document
+                .querySelector<HTMLButtonElement>(
+                  ".games-library-sidebar:not(.is-collapsed) .games-library-home, .games-library-sidebar.is-collapsed .games-library-collapse",
+                )
+                ?.focus({ preventScroll: true }),
+            );
+          }
+        }}
+        data-kids={kidsTop || kid ? "on" : undefined}
+        className="relative flex h-full"
       >
-        <div className={layer(homeTop)}>
-          <Home active={homeTop} onReady={onReady} />
-        </div>
-        {settingsAlive && (
-          <div className={layer(settingsTop)}>
-            <Suspense fallback={null}>
-              <Settings />
-            </Suspense>
-          </div>
-        )}
-        {animeAlive && (
-          <div className={layer(animeTop)}>
-            <Suspense fallback={null}>
-              <AnimeView active={animeTop} />
-            </Suspense>
-          </div>
-        )}
-        {discoverAlive && (
-          <div className={layer(discoverTop)}>
-            <Suspense fallback={null}>
-              <Discover active={discoverTop} />
-            </Suspense>
-          </div>
-        )}
-        {catalogsAlive && (
-          <div className={layer(catalogsTop)}>
-            <Suspense fallback={null}>
-              <Catalogs active={catalogsTop} />
-            </Suspense>
-          </div>
-        )}
-        {addonsAlive && (
-          <div className={layer(addonsTop)}>
-            <Suspense fallback={null}>
-              <AddonsView />
-            </Suspense>
-          </div>
-        )}
-        {calendarAlive && (
-          <div className={layer(calendarTop)}>
-            <Suspense fallback={null}>
-              <CalendarView />
-            </Suspense>
-          </div>
-        )}
-        {wrappedAlive && (
-          <div className={layer(wrappedTop)}>
-            <Suspense fallback={null}>
-              <WrappedView active={wrappedTop} />
-            </Suspense>
-          </div>
-        )}
-        {sportsAlive && (
-          <div className={layer(sportsTop)}>
-            <Suspense fallback={null}>
-              <SportsView active={sportsTop} />
-            </Suspense>
-          </div>
-        )}
-        {mangaAlive && (
-          <div className={layer(mangaTop)}>
-            <Suspense fallback={null}>
-              <MangaView active={mangaTop} />
-            </Suspense>
-          </div>
-        )}
-        {moviesAlive && (
-          <div className={layer(moviesTop)}>
-            <Suspense fallback={null}>
-              <Movies active={moviesTop} />
-            </Suspense>
-          </div>
-        )}
-        {kidsAlive && (
-          <div className={layer(kidsTop)}>
-            <Suspense fallback={null}>
-              <Kids active={kidsTop} />
-            </Suspense>
-          </div>
-        )}
-        {showsAlive && (
-          <div className={layer(showsTop)}>
-            <Suspense fallback={null}>
-              <Shows active={showsTop} />
-            </Suspense>
-          </div>
-        )}
-        {libraryAlive && (
-          <div className={layer(libraryTop)}>
-            <Suspense fallback={null}>
-              <LibraryView active={libraryTop} />
-            </Suspense>
-          </div>
-        )}
-        {liveAlive && (
-          <div className={layer(liveTop)}>
-            <Suspense fallback={null}>
-              <LiveView active={liveTop} />
-            </Suspense>
-          </div>
-        )}
-        {vodAlive && (
-          <div className={layer(vodTop)}>
-            <Suspense fallback={null}>
-              <PlaylistVodView active={vodTop} />
-            </Suspense>
-          </div>
-        )}
-        {downloadsAlive && (
-          <div className={layer(downloadsTop)}>
-            <Suspense fallback={null}>
-              <DownloadsView />
-            </Suspense>
-          </div>
-        )}
-        {musicAlive && (
-          <div className={layer(musicTop)}>
-            <Suspense fallback={null}>
-              <MusicView active={musicTop} />
-            </Suspense>
-          </div>
-        )}
-        {queueAlive && (
-          <div className={layer(queueTop)}>
-            <Suspense fallback={null}>
-              <QueueView />
-            </Suspense>
-          </div>
-        )}
-        {serviceAlive && service && (
-          <div className={layer(serviceTop)}>
-            <Suspense fallback={null}>
-              <ServiceView key={service} service={service} />
-            </Suspense>
-          </div>
-        )}
-        {detailAlive && meta && (
-          <div className={layer(detailTop)}>
-            <Suspense fallback={null}>
-              {kid ? (
-                <KidsDetailView
-                  key={`kid-meta-${meta.id}`}
-                  meta={meta}
-                  episodeHint={metaEpisodeHint ?? undefined}
-                />
-              ) : (
-                <DetailView
-                  key={`meta-${meta.id}`}
-                  meta={meta}
-                  liveContext={metaLiveContext}
-                  episodeHint={metaEpisodeHint ?? undefined}
-                />
-              )}
-            </Suspense>
-          </div>
-        )}
-        {personAlive && personId !== null && (
-          <div className={layer(personTop)}>
-            <Suspense fallback={null}>
-              <PersonView key={`person-${personId}`} personId={personId} />
-            </Suspense>
-          </div>
-        )}
-        {collectionAlive && collectionId !== null && (
-          <div className={layer(collectionTop)}>
-            <Suspense fallback={null}>
-              <CollectionView key={`collection-${collectionId}`} collectionId={collectionId} />
-            </Suspense>
-          </div>
-        )}
-        {episodeDetailAlive && episodeDetail && (
-          <div className={layer(episodeDetailTop)}>
-            <Suspense fallback={null}>
-              <EpisodeDetailView
-                key={`episode-${episodeDetail.seriesId}-${episodeDetail.season}-${episodeDetail.episode}`}
-                seriesId={episodeDetail.seriesId}
-                season={episodeDetail.season}
-                episode={episodeDetail.episode}
-                seriesMeta={episodeDetail.seriesMeta}
-              />
-            </Suspense>
-          </div>
-        )}
-        {matchDetailAlive && matchDetailGame && (
-          <div className={layer(matchDetailTop)}>
-            <Suspense fallback={null}>
-              <MatchDetailView key={`match-${matchDetailGame.id}`} game={matchDetailGame} />
-            </Suspense>
-          </div>
-        )}
-        {filterAlive && filter && (
-          <div className={layer(filterTop)}>
-            <Suspense fallback={null}>
-              <FilterView key={filterReactKey(filter)} filter={filter} />
-            </Suspense>
-          </div>
-        )}
-        {gridAlive && grid && (
-          <div className={layer(gridTop)}>
-            <Suspense fallback={null}>
-              <GridView key={`grid-${grid.title}`} grid={grid} />
-            </Suspense>
-          </div>
-        )}
-        {collectionsIndexAlive && (
-          <div className={layer(collectionsIndexTop)}>
-            <Suspense fallback={null}>
-              <CollectionsView />
-            </Suspense>
-          </div>
-        )}
-        {awardAlive && awardType && (
-          <div className={layer(awardTop)}>
-            <Suspense fallback={null}>
-              <AwardView key={`award-${awardType}`} awardType={awardType} />
-            </Suspense>
-          </div>
-        )}
-        {animeAwardAlive && animeAwardSource && (
-          <div className={layer(animeAwardTop)}>
-            <Suspense fallback={null}>
-              <AnimeAwardView key={`anime-award-${animeAwardSource}`} sourceId={animeAwardSource} />
-            </Suspense>
-          </div>
-        )}
-        {pickerAlive && picker && (
-          <div className={layer(pickerTop)}>
-            <Suspense fallback={null}>
-              <PlayPicker
-                key={`picker-${picker.meta.id}-${picker.episode?.season ?? ""}-${picker.episode?.episode ?? ""}-${picker.attempt ?? 0}-${picker.intent ?? "play"}`}
-                meta={picker.meta}
-                episode={picker.episode}
-                autoPlay={picker.intent === "download" ? false : picker.autoPlay}
-                attempt={picker.attempt}
-                intent={picker.intent}
-                resume={picker.resume}
-              />
-            </Suspense>
-          </div>
-        )}
-        {pickerTop && !themeHasTopbar && (
-          <div className="fixed end-3 top-3 z-[120]">
-            <WindowControls />
-          </div>
-        )}
-        <div
-          aria-hidden
-          className="pointer-events-none absolute inset-x-0 top-0 z-30 h-24 bg-gradient-to-b from-canvas/85 via-canvas/40 to-transparent"
-        />
-        {!immersive &&
-          (themeHasTopbar || (settingsTop && layout !== "minui" && layout !== "custom")) && (
-            <Topbar />
+        <div data-argus-native-backdrop className="relative flex h-full min-w-0 flex-1">
+          {!settingsTop &&
+            !playerActive &&
+            !standaloneLive &&
+            !pickerTop &&
+            layout === "sidebar" && <Sidebar />}
+          {!settingsTop &&
+            !playerActive &&
+            !standaloneLive &&
+            !pickerTop &&
+            layout === "dracula" && <DraculaSidebar />}
+          {!settingsTop && !playerActive && !standaloneLive && !pickerTop && layout === "nord" && (
+            <NordSidebar />
           )}
-        {!immersive && layout === "rail" && !settingsTop && (
+          {!settingsTop &&
+            !playerActive &&
+            !standaloneLive &&
+            !pickerTop &&
+            layout === "forest" && <ForestSidebar />}
+          {!settingsTop &&
+            !playerActive &&
+            !standaloneLive &&
+            !pickerTop &&
+            layout === "stremio" && <StremioRail />}
+          {!settingsTop && !playerActive && !pickerTop && layout === "topdock" && !immersive && (
+            <TopDock />
+          )}
+          {!settingsTop && !playerActive && !pickerTop && layout === "cinematic" && !immersive && (
+            <CinematicOverlay />
+          )}
+          {!settingsTop && !playerActive && !pickerTop && layout === "royal" && !immersive && (
+            <RoyalTopbar />
+          )}
+          {!settingsTop && !playerActive && !pickerTop && layout === "rail" && !immersive && (
+            <SideRail />
+          )}
+          {!playerActive && !pickerTop && layout === "minui" && !immersive && <MinUIDock />}
+          {!playerActive && !pickerTop && layout === "topdock" && !immersive && (
+            <div className={gamesTop ? "games-library-back" : "contents"}>
+              <FloatingBack offsetTop={92} />
+            </div>
+          )}
+          {!playerActive && !pickerTop && layout === "cinematic" && !immersive && (
+            <div className={gamesTop ? "games-library-back" : "contents"}>
+              <FloatingBack offsetTop={92} />
+            </div>
+          )}
+          {!playerActive && !pickerTop && layout === "royal" && !immersive && (
+            <div className={gamesTop ? "games-library-back" : "contents"}>
+              <FloatingBack offsetTop={92} />
+            </div>
+          )}
+          {!playerActive && !pickerTop && layout === "rail" && !immersive && (
+            <div className={gamesTop ? "games-library-back" : "contents"}>
+              <FloatingBack offsetLeft={settings.sidebarCollapsed ? 88 : 220} offsetTop={28} />
+            </div>
+          )}
+          {!playerActive && !pickerTop && layout === "custom" && !immersive && (
+            <div className={gamesTop ? "games-library-back" : "contents"}>
+              <FloatingBack offsetLeft={20} offsetTop={20} />
+            </div>
+          )}
+          {!playerActive && !pickerTop && layout === "custom" && !immersive && (
+            <div className="fixed end-3 top-3 z-[120]">
+              <WindowControls />
+            </div>
+          )}
+          {installFeatures.music && <MusicDock />}
+          <MusicSurprisePrompt />
+          {!playerActive && <WindowResizeEdges />}
+          <HybridTitleBar suppressed={playerActive || immersive || chromeHidden} />
           <div
-            aria-hidden
-            className="pointer-events-none absolute inset-x-0 top-0 z-10 h-20 bg-gradient-to-b from-canvas/90 via-canvas/40 to-transparent"
-          />
+            className={`relative flex min-h-0 min-w-0 flex-1 flex-col ${playerActive ? "invisible" : ""}`}
+          >
+            {homeAlive && (
+              <div {...parkLayerProps(homeTop)}>
+                <Profiled id="view.home">
+                  <MemoSpooktoberHome active={homeTop} onReady={onReady} />
+                </Profiled>
+              </div>
+            )}
+            {settingsAlive && (
+              <div {...layerProps(settingsTop)}>
+                <Suspense fallback={null}>
+                  <Settings visible={settingsTop} />
+                </Suspense>
+              </div>
+            )}
+            {animeAlive && (
+              <div {...layerProps(animeTop)}>
+                <Suspense fallback={null}>
+                  <AnimeView active={animeTop} />
+                </Suspense>
+              </div>
+            )}
+            {discoverAlive && (
+              <div {...parkLayerProps(discoverTop)}>
+                <Suspense fallback={null}>
+                  <Profiled id="view.discover">
+                    <Discover active={discoverTop} />
+                  </Profiled>
+                </Suspense>
+              </div>
+            )}
+            {catalogsAlive && (
+              <div {...layerProps(catalogsTop)}>
+                <Suspense fallback={null}>
+                  <Profiled id="view.catalogs">
+                    <Catalogs active={catalogsTop} />
+                  </Profiled>
+                </Suspense>
+              </div>
+            )}
+            {pluginsAlive && (
+              <div {...layerProps(pluginsTop)}>
+                <Suspense fallback={null}>
+                  <PluginsView active={pluginsTop} />
+                </Suspense>
+              </div>
+            )}
+            {addonsAlive && (
+              <div {...layerProps(addonsTop)}>
+                <Suspense fallback={null}>
+                  <AddonsView active={addonsTop} />
+                </Suspense>
+              </div>
+            )}
+            {calendarAlive && (
+              <div {...layerProps(calendarTop)}>
+                <Suspense fallback={null}>
+                  <CalendarView
+                    active={calendarTop}
+                    gamesAllowed={!kid && GAMES_IN_NAV && installFeatures.games}
+                  />
+                </Suspense>
+              </div>
+            )}
+            {wrappedAlive && (
+              <div {...layerProps(wrappedTop)}>
+                <Suspense fallback={null}>
+                  <WrappedView active={wrappedTop} />
+                </Suspense>
+              </div>
+            )}
+            {moviesAlive && (
+              <div {...layerProps(moviesTop)}>
+                <Suspense fallback={null}>
+                  <Profiled id="view.movies">
+                    <Movies active={moviesTop} />
+                  </Profiled>
+                </Suspense>
+              </div>
+            )}
+            {kidsAlive && (
+              <div {...layerProps(kidsTop)}>
+                <Suspense fallback={null}>
+                  <Kids active={kidsTop} />
+                </Suspense>
+              </div>
+            )}
+            {showsAlive && (
+              <div {...layerProps(showsTop)}>
+                <Suspense fallback={null}>
+                  <Shows active={showsTop} />
+                </Suspense>
+              </div>
+            )}
+            {musicAlive && (
+              <div className={layer(musicTop)}>
+                <Suspense fallback={null}>
+                  <MusicView
+                    active={musicTop}
+                    shellBackAvailable={
+                      canGoBack &&
+                      !chromeHidden &&
+                      !immersive &&
+                      (themeHasTopbar || layout === "minui")
+                    }
+                  />
+                </Suspense>
+              </div>
+            )}
+            {gamesAlive && (
+              <div {...layerProps(gamesTop)}>
+                <Suspense fallback={<GameRouteLoading />}>
+                  <GameDockWelcome
+                    eligible={gamesTop && quickLibraryVisible && !gamesNavigationOpen}
+                  />
+                  <GamesView
+                    argusNavigationOpen={gamesNavigationOpen}
+                    onArgusNavigationChange={setGamesNavigationOpen}
+                    shellBackAvailable={
+                      canGoBack &&
+                      !chromeHidden &&
+                      !immersive &&
+                      (themeHasTopbar ||
+                        ["minui", "topdock", "cinematic", "royal", "rail", "custom"].includes(
+                          layout,
+                        ))
+                    }
+                    cloudKeys={{
+                      rd: settings.rdKey,
+                      tb: settings.tbKey,
+                      pm: settings.pmKey,
+                      ad: settings.adKey,
+                    }}
+                    openSourceSettings={() => openSettings("streaming")}
+                    key={activeProfile?.id ?? "default"}
+                    active={gamesTop}
+                    profileId={activeProfile?.id ?? "default"}
+                    openEsports={sportsEnabled ? openSportsEvent : undefined}
+                    openSports={sportsEnabled ? () => openSportsEvent() : undefined}
+                    openMedia={(target) => {
+                      if (target.kind === "book") openEBook(target.id);
+                      else
+                        openMeta({
+                          id: target.id,
+                          type: target.kind,
+                          name: target.name,
+                          poster: target.poster,
+                        });
+                    }}
+                  />
+                </Suspense>
+              </div>
+            )}
+            {libraryAlive && (
+              <div {...layerProps(libraryTop)}>
+                <Suspense fallback={null}>
+                  <LibraryView active={libraryTop} />
+                </Suspense>
+              </div>
+            )}
+            {collectionsHubAlive && (
+              <div {...layerProps(collectionsHubTop)}>
+                <Suspense fallback={null}>
+                  <CommunityCollectionsView active={collectionsHubTop} />
+                </Suspense>
+              </div>
+            )}
+            {liveAlive && (
+              <div {...layerProps(liveTop)}>
+                <Suspense fallback={null}>
+                  <LiveView active={liveTop} />
+                </Suspense>
+              </div>
+            )}
+            {vodAlive && (
+              <div {...layerProps(vodTop)}>
+                <Suspense fallback={null}>
+                  <PlaylistVodView active={vodTop} />
+                </Suspense>
+              </div>
+            )}
+            {sportsAlive && (
+              <div className={parkLayer(sportsTop)}>
+                <Suspense fallback={null}>
+                  <SportsView active={sportsTop} />
+                </Suspense>
+              </div>
+            )}
+            {downloadsAlive && (
+              <div {...layerProps(downloadsTop)}>
+                <Suspense fallback={null}>
+                  <DownloadsView active={downloadsTop} />
+                </Suspense>
+              </div>
+            )}
+            {mangaAlive && (
+              <div {...layerProps(mangaTop)}>
+                <Suspense fallback={null}>
+                  <MangaView />
+                </Suspense>
+              </div>
+            )}
+            {ebookAlive && (
+              <div {...layerProps(ebookTop)}>
+                <Suspense fallback={null}>
+                  <EBookView />
+                </Suspense>
+              </div>
+            )}
+            {peopleAlive && (
+              <div {...layerProps(peopleTop)}>
+                <Suspense fallback={null}>
+                  <PeopleView init={peopleInit} />
+                </Suspense>
+              </div>
+            )}
+            {queueAlive && (
+              <div {...layerProps(queueTop)}>
+                <Suspense fallback={null}>
+                  <QueueView />
+                </Suspense>
+              </div>
+            )}
+            {serviceAlive && service && (
+              <div {...layerProps(serviceTop)}>
+                <Suspense fallback={null}>
+                  <ServiceView key={service} service={service} />
+                </Suspense>
+              </div>
+            )}
+            {detailAlive && meta && (
+              <div {...layerProps(detailTop)}>
+                <Suspense fallback={null}>
+                  {kid ? (
+                    <KidsDetailView
+                      key={`kid-meta-${meta.id}`}
+                      meta={meta}
+                      episodeHint={metaEpisodeHint ?? undefined}
+                    />
+                  ) : (
+                    <DetailView
+                      key={`meta-${meta.id}`}
+                      meta={meta}
+                      liveContext={metaLiveContext}
+                      episodeHint={metaEpisodeHint ?? undefined}
+                    />
+                  )}
+                </Suspense>
+              </div>
+            )}
+            {personAlive && personId !== null && (
+              <div {...layerProps(personTop)}>
+                <Suspense fallback={null}>
+                  <PersonView key={`person-${personId}`} personId={personId} />
+                </Suspense>
+              </div>
+            )}
+            {profileAlive && profileHandle !== null && (
+              <div {...layerProps(profileTop)}>
+                <Suspense fallback={null}>
+                  <ProfileView
+                    key={`profile-${profileHandle}`}
+                    handle={profileHandle}
+                    onOpenProfile={requestOpenProfile}
+                    onOpenMeta={(id, kind, hint) => {
+                      if (kind === "manga") {
+                        openManga(id);
+                        return;
+                      }
+                      openMeta(profileMediaMeta(id, kind, hint));
+                    }}
+                  />
+                </Suspense>
+              </div>
+            )}
+            {feedAlive && (
+              <div {...layerProps(feedTop)}>
+                <Suspense fallback={null}>
+                  <FeedView onOpenProfile={requestOpenProfile} />
+                </Suspense>
+              </div>
+            )}
+            {groupsAlive && (
+              <div {...layerProps(groupsTop)}>
+                <Suspense fallback={null}>
+                  <GroupsView />
+                </Suspense>
+              </div>
+            )}
+            {groupAlive && groupId !== null && (
+              <div {...layerProps(groupTop)}>
+                <Suspense fallback={null}>
+                  <GroupView
+                    key={`group-${groupId}`}
+                    id={groupId}
+                    onOpenProfile={requestOpenProfile}
+                  />
+                </Suspense>
+              </div>
+            )}
+            {listAlive && listHandle !== null && listId !== null && (
+              <div {...layerProps(listTop)}>
+                <Suspense fallback={null}>
+                  <SharedListView
+                    key={`list-${listHandle}-${listId}`}
+                    handle={listHandle}
+                    listId={listId}
+                    onOpenProfile={requestOpenProfile}
+                    onOpenMeta={(id, kind, hint) => {
+                      if (kind === "manga") {
+                        openManga(id);
+                        return;
+                      }
+                      openMeta(profileMediaMeta(id, kind, hint));
+                    }}
+                  />
+                </Suspense>
+              </div>
+            )}
+            {collectionAlive && collectionId !== null && (
+              <div {...layerProps(collectionTop)}>
+                <Suspense fallback={null}>
+                  <CollectionView key={`collection-${collectionId}`} collectionId={collectionId} />
+                </Suspense>
+              </div>
+            )}
+            {addonCollectionAlive && addonCollectionMeta && (
+              <div {...layerProps(addonCollectionTop)}>
+                <Suspense fallback={null}>
+                  <AddonCollectionView
+                    key={`addon-collection-${addonCollectionMeta.id}`}
+                    meta={addonCollectionMeta}
+                  />
+                </Suspense>
+              </div>
+            )}
+            {episodeDetailAlive && episodeDetail && (
+              <div {...layerProps(episodeDetailTop)}>
+                <Suspense fallback={null}>
+                  <EpisodeDetailView
+                    key={`episode-${episodeDetail.seriesId}-${episodeDetail.season}-${episodeDetail.episode}`}
+                    seriesId={episodeDetail.seriesId}
+                    season={episodeDetail.season}
+                    episode={episodeDetail.episode}
+                    seriesMeta={episodeDetail.seriesMeta}
+                    playback={episodeDetail.playback}
+                  />
+                </Suspense>
+              </div>
+            )}
+            {filterAlive && filter && (
+              <div {...layerProps(filterTop)}>
+                <Suspense fallback={null}>
+                  <FilterView key={filterReactKey(filter)} filter={filter} />
+                </Suspense>
+              </div>
+            )}
+            {brandsAlive && brands && (
+              <div className={layer(brandsTop)}>
+                <Suspense fallback={null}>
+                  <BrandsView key={`brands-${brands}`} brand={brands} />
+                </Suspense>
+              </div>
+            )}
+            {matchDetailAlive && matchDetailGame && (
+              <div className={layer(matchDetailTop)}>
+                <Suspense
+                  fallback={
+                    <SportsEventSkeleton
+                      shellBackAvailable={
+                        canGoBack &&
+                        !chromeHidden &&
+                        !immersive &&
+                        (themeHasTopbar || layout === "minui")
+                      }
+                    />
+                  }
+                >
+                  <SportsAccessGate active={matchDetailTop}>
+                    <MatchDetailView
+                      key={`match-${matchDetailGame.source ?? "espn"}-${matchDetailGame.league}-${matchDetailGame.id}-${matchDetailEventGames ? "event" : "match"}`}
+                      game={matchDetailGame}
+                      eventGames={matchDetailEventGames}
+                      shellBackAvailable={
+                        canGoBack &&
+                        !chromeHidden &&
+                        !immersive &&
+                        (themeHasTopbar || layout === "minui")
+                      }
+                    />
+                  </SportsAccessGate>
+                </Suspense>
+              </div>
+            )}
+            {gridAlive && grid && (
+              <div {...layerProps(gridTop)}>
+                <Suspense fallback={null}>
+                  <GridView key={`grid-${grid.title}`} grid={grid} />
+                </Suspense>
+              </div>
+            )}
+            {collectionsIndexAlive && (
+              <div {...layerProps(collectionsIndexTop)}>
+                <Suspense fallback={null}>
+                  <CollectionsView />
+                </Suspense>
+              </div>
+            )}
+            {awardAlive && awardType && (
+              <div {...layerProps(awardTop)}>
+                <Suspense fallback={null}>
+                  <AwardView key={`award-${awardType}`} awardType={awardType} />
+                </Suspense>
+              </div>
+            )}
+            {animeAwardAlive && animeAwardSource && (
+              <div {...layerProps(animeAwardTop)}>
+                <Suspense fallback={null}>
+                  <AnimeAwardView
+                    key={`anime-award-${animeAwardSource}`}
+                    sourceId={animeAwardSource}
+                  />
+                </Suspense>
+              </div>
+            )}
+            {curatedListAlive && curatedListId && (
+              <div {...layerProps(curatedListTop)}>
+                <Suspense fallback={null}>
+                  <CuratedListView key={`curated-list-${curatedListId}`} listId={curatedListId} />
+                </Suspense>
+              </div>
+            )}
+            {pickerAlive && picker && (
+              <div {...layerProps(pickerTop)}>
+                <Suspense fallback={null}>
+                  <PlayPicker
+                    key={`picker-${picker.meta.id}-${picker.episode?.season ?? ""}-${picker.episode?.episode ?? ""}-${picker.attempt ?? 0}-${picker.intent ?? "play"}-${picker.seasonEpisodes?.length ?? 0}-${picker.contextRequestId ?? ""}-${picker.continuation?.id ?? ""}`}
+                    meta={picker.meta}
+                    episode={picker.episode}
+                    autoPlay={picker.intent === "download" ? false : picker.autoPlay}
+                    attempt={picker.attempt}
+                    intent={picker.intent}
+                    seasonEpisodes={picker.seasonEpisodes}
+                    resume={picker.resume}
+                    continuation={picker.continuation}
+                    playerActive={playerActive}
+                  />
+                </Suspense>
+              </div>
+            )}
+            {pickerTop && !themeHasTopbar && (
+              <div className="fixed end-3 top-3 z-[120]">
+                <WindowControls />
+              </div>
+            )}
+            {!immersive && !settingsTop && (
+              <div
+                aria-hidden
+                className="pointer-events-none absolute inset-x-0 top-0 z-30 h-24 bg-gradient-to-b from-canvas/85 via-canvas/40 to-transparent"
+              />
+            )}
+            {!immersive &&
+              (themeHasTopbar || (settingsTop && layout !== "minui" && layout !== "custom")) && (
+                <Topbar />
+              )}
+            {!immersive && !playerActive && !pickerTop && layout === "custom" && (
+              <div aria-hidden className="argus-chrome-proxy fixed end-3 top-3 z-[40]">
+                <TogetherButton />
+              </div>
+            )}
+            {!immersive && !playerActive && !pickerTop && !bigPicture && layout === "custom" && (
+              <div className="argus-bp-proxy">
+                <BigPictureEntryButton hidden={chromeHidden} />
+              </div>
+            )}
+            {!immersive && layout === "rail" && !settingsTop && (
+              <div
+                aria-hidden
+                className="pointer-events-none absolute inset-x-0 top-0 z-10 h-20 bg-gradient-to-b from-canvas/90 via-canvas/40 to-transparent"
+              />
+            )}
+          </div>
+        </div>
+        <GameLibraryDock visible={quickLibraryVisible && !gamesTop} />
+        {player && (
+          <Suspense fallback={null}>
+            <PlayerView
+              key={player.meta.id.startsWith("iptv:") ? "player-live" : `player-${player.meta.id}`}
+              src={player}
+            />
+          </Suspense>
         )}
+        {bigPicture && (
+          <BpErrorBoundary>
+            <Suspense fallback={null}>
+              <BigPictureShell />
+            </Suspense>
+          </BpErrorBoundary>
+        )}
+        <CustomCodeMount />
+        <ThemeChromeBridge />
+        <WebhookLoopMount />
+        <SportsReminderLoop />
+        <MemoryHud />
+        <TabHotkeys />
+        {!player && <OfflineBanner />}
       </div>
-      {player && (
-        <Suspense fallback={<PlayerRouteFallback src={player} />}>
-          <PlayerView
-            key={player.meta.id.startsWith("iptv:") ? "player-live" : `player-${player.meta.id}`}
-            src={player}
-          />
-        </Suspense>
-      )}
-      <CustomCodeMount />
-      <WebhookLoopMount />
-      <MemoryHud />
-      {!player && <OfflineBanner />}
-    </div>
+    </GameAccessProvider>
   );
 }
 

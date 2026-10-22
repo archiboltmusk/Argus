@@ -2,16 +2,25 @@ import { Blocks, Star } from "lucide-react";
 import type { AddonResultGroup } from "@/lib/search-addons";
 import type { Meta } from "@/lib/cinemeta";
 import { Poster, usePosterChain } from "@/components/poster";
+import { useT } from "@/lib/i18n";
 import { useSettings } from "@/lib/settings";
 import { useView } from "@/lib/view";
+import { useContextMenu } from "@/lib/context-menu";
 
-export function AddonResults({ groups, onClose }: { groups: AddonResultGroup[]; onClose: () => void }) {
+export function AddonResults({
+  groups,
+  onClose,
+}: {
+  groups: AddonResultGroup[];
+  onClose: () => void;
+}) {
+  const t = useT();
   if (groups.length === 0) return null;
   return (
     <section className="flex flex-col gap-6">
       <h3 className="flex items-center gap-1.5 text-[12px] font-semibold uppercase tracking-[0.2em] text-ink-subtle">
         <Blocks size={11} strokeWidth={2.2} />
-        From your addons
+        {t("From your addons")}
       </h3>
       {groups.map((g) => (
         <AddonGroup key={g.id} group={g} onClose={onClose} />
@@ -50,6 +59,7 @@ function AddonGroup({ group, onClose }: { group: AddonResultGroup; onClose: () =
 
 function AddonResultRow({ meta, onClose }: { meta: Meta; onClose: () => void }) {
   const { openMeta } = useView();
+  const { open } = useContextMenu();
   const { settings } = useSettings();
   const poster = usePosterChain(
     settings.rpdbKey,
@@ -59,6 +69,7 @@ function AddonResultRow({ meta, onClose }: { meta: Meta; onClose: () => void }) 
   );
   return (
     <button
+      onContextMenu={(event) => open(event, { kind: "meta", meta })}
       onClick={() => {
         openMeta(meta);
         onClose();

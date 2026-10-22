@@ -1,6 +1,6 @@
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
-use std::sync::Mutex;
-use std::time::Duration;
+use std::sync::{Condvar, Mutex};
+use std::time::{Duration, Instant};
 
 use discord_rich_presence::activity::{
     Activity, ActivityType, Assets, Button, Party, StatusDisplayType, Timestamps,
@@ -9,31 +9,44 @@ use discord_rich_presence::{DiscordIpc, DiscordIpcClient};
 use serde::Deserialize;
 use tauri::{AppHandle, Manager};
 
-const APP_ID: &str = "REPLACE_WITH_ARGUS_DISCORD_APP_ID";
-const SMALL_IMAGE_KEY: &str = "argus_logo";
+const APP_ID: &str = "1510339683215736892";
+/// The Argus mark is uploaded to the Discord application, so it renders even when no
+/// external artwork is available. It is the large image when nothing else fills that spot,
+/// and the small badge over a real poster otherwise.
+const LOGO_ASSET: &str = "argus_logo";
+/// Discord rate-limits activity updates; a short gap merges a burst of changes without
+/// making a normal change feel delayed.
+const MIN_SEND_GAP: Duration = Duration::from_millis(400);
 
 #[derive(Default, Clone)]
 struct Desired {
     active: bool,
     paused: bool,
+    listening: bool,
     details: Option<String>,
+    details_url: Option<String>,
     state: Option<String>,
+    state_url: Option<String>,
     large_image: Option<String>,
     large_text: Option<String>,
+    large_url: Option<String>,
     small_image: Option<String>,
     small_text: Option<String>,
+    small_url: Option<String>,
     start_ts: Option<i64>,
     end_ts: Option<i64>,
     party_id: Option<String>,
     party_size: Option<[i32; 2]>,
-    button_label: Option<String>,
-    button_url: Option<String>,
+    buttons: Vec<(String, String)>,
 }
 
 pub struct DiscordState {
     desired: Mutex<Desired>,
     enabled: AtomicBool,
     generation: AtomicU64,
+    /// Wakes the presence loop as soon as a change arrives instead of waiting for its tick.
+    wake: Condvar,
+    wake_lock: Mutex<()>,
 }
 
 impl DiscordState {
@@ -42,27 +55,44 @@ impl DiscordState {
             desired: Mutex::new(Desired::default()),
             enabled: AtomicBool::new(false),
             generation: AtomicU64::new(0),
+            wake: Condvar::new(),
+            wake_lock: Mutex::new(()),
         }
+    }
+
+    fn signal(&self) {
+        self.wake.notify_all();
     }
 }
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct PresenceInput {
+    pub activity_type: Option<String>,
     pub details: Option<String>,
+    pub details_url: Option<String>,
     pub state: Option<String>,
+    pub state_url: Option<String>,
     pub poster_url: Option<String>,
     pub large_text: Option<String>,
+    pub large_url: Option<String>,
     pub small_image_url: Option<String>,
     pub small_text: Option<String>,
+    pub small_url: Option<String>,
     pub start_ts: Option<i64>,
     pub end_ts: Option<i64>,
     #[serde(default)]
     pub paused: bool,
     pub party_id: Option<String>,
     pub party_size: Option<[i32; 2]>,
-    pub button_label: Option<String>,
-    pub button_url: Option<String>,
+    #[serde(default)]
+    pub buttons: Vec<ButtonInput>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct ButtonInput {
+    pub label: String,
+    pub url: String,
 }
 
 fn clean(s: Option<String>) -> Option<String> {
@@ -78,13 +108,26 @@ fn safe_image(url: Option<String>) -> Option<String> {
     }
 }
 
-fn safe_button_url(url: Option<String>) -> Option<String> {
+fn safe_button_url(url: &str) -> bool {
+    url.starts_with("https://") && url.len() <= 512
+}
+
+fn safe_link(url: Option<String>) -> Option<String> {
     let u = url?;
-    if u.starts_with("https://") && u.len() <= 512 {
+    if safe_button_url(&u) {
         Some(u)
     } else {
         None
     }
+}
+
+fn safe_buttons(buttons: Vec<ButtonInput>) -> Vec<(String, String)> {
+    buttons
+        .into_iter()
+        .filter(|b| !b.label.trim().is_empty() && safe_button_url(&b.url))
+        .take(2)
+        .map(|b| (b.label.trim().to_string(), b.url))
+        .collect()
 }
 
 #[tauri::command]
@@ -93,20 +136,25 @@ pub fn discord_set_presence(state: tauri::State<'_, DiscordState>, p: PresenceIn
         let mut d = state.desired.lock().unwrap();
         d.active = true;
         d.paused = p.paused;
+        d.listening = p.activity_type.as_deref() == Some("listening");
         d.details = clean(p.details);
+        d.details_url = safe_link(p.details_url);
         d.state = clean(p.state);
+        d.state_url = safe_link(p.state_url);
         d.large_image = safe_image(p.poster_url);
         d.large_text = clean(p.large_text);
+        d.large_url = safe_link(p.large_url);
         d.small_image = safe_image(p.small_image_url);
         d.small_text = clean(p.small_text);
+        d.small_url = safe_link(p.small_url);
         d.start_ts = if p.paused { None } else { p.start_ts };
         d.end_ts = if p.paused { None } else { p.end_ts };
         d.party_id = clean(p.party_id);
         d.party_size = p.party_size;
-        d.button_label = clean(p.button_label);
-        d.button_url = safe_button_url(p.button_url);
+        d.buttons = safe_buttons(p.buttons);
     }
     state.generation.fetch_add(1, Ordering::SeqCst);
+    state.signal();
 }
 
 #[tauri::command]
@@ -116,12 +164,14 @@ pub fn discord_clear(state: tauri::State<'_, DiscordState>) {
         *d = Desired::default();
     }
     state.generation.fetch_add(1, Ordering::SeqCst);
+    state.signal();
 }
 
 #[tauri::command]
 pub fn discord_set_enabled(state: tauri::State<'_, DiscordState>, on: bool) {
     state.enabled.store(on, Ordering::SeqCst);
     state.generation.fetch_add(1, Ordering::SeqCst);
+    state.signal();
 }
 
 pub fn shutdown(app: &AppHandle) {
@@ -130,6 +180,7 @@ pub fn shutdown(app: &AppHandle) {
     if let Ok(mut d) = state.desired.lock() {
         *d = Desired::default();
     };
+    state.signal();
 }
 
 pub fn run_loop(app: AppHandle) {
@@ -140,10 +191,16 @@ pub fn run_loop(app: AppHandle) {
     let mut client: Option<DiscordIpcClient> = None;
     let mut last_gen: u64 = u64::MAX;
     let mut backoff_ms: u64 = 1000;
+    let mut last_sent_at: Option<Instant> = None;
 
     loop {
-        std::thread::sleep(Duration::from_secs(1));
         let state = app.state::<DiscordState>();
+        // A presence change wakes the loop immediately; the timeout keeps connection retries
+        // and the paused-hide grace period moving when nothing else changes.
+        {
+            let guard = state.wake_lock.lock().unwrap();
+            let _ = state.wake.wait_timeout(guard, Duration::from_secs(1));
+        }
 
         if !state.enabled.load(Ordering::SeqCst) {
             if let Some(c) = client.as_mut() {
@@ -169,33 +226,60 @@ pub fn run_loop(app: AppHandle) {
         if gen == last_gen {
             continue;
         }
+        // Coalesce a burst of changes (fast skipping) without delaying a normal one; the
+        // desired state is read after the gap, so the newest change is what gets sent.
+        let since = last_sent_at.map_or(MIN_SEND_GAP, |at| at.elapsed());
+        if since < MIN_SEND_GAP {
+            std::thread::sleep(MIN_SEND_GAP - since);
+        }
+        let gen = state.generation.load(Ordering::SeqCst);
         let desired = state.desired.lock().unwrap().clone();
         let Some(c) = client.as_mut() else { continue };
 
         let result = if desired.active {
-            let mut assets = match desired.small_image.as_deref() {
-                Some(s) => Assets::new()
-                    .small_image(s)
-                    .small_text(desired.small_text.as_deref().unwrap_or("Argus")),
-                None => Assets::new()
-                    .small_image(SMALL_IMAGE_KEY)
-                    .small_text("Argus"),
-            };
-            if let Some(img) = desired.large_image.as_deref() {
-                assets = assets.large_image(img);
+            let mut assets =
+                Assets::new().large_image(desired.large_image.as_deref().unwrap_or(LOGO_ASSET));
+            match desired.small_image.as_deref() {
+                Some(s) => {
+                    assets = assets
+                        .small_image(s)
+                        .small_text(desired.small_text.as_deref().unwrap_or("Argus"));
+                }
+                // A badge over the logo itself would duplicate the mark.
+                None if desired.large_image.is_some() => {
+                    assets = assets.small_image(LOGO_ASSET).small_text("Argus");
+                }
+                None => {}
             }
             if let Some(t) = desired.large_text.as_deref() {
                 assets = assets.large_text(t);
             }
+            if let Some(u) = desired.large_url.as_deref() {
+                assets = assets.large_url(u);
+            }
+            if let Some(u) = desired.small_url.as_deref() {
+                assets = assets.small_url(u);
+            }
+            let kind = if desired.listening {
+                ActivityType::Listening
+            } else {
+                ActivityType::Watching
+            };
             let mut act = Activity::new()
-                .activity_type(ActivityType::Watching)
+                .activity_type(kind)
                 .status_display_type(StatusDisplayType::Details)
                 .assets(assets);
             if let Some(d) = desired.details.as_deref() {
                 act = act.details(d);
             }
+            if let Some(u) = desired.details_url.as_deref() {
+                act = act.details_url(u);
+            }
             if let Some(s) = desired.state.as_deref() {
                 act = act.state(s);
+            }
+            if let Some(u) = desired.state_url.as_deref() {
+                act = act.state_url(u);
             }
             match (desired.start_ts, desired.end_ts) {
                 (Some(start), Some(end)) => {
@@ -213,11 +297,13 @@ pub fn run_loop(app: AppHandle) {
                 }
                 act = act.party(party);
             }
-            if let (Some(label), Some(url)) = (
-                desired.button_label.as_deref(),
-                desired.button_url.as_deref(),
-            ) {
-                act = act.buttons(vec![Button::new(label, url)]);
+            if !desired.buttons.is_empty() {
+                let buttons: Vec<Button> = desired
+                    .buttons
+                    .iter()
+                    .map(|(label, url)| Button::new(label, url))
+                    .collect();
+                act = act.buttons(buttons);
             }
             c.set_activity(act)
         } else {
@@ -226,6 +312,7 @@ pub fn run_loop(app: AppHandle) {
 
         if result.is_ok() {
             last_gen = gen;
+            last_sent_at = Some(Instant::now());
             backoff_ms = 1000;
         } else {
             let _ = c.reconnect();

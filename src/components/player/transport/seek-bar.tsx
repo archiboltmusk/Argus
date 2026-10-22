@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSettings } from "@/lib/settings";
 import {
   usePlaybackPositionGated,
@@ -10,27 +10,38 @@ import { useTrickplayState } from "@/lib/trickplay";
 import { useSkipSegmentsView } from "@/lib/skip-intro/segment-store";
 import { ThumbPreview } from "@/components/player/thumb-preview";
 import { SeekBarVisual } from "./seek-bar-visual";
+import { useHoverExitGuard } from "./use-hover-exit-guard";
 import { fmtTime } from "./transport-utils";
+import type { Chapter } from "@/lib/player/bridge";
 
 const BUFFER_PAD_SEC = 4;
 const PENDING_MAX_MS = 2500;
 
+// This bar is the mouse-era scrubber and it stays that way. The ten-foot
+// scrubber is views/big-picture/player/bp-player-scrub.tsx, which lives inside
+// the Big Picture focus root and steps through setBpPlayerKeyHandler. A D-pad
+// engine here would be unreachable: bp-focus-core only scans [data-bp-root],
+// and this element is never inside one.
 export function SeekBar({
   durationSec,
   onSeek,
   active,
+  chapters = [],
 }: {
   durationSec: number;
   onSeek: (s: number) => void;
   active: boolean;
+  chapters?: Chapter[];
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const [hover, setHover] = useState<number | null>(null);
   const [scrub, setScrub] = useState<number | null>(null);
   const [pending, setPending] = useState<number | null>(null);
+  const [overDot, setOverDot] = useState(false);
   const pendingAtRef = useRef<number | null>(null);
   const positionRef = useRef(0);
   const { settings } = useSettings();
+  const baseDot = Math.min(Math.max(settings.seekDotSize ?? 16, 8), 200);
   const { active: trickplayActive, bufferedOnly } = useTrickplayState();
   const position = usePlaybackPositionGated(active);
   const buffered = usePlaybackBufferedGated(active);
@@ -61,6 +72,7 @@ export function SeekBar({
   const clearInteraction = () => {
     setScrub(null);
     setHover(null);
+    setOverDot(false);
   };
 
   useEffect(() => {
@@ -113,8 +125,20 @@ export function SeekBar({
   const onMove = (e: React.PointerEvent) => {
     setHover(fromEvent(e.clientX));
     if (scrub != null) setScrub(fromEvent(e.clientX));
+    const r = ref.current?.getBoundingClientRect();
+    if (r && r.width > 0) {
+      const pointerX = e.clientX - r.left;
+      const dotX = (positionRef.current / dur) * r.width;
+      setOverDot(Math.abs(pointerX - dotX) <= baseDot / 2 + 8);
+    }
   };
-  const onLeave = () => setHover(null);
+  const onLeave = useCallback(() => {
+    setHover(null);
+    setOverDot(false);
+  }, []);
+  const hoverGuardRef = useRef(false);
+  hoverGuardRef.current = hover != null && scrub == null;
+  useHoverExitGuard(ref, hoverGuardRef, onLeave);
   const onCancel = () => clearInteraction();
   const onDown = (e: React.PointerEvent) => {
     try {
@@ -140,11 +164,19 @@ export function SeekBar({
     <div dir="ltr" className="pointer-events-auto group/seek relative h-12">
       <div
         ref={ref}
+        data-player-seekbar
         onPointerMove={onMove}
         onPointerLeave={onLeave}
         onPointerDown={onDown}
         onPointerUp={onUp}
         onPointerCancel={onCancel}
+        onClick={(e) => {
+          if (e.isTrusted) return;
+          const seek = fromEvent(e.clientX);
+          setPending(seek);
+          pendingAtRef.current = Date.now();
+          onSeek(seek);
+        }}
         className="absolute inset-x-0 top-1/2 -translate-y-1/2 cursor-pointer"
       >
         <SeekBarVisual
@@ -155,7 +187,21 @@ export function SeekBar({
           hovered={hover != null}
           segments={segmentSpans}
         />
+        {settings.seekBarChapters !== false &&
+          durationSec > 0 &&
+          chapters
+            .filter((chapter) => chapter.startSec > 0 && chapter.startSec < durationSec)
+            .map((chapter, index) => (
+              <span
+                key={`${chapter.startSec}-${index}`}
+                title={chapter.title || `Chapter ${index + 1}`}
+                aria-hidden
+                className="pointer-events-none absolute top-1/2 z-[2] h-3 -translate-x-1/2 -translate-y-1/2 border-l border-black/65 bg-white/90 shadow-[0_0_2px_rgba(0,0,0,0.8)]"
+                style={{ left: `${(chapter.startSec / durationSec) * 100}%`, width: 1 }}
+              />
+            ))}
         {hover != null &&
+          !(overDot && scrub == null) &&
           (trickplayActive ? (
             <ThumbPreview
               time={hover}

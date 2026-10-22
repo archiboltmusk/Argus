@@ -1,4 +1,5 @@
 import { activeProfileId, activeProfileIsPrimary } from "@/lib/active-profile-id";
+import { getSecret, setSecret, subscribeSecretsReady } from "@/lib/secret-store";
 import type { AnilistSession } from "./types";
 
 const BASE_KEY = "argus.anilist.session.v1";
@@ -14,12 +15,12 @@ let loaded = false;
 function read(): AnilistSession | null {
   try {
     const key = keyFor();
-    let raw = localStorage.getItem(key);
+    let raw = getSecret(key);
     if (!raw) {
-      const legacy = localStorage.getItem(BASE_KEY);
+      const legacy = getSecret(BASE_KEY);
       if (legacy && activeProfileIsPrimary()) {
-        localStorage.setItem(key, legacy);
-        localStorage.removeItem(BASE_KEY);
+        setSecret(key, legacy);
+        setSecret(BASE_KEY, null);
         raw = legacy;
       }
     }
@@ -42,8 +43,8 @@ function read(): AnilistSession | null {
 
 function write(session: AnilistSession | null): void {
   try {
-    if (session) localStorage.setItem(keyFor(), JSON.stringify(session));
-    else localStorage.removeItem(keyFor());
+    if (session) setSecret(keyFor(), JSON.stringify(session));
+    else setSecret(keyFor(), null);
   } catch {
     return;
   }
@@ -60,6 +61,11 @@ export function resetForProfile(): void {
   cached = null;
   for (const fn of subscribers) fn();
 }
+
+// A reader that mounted before the persisted store landed cached a null session, and
+// nothing cleared it: the account stayed signed out for the whole run while its calls
+// went out without a token. The store announcing itself must re-arm this module.
+subscribeSecretsReady(resetForProfile);
 
 export function getSession(): AnilistSession | null {
   ensureLoaded();

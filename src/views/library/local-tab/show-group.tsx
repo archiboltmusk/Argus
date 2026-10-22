@@ -4,18 +4,23 @@ import {
   Download,
   Info,
   ListVideo,
-  RefreshCw,
   Square,
   Trash2,
   Wand2,
 } from "lucide-react";
-import { useState } from "react";
+import { memo, useMemo } from "react";
 import { Poster } from "@/components/poster";
-import { removeLocalEntry, type LocalEntry } from "@/lib/local-library";
+import { type LocalEntry } from "@/lib/local-library";
+import { localGroupKey, sortVersions } from "@/lib/local-library/versions";
 import { useView } from "@/lib/view";
 import { useT } from "@/lib/i18n";
 import { LocalBadge } from "@/components/local-badge";
-import { CardIconButton, type LocalCardProps } from "./card-actions";
+import {
+  CardIconButton,
+  LocalMoreActions,
+  useLocalFileContext,
+  type LocalCardProps,
+} from "./card-actions";
 import { episodeLabel, localPlayerSrc } from "@/lib/local-library/player-src";
 import { openLocalEpisodes } from "@/lib/player/local-episodes-modal";
 import { useLocalPoster } from "./use-local-poster";
@@ -23,15 +28,26 @@ import { useLocalPoster } from "./use-local-poster";
 export { episodeLabel, localPlayerSrc };
 
 export type LocalGroup =
-  | { kind: "movie"; entry: LocalEntry }
+  /** `entry` is the best version; `versions` holds every file for this movie. */
+  | { kind: "movie"; key: string; entry: LocalEntry; versions: LocalEntry[] }
   | { kind: "show"; key: string; head: LocalEntry; episodes: LocalEntry[] };
 
 export function groupLocal(items: LocalEntry[]): LocalGroup[] {
   const out: LocalGroup[] = [];
   const showIdx = new Map<string, number>();
+  const movieIdx = new Map<string, number>();
   for (const it of items) {
     if (it.type !== "show") {
-      out.push({ kind: "movie", entry: it });
+      // Two files of the same movie (different quality, source or cut) collapse
+      // into a single card; the versions are offered when you press play.
+      const key = localGroupKey(it);
+      const at = movieIdx.get(key);
+      if (at != null) {
+        (out[at] as { versions: LocalEntry[] }).versions.push(it);
+      } else {
+        movieIdx.set(key, out.length);
+        out.push({ kind: "movie", key, entry: it, versions: [it] });
+      }
       continue;
     }
     const key = (it.imdbId || it.title || it.filename).toLowerCase();
@@ -44,54 +60,68 @@ export function groupLocal(items: LocalEntry[]): LocalGroup[] {
     }
   }
   for (const g of out) {
-    if (g.kind !== "show") continue;
-    g.episodes.sort((a, b) => (a.season ?? 0) - (b.season ?? 0) || (a.episode ?? 0) - (b.episode ?? 0));
+    if (g.kind === "movie") {
+      if (g.versions.length > 1) {
+        g.versions = sortVersions(g.versions);
+        g.entry = g.versions[0];
+      }
+      continue;
+    }
+    g.episodes.sort(
+      (a, b) => (a.season ?? 0) - (b.season ?? 0) || (a.episode ?? 0) - (b.episode ?? 0),
+    );
     g.head = g.episodes.find((e) => e.poster) ?? g.episodes[0];
   }
   return out;
 }
 
-export function ShowGroupCard({
+function ShowGroupCardImpl({
   head,
   episodes,
   selectMode,
-  selected,
+  isSelected,
   onToggleSelect,
   onFixMatch,
   onExport,
   onOpenDetail,
-}: { head: LocalEntry; episodes: LocalEntry[] } & LocalCardProps) {
+}: { head: LocalEntry; episodes: LocalEntry[]; isSelected: boolean } & LocalCardProps) {
   const t = useT();
   const { openPlayer } = useView();
-  const [confirm, setConfirm] = useState(false);
   const poster = useLocalPoster(head);
-  const episodeIds = episodes.map((e) => e.id);
-  const isSelected = episodeIds.every((id) => selected.has(id));
+  const episodeIds = useMemo(() => episodes.map((e) => e.id), [episodes]);
   const needsReview = episodes.some((e) => e.needsReview);
-  const countLabel = episodes.length === 1 ? t("1 episode") : t("{n} episodes", { n: episodes.length });
-  const onActivate = () => {
-    if (selectMode) {
-      onToggleSelect(episodeIds);
-      return;
-    }
-    openLocalEpisodes({
-      title: head.title,
-      tmdbId: head.tmdbId ?? null,
-      imdbId: head.imdbId ?? null,
-      poster: poster.src,
-      onPlayLocal: (e) => openPlayer(localPlayerSrc(e)),
-    });
+  const countLabel =
+    episodes.length === 1 ? t("1 episode") : t("{n} episodes", { n: episodes.length });
+  const context = useLocalFileContext(episodes, head.title, {
+    onPlay: (current) => openPlayer(localPlayerSrc(current)),
+    onChoose: (current) =>
+      openLocalEpisodes({
+        title: head.title,
+        tmdbId: head.tmdbId ?? null,
+        imdbId: head.imdbId ?? null,
+        poster: poster.src,
+        entries: current,
+        onPlayLocal: (current) => openPlayer(localPlayerSrc(current)),
+      }),
+    chooseLabel: t("Choose episode"),
+    onOpenDetail,
+    onFixMatch,
+    onExport,
+  });
+  const onActivate = (range = false) => {
+    if (selectMode) onToggleSelect(episodeIds, range);
+    else context.run("open");
   };
   return (
-    <div className="group relative flex flex-col gap-2 text-start" onMouseLeave={() => setConfirm(false)}>
+    <div className="group relative flex flex-col gap-2 text-start" ref={context.ref}>
       <div
         role="button"
         tabIndex={0}
-        onClick={onActivate}
+        onClick={(e) => onActivate(e.shiftKey)}
         onKeyDown={(e) => {
           if (e.key === "Enter" || e.key === " ") {
             e.preventDefault();
-            onActivate();
+            onActivate(e.shiftKey);
           }
         }}
         className={`relative aspect-[2/3] cursor-pointer overflow-hidden rounded-xl bg-elevated shadow-[0_2px_8px_-2px_rgba(0,0,0,0.4)] outline-none ring-offset-2 ring-offset-canvas focus-visible:ring-2 focus-visible:ring-ink ${
@@ -103,10 +133,10 @@ export function ShowGroupCard({
           onError={poster.onError}
           seed={head.id}
           lazy
-          className="h-full w-full transition-transform duration-200 group-hover:scale-[1.02]"
+          className="h-full w-full transition-transform duration-200 will-change-transform [transform:translate3d(0,0,0)] group-hover:scale-[1.02]"
         />
         <LocalBadge label={t("local")} className="absolute start-2 top-2" />
-        <span className="absolute bottom-2 end-2 inline-flex items-center gap-1 rounded-md bg-canvas/85 px-2 py-0.5 text-[10.5px] font-semibold text-ink backdrop-blur-sm">
+        <span className="absolute bottom-2 end-2 inline-flex items-center gap-1 rounded-md bg-canvas/90 px-2 py-0.5 text-[10.5px] font-semibold text-ink">
           <ListVideo size={11} strokeWidth={2.2} />
           {episodes.length}
         </span>
@@ -119,10 +149,16 @@ export function ShowGroupCard({
         {selectMode && (
           <span
             className={`absolute end-2 top-2 flex h-6 w-6 items-center justify-center rounded-md ${
-              isSelected ? "bg-accent text-white" : "bg-canvas/80 text-ink-subtle ring-1 ring-edge-soft"
+              isSelected
+                ? "bg-accent text-white"
+                : "bg-canvas/80 text-ink-subtle ring-1 ring-edge-soft"
             }`}
           >
-            {isSelected ? <CheckSquare size={14} strokeWidth={2.4} /> : <Square size={14} strokeWidth={2.2} />}
+            {isSelected ? (
+              <CheckSquare size={14} strokeWidth={2.4} />
+            ) : (
+              <Square size={14} strokeWidth={2.2} />
+            )}
           </span>
         )}
         {!selectMode && (
@@ -142,40 +178,41 @@ export function ShowGroupCard({
                 <Wand2 size={11} strokeWidth={2.2} />
               </CardIconButton>
               {head.tmdbId != null && (
-                <CardIconButton title={t("Export .nfo and artwork")} onClick={() => onExport(episodes)}>
+                <CardIconButton
+                  title={t("Export .nfo and artwork")}
+                  onClick={() => onExport(episodes)}
+                >
                   <Download size={11} strokeWidth={2.2} />
                 </CardIconButton>
               )}
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  if (confirm) {
-                    episodes.forEach((ep) => removeLocalEntry(ep.id));
-                    setConfirm(false);
-                  } else {
-                    setConfirm(true);
-                  }
-                }}
-                className={`flex h-7 w-7 items-center justify-center rounded-full text-white shadow-[0_2px_8px_rgba(0,0,0,0.4)] transition-all duration-200 ${
-                  confirm
-                    ? "bg-danger"
-                    : "bg-canvas/70 opacity-0 backdrop-blur-sm hover:bg-canvas/90 group-hover:opacity-100"
-                }`}
-                aria-label={confirm ? t("Confirm remove") : t("Remove from library")}
+              <CardIconButton
+                title={t("Remove from library; keep file")}
+                onClick={() => context.run("remove")}
               >
-                {confirm ? <RefreshCw size={11} strokeWidth={2.4} /> : <Trash2 size={11} strokeWidth={2.2} />}
-              </button>
+                <Trash2 size={11} strokeWidth={2.2} />
+              </CardIconButton>
             </div>
           </>
         )}
       </div>
-      <button type="button" onClick={onActivate} className="text-start">
-        <p className="truncate text-[13px] font-medium text-ink transition-colors hover:text-accent" title={head.title}>
-          {head.title}
-        </p>
-        <p className="-mt-1.5 truncate text-[11.5px] text-ink-subtle">{countLabel}</p>
-      </button>
+      <div className="flex items-start gap-1">
+        <button
+          type="button"
+          onClick={(e) => onActivate(e.shiftKey)}
+          className="min-w-0 flex-1 text-start"
+        >
+          <p
+            className="truncate text-[13px] font-medium text-ink transition-colors hover:text-accent"
+            title={head.title}
+          >
+            {head.title}
+          </p>
+          <p className="-mt-1.5 truncate text-[11.5px] text-ink-subtle">{countLabel}</p>
+        </button>
+        {!selectMode && <LocalMoreActions target={context.source} />}
+      </div>
     </div>
   );
 }
+
+export const ShowGroupCard = memo(ShowGroupCardImpl);

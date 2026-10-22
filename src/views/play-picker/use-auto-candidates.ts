@@ -2,19 +2,35 @@ import { useMemo } from "react";
 import { isStreamDead } from "@/lib/dead-streams";
 import { engineP2pEligible } from "@/lib/torrent/stremio-stream";
 import type { ScoredStream } from "@/lib/streams/types";
-import { streamMatchesEntry, streamMatchesSource, type PlaybackEntry } from "@/lib/playback-history";
+import {
+  streamMatchesEntry,
+  streamMatchesPreferredSource,
+  streamMatchesReleaseLineage,
+  streamMatchesSource,
+  findPreferredSourceMatch,
+  streamOfferedByAddon,
+  type PlaybackEntry,
+} from "@/lib/playback-history";
 import type { SourceDescriptor } from "@/lib/together/protocol";
 import { buildMatchScores } from "@/lib/together/source-match";
 import { hostSourceStream } from "@/lib/together/host-stream";
 import { hasInstantMarker, isWatchHub, needsDownload, streamMatchesLangs } from "./picker-utils";
+import { titleTokensPresent } from "@/lib/streams/trust";
+import { episodeSpanContains } from "@/lib/episode-span";
 
 const RES_PREF: Record<string, number> = { "1080p": 0, "720p": 1, "480p": 2, "4K": 3, SD: 4 };
 const LIKELY_PACK_BYTES = 12 * 1024 * 1024 * 1024;
 
 export function useAutoCandidates(args: {
-  filteredPicker: { all: ScoredStream[]; primary: ScoredStream | null } | null;
+  filteredPicker: {
+    all: ScoredStream[];
+    allRaw: ScoredStream[];
+    primary: ScoredStream | null;
+  } | null;
   previousPlayback: PlaybackEntry | null;
   sourceEntry: PlaybackEntry | null;
+  sourceEntryLineage?: boolean;
+  sourceEntryBestEffort?: boolean;
   isCached: (s: ScoredStream) => boolean;
   addons: Array<{ manifest?: { id?: string } }> | null;
   hasStrongAddon: boolean;
@@ -25,8 +41,32 @@ export function useAutoCandidates(args: {
   preferPacks?: boolean;
   season?: number | null;
   episode?: number | null;
+  expectedTitle?: string | null;
+  expectedTitles?: string[] | null;
+  isAnime?: boolean;
+  filterDisabled?: boolean;
 }): ScoredStream[] {
-  const { filteredPicker, previousPlayback, sourceEntry, isCached, addons, hasStrongAddon, isTorrentioStream, preferredLangs, hostSource, prefer1080, preferPacks, season, episode } = args;
+  const {
+    filteredPicker,
+    previousPlayback,
+    sourceEntry,
+    sourceEntryLineage,
+    sourceEntryBestEffort,
+    isCached,
+    addons,
+    hasStrongAddon,
+    isTorrentioStream,
+    preferredLangs,
+    hostSource,
+    prefer1080,
+    preferPacks,
+    season,
+    episode,
+    expectedTitle,
+    expectedTitles,
+    isAnime,
+    filterDisabled,
+  } = args;
   return useMemo(() => {
     const hostFallback = (): ScoredStream[] => {
       if (!hostSource) return [];
@@ -37,12 +77,14 @@ export function useAutoCandidates(args: {
     const key = (s: ScoredStream) => s.url ?? s.infoHash ?? `${s.addonId}:${s.title ?? ""}`;
     const episodeConflict = (s: ScoredStream) => {
       if (episode == null || s.episode == null) return false;
-      if (s.episode !== episode) return true;
-      return season != null && s.season != null && s.season !== season;
+      if (season != null && s.season != null) return !episodeSpanContains(s, season, episode);
+      return s.episode !== episode;
     };
     const episodeExact = (s: ScoredStream) =>
       episode != null &&
-      s.episode === episode &&
+      (season != null && s.season != null
+        ? episodeSpanContains(s, season, episode)
+        : s.episode === episode) &&
       (season == null || s.season == null || s.season === season);
     const instantTier = (s: ScoredStream) => {
       if (!isCached(s)) return 2;
@@ -54,14 +96,28 @@ export function useAutoCandidates(args: {
       if (episodeExact(s)) return false;
       return s.size != null && s.size > LIKELY_PACK_BYTES;
     };
+    const nameKnown = (s: ScoredStream): boolean => {
+      if (filterDisabled) return true;
+      if (s.seasonPack || s.fileIdx != null) return true;
+      const hay = s.parsedTitle;
+      if (!hay) return true;
+      if (isAnime) {
+        if (!expectedTitles || expectedTitles.length === 0) return true;
+        return expectedTitles.some((t) => titleTokensPresent(t, hay));
+      }
+      if (!expectedTitle) return true;
+      return titleTokensPresent(expectedTitle, hay);
+    };
+    const isYourMedia = (s: ScoredStream) => /\(your media\)/i.test(s.title ?? "");
     const addonRank = new Map<string, number>();
     (addons ?? []).forEach((a, i) => {
       if (a.manifest?.id) addonRank.set(a.manifest.id, i);
     });
     const matchScores = hostSource ? buildMatchScores(filteredPicker.all, hostSource) : null;
     const previousMatch = previousPlayback
-      ? filteredPicker.all.find((s) => streamMatchesEntry(s, previousPlayback)) ?? null
+      ? (filteredPicker.allRaw.find((s) => streamMatchesEntry(s, previousPlayback)) ?? null)
       : null;
+    for (const s of filteredPicker.all) s.nameAbsent = !nameKnown(s);
     const sorted = filteredPicker.all.slice().sort((a, b) => {
       if (matchScores) {
         const dm = (matchScores.get(b) ?? 0) - (matchScores.get(a) ?? 0);
@@ -73,6 +129,12 @@ export function useAutoCandidates(args: {
       const ai0 = instantTier(a);
       const bi0 = instantTier(b);
       if (ai0 !== bi0) return ai0 - bi0;
+      const an = a.nameAbsent ? 1 : 0;
+      const bn = b.nameAbsent ? 1 : 0;
+      if (an !== bn) return an - bn;
+      const aym = isYourMedia(a) ? 0 : 1;
+      const bym = isYourMedia(b) ? 0 : 1;
+      if (aym !== bym) return aym - bym;
       const ap = isLikelyPack(a) ? 1 : 0;
       const bp = isLikelyPack(b) ? 1 : 0;
       if (ap !== bp) return preferPacks ? bp - ap : ap - bp;
@@ -105,6 +167,7 @@ export function useAutoCandidates(args: {
     const seen = new Set<string>();
     const push = (s: ScoredStream | null | undefined) => {
       if (!s) return;
+      s.nameAbsent = !nameKnown(s);
       if (isStreamDead(s)) return;
       if (isWatchHub(s)) return;
       if (episodeConflict(s)) return;
@@ -114,11 +177,30 @@ export function useAutoCandidates(args: {
       seen.add(k);
       out.push(s);
     };
-     const sourceMatch =
-      sourceEntry ? filteredPicker.all.find((s) => streamMatchesSource(s, sourceEntry)) ?? null : null;
+    const matchSource = sourceEntryBestEffort
+      ? streamMatchesPreferredSource
+      : sourceEntryLineage
+        ? streamMatchesReleaseLineage
+        : streamMatchesSource;
+    const sourceMatch = sourceEntry
+      ? findPreferredSourceMatch(filteredPicker.allRaw, sourceEntry, matchSource)
+      : null;
+    // When the exact source is unavailable at the remembered quality, prefer
+    // another stream at that quality over a same-group release at a different
+    // resolution. The remembered addon still wins ties.
+    const preferredQuality = sourceEntry?.resolution
+      ? (filteredPicker.all.find(
+          (s) =>
+            s.resolution === sourceEntry.resolution &&
+            (!sourceEntry.addonId || streamOfferedByAddon(s, sourceEntry.addonId)),
+        ) ??
+        filteredPicker.all.find((s) => s.resolution === sourceEntry.resolution) ??
+        null)
+      : null;
     const instantPlayable = (s: ScoredStream | null) => !!s && (isCached(s) || !!s.url);
     if (!matchScores) {
       if (instantPlayable(sourceMatch)) push(sourceMatch);
+      if (instantPlayable(preferredQuality)) push(preferredQuality);
       if (instantPlayable(previousMatch)) push(previousMatch);
     }
     for (const s of sorted) push(s);
@@ -126,11 +208,29 @@ export function useAutoCandidates(args: {
     const synthetic = hostFallback();
     if (synthetic.length > 0) return synthetic;
     if (hostSource) {
-      const ownBest = sorted.find(
-        (s) => !isStreamDead(s) && !isWatchHub(s) && !episodeConflict(s),
-      );
+      const ownBest = sorted.find((s) => !isStreamDead(s) && !isWatchHub(s) && !episodeConflict(s));
       if (ownBest) return [ownBest];
     }
     return [];
-  }, [filteredPicker, previousPlayback, sourceEntry, isCached, addons, hasStrongAddon, isTorrentioStream, preferredLangs, hostSource, prefer1080, preferPacks, season, episode]);
+  }, [
+    filteredPicker,
+    previousPlayback,
+    sourceEntry,
+    sourceEntryLineage,
+    sourceEntryBestEffort,
+    isCached,
+    addons,
+    hasStrongAddon,
+    isTorrentioStream,
+    preferredLangs,
+    hostSource,
+    prefer1080,
+    preferPacks,
+    season,
+    episode,
+    expectedTitle,
+    expectedTitles,
+    isAnime,
+    filterDisabled,
+  ]);
 }

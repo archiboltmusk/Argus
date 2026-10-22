@@ -1,36 +1,27 @@
-import { useQueryClient } from "@tanstack/react-query";
-import { ChevronDown, Lock } from "lucide-react";
+import { useContextMenu } from "@/lib/context-menu";
+import { ChevronDown, ChevronUp, Lock } from "lucide-react";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { ArgusMark } from "@/components/icons/argus-mark";
 import { ProfileChip } from "@/chrome/sidebar/profile-chip";
 import { useT } from "@/lib/i18n";
-import { useAuth } from "@/lib/auth";
-import { preloadNavPage } from "@/lib/query";
 import { useSettings } from "@/lib/settings";
 import { useArgusLogo } from "@/lib/argus-logo";
 import { ParentalPinModal } from "@/components/parental-pin-modal";
-import { useParental, type LockableTab } from "@/lib/parental";
+import { useParental } from "@/lib/parental";
 import { useActiveKid } from "@/lib/profiles";
 import { useView, type View } from "@/lib/view";
 import { KidsSidebarDoodles } from "./kids-sidebar-doodles";
 import { CollapseToggle } from "@/chrome/sidebar/collapse-toggle";
-import { NAV_ITEMS, applyNavCustomization, type NavItem } from "@/chrome/nav-items";
-
-const PRIMARY_IDS = new Set([
-  "home",
-  "discover",
-  "catalogs",
-  "movies",
-  "shows",
-  "kids",
-  "anime",
-  "live",
-  "vod",
-]);
+import { SidebarBigPictureEntry } from "@/chrome/sidebar/big-picture-entry";
+import type { NavItemId } from "@/chrome/nav-items";
+import { NavHiddenTray, NavEditableItem, useNavDrag } from "@/chrome/nav-edit";
+import { useNavEditMode } from "@/chrome/nav-edit-mode";
+import { useSidebarNavigation } from "./context-page-navigation";
 
 export function Sidebar() {
+  const editing = useNavEditMode();
   const { view, setView, chromeHidden } = useView();
-  const { locked, unlock, hiddenTabs } = useParental();
+  const { locked, unlock } = useParental();
   const { settings } = useSettings();
   const kid = useActiveKid();
   const t = useT();
@@ -38,14 +29,21 @@ export function Sidebar() {
 
   const { mark: customMark, wordmark: customWordmark } = useArgusLogo();
   const collapsed = settings.sidebarCollapsed;
+  const retainLabels = (settings.theme.preset as string) === "elegantfin" && !kid;
+  const hybridBar =
+    typeof window !== "undefined" &&
+    "__TAURI_INTERNALS__" in window &&
+    !settings.useNativeTitleBar &&
+    settings.hybridTitleBar;
 
   return (
     <>
       <aside
+        data-tv-focus-scope={editing || undefined}
         aria-hidden={chromeHidden}
         data-argus-sidebar
-        data-tv-nav-zone
-        className={`relative z-[60] flex w-[72px] shrink-0 flex-col border-e border-edge-soft bg-canvas transition-[opacity,transform,width] duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] will-change-[width] ${
+        data-collapsed={collapsed ? "true" : "false"}
+        className={`relative z-[60] flex w-[72px] shrink-0 flex-col border-e border-edge-soft bg-canvas transition-[opacity,transform,width] duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${
           collapsed ? "" : "lg:w-60"
         } ${
           chromeHidden
@@ -56,30 +54,40 @@ export function Sidebar() {
         {kid && <KidsSidebarDoodles />}
         <div
           data-tauri-drag-region
-          className={`flex h-20 shrink-0 items-center justify-center gap-0.5 px-3 text-ink ${
+          data-argus-sidebar-brand
+          className={`flex shrink-0 items-center justify-center gap-0.5 px-3 text-ink ${
             collapsed ? "" : "lg:justify-start lg:px-7"
-          }`}
+          } ${hybridBar ? "h-12" : "h-20"}`}
         >
-          {customMark ? (
-            <img
-              src={customMark}
-              alt=""
-              draggable={false}
-              className={`h-9 w-9 shrink-0 object-contain ${collapsed ? "" : "lg:h-10 lg:w-10"}`}
-            />
-          ) : (
-            <ArgusMark className={`h-9 w-9 shrink-0 ${collapsed ? "" : "lg:h-10 lg:w-10"}`} />
+          {!hybridBar && (
+            <span data-argus-sidebar-mark className="inline-flex shrink-0">
+              {customMark ? (
+                <img
+                  src={customMark}
+                  alt=""
+                  draggable={false}
+                  className={`h-9 w-9 shrink-0 object-contain ${collapsed ? "" : "lg:h-10 lg:w-10"}`}
+                />
+              ) : (
+                <ArgusMark className={`h-9 w-9 shrink-0 ${collapsed ? "" : "lg:h-10 lg:w-10"}`} />
+              )}
+            </span>
           )}
-          {!collapsed &&
+          {!hybridBar &&
+            (!collapsed || retainLabels) &&
             (customWordmark ? (
               <img
                 src={customWordmark}
                 alt=""
                 draggable={false}
+                data-argus-sidebar-label
+                aria-hidden={collapsed || undefined}
                 className="hidden h-8 w-auto object-contain lg:inline-block"
               />
             ) : kid ? (
               <span
+                data-argus-sidebar-label
+                aria-hidden={collapsed || undefined}
                 className="hidden whitespace-nowrap text-[42px] font-bold leading-none tracking-tight lg:inline-flex lg:items-center"
                 style={{
                   fontFamily: '"Fredoka", "Baloo 2", system-ui, sans-serif',
@@ -102,6 +110,8 @@ export function Sidebar() {
               </span>
             ) : (
               <span
+                data-argus-sidebar-label
+                aria-hidden={collapsed || undefined}
                 className="hidden whitespace-nowrap text-[44px] font-medium leading-none tracking-tight lg:inline"
                 style={{
                   fontFamily: '"Fraunces", "Iowan Old Style", "Georgia", serif',
@@ -122,20 +132,17 @@ export function Sidebar() {
         <ScrollableNav
           view={view}
           setView={setView}
-          locked={locked}
           collapsed={collapsed}
-          hiddenTabs={hiddenTabs}
+          retainLabels={retainLabels}
           onPinNav={(v) => setPendingPinView(v)}
         />
-        <div className={`relative p-2 ${collapsed ? "" : "lg:p-4"}`}>
-          <div
-            aria-hidden
-            className={`pointer-events-none absolute inset-x-2 top-0 h-px bg-gradient-to-r from-transparent via-edge-soft/55 to-transparent ${
-              collapsed ? "" : "lg:inset-x-4"
-            }`}
-          />
-          <div className={`flex pb-1 ${collapsed ? "justify-center" : ""}`}>
-            <CollapseToggle collapsed={collapsed} />
+        <div data-argus-sidebar-footer className={`relative p-2 ${collapsed ? "" : "lg:p-4"}`}>
+          <div className="mb-1 px-1">
+            <NavHiddenTray orientation="vertical" compact={collapsed} />
+          </div>
+          <div className={`flex flex-col gap-1 pb-1 ${collapsed ? "items-center" : ""}`}>
+            <SidebarBigPictureEntry collapsed={collapsed} retainLabels={retainLabels} />
+            <CollapseToggle collapsed={collapsed} retainLabels={retainLabels} />
           </div>
           {locked ? (
             <div
@@ -146,8 +153,12 @@ export function Sidebar() {
               <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-edge-soft bg-elevated/50 text-ink-subtle">
                 <Lock size={17} />
               </div>
-              {!collapsed && (
-                <div className="hidden min-w-0 flex-1 lg:block">
+              {(!collapsed || retainLabels) && (
+                <div
+                  data-argus-sidebar-label
+                  aria-hidden={collapsed || undefined}
+                  className="hidden min-w-0 flex-1 lg:block"
+                >
                   <div className="truncate text-[13.5px] font-medium text-ink-muted">
                     {t("chrome.locked")}
                   </div>
@@ -183,39 +194,26 @@ export function Sidebar() {
 function ScrollableNav({
   view,
   setView,
-  locked,
   collapsed,
-  hiddenTabs,
+  retainLabels,
   onPinNav,
 }: {
   view: View;
   setView: (v: View) => void;
-  locked: boolean;
   collapsed: boolean;
-  hiddenTabs: Record<LockableTab, boolean>;
+  retainLabels: boolean;
   onPinNav: (v: View) => void;
 }) {
-  const { settings } = useSettings();
-  const { authKey } = useAuth();
-  const queryClient = useQueryClient();
   const kid = useActiveKid();
   const t = useT();
-  const items = applyNavCustomization(NAV_ITEMS, settings.navCustomization);
-  const warm = (view: View) => {
-    preloadNavPage(queryClient, view, settings.tmdbKey, settings.region, authKey, settings);
+  const { open: openContextMenu } = useContextMenu();
+  const openEmptyMenu = (e: React.MouseEvent) => {
+    if ((e.target as HTMLElement).closest("button")) return;
+    openContextMenu(e, { kind: "nav" });
   };
-  const isItemVisible = (item: NavItem) => {
-    if (kid) return item.view === "kids";
-    if (item.view === "kids") return false;
-    if (item.view === "vod" && !settings.showPlaylistsTab) return false;
-    if (item.view === "music" && !settings.musicEnabled) return false;
-    if (item.hideKey && settings.hideContent[item.hideKey]) return false;
-    if (locked && item.parentalKey && hiddenTabs[item.parentalKey]) return false;
-    return true;
-  };
-  const visible = items.filter(isItemVisible);
-  const primary = visible.filter((item) => PRIMARY_IDS.has(item.id));
-  const collections = visible.filter((item) => !PRIMARY_IDS.has(item.id));
+  const { entries } = useSidebarNavigation();
+  const primary = entries.filter((entry) => entry.primary);
+  const collections = entries.filter((entry) => !entry.primary);
   const ref = useRef<HTMLDivElement>(null);
   const [overflow, setOverflow] = useState<{ top: boolean; bottom: boolean }>({
     top: false,
@@ -248,47 +246,82 @@ function ScrollableNav({
     el.scrollBy({ top: 112, behavior: "smooth" });
   };
 
+  const scrollToTop = () => {
+    const el = ref.current;
+    if (!el) return;
+    el.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
   return (
     <div className="relative flex min-h-0 flex-1 flex-col">
       <div
         ref={ref}
+        onContextMenu={openEmptyMenu}
         className="flex flex-1 flex-col overflow-y-auto px-4 pt-3 pb-6 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
       >
         <div className="flex flex-col gap-1.5">
-          {primary.map((item) => (
+          {primary.map(({ item }) => (
             <NavItem
               key={item.id}
               {...item}
               collapsed={collapsed}
+              retainLabels={retainLabels}
               big={!!kid}
               active={view === item.view}
               onClick={() => setView(item.view)}
-              onIntent={() => warm(item.view)}
             />
           ))}
+          {kid && (
+            <NavItem
+              render={(active) => <KidsPlayIcon active={active} />}
+              label="Play"
+              big
+              collapsed={collapsed}
+              retainLabels={retainLabels}
+              active={false}
+              onClick={() => {
+                setView("kids");
+                window.dispatchEvent(new CustomEvent("argus:kids-play"));
+              }}
+            />
+          )}
         </div>
-        <div data-tauri-drag-region className="py-2.5">
-          <div className="mx-3 h-px bg-gradient-to-r from-transparent via-edge-soft/55 to-transparent" />
-        </div>
+        <div
+          data-tauri-drag-region
+          aria-hidden
+          className="h-5 shrink-0"
+          onContextMenu={openEmptyMenu}
+        />
         <div className="flex flex-col gap-1.5">
-          {collections.map((item) => {
-            const gated = !!item.pinGated && locked;
+          {collections.map(({ item, gated }) => {
             return (
               <NavItem
                 key={item.id}
                 {...item}
                 gated={gated}
                 collapsed={collapsed}
+                retainLabels={retainLabels}
                 active={view === item.view}
                 onClick={() => (gated ? onPinNav(item.view) : setView(item.view))}
               />
             );
           })}
         </div>
-        <div data-tauri-drag-region className="flex-1 min-h-2" />
+        <div data-tauri-drag-region className="flex-1 min-h-2" onContextMenu={openEmptyMenu} />
       </div>
       {overflow.top && (
-        <div className="pointer-events-none absolute inset-x-0 top-0 h-6 bg-gradient-to-b from-canvas to-transparent" />
+        <>
+          <div className="pointer-events-none absolute inset-x-0 top-0 h-12 bg-gradient-to-b from-canvas via-canvas/85 to-transparent" />
+          <button
+            type="button"
+            onClick={scrollToTop}
+            aria-label={t("chrome.backToTop")}
+            data-tv-skip=""
+            className="absolute top-1 left-1/2 flex h-4 w-7 -translate-x-1/2 items-center justify-center text-ink-subtle/55 transition-colors hover:text-ink-muted"
+          >
+            <ChevronUp size={11} strokeWidth={2} />
+          </button>
+        </>
       )}
       {overflow.bottom && (
         <>
@@ -297,6 +330,7 @@ function ScrollableNav({
             type="button"
             onClick={scrollDown}
             aria-label={t("chrome.scrollForMore")}
+            data-tv-skip=""
             className="absolute bottom-1 left-1/2 flex h-4 w-7 -translate-x-1/2 items-center justify-center text-ink-subtle/55 transition-colors hover:text-ink-muted"
           >
             <ChevronDown size={11} strokeWidth={2} />
@@ -307,65 +341,111 @@ function ScrollableNav({
   );
 }
 
+function KidsPlayIcon({ active }: { active: boolean }) {
+  return (
+    <svg
+      width="26"
+      height="26"
+      viewBox="0 0 26 26"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+      className={active ? "" : "opacity-70"}
+    >
+      <circle cx="12" cy="14" r="9" />
+      <path d="M10 10.5 L16.5 14 L10 17.5 Z" fill="currentColor" stroke="none" />
+      <circle cx="21.5" cy="6" r="1.7" />
+      <circle cx="24" cy="10.5" r="1" />
+    </svg>
+  );
+}
+
 function NavItem({
+  id,
   render,
   label,
   active,
   onClick,
-  onIntent,
   gated,
   collapsed,
+  retainLabels = false,
   big,
   view,
 }: {
-  render: (active: boolean) => ReactNode;
+  id?: NavItemId;
+  render: (active: boolean, hovered?: boolean) => ReactNode;
   label: string;
   active?: boolean;
   onClick?: () => void;
-  /** TanStack Query preload on hover/focus. */
-  onIntent?: () => void;
   gated?: boolean;
   collapsed?: boolean;
+  retainLabels?: boolean;
   big?: boolean;
   view?: View;
 }) {
   const t = useT();
   const text = t(label);
   const [hovered, setHovered] = useState(false);
+  const { open: openContextMenu } = useContextMenu();
+  const editing = useNavEditMode();
+  const drag = useNavDrag(id, "vertical");
   return (
-    <button
-      onClick={onClick}
-      onMouseEnter={() => {
-        setHovered(true);
-        onIntent?.();
-      }}
-      onFocus={() => onIntent?.()}
-      onMouseLeave={() => setHovered(false)}
-      data-argus-nav={view}
-      data-active={active ? "" : undefined}
-      aria-label={gated ? t("chrome.lockedRequiresPin", { label: text }) : text}
-      title={gated ? t("chrome.lockedShort", { label: text }) : text}
-      className={`relative flex items-center justify-center gap-4 transition-colors duration-150 ${
-        big ? "h-[68px] rounded-2xl text-[20px] font-bold" : "h-14 rounded-xl text-[16px]"
-      } ${collapsed ? "" : big ? "lg:justify-start lg:px-5" : "lg:justify-start lg:px-4"} ${
-        collapsed
-          ? active
-            ? "text-accent"
-            : "text-ink-muted hover:text-ink"
-          : active
-            ? "bg-elevated text-ink"
-            : "text-ink-muted hover:bg-elevated/50 hover:text-ink"
-      }`}
-    >
-      <span className={`relative ${big ? "scale-110" : ""} ${gated ? "opacity-70" : ""}`}>
-        {render(hovered)}
-        {gated && (
-          <span className="absolute -bottom-1 -end-1 flex h-4 w-4 items-center justify-center rounded-full bg-canvas text-ink-subtle ring-1 ring-edge">
-            <Lock size={9} strokeWidth={2.4} />
+    <NavEditableItem itemId={id}>
+      <button
+        onClick={onClick}
+        onMouseEnter={() => setHovered(true)}
+        onMouseLeave={() => setHovered(false)}
+        onContextMenu={(e) => {
+          if (!id) return;
+          openContextMenu(e, { kind: "nav", itemId: id, view, label: text, onOpen: onClick });
+        }}
+        data-argus-nav={view}
+        data-active={active ? "" : undefined}
+        aria-current={active ? "page" : undefined}
+        data-tauri-drag-region={editing ? "false" : undefined}
+        onPointerDown={drag.onPointerDown}
+        onKeyDown={drag.onKeyDown}
+        data-nav-drop-id={id}
+        aria-label={gated ? t("chrome.lockedRequiresPin", { label: text }) : text}
+        title={gated ? t("chrome.lockedShort", { label: text }) : text}
+        className={`group relative flex items-center justify-center gap-4 transition-colors duration-150 ${
+          big ? "h-[68px] rounded-2xl text-[20px] font-bold" : "h-14 rounded-lg text-[16px]"
+        } ${collapsed ? "" : big ? "lg:justify-start lg:px-5" : "lg:justify-start lg:px-4"} ${
+          drag.over ? "ring-2 ring-accent" : ""
+        } ${
+          collapsed
+            ? active
+              ? "text-accent"
+              : "text-ink-muted hover:text-ink"
+            : active
+              ? "bg-elevated text-ink ring-1 ring-edge"
+              : "text-ink-muted hover:bg-elevated/50 hover:text-ink"
+        }`}
+      >
+        <span
+          data-argus-sidebar-icon
+          className={`relative ${big ? "scale-110" : ""} ${gated ? "opacity-70" : ""}`}
+        >
+          {render(Boolean(active || hovered), hovered)}
+          {gated && (
+            <span className="absolute -bottom-1 -end-1 flex h-4 w-4 items-center justify-center rounded-full bg-canvas text-ink-subtle ring-1 ring-edge">
+              <Lock size={9} strokeWidth={2.4} />
+            </span>
+          )}
+        </span>
+        {(!collapsed || retainLabels) && (
+          <span
+            data-argus-sidebar-label
+            aria-hidden={collapsed || undefined}
+            className="hidden lg:inline"
+          >
+            {text}
           </span>
         )}
-      </span>
-      {!collapsed && <span className="hidden lg:inline">{text}</span>}
-    </button>
+      </button>
+    </NavEditableItem>
   );
 }

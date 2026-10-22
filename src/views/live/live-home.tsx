@@ -42,7 +42,7 @@ export function LiveHome({
   onOpenCategory: (group: string) => void;
 }) {
   const t = useT();
-  const { openMatchDetail, setView } = useView();
+  const { openMatchDetail } = useView();
   const { spotlight, guide, rails, categoryRails, countries } = useLiveHome({
     channels,
     epg,
@@ -99,15 +99,6 @@ export function LiveHome({
             {t("Your TV")}
           </h1>
           <span className="text-[16px] text-ink-subtle">{t("at {time}", { time: fmtClock(nowMs) })}</span>
-          {settings.sportsPage && (
-            <button
-              type="button"
-              onClick={() => setView("sports")}
-              className="ms-auto rounded-full bg-elevated px-3.5 py-1.5 text-[12px] font-semibold text-ink-muted hover:text-ink"
-            >
-              {t("Sports")}
-            </button>
-          )}
         </div>
         {spotlight.length > 0 && (
           <div className="flex gap-5">

@@ -1,4 +1,6 @@
-import { Check, Play } from "lucide-react";
+import { Check } from "lucide-react";
+import { EpisodeReleaseCountdown } from "@/components/episode-release-countdown";
+import { Play } from "@/components/icons/play-filled";
 import { Poster } from "@/components/poster";
 import type { Meta } from "@/lib/cinemeta";
 import { formatAirDate } from "@/lib/dates";
@@ -7,12 +9,18 @@ import type { KitsuEpisode } from "@/lib/providers/kitsu";
 import { useSettings } from "@/lib/settings";
 import { SPOILER_TEXT_CLASS, SPOILER_THUMB_CLASS, type SpoilerMask } from "@/lib/spoilers";
 import { animeSeasonKey } from "./anime-season-key";
+import { parseKitsuId } from "@/lib/providers/kitsu";
+import { splitFranchiseDisplaySeason } from "@/lib/streams/anime-identity-core";
 import { useView } from "@/lib/view";
 import { useT } from "@/lib/i18n";
 import { FillerBadge, UpcomingBadge } from "../badges";
 import { EpisodeRatingBadge } from "../episode-rating-badge";
 import { EpisodeDownloadButton } from "../episode-download-button";
 import { isUpcomingDate } from "../helpers";
+
+function partDisplaySeason(metaId: string, sourceMetaId?: string): number | null {
+  return splitFranchiseDisplaySeason(parseKitsuId(sourceMetaId ?? metaId));
+}
 
 export function AnimeEpisodeRow({
   meta,
@@ -22,6 +30,7 @@ export function AnimeEpisodeRow({
   onContextMenu,
   metaForEp,
   showSeason,
+  forceUpcoming,
 }: {
   meta: Meta;
   ep: KitsuEpisode;
@@ -33,9 +42,11 @@ export function AnimeEpisodeRow({
     episode: number,
     watched: boolean,
     sourceMetaId?: string,
+    absoluteNumber?: number,
   ) => void;
   metaForEp?: (ep: KitsuEpisode) => Meta;
   showSeason?: boolean;
+  forceUpcoming?: boolean;
 }) {
   const t = useT();
   const { openPicker } = useView();
@@ -52,15 +63,27 @@ export function AnimeEpisodeRow({
     imdbId: ep.imdbId,
     imdbSeason: ep.imdbSeason,
     imdbEpisode: ep.imdbEpisode,
+    absoluteNumber: ep.absoluteNumber ?? ep.number,
+    tvdbEpisodeId: ep.tvdbEpisodeId,
+    sourceMetaId: ep.sourceMetaId,
   };
   return (
     <div
       data-ep={ep.number}
+      data-epid={ep.id}
       data-no-card-ring
+      style={{ contentVisibility: "auto", containIntrinsicSize: "auto 160px" }}
       onContextMenu={(e) =>
-        onContextMenu?.(e, animeSeasonKey(ep), ep.number, progress.watched, ep.sourceMetaId)
+        onContextMenu?.(
+          e,
+          animeSeasonKey(ep),
+          ep.number,
+          progress.watched,
+          ep.sourceMetaId,
+          ep.absoluteNumber,
+        )
       }
-      className="group flex gap-6 rounded-2xl px-4 py-5 transition-colors hover:bg-elevated/30"
+      className="group flex gap-6 rounded-lg px-4 py-5 transition-colors hover:bg-elevated/30"
     >
       <button
         onClick={() =>
@@ -100,7 +123,7 @@ export function AnimeEpisodeRow({
             </span>
           )}
           {progress.watched && (
-            <span className="absolute end-2 top-2 flex h-6 w-6 items-center justify-center rounded-full bg-emerald-400/22 text-emerald-200 ring-1 ring-emerald-400/40 backdrop-blur-sm">
+            <span className="absolute end-2 top-2 flex h-6 w-6 items-center justify-center rounded-full bg-success/20 text-success backdrop-blur-sm">
               <Check size={12} strokeWidth={3} />
             </span>
           )}
@@ -119,13 +142,13 @@ export function AnimeEpisodeRow({
               {ep.title || t("Episode {n}", { n: ep.number })}
             </span>
             {ep.filler && <FillerBadge />}
-            {isUpcomingDate(ep.airdate) ? <UpcomingBadge /> : null}
+            {isUpcomingDate(ep.airdate) || forceUpcoming ? <UpcomingBadge /> : null}
           </h4>
           <p className="flex flex-wrap items-center gap-x-2 text-[12px] text-ink-subtle">
             <span>
               {[
                 showSeason
-                  ? `S${ep.imdbSeason ?? ep.seasonNumber ?? 1} · E${ep.number}`
+                  ? `S${partDisplaySeason(meta.id, ep.sourceMetaId) ?? ep.imdbSeason ?? ep.seasonNumber ?? 1} · E${ep.number}`
                   : `E${ep.number}`,
                 ep.absoluteNumber && ep.absoluteNumber !== ep.number
                   ? `Abs E${ep.absoluteNumber}`
@@ -137,9 +160,7 @@ export function AnimeEpisodeRow({
                 .join("  ·  ")}
             </span>
             {progress.watched && watchedAgo && (
-              <span className="text-emerald-300/85">
-                · {t("Watched {ago}", { ago: watchedAgo })}
-              </span>
+              <span className="text-success/90">· {t("Watched {ago}", { ago: watchedAgo })}</span>
             )}
             {!progress.watched && progress.ratio > 0.01 && watchedAgo && (
               <span className="text-accent/85">
@@ -147,6 +168,7 @@ export function AnimeEpisodeRow({
               </span>
             )}
           </p>
+          <EpisodeReleaseCountdown date={ep.airdate} />
           {ep.synopsis && (
             <p
               className={`line-clamp-2 text-[13.5px] leading-relaxed text-ink-muted ${

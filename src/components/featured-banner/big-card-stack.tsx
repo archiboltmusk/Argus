@@ -1,14 +1,16 @@
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { NavArrow } from "@/components/nav-arrow";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { Meta } from "@/lib/cinemeta";
 import { useT } from "@/lib/i18n";
 import { peekCachedLogo, resolveLogo } from "@/lib/logo";
 import { useTmdbImdbId } from "@/lib/providers/tmdb";
+import { useReducedMotion } from "@/lib/use-reduced-motion";
 import { useSettings } from "@/lib/settings";
 import { useView } from "@/lib/view";
 import { MetaAwardsCorner } from "../meta-awards-corner";
 import { ThumbsDock } from "./thumbs-dock";
 import { FADE_MS, upsizeTmdb } from "./types";
+import { useTitleContext } from "@/components/context-menu/use-title-context";
 
 type LogoMap = Record<string, string | null>;
 
@@ -36,17 +38,22 @@ export function BigCardStack({
   const { openMeta } = useView();
   const t = useT();
   const current = items[active] ?? items[0];
+  const onContextMenu = useTitleContext(current, upsizeTmdb(current.background ?? current.poster));
   const resolvedImdb = useTmdbImdbId(current.id);
   const [logos, setLogos] = useState<LogoMap>(() => seedLogos(settings.tmdbKey, items));
   const containerRef = useRef<HTMLDivElement>(null);
   const dragRef = useRef<{ x: number; pointerId: number; moved: boolean } | null>(null);
   const [dragging, setDragging] = useState(false);
+  const reduce = useReducedMotion();
+  const contentAnim = reduce
+    ? undefined
+    : { animation: "banner-content-in 640ms cubic-bezier(0.32, 0.72, 0.24, 1)" };
 
   useEffect(() => {
     let cancelled = false;
     const indices = new Set<number>();
     for (let i = -2; i <= 2; i++) {
-      indices.add(((active + i) % items.length + items.length) % items.length);
+      indices.add((((active + i) % items.length) + items.length) % items.length);
     }
     const pending = items.filter((m, i) => indices.has(i) && !(m.id in logos));
     if (pending.length === 0) return;
@@ -117,8 +124,10 @@ export function BigCardStack({
     <div
       ref={containerRef}
       role="button"
+      onContextMenu={onContextMenu}
       tabIndex={0}
       onKeyDown={(e) => {
+        if (e.target !== e.currentTarget) return;
         if (e.key === "Enter" || e.key === " ") {
           e.preventDefault();
           openMeta({ ...current, logo: logos[current.id] ?? current.logo });
@@ -151,9 +160,10 @@ export function BigCardStack({
           <div
             key={m.id}
             aria-hidden={i !== active}
-            className="absolute inset-[2px] overflow-hidden rounded-[14px]"
+            className="absolute inset-[2px] overflow-hidden rounded-lg"
             style={{
               opacity: i === active ? 1 : 0,
+              pointerEvents: i === active ? "auto" : "none",
               transition: `opacity ${FADE_MS}ms cubic-bezier(0.32, 0.72, 0.24, 1)`,
             }}
           >
@@ -170,13 +180,17 @@ export function BigCardStack({
       })}
       <div
         aria-hidden
-        className="absolute inset-[2px] rounded-[14px]"
+        className="absolute inset-[2px] rounded-lg"
         style={{
           background:
             "linear-gradient(to top, oklch(0.10 0.02 260 / 0.92) 0%, oklch(0.10 0.02 260 / 0.20) 38%, transparent 60%)",
         }}
       />
-      <div className="absolute start-7 top-6 flex items-center gap-2 text-[10.5px] font-semibold uppercase tracking-[0.22em] text-accent">
+      <div
+        key={`badge-${current.id}`}
+        style={contentAnim}
+        className="absolute start-7 top-6 flex items-center gap-2 text-[10.5px] font-semibold uppercase tracking-[0.22em] text-accent"
+      >
         {current.providerBadge ? (
           <span
             className="flex items-center gap-2 rounded-full bg-canvas/65 py-1 pe-1 ps-2.5 normal-case tracking-normal text-ink/90"
@@ -197,8 +211,9 @@ export function BigCardStack({
         )}
       </div>
       <div
+        key={`meta-${current.id}`}
         className="absolute inset-x-7 bottom-7 flex flex-col gap-3"
-        style={{ transition: `opacity ${FADE_MS}ms ease-out` }}
+        style={contentAnim}
       >
         <TitlePlate title={current.name} logo={logo} />
         <div className="flex items-center gap-2.5 text-[13px] text-ink/80">
@@ -209,36 +224,50 @@ export function BigCardStack({
         <MetaAwardsCorner meta={current} imdbId={resolvedImdb} />
       </div>
       {onPrev && items.length > 1 && (
-        <button
-          type="button"
+        <div
           data-no-drag
-          aria-label={t("Previous")}
           onPointerDown={(e) => e.stopPropagation()}
-          onClick={(e) => {
-            e.stopPropagation();
-            onPrev();
+          onClick={(e) => e.stopPropagation()}
+          style={{
+            position: "absolute",
+            insetInlineStart: 6,
+            top: "50%",
+            transform: "translateY(-50%)",
+            zIndex: 10,
           }}
-          style={{ position: "absolute", insetInlineStart: 12, top: "50%", transform: "translateY(-50%)", zIndex: 10 }}
-          className="flex h-12 w-12 items-center justify-center rounded-full bg-canvas/65 text-ink opacity-0 backdrop-blur-md transition-all duration-200 hover:bg-canvas/85 hover:scale-105 group-hover:opacity-100"
+          className="opacity-0 transition-opacity duration-200 group-hover:opacity-100"
         >
-          <ChevronLeft size={22} strokeWidth={2.2} className="dir-icon" />
-        </button>
+          <NavArrow
+            dir="left"
+            onClick={onPrev}
+            label={t("Previous")}
+            size={34}
+            className="h-12 w-12"
+          />
+        </div>
       )}
       {onNext && items.length > 1 && (
-        <button
-          type="button"
+        <div
           data-no-drag
-          aria-label={t("Next")}
           onPointerDown={(e) => e.stopPropagation()}
-          onClick={(e) => {
-            e.stopPropagation();
-            onNext();
+          onClick={(e) => e.stopPropagation()}
+          style={{
+            position: "absolute",
+            insetInlineEnd: 6,
+            top: "50%",
+            transform: "translateY(-50%)",
+            zIndex: 10,
           }}
-          style={{ position: "absolute", insetInlineEnd: 12, top: "50%", transform: "translateY(-50%)", zIndex: 10 }}
-          className="flex h-12 w-12 items-center justify-center rounded-full bg-canvas/65 text-ink opacity-0 backdrop-blur-md transition-all duration-200 hover:bg-canvas/85 hover:scale-105 group-hover:opacity-100"
+          className="opacity-0 transition-opacity duration-200 group-hover:opacity-100"
         >
-          <ChevronRight size={22} strokeWidth={2.2} className="dir-icon" />
-        </button>
+          <NavArrow
+            dir="right"
+            onClick={onNext}
+            label={t("Next")}
+            size={34}
+            className="h-12 w-12"
+          />
+        </div>
       )}
       <ThumbsDock meta={current} />
     </div>
@@ -276,4 +305,3 @@ function TitlePlate({ title, logo }: { title: string; logo?: string }) {
     </div>
   );
 }
-

@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { useSettings } from "@/lib/settings";
 import {
   usePlaybackPosition,
@@ -7,6 +7,7 @@ import {
 } from "@/lib/player/playback-clock";
 import { useT } from "@/lib/i18n";
 import { SeekBarVisual } from "./seek-bar-visual";
+import { useHoverExitGuard } from "./use-hover-exit-guard";
 
 const LIVE_BEHIND_THRESHOLD_SEC = 30;
 const LIVE_EDGE_PAD_SEC = 2;
@@ -99,7 +100,10 @@ export function LiveSeekBar({
     setHover(fromEvent(e.clientX));
     if (scrub != null) setScrub(fromEvent(e.clientX));
   };
-  const onLeave = () => setHover(null);
+  const onLeave = useCallback(() => setHover(null), []);
+  const hoverGuardRef = useRef(false);
+  hoverGuardRef.current = hover != null && scrub == null;
+  useHoverExitGuard(ref, hoverGuardRef, onLeave);
   const onDown = (e: React.PointerEvent) => {
     e.currentTarget.setPointerCapture(e.pointerId);
     setScrub(fromEvent(e.clientX));
@@ -119,10 +123,12 @@ export function LiveSeekBar({
     <div className="pointer-events-auto group/seek relative h-12">
       <div
         ref={ref}
+        data-player-seekbar
         onPointerMove={onMove}
         onPointerLeave={onLeave}
         onPointerDown={onDown}
         onPointerUp={onUp}
+        onClick={(e) => { if (!e.isTrusted) onSeek(fromEvent(e.clientX)); }}
         className="absolute inset-x-0 top-1/2 -translate-y-1/2 cursor-pointer"
       >
         <SeekBarVisual

@@ -1,284 +1,321 @@
-import { useEffect, useMemo, useRef, useState } from "react";
-import stremioWordmark from "@/assets/stremio-wordmark.png";
-import { AuthModal } from "@/components/auth-modal";
-import { useAuth } from "@/lib/auth";
-import { useProfiles } from "@/lib/profiles";
+import { SettingGroup } from "./kit";
 import { useSettings } from "@/lib/settings";
-import { useTogether } from "@/lib/together/provider";
+import { useEffect, useState } from "react";
+import { Info, Link2 } from "./icons";
 import { useT } from "@/lib/i18n";
-import { ColorPicker } from "./color-picker";
-import { Section } from "./shared";
-import { AvatarRing } from "./account/avatar-ring";
-import { resizeAvatar } from "./account/avatar-utils";
-import { SyncedAddonsCard } from "./account/synced-addons-card";
+import { ROW_DESC, Section, ToggleRow } from "./shared";
+import { useSubTabs } from "./sub-tabs";
+import { IdentityTab } from "./account/identity-tab";
 import { ProfilesStrip } from "./account/profiles-strip";
 import { StartupDefaults } from "./account/startup-defaults";
 import { SettingsScopeCard } from "./account/settings-scope-card";
-import { AvatarFan } from "@/components/avatar-picker/avatar-fan";
-import { AvatarCatalogModal } from "@/components/avatar-picker/avatar-catalog-modal";
-import { avatarUrl } from "@/lib/avatars/catalog";
+import { StremioCard } from "./account/stremio-card";
+import { SyncedAddonsCard } from "./account/synced-addons-card";
+import { ArgusAccountPanel } from "@/views/account/argus-account-panel";
+
+import { NuvioCard } from "./account/nuvio-card";
+import { NuvioSyncedAddonsCard } from "./account/nuvio-synced-addons-card";
+import { NuvioProfileMappingCard } from "./account/nuvio-profile-card";
+
+import { AccountProviderPanel } from "./account/account-provider-panel";
+import { NuvioProfilesTab } from "./account/nuvio-profiles-tab";
+
+import { useProfiles } from "@/lib/profiles";
+import { loadNuvioState } from "@/lib/nuvio/nuvio-client";
+
+import { SecondaryPrivilegesCard } from "./account/secondary-privileges-card";
+import { SettingsModal, ModalButton } from "./kit";
+import { ShieldAlert } from "lucide-react";
+import { getSecondaryPrivileges } from "@/lib/settings/defaults";
+import { isStremioActivePrimary } from "@/lib/active-profile-id";
+
+type Tab = "provider" | "you" | "profiles" | "argus" | "stremio" | "nuvio";
 
 export function AccountStub() {
   const t = useT();
-  const { user, signOut } = useAuth();
-  const { settings, update } = useSettings();
-  const { displayName, setDisplayName } = useTogether();
-  const { activeProfile, updateProfile } = useProfiles();
-  const pushIdentity = (patch: { argusColor?: string; argusAvatar?: string | null }) => {
-    update(patch);
-    if (!activeProfile) return;
-    const profilePatch: { color?: string; avatar?: string | null } = {};
-    if (patch.argusColor !== undefined) profilePatch.color = patch.argusColor;
-    if (patch.argusAvatar !== undefined) profilePatch.avatar = patch.argusAvatar;
-    if (Object.keys(profilePatch).length > 0) updateProfile(activeProfile.id, profilePatch);
-  };
-  const pushDisplayName = (next: string) => {
-    setDisplayName(next);
-    if (activeProfile && next && next !== activeProfile.name) {
-      updateProfile(activeProfile.id, { name: next });
-    }
-  };
-  const [showAuth, setShowAuth] = useState(false);
-  const [reveal, setReveal] = useState(false);
-  const [nameDraft, setNameDraft] = useState(displayName);
-  const [editingName, setEditingName] = useState(false);
-  const fileRef = useRef<HTMLInputElement>(null);
-  const [avatarPickerOpen, setAvatarPickerOpen] = useState(false);
+  const { profiles, activeProfile, openPicker } = useProfiles();
+  const { settings } = useSettings();
+  const isNuvio = settings.accountProvider === "nuvio";
+  const [, setNuvioState] = useState(() => loadNuvioState());
+  const [forceTick, setForceTick] = useState(0);
+  void forceTick;
+  const [restrictedModal, setRestrictedModal] = useState<{
+    title: string;
+    description: string;
+  } | null>(null);
 
   useEffect(() => {
-    setNameDraft(displayName);
-  }, [displayName]);
+    const onSync = () => setNuvioState(loadNuvioState());
+    const onProfileSync = () => setForceTick((t) => t + 1);
+    window.addEventListener("argus:nuvio-state-changed", onSync);
+    window.addEventListener("argus:nuvio-profile-changed", onSync);
+    window.addEventListener("argus:nuvio-profiles-updated", onSync);
+    window.addEventListener("argus:active-profile-changed", onProfileSync);
+    window.addEventListener("argus:profiles-updated", onProfileSync);
+    return () => {
+      window.removeEventListener("argus:nuvio-state-changed", onSync);
+      window.removeEventListener("argus:nuvio-profile-changed", onSync);
+      window.removeEventListener("argus:nuvio-profiles-updated", onSync);
+      window.removeEventListener("argus:active-profile-changed", onProfileSync);
+      window.removeEventListener("argus:profiles-updated", onProfileSync);
+    };
+  }, []);
 
-  const stremioAvatar = user?.avatar ?? null;
-  const argusAvatar = settings.argusAvatar;
-  const customAvatar = activeProfile?.avatar ?? argusAvatar ?? null;
-  const effectiveAvatar = customAvatar ?? stremioAvatar;
+  const tabs = [
+    { id: "you" as const, label: t("Your profile") },
+    { id: "profiles" as const, label: t("Profiles") },
+    { id: "argus" as const, label: t("Argus account") },
+    { id: "provider" as const, label: t("Account provider") },
+    ...(isNuvio
+      ? [{ id: "nuvio" as const, label: t("Nuvio") }]
+      : [{ id: "stremio" as const, label: t("Stremio") }]),
+  ];
 
-  const onPickFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    e.target.value = "";
-    if (!file) return;
-    try {
-      const dataUrl = await resizeAvatar(file, 320);
-      pushIdentity({ argusAvatar: dataUrl });
-    } catch (err) {
-      console.warn("[avatar] resize failed", err);
+  const [tab, setTab] = useState<Tab>("you");
+
+  const handleTabSelect = (next: Tab) => {
+    const liveIsPrimary = isNuvio
+      ? Number(loadNuvioState().activeProfileIndex) === 1
+      : isStremioActivePrimary(activeProfile, profiles);
+
+    if (liveIsPrimary) {
+      setTab(next);
+      return;
     }
+
+    if (next === "you" || next === "profiles") {
+      setTab(next);
+      return;
+    }
+
+    const currentPrivs = getSecondaryPrivileges(settings, isNuvio);
+
+    if (next === "provider") {
+      if (currentPrivs?.canViewAccountProvider) {
+        setTab(next);
+        return;
+      }
+      setRestrictedModal({
+        title: t("Accessible for primary profile"),
+        description: t(
+          "Account provider settings allow switching between Stremio and Nuvio. This action is restricted to the primary profile.",
+        ),
+      });
+      return;
+    }
+
+    if (next === "argus") {
+      if (currentPrivs?.canViewArgusAccount) {
+        setTab(next);
+        return;
+      }
+      setRestrictedModal({
+        title: t("Accessible for primary profile"),
+        description: t(
+          "Argus master cloud account management is restricted to the primary profile.",
+        ),
+      });
+      return;
+    }
+
+    if (next === "stremio" || next === "nuvio") {
+      if (currentPrivs?.canViewProviderAccount) {
+        setTab(next);
+        return;
+      }
+      setRestrictedModal({
+        title: t("Accessible for primary profile"),
+        description: isNuvio
+          ? t(
+              "Nuvio account credentials, profile slot mapping, and cloud addons are restricted to the primary profile.",
+            )
+          : t(
+              "Stremio account credentials, install links, and synced addons are restricted to the primary profile.",
+            ),
+      });
+      return;
+    }
+
+    setTab(next);
   };
 
-  const maskedEmail = useMemo(() => {
-    if (!user?.email) return "";
-    const [local, domain] = user.email.split("@");
-    if (!domain) return "*****";
-    const visible = local.slice(0, 1);
-    return `${visible}${"*".repeat(Math.max(local.length - 1, 4))}@${domain}`;
-  }, [user]);
+  useSubTabs(tabs, tab, (id) => handleTabSelect(id as Tab));
 
   return (
-    <div className="flex flex-col gap-5">
-      <Section
-        title={t("Argus identity")}
-        subtitle={t("How you appear in Watch Together, sessions, and chat. Sits on top of your Stremio account.")}
-      >
-        <div className="flex flex-col gap-4 rounded-2xl border border-edge-soft bg-canvas/40 p-5">
-          <div className="flex items-center gap-5">
-            <AvatarRing
-              src={effectiveAvatar}
-              size={88}
-              onClick={() => fileRef.current?.click()}
-            />
-            <input
-              ref={fileRef}
-              type="file"
-              accept="image/png,image/jpeg,image/webp,image/gif"
-              onChange={onPickFile}
-              className="hidden"
-            />
-            <div className="flex min-w-0 flex-1 flex-col gap-3">
-              {editingName ? (
-                <div className="flex items-center gap-2">
-                  <input
-                    autoFocus
-                    value={nameDraft}
-                    onChange={(e) => setNameDraft(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") {
-                        pushDisplayName(nameDraft.trim() || displayName);
-                        setEditingName(false);
-                      }
-                      if (e.key === "Escape") {
-                        setNameDraft(displayName);
-                        setEditingName(false);
-                      }
-                    }}
-                    className="h-10 flex-1 rounded-xl border border-ink bg-elevated px-3 text-[15px] font-semibold text-ink outline-none"
-                  />
-                  <button
-                    onClick={() => {
-                      pushDisplayName(nameDraft.trim() || displayName);
-                      setEditingName(false);
-                    }}
-                    className="h-10 rounded-xl bg-ink px-4 text-[12.5px] font-semibold text-canvas"
-                  >
-                    {t("Save")}
-                  </button>
-                </div>
-              ) : (
-                <button
-                  onClick={() => setEditingName(true)}
-                  className="flex flex-wrap items-baseline gap-x-2 gap-y-0 self-start rounded-lg px-1 py-0.5 text-start transition-colors hover:bg-canvas/50"
-                >
-                  <span className="font-display text-[24px] font-medium leading-tight tracking-tight text-ink">
-                    {displayName}
-                  </span>
-                  {user && (
-                    <span className="text-[13px] text-ink-subtle">
-                      ({user.fullname || user.email.split("@")[0]})
-                    </span>
-                  )}
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" aria-hidden className="text-ink-subtle">
-                    <path
-                      d="M16.5 4.5l3 3-11 11H5.5v-3l11-11z"
-                      stroke="currentColor"
-                      strokeWidth="1.6"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                  </svg>
-                </button>
-              )}
-              <div className="flex flex-wrap items-center gap-2">
-                <button
-                  onClick={() => fileRef.current?.click()}
-                  className="flex h-9 items-center gap-1.5 rounded-lg border border-edge-soft px-3 text-[12.5px] font-medium text-ink-muted transition-colors hover:border-edge hover:text-ink"
-                >
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" aria-hidden>
-                    <path d="M12 5v14M5 12h14" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-                  </svg>
-                  {t("Upload photo")}
-                </button>
-                {customAvatar && (
-                  <button
-                    onClick={() => pushIdentity({ argusAvatar: null })}
-                    className="flex h-9 items-center rounded-lg border border-edge-soft px-3 text-[12.5px] font-medium text-ink-subtle transition-colors hover:border-danger/40 hover:text-danger"
-                  >
-                    {stremioAvatar ? t("Reset to Stremio avatar") : t("Reset to default")}
-                  </button>
-                )}
-              </div>
-              <AvatarFan
-                onClick={() => setAvatarPickerOpen(true)}
-                onRandomize={(id) => pushIdentity({ argusAvatar: avatarUrl(id) })}
-              />
-              <ColorPicker
-                value={settings.argusColor}
-                onChange={(c) => pushIdentity({ argusColor: c })}
-              />
-            </div>
-          </div>
-        </div>
-      </Section>
+    <>
+      <div key={tab} className="argus-cascade flex flex-col gap-10">
+        {tab === "provider" && <AccountProviderPanel />}
+        {tab === "you" && <IdentityTab />}
+        {tab === "profiles" && <ProfilesTab />}
+        {tab === "argus" && <ArgusAccountPanel />}
+        {tab === "stremio" && <StremioTab />}
+        {tab === "nuvio" && <NuvioTab />}
+      </div>
 
+      {restrictedModal && (
+        <SettingsModal
+          open={true}
+          onClose={() => setRestrictedModal(null)}
+          title={restrictedModal.title}
+          sub={restrictedModal.description}
+          actions={
+            <div className="flex items-center gap-2">
+              <ModalButton
+                ghost
+                onClick={() => {
+                  setRestrictedModal(null);
+                  openPicker({ kind: "list" });
+                }}
+              >
+                {t("Switch profile")}
+              </ModalButton>
+              <ModalButton onClick={() => setRestrictedModal(null)}>{t("OK")}</ModalButton>
+            </div>
+          }
+        >
+          <div className="flex flex-col items-center gap-3 py-4 text-center">
+            <span className="grid h-14 w-14 place-items-center rounded-full bg-accent/15 text-accent ring-1 ring-accent/30">
+              <ShieldAlert size={28} strokeWidth={2.2} />
+            </span>
+            <p className="max-w-[42ch] text-[14.5px] leading-relaxed text-ink-muted">
+              {t(
+                "To access administrative account settings, switch to the primary profile or have the primary profile enable permissions in Settings > Profiles > Privileges for secondary profiles.",
+              )}
+            </p>
+          </div>
+        </SettingsModal>
+      )}
+    </>
+  );
+}
+
+function NuvioTab() {
+  const t = useT();
+  return (
+    <>
       <Section
-        title={t("Profiles")}
-        subtitle={t("Everyone who uses this Argus gets their own watch history, avatar, color, and optional PIN. Switch anytime.")}
+        title={t("Nuvio account")}
+        subtitle={t(
+          "Connect your Nuvio account to sync watch progress, profile slots, and addons.",
+        )}
       >
-        <div className="flex flex-col gap-5 rounded-2xl border border-edge-soft bg-canvas/40 p-5">
-          <ProfilesStrip />
-          <StartupDefaults />
-          <SettingsScopeCard />
-        </div>
+        <NuvioCard />
+      </Section>
+      <Section
+        title={t("Profile mapping")}
+        subtitle={t("Choose which Nuvio profile slot (1–6) syncs with this Argus profile.")}
+      >
+        <NuvioProfileMappingCard />
+      </Section>
+      <Section
+        title={t("Synced addons")}
+        subtitle={t("Argus pulls addons configured in your Nuvio profile.")}
+      >
+        <NuvioSyncedAddonsCard />
+      </Section>
+    </>
+  );
+}
+
+function ProfilesTab() {
+  const t = useT();
+  const { settings } = useSettings();
+  const { profiles, activeProfile } = useProfiles();
+  const isNuvio = settings.accountProvider === "nuvio";
+  const isPrimary = isNuvio
+    ? loadNuvioState().activeProfileIndex === 1
+    : isStremioActivePrimary(activeProfile, profiles);
+
+  if (isNuvio) {
+    return <NuvioProfilesTab />;
+  }
+
+  const canManageStartup = isPrimary || getSecondaryPrivileges(settings, false).canManageStartup;
+
+  return (
+    <Section
+      title={t("Profiles")}
+      subtitle={t(
+        "Create profiles for the people who use Argus. Each can have its own appearance, settings, and PIN.",
+      )}
+    >
+      <SettingGroup label={t("Everyone on this Argus")}>
+        <p className={`max-w-[70ch] ${ROW_DESC}`}>
+          {isPrimary
+            ? t(
+                "Choose a profile to switch. Use the pencil to edit its details and access settings.",
+              )
+            : t(
+                "Choose a profile to switch. You can edit your own profile's details and settings.",
+              )}
+        </p>
+        <ProfilesStrip />
+      </SettingGroup>
+      {canManageStartup && <StartupDefaults />}
+      <SettingsScopeCard />
+      {isPrimary && <SecondaryPrivilegesCard />}
+    </Section>
+  );
+}
+
+function StremioTab() {
+  const t = useT();
+  return (
+    <>
+      <Section
+        title={t("Stremio install links")}
+        subtitle={t(
+          "Argus catches stremio:// install links so the configure-and-install flow stays inside the app. Every install also syncs to your Stremio account, so the official app remains the canonical home for your library.",
+        )}
+      >
+        <StremioDeeplinkRow />
       </Section>
 
       <Section
         title={t("Stremio account")}
         subtitle={t("Library, watch progress, and addon collection sync from this account.")}
       >
-        {user ? (
-          <div className="relative flex flex-col gap-3 overflow-hidden rounded-2xl border border-edge-soft bg-canvas/40 p-5">
-            <img
-              src={stremioWordmark}
-              alt=""
-              aria-hidden
-              className="pointer-events-none absolute end-5 bottom-4 h-9 w-auto opacity-45 select-none"
-              style={{ filter: "invert(1) grayscale(1) brightness(1.1)" }}
-              draggable={false}
-            />
-            <div className="flex items-center justify-between gap-4">
-              <div className="flex min-w-0 flex-col">
-                <span className="text-[10.5px] font-semibold uppercase tracking-[0.16em] text-ink-subtle">
-                  {t("Email")}
-                </span>
-                <span className="truncate font-mono text-[14.5px] text-ink">
-                  {reveal ? user.email : maskedEmail}
-                </span>
-              </div>
-              <button
-                onClick={() => setReveal((v) => !v)}
-                className="flex h-9 shrink-0 items-center rounded-lg border border-edge-soft px-3 text-[12.5px] font-medium text-ink-muted transition-colors hover:border-edge hover:text-ink"
-              >
-                {reveal ? t("Hide") : t("Reveal")}
-              </button>
-            </div>
-            <div className="flex items-center justify-between gap-4">
-              <div className="flex min-w-0 flex-col">
-                <span className="text-[10.5px] font-semibold uppercase tracking-[0.16em] text-ink-subtle">
-                  {t("Stremio ID")}
-                </span>
-                <span className="truncate font-mono text-[12.5px] text-ink-muted">{user._id}</span>
-              </div>
-            </div>
-            <div className="mt-1 flex items-center gap-2 border-t border-edge-soft/60 pt-3">
-              <button
-                onClick={() => setShowAuth(true)}
-                className="flex h-10 items-center gap-1.5 rounded-xl border border-edge-soft px-4 text-[12.5px] font-medium text-ink-muted transition-colors hover:border-edge hover:text-ink"
-              >
-                {t("Re-authenticate")}
-              </button>
-              <button
-                onClick={signOut}
-                className="flex h-10 items-center gap-1.5 rounded-xl border border-edge-soft px-4 text-[12.5px] font-medium text-ink-subtle transition-colors hover:border-danger/40 hover:bg-danger/10 hover:text-danger"
-              >
-                {t("Sign out")}
-              </button>
-            </div>
-          </div>
-        ) : (
-          <div className="flex items-center justify-between gap-4 rounded-2xl border border-edge-soft bg-canvas/40 p-5">
-            <div className="flex flex-col">
-              <span className="text-[14px] font-medium text-ink">{t("Not signed in")}</span>
-              <span className="text-[12.5px] text-ink-subtle">
-                {t("Sign in to sync your library, watch progress, and addons.")}
-              </span>
-            </div>
-            <button
-              onClick={() => setShowAuth(true)}
-              className="flex h-10 items-center gap-1.5 rounded-xl bg-ink px-4 text-[13px] font-semibold text-canvas transition-transform hover:scale-[1.02]"
-            >
-              {t("Sign in")}
-            </button>
-          </div>
-        )}
+        <StremioCard />
       </Section>
-
       <Section
         title={t("Synced addons")}
-        subtitle={t("Argus pulls your addon collection from Stremio. Manage individual addons in Streaming sources.")}
+        subtitle={t(
+          "Argus pulls your addon collection from Stremio. Manage individual addons in Streaming sources.",
+        )}
       >
         <SyncedAddonsCard />
       </Section>
+    </>
+  );
+}
 
-      {showAuth && <AuthModal onClose={() => setShowAuth(false)} />}
-      {avatarPickerOpen && (
-        <AvatarCatalogModal
-          current={effectiveAvatar}
-          onPick={(id) => {
-            pushIdentity({ argusAvatar: avatarUrl(id) });
-            setAvatarPickerOpen(false);
-          }}
-          onClose={() => setAvatarPickerOpen(false)}
-        />
-      )}
-    </div>
+function StremioDeeplinkRow() {
+  const t = useT();
+  const { settings, update } = useSettings();
+  const on = settings.stremioDeeplinkInstall;
+  return (
+    <SettingGroup>
+      <ToggleRow
+        label={t("Catch stremio:// install links inside Argus")}
+        sub={t(
+          "Argus's in-app installer animates the manifest install and keeps you in context. Anything Argus installs is also synced to your Stremio account, so the official app stays the canonical library. Turn this off and Stremio becomes the only handler for stremio:// links; Argus still installs anything you trigger from inside the app (Configure & install, paste, drag-and-drop).",
+        )}
+        leading={<Link2 size={18} strokeWidth={2} />}
+        value={on}
+        onChange={(stremioDeeplinkInstall) => update({ stremioDeeplinkInstall })}
+      />
+      <div className="flex items-start gap-2.5 rounded-[10px] bg-elevated px-4 py-3">
+        <Info size={18} className="mt-[2px] shrink-0 text-ink-subtle" />
+        <p className={`max-w-[66ch] ${ROW_DESC}`}>
+          {on
+            ? t(
+                "Heads up: if Stremio is also installed, Windows may ask which app to use the first time a stremio:// link fires. Pick Argus to make it stick.",
+              )
+            : t(
+                "stremio:// links now open in the Stremio app. Argus will only install when you trigger it from inside Argus.",
+              )}
+        </p>
+      </div>
+    </SettingGroup>
   );
 }

@@ -2,7 +2,9 @@ import { ChevronDown, ChevronUp, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import {
   getCacheReports,
+  getFrameStats,
   getSamples,
+  getViewportInfo,
   startProfiler,
   stopProfiler,
   subscribeProfiler,
@@ -25,6 +27,12 @@ export function MemoryHud() {
   const [toast, setToast] = useState<string | null>(null);
 
   useEffect(() => {
+    try {
+      localStorage.setItem(STORAGE_KEY, open ? "1" : "0");
+    } catch {}
+  }, [open]);
+
+  useEffect(() => {
     if (!open) return;
     startProfiler();
     const unsub = subscribeProfiler(() => force((x) => x + 1));
@@ -32,12 +40,6 @@ export function MemoryHud() {
       unsub();
       stopProfiler();
     };
-  }, [open]);
-
-  useEffect(() => {
-    try {
-      localStorage.setItem(STORAGE_KEY, open ? "1" : "0");
-    } catch {}
   }, [open]);
 
   useEffect(() => {
@@ -73,10 +75,11 @@ export function MemoryHud() {
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-2">
           <span className="font-bold text-ink">PROFILER</span>
-          <span style={{ color: heapColor }}>{heap.toFixed(1)}MB</span>
+          <span style={{ color: heapColor }}>
+            {heap.toFixed(1)}MB
+          </span>
           <span className="text-ink-subtle">
-            (Δ{delta >= 0 ? "+" : ""}
-            {delta.toFixed(1)} · peak {peak.toFixed(1)})
+            (Δ{delta >= 0 ? "+" : ""}{delta.toFixed(1)} · peak {peak.toFixed(1)})
           </span>
         </div>
         <div className="flex items-center gap-1">
@@ -93,9 +96,7 @@ export function MemoryHud() {
             onClick={() => {
               const r = api.dumpReport();
               if (r) {
-                setToast(
-                  `Downloaded ${r.filename} (${r.events} events, ${(r.bytes / 1024).toFixed(1)} KB)`,
-                );
+                setToast(`Downloaded ${r.filename} (${r.events} events, ${(r.bytes / 1024).toFixed(1)} KB)`);
                 setTimeout(() => setToast(null), 4000);
               }
             }}
@@ -129,6 +130,7 @@ export function MemoryHud() {
       </div>
 
       <NativeLine />
+      <FrameLine />
       {!collapsed && (
         <>
           <DomLine />
@@ -159,6 +161,27 @@ function NativeLine() {
         <span className="text-ink-subtle">
           {" "}
           · hb {m.argusRss.toFixed(0)} · wv {m.webviewRss.toFixed(0)} · {tier}
+        </span>
+      </span>
+    </div>
+  );
+}
+
+function FrameLine() {
+  const f = getFrameStats();
+  const vp = getViewportInfo();
+  const missPct = f.samples > 0 ? Math.round((f.missed / f.samples) * 100) : 0;
+  const worstP95 = f.worstSeconds[0]?.p95 ?? 0;
+  const color = missPct > 20 ? "#ff7676" : missPct > 5 ? "#ffb866" : "#7eea9f";
+  return (
+    <div className="flex items-center justify-between gap-2 border-t border-edge-soft pt-1.5">
+      <span className="font-bold text-ink">FRAMES</span>
+      <span>
+        <span style={{ color }}>{f.fps.toFixed(0)} fps</span>
+        <span className="text-ink-subtle">
+          {" "}
+          · 1% low {f.low1Fps.toFixed(0)} · miss {missPct}% · worst {worstP95.toFixed(0)}ms ·{" "}
+          {f.refreshHz}Hz · {vp.width}x{vp.height}@{vp.dpr}
         </span>
       </span>
     </div>
@@ -211,7 +234,9 @@ function EventList({ samples }: { samples: Sample[] }) {
         .filter((s) => s.kind !== "tick")
         .map((s, i) => (
           <div key={i} className="flex items-baseline justify-between gap-2 text-[10px]">
-            <span className="shrink-0 text-ink-subtle">[{s.kind}]</span>
+            <span className="shrink-0 text-ink-subtle">
+              [{s.kind}]
+            </span>
             <span className="flex-1 truncate text-ink-muted">{s.label}</span>
             <span className="shrink-0 text-ink">{s.heapMB.toFixed(0)}MB</span>
           </div>

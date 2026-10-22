@@ -3,20 +3,23 @@ import type { Meta } from "@/lib/cinemeta";
 import { useLocalizedOverview } from "@/lib/use-localized-overview";
 import { ResultPoster } from "./result-poster";
 import { useView } from "@/lib/view";
+import { useContextMenu } from "@/lib/context-menu";
 
 function MetaRow({ m, onClose, index }: { m: Meta; onClose: () => void; index?: number }) {
   const { openMeta } = useView();
+  const { open } = useContextMenu();
   const description = useLocalizedOverview(m);
   const staggered = index != null;
   return (
     <button
+      onContextMenu={(event) => open(event, { kind: "meta", meta: m })}
       onClick={() => {
         openMeta(m);
         onClose();
       }}
       style={staggered ? { animationDelay: `${Math.min(index, 8) * 55}ms` } : undefined}
       className={`group flex min-w-0 items-center gap-4 rounded-2xl border border-transparent px-3 py-2.5 text-start transition-colors hover:border-edge-soft hover:bg-elevated/50 active:scale-[0.997] ${
-        staggered ? "animate-ai-reveal" : ""
+        staggered ? "animate-row-in" : ""
       }`}
     >
       <div className="h-[96px] w-[64px] shrink-0 overflow-hidden rounded-xl shadow-[0_6px_16px_-8px_rgba(0,0,0,0.55)] ring-1 ring-edge-soft">

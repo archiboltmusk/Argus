@@ -18,6 +18,8 @@ concurrency:
 
 env:
   CARGO_TERM_COLOR: always
+  # The Harbor tree is large; tsc and vite exceed the default ~2 GB heap.
+  NODE_OPTIONS: --max-old-space-size=8192
 
 jobs:
   # PRs only build the .dmg when native code or the build itself changed;
@@ -113,50 +115,25 @@ jobs:
         with:
           node-version: 24
           cache: pnpm
-      - run: brew install mpv dylibbundler
-      # Minimal LGPL ffmpeg (audio decode + silencedetect + https/http input) for
-      # subtitle auto-sync. Built from the official source tarball, no GPL or
-      # nonfree parts, linked statically so the app needs no extra dylibs.
-      - name: Restore ffmpeg
-        id: ffmpeg-cache
-        uses: actions/cache@v4
-        with:
-          path: ffmpeg-bin
-          key: ffmpeg-7.1.1-lgpl-${{ matrix.target }}-v1
-      - name: Build LGPL ffmpeg
-        if: steps.ffmpeg-cache.outputs.cache-hit != 'true'
+      - run: brew install mpv pkg-config
+      # Stage libmpv and its dylib closure with @rpath install names; build.rs links it.
+      - name: Prepare bundled macOS libraries
+        id: macos-libraries
         run: |
-          set -euo pipefail
-          curl -fsSL https://ffmpeg.org/releases/ffmpeg-7.1.1.tar.xz -o ffmpeg.tar.xz
-          tar -xf ffmpeg.tar.xz
-          cd ffmpeg-7.1.1
-          SSL="$(brew --prefix openssl@3)"
-          # Only the static archives, so the linker cannot pick the dylibs.
-          mkdir -p "$PWD/../ssl-static/lib"
-          cp "$SSL"/lib/libssl.a "$SSL"/lib/libcrypto.a "$PWD/../ssl-static/lib/"
-          # Hide brew .pc files so configure falls back to our static -lssl -lcrypto.
-          export PKG_CONFIG_LIBDIR="$PWD/../empty-pc"; mkdir -p "$PKG_CONFIG_LIBDIR"
-          ./configure --prefix="$PWD/../ffmpeg-out" --enable-version3 \
-            --disable-gpl --disable-nonfree --disable-autodetect \
-            --disable-doc --disable-debug --disable-ffplay --disable-ffprobe \
-            --disable-avdevice --disable-swscale --disable-postproc \
-            --disable-encoders --disable-muxers --enable-muxer=null \
-            --enable-encoder=pcm_s16le \
-            --enable-network --enable-openssl \
-            --extra-cflags="-I$SSL/include" \
-            --extra-ldflags="-L$PWD/../ssl-static/lib"
-          make -j"$(sysctl -n hw.ncpu)"
-          mkdir -p ../ffmpeg-bin
-          cp ffmpeg ../ffmpeg-bin/ffmpeg
-          strip ../ffmpeg-bin/ffmpeg
-          if otool -L ../ffmpeg-bin/ffmpeg | grep -E "/opt/homebrew|/usr/local"; then
-            echo "::error::ffmpeg links Homebrew paths"; exit 1
-          fi
-          ../ffmpeg-bin/ffmpeg -hide_banner -version | head -3
-          ../ffmpeg-bin/ffmpeg -hide_banner -version | grep -q -- "--disable-gpl"
+          FRAMEWORKS_DIR="$RUNNER_TEMP/argus-macos-frameworks-${{ matrix.target }}"
+          CONFIG_PATH="$RUNNER_TEMP/tauri-macos-libmpv-${{ matrix.target }}.json"
+          python3 scripts/macos-bundle-libmpv.py prepare \
+            --frameworks "$FRAMEWORKS_DIR" \
+            --config "$CONFIG_PATH" \
+            --target "${{ matrix.target }}"
+          echo "ARGUS_MACOS_FRAMEWORKS_DIR=$FRAMEWORKS_DIR" >> "$GITHUB_ENV"
+          echo "ARGUS_MACOS_LIB_DIR=$FRAMEWORKS_DIR/link" >> "$GITHUB_ENV"
+          echo "config=--config $CONFIG_PATH" >> "$GITHUB_OUTPUT"
       - run: pnpm install --frozen-lockfile
       # Bundled fonts (CJK subset) are fetched with pinned checksums, not committed.
       - run: pnpm run setup:fonts
+      # yt-dlp / ffmpeg / ffprobe sidecars declared as externalBin.
+      - run: pnpm run setup:binaries
       # Non-PR builds feed the beta channel: version MAJOR.MINOR.<run number>
       # so every main build is newer than the last for the updater.
       # The updater public key comes from the TAURI_UPDATER_PUBKEY repo variable
@@ -179,32 +156,17 @@ jobs:
             console.log("version", c.version);
           '
       # Unsigned until an Apple Developer ID is added as a repo secret.
-      - run: pnpm tauri build --target ${{ matrix.target }} --bundles app
+      - run: pnpm tauri build --target ${{ matrix.target }} --bundles app ${{ steps.macos-libraries.outputs.config }}
         env:
           # Optional: enable Trakt/Simkl sign-in (apps registered by the maintainer).
           ARGUS_TRAKT_CLIENT_ID: ${{ secrets.ARGUS_TRAKT_CLIENT_ID }}
           ARGUS_TRAKT_CLIENT_SECRET: ${{ secrets.ARGUS_TRAKT_CLIENT_SECRET }}
           ARGUS_SIMKL_CLIENT_ID: ${{ secrets.ARGUS_SIMKL_CLIENT_ID }}
-      - name: Bundle libmpv into the app and build the .dmg
+      - name: Verify the app and build the .dmg
         run: |
           set -euo pipefail
           APP="src-tauri/target/${{ matrix.target }}/release/bundle/macos/Argus.app"
-          EXE="$APP/Contents/MacOS/$(/usr/libexec/PlistBuddy -c 'Print CFBundleExecutable' "$APP/Contents/Info.plist")"
-          # Copy libmpv and every dylib it pulls in, rewriting install names,
-          # so the app runs on a Mac without Homebrew.
-          dylibbundler -od -b -cd \
-            -x "$EXE" \
-            -d "$APP/Contents/Frameworks/" \
-            -p @executable_path/../Frameworks/
-          if otool -L "$EXE" "$APP"/Contents/Frameworks/*.dylib | grep -E "/opt/homebrew|/usr/local"; then
-            echo "::error::App still links Homebrew paths"; exit 1
-          fi
-          # Slim sync-only build next to the main binary; locate_sync_ffmpeg() uses it.
-          # Named apart from ffmpeg so transcode, casting and subtitle extraction
-          # never pick it up (it has no video encoders or HLS muxer).
-          cp ffmpeg-bin/ffmpeg "$(dirname "$EXE")/argus-sync-ffmpeg"
-          chmod +x "$(dirname "$EXE")/argus-sync-ffmpeg"
-          codesign --force --deep --sign - "$APP"
+          python3 scripts/macos-bundle-libmpv.py verify-app --app "$APP" --target "${{ matrix.target }}"
           mkdir -p dist-dmg && cp -R "$APP" dist-dmg/
           ln -s /Applications dist-dmg/Applications
           hdiutil create -volname Argus -srcfolder dist-dmg -ov -format UDZO "Argus-${{ matrix.arch }}.dmg"

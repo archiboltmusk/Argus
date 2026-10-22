@@ -1,8 +1,13 @@
 import { Check, Eye } from "lucide-react";
+import { HoverTooltip } from "@/components/hover-tooltip";
 import { EpisodeRatingBadge } from "./episode-rating-badge";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
+import { EpisodePreview } from "./episode-grid-card";
 import { DragStrip } from "@/components/drag-strip";
 import { Poster } from "@/components/poster";
+import { EpisodeReleaseCountdown } from "@/components/episode-release-countdown";
+import { formatAirDate } from "@/lib/dates";
 import type { Meta } from "@/lib/cinemeta";
 import type { Episode } from "@/lib/providers/tmdb";
 import { useSettings } from "@/lib/settings";
@@ -46,7 +51,9 @@ export function EpisodeStrip({
     () =>
       episodes.map((ep) => {
         const tmdbStill = ep.stillPath
-          ? `https://image.tmdb.org/t/p/${settings.hdEpisodeImages ? "original" : "w300"}${ep.stillPath}`
+          ? ep.stillPath.startsWith("http")
+            ? ep.stillPath
+            : `https://image.tmdb.org/t/p/${settings.hdEpisodeImages ? "original" : "w300"}${ep.stillPath}`
           : ep.stillUrl;
         const stills = [tmdbStill, thumbnailFor(ep)].filter((u): u is string => !!u);
         return {
@@ -114,7 +121,11 @@ export function EpisodeStrip({
   return (
     <DragStrip itemCount={episodes.length}>
       {episodes.map((ep) => (
-        <div key={ep.id} className="w-[244px] shrink-0">
+        <div
+          key={ep.id}
+          className="shrink-0"
+          style={{ width: Math.round(244 * (settings.episodeCardScale || 1)) }}
+        >
           <EpisodeStripCard
             meta={meta}
             ep={ep}
@@ -156,6 +167,53 @@ function EpisodeStripCard({
   const { settings } = useSettings();
   const ratingValue = ep.imdbRating ?? ep.voteAverage;
   const ratingIsImdb = ep.imdbRating != null;
+  const cardRef = useRef<HTMLDivElement>(null);
+  const popupRef = useRef<HTMLDivElement>(null);
+  const previewTimer = useRef<number | undefined>(undefined);
+  const [preview, setPreview] = useState<{ top: number; left: number; width: number } | null>(null);
+  const spoilered = !!spoiler && (spoiler.thumb || spoiler.title || spoiler.desc);
+  const cancelPreviewTimer = () => window.clearTimeout(previewTimer.current);
+  const closePreview = () => {
+    cancelPreviewTimer();
+    setPreview(null);
+  };
+  const leavePreview = () => {
+    cancelPreviewTimer();
+    previewTimer.current = window.setTimeout(() => setPreview(null), 120);
+  };
+  const enterPreview = () => {
+    cancelPreviewTimer();
+    if (spoilered || preview) return;
+    previewTimer.current = window.setTimeout(() => {
+      const rect = cardRef.current?.getBoundingClientRect();
+      if (!rect) return;
+      const width = Math.min(rect.width + 16, window.innerWidth - 16);
+      setPreview({
+        top: Math.max(8, Math.min(rect.top - 8, window.innerHeight - 480)),
+        left: Math.max(8, Math.min(rect.left - 8, window.innerWidth - width - 8)),
+        width,
+      });
+    }, 220);
+  };
+  useEffect(() => () => window.clearTimeout(previewTimer.current), []);
+  useEffect(() => {
+    if (!preview) return;
+    const dismissOnScroll = (event: Event) => {
+      if (event.target instanceof Node && popupRef.current?.contains(event.target)) return;
+      closePreview();
+    };
+    const dismissOnKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") closePreview();
+    };
+    window.addEventListener("scroll", dismissOnScroll, true);
+    window.addEventListener("resize", closePreview);
+    window.addEventListener("keydown", dismissOnKey);
+    return () => {
+      window.removeEventListener("scroll", dismissOnScroll, true);
+      window.removeEventListener("resize", closePreview);
+      window.removeEventListener("keydown", dismissOnKey);
+    };
+  }, [preview]);
 
   const [imgIdx, setImgIdx] = useState(0);
   useEffect(() => {
@@ -165,13 +223,15 @@ function EpisodeStripCard({
   const still = useMemo(() => {
     const tmdbSize = settings.hdEpisodeImages ? "original" : "w300";
     if (imgIdx === 0 && ep.stillPath)
-      return `https://image.tmdb.org/t/p/${tmdbSize}${ep.stillPath}`;
+      return ep.stillPath.startsWith("http")
+        ? ep.stillPath
+        : `https://image.tmdb.org/t/p/${tmdbSize}${ep.stillPath}`;
     if (imgIdx === 0 && !ep.stillPath && ep.stillUrl) return ep.stillUrl;
     if (imgIdx <= 1 && thumbnail) return thumbnail;
     return undefined;
   }, [ep.stillPath, ep.stillUrl, imgIdx, thumbnail, settings.hdEpisodeImages]);
 
-  const handlePlayClick = () => {
+  const handlePlayClick = (opts?: { resume?: boolean }) => {
     playLocalAware({
       meta,
       episode: {
@@ -184,7 +244,7 @@ function EpisodeStripCard({
       },
       opts: {
         autoPlay: settings.instantPlay || settings.seasonSourceLock,
-        resume: !progress.watched && progress.ratio > 0.01,
+        resume: opts?.resume ?? (!progress.watched && progress.ratio > 0.01),
       },
       imdbId: seriesImdbId,
       videos: cinemetaVideos,
@@ -193,6 +253,9 @@ function EpisodeStripCard({
 
   return (
     <div
+      ref={cardRef}
+      onMouseEnter={enterPreview}
+      onMouseLeave={leavePreview}
       data-ep={ep.episodeNumber}
       data-no-card-ring
       onContextMenu={(e) => onContextMenu?.(e, ep.seasonNumber, ep.episodeNumber, progress.watched)}
@@ -200,7 +263,7 @@ function EpisodeStripCard({
     >
       <button
         type="button"
-        onClick={handlePlayClick}
+        onClick={() => handlePlayClick()}
         className="relative aspect-video overflow-hidden rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink"
       >
         <div className={spoiler?.thumb ? SPOILER_THUMB_CLASS : undefined}>
@@ -209,6 +272,7 @@ function EpisodeStripCard({
             seed={String(ep.id)}
             ratio="landscape"
             className=""
+            lazy
             onError={() => setImgIdx((i) => i + 1)}
           />
         </div>
@@ -218,19 +282,12 @@ function EpisodeStripCard({
             <EpisodeRatingBadge value={ratingValue} isImdb={ratingIsImdb} />
           </div>
         )}
-        {settings.showEpisodeDescription && ep.overview && (
-          <div className="absolute inset-x-0 bottom-0 flex flex-col justify-end bg-gradient-to-t from-black/92 via-black/55 to-transparent p-2 pt-10 text-start pointer-events-none opacity-0 transition-opacity duration-200 group-hover:opacity-100">
-            <p className="line-clamp-5 text-[9.5px] leading-[1.35] text-white/95 drop-shadow-md">
-              {ep.overview}
-            </p>
-          </div>
-        )}
 
         <span className="absolute start-2 top-2 rounded-md bg-canvas/95 px-1.5 py-0.5 text-[11px] font-semibold text-ink transition-opacity group-hover:opacity-0">
           {ep.episodeNumber}
         </span>
         {progress.watched && (
-          <span className="absolute end-2 top-2 flex h-6 w-6 items-center justify-center rounded-full bg-emerald-400/22 text-emerald-200 ring-1 ring-emerald-400/40 backdrop-blur-sm transition-opacity group-hover:opacity-0">
+          <span className="absolute end-2 top-2 flex h-6 w-6 items-center justify-center rounded-full bg-success/20 text-success backdrop-blur-sm transition-opacity group-hover:opacity-0">
             <Check size={12} strokeWidth={3} />
           </span>
         )}
@@ -246,7 +303,7 @@ function EpisodeStripCard({
       <div className="flex items-start justify-between gap-2 px-0.5">
         <button
           type="button"
-          onClick={handlePlayClick}
+          onClick={() => handlePlayClick()}
           className="flex min-w-0 flex-1 flex-col gap-0.5 text-start focus-visible:outline-none"
         >
           <span
@@ -257,7 +314,16 @@ function EpisodeStripCard({
           <span className="text-[11.5px] text-ink-subtle">
             S{ep.seasonNumber} E{ep.episodeNumber}
             {ep.runtime ? ` · ${t("{n} min", { n: ep.runtime })}` : ""}
+            {formatAirDate(ep.airDate) ? ` · ${formatAirDate(ep.airDate)}` : ""}
           </span>
+          {settings.showEpisodeDescription && ep.overview && (
+            <p
+              className={`mt-0.5 line-clamp-2 text-[12px] leading-relaxed text-ink-muted ${spoiler?.desc ? SPOILER_TEXT_CLASS : ""}`}
+            >
+              {ep.overview}
+            </p>
+          )}
+          <EpisodeReleaseCountdown date={ep.airDate} className="text-[11.5px]" />
         </button>
         <div className="flex shrink-0 items-center gap-0.5">
           <EpisodeDownloadButton
@@ -272,17 +338,59 @@ function EpisodeStripCard({
             }}
             size={30}
           />
-          <button
-            type="button"
-            onClick={() => openEpisodeDetail(meta.id, ep.seasonNumber, ep.episodeNumber, meta)}
-            aria-label={t("Episode details")}
-            title={t("Episode details")}
-            className="flex items-center justify-center rounded-full p-1.5 text-ink-subtle transition-colors hover:bg-elevated hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink"
-          >
-            <Eye size={16} strokeWidth={2} />
-          </button>
+          <HoverTooltip label={t("Episode details")} align="center" className="shrink-0">
+            <button
+              type="button"
+              onClick={() => openEpisodeDetail(meta.id, ep.seasonNumber, ep.episodeNumber, meta)}
+              aria-label={t("Episode details")}
+              className="flex items-center justify-center rounded-full p-1.5 text-ink-subtle transition-colors hover:bg-elevated hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink"
+            >
+              <Eye size={16} strokeWidth={2} />
+            </button>
+          </HoverTooltip>
         </div>
       </div>
+      {preview &&
+        !spoilered &&
+        createPortal(
+          <div
+            ref={popupRef}
+            onMouseEnter={cancelPreviewTimer}
+            onMouseLeave={leavePreview}
+            className="fixed z-[100]"
+            style={preview}
+          >
+            <EpisodePreview
+              meta={meta}
+              g={{
+                key: String(ep.id),
+                number: ep.episodeNumber,
+                season: ep.seasonNumber,
+                seasonLabel: `S${ep.seasonNumber}`,
+                title: ep.name || t("Episode {n}", { n: ep.episodeNumber }),
+                stills: still ? [still] : [],
+                runtime: ep.runtime,
+                airDate: ep.airDate,
+                overview: ep.overview || undefined,
+                upcoming: isUpcomingDate(ep.airDate),
+                play: handlePlayClick,
+              }}
+              still={still}
+              watched={progress.watched}
+              minsLeft={
+                !progress.watched && progress.ratio > 0.01 && ep.runtime
+                  ? Math.max(1, Math.round(ep.runtime * (1 - progress.ratio)))
+                  : 0
+              }
+              ratio={progress.ratio}
+              onContext={(e) =>
+                onContextMenu?.(e, ep.seasonNumber, ep.episodeNumber, progress.watched)
+              }
+              t={t}
+            />
+          </div>,
+          document.body,
+        )}
     </div>
   );
 }

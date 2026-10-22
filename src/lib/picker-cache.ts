@@ -15,6 +15,7 @@ type Entry = {
   result: StoredResult;
   fetchedAt: number;
   configHash: string;
+  animePreferImdbStreams?: boolean;
   complete: boolean;
 };
 
@@ -31,8 +32,17 @@ const cache = new Map<string, Entry>();
 const listeners = new Set<() => void>();
 
 function entryKey(meta: Meta, episode?: PlayEpisode): string {
-  if (episode) return `${meta.id}|s${episode.season}e${episode.episode}`;
-  return meta.id;
+  if (!episode) return meta.id;
+  const base = `${meta.id}|s${episode.season}e${episode.episode}`;
+  const anime = /^(kitsu|mal|anilist|anidb):/.test(meta.id) || episode.kitsuStreamId != null;
+  if (!anime) return base;
+  const disc =
+    episode.videoId ??
+    episode.kitsuStreamId ??
+    (episode.imdbSeason != null && episode.imdbEpisode != null
+      ? `${episode.imdbSeason}:${episode.imdbEpisode}`
+      : null);
+  return disc ? `${base}|${disc}` : base;
 }
 
 function notify() {
@@ -45,15 +55,17 @@ export function setPickerCache(
   result: PipelineResult,
   configHash: string,
   complete = true,
+  animePreferImdbStreams?: boolean,
 ): void {
   if (result.picker.all.length === 0) return;
-  const stripped: StoredResult = { picker: result.picker, rejected: result.rejected.slice(0, 60) };
+  const stripped: StoredResult = { picker: result.picker, rejected: result.rejected.slice(0, 60), debridErrors: result.debridErrors };
   lruSet(cache, entryKey(meta, episode), {
     meta,
     episode,
     result: stripped,
     fetchedAt: Date.now(),
     configHash,
+    animePreferImdbStreams,
     complete,
   }, MAX_ENTRIES);
   notify();
@@ -101,8 +113,17 @@ export function getPickerCache(
   return e;
 }
 
-export function peekPickerCache(meta: Meta, episode?: PlayEpisode): Entry | null {
-  return cache.get(entryKey(meta, episode)) ?? null;
+export function peekPickerCache(
+  meta: Meta,
+  episode?: PlayEpisode,
+  animePreferImdbStreams?: boolean,
+): Entry | null {
+  const entry = cache.get(entryKey(meta, episode));
+  if (
+    entry?.animePreferImdbStreams != null && animePreferImdbStreams != null &&
+    entry.animePreferImdbStreams !== animePreferImdbStreams
+  ) return null;
+  return entry ?? null;
 }
 
 export function clearPickerCache(): void {
@@ -137,10 +158,17 @@ export function buildPickerConfigHash(parts: {
   debridSlugs: string[];
   scraperKeys: string[];
   filterMode: string;
+  animePreferImdbStreams?: boolean;
+  preferredAnimeImdbId?: string;
+  preferredAddonId?: string | null;
 }): string {
   const tokens = [
     TRUST_LOGIC_VERSION,
     `filter:${parts.filterMode}`,
+    `preferred-addon:${parts.preferredAddonId ?? ""}`,
+    ...(parts.animePreferImdbStreams != null
+      ? [`anime-imdb:${parts.animePreferImdbStreams}:${parts.preferredAnimeImdbId ?? ""}`]
+      : []),
     ...parts.addonTransportUrls.slice().sort(),
     ...parts.debridSlugs.slice().sort(),
     ...parts.scraperKeys.slice().sort(),

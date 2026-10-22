@@ -1,8 +1,22 @@
 import { useEffect, useMemo, useState } from "react";
-import { argusImdbEpisodes } from "@/lib/providers/argus-imdb";
-import { omdbSeasonRatings } from "@/lib/providers/omdb";
+import { pickPreferredEpisodeOverview, pickPreferredEpisodeTitle } from "@/lib/localized-text";
+import {
+  PREFERRED_TEXT_SCORE,
+  preferredMeta,
+  preferredVideoMap,
+  preferredVideoName,
+  preferredVideoOverview,
+  type PreferredVideo,
+} from "@/lib/meta-resource";
+import { useEpisodeImdbRatings } from "../use-episode-imdb-ratings";
 import type { Episode } from "@/lib/providers/tmdb";
-import { tvdbEpisodes, tvdbSeriesByImdb, type TvdbEpisode } from "@/lib/providers/tvdb";
+import { tmdbLanguageIso } from "@/lib/providers/tmdb/tmdb-client";
+import {
+  tvdbEpisodes,
+  tvdbLangFromIso1,
+  tvdbSeriesByImdb,
+  type TvdbEpisode,
+} from "@/lib/providers/tvdb";
 
 export function useEpisodeEnrich({
   episodes,
@@ -10,86 +24,117 @@ export function useEpisodeEnrich({
   imdbId,
   tvdbKey,
   omdbKey,
+  metaId,
+  preferCustomMeta,
+  ratings = true,
 }: {
   episodes: Episode[];
   active: number;
   imdbId: string | null;
   tvdbKey: string;
   omdbKey: string;
-}): Episode[] {
-  const [tvdbBySeason, setTvdbBySeason] = useState<Map<number, Map<number, TvdbEpisode>>>(new Map());
-  const [omdbBySeason, setOmdbBySeason] = useState<Map<number, Map<number, number>>>(new Map());
-  const [argusImdb, setArgusImdb] = useState<Map<string, number>>(new Map());
+  metaId: string;
+  preferCustomMeta: boolean;
+  ratings?: boolean;
+}): {
+  episodes: Episode[];
+  imdbRatings: Map<string, number>;
+  preferredVideos: Map<string, PreferredVideo>;
+} {
+  const language = tmdbLanguageIso();
+  const seasonKey = `${imdbId || metaId || ""}:${language}:${active}`;
+  const [tvdbBySeason, setTvdbBySeason] = useState<Map<string, Map<number, TvdbEpisode>>>(
+    new Map(),
+  );
+  const imdbRatings = useEpisodeImdbRatings(
+    ratings ? imdbId : null,
+    active,
+    ratings ? omdbKey : "",
+  );
+  const [preferredVideos, setPreferredVideos] = useState<Map<string, PreferredVideo>>(new Map());
 
   useEffect(() => {
-    if (!tvdbKey || !imdbId) return;
-    if (tvdbBySeason.has(active)) return;
+    setPreferredVideos((prev) => (prev.size === 0 ? prev : new Map<string, PreferredVideo>()));
+    if (!preferCustomMeta || !metaId) return;
     let cancelled = false;
-    void (async () => {
-      const seriesId = await tvdbSeriesByImdb(tvdbKey, imdbId);
-      if (!seriesId || cancelled) return;
-      const eps = await tvdbEpisodes(tvdbKey, seriesId, active);
+    void preferredMeta("series", metaId).then((full) => {
       if (cancelled) return;
-      const map = new Map<number, TvdbEpisode>();
-      for (const e of eps) map.set(e.number, e);
-      setTvdbBySeason((prev) => new Map(prev).set(active, map));
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [imdbId, active, tvdbKey, tvdbBySeason]);
-
-  useEffect(() => {
-    if (!omdbKey || !imdbId) return;
-    if (omdbBySeason.has(active)) return;
-    let cancelled = false;
-    void (async () => {
-      const map = await omdbSeasonRatings(omdbKey, imdbId, active);
-      if (cancelled || map.size === 0) return;
-      setOmdbBySeason((prev) => new Map(prev).set(active, map));
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [imdbId, active, omdbKey, omdbBySeason]);
-
-  useEffect(() => {
-    if (!imdbId) return;
-    let cancelled = false;
-    void argusImdbEpisodes(imdbId).then((map) => {
-      if (!cancelled && map.size > 0) setArgusImdb(map);
+      const map = preferredVideoMap(full?.videos);
+      if (map.size > 0) setPreferredVideos(map);
     });
     return () => {
       cancelled = true;
     };
-  }, [imdbId]);
+  }, [metaId, preferCustomMeta]);
 
-  const tvdbForSeason = tvdbBySeason.get(active);
-  const omdbForSeason = omdbBySeason.get(active);
-  return useMemo<Episode[]>(() => {
-    if (!tvdbForSeason && !omdbForSeason && argusImdb.size === 0) return episodes;
+  useEffect(() => {
+    if (!tvdbKey || !imdbId) return;
+    if (tvdbBySeason.has(seasonKey)) return;
+    let cancelled = false;
+    void (async () => {
+      const seriesId = await tvdbSeriesByImdb(tvdbKey, imdbId);
+      if (!seriesId || cancelled) return;
+      const eps = await tvdbEpisodes(tvdbKey, seriesId, active, tvdbLangFromIso1(language));
+      if (cancelled) return;
+      const map = new Map<number, TvdbEpisode>();
+      for (const e of eps) map.set(e.number, e);
+      setTvdbBySeason((prev) => new Map(prev).set(seasonKey, map));
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [imdbId, active, tvdbKey, tvdbBySeason, seasonKey, language]);
+
+  const tvdbForSeason = tvdbBySeason.get(seasonKey);
+  const enriched = useMemo<Episode[]>(() => {
+    if (!tvdbForSeason && imdbRatings.size === 0 && preferredVideos.size === 0) return episodes;
     return episodes.map((ep): Episode => {
       let next: Episode = ep;
       const tv = tvdbForSeason?.get(ep.episodeNumber);
-      if (tv) {
+      const pref = preferredVideos.get(`${ep.seasonNumber}:${ep.episodeNumber}`);
+      if (tv || pref) {
+        // pickLocalizedText keys script tests by ISO-1 ("ko"), not TVDB codes ("kor").
+        const lang = language;
+        const name =
+          pickPreferredEpisodeTitle(
+            [
+              { text: preferredVideoName(pref), score: PREFERRED_TEXT_SCORE },
+              { text: tv?.name, language: tv?.nameLanguage },
+            ],
+            [{ text: next.name, language: next.nameLanguage }],
+            lang,
+          ) ?? next.name;
         const overview =
-          tv.overview && tv.overview.trim().length > (next.overview?.trim().length ?? 0)
-            ? tv.overview
-            : next.overview;
+          pickPreferredEpisodeOverview(
+            [
+              { text: preferredVideoOverview(pref), score: PREFERRED_TEXT_SCORE },
+              { text: tv?.overview, language: tv?.overviewLanguage },
+            ],
+            [{ text: next.overview, language: next.overviewLanguage }],
+            lang,
+          ) ?? next.overview;
         next = {
           ...next,
+          name,
           overview,
-          runtime: next.runtime ?? tv.runtime ?? null,
-          name: next.name || tv.name || next.name,
-          airDate: next.airDate ?? tv.aired ?? null,
+          nameLanguage:
+            name === next.name ? next.nameLanguage : name === tv?.name ? tv.nameLanguage : "und",
+          overviewLanguage:
+            overview === next.overview
+              ? next.overviewLanguage
+              : overview === tv?.overview
+                ? tv.overviewLanguage
+                : "und",
+          runtime: next.runtime ?? tv?.runtime ?? null,
+          airDate: next.airDate ?? tv?.aired ?? null,
         };
       }
-      const imdbRating =
-        argusImdb.get(`${active}:${ep.episodeNumber}`) ?? omdbForSeason?.get(ep.episodeNumber);
+      const imdbRating = imdbRatings.get(`${ep.seasonNumber}:${ep.episodeNumber}`);
       if (imdbRating != null && imdbRating > 0) {
         next = { ...next, imdbRating };
       }
       return next;
     });
-  }, [episodes, tvdbForSeason, omdbForSeason, argusImdb, active]);
+  }, [episodes, tvdbForSeason, imdbRatings, active, preferredVideos, language]);
+  return { episodes: enriched, imdbRatings, preferredVideos };
 }

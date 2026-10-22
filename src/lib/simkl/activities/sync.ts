@@ -1,5 +1,6 @@
 import { simklRequest } from "../client";
 import { getSession } from "../session";
+import { activeProfileId } from "@/lib/active-profile-id";
 import type { WatchlistStatus } from "../list-status";
 import {
   emptyCache,
@@ -105,9 +106,7 @@ function parseAndMergeEntry(cache: SimklCache, entry: RawEntry, type: "movie" | 
         }
       }
     }
-    if (eps.length > 0) {
-      watchedEpisodes = eps;
-    }
+    watchedEpisodes = eps;
   }
 
   const existing = cache.items[simklIdStr];
@@ -121,7 +120,9 @@ function parseAndMergeEntry(cache: SimklCache, entry: RawEntry, type: "movie" | 
     watchedAt: entry.added_to_watchlist_at ?? existing?.watchedAt ?? null,
     watchedEpisodes: watchedEpisodes ?? existing?.watchedEpisodes,
     poster:
-      (entry.anime?.poster || entry.show?.poster || entry.movie?.poster) ?? existing?.poster ?? null,
+      (entry.anime?.poster || entry.show?.poster || entry.movie?.poster) ??
+      existing?.poster ??
+      null,
   };
 
   cache.items[simklIdStr] = item;
@@ -180,41 +181,37 @@ function applyActivities(cache: SimklCache, activities: any) {
   };
 }
 
-async function bootstrapCache(): Promise<SimklCache> {
+async function bootstrapCache(activities: any): Promise<SimklCache> {
   const cache = emptyCache();
 
   const showsData = await simklRequest<RawAllItems>(
     "/sync/all-items/shows/all?extended=full&episode_watched_at=yes",
-  ).catch(() => ({}) as RawAllItems);
-  for (const entry of showsData.shows ?? []) {
+  );
+  for (const entry of showsData?.shows ?? []) {
     parseAndMergeEntry(cache, entry, "show");
   }
 
   const moviesData = await simklRequest<RawAllItems>(
     "/sync/all-items/movies/all?extended=full&episode_watched_at=yes",
-  ).catch(() => ({}) as RawAllItems);
-  for (const entry of moviesData.movies ?? []) {
+  );
+  for (const entry of moviesData?.movies ?? []) {
     parseAndMergeEntry(cache, entry, "movie");
   }
 
   const animeData = await simklRequest<RawAllItems>(
     "/sync/all-items/anime/all?extended=full&episode_watched_at=yes",
-  ).catch(() => ({}) as RawAllItems);
-  for (const entry of animeData.anime ?? []) {
+  );
+  for (const entry of animeData?.anime ?? []) {
     parseAndMergeEntry(cache, entry, "anime");
   }
 
-  const ratingsData = await simklRequest<RawRatingsResponse>("/sync/ratings").catch(
-    () => ({}) as RawRatingsResponse,
-  );
-  mergeRatings(cache, ratingsData);
+  const ratingsData = await simklRequest<RawRatingsResponse>("/sync/ratings");
+  mergeRatings(cache, ratingsData ?? {});
 
-  const activities = await simklRequest<any>("/sync/activities").catch(() => null);
   if (activities) {
     applyActivities(cache, activities);
   }
 
-  saveLocalCache(cache);
   return cache;
 }
 
@@ -225,17 +222,17 @@ async function performDeltaSync(cache: SimklCache, activities: any): Promise<Sim
   }
 
   const dateFrom = currentLastSync ? encodeURIComponent(currentLastSync) : "";
-  const deltaData = await simklRequest<RawAllItems>(`/sync/all-items?date_from=${dateFrom}`).catch(
-    () => ({}) as RawAllItems,
+  const deltaData = await simklRequest<RawAllItems>(
+    `/sync/all-items?date_from=${dateFrom}&extended=full&episode_watched_at=yes`,
   );
 
-  for (const entry of deltaData.shows ?? []) {
+  for (const entry of deltaData?.shows ?? []) {
     parseAndMergeEntry(cache, entry, "show");
   }
-  for (const entry of deltaData.movies ?? []) {
+  for (const entry of deltaData?.movies ?? []) {
     parseAndMergeEntry(cache, entry, "movie");
   }
-  for (const entry of deltaData.anime ?? []) {
+  for (const entry of deltaData?.anime ?? []) {
     parseAndMergeEntry(cache, entry, "anime");
   }
 
@@ -255,9 +252,7 @@ async function performDeltaSync(cache: SimklCache, activities: any): Promise<Sim
     isRemovedSinceLastSync(animeRemoved);
 
   if (hasRemovals) {
-    const idsOnlyData = await simklRequest<RawAllItems>(
-      "/sync/all-items?extended=simkl_ids_only",
-    ).catch(() => ({}) as RawAllItems);
+    const idsOnlyData = await simklRequest<RawAllItems>("/sync/all-items?extended=simkl_ids_only");
 
     const validIds = new Set<number>();
     const addIds = (entries: RawEntry[] | undefined, type: "movie" | "show" | "anime") => {
@@ -269,9 +264,9 @@ async function performDeltaSync(cache: SimklCache, activities: any): Promise<Sim
         }
       }
     };
-    addIds(idsOnlyData.movies, "movie");
-    addIds(idsOnlyData.shows, "show");
-    addIds(idsOnlyData.anime, "anime");
+    addIds(idsOnlyData?.movies, "movie");
+    addIds(idsOnlyData?.shows, "show");
+    addIds(idsOnlyData?.anime, "anime");
 
     for (const simklIdStr of Object.keys(cache.items)) {
       const item = cache.items[simklIdStr];
@@ -282,38 +277,55 @@ async function performDeltaSync(cache: SimklCache, activities: any): Promise<Sim
   }
 
   applyActivities(cache, activities);
-  saveLocalCache(cache);
   return cache;
 }
 
 let activeSyncPromise: Promise<SimklCache> | null = null;
+let syncSession: ReturnType<typeof getSession> = null;
+let syncProfile: string | null = null;
 
 export function syncWatchlistCache(): Promise<SimklCache> {
-  if (activeSyncPromise) return activeSyncPromise;
+  const ownerSession = getSession();
+  const ownerProfile = activeProfileId();
+  if (activeSyncPromise && syncSession === ownerSession && syncProfile === ownerProfile)
+    return activeSyncPromise;
+  syncSession = ownerSession;
+  syncProfile = ownerProfile;
 
-  activeSyncPromise = (async () => {
+  const request = (async () => {
     try {
       const session = getSession();
       if (!session) {
         throw new Error("User not authenticated");
       }
 
-      let cache = getLocalCache();
+      const saved = getLocalCache();
+      const activities = await simklRequest<any>("/sync/activities");
+      if (getSession() !== ownerSession || activeProfileId() !== ownerProfile) {
+        throw new Error("SIMKL session changed");
+      }
+      // An unchanged activity marker requires neither a full library clone nor a disk write.
+      if (saved?.lastSync && activities?.all === saved.lastSync) return saved;
+      let cache = saved ? structuredClone(saved) : null;
       if (!cache || !cache.lastSync) {
-        cache = await bootstrapCache();
+        cache = await bootstrapCache(activities);
       } else {
-        const activities = await simklRequest<any>("/sync/activities").catch(() => null);
         if (activities) {
           cache = await performDeltaSync(cache, activities);
         }
       }
+      if (getSession() !== ownerSession || activeProfileId() !== ownerProfile) {
+        throw new Error("SIMKL session changed");
+      }
+      saveLocalCache(cache);
       return cache;
     } finally {
-      activeSyncPromise = null;
+      if (syncSession === ownerSession && syncProfile === ownerProfile) activeSyncPromise = null;
     }
   })();
 
-  return activeSyncPromise;
+  activeSyncPromise = request;
+  return request;
 }
 
 export async function getCachedSimklData(): Promise<{
@@ -333,23 +345,20 @@ export async function getCachedSimklData(): Promise<{
   }
 
   const resolved = cache;
+  const keysBySimkl = new Map<number, string[]>();
+  const index = (ids: Record<string, number>, keyFor: (key: string) => string) => {
+    for (const [key, simklId] of Object.entries(ids)) {
+      const keys = keysBySimkl.get(simklId);
+      if (keys) keys.push(keyFor(key));
+      else keysBySimkl.set(simklId, [keyFor(key)]);
+    }
+  };
+  index(resolved.imdbToSimkl, (key) => key);
+  index(resolved.tmdbToSimkl, (key) => `tmdb:${key}`);
+  index(resolved.malToSimkl, (key) => `mal:${key}`);
+  index(resolved.kitsuToSimkl, (key) => `kitsu:${key}`);
   const registerKeys = (item: SimklCacheItem, simklId: number) => {
-    const keys: string[] = [];
-    for (const [imdbId, sId] of Object.entries(resolved.imdbToSimkl)) {
-      if (sId === simklId) keys.push(imdbId);
-    }
-    for (const [tmdbKey, sId] of Object.entries(resolved.tmdbToSimkl)) {
-      if (sId === simklId) {
-        const parts = tmdbKey.split(":");
-        if (parts.length === 2) keys.push(`tmdb:${parts[0]}:${parts[1]}`);
-      }
-    }
-    for (const [malId, sId] of Object.entries(resolved.malToSimkl)) {
-      if (sId === simklId) keys.push(`mal:${malId}`);
-    }
-    for (const [kitsuId, sId] of Object.entries(resolved.kitsuToSimkl)) {
-      if (sId === simklId) keys.push(`kitsu:${kitsuId}`);
-    }
+    const keys = keysBySimkl.get(simklId) ?? [];
 
     for (const k of keys) {
       statuses.set(k, item.status);

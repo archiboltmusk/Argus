@@ -1,9 +1,21 @@
 import { useSyncExternalStore } from "react";
+import type { PlayerStatus } from "./bridge";
 
 let positionSec = 0;
 let bufferedSec = 0;
 let downloadedFraction = 0;
 const listeners = new Set<() => void>();
+let clockNotification: ReturnType<typeof setTimeout> | null = null;
+const CLOCK_NOTIFY_MS = 100;
+function notifyClock(): void {
+  if (clockNotification !== null || listeners.size === 0) return;
+  // Buffer telemetry can arrive much faster than the controls need to redraw.
+  // Values stay current for seeks and persistence; React sees one latest update.
+  clockNotification = setTimeout(() => {
+    clockNotification = null;
+    for (const listener of listeners) listener();
+  }, CLOCK_NOTIFY_MS);
+}
 
 export function resolvePlaybackDownloadedFraction(input: {
   isP2pEngine: boolean;
@@ -18,14 +30,14 @@ export function setPlaybackClock(pos: number, buf: number) {
   if (pos === positionSec && buf === bufferedSec) return;
   positionSec = pos;
   bufferedSec = buf;
-  for (const l of listeners) l();
+  notifyClock();
 }
 
 export function setPlaybackDownloaded(fraction: number) {
   const clamped = fraction > 1 ? 1 : fraction < 0 ? 0 : fraction;
   if (clamped === downloadedFraction) return;
   downloadedFraction = clamped;
-  for (const l of listeners) l();
+  notifyClock();
 }
 
 export function getPlaybackPosition(): number {
@@ -44,6 +56,10 @@ export function subscribePlaybackClock(cb: () => void): () => void {
   listeners.add(cb);
   return () => {
     listeners.delete(cb);
+    if (listeners.size === 0 && clockNotification !== null) {
+      clearTimeout(clockNotification);
+      clockNotification = null;
+    }
   };
 }
 
@@ -110,5 +126,33 @@ export function usePlaybackDownloadedGated(active: boolean): number {
     active ? subscribePlaybackClock : NEVER,
     () => downloadedFraction,
     () => downloadedFraction,
+  );
+}
+
+let status: PlayerStatus = "idle";
+const statusListeners = new Set<() => void>();
+
+export function setPlaybackStatus(next: PlayerStatus): void {
+  if (status === next) return;
+  status = next;
+  for (const l of statusListeners) l();
+}
+
+export function getPlaybackStatus(): PlayerStatus {
+  return status;
+}
+
+export function subscribePlaybackStatus(cb: () => void): () => void {
+  statusListeners.add(cb);
+  return () => {
+    statusListeners.delete(cb);
+  };
+}
+
+export function usePlaybackStatus(): PlayerStatus {
+  return useSyncExternalStore(
+    subscribePlaybackStatus,
+    () => status,
+    () => status,
   );
 }

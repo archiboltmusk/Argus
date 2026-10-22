@@ -1,15 +1,27 @@
+import { kawaiiCss } from "./theme-kawaii";
 import auroraPreview from "@/assets/theme-previews/aurora.png";
 import crunchPreview from "@/assets/theme-previews/crunchy.png";
 import draculaPreview from "@/assets/theme-previews/dracula.png";
 import forestPreview from "@/assets/theme-previews/forest.png";
 import argusPreview from "@/assets/theme-previews/argus.png";
+import kawaiiPreview from "@/assets/theme-previews/kawaii.jpg";
 import minuiPreview from "@/assets/theme-previews/minui.png";
+import minuiDarkPreview from "@/assets/theme-previews/minui-dark.png";
 import noirPreview from "@/assets/theme-previews/noir.png";
 import nordPreview from "@/assets/theme-previews/nord.png";
 import royalPreview from "@/assets/theme-previews/royal.png";
 import stremioPreview from "@/assets/theme-previews/stremio.png";
 import velvetPreview from "@/assets/theme-previews/velvet.png";
 import { getCustomThemes } from "./custom-themes";
+import { t } from "./i18n";
+
+function escapeGeneratedHtml(value: string): string {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
 
 export type ThemePresetId =
   | "cool-grey"
@@ -337,6 +349,10 @@ const elegantFinCss = `@import url("https://fonts.googleapis.com/css2?family=Int
   --ef-panel-glass: rgba(30, 40, 54, 0.95);
   --ef-hairline: #47505c;
   --ef-border-w: 0.06em;
+  --ef-rail-width: 72px;
+  --ef-drawer-width: 260px;
+  --ef-rail-space: 0px;
+  --ef-header-inset: 1rem;
   --ef-shine: linear-gradient(
     0deg,
     transparent 0%,
@@ -373,9 +389,14 @@ aside[data-argus-sidebar] {
   inset-block: 0 !important;
   inset-inline-start: 0 !important;
   z-index: 120 !important;
-  width: 260px !important;
+  width: var(--ef-drawer-width) !important;
   transform: translateX(-103%);
-  transition: transform 170ms ease !important;
+  visibility: hidden;
+  pointer-events: none;
+  transition: width var(--duration-base) var(--ease-in-out),
+    transform var(--duration-fast) var(--ease-out),
+    box-shadow var(--duration-fast) var(--ease-out),
+    visibility 0s linear var(--duration-fast) !important;
   box-shadow: 0.5em 0 2.5em rgba(0, 0, 0, 0.5);
 }
 html[dir="rtl"] aside[data-argus-sidebar] {
@@ -384,6 +405,104 @@ html[dir="rtl"] aside[data-argus-sidebar] {
 html.ef-drawer-open aside[data-argus-sidebar],
 html[dir="rtl"].ef-drawer-open aside[data-argus-sidebar] {
   transform: translateX(0);
+  visibility: visible;
+  pointer-events: auto;
+  transition-duration: var(--duration-base), var(--duration-base), var(--duration-fast), 0s !important;
+  transition-delay: 0s !important;
+}
+aside[data-argus-sidebar][data-collapsed="true"]:not([aria-hidden="true"]) {
+  width: var(--ef-rail-width) !important;
+  transform: translateX(0) !important;
+  visibility: visible;
+  pointer-events: auto;
+  box-shadow: none;
+  transition-delay: 0s !important;
+}
+/* The drawer stays fixed during morphing; only the pinned rail occupies page space. */
+html:has(aside[data-argus-sidebar]:not([aria-hidden="true"])) {
+  --ef-header-inset: 4.25rem;
+}
+html:has(aside[data-argus-sidebar][data-collapsed="true"]:not([aria-hidden="true"])) {
+  --ef-rail-space: var(--ef-rail-width);
+  --ef-header-inset: calc(var(--ef-rail-width) + 1rem);
+}
+[data-argus-shell]::before {
+  content: "";
+  flex: none;
+  width: var(--ef-rail-space);
+  pointer-events: none;
+  transition: width var(--duration-base) var(--ease-in-out);
+}
+aside[data-argus-sidebar] [data-argus-sidebar-brand] {
+  justify-content: flex-start !important;
+  padding-inline: 12px !important;
+  gap: 4px !important;
+}
+aside[data-argus-sidebar] [data-argus-sidebar-mark] {
+  flex: none;
+  width: 48px;
+  justify-content: center;
+}
+aside[data-argus-sidebar] [data-argus-sidebar-mark] > :is(svg, img) {
+  width: 36px !important;
+  height: 36px !important;
+}
+aside[data-argus-sidebar] [data-argus-sidebar-label] {
+  display: block !important;
+  flex-shrink: 0;
+  white-space: nowrap;
+  opacity: 1;
+  visibility: visible;
+  transition: opacity var(--duration-fast) var(--ease-out), visibility 0s;
+  transition-delay: calc(var(--duration-base) - var(--duration-fast)), 0s;
+}
+aside[data-argus-sidebar][data-collapsed="true"] [data-argus-sidebar-label] {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition-delay: 0s, var(--duration-fast);
+}
+aside[data-argus-sidebar] [data-argus-sidebar-brand] [data-argus-sidebar-label] {
+  min-width: 0;
+  flex-shrink: 1;
+  overflow: hidden;
+}
+aside[data-argus-sidebar] [data-argus-nav] {
+  justify-content: flex-start !important;
+  padding-inline: 0 !important;
+  gap: 0 !important;
+  overflow: hidden;
+}
+aside[data-argus-sidebar] [data-argus-sidebar-icon] {
+  display: inline-flex;
+  flex: none;
+  width: 40px;
+  justify-content: center;
+}
+aside[data-argus-sidebar] [data-argus-sidebar-footer] {
+  padding-inline: 8px !important;
+}
+aside[data-argus-sidebar] [data-argus-sidebar-footer] > .flex {
+  align-items: stretch !important;
+}
+aside[data-argus-sidebar] [data-argus-sidebar-footer] > .flex > button {
+  width: 100% !important;
+  justify-content: flex-start !important;
+  padding-inline: 0 !important;
+  gap: 0 !important;
+  overflow: hidden;
+}
+aside[data-argus-sidebar] [data-argus-sidebar-footer] [data-argus-sidebar-icon] {
+  width: 56px;
+}
+aside[data-argus-sidebar] [data-argus-sidebar-footer] > .relative > button {
+  justify-content: flex-start !important;
+  padding-inline: 4px !important;
+}
+aside[data-argus-sidebar] [data-argus-sidebar-footer] > .relative > button [data-argus-sidebar-label] {
+  min-width: 0;
+  flex-shrink: 1;
+  overflow: hidden;
 }
 aside[data-argus-sidebar] [data-tauri-drag-region] > span {
   font-family: "Inter", system-ui, sans-serif !important;
@@ -417,7 +536,7 @@ aside[data-argus-sidebar] [data-tauri-drag-region] > span > span {
   background-color: color-mix(in srgb, var(--color-accent) 24%, transparent) !important;
   color: var(--color-accent) !important;
 }
-aside[data-argus-sidebar].w-\[72px\] [data-argus-nav][data-active],
+aside[data-argus-sidebar][data-collapsed="true"] [data-argus-nav][data-active],
 html:not(.lg) [data-argus-nav][data-active] {
   box-shadow: inset 0 0 0 var(--ef-border-w) color-mix(in srgb, var(--color-accent) 55%, transparent) !important;
 }
@@ -430,7 +549,7 @@ aside[data-argus-sidebar] .h-px.bg-gradient-to-r {
   ) !important;
 }
 aside[data-argus-sidebar] > div:last-child .rounded-full.border,
-aside[data-argus-sidebar] > div:last-child .bg-elevated\/50 {
+aside[data-argus-sidebar] > div:last-child .bg-elevated/50 {
   background-color: color-mix(in srgb, var(--color-raised) 40%, transparent) !important;
   border-color: color-mix(in srgb, var(--ef-hairline) 80%, transparent) !important;
 }
@@ -438,13 +557,17 @@ aside[data-argus-sidebar] > div:last-child .bg-elevated\/50 {
 /* ==========================================================================
    TOP HEADER BAR  (glass it: blur10 + bottom hairline on the inner grid)
    ========================================================================== */
-header.fixed.inset-x-0.top-0 > div {
+[data-argus-topbar-content] {
   background-color: transparent !important;
   background-image: none !important;
   backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;
   border-bottom: 0 !important;
-  padding-inline-start: 4.25rem !important;
+  padding-inline-start: var(--ef-header-inset) !important;
+  transition: padding-inline-start var(--duration-base) var(--ease-in-out);
+}
+[data-argus-topbar-leading] {
+  padding-inline-start: 0 !important;
 }
 .argus-search-pill {
   background-color: color-mix(in srgb, var(--color-raised) 45%, transparent) !important;
@@ -527,11 +650,11 @@ h3.truncate.font-medium.tracking-tight {
   letter-spacing: -0.018em !important;
   color: var(--color-ink) !important;
 }
-.group\/va {
+.group/va {
   color: var(--color-ink-subtle) !important;
   transition: color 125ms ease !important;
 }
-.group\/va:hover {
+.group/va:hover {
   color: var(--color-accent) !important;
 }
 .argus-row-arrow {
@@ -600,7 +723,7 @@ button.group > p.line-clamp-2 {
   font-weight: 500 !important;
   color: var(--color-ink) !important;
 }
-.argus-poster > .absolute.rounded-md.bg-canvas\/95 {
+.argus-poster > .absolute.rounded-md.bg-canvas/95 {
   background-color: color-mix(in srgb, var(--ef-panel-glass) 95%, transparent) !important;
   backdrop-filter: blur(5px);
   -webkit-backdrop-filter: blur(5px);
@@ -609,7 +732,7 @@ button.group > p.line-clamp-2 {
   color: var(--color-accent) !important;
   border: var(--ef-border-w) solid color-mix(in srgb, var(--color-accent) 45%, transparent) !important;
 }
-.argus-poster .rounded-full.bg-canvas\/85 {
+.argus-poster .rounded-full.bg-canvas/85 {
   background-color: color-mix(in srgb, var(--ef-panel-glass) 85%, transparent) !important;
 }
 
@@ -768,9 +891,6 @@ textarea {
   opacity: 1;
   background-color: rgba(255, 255, 255, 0.08);
 }
-header.fixed.inset-x-0.top-0 > div > :first-child button.rounded-full {
-  display: none !important;
-}
 .argus-search-pill {
   display: none !important;
 }
@@ -819,9 +939,11 @@ header.fixed.inset-x-0.top-0 > div > :first-child button.rounded-full {
   object-fit: cover;
   border-radius: 999px;
 }
-html.ef-drawer-open #ef-topleft {
+html.ef-drawer-open #ef-topleft,
+html:has(aside[data-argus-sidebar][data-collapsed="true"]) #ef-topleft {
   opacity: 0;
   pointer-events: none;
+  visibility: hidden;
 }
 #ef-scrim {
   pointer-events: none;
@@ -830,18 +952,56 @@ html.ef-drawer-open #ef-topleft {
   z-index: 85;
   background: rgba(9, 13, 21, 0.5);
   opacity: 0;
-  transition: opacity 170ms ease;
+  transition: opacity var(--duration-fast) var(--ease-out);
 }
-html.ef-drawer-open #ef-scrim {
+html.ef-drawer-open:has(aside[data-argus-sidebar][data-collapsed="false"]:not([aria-hidden="true"])) #ef-scrim {
   pointer-events: auto;
   opacity: 1;
 }
 html:not(:has(header.fixed.inset-x-0.top-0)) #ef-topleft,
 html:not(:has(aside[data-argus-sidebar])) #ef-menu,
-html:not(:has(aside[data-argus-sidebar])) #ef-home,
 html:not(:has(aside[data-argus-sidebar])) #ef-profile,
 html:not(:has(aside[data-argus-sidebar])) #ef-scrim {
   display: none !important;
+}
+@media (prefers-reduced-motion: reduce) {
+  aside[data-argus-sidebar],
+  aside[data-argus-sidebar] [data-argus-sidebar-label],
+  html.ef-drawer-open aside[data-argus-sidebar],
+  html[dir="rtl"].ef-drawer-open aside[data-argus-sidebar],
+  [data-argus-shell]::before,
+  [data-argus-topbar-content],
+  #ef-topleft,
+  #ef-scrim {
+    transition-duration: 0.01ms !important;
+    transition-delay: 0s !important;
+  }
+}
+
+/* ==========================================================================
+   GAMES WORKSPACE  (the Games column supplies its own navigation menu)
+   ========================================================================== */
+/* Games takes over the corner with its library menu; the drawer button must not
+   sit on top of it, or clicks open the app navigation instead of the Games menu. */
+html:has([data-games-library]) #ef-topleft {
+  display: none !important;
+}
+/* The Games menu reveals the shell navigation. Show the same drawer without
+   requiring ef-drawer-open, so no scrim is involved. */
+[data-games-library][data-games-navigation] [data-argus-native-backdrop] > aside[data-argus-sidebar] {
+  transform: translateX(0) !important;
+  translate: 0 !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  pointer-events: auto !important;
+  transition-delay: 0s !important;
+}
+/* The themed drawer (for example the profile fallback) still shows inside Games. */
+html.ef-drawer-open [data-games-library]:not([data-games-navigation]) [data-argus-native-backdrop] > aside[data-argus-sidebar] {
+  translate: 0 !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  pointer-events: auto !important;
 }
 
 /* ==========================================================================
@@ -933,6 +1093,13 @@ main.absolute.inset-0 .rounded-xl.border.bg-elevated\\/70 {
 [data-scroll-anchor="hero"] .overflow-hidden {
   border-radius: 0 !important;
 }
+[data-scroll-anchor="hero"]:not(.argus-anime-hero) .argus-hero-stage > img.object-cover,
+[data-scroll-anchor="hero"]:not(.argus-anime-hero) .argus-hero-stage > .pointer-events-none.overflow-hidden {
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  border-radius: 0 !important;
+}
 [data-scroll-anchor="hero"].argus-anime-hero {
   margin: 0 !important;
 }
@@ -946,32 +1113,69 @@ main.absolute.inset-0 .rounded-xl.border.bg-elevated\\/70 {
   -webkit-backdrop-filter: blur(18px) saturate(125%);
 }`;
 
-const elegantFinHtml = `<div id="ef-topleft">
-  <button id="ef-back" type="button" aria-label="Back" style="display:none">
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M19 12H5m0 0l7 7m-7-7l7-7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-  </button>
-  <button id="ef-home" type="button" aria-label="Home" style="display:none">
-    <svg width="19" height="19" viewBox="0 0 24 24" fill="none"><path d="M3 10.5L12 3l9 7.5M5.5 8.5V20a1 1 0 001 1H10v-6h4v6h3.5a1 1 0 001-1V8.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-  </button>
-  <button id="ef-menu" type="button" aria-label="Menu">
+function buildElegantFinHtml(): string {
+  return `<div id="ef-topleft">
+  <button id="ef-menu" type="button" aria-label="${escapeGeneratedHtml(t("Menu"))}">
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M4 6.5h16M4 12h16M4 17.5h16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
   </button>
 </div>
 <div id="ef-scrim"></div>`;
+}
 
-const elegantFinJs = `(function () {
+function buildElegantFinJs(): string {
+  return `(function () {
   var w = window;
   if (typeof w.__efChromeCleanup === "function") {
     try { w.__efChromeCleanup(); } catch (e) {}
   }
   var root = document.documentElement;
-  function setOpen(open) {
-    if (open === undefined) root.classList.toggle("ef-drawer-open");
-    else if (open) root.classList.add("ef-drawer-open");
-    else root.classList.remove("ef-drawer-open");
+  var sidebar = null;
+  var sidebarParent = null;
+  var previousCollapsed = null;
+  var originalInert = false;
+  var observer = new MutationObserver(syncSidebar);
+  function gamesNavigationOpen() {
+    if (!sidebar) return false;
+    var shell = sidebar.closest("[data-argus-shell]");
+    return !!shell && shell.hasAttribute("data-games-navigation");
   }
-  function realBack() {
-    return document.querySelector("header.fixed.inset-x-0.top-0 > div > :first-child button.rounded-full");
+  function syncAccess() {
+    var open = root.classList.contains("ef-drawer-open");
+    var hidden = !sidebar || sidebar.getAttribute("aria-hidden") === "true";
+    var collapsed = sidebar && sidebar.getAttribute("data-collapsed") === "true";
+    // Games reveals this same sidebar through the shell instead of the drawer.
+    if (sidebar) sidebar.inert = hidden || (!collapsed && !open && !gamesNavigationOpen());
+    var menu = document.getElementById("ef-menu");
+    if (menu) menu.setAttribute("aria-expanded", String(open && !hidden && !collapsed));
+  }
+  function setOpen(open) {
+    if (open === undefined) open = !root.classList.contains("ef-drawer-open");
+    root.classList.toggle("ef-drawer-open", !!open && !!sidebar && sidebar.getAttribute("aria-hidden") !== "true");
+    syncAccess();
+  }
+  function syncSidebar() {
+    var next = document.querySelector("aside[data-argus-sidebar]");
+    if (next !== sidebar) {
+      if (sidebar) sidebar.inert = originalInert;
+      observer.disconnect();
+      sidebar = next;
+      previousCollapsed = null;
+      originalInert = sidebar ? sidebar.inert : false;
+      if (sidebar) sidebarParent = sidebar.parentElement;
+      if (sidebarParent) observer.observe(sidebarParent, { childList: true });
+      if (sidebar) observer.observe(sidebar, { attributes: true, attributeFilter: ["data-collapsed", "aria-hidden"] });
+      var shell = sidebar && sidebar.closest("[data-argus-shell]");
+      if (shell) observer.observe(shell, { attributes: true, attributeFilter: ["data-games-navigation"] });
+      setOpen(false);
+    }
+    if (!sidebar || sidebar.getAttribute("aria-hidden") === "true") {
+      setOpen(false);
+      return;
+    }
+    var collapsed = sidebar.getAttribute("data-collapsed") === "true";
+    if (previousCollapsed !== null && previousCollapsed !== collapsed) setOpen(!collapsed);
+    previousCollapsed = collapsed;
+    syncAccess();
   }
   function onClick(e) {
     var t = e.target;
@@ -980,18 +1184,12 @@ const elegantFinJs = `(function () {
       setOpen();
       return;
     }
-    if (t.closest("#ef-back")) {
-      var rb = realBack();
-      if (rb) rb.click();
-      return;
-    }
-    if (t.closest("#ef-home")) {
-      var home = document.querySelector("aside[data-argus-sidebar] [data-argus-nav]");
-      if (home) home.click();
+    if (t.closest("[data-argus-sidebar-toggle]")) {
+      // React owns the saved preference; the observer follows its committed state.
       return;
     }
     if (t.closest("#ef-search")) {
-      var pill = document.querySelector(".argus-search-pill");
+      var pill = document.querySelector("[data-argus-search]");
       if (pill) pill.click();
       return;
     }
@@ -1000,30 +1198,34 @@ const elegantFinJs = `(function () {
       return;
     }
     if (t.closest("#ef-profile")) {
-      setOpen(true);
+      var opened = false;
+      try {
+        if (w.argus && typeof w.argus.tryViewMyProfile === "function") {
+          opened = w.argus.tryViewMyProfile() === true;
+        }
+      } catch (e) {}
+      if (!opened && sidebar && sidebar.getAttribute("data-collapsed") === "true") {
+        var expand = sidebar.querySelector("[data-argus-sidebar-toggle]");
+        if (expand) expand.click();
+      }
+      setOpen(!opened);
       return;
     }
     if (t.closest("aside[data-argus-sidebar] [data-argus-nav]")) {
       setOpen(false);
       return;
     }
-    var bottom = t.closest("aside[data-argus-sidebar] > div:last-child");
-    if (bottom && t.closest("button") && !t.closest("div.relative")) {
-      e.preventDefault();
-      e.stopPropagation();
-      setOpen(false);
-    }
   }
   function onKey(e) {
-    if (e.key === "Escape") setOpen(false);
+    if (e.key !== "Escape") return;
+    var restoreFocus = sidebar && sidebar.getAttribute("data-collapsed") !== "true" && sidebar.contains(document.activeElement);
+    setOpen(false);
+    var menu = document.getElementById("ef-menu");
+    if (restoreFocus && menu) menu.focus({ preventScroll: true });
   }
   function tick() {
-    var back = document.getElementById("ef-back");
-    var home = document.getElementById("ef-home");
-    var showNav = realBack() ? "flex" : "none";
-    if (back && back.style.display !== showNav) back.style.display = showNav;
-    if (home && home.style.display !== showNav) home.style.display = showNav;
-    var cluster = document.querySelector("header.fixed.inset-x-0.top-0 > div > :last-child");
+    syncSidebar();
+    var cluster = document.querySelector("[data-argus-topbar-actions]");
     var prof = document.getElementById("ef-profile");
     if (!cluster) return;
     var search = document.getElementById("ef-search");
@@ -1031,14 +1233,14 @@ const elegantFinJs = `(function () {
       search = document.createElement("button");
       search.id = "ef-search";
       search.type = "button";
-      search.setAttribute("aria-label", "Search");
+      search.setAttribute("aria-label", ${JSON.stringify(t("Search"))});
       search.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.5-3.5"></path></svg>';
     }
     if (!prof) {
       prof = document.createElement("button");
       prof.id = "ef-profile";
       prof.type = "button";
-      prof.setAttribute("aria-label", "Profile");
+      prof.setAttribute("aria-label", ${JSON.stringify(t("Profile"))});
     }
     var controls = cluster.querySelector(":scope > div.ms-1");
     var anchor = controls || null;
@@ -1069,6 +1271,8 @@ const elegantFinJs = `(function () {
   var iv = w.setInterval(tick, 800);
   tick();
   var cleanup = function () {
+    observer.disconnect();
+    if (sidebar) sidebar.inert = originalInert;
     root.classList.remove("ef-drawer-open");
     document.removeEventListener("click", onClick, true);
     window.removeEventListener("keydown", onKey);
@@ -1082,6 +1286,7 @@ const elegantFinJs = `(function () {
   w.__efChromeCleanup = cleanup;
   w.__argusThemeCleanup = cleanup;
 })();`;
+}
 
 const feishinCss = `/* ===== FEISHIN THEME FOR ARGUS ===== */
 /* Retoken Argus's @theme palette to Feishin's near-black ladder + electric blue */
@@ -1293,20 +1498,21 @@ html[data-theme-layout="custom"] [class*="shadow-"] { --tw-shadow: 0 0 #0000; }
 /* Selection / focus accent everywhere = blue */
 html[data-theme-layout="custom"] ::selection { background: rgba(53,116,252,0.35); }`;
 
-const feishinHtml = `<aside class="fsh-rail" data-tv-nav-zone data-tauri-drag-region>
+function buildFeishinHtml(): string {
+  return `<aside class="fsh-rail" data-tv-nav-zone data-tauri-drag-region>
   <div class="fsh-actionbar">
-    <button class="fsh-search" type="button" onclick="window.argus.search()" aria-label="Search" title="Search">
+    <button class="fsh-search" type="button" onclick="window.argus.search()" aria-label="${escapeGeneratedHtml(t("Search"))}" title="${escapeGeneratedHtml(t("Search"))}">
       <svg class="fsh-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="m21 21-4.3-4.3"></path></svg>
-      <span class="fsh-search-ph">Search</span>
+      <span class="fsh-search-ph">${escapeGeneratedHtml(t("Search"))}</span>
     </button>
     <div class="fsh-actionbtns">
-      <button class="fsh-iconbtn" type="button" onclick="window.argus.navigate('settings')" aria-label="Menu" title="Menu">
+      <button class="fsh-iconbtn" type="button" onclick="window.argus.navigate('settings')" aria-label="${escapeGeneratedHtml(t("Menu"))}" title="${escapeGeneratedHtml(t("Menu"))}">
         <svg class="fsh-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
       </button>
-      <button class="fsh-iconbtn" type="button" onclick="window.argus.back()" aria-label="Back" title="Back">
+      <button class="fsh-iconbtn" type="button" onclick="window.argus.back()" aria-label="${escapeGeneratedHtml(t("Back"))}" title="${escapeGeneratedHtml(t("Back"))}">
         <svg class="fsh-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"></path></svg>
       </button>
-      <button class="fsh-iconbtn" type="button" onclick="window.argus.navigate('home')" aria-label="Forward" title="Home">
+      <button class="fsh-iconbtn" type="button" onclick="window.argus.navigate('home')" aria-label="${escapeGeneratedHtml(t("Forward"))}" title="${escapeGeneratedHtml(t("Home"))}">
         <svg class="fsh-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6"></path></svg>
       </button>
     </div>
@@ -1314,69 +1520,71 @@ const feishinHtml = `<aside class="fsh-rail" data-tv-nav-zone data-tauri-drag-re
 
   <div class="fsh-scroll">
     <div class="fsh-section">
-      <div class="fsh-section-head">My Library</div>
+      <div class="fsh-section-head">${escapeGeneratedHtml(t("My Library"))}</div>
       <nav class="fsh-nav">
         <button data-argus-nav="home" onclick="window.argus.navigate('home')">
           <svg class="fsh-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 10.5 12 3l9 7.5"></path><path d="M5 9.5V21h14V9.5"></path></svg>
-          <span>Home</span>
+          <span>${escapeGeneratedHtml(t("Home"))}</span>
         </button>
         <button data-argus-nav="discover" onclick="window.argus.navigate('discover')">
           <svg class="fsh-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="m15.5 8.5-2.2 5.3-5.3 2.2 2.2-5.3z"></path></svg>
-          <span>Discover</span>
+          <span>${escapeGeneratedHtml(t("Discover"))}</span>
         </button>
         <button data-argus-nav="movies" onclick="window.argus.navigate('movies')">
           <svg class="fsh-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"></rect><path d="M7 4v16M17 4v16M3 9h4M17 9h4M3 15h4M17 15h4"></path></svg>
-          <span>Movies</span>
+          <span>${escapeGeneratedHtml(t("Movies"))}</span>
         </button>
         <button data-argus-nav="shows" onclick="window.argus.navigate('shows')">
           <svg class="fsh-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="7" width="20" height="13" rx="2"></rect><path d="m8 3 4 4 4-4"></path></svg>
-          <span>Shows</span>
+          <span>${escapeGeneratedHtml(t("Shows"))}</span>
         </button>
         <button data-argus-nav="anime" onclick="window.argus.navigate('anime')">
           <svg class="fsh-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3c4.5 0 8 3 8 7 0 3-2 5-5 6l1 4-4-2.5L8 20l1-4c-3-1-5-3-5-6 0-4 3.5-7 8-7z"></path></svg>
-          <span>Anime</span>
+          <span>${escapeGeneratedHtml(t("Anime"))}</span>
         </button>
         <button data-argus-nav="live" onclick="window.argus.navigate('live')">
           <svg class="fsh-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="7" width="20" height="14" rx="2"></rect><path d="m8 7 4-4 4 4"></path></svg>
-          <span>Live TV</span>
+          <span>${escapeGeneratedHtml(t("Live TV"))}</span>
         </button>
         <button data-argus-nav="vod" onclick="window.argus.navigate('vod')">
           <svg class="fsh-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h11M4 12h11M4 18h7"></path><path d="m17 9 4 3-4 3z"></path></svg>
-          <span>Playlists</span>
+          <span>${escapeGeneratedHtml(t("Playlists"))}</span>
         </button>
       </nav>
     </div>
 
     <div class="fsh-section">
-      <div class="fsh-section-head">Collections</div>
+      <div class="fsh-section-head">${escapeGeneratedHtml(t("Collections"))}</div>
       <nav class="fsh-nav">
         <button data-argus-nav="library" onclick="window.argus.navigate('library')">
           <svg class="fsh-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4h4v16H4zM10 4h4v16h-4z"></path><path d="m17 5 3.5 1-3 14-3.4-1z"></path></svg>
-          <span>Library</span>
+          <span>${escapeGeneratedHtml(t("Library"))}</span>
         </button>
         <button data-argus-nav="calendar" onclick="window.argus.navigate('calendar')">
           <svg class="fsh-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"></rect><path d="M3 10h18M8 3v4M16 3v4"></path></svg>
-          <span>Calendar</span>
+          <span>${escapeGeneratedHtml(t("Calendar"))}</span>
         </button>
         <button data-argus-nav="downloads" onclick="window.argus.navigate('downloads')">
           <svg class="fsh-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12"></path><path d="m7 11 5 5 5-5"></path><path d="M4 20h16"></path></svg>
-          <span>Downloads</span>
+          <span>${escapeGeneratedHtml(t("Downloads"))}</span>
         </button>
         <button data-argus-nav="addons" onclick="window.argus.navigate('addons')">
           <svg class="fsh-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="8" height="8" rx="1.5"></rect><rect x="13" y="3" width="8" height="8" rx="1.5"></rect><rect x="3" y="13" width="8" height="8" rx="1.5"></rect><path d="M17 13v8M13 17h8"></path></svg>
-          <span>Addons</span>
+          <span>${escapeGeneratedHtml(t("Addons"))}</span>
         </button>
         <button data-argus-nav="settings" onclick="window.argus.navigate('settings')">
           <svg class="fsh-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.9.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1A1.7 1.7 0 0 0 4.6 9a1.7 1.7 0 0 0-.3-1.9l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.9.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.9-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.9V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"></path></svg>
-          <span>Settings</span>
+          <span>${escapeGeneratedHtml(t("Settings"))}</span>
         </button>
       </nav>
     </div>
   </div>
 </aside>
 `;
+}
 
-const feishinJs = `(function () {
+function buildFeishinJs(): string {
+  return `(function () {
   var root = document.documentElement;
   function syncActive() {
     var kind = "";
@@ -1391,6 +1599,7 @@ const feishinJs = `(function () {
   syncActive();
   window.__argusThemeCleanup = function () { obs.disconnect(); };
 })();`;
+}
 
 export const BETA_THEMES: ThemePreset[] = [
   {
@@ -1419,9 +1628,16 @@ export const BETA_THEMES: ThemePreset[] = [
     buttonStyle: "flat",
     fontPair: "fraunces-inter",
     css: elegantFinCss,
-    html: elegantFinHtml,
-    js: elegantFinJs,
+    get html() {
+      return buildElegantFinHtml();
+    },
+    get js() {
+      return buildElegantFinJs();
+    },
   },
+];
+
+const PARKED_THEMES: ThemePreset[] = [
   {
     id: "feishin" as ThemePresetId,
     name: "Feishin",
@@ -1447,12 +1663,43 @@ export const BETA_THEMES: ThemePreset[] = [
     buttonStyle: "flat",
     fontPair: "fraunces-inter",
     css: feishinCss,
-    html: feishinHtml,
-    js: feishinJs,
+    get html() {
+      return buildFeishinHtml();
+    },
+    get js() {
+      return buildFeishinJs();
+    },
   },
 ];
 
 export const FEATURED_CUSTOM_THEMES: ThemePreset[] = [
+  {
+    id: "kawaii" as ThemePresetId,
+    name: "Kawaii",
+    blurb: "Pink gingham over cream, white cards, rounded Japanese type. Sweet and soft.",
+    swatch: ["#fdefe0", "#fbd8e2", "#f090ae"],
+    tokens: {
+      "--color-canvas": "#fdefe0",
+      "--color-surface": "#ffffff",
+      "--color-elevated": "#ffffff",
+      "--color-raised": "#fdeef3",
+      "--color-ink": "#7d5c4e",
+      "--color-ink-muted": "#a5867a",
+      "--color-ink-subtle": "#c3a89c",
+      "--color-edge": "rgba(240,144,174,0.45)",
+      "--color-edge-soft": "rgba(240,144,174,0.22)",
+      "--color-accent": "#f090ae",
+      "--color-accent-soft": "rgba(240,144,174,0.20)",
+      "--color-danger": "#e2607a",
+    },
+    background: { image: "none", dim: 0 },
+    layout: "topdock",
+    cardStyle: "flat",
+    buttonStyle: "flat",
+    bokeh: false,
+    css: kawaiiCss,
+    previewImage: kawaiiPreview,
+  },
   {
     id: "aurora" as ThemePresetId,
     name: "Aurora",
@@ -1505,6 +1752,36 @@ export const FEATURED_CUSTOM_THEMES: ThemePreset[] = [
     },
     background: {
       image: "radial-gradient(ellipse 120% 70% at 50% -10%, #ffffff 0%, #f4f4f6 45%, #ececef 100%)",
+      dim: 0,
+    },
+    layout: "minui",
+    cardStyle: "minui",
+    buttonStyle: "minui",
+    bokeh: false,
+    fontPair: "general-sans",
+  },
+  {
+    id: "minui-dark" as ThemePresetId,
+    name: "MinUI Dark",
+    blurb: "MinUI after dark. Same floating dock, deep charcoal chrome.",
+    previewImage: minuiDarkPreview,
+    swatch: ["#101014", "#1a1a20", "#14b8a6"],
+    tokens: {
+      "--color-canvas": "#101014",
+      "--color-surface": "#17171c",
+      "--color-elevated": "#1e1e25",
+      "--color-raised": "#26262e",
+      "--color-ink": "#f4f4f5",
+      "--color-ink-muted": "#a1a1aa",
+      "--color-ink-subtle": "#63636b",
+      "--color-edge": "rgba(255,255,255,0.12)",
+      "--color-edge-soft": "rgba(255,255,255,0.06)",
+      "--color-accent": "#14b8a6",
+      "--color-accent-soft": "rgba(20,184,166,0.16)",
+      "--color-danger": "#e87474",
+    },
+    background: {
+      image: "radial-gradient(ellipse 120% 70% at 50% -10%, #1c1c22 0%, #131316 45%, #0c0c0f 100%)",
       dim: 0,
     },
     layout: "minui",
@@ -1666,6 +1943,8 @@ export function getThemeById(id: string): ThemePreset | null {
   if (featured) return featured;
   const beta = BETA_THEMES.find((t) => t.id === id);
   if (beta) return beta;
+  const parked = PARKED_THEMES.find((t) => t.id === id);
+  if (parked) return parked;
   const template = TEMPLATE_THEMES.find((t) => t.id === id);
   if (template) return template;
   if (id.startsWith("user:")) {
@@ -1678,6 +1957,18 @@ export function isKnownPreset(id: string): boolean {
   return getThemeById(id) !== null;
 }
 
+export function getTrayThemes(): Array<{ id: string; name: string }> {
+  const themes = [
+    ...Object.values(THEME_PRESETS),
+    ...FEATURED_CUSTOM_THEMES,
+    ...BETA_THEMES,
+    ...PARKED_THEMES,
+    ...TEMPLATE_THEMES,
+    ...getCustomThemes(),
+  ];
+  return Array.from(new Map(themes.map(({ id, name }) => [id, { id, name }])).values());
+}
+
 const CYCLE_THEME_IDS: ThemePresetId[] = (Object.keys(THEME_PRESETS) as ThemePresetId[]).filter(
   (id) => id !== "crunch",
 );
@@ -1687,7 +1978,7 @@ export function nextColorTheme(current: string): ThemePresetId {
   return CYCLE_THEME_IDS[(i + 1) % CYCLE_THEME_IDS.length];
 }
 
-function resolveTokens(theme: ThemeSettings): Record<string, string> {
+export function resolveTokens(theme: ThemeSettings): Record<string, string> {
   if (theme.preset === "custom" && theme.customColors) {
     return customColorsToTokens(theme.customColors);
   }
@@ -1698,11 +1989,40 @@ function resolveTokens(theme: ThemeSettings): Record<string, string> {
   return THEME_PRESETS["cool-grey"].tokens;
 }
 
+export function isLightColor(value: string | undefined): boolean {
+  const s = (value ?? "").trim();
+  const oklch = /^oklch\(\s*([\d.]+)(%?)/i.exec(s);
+  if (oklch) return (oklch[2] ? Number(oklch[1]) / 100 : Number(oklch[1])) > 0.55;
+  const rgb = /^rgba?\(\s*([\d.]+)[,\s]+([\d.]+)[,\s]+([\d.]+)/i.exec(s);
+  const hex = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.exec(s);
+  let r: number;
+  let g: number;
+  let b: number;
+  if (rgb) {
+    r = Number(rgb[1]);
+    g = Number(rgb[2]);
+    b = Number(rgb[3]);
+  } else if (hex) {
+    const h = hex[1].length === 3 ? hex[1].replace(/./g, (c) => c + c) : hex[1];
+    r = parseInt(h.slice(0, 2), 16);
+    g = parseInt(h.slice(2, 4), 16);
+    b = parseInt(h.slice(4, 6), 16);
+  } else {
+    return false;
+  }
+  return (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255 > 0.55;
+}
+
 export function applyTheme(theme: ThemeSettings): void {
   const root = document.documentElement;
-  for (const [k, v] of Object.entries(resolveTokens(theme))) {
+  const tokens = resolveTokens(theme);
+  for (const [k, v] of Object.entries(tokens)) {
     root.style.setProperty(k, v);
   }
+  root.dataset.themeMode = isLightColor(tokens["--color-canvas"]) ? "light" : "dark";
+  // light-dark() is how album-art colours pick a readable lightness. Without a real
+  // color-scheme it always resolves dark, so light themes got an invisible tint.
+  root.style.colorScheme = root.dataset.themeMode;
   const preset = theme.preset !== "custom" ? getThemeById(theme.preset) : null;
   const fontPairId = preset?.fontPair ?? theme.fontPair;
   const pair = FONT_PAIRS[fontPairId] ?? FONT_PAIRS["sentient-switzer"];

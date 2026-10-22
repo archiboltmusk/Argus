@@ -1,4 +1,5 @@
 import { Settings2 } from "lucide-react";
+import { isLivePlaybackSrc } from "@/lib/player/live-src";
 import { Fragment, useEffect, useRef, useState } from "react";
 import type { PlayerCapabilities, PlayerSnapshot } from "@/lib/player/bridge";
 import type { SubtitleAddHandler } from "@/lib/player/subtitle-load";
@@ -10,7 +11,7 @@ import { TransportKids } from "./transport-kids";
 import { useActiveKid } from "@/lib/profiles";
 import { useSettings } from "@/lib/settings";
 import { useT } from "@/lib/i18n";
-import { useView } from "@/lib/view";
+import { usePlayerNavigation } from "@/lib/view";
 import { resolveChromeTheme } from "@/lib/theme";
 import { SeekBar } from "./transport/seek-bar";
 import { LiveBadge, GoToLive, LiveSeekBar } from "./transport/live-controls";
@@ -29,8 +30,11 @@ import { renderControl, type ControlContext } from "./transport/control-renderer
 import { SongIdToast } from "@/components/song-id-toast";
 import { useCastModalPlay } from "./use-cast-modal-play";
 
+// This is the mouse-era transport. Big Picture suppresses it outright and
+// renders views/big-picture/player instead, so nothing here scales for ten feet.
 export function Transport({
   snap,
+  isLive,
   capabilities,
   visible,
   fullscreen,
@@ -92,8 +96,10 @@ export function Transport({
   onDownloadReset,
   onOpenDvr,
   sleep,
+  homeServerQualityControl,
 }: {
   snap: PlayerSnapshot;
+  isLive?: boolean;
   capabilities: PlayerCapabilities;
   visible: boolean;
   fullscreen: boolean;
@@ -155,6 +161,7 @@ export function Transport({
   onDownloadReset?: () => void;
   onOpenDvr?: () => void;
   sleep?: import("@/views/player/hooks/use-sleep-timer").SleepTimerState;
+  homeServerQualityControl?: import("react").ReactNode;
 }) {
   const t = useT();
   const { settings } = useSettings();
@@ -169,12 +176,13 @@ export function Transport({
   const [aspectMenuOpen, setAspectMenuOpen] = useState(false);
   const [anime4kMenuOpen, setAnime4kMenuOpen] = useState(false);
   const [castModalOpen, setCastModalOpen] = useState(false);
+  const [chapterMenuOpen, setChapterMenuOpen] = useState(false);
   const [chromeConfig, setChromeConfig] = useState<PlayerChromeConfig>(() =>
     readPlayerChromeConfig("default"),
   );
-  const isLiveChannel = !!meta?.id?.startsWith("iptv:");
+  const isLiveChannel = isLivePlaybackSrc({ meta: meta ?? {}, isLive });
   const titleClickable = !!meta && !isLiveChannel;
-  const { openMeta, exitPlayer } = useView();
+  const { openMeta, exitPlayer } = usePlayerNavigation();
   const castModalPlay = useCastModalPlay();
   const controlsRef = useRef<HTMLDivElement>(null);
   const [mid, setMid] = useState(false);
@@ -182,7 +190,12 @@ export function Transport({
   const [tight, setTight] = useState(false);
   useEffect(() => {
     onMenuOpenChange?.(
-      audioMenuOpen || subtitleMenuOpen || speedMenuOpen || aspectMenuOpen || anime4kMenuOpen,
+      audioMenuOpen ||
+        subtitleMenuOpen ||
+        speedMenuOpen ||
+        aspectMenuOpen ||
+        anime4kMenuOpen ||
+        chapterMenuOpen,
     );
   }, [
     audioMenuOpen,
@@ -190,6 +203,7 @@ export function Transport({
     speedMenuOpen,
     aspectMenuOpen,
     anime4kMenuOpen,
+    chapterMenuOpen,
     onMenuOpenChange,
   ]);
   useEffect(() => {
@@ -223,6 +237,7 @@ export function Transport({
     return (
       <TransportStremio
         snap={snap}
+        isLive={isLiveChannel}
         capabilities={capabilities}
         visible={visible}
         fullscreen={fullscreen}
@@ -280,6 +295,7 @@ export function Transport({
         onDownloadReset={onDownloadReset}
         onOpenDvr={onOpenDvr}
         sleep={sleep}
+        homeServerQualityControl={homeServerQualityControl}
       />
     );
   }
@@ -380,6 +396,7 @@ export function Transport({
     sleep,
     onPlayPause,
     onSeekStep,
+    onSeek,
     onMute,
     onVolume,
     onAudio,
@@ -408,22 +425,21 @@ export function Transport({
     setSubtitleMenuOpen,
     setSpeedMenuOpen,
     setAspectMenuOpen,
+    setChapterMenuOpen,
     cropMode,
     onCropMode,
     setAnime4kMenuOpen,
     anime4kMode,
     onAnime4kMode,
     anime4kAvailable,
+    homeServerQualityControl,
   };
   const fadeClassName = `transition-opacity duration-300 ${visible ? "opacity-100" : "opacity-0"}`;
   const renderFadedControl = (id: PlayerControlId) => {
     const control = renderControl(id, ctx);
-
     if (control == null || id === "back" || id === "play-pause") return control;
-
     return <div className={fadeClassName}>{control}</div>;
   };
-
   return (
     <>
       <SongIdToast />
@@ -479,7 +495,12 @@ export function Transport({
                 <Fragment key={c.id}>{renderFadedControl(c.id)}</Fragment>
               ))}
               <div className={`flex-1 ${fadeClassName}`}>
-                <SeekBar durationSec={snap.durationSec} onSeek={onSeek} active={visible} />
+                <SeekBar
+                  durationSec={snap.durationSec}
+                  onSeek={onSeek}
+                  active={visible}
+                  chapters={snap.chapters}
+                />
               </div>
               {controlsInSlot(chromeConfig, "seek-trailing").map((c) => (
                 <Fragment key={c.id}>{renderFadedControl(c.id)}</Fragment>

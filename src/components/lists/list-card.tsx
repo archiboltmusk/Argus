@@ -1,24 +1,74 @@
-import { Layers } from "lucide-react";
-import type { CustomList } from "@/lib/custom-lists";
+import { Layers, ListVideo, Pencil, Trash2 } from "lucide-react";
+import { sharedLists, type CustomList, type ListStore } from "@/lib/custom-lists";
 import { relativeTime } from "@/lib/dates";
 import { useT } from "@/lib/i18n";
 import { Poster, posterPlate } from "@/components/poster";
+import { useContextTarget } from "@/lib/context-menu";
+import { captureMembershipProfile, isMembershipProfileCurrent } from "@/lib/membership-operations";
 
 export function ListCard({
   list,
   onOpen,
+  onManage,
+  store = sharedLists,
 }: {
   list: CustomList;
+  store?: ListStore;
   onOpen?: (id: string) => void;
+  onManage?: (id: string, action: "rename" | "delete") => void;
 }) {
   const t = useT();
   const covers = list.items.slice(0, 3);
   const count = list.items.length;
+  const contextRef = useContextTarget<HTMLButtonElement>(() => {
+    const profile = captureMembershipProfile();
+    return {
+      kind: "actions",
+      id: `list:${store.storageKey}:${list.id}`,
+      label: list.name,
+      isValid: () =>
+        isMembershipProfileCurrent(profile) &&
+        store.readLists().some((entry) => entry.id === list.id),
+      actions: () => [
+        {
+          id: `list:open:${list.id}`,
+          icon: <ListVideo size={16} />,
+          label: t("Open list"),
+          disabled: !onOpen,
+          run: () => onOpen?.(list.id),
+          restoreFocus: false,
+          group: "list",
+        },
+        ...(onManage
+          ? [
+              {
+                id: `list:rename:${list.id}`,
+                icon: <Pencil size={16} />,
+                label: t("Rename list"),
+                run: () => onManage(list.id, "rename"),
+                restoreFocus: false,
+                group: "list",
+              },
+              {
+                id: `list:delete:${list.id}`,
+                icon: <Trash2 size={16} />,
+                label: t("Delete list"),
+                run: () => onManage(list.id, "delete"),
+                restoreFocus: false,
+                danger: true,
+                group: "remove",
+              },
+            ]
+          : []),
+      ],
+    };
+  });
 
   return (
     <button
+      ref={contextRef}
       onClick={() => onOpen?.(list.id)}
-      className="group flex w-full flex-col overflow-hidden rounded-[20px] border border-edge-soft bg-surface text-start transition-colors hover:bg-elevated"
+      className="group flex w-full flex-col overflow-hidden rounded-xl border border-edge-soft bg-surface text-start transition-colors hover:bg-elevated"
     >
       <div className="relative h-[136px] overflow-hidden bg-canvas">
         {covers.length === 0 ? (
@@ -48,6 +98,11 @@ export function ListCard({
         <h3 className="line-clamp-1 font-display text-[16px] font-medium leading-tight text-ink">
           {list.name}
         </h3>
+        {list.description && (
+          <p className="line-clamp-2 text-[12.5px] leading-snug text-ink-muted">
+            {list.description}
+          </p>
+        )}
         <p className="text-[12px] text-ink-subtle">
           {count === 1 ? t("1 item") : t("{n} items", { n: count })}
           {list.updatedAt > 0 &&

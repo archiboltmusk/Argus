@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useSyncExternalStore } from "react";
 import { useSettings } from "@/lib/settings";
 import { useView, type MetaFilter } from "@/lib/view";
 import { useTogether } from "@/lib/together/provider";
@@ -8,12 +8,21 @@ import { awardTypeLabel } from "@/lib/providers/wikidata";
 import { awardSourceMeta } from "@/lib/anime-awards";
 import { tmdbPerson, tmdbPersonCached } from "@/lib/providers/tmdb/tmdb-people";
 import type { Meta } from "@/lib/cinemeta";
-import { configureDiscord, setBrowsePresence, setPartyPresence, type BrowsePresence } from "./presence";
+import { getMangaReading, subscribeMangaReading } from "@/lib/manga-reading-state";
+import { startMusicPresence } from "@/lib/music/presence";
+import {
+  configureDiscord,
+  setBrowsePresence,
+  setPartyPresence,
+  setReadingPresence,
+  type BrowsePresence,
+} from "./presence";
 import { useActivityHint } from "./activity-hint";
+import { ARGUS_API_BASE, ARGUS_RELAY_BASE } from "@/lib/config/endpoints";
 
-const JOIN_BASE = "https://argus.invalid";
+const JOIN_BASE = ARGUS_RELAY_BASE;
 
-const AWARD_IMG = "https://argus.invalid/discord/awards";
+const AWARD_IMG = `${ARGUS_API_BASE}/discord/awards`;
 const NORMAL_AWARD_IMG: Record<string, string> = {
   oscar: "oscar.png",
   emmy: "emmy.png",
@@ -39,6 +48,7 @@ const STATIC_LABELS: Record<string, BrowsePresence> = {
   movies: { details: "Browsing movies" },
   shows: { details: "Browsing shows" },
   anime: { details: "Browsing anime" },
+  manga: { details: "Browsing manga" },
   live: { details: "Watching live TV" },
   library: { details: "Browsing their library" },
   calendar: { details: "Checking the calendar" },
@@ -65,7 +75,8 @@ function filterBrowse(f: MetaFilter): BrowsePresence {
   const media = f.mediaType === "movie" ? "movies" : "shows";
   if (f.kind === "year") return { details: `Browsing ${f.value} ${media}` };
   if (f.kind === "runtime") return { details: `Browsing ${media} around ${f.value} min` };
-  if (f.kind === "country") return { details: `Browsing ${media} from ${f.name}`, largeText: f.name };
+  if (f.kind === "country")
+    return { details: `Browsing ${media} from ${f.name}`, largeText: f.name };
   return { details: `Browsing ${f.name} ${media}`, largeText: f.name };
 }
 
@@ -82,6 +93,7 @@ export function useDiscordPresence(): void {
   const { settings } = useSettings();
   const { topKind, service, meta, awardType, animeAwardSource, filter, personId } = useView();
   const hint = useActivityHint();
+  const manga = useSyncExternalStore(subscribeMangaReading, getMangaReading, getMangaReading);
   const { snapshot } = useTogether();
   const relayUrl = settings.togetherRelayUrl;
 
@@ -94,6 +106,8 @@ export function useDiscordPresence(): void {
       showPoster: settings.discordShowPoster,
       showTimestamp: settings.discordShowTimestamp,
       showPartyJoin: settings.discordShowPartyJoin,
+      showMusic: settings.discordMusicPresence,
+      hideMusicWhenPaused: settings.discordHideMusicWhenPaused,
     });
   }, [
     settings.discordRichPresence,
@@ -103,7 +117,15 @@ export function useDiscordPresence(): void {
     settings.discordShowPoster,
     settings.discordShowTimestamp,
     settings.discordShowPartyJoin,
+    settings.discordMusicPresence,
+    settings.discordHideMusicWhenPaused,
   ]);
+
+  useEffect(() => startMusicPresence(), []);
+
+  useEffect(() => {
+    setReadingPresence(manga);
+  }, [manga]);
 
   useEffect(() => {
     if (topKind === "player") return;
