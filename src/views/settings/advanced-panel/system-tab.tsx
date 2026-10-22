@@ -1,4 +1,5 @@
 import { useT } from "@/lib/i18n";
+import { GAMES_SHIPPED } from "@/lib/features/install";
 import { useSettings } from "@/lib/settings";
 import { Section, Segmented, ToggleRow } from "../shared";
 import { E2eSyncSection, SelfHealSection } from "../self-heal-section";
@@ -44,12 +45,14 @@ export function SystemTab() {
           "Turn whole areas of Argus on or off. Argus ships no game, ROM or streaming sources; Games only manages what you add yourself.",
         )}
       >
-        <ToggleRow
-          label={t("Games")}
-          sub={t("Game library, launchers, emulation and downloads you add yourself.")}
-          value={settings.gamesEnabled}
-          onChange={(gamesEnabled) => update({ gamesEnabled })}
-        />
+        {GAMES_SHIPPED && (
+          <ToggleRow
+            label={t("Games")}
+            sub={t("Game library, launchers, emulation and downloads you add yourself.")}
+            value={settings.gamesEnabled}
+            onChange={(gamesEnabled) => update({ gamesEnabled })}
+          />
+        )}
         <ToggleRow
           label={t("Music")}
           sub={t("Local music library, queue, playlists and lyrics.")}
