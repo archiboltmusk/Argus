@@ -5,20 +5,29 @@ use once_cell::sync::Lazy;
 use regex::Regex;
 use std::collections::{BTreeMap, HashSet};
 
-static EPISODE_SPAN_RX: Lazy<Vec<Regex>> = Lazy::new(|| vec![
-    Regex::new(r"(?i)(?:^|[^a-z0-9])s(\d{1,3})[ ._-]*e(\d{1,4})[ ._-]*e(\d{1,4})(?:\D|$)").unwrap(),
-    Regex::new(r"(?i)(?:^|[^a-z0-9])s(\d{1,3})[ ._-]*e(\d{1,4})\s*-\s*e?(\d{1,4})(?:\D|$)").unwrap(),
-    Regex::new(r"(?i)(?:^|[^a-z0-9])(\d{1,3})x(\d{1,4})\s*-\s*(\d{1,4})(?:\D|$)").unwrap(),
-]);
+static EPISODE_SPAN_RX: Lazy<Vec<Regex>> = Lazy::new(|| {
+    vec![
+        Regex::new(r"(?i)(?:^|[^a-z0-9])s(\d{1,3})[ ._-]*e(\d{1,4})[ ._-]*e(\d{1,4})(?:\D|$)")
+            .unwrap(),
+        Regex::new(r"(?i)(?:^|[^a-z0-9])s(\d{1,3})[ ._-]*e(\d{1,4})\s*-\s*e?(\d{1,4})(?:\D|$)")
+            .unwrap(),
+        Regex::new(r"(?i)(?:^|[^a-z0-9])(\d{1,3})x(\d{1,4})\s*-\s*(\d{1,4})(?:\D|$)").unwrap(),
+    ]
+});
 
 fn parse_episode_span(text: &str) -> Option<(i32, i32, i32)> {
     for regex in EPISODE_SPAN_RX.iter() {
-        let Some(captures) = regex.captures(text) else { continue };
+        let Some(captures) = regex.captures(text) else {
+            continue;
+        };
         let season = captures.get(1)?.as_str().parse().ok()?;
         let episode = captures.get(2)?.as_str().parse().ok()?;
         let episode_end = captures.get(3)?.as_str().parse().ok()?;
-        return (season > 0 && episode > 0 && episode_end == episode + 1)
-            .then_some((season, episode, episode_end));
+        return (season > 0 && episode > 0 && episode_end == episode + 1).then_some((
+            season,
+            episode,
+            episode_end,
+        ));
     }
     None
 }
@@ -1954,7 +1963,10 @@ mod tests {
 
     #[test]
     fn comma_decimal_size_is_not_read_as_its_tail() {
-        let p = parse_stream(mk_stream("Movie.2020.1080p.WEB-DL\n💾 2,75 GB", "Torrentio"));
+        let p = parse_stream(mk_stream(
+            "Movie.2020.1080p.WEB-DL\n💾 2,75 GB",
+            "Torrentio",
+        ));
         let bytes = p.size.expect("size parsed");
         assert!(
             bytes > 2_900_000_000 && bytes < 3_000_000_000,
@@ -1964,7 +1976,10 @@ mod tests {
 
     #[test]
     fn space_grouped_size_keeps_its_thousands() {
-        let p = parse_stream(mk_stream("Movie.2020.1080p.WEB-DL\n💾 1 500 MB", "Torrentio"));
+        let p = parse_stream(mk_stream(
+            "Movie.2020.1080p.WEB-DL\n💾 1 500 MB",
+            "Torrentio",
+        ));
         let bytes = p.size.expect("size parsed");
         assert!(
             bytes > 1_500_000_000 && bytes < 1_600_000_000,

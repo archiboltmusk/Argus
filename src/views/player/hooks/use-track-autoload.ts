@@ -15,8 +15,6 @@ import type { GeneratedSubtitleGroup } from "@/lib/subtitles/types";
 import { gatherSubtitleAddons } from "@/lib/subtitles/addon-source";
 import { buildStreamIds } from "@/lib/streams/stream-ids";
 import type { PlayerSrc } from "@/lib/view";
-import { clearAutoSub, describeAutoSub, setAutoSub } from "@/lib/subtitles/auto-candidates";
-import type { SubResult } from "@/lib/subtitles/types";
 import type { Settings } from "@/lib/settings";
 import { canStartSubtitleAutoload, subtitleSearchImdbId } from "@/lib/subtitles/autoload";
 import {
@@ -107,7 +105,6 @@ export function useTrackAutoload(params: {
       .then((id) => {
         if (cancelled) return;
         setResolvedImdbId(id);
-    clearAutoSub();
         setResolvedImdbVerified(!!id);
         setResolutionSettled(true);
       })
@@ -141,7 +138,6 @@ export function useTrackAutoload(params: {
   const refetchRef = useRef<(() => Promise<number>) | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [initialSearches, setInitialSearches] = useState(0);
-            videoHash: videoHash ?? null,
   const [initialPreflight, setInitialPreflight] = useState({
     mediaUrl: src.url,
     settled: false,

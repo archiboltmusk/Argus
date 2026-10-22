@@ -13,8 +13,6 @@ export type ProviderMatchEvidence = {
   degraded?: boolean;
 };
 
-  /** 0-100 confidence that this subtitle fits the playing release; set by search ranking. */
-  matchScore?: number;
 export type SubtitleRating = {
   score?: number;
   good?: number;

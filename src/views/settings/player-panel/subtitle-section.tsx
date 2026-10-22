@@ -148,13 +148,6 @@ export function SubtitleStylePanel() {
       subFontColor: "#FFFFFF",
       subBorderColor: "#000000",
       subBorderSize: 0,
-      <ToggleRow
-        label={t("Auto-sync subtitles to speech")}
-        sub={t("In the background, match each subtitle line to when it is spoken, correcting offsets, framerate drift and edited cuts. Needs ffmpeg installed. Playback starts immediately and subtitles snap into place when ready.")}
-        value={settings.subtitleAutoSync}
-        onChange={(v) => update({ subtitleAutoSync: v })}
-      />
-
       subMarginY: 12,
       subAlignX: "center",
       subBoxOpacity: 0.6,

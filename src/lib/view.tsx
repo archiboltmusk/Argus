@@ -201,8 +201,6 @@ export type Frame =
   | { kind: "addon-detail"; id: string }
   | { kind: "calendar" }
   | { kind: "wrapped" }
-  | { kind: "sports" }
-  | { kind: "manga" }
   | { kind: "queue" }
   | { kind: "movies" }
   | { kind: "shows" }
@@ -211,7 +209,6 @@ export type Frame =
   | { kind: "kids" }
   | { kind: "library" }
   | { kind: "live" }
-  | { kind: "music" }
   | { kind: "sports"; esportsEvent?: EsportsMatch }
   | { kind: "vod" }
   | { kind: "downloads" }
@@ -250,8 +247,6 @@ export type Frame =
   | { kind: "award"; awardType: import("./providers/wikidata").AwardType }
   | { kind: "anime-award"; sourceId: import("./anime-awards").AwardSourceId }
   | { kind: "curated-list"; listId: string }
-  sports: "sports",
-  manga: "manga",
   | {
       kind: "picker";
       meta: Meta;
@@ -260,7 +255,6 @@ export type Frame =
       attempt?: number;
       intent?: "play" | "download";
       seasonEpisodes?: PlayEpisode[];
-  music: "music",
       resume?: boolean;
       returnTo?: "previous";
       contextRequestId?: string;
@@ -467,10 +461,6 @@ function frameKey(f: Frame): string {
       return "calendar";
     case "wrapped":
       return "wrapped";
-    case "sports":
-      return "sports";
-    case "manga":
-      return "manga";
     case "queue":
       return "queue";
     case "movies":
@@ -487,8 +477,6 @@ function frameKey(f: Frame): string {
       return "library";
     case "live":
       return "live";
-    case "music":
-      return "music";
     case "sports":
       return "sports";
     case "vod":

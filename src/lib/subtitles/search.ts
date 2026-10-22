@@ -19,8 +19,6 @@ import { isSafeProviderSubtitleUrl } from "./provider-url";
 
 export { streamTagsOf } from "./stream-hints";
 export type { StreamHints } from "./stream-hints";
-  fps?: number | null;
-  videoHash?: string | null;
 export {
   compareSubtitleMatch,
   rankSubtitleCandidates,
@@ -279,10 +277,8 @@ export function deduplicateAndRankSubtitleResults(
     groups.set(key, group);
   }
   const filtered = [...groups.values()].map((group) => mergeDuplicateGroup(group, hints));
-  if (hints) {
-    for (const r of filtered) r.matchScore = toConfidence(streamMatchScore(r, hints));
-  }
-  return interleaveBySource(filtered, preferred, hints);
+  const interleaved = interleaveBySource(filtered, preferred, hints);
+  return interleaved;
 }
 
 function interleaveBySource(

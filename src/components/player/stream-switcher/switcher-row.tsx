@@ -2,7 +2,6 @@ import { useLayoutEffect, useRef, useState } from "react";
 import { ChevronDown, Loader2 } from "lucide-react";
 import { AddonLogo } from "@/components/addon-logo";
 import { CopyLinkButton, resolveStreamLink } from "@/components/player/copy-link-button";
-import { ExternalPlayerButton } from "@/components/player/external-player-button";
 import { FlagStack } from "@/components/flag";
 import { FormatBadge, RuleBadges, streamBadges } from "@/components/format-badge";
 import type { ScoredStream } from "@/lib/streams/types";
@@ -120,7 +119,6 @@ export function SwitcherRow({
           {description && (
             <p
               ref={descRef}
-          {link && !resolving && <ExternalPlayerButton url={link} />}
               className={`whitespace-pre-line text-[12.5px] leading-snug text-ink-muted ${
                 expanded ? "" : "line-clamp-2"
               }`}

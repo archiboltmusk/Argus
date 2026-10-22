@@ -2,9 +2,6 @@ import type { Addon } from "@/lib/addons";
 import { dlog } from "@/lib/debug";
 import type { DebridStore } from "@/lib/debrid/types";
 import {
-import { fetchArchiveStreams } from "./archive";
-import type { Indexer } from "./indexer-feed";
-import { fetchIndexerStreams } from "./indexers";
   fetchAddonStreams,
   type AddonFailure,
   type AddonProgress,
@@ -105,8 +102,6 @@ export type PipelineInput = {
   query: LibraryQuery;
   addons: Addon[];
   debrids: DebridStore[];
-  indexers?: Indexer[];
-  internetArchive?: boolean;
   trust?: TrustOptions;
   score: ScoreOptions;
   isAnime?: boolean;
@@ -477,7 +472,7 @@ async function runCorePipeline(
     const { invoke } = await import("@tauri-apps/api/core");
     const result = (await invoke("streams_run_pipeline", {
       streams: parsed,
-      trustOpts: { ...trustOpts, expectedAliases: trustOpts.expectedAliases?.() ?? [] },
+      trustOpts,
       scoreOpts,
     })) as { picker: RankedPicker; rejected: Rejection[] };
     return result;

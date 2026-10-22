@@ -22,7 +22,13 @@ fn movie_min_size(r: Resolution, in_cinema: bool, older: bool) -> u64 {
         Resolution::P480 => (250 * MIB, 150 * MIB, 50 * MIB),
         Resolution::SD => (200 * MIB, 100 * MIB, 25 * MIB),
     };
-    if older { older_floor } else if in_cinema { cinema } else { normal }
+    if older {
+        older_floor
+    } else if in_cinema {
+        cinema
+    } else {
+        normal
+    }
 }
 
 fn episode_min_size(r: Resolution, in_cinema: bool, older: bool) -> u64 {
@@ -33,7 +39,13 @@ fn episode_min_size(r: Resolution, in_cinema: bool, older: bool) -> u64 {
         Resolution::P480 => (80 * MIB, 50 * MIB, 12 * MIB),
         Resolution::SD => (50 * MIB, 30 * MIB, 8 * MIB),
     };
-    if older { older_floor } else if in_cinema { cinema } else { normal }
+    if older {
+        older_floor
+    } else if in_cinema {
+        cinema
+    } else {
+        normal
+    }
 }
 
 fn anime_episode_min_size(r: Resolution, in_cinema: bool, older: bool) -> u64 {
@@ -44,7 +56,13 @@ fn anime_episode_min_size(r: Resolution, in_cinema: bool, older: bool) -> u64 {
         Resolution::P480 => (40 * MIB, 28 * MIB, 8 * MIB),
         Resolution::SD => (25 * MIB, 18 * MIB, 5 * MIB),
     };
-    if older { older_floor } else if in_cinema { cinema } else { normal }
+    if older {
+        older_floor
+    } else if in_cinema {
+        cinema
+    } else {
+        normal
+    }
 }
 
 fn resolution_label(r: Resolution) -> &'static str {
@@ -194,10 +212,7 @@ fn check_one(
         .as_deref()
         .map(|u| VIDEO_EXT_RX.is_match(u))
         .unwrap_or(false);
-    if s.stream.info_hash.is_none()
-        && !url_is_video
-        && STATUS_LINE_RX.is_match(&title_name_desc)
-    {
+    if s.stream.info_hash.is_none() && !url_is_video && STATUS_LINE_RX.is_match(&title_name_desc) {
         let bh = s.stream.behavior_hints.as_ref();
         let has_video_size = bh
             .and_then(|b| b.get("videoSize"))
@@ -256,7 +271,10 @@ fn check_one(
 
     if kind_is_movie
         && in_cinema_window
-        && !matches!(s.source, Source::CAM | Source::TS | Source::HDTS | Source::TC)
+        && !matches!(
+            s.source,
+            Source::CAM | Source::TS | Source::HDTS | Source::TC
+        )
     {
         if let Some(sz) = s.size {
             let size_mb = (sz as f64 / MIB as f64).round() as u64;
@@ -269,10 +287,12 @@ fn check_one(
         }
     }
 
-    if kind_is_movie && !opts.is_anime
-        && (s.season_pack || s.season.is_some() || s.episode.is_some()) {
-            return Some("series-result-for-movie".to_string());
-        }
+    if kind_is_movie
+        && !opts.is_anime
+        && (s.season_pack || s.season.is_some() || s.episode.is_some())
+    {
+        return Some("series-result-for-movie".to_string());
+    }
 
     if strict
         && kind_is_movie
@@ -405,9 +425,7 @@ fn check_one(
     if strict && !opts.is_anime && !has_file_idx && !s.season_pack {
         if let (Some(expected_season), Some(season)) = (opts.expected_season, s.season) {
             if season != expected_season {
-                return Some(format!(
-                    "season-mismatch:{season}-vs-{expected_season}"
-                ));
+                return Some(format!("season-mismatch:{season}-vs-{expected_season}"));
             }
         }
     }
@@ -415,9 +433,7 @@ fn check_one(
     if strict && !opts.is_anime && !has_file_idx && !s.season_pack {
         if let (Some(expected_episode), Some(episode)) = (opts.expected_episode, s.episode) {
             if expected_episode < episode || expected_episode > s.episode_end.unwrap_or(episode) {
-                return Some(format!(
-                    "episode-mismatch:{episode}-vs-{expected_episode}"
-                ));
+                return Some(format!("episode-mismatch:{episode}-vs-{expected_episode}"));
             }
         }
     }
@@ -693,9 +709,7 @@ fn count_overlap(words: &[String], lookup: &HashSet<&str>) -> usize {
             continue;
         }
         for l in lookup.iter() {
-            if (w.len() >= 4
-                && l.len() >= 4
-                && (w.starts_with(l) || l.starts_with(w.as_str())))
+            if (w.len() >= 4 && l.len() >= 4 && (w.starts_with(l) || l.starts_with(w.as_str())))
                 || tokens_equivalent(w, l)
             {
                 hits += 1;
@@ -906,9 +920,10 @@ mod tests {
     fn keeps_nzb_only_stream() {
         let mut s = base_stream();
         s.stream.info_hash = None;
-        s.stream
-            .extra
-            .insert("nzbUrl".into(), serde_json::Value::String("https://x/nzb".into()));
+        s.stream.extra.insert(
+            "nzbUrl".into(),
+            serde_json::Value::String("https://x/nzb".into()),
+        );
         let result = apply_trust(vec![s], &opts_strict());
         assert_eq!(result.rejected.len(), 0);
     }
@@ -1046,7 +1061,10 @@ mod tests {
         let mut s = base_stream();
         s.stream.name = Some("⏳ Cloud only".into());
         let result = apply_trust(vec![s], &opts_strict());
-        assert!(result.rejected.iter().all(|r| r.reason != "addon-uncached-emoji"));
+        assert!(result
+            .rejected
+            .iter()
+            .all(|r| r.reason != "addon-uncached-emoji"));
     }
 
     #[test]
@@ -1073,7 +1091,10 @@ mod tests {
         opts.release_date = Some(format!("{y:04}-{m:02}-{d:02}"));
         let result = apply_trust(vec![s], &opts);
         assert_eq!(result.rejected.len(), 1);
-        assert_eq!(result.rejected[0].reason, "cinema-year-mismatch:2008-vs-2025");
+        assert_eq!(
+            result.rejected[0].reason,
+            "cinema-year-mismatch:2008-vs-2025"
+        );
     }
 
     #[test]
@@ -1298,7 +1319,12 @@ mod tests {
 
     #[test]
     fn title_matches_numbered_title_across_name_variants() {
-        assert!(title_matches("Kaiju No. 8", "Kaijuu 8 Gou", None, Some(2024)));
+        assert!(title_matches(
+            "Kaiju No. 8",
+            "Kaijuu 8 Gou",
+            None,
+            Some(2024)
+        ));
         assert!(title_matches("Kaiju No. 8", "Kaiju No 8", None, Some(2024)));
     }
 
@@ -1314,14 +1340,22 @@ mod tests {
         romaji.parsed_title = "Kaijuu 8 Gou".into();
         romaji.year = None;
         let kept = apply_trust(vec![romaji], &opts);
-        assert_eq!(kept.keep.len(), 1, "romaji release must survive the anime gate");
+        assert_eq!(
+            kept.keep.len(),
+            1,
+            "romaji release must survive the anime gate"
+        );
         assert!(kept.rejected.is_empty());
 
         let mut english = base_stream();
         english.parsed_title = "Kaiju No 8".into();
         english.year = None;
         let kept = apply_trust(vec![english], &opts);
-        assert_eq!(kept.keep.len(), 1, "english release must survive the anime gate");
+        assert_eq!(
+            kept.keep.len(),
+            1,
+            "english release must survive the anime gate"
+        );
 
         let mut wrong = base_stream();
         wrong.parsed_title = "Stranger Things".into();

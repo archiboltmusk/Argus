@@ -38,7 +38,6 @@ const PRIMARY_IDS = new Set([
   "sports",
   "vod",
 ]);
-    (item.view !== "music" || settings.musicEnabled) &&
 
 export function SideRail() {
   const editing = useNavEditMode();

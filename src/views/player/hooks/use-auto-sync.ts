@@ -8,8 +8,6 @@ import { fetchAndParse, type SubCue } from "@/lib/subtitles/parser";
 import { toSrt, toVtt } from "@/lib/subtitles/serialize";
 import {
   runAutoSync,
-import { setSyncStatus } from "@/lib/subtitles/sync-status";
-import { readSyncCache, syncCacheKey, writeSyncCache } from "@/lib/subtitles/sync-cache";
   type PipelineContext,
   type PipelineOutcome,
 } from "@/lib/subtitles/autosync/pipeline";
@@ -23,11 +21,6 @@ import {
   reportCrowdFeedback,
   reportVerifiedSync,
 } from "@/lib/subtitles/autosync/crowd-db";
-  useEffect(() => {
-    doneKeyRef.current = null;
-    setStatus("idle");
-    setSyncStatus("idle");
-  }, [src.url]);
 import {
   classifyTorrentSource,
   scheduleProgressiveTorrentSync,
@@ -759,18 +752,4 @@ function formatOf(b: PlayerBridge, track: TrackInfo | null): SubFmt {
     return "srt";
   }
   return "unknown";
-}
-
-/** Linear interpolation of per-segment residuals; flat before the first and after the last anchor. */
-function residualAt(anchors: Array<[number, number]>, t: number): number {
-  if (anchors.length === 0) return 0;
-  if (t <= anchors[0][0]) return anchors[0][1];
-  for (let i = 1; i < anchors.length; i++) {
-    const [t1, o1] = anchors[i];
-    if (t <= t1) {
-      const [t0, o0] = anchors[i - 1];
-      return o0 + ((o1 - o0) * (t - t0)) / Math.max(1e-6, t1 - t0);
-    }
-  }
-  return anchors[anchors.length - 1][1];
 }
