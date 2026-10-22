@@ -6,7 +6,7 @@ import {
   type ThemeSettings,
 } from "@/lib/theme";
 import { languageName } from "@/lib/subtitles/language";
-import { sanitizeSeekStep } from "@/lib/seek-step";
+import { sanitizeHoldSpeedRate, sanitizeSeekStep } from "@/lib/seek-step";
 import { migrateModelId, providerTabFor } from "@/lib/ai-models";
 import {
   sanitizeFullscreenClockFormat,
@@ -528,6 +528,8 @@ function parseStoredSettings(raw: string | null): { settings: Settings; cacheabl
       traktRefreshToken: parsed.traktRefreshToken ?? DEFAULT.traktRefreshToken,
       traktExpiresAt: parsed.traktExpiresAt ?? DEFAULT.traktExpiresAt,
       traktUsername: parsed.traktUsername ?? DEFAULT.traktUsername,
+      holdSpeedEnabled: parsed.holdSpeedEnabled !== false,
+      holdSpeedRate: sanitizeHoldSpeedRate(parsed.holdSpeedRate, DEFAULT.holdSpeedRate),
       seekBackStepSec: sanitizeSeekStep(
         parsed.seekBackStepSec ?? legacySeekStep("back"),
         DEFAULT.seekBackStepSec,

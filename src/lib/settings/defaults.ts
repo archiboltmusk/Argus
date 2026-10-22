@@ -438,6 +438,8 @@ export const DEFAULT: Settings = {
   playerHdrOpaqueWindow: false,
   playerEscExitsFullscreen: true,
   playerConfirmLeave: true,
+  holdSpeedEnabled: true,
+  holdSpeedRate: 2,
   tvNavigation: true,
   playerTvNavigation: false,
   bigPictureButton: true,
