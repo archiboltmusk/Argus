@@ -181,6 +181,7 @@ export const DEFAULT: Settings = {
   communityAddonDirectories: false,
   advancedSettings: false,
   metadataFusion: true,
+  externalPlayer: "off",
   addonHealthTracking: true,
   capabilityMatching: true,
   addonHealthProbes: false,

@@ -48,7 +48,7 @@ import { BuildFeedback } from "./build-feedback";
 import { RollbackRow } from "./rollback-row";
 import { PrivacyRow } from "./privacy-row";
 import { TrayRow } from "./tray-row";
-import { Section, ToggleRow } from "./shared";
+import { Section, Segmented, ToggleRow } from "./shared";
 import { Signature } from "./signature";
 import { CustomCodeCard, DownloadsSection } from "./player-panel";
 import { DesktopOnlyBlock } from "./player-panel/internals";
@@ -117,6 +117,7 @@ export function AdvancedPanel() {
       >
         <CapabilityRow />
         <MetadataFusionRow />
+        <ExternalPlayerRow />
       </Section>
 
       <Section
@@ -993,5 +994,28 @@ function MetadataFusionRow() {
       value={settings.metadataFusion}
       onChange={(v) => update({ metadataFusion: v })}
     />
+  );
+}
+
+function ExternalPlayerRow() {
+  const t = useT();
+  const { settings, update } = useSettings();
+  return (
+    <div className="flex flex-col gap-2 px-1 py-2">
+      <div className="text-[14px] font-medium text-ink">{t("Open streams in an external player")}</div>
+      <div className="text-[12.5px] text-ink-muted">
+        {t("Adds an Open button to stream rows that hands the link to a player you have installed.")}
+      </div>
+      <Segmented
+        value={settings.externalPlayer}
+        options={[
+          { value: "off", label: "Off" },
+          { value: "iina", label: "IINA" },
+          { value: "vlc", label: "VLC" },
+          { value: "mpv", label: "mpv" },
+        ]}
+        onChange={(v) => update({ externalPlayer: v })}
+      />
+    </div>
   );
 }

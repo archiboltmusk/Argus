@@ -219,6 +219,7 @@ export type Settings = {
   communityAddonDirectories: boolean;
   advancedSettings: boolean;
   metadataFusion: boolean;
+  externalPlayer: "off" | "iina" | "vlc" | "mpv";
   addonHealthTracking: boolean;
   capabilityMatching: boolean;
   addonHealthProbes: boolean;

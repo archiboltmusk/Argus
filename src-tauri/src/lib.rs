@@ -41,6 +41,7 @@ mod subsync;
 mod svp;
 mod thumbs;
 mod torrent_engine;
+mod external_player;
 mod trailer;
 mod transcode;
 mod tray;
@@ -640,6 +641,7 @@ pub fn run() {
         })
         .invoke_handler(tauri::generate_handler![
             crash_report::take_startup_crash_report,
+            external_player::open_in_external_player,
             argus_flush_done,
             argus_startup_ready,
             close_aux_windows,

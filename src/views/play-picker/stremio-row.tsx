@@ -1,6 +1,7 @@
 import { ArrowDownToLine, Play } from "lucide-react";
 import { AddonLogo } from "@/components/addon-logo";
 import { CopyLinkButton, resolveStreamLink } from "@/components/player/copy-link-button";
+import { ExternalPlayerButton } from "@/components/player/external-player-button";
 import { DubSubPill, streamDubSub } from "@/components/dub-sub-pill";
 import { FormatBadge, streamBadges } from "@/components/format-badge";
 import { HostMatchChip } from "@/components/host-match-chip";
@@ -73,6 +74,7 @@ export function StremioRow({
       </div>
       <div className="flex shrink-0 items-center gap-2 self-center">
         {link && <CopyLinkButton url={link} size={16} className="h-9 w-9" />}
+        {link && <ExternalPlayerButton url={link} size={16} className="h-9 w-9" />}
         <button
           onClick={onPlay}
           aria-label={download ? "Download" : "Play"}

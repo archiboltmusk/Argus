@@ -2,6 +2,7 @@ import { ChevronDown, Download, ExternalLink, Loader2, Play, Zap } from "lucide-
 import { useEffect, useMemo, useState } from "react";
 import { AddonLogo, AddonLogoStack } from "@/components/addon-logo";
 import { CopyLinkButton, resolveStreamLink } from "@/components/player/copy-link-button";
+import { ExternalPlayerButton } from "@/components/player/external-player-button";
 import { FlagStack } from "@/components/flag";
 import { FormatBadge } from "@/components/format-badge";
 import { HostMatchChip } from "@/components/host-match-chip";
@@ -209,6 +210,7 @@ function SourceRow({
         </div>
         <div className="flex shrink-0 items-center gap-3 pt-0.5">
           {link && <CopyLinkButton url={link} />}
+          {link && <ExternalPlayerButton url={link} />}
           <HostMatchChip match={match} />
           {stream.audioLanguages.filter((l) => l.toLowerCase() !== "unknown").length > 0 && (
             <FlagStack
