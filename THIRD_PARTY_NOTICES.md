@@ -27,3 +27,7 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+
+## FFmpeg
+
+The macOS app bundles `ffmpeg` (version 7.1.1), built in CI from the official source at https://ffmpeg.org/releases/ffmpeg-7.1.1.tar.xz with `--disable-gpl --disable-nonfree --enable-version3`, so it is licensed under the GNU LGPL v3 or later. It is used as a separate executable for subtitle auto-sync. Linked statically with OpenSSL 3 (Apache-2.0). The exact build flags are in `.github/workflows/ci.yml`. FFmpeg is a trademark of Fabrice Bellard. Source and license: https://ffmpeg.org/legal.html

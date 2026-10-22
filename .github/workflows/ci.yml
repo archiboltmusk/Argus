@@ -86,6 +86,41 @@ jobs:
           node-version: 24
           cache: pnpm
       - run: brew install mpv dylibbundler
+      # Minimal LGPL ffmpeg (audio decode + silencedetect + https/http input) for
+      # subtitle auto-sync. Built from the official source tarball, no GPL or
+      # nonfree parts, linked statically so the app needs no extra dylibs.
+      - name: Restore ffmpeg
+        id: ffmpeg-cache
+        uses: actions/cache@v4
+        with:
+          path: ffmpeg-bin
+          key: ffmpeg-7.1.1-lgpl-${{ matrix.target }}-v1
+      - name: Build LGPL ffmpeg
+        if: steps.ffmpeg-cache.outputs.cache-hit != 'true'
+        run: |
+          set -euo pipefail
+          curl -fsSL https://ffmpeg.org/releases/ffmpeg-7.1.1.tar.xz -o ffmpeg.tar.xz
+          tar -xf ffmpeg.tar.xz
+          cd ffmpeg-7.1.1
+          SSL="$(brew --prefix openssl@3)"
+          ./configure --prefix="$PWD/../ffmpeg-out" --enable-version3 \
+            --disable-gpl --disable-nonfree --disable-autodetect \
+            --disable-doc --disable-debug --disable-ffplay --disable-ffprobe \
+            --disable-avdevice --disable-swscale --disable-postproc \
+            --disable-encoders --disable-muxers --enable-muxer=null \
+            --enable-encoder=pcm_s16le \
+            --enable-network --enable-openssl \
+            --extra-cflags="-I$SSL/include" \
+            --extra-ldflags="-L$SSL/lib" --pkg-config-flags=--static
+          make -j"$(sysctl -n hw.ncpu)"
+          mkdir -p ../ffmpeg-bin
+          cp ffmpeg ../ffmpeg-bin/ffmpeg
+          strip ../ffmpeg-bin/ffmpeg
+          if otool -L ../ffmpeg-bin/ffmpeg | grep -E "/opt/homebrew|/usr/local"; then
+            echo "::error::ffmpeg links Homebrew paths"; exit 1
+          fi
+          ../ffmpeg-bin/ffmpeg -hide_banner -version | head -3
+          ../ffmpeg-bin/ffmpeg -hide_banner -version | grep -q -- "--disable-gpl"
       - run: pnpm install --frozen-lockfile
       # Bundled fonts (CJK subset) are fetched with pinned checksums, not committed.
       - run: pnpm run setup:fonts
@@ -131,6 +166,9 @@ jobs:
           if otool -L "$EXE" "$APP"/Contents/Frameworks/*.dylib | grep -E "/opt/homebrew|/usr/local"; then
             echo "::error::App still links Homebrew paths"; exit 1
           fi
+          # Sidecar next to the main binary; locate_ffmpeg() checks there first.
+          cp ffmpeg-bin/ffmpeg "$(dirname "$EXE")/ffmpeg"
+          chmod +x "$(dirname "$EXE")/ffmpeg"
           codesign --force --deep --sign - "$APP"
           mkdir -p dist-dmg && cp -R "$APP" dist-dmg/
           ln -s /Applications dist-dmg/Applications
