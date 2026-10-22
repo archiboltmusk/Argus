@@ -210,12 +210,9 @@ impl MusicEngine {
     }
 
     pub async fn audio_devices(&self) -> Result<Vec<crate::mpv::AudioDevice>, String> {
-        for deck in &self.decks {
-            if let Some(devices) = deck.audio_devices().await {
-                return devices;
-            }
-        }
-        core_setup::read_music_audio_devices(&core_setup::probe_core()?)
+        tokio::task::spawn_blocking(core_setup::read_music_audio_devices)
+            .await
+            .map_err(|error| error.to_string())?
     }
 
     pub async fn set_audio_settings(

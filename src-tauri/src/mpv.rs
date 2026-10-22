@@ -406,22 +406,37 @@ fn read_audio_devices(mpv: &Mpv) -> Vec<AudioDevice> {
     out
 }
 
-#[tauri::command]
-pub async fn mpv_audio_devices(state: State<'_, MpvState>) -> Result<Vec<AudioDevice>, String> {
-    let existing = {
-        let g = state.inner.lock().await;
-        g.as_ref().map(|s| s.mpv.clone())
-    };
-    if let Some(mpv) = existing {
-        return Ok(read_audio_devices(&mpv));
+/// mpv registers a CoreAudio hotplug listener the first time `audio-device-list` is touched
+/// and does not reliably remove it when that instance is destroyed. A later device change
+/// then calls into freed memory (SIGSEGV in `hotplug_cb`). Device queries therefore share one
+/// process-lifetime instance instead of touching the property on short-lived ones.
+pub(crate) fn with_audio_device_enumerator<T>(
+    read: impl FnOnce(&Mpv) -> T,
+) -> Result<T, String> {
+    static ENUMERATOR: std::sync::Mutex<Option<Mpv>> = std::sync::Mutex::new(None);
+    let mut slot = ENUMERATOR
+        .lock()
+        .map_err(|_| "Audio device enumerator is unavailable".to_string())?;
+    if slot.is_none() {
+        force_c_numeric_locale();
+        let mpv = Mpv::with_initializer(|init| {
+            let _ = init.set_property("media-controls", "no");
+            let _ = init.set_property("terminal", "no");
+            let _ = init.set_property("video", "no");
+            let _ = init.set_property("vo", "null");
+            Ok(())
+        })
+        .map_err(|e| format!("mpv init: {}", e))?;
+        *slot = Some(mpv);
     }
-    force_c_numeric_locale();
-    let mpv = Mpv::with_initializer(|init| {
-        let _ = init.set_property("media-controls", "no");
-        Ok(())
-    })
-    .map_err(|e| format!("mpv init: {}", e))?;
-    Ok(read_audio_devices(&mpv))
+    Ok(read(slot.as_ref().expect("enumerator initialised")))
+}
+
+#[tauri::command]
+pub async fn mpv_audio_devices() -> Result<Vec<AudioDevice>, String> {
+    tokio::task::spawn_blocking(|| with_audio_device_enumerator(read_audio_devices))
+        .await
+        .map_err(|e| e.to_string())?
 }
 
 fn mpv_header_field(name: &str, value: &str) -> String {
@@ -1225,6 +1240,13 @@ pub async fn mpv_start(
 
     let event_ctx = EventContext::new(mpv_arc.ctx);
     for (name, id, kind) in OBSERVED_PROPS {
+        // Observing the device list installs mpv's CoreAudio hotplug listener, which dangles
+        // once this instance is destroyed (see `with_audio_device_enumerator`). CoreAudio
+        // already follows the default output, so macOS has nothing to re-bind.
+        #[cfg(target_os = "macos")]
+        if *name == "audio-device-list" {
+            continue;
+        }
         if let Err(e) = event_ctx.observe_property(name, kind.fmt(), *id) {
             eprintln!("[mpv] observe {} failed: {}", name, e);
         }

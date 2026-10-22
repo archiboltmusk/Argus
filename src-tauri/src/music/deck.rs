@@ -68,7 +68,7 @@ impl MusicDeck {
         core_setup::apply_network_cache(&mpv);
         let settings = request.settings;
         let wanted = request.device.unwrap_or(settings.device.as_str());
-        let available = core_setup::read_music_audio_devices(&mpv).unwrap_or_default();
+        let available = core_setup::read_music_audio_devices().unwrap_or_default();
         let device_available =
             wanted == "auto" || available.iter().any(|device| device.name == wanted);
         core_setup::apply_music_audio(
