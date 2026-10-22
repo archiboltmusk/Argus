@@ -58,9 +58,10 @@ export function useProviderKeys({
   const [nytDraft, setNytDraft] = useState(settings.nytKey);
   const [posterSrvDraft, setPosterSrvDraft] = useState(settings.posterBaseUrl);
   const [auddDraft, setAuddDraft] = useState(settings.auddKey);
+  const [acoustidDraft, setAcoustidDraft] = useState(settings.acoustidKey);
   const [songAiDraft, setSongAiDraft] = useState(settings.songIdAiKey);
   const [extraSaved, setExtraSaved] = useState<
-    "mdblist" | "postersrv" | "ai" | "audd" | "songai" | "nyt" | null
+    "mdblist" | "postersrv" | "ai" | "audd" | "acoustid" | "songai" | "nyt" | null
   >(null);
   const [tmdbGuide, setTmdbGuide] = useState(false);
   const [tvdbGuide, setTvdbGuide] = useState(false);
@@ -90,7 +91,9 @@ export function useProviderKeys({
     return () => window.removeEventListener("keydown", onKey);
   }, [keyModal, tmdbGuide, tvdbGuide]);
 
-  const flashExtra = (k: "mdblist" | "postersrv" | "ai" | "audd" | "songai" | "nyt") => {
+  const flashExtra = (
+    k: "mdblist" | "postersrv" | "ai" | "audd" | "acoustid" | "songai" | "nyt",
+  ) => {
     setExtraSaved(k);
     if (extraTimerRef.current) window.clearTimeout(extraTimerRef.current);
     extraTimerRef.current = window.setTimeout(() => setExtraSaved(null), 1800);
@@ -403,6 +406,34 @@ export function useProviderKeys({
             <>
               {t("Powers the Identify-song button in the player. Get a token at")}{" "}
               <ExtLink href="https://dashboard.audd.io/">dashboard.audd.io</ExtLink>.
+            </>
+          }
+        />
+      ),
+    },
+    {
+      id: "acoustid",
+      name: t("AcoustID"),
+      desc: t("Free. Identifies audio and video files against MusicBrainz."),
+      value: settings.acoustidKey,
+      field: (
+        <KeyField
+          label={t("AcoustID · identify a file")}
+          placeholder={t("AcoustID application API key")}
+          value={acoustidDraft}
+          onChange={setAcoustidDraft}
+          onSave={() => {
+            update({ acoustidKey: acoustidDraft.trim() });
+            flashExtra("acoustid");
+          }}
+          saved={extraSaved === "acoustid"}
+          help={
+            <>
+              {t("Free key, stored only on this device. Register an application at")}{" "}
+              <ExtLink href="https://acoustid.org/new-application">
+                acoustid.org/new-application
+              </ExtLink>
+              . {t("Works on whole files, not live playback clips.")}
             </>
           }
         />

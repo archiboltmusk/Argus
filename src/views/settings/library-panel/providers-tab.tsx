@@ -15,6 +15,8 @@ import { ROW_ACTION, SettingGroup, SettingRow, Nested } from "../kit";
 import { EpisodeOrderSetting } from "../episode-order-setting";
 import { SportsApiSetting } from "../sports-api-setting";
 import { GameMetadataSetting } from "../game-metadata-setting";
+import { FileAudio } from "lucide-react";
+import { identifyFile, songIdOptions, type SongIdProvider } from "@/lib/song-id";
 import { useProviderKeys, type ProviderKeysArgs } from "./provider-keys";
 
 export function ProvidersTab(props: ProviderKeysArgs) {
@@ -120,11 +122,33 @@ export function ProvidersTab(props: ProviderKeysArgs) {
               options={[
                 { value: "audd", label: t("AudD") },
                 { value: "ai", label: t("AI (Gemini)") },
+                { value: "acoustid", label: t("AcoustID") },
               ]}
-              onChange={(v) => update({ songIdProvider: v as "audd" | "ai" })}
+              onChange={(v) => update({ songIdProvider: v as SongIdProvider })}
             />
           </SettingRow>
-          <Nested>{settings.songIdProvider === "ai" ? keyRow("songai") : keyRow("audd")}</Nested>
+          <Nested>
+            {settings.songIdProvider === "ai"
+              ? keyRow("songai")
+              : settings.songIdProvider === "acoustid"
+                ? keyRow("acoustid")
+                : keyRow("audd")}
+          </Nested>
+          <SettingRow
+            wide
+            icon={<FileAudio size={18} strokeWidth={2} />}
+            label={t("Identify a file")}
+            desc={t("Pick an audio or video file to name the song in it. Needs the key above.")}
+          >
+            <button
+              type="button"
+              className={ROW_ACTION}
+              disabled={!settings.songIdEnabled}
+              onClick={() => void identifyFile(songIdOptions(settings))}
+            >
+              {t("Choose file…")}
+            </button>
+          </SettingRow>
         </SettingGroup>
       </Section>
 

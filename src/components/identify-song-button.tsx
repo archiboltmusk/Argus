@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { AudioLines } from "lucide-react";
 import { useSettings } from "@/lib/settings";
-import { identifyNowPlaying } from "@/lib/song-id";
+import { identifyNowPlaying, songIdOptions } from "@/lib/song-id";
 import { Tooltip } from "@/components/player/transport/tooltip";
 import { useT } from "@/lib/i18n";
 
@@ -26,12 +26,7 @@ export function IdentifySongButton({
     if (pending) return;
     setPending(true);
     try {
-      await identifyNowPlaying({
-        provider: settings.songIdProvider,
-        auddKey: settings.auddKey ?? "",
-        aiKey: settings.songIdAiKey ?? "",
-        aiModel: settings.songIdAiModel ?? "",
-      });
+      await identifyNowPlaying(songIdOptions(settings));
     } finally {
       setPending(false);
     }

@@ -405,6 +405,7 @@ export const DEFAULT: Settings = {
   mdblistKey: "",
   auddKey: "",
   songIdProvider: "audd",
+  acoustidKey: "",
   songIdAiKey: "",
   songIdAiModel: "gemini-3.6-flash",
   aiSearchKey: "",
