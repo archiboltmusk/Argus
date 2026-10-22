@@ -106,6 +106,8 @@ jobs:
           # Only the static archives, so the linker cannot pick the dylibs.
           mkdir -p "$PWD/../ssl-static/lib"
           cp "$SSL"/lib/libssl.a "$SSL"/lib/libcrypto.a "$PWD/../ssl-static/lib/"
+          # Hide brew .pc files so configure falls back to our static -lssl -lcrypto.
+          export PKG_CONFIG_LIBDIR="$PWD/../empty-pc"; mkdir -p "$PKG_CONFIG_LIBDIR"
           ./configure --prefix="$PWD/../ffmpeg-out" --enable-version3 \
             --disable-gpl --disable-nonfree --disable-autodetect \
             --disable-doc --disable-debug --disable-ffplay --disable-ffprobe \
