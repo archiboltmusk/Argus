@@ -112,6 +112,7 @@ import { useSdrBoostGate } from "./player/hooks/use-sdr-boost-gate";
 import { PlayerOverlayLayers, type PlayerOverlayLayersProps } from "./player/player-overlay-layers";
 import { StillWatchingPrompt } from "./player/still-watching-prompt";
 import { SourceErrorCard } from "./player/source-error-card";
+import { WebErrorCard } from "./player/web-error-card";
 import { EndScreen } from "./player/end-screen";
 import { useEndScreen } from "./player/hooks/use-end-screen";
 import { LeaveConfirmModal } from "@/components/player/leave-confirm-modal";
@@ -780,6 +781,12 @@ function NativePlayerView({ src }: { src: PlayerSrc }) {
     engine === "html5" &&
     !settings.playerExternalMpv &&
     (snap.status === "error" || snap.status === "loading");
+  // The browser has no mpv to fall back to, so say why a source can't play
+  // here instead of the generic "provider didn't respond" card.
+  const webErrorCode =
+    isWeb() && engine === "html5" && !isLocalSrc && !isLiveLike && snap.status === "error"
+      ? snap.errorCode
+      : null;
   const [noAudioDismissed, setNoAudioDismissed] = useState(false);
   useEffect(() => {
     setNoAudioDismissed(false);
@@ -1823,7 +1830,13 @@ function NativePlayerView({ src }: { src: PlayerSrc }) {
           onExit={stopWatching}
         />
       )}
-      {sourceError && !docked && (
+      {webErrorCode && !docked && (
+        <WebErrorCard
+          code={webErrorCode}
+          onChoose={() => openPicker(src.meta, src.episode, { autoPlay: false })}
+        />
+      )}
+      {sourceError && !webErrorCode && !docked && (
         <SourceErrorCard
           error={sourceError}
           onChoose={() => {

@@ -512,6 +512,8 @@ export type PlayErrorCode =
   | "engine-no-peers"
   | "engine-not-ready"
   | "direct-torrent-disabled"
+  | "web-needs-desktop"
+  | "web-insecure-source"
   | "no-source"
   | "addon-not-configured"
   | "external-url-only"
@@ -548,6 +550,8 @@ const KNOWN_PLAY_ERROR_CODES: Record<string, true> = {
   "engine-no-peers": true,
   "engine-not-ready": true,
   "direct-torrent-disabled": true,
+  "web-needs-desktop": true,
+  "web-insecure-source": true,
   "no-source": true,
   "addon-not-configured": true,
   "external-url-only": true,
@@ -639,6 +643,14 @@ export function translatePickerError(t: Translate, error: PickerError): string {
     case "direct-torrent-disabled":
       return t(
         "Direct torrent streaming is turned off. Turn it on in Settings > P2P & servers to stream torrents without a debrid.",
+      );
+    case "web-needs-desktop":
+      return t(
+        "Torrents can't play in a browser. Use the Argus desktop app, or add a debrid service so sources arrive as direct links.",
+      );
+    case "web-insecure-source":
+      return t(
+        "This source is served over plain http, which a browser blocks on an https page. Pick an https source or use the desktop app.",
       );
     case "no-source":
       return t("This stream has no playable source.");
