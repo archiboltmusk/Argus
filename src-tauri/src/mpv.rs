@@ -486,7 +486,10 @@ fn apply_pre_init(
     // RTX Video HDR and RTX Video Super Resolution both need native D3D11
     // hardware frames for mpv's d3d11vpp filter.
     let rtx_video = rtx || rtx_vsr;
-    let on_mac_embed = cfg!(target_os = "macos") && embed_hwnd.is_some();
+    // Key off the embed request, not the NSView capture: if the capture times out,
+    // force-window=immediate would make libmpv open its own Cocoa window (a second
+    // Dock entry) before the render API takes over.
+    let on_mac_embed = cfg!(target_os = "macos") && args.embed.unwrap_or(false);
     if on_mac_embed {
         set("hwdec", "videotoolbox-copy");
         set("force-window", "no");
