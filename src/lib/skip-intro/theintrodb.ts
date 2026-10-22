@@ -5,6 +5,7 @@ type RawSpan = { start_ms: number | null; end_ms: number | null };
 
 type RawResponse = {
   tmdb_id?: number;
+  tvdb_id?: number;
   type?: string;
   intro?: RawSpan[];
   recap?: RawSpan[];
@@ -14,6 +15,11 @@ type RawResponse = {
 
 const cache = new Map<string, RawResponse | null>();
 const inflight = new Map<string, Promise<RawResponse | null>>();
+
+// After a server error or rate limit, stop asking for a while instead of
+// hitting the API once per episode.
+const FAILURE_COOLDOWN_MS = 10 * 60 * 1000;
+let coolingUntil = 0;
 
 function pickId(metaId: string): { tmdb?: string; imdb?: string } | null {
   if (metaId.startsWith("tmdb:movie:")) return { tmdb: metaId.slice("tmdb:movie:".length) };
@@ -45,10 +51,14 @@ async function fetchRaw(cacheKey: string): Promise<RawResponse | null> {
   if (hit !== undefined) return hit;
   const pending = inflight.get(cacheKey);
   if (pending) return pending;
+  if (Date.now() < coolingUntil) return null;
   const p = (async () => {
-    const res = await fetch(`https://api.theintrodb.org/v2/media?${cacheKey}`);
+    const res = await fetch(`https://api.theintrodb.org/v4/media?${cacheKey}`);
     if (!res.ok) {
-      cache.set(cacheKey, null);
+      // 404 means "no data for this title": cache it. Anything else is
+      // transient, so back off and retry later.
+      if (res.status === 404) cache.set(cacheKey, null);
+      else coolingUntil = Date.now() + FAILURE_COOLDOWN_MS;
       return null;
     }
     const json = (await res.json()) as RawResponse;
