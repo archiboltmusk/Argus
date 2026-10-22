@@ -460,6 +460,8 @@ export const DEFAULT: Settings = {
   subdlApiKey: "",
   subsourceApiKey: "",
   audioNormalize: false,
+  audioDelayRemember: true,
+  audioOutputLatencyMs: 0,
   audioProfile: "off",
   audioDevice: "",
   bandwidthMbps: 0,

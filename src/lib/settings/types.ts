@@ -568,6 +568,10 @@ export type Settings = {
   subdlApiKey: string;
   subsourceApiKey: string;
   audioNormalize: boolean;
+  /** Remember the audio delay per title and restore it on the next play. */
+  audioDelayRemember: boolean;
+  /** Extra audio delay in ms for slow outputs such as Bluetooth headphones. */
+  audioOutputLatencyMs: number;
   audioProfile: "off" | "bass" | "voice" | "bass-reduce" | "night";
   audioDevice: string;
   bandwidthMbps: number;
