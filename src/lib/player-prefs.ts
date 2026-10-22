@@ -4,6 +4,7 @@ const MAX_ENTRIES = 200;
 export type PerShowPrefs = {
   rate?: number;
   subDelaySec?: number;
+  audioDelaySec?: number;
   audioLang?: string;
   subLang?: string;
   subsOff?: boolean;

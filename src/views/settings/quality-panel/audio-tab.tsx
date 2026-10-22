@@ -72,6 +72,29 @@ export function AudioTab() {
         </div>
       </SettingRow>
       <AudioOutputRow />
+      <ToggleRow
+        label={t("Remember audio delay per title")}
+        sub={t("Keeps the sync fix you made with Alt+Z / Alt+X (50 ms steps) for that title next time you play it.")}
+        value={settings.audioDelayRemember}
+        onChange={(v) => update({ audioDelayRemember: v })}
+      />
+      <SettingRow
+        wide
+        label={t("Wireless output delay")}
+        desc={t("Extra delay for Bluetooth or AirPlay speakers whose sound arrives late. Added to every title. Start at 0 and raise it until lips match.")}
+      >
+        <Segmented
+          value={String(settings.audioOutputLatencyMs)}
+          options={[
+            { value: "0", label: t("Off") },
+            { value: "100", label: "100 ms" },
+            { value: "200", label: "200 ms" },
+            { value: "300", label: "300 ms" },
+            { value: "400", label: "400 ms" },
+          ]}
+          onChange={(v) => update({ audioOutputLatencyMs: Number(v) })}
+        />
+      </SettingRow>
     </Section>
   );
 }

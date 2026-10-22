@@ -39,6 +39,8 @@ export type HotkeyId =
   | "playerSpeedUp"
   | "playerSubDelayDown"
   | "playerSubDelayUp"
+  | "playerAudioDelayDown"
+  | "playerAudioDelayUp"
   | "playerStreamSwitcher"
   | "playerEpisodePanel"
   | "playerTvGuide"
@@ -392,6 +394,22 @@ export const HOTKEYS: HotkeyDef[] = [
     label: "Subtitle delay +0.1s",
     description: "Shift subtitle timing later (Shift for fine steps).",
     defaultBinding: "x",
+  },
+  {
+    id: "playerAudioDelayDown",
+    scope: "Player",
+    group: "Tracks",
+    label: "Audio delay −50ms",
+    description: "Play audio earlier to fix sound lagging behind the picture.",
+    defaultBinding: "alt+z",
+  },
+  {
+    id: "playerAudioDelayUp",
+    scope: "Player",
+    group: "Tracks",
+    label: "Audio delay +50ms",
+    description: "Play audio later to fix sound running ahead of the picture.",
+    defaultBinding: "alt+x",
   },
 
   {
