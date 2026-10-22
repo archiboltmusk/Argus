@@ -219,6 +219,8 @@ export type Settings = {
   navIconAnimations: boolean;
   bigPicturePlayerUi: "tenFoot" | "desktop";
   capabilityMatching: boolean;
+  p2pUploadEnabled: boolean;
+  communityAddonDirectories: boolean;
   metadataFusion: boolean;
   internetArchive: boolean;
   indexers: import("@/lib/streams/indexer-feed").Indexer[];

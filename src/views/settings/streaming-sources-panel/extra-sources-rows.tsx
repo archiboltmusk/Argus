@@ -22,6 +22,14 @@ export function ExtraSourcesRows() {
           onChange={(internetArchive) => update({ internetArchive })}
         />
       </Section>
+      <Section title={t("Addon directories")}>
+        <ToggleRow
+          label={t("Community addon directories")}
+          sub={t("Show addons from public directories in the addon store. Off by default; Argus lists no sources of its own. Reopen the addon store after changing.")}
+          value={settings.communityAddonDirectories}
+          onChange={(communityAddonDirectories) => update({ communityAddonDirectories })}
+        />
+      </Section>
       <Section title={t("Title matching")}>
         <ToggleRow
           label={t("Match alternate and regional titles")}

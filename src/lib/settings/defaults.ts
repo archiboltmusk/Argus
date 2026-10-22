@@ -181,6 +181,8 @@ export const DEFAULT: Settings = {
   useTraktAvatar: false,
   useSimklAvatar: false,
   capabilityMatching: true,
+  p2pUploadEnabled: false,
+  communityAddonDirectories: false,
   metadataFusion: true,
   internetArchive: false,
   indexers: [],
