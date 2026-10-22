@@ -28,7 +28,7 @@ jobs:
       run:
         working-directory: argus-core
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: dtolnay/rust-toolchain@stable
         with:
           components: rustfmt, clippy
@@ -44,11 +44,11 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v6
+      - uses: pnpm/action-setup@v5
+      - uses: actions/setup-node@v6
         with:
-          node-version: 22
+          node-version: 24
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm run typecheck
@@ -70,7 +70,7 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: dtolnay/rust-toolchain@stable
         with:
           targets: ${{ matrix.target }}
@@ -80,10 +80,10 @@ jobs:
           workspaces: src-tauri
           key: ${{ matrix.target }}
           cache-on-failure: true
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v4
+      - uses: pnpm/action-setup@v5
+      - uses: actions/setup-node@v6
         with:
-          node-version: 22
+          node-version: 24
           cache: pnpm
       - run: brew install mpv dylibbundler
       - run: pnpm install --frozen-lockfile
@@ -178,7 +178,7 @@ jobs:
           body: |
             Rolling beta. Installed copies of Argus 0.2+ update themselves from here (Settings → Updates).
             First install: download the .dmg. Apple Silicon only. Unsigned build: right-click Argus.app → Open the first time.
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: Argus-macOS-${{ matrix.arch }}
           path: Argus-${{ matrix.arch }}.dmg
