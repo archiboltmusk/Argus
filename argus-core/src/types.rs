@@ -380,6 +380,9 @@ pub struct ScoreOptions {
     /// Info hashes this device saw fail or abandoned within seconds (lower-case).
     #[serde(default)]
     pub demoted_hashes: Vec<String>,
+    /// Hosts the user prefers, matched against the stream URL host (lower-case).
+    #[serde(default)]
+    pub preferred_hosts: Vec<String>,
 }
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]

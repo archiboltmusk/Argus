@@ -180,6 +180,7 @@ export const DEFAULT: Settings = {
   useAnilistAvatar: false,
   useTraktAvatar: false,
   useSimklAvatar: false,
+  capabilityMatching: true,
   useMalAvatar: false,
   traktClientId: "",
   traktClientSecret: "",
@@ -190,6 +191,10 @@ export const DEFAULT: Settings = {
   streaming: {
     netflix: true,
     disney: true,
+  bestLinkScoring: true,
+  preferredReleaseGroups: "",
+  preferredHosts: "",
+  deadLinkDemotion: true,
     hulu: true,
     prime: true,
     apple: true,

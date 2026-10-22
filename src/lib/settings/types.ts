@@ -218,6 +218,7 @@ export type Settings = {
   heroTrailerAudio: boolean;
   navIconAnimations: boolean;
   bigPicturePlayerUi: "tenFoot" | "desktop";
+  capabilityMatching: boolean;
   screensaver: boolean;
   screensaverStyle: "ambient" | "catBoat" | "halloween" | "custom";
   screensaverMedia: ScreensaverMedia[];
@@ -228,6 +229,10 @@ export type Settings = {
   keepFullscreenOnExit: boolean;
   fullscreenRestorePosition: boolean;
   contentAdvisoryToast: boolean;
+  bestLinkScoring: boolean;
+  preferredReleaseGroups: string;
+  preferredHosts: string;
+  deadLinkDemotion: boolean;
   contentAdvisoryTheme: "colored" | "monochrome";
   contentAdvisoryShowIgnore: boolean;
   playerVolumeHud: boolean;

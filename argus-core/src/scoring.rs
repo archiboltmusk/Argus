@@ -946,6 +946,14 @@ fn bitrate_mbps(s: &ParsedStream, opts: &ScoreOptions) -> Option<f64> {
 }
 
 /// Streams in the range most people finish without stutter or visible bloat.
+/// Lower-case host of an http(s) URL, without port or credentials.
+fn url_host(url: &str) -> Option<String> {
+    let rest = url.split_once("://")?.1;
+    let authority = rest.split(['/', '?', '#']).next()?;
+    let host = authority.rsplit('@').next()?.split(':').next()?;
+    (!host.is_empty()).then(|| host.to_lowercase())
+}
+
 fn sweet_spot_points(s: &ParsedStream, opts: &ScoreOptions) -> Option<ScoreReason> {
     let mbps = bitrate_mbps(s, opts)?;
     let (lo, hi) = match s.resolution {
@@ -1134,6 +1142,20 @@ pub fn score_stream(
             reasons.push(ScoreReason {
                 signal: format!("group-pref:{}", g),
                 delta: 8.0,
+            });
+        }
+    }
+
+    if let Some(host) = parsed.stream.url.as_deref().and_then(url_host) {
+        if opts
+            .preferred_hosts
+            .iter()
+            .any(|h| host == *h || host.ends_with(&format!(".{h}")))
+        {
+            score += 12.0;
+            reasons.push(ScoreReason {
+                signal: format!("host-pref:{}", host),
+                delta: 12.0,
             });
         }
     }
@@ -2049,6 +2071,22 @@ mod tests {
         let a = score_stream(p.clone(), &with, &corpus).score;
         let b = score_stream(p, &empty_opts(), &corpus).score;
         assert_eq!(a - b, -8.0);
+
+        let mut p = base_parsed();
+        p.stream.url = Some("https://cdn.pixeldrain.com:443/api/file/x".to_string());
+        let hosts = ScoreOptions {
+            preferred_hosts: vec!["pixeldrain.com".to_string()],
+            ..Default::default()
+        };
+        let boosted = score_stream(p.clone(), &hosts, &corpus).score;
+        assert_eq!(
+            boosted - score_stream(p, &empty_opts(), &corpus).score,
+            12.0
+        );
+        assert_eq!(
+            url_host("https://user@Example.COM:80/a?b"),
+            Some("example.com".to_string())
+        );
     }
 
     #[test]
