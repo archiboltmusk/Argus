@@ -8,6 +8,7 @@ import { useT } from "@/lib/i18n";
 import {
   torrentEngineHardReset,
   torrentEngineSetOptions,
+  torrentEngineSetUpload,
   torrentEngineStatus,
 } from "@/lib/torrent/local-engine";
 import { Section, ToggleRow } from "../shared";
@@ -95,6 +96,7 @@ export function P2PAdvancedSection() {
       engine: status,
       directTorrentStream: settings.directTorrentStream,
       p2pAutoConsent: settings.p2pAutoConsent,
+      p2pUploadEnabled: settings.p2pUploadEnabled,
       remoteStreamServerUrl: settings.remoteStreamServerUrl || null,
       remoteStreamServerStrict: settings.remoteStreamServerStrict,
       userAgent: navigator.userAgent,
@@ -279,6 +281,21 @@ export function P2PAdvancedSection() {
           value={settings.p2pAutoConsent}
           onChange={(v) => update({ p2pAutoConsent: v })}
         />
+
+        <ToggleRow
+          label={t("Share data back to peers (seeding)")}
+          sub={t("Off by default: uploads are throttled to a trickle so Argus only downloads what you watch. Turning this on uploads to other peers at full speed and can expose your IP address to them. You are responsible for what you share.")}
+          value={settings.p2pUploadEnabled}
+          onChange={(v) => {
+            update({ p2pUploadEnabled: v });
+            void torrentEngineSetUpload(v);
+          }}
+        />
+        {settings.p2pUploadEnabled && (
+          <p className="rounded-lg border border-amber-400/30 bg-amber-400/10 px-3 py-2 text-[12px] leading-relaxed text-amber-200">
+            {t("Seeding is on. Peers can see your IP address and what you are sharing.")}
+          </p>
+        )}
 
         <div className="flex flex-wrap items-center gap-2 pt-1">
           <button

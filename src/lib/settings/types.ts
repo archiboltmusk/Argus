@@ -215,6 +215,7 @@ export type Settings = {
   torrentsDisabled: boolean;
   torrentFullDownload: boolean;
   p2pAutoConsent: boolean;
+  p2pUploadEnabled: boolean;
   streamCacheRetentionHours: number;
   streamCacheMaxGb: number;
   deleteWatchedDownloads: boolean;

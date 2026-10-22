@@ -4644,5 +4644,9 @@
   "Zoom out": "Zoom out",
   "العربية": "العربية",
   "{count}% match": "{count}% match",
-  "Try next subtitle": "Try next subtitle"
+  "Try next subtitle": "Try next subtitle",
+  "Share data back to peers (seeding)": "Share data back to peers (seeding)",
+  "Off by default: uploads are throttled to a trickle so Argus only downloads what you watch. Turning this on uploads to other peers at full speed and can expose your IP address to them. You are responsible for what you share.": "Off by default: uploads are throttled to a trickle so Argus only downloads what you watch. Turning this on uploads to other peers at full speed and can expose your IP address to them. You are responsible for what you share.",
+  "Seeding is on. Peers can see your IP address and what you are sharing.": "Seeding is on. Peers can see your IP address and what you are sharing.",
+  "Argus ships with no streaming sources. You are responsible for the addons and sources you add and for following the laws where you live.": "Argus ships with no streaming sources. You are responsible for the addons and sources you add and for following the laws where you live."
 }
