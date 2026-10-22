@@ -12,9 +12,12 @@ on:
         required: false
         default: ""
 
+# PR runs cancel when a newer commit lands. Main runs are never cancelled:
+# GitHub keeps one running and one queued run per group, and a newer queued run
+# replaces an older one, so the latest commit always publishes (latest wins).
 concurrency:
   group: ci-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 env:
   CARGO_TERM_COLOR: always
@@ -30,6 +33,7 @@ jobs:
     timeout-minutes: 5
     outputs:
       native: ${{ steps.diff.outputs.native }}
+      bundle: ${{ steps.diff.outputs.bundle }}
     steps:
       - uses: actions/checkout@v6
         with:
@@ -37,13 +41,20 @@ jobs:
       - id: diff
         run: |
           if [ "${{ github.event_name }}" != "pull_request" ]; then
-            echo "native=true" >> "$GITHUB_OUTPUT"; exit 0
+            echo "native=true" >> "$GITHUB_OUTPUT"
+            echo "bundle=true" >> "$GITHUB_OUTPUT"; exit 0
           fi
-          if git diff --name-only "${{ github.event.pull_request.base.sha }}" "${{ github.sha }}" \
-            | grep -E '^(src-tauri/|argus-core/|\.github/workflows/|package\.json$|pnpm-lock\.yaml$)'; then
+          FILES=$(git diff --name-only "${{ github.event.pull_request.base.sha }}" "${{ github.sha }}")
+          if echo "$FILES" | grep -qE '^(src-tauri/|argus-core/|\.github/workflows/|package\.json$|pnpm-lock\.yaml$)'; then
             echo "native=true" >> "$GITHUB_OUTPUT"
           else
             echo "native=false" >> "$GITHUB_OUTPUT"
+          fi
+          # Packaging changes need the full .dmg build; plain Rust edits only a cargo check.
+          if echo "$FILES" | grep -qE '^(src-tauri/(tauri[^/]*\.json|Cargo\.toml|Cargo\.lock|build\.rs|Info\.plist|entitlements[^/]*)|scripts/|\.github/workflows/ci\.yml|package\.json$|pnpm-lock\.yaml$)'; then
+            echo "bundle=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "bundle=false" >> "$GITHUB_OUTPUT"
           fi
 
   core:
@@ -134,6 +145,10 @@ jobs:
       - run: pnpm run setup:fonts
       # yt-dlp / ffmpeg / ffprobe sidecars declared as externalBin.
       - run: pnpm run setup:binaries
+      # PRs that only touch Rust sources skip the bundle and compile-check instead.
+      - name: Cargo check (PR without packaging changes)
+        if: github.event_name == 'pull_request' && needs.changes.outputs.bundle != 'true'
+        run: cargo check --manifest-path src-tauri/Cargo.toml --target ${{ matrix.target }}
       # Non-PR builds feed the beta channel: version MAJOR.MINOR.<run number>
       # so every main build is newer than the last for the updater.
       # The updater public key comes from the TAURI_UPDATER_PUBKEY repo variable
@@ -156,13 +171,15 @@ jobs:
             console.log("version", c.version);
           '
       # Unsigned until an Apple Developer ID is added as a repo secret.
-      - run: pnpm tauri build --target ${{ matrix.target }} --bundles app ${{ steps.macos-libraries.outputs.config }}
+      - if: github.event_name != 'pull_request' || needs.changes.outputs.bundle == 'true'
+        run: pnpm tauri build --target ${{ matrix.target }} --bundles app ${{ steps.macos-libraries.outputs.config }}
         env:
           # Optional: enable Trakt/Simkl sign-in (apps registered by the maintainer).
           ARGUS_TRAKT_CLIENT_ID: ${{ secrets.ARGUS_TRAKT_CLIENT_ID }}
           ARGUS_TRAKT_CLIENT_SECRET: ${{ secrets.ARGUS_TRAKT_CLIENT_SECRET }}
           ARGUS_SIMKL_CLIENT_ID: ${{ secrets.ARGUS_SIMKL_CLIENT_ID }}
       - name: Verify the app and build the .dmg
+        if: github.event_name != 'pull_request' || needs.changes.outputs.bundle == 'true'
         run: |
           set -euo pipefail
           APP="src-tauri/target/${{ matrix.target }}/release/bundle/macos/Argus.app"
@@ -200,6 +217,7 @@ jobs:
           ' "$VERSION" "$SIG" "$URL" "$GITHUB_SHA"
           cat latest.json
       - uses: actions/upload-artifact@v7
+        if: github.event_name != 'pull_request' || needs.changes.outputs.bundle == 'true'
         with:
           name: Argus-macOS-${{ matrix.arch }}
           path: |
@@ -207,150 +225,6 @@ jobs:
             Argus-${{ matrix.arch }}.app.tar.gz
             latest.json
           if-no-files-found: ignore
-
-  # Windows and Linux build beside macOS and are not part of the macOS publish
-  # gate: a failure here never blocks or delays the .dmg.
-  windows:
-    name: Windows x64 (NSIS, MSI)
-    needs: [changes]
-    if: needs.changes.outputs.native == 'true'
-    runs-on: windows-latest
-    timeout-minutes: 90
-    steps:
-      - uses: actions/checkout@v6
-      - uses: dtolnay/rust-toolchain@stable
-      - uses: Swatinem/rust-cache@v2
-        with:
-          workspaces: src-tauri
-          key: x86_64-pc-windows-msvc
-          cache-on-failure: true
-          save-if: ${{ github.ref == 'refs/heads/main' }}
-      - uses: pnpm/action-setup@v5
-      - uses: actions/setup-node@v6
-        with:
-          node-version: 24
-          cache: pnpm
-      - run: pnpm install --frozen-lockfile
-      - run: pnpm run setup:fonts
-      # libmpv-2.dll, mpv.exe and the yt-dlp / ffmpeg / ffprobe sidecars.
-      # tauri.windows.conf.json bundles them next to the app.
-      - run: pnpm run setup:libmpv
-      - run: pnpm run setup:mpv
-      - run: pnpm run setup:binaries
-      - name: Set beta version and updater key
-        if: github.event_name != 'pull_request'
-        shell: bash
-        env:
-          PUBKEY: ${{ vars.TAURI_UPDATER_PUBKEY }}
-        run: node scripts/ci-set-beta-version.mjs
-      - name: Build installers
-        shell: bash
-        env:
-          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
-          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
-          ARGUS_TRAKT_CLIENT_ID: ${{ secrets.ARGUS_TRAKT_CLIENT_ID }}
-          ARGUS_TRAKT_CLIENT_SECRET: ${{ secrets.ARGUS_TRAKT_CLIENT_SECRET }}
-          ARGUS_SIMKL_CLIENT_ID: ${{ secrets.ARGUS_SIMKL_CLIENT_ID }}
-        run: |
-          set -euo pipefail
-          EXTRA=""
-          # Signed updater artifacts (the NSIS setup .exe + .sig) only off PRs.
-          if [ "${{ github.event_name }}" != "pull_request" ]; then
-            EXTRA="--config src-tauri/tauri.updater.conf.json"
-          fi
-          pnpm tauri build --bundles nsis,msi $EXTRA
-      - name: Collect artifacts
-        shell: bash
-        run: |
-          set -euo pipefail
-          B=src-tauri/target/release/bundle
-          mkdir -p out
-          cp "$(ls $B/nsis/*-setup.exe | head -n1)" out/Argus-windows-x64-setup.exe
-          cp "$(ls $B/msi/*.msi | head -n1)" out/Argus-windows-x64.msi
-          if ls $B/nsis/*-setup.exe.sig >/dev/null 2>&1; then
-            cp "$(ls $B/nsis/*-setup.exe.sig | head -n1)" out/Argus-windows-x64-setup.exe.sig
-          fi
-          ls -la out
-      - uses: actions/upload-artifact@v7
-        with:
-          name: Argus-windows-x64
-          path: out/*
-          if-no-files-found: error
-
-  linux:
-    name: Linux x64 (AppImage, deb)
-    needs: [changes]
-    if: needs.changes.outputs.native == 'true'
-    # 24.04 ships libmpv2 (mpv 0.37) and webkit2gtk-4.1. The AppImage therefore
-    # needs glibc 2.39 or newer.
-    runs-on: ubuntu-24.04
-    timeout-minutes: 90
-    env:
-      # linuxdeploy's bundled strip chokes on newer .relr.dyn sections.
-      NO_STRIP: "true"
-      # CI runners have no FUSE.
-      APPIMAGE_EXTRACT_AND_RUN: "1"
-    steps:
-      - uses: actions/checkout@v6
-      - name: Install system packages
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends \
-            build-essential pkg-config patchelf xdg-utils file curl \
-            libwebkit2gtk-4.1-dev libgtk-3-dev libayatana-appindicator3-dev librsvg2-dev \
-            libssl-dev libxdo-dev libmpv-dev \
-            libgstreamer1.0-dev gstreamer1.0-plugins-good gstreamer1.0-plugins-bad gstreamer1.0-libav
-      - uses: dtolnay/rust-toolchain@stable
-      - uses: Swatinem/rust-cache@v2
-        with:
-          workspaces: src-tauri
-          key: x86_64-unknown-linux-gnu
-          cache-on-failure: true
-          save-if: ${{ github.ref == 'refs/heads/main' }}
-      - uses: pnpm/action-setup@v5
-      - uses: actions/setup-node@v6
-        with:
-          node-version: 24
-          cache: pnpm
-      - run: pnpm install --frozen-lockfile
-      - run: pnpm run setup:fonts
-      # yt-dlp / ffmpeg / ffprobe sidecars declared as externalBin.
-      - run: pnpm run setup:binaries
-      - name: Set beta version and updater key
-        if: github.event_name != 'pull_request'
-        env:
-          PUBKEY: ${{ vars.TAURI_UPDATER_PUBKEY }}
-        run: node scripts/ci-set-beta-version.mjs
-      - name: Build AppImage and deb
-        env:
-          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
-          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
-          ARGUS_TRAKT_CLIENT_ID: ${{ secrets.ARGUS_TRAKT_CLIENT_ID }}
-          ARGUS_TRAKT_CLIENT_SECRET: ${{ secrets.ARGUS_TRAKT_CLIENT_SECRET }}
-          ARGUS_SIMKL_CLIENT_ID: ${{ secrets.ARGUS_SIMKL_CLIENT_ID }}
-        run: |
-          set -euo pipefail
-          EXTRA=""
-          if [ "${{ github.event_name }}" != "pull_request" ]; then
-            EXTRA="--config src-tauri/tauri.updater.conf.json"
-          fi
-          pnpm tauri build --bundles appimage,deb $EXTRA
-      - name: Collect artifacts
-        run: |
-          set -euo pipefail
-          B=src-tauri/target/release/bundle
-          mkdir -p out
-          cp "$(ls $B/appimage/*.AppImage | head -n1)" out/Argus-linux-x64.AppImage
-          cp "$(ls $B/deb/*.deb | head -n1)" out/Argus-linux-x64.deb
-          if ls $B/appimage/*.AppImage.sig >/dev/null 2>&1; then
-            cp "$(ls $B/appimage/*.AppImage.sig | head -n1)" out/Argus-linux-x64.AppImage.sig
-          fi
-          ls -la out
-      - uses: actions/upload-artifact@v7
-        with:
-          name: Argus-linux-x64
-          path: out/*
-          if-no-files-found: error
 
   # Publishes as soon as the .dmg and every check have passed.
   publish:
@@ -420,50 +294,3 @@ jobs:
           generate_release_notes: true
           body: |
             Apple Silicon (M1 or newer), macOS 11+. Unsigned build: on first launch, right-click Argus.app → Open, or run `xattr -dr com.apple.quarantine /Applications/Argus.app`.
-
-  # Adds Windows and Linux to the beta channel after the macOS publish has
-  # written latest.json for this build. Runs only if macOS published, so a
-  # failed Mac build never leaves a feed whose version has no darwin entry.
-  # Mac's publish job does not depend on this one.
-  publish-desktop:
-    name: Publish Windows and Linux beta
-    needs: [publish, windows, linux]
-    if: ${{ !cancelled() && github.event_name != 'pull_request' && needs.publish.result == 'success' && (needs.windows.result == 'success' || needs.linux.result == 'success') }}
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    permissions:
-      contents: write
-    steps:
-      - uses: actions/download-artifact@v5
-        if: needs.windows.result == 'success'
-        with:
-          name: Argus-windows-x64
-          path: win
-      - uses: actions/download-artifact@v5
-        if: needs.linux.result == 'success'
-        with:
-          name: Argus-linux-x64
-          path: linux
-      - name: Merge into latest.json and upload
-        env:
-          GH_TOKEN: ${{ github.token }}
-          REPO: ${{ github.repository }}
-        run: |
-          set -euo pipefail
-          BASE="https://github.com/$REPO/releases/download/beta"
-          gh release download beta --repo "$REPO" -p latest.json -O latest.json
-          # Same workflow run as the macOS build, so every bundle carries latest.json's version.
-          FILES=()
-          if [ -d win ] && [ -f win/Argus-windows-x64-setup.exe.sig ]; then
-            jq --rawfile sig win/Argus-windows-x64-setup.exe.sig --arg url "$BASE/Argus-windows-x64-setup.exe" \
-              '.platforms["windows-x86_64"] = {signature: ($sig|rtrimstr("\n")), url: $url}' latest.json > l.tmp && mv l.tmp latest.json
-            FILES+=(win/Argus-windows-x64-setup.exe win/Argus-windows-x64.msi)
-          fi
-          if [ -d linux ] && [ -f linux/Argus-linux-x64.AppImage.sig ]; then
-            jq --rawfile sig linux/Argus-linux-x64.AppImage.sig --arg url "$BASE/Argus-linux-x64.AppImage" \
-              '.platforms["linux-x86_64"] = {signature: ($sig|rtrimstr("\n")), url: $url}' latest.json > l.tmp && mv l.tmp latest.json
-            FILES+=(linux/Argus-linux-x64.AppImage linux/Argus-linux-x64.deb)
-          fi
-          [ ${#FILES[@]} -gt 0 ] || { echo "::error::No signed Windows/Linux bundle to publish"; exit 1; }
-          cat latest.json
-          gh release upload beta "${FILES[@]}" latest.json --repo "$REPO" --clobber

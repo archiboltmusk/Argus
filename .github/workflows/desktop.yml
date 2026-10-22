@@ -1,0 +1,234 @@
+name: Desktop
+
+# Windows and Linux builds, separate from the CI run so the macOS .dmg and
+# updater feed publish without waiting for them. Starts once CI has published
+# the Mac build, stamps that build's version, and adds its entries to latest.json.
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+  pull_request:
+    paths:
+      - ".github/workflows/desktop.yml"
+      - "src-tauri/tauri.windows.conf.json"
+      - "src-tauri/tauri.linux*.json"
+      - "src-tauri/tauri.updater.conf.json"
+  workflow_dispatch:
+
+concurrency:
+  group: desktop-${{ github.event_name == 'pull_request' && github.ref || 'main' }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  CARGO_TERM_COLOR: always
+  NODE_OPTIONS: --max-old-space-size=8192
+
+jobs:
+  version:
+    name: Resolve Mac build version
+    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      version: ${{ steps.v.outputs.version }}
+    steps:
+      - id: v
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then exit 0; fi
+          gh release download beta --repo "$GITHUB_REPOSITORY" -p latest.json -O latest.json
+          echo "version=$(jq -r .version latest.json)" >> "$GITHUB_OUTPUT"
+
+  windows:
+    name: Windows x64 (NSIS, MSI)
+    needs: [version]
+    runs-on: windows-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+          key: x86_64-pc-windows-msvc
+          cache-on-failure: true
+          save-if: ${{ github.ref == 'refs/heads/main' }}
+      - uses: pnpm/action-setup@v5
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm run setup:fonts
+      # libmpv-2.dll, mpv.exe and the yt-dlp / ffmpeg / ffprobe sidecars.
+      # tauri.windows.conf.json bundles them next to the app.
+      - run: pnpm run setup:libmpv
+      - run: pnpm run setup:mpv
+      - run: pnpm run setup:binaries
+      - name: Set beta version and updater key
+        if: github.event_name != 'pull_request'
+        shell: bash
+        env:
+          PUBKEY: ${{ vars.TAURI_UPDATER_PUBKEY }}
+          ARGUS_VERSION: ${{ needs.version.outputs.version }}
+        run: node scripts/ci-set-beta-version.mjs
+      - name: Build installers
+        shell: bash
+        env:
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+          ARGUS_TRAKT_CLIENT_ID: ${{ secrets.ARGUS_TRAKT_CLIENT_ID }}
+          ARGUS_TRAKT_CLIENT_SECRET: ${{ secrets.ARGUS_TRAKT_CLIENT_SECRET }}
+          ARGUS_SIMKL_CLIENT_ID: ${{ secrets.ARGUS_SIMKL_CLIENT_ID }}
+        run: |
+          set -euo pipefail
+          EXTRA=""
+          # Signed updater artifacts (the NSIS setup .exe + .sig) only off PRs.
+          if [ "${{ github.event_name }}" != "pull_request" ]; then
+            EXTRA="--config src-tauri/tauri.updater.conf.json"
+          fi
+          pnpm tauri build --bundles nsis,msi $EXTRA
+      - name: Collect artifacts
+        shell: bash
+        run: |
+          set -euo pipefail
+          B=src-tauri/target/release/bundle
+          mkdir -p out
+          cp "$(ls $B/nsis/*-setup.exe | head -n1)" out/Argus-windows-x64-setup.exe
+          cp "$(ls $B/msi/*.msi | head -n1)" out/Argus-windows-x64.msi
+          if ls $B/nsis/*-setup.exe.sig >/dev/null 2>&1; then
+            cp "$(ls $B/nsis/*-setup.exe.sig | head -n1)" out/Argus-windows-x64-setup.exe.sig
+          fi
+          ls -la out
+      - uses: actions/upload-artifact@v7
+        with:
+          name: Argus-windows-x64
+          path: out/*
+          if-no-files-found: error
+
+  linux:
+    name: Linux x64 (AppImage, deb)
+    needs: [version]
+    # 24.04 ships libmpv2 (mpv 0.37) and webkit2gtk-4.1. The AppImage therefore
+    # needs glibc 2.39 or newer.
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    env:
+      # linuxdeploy's bundled strip chokes on newer .relr.dyn sections.
+      NO_STRIP: "true"
+      # CI runners have no FUSE.
+      APPIMAGE_EXTRACT_AND_RUN: "1"
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+      - name: Install system packages
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            build-essential pkg-config patchelf xdg-utils file curl \
+            libwebkit2gtk-4.1-dev libgtk-3-dev libayatana-appindicator3-dev librsvg2-dev \
+            libssl-dev libxdo-dev libmpv-dev \
+            libgstreamer1.0-dev gstreamer1.0-plugins-good gstreamer1.0-plugins-bad gstreamer1.0-libav
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+          key: x86_64-unknown-linux-gnu
+          cache-on-failure: true
+          save-if: ${{ github.ref == 'refs/heads/main' }}
+      - uses: pnpm/action-setup@v5
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm run setup:fonts
+      # yt-dlp / ffmpeg / ffprobe sidecars declared as externalBin.
+      - run: pnpm run setup:binaries
+      - name: Set beta version and updater key
+        if: github.event_name != 'pull_request'
+        env:
+          PUBKEY: ${{ vars.TAURI_UPDATER_PUBKEY }}
+          ARGUS_VERSION: ${{ needs.version.outputs.version }}
+        run: node scripts/ci-set-beta-version.mjs
+      - name: Build AppImage and deb
+        env:
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+          ARGUS_TRAKT_CLIENT_ID: ${{ secrets.ARGUS_TRAKT_CLIENT_ID }}
+          ARGUS_TRAKT_CLIENT_SECRET: ${{ secrets.ARGUS_TRAKT_CLIENT_SECRET }}
+          ARGUS_SIMKL_CLIENT_ID: ${{ secrets.ARGUS_SIMKL_CLIENT_ID }}
+        run: |
+          set -euo pipefail
+          EXTRA=""
+          if [ "${{ github.event_name }}" != "pull_request" ]; then
+            EXTRA="--config src-tauri/tauri.updater.conf.json"
+          fi
+          pnpm tauri build --bundles appimage,deb $EXTRA
+      - name: Collect artifacts
+        run: |
+          set -euo pipefail
+          B=src-tauri/target/release/bundle
+          mkdir -p out
+          cp "$(ls $B/appimage/*.AppImage | head -n1)" out/Argus-linux-x64.AppImage
+          cp "$(ls $B/deb/*.deb | head -n1)" out/Argus-linux-x64.deb
+          if ls $B/appimage/*.AppImage.sig >/dev/null 2>&1; then
+            cp "$(ls $B/appimage/*.AppImage.sig | head -n1)" out/Argus-linux-x64.AppImage.sig
+          fi
+          ls -la out
+      - uses: actions/upload-artifact@v7
+        with:
+          name: Argus-linux-x64
+          path: out/*
+          if-no-files-found: error
+
+  publish-desktop:
+    name: Publish Windows and Linux beta
+    needs: [version, windows, linux]
+    if: ${{ !cancelled() && github.event_name != 'pull_request' && (needs.windows.result == 'success' || needs.linux.result == 'success') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v5
+        if: needs.windows.result == 'success'
+        with:
+          name: Argus-windows-x64
+          path: win
+      - uses: actions/download-artifact@v5
+        if: needs.linux.result == 'success'
+        with:
+          name: Argus-linux-x64
+          path: linux
+      - name: Merge into latest.json and upload
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          BASE="https://github.com/$REPO/releases/download/beta"
+          gh release download beta --repo "$REPO" -p latest.json -O latest.json
+          # A newer Mac build replaced the feed while this one was building: skip, its own run adds these.
+          if [ "$(jq -r .version latest.json)" != "${{ needs.version.outputs.version }}" ]; then
+            echo "::notice::Feed moved on; skipping Windows/Linux for ${{ needs.version.outputs.version }}"; exit 0
+          fi
+          FILES=()
+          if [ -d win ] && [ -f win/Argus-windows-x64-setup.exe.sig ]; then
+            jq --rawfile sig win/Argus-windows-x64-setup.exe.sig --arg url "$BASE/Argus-windows-x64-setup.exe" \
+              '.platforms["windows-x86_64"] = {signature: ($sig|rtrimstr("\n")), url: $url}' latest.json > l.tmp && mv l.tmp latest.json
+            FILES+=(win/Argus-windows-x64-setup.exe win/Argus-windows-x64.msi)
+          fi
+          if [ -d linux ] && [ -f linux/Argus-linux-x64.AppImage.sig ]; then
+            jq --rawfile sig linux/Argus-linux-x64.AppImage.sig --arg url "$BASE/Argus-linux-x64.AppImage" \
+              '.platforms["linux-x86_64"] = {signature: ($sig|rtrimstr("\n")), url: $url}' latest.json > l.tmp && mv l.tmp latest.json
+            FILES+=(linux/Argus-linux-x64.AppImage linux/Argus-linux-x64.deb)
+          fi
+          [ ${#FILES[@]} -gt 0 ] || { echo "::error::No signed Windows/Linux bundle to publish"; exit 1; }
+          cat latest.json
+          gh release upload beta "${FILES[@]}" latest.json --repo "$REPO" --clobber
