@@ -4676,5 +4676,11 @@
   "Open streams in an external player": "Open streams in an external player",
   "Adds an Open button to stream rows that hands the link to a player you have installed.": "Adds an Open button to stream rows that hands the link to a player you have installed.",
   "IINA": "IINA",
-  "VLC": "VLC"
+  "VLC": "VLC",
+  "Your indexers": "Your indexers",
+  "Add your own Torznab or Newznab endpoints (Jackett, Prowlarr, a Usenet indexer). Argus ships none and only searches the ones you add.": "Add your own Torznab or Newznab endpoints (Jackett, Prowlarr, a Usenet indexer). Argus ships none and only searches the ones you add.",
+  "Torznab (torrents)": "Torznab (torrents)",
+  "Newznab (Usenet)": "Newznab (Usenet)",
+  "Indexer URL, e.g. http://localhost:9117/api/v2.0/indexers/all/results/torznab/": "Indexer URL, e.g. http://localhost:9117/api/v2.0/indexers/all/results/torznab/",
+  "Add indexer": "Add indexer"
 }

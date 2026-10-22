@@ -48,6 +48,7 @@ import { BuildFeedback } from "./build-feedback";
 import { RollbackRow } from "./rollback-row";
 import { PrivacyRow } from "./privacy-row";
 import { TrayRow } from "./tray-row";
+import { IndexersSection } from "./indexers-section";
 import { Section, Segmented, ToggleRow } from "./shared";
 import { Signature } from "./signature";
 import { CustomCodeCard, DownloadsSection } from "./player-panel";
@@ -107,6 +108,15 @@ export function AdvancedPanel() {
         )}
       >
         <CommunityDirectoriesRow />
+      </Section>
+
+      <Section
+        title={t("Your indexers")}
+        subtitle={t(
+          "Add your own Torznab or Newznab endpoints (Jackett, Prowlarr, a Usenet indexer). Argus ships none and only searches the ones you add.",
+        )}
+      >
+        <IndexersSection />
       </Section>
 
       <Section

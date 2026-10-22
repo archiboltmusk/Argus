@@ -220,6 +220,7 @@ export type Settings = {
   advancedSettings: boolean;
   metadataFusion: boolean;
   externalPlayer: "off" | "iina" | "vlc" | "mpv";
+  indexers: import("@/lib/streams/indexer-feed").Indexer[];
   addonHealthTracking: boolean;
   capabilityMatching: boolean;
   addonHealthProbes: boolean;
