@@ -2,8 +2,11 @@
 
 ## Task Completion Requirements
 
-- Run `pnpm run check` (`pnpm run check` (vite-plus `vp check`)) for files changed by the task before considering it complete.
-- Run `pnpm run typecheck` (`tsc -b --pretty false`) after TypeScript changes.
+- Run `pnpm run check` (`vp check`) for files changed by the task before considering it complete.
+- Run `pnpm run typecheck` (`tsc --noEmit -p tsconfig.json`) after TypeScript changes.
+  Never use `tsc -b` for a typecheck. It emits `vite.config.js` and `vite.config.d.ts`
+  (both gitignored) and writing them restarts the dev server, killing hot reload.
+  `tsc -b` belongs only in the `build` scripts, where emitting is intended.
 - Run `cargo check --manifest-path src-tauri/Cargo.toml` after Rust changes.
 - Run `pnpm tauri:build:linux-system` (`tauri build --config src-tauri/tauri.linux-system.conf.json`) to build the full Linux binary.
 - Test platform-specific changes on the affected platform when possible.
@@ -82,13 +85,3 @@ Use references to understand established patterns. Do not copy large implementat
 - Do not silently change user-facing behavior.
 - Add comments only when they explain a non-obvious decision.
 - Never expose secrets, tokens, private URLs, or user data.
-
-## Argus-specific rules
-
-- Argus is derived from Harbor (MIT). Keep `LICENSE` and `THIRD_PARTY_NOTICES.md` intact when importing or porting code.
-- NuvioDesktop is GPL-3.0: reimplement behavior only, never copy its code.
-- Never rely on Harbor-hosted services. Hosted endpoints are `argus.invalid` until Argus hosts its own or the user supplies one.
-- No bundled piracy sources. Addon and plugin systems stay generic.
-- Every feature sits behind a Settings toggle where practical.
-- macOS ships Apple Silicon only. Merging to main publishes the rolling signed `beta` release; do not cut a per-milestone `.dmg`.
-- Never create or store signing keys or secrets in the repo.

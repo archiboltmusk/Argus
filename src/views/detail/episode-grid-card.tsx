@@ -1,4 +1,7 @@
-import { CalendarDays, Check, Info, Play, RotateCcw } from "lucide-react";
+import { CalendarClock, CalendarDays, Check, Info, RotateCcw } from "lucide-react";
+import { EpisodeReleaseCountdown } from "@/components/episode-release-countdown";
+import { Play } from "@/components/icons/play-filled";
+import { HoverTooltip } from "@/components/hover-tooltip";
 import { EpisodeDownloadButton } from "./episode-download-button";
 import { useEffect, useRef, useState } from "react";
 import { EpisodeRatingBadge } from "./episode-rating-badge";
@@ -7,6 +10,7 @@ import type { Meta } from "@/lib/cinemeta";
 import { prefetchSegments } from "@/lib/skip-intro";
 import { formatAirDate } from "@/lib/dates";
 import { useT } from "@/lib/i18n";
+import { bidiIsolate } from "@/lib/bidi";
 import { useView } from "@/lib/view";
 import { useSettings } from "@/lib/settings";
 import { SPOILER_TEXT_CLASS, SPOILER_THUMB_CLASS, type SpoilerMask } from "@/lib/spoilers";
@@ -34,6 +38,7 @@ export function EpisodeGridCard({
     episode: number,
     watched: boolean,
     sourceMetaId?: string,
+    absoluteNumber?: number,
   ) => void;
 }) {
   const t = useT();
@@ -62,7 +67,7 @@ export function EpisodeGridCard({
     setPreview(false);
   };
   const ctx = (e: React.MouseEvent) =>
-    onContextMenu?.(e, g.season, g.number, watched, g.sourceMetaId);
+    onContextMenu?.(e, g.season, g.number, watched, g.sourceMetaId, g.absoluteNumber);
 
   const thumbDim = spoiler?.thumb
     ? SPOILER_THUMB_CLASS
@@ -129,16 +134,19 @@ export function EpisodeGridCard({
             {g.filler && <FillerBadge />}
           </span>
           <span className="text-[11.5px] text-ink-subtle">
-            {g.seasonLabel ? `${g.seasonLabel} · E${g.number}` : `E${g.number}`}
-            {g.runtime ? ` · ${t("{n} min", { n: g.runtime })}` : ""}
+            {bidiIsolate(g.seasonLabel ? `${g.seasonLabel} · E${g.number}` : `E${g.number}`)}
+            {g.runtime ? ` · ${bidiIsolate(t("{n} min", { n: g.runtime }))}` : ""}
+            {formatAirDate(g.airDate) ? ` · ${bidiIsolate(formatAirDate(g.airDate))}` : ""}
           </span>
           {settings.showEpisodeDescription && g.overview && (
             <p
+              dir="auto"
               className={`mt-0.5 line-clamp-2 text-[12px] leading-relaxed text-ink-muted ${spoiler?.desc ? SPOILER_TEXT_CLASS : ""}`}
             >
               {g.overview}
             </p>
           )}
+          <EpisodeReleaseCountdown date={g.airDate} className="text-[11.5px]" />
         </div>
       </button>
       {preview && !spoilered && (
@@ -170,7 +178,7 @@ function StatusTag({
 }) {
   if (watched)
     return (
-      <span className="absolute bottom-2 end-2 flex items-center gap-1 rounded-md bg-canvas/90 px-1.5 py-0.5 text-[10.5px] font-semibold text-emerald-300">
+      <span className="absolute bottom-2 end-2 flex items-center gap-1 rounded-md bg-canvas/90 px-1.5 py-0.5 text-[10.5px] font-semibold text-success">
         <Check size={11} strokeWidth={3} />
         {t("Watched")}
       </span>
@@ -190,7 +198,7 @@ function StatusTag({
   return null;
 }
 
-function EpisodePreview({
+export function EpisodePreview({
   meta,
   g,
   still,
@@ -210,8 +218,9 @@ function EpisodePreview({
   t: T;
 }) {
   const { openEpisodeDetail } = useView();
+  const { settings } = useSettings();
   return (
-    <div className="animate-popover-in absolute -inset-x-2 -top-2 z-30 overflow-hidden rounded-2xl border border-edge bg-elevated shadow-[0_24px_60px_-18px_rgba(0,0,0,0.8)]">
+    <div className="group animate-popover-in absolute -inset-x-2 -top-2 z-30 overflow-hidden rounded-2xl border border-edge bg-elevated shadow-[0_24px_60px_-18px_rgba(0,0,0,0.8)]">
       <button
         onClick={() => g.play({ resume: !watched && ratio > 0.01 })}
         onContextMenu={onContext}
@@ -245,32 +254,55 @@ function EpisodePreview({
         <h4 className="line-clamp-1 text-[14px] font-semibold leading-snug text-ink">{g.title}</h4>
         <span className="flex items-center gap-1.5 text-[11.5px] text-ink-subtle">
           <span className="font-semibold text-ink-muted">
-            {g.seasonLabel ? `${g.seasonLabel} · E${g.number}` : `E${g.number}`}
+            {bidiIsolate(g.seasonLabel ? `${g.seasonLabel} · E${g.number}` : `E${g.number}`)}
           </span>
           {g.airDate && (
             <>
               <span>·</span>
               <CalendarDays size={11} />
-              <span>{formatAirDate(g.airDate)}</span>
+              <bdi>{formatAirDate(g.airDate)}</bdi>
             </>
           )}
         </span>
-        {g.overview && (
-          <div className="max-h-28 overflow-y-auto pe-1 text-[12.5px] leading-relaxed text-ink-muted [scrollbar-width:thin]">
+        <EpisodeReleaseCountdown date={g.airDate} className="text-[11.5px]" />
+        {settings.showEpisodeDescription && g.overview && (
+          <div
+            dir="auto"
+            className="max-h-28 overflow-y-auto pe-1 text-[12.5px] leading-relaxed text-ink-muted [scrollbar-width:thin]"
+          >
             {g.overview}
           </div>
         )}
         <div className="mt-1 flex gap-2">
           <button
             onClick={() => g.play({ resume: !watched && ratio > 0.01 })}
-            className="flex h-9 flex-1 items-center justify-center gap-2 rounded-lg bg-ink text-[12.5px] font-semibold text-canvas transition-opacity hover:opacity-90"
+            title={
+              g.upcoming
+                ? t(
+                    "Not officially released yet. Click to search anyway in case of an early release.",
+                  )
+                : undefined
+            }
+            className={`flex h-9 flex-1 items-center justify-center gap-2 rounded-lg text-[12.5px] font-semibold transition-[opacity,color] hover:opacity-90 ${
+              g.upcoming
+                ? "bg-white/[0.06] text-ink-muted hover:bg-white/[0.10] hover:text-ink"
+                : "bg-ink text-canvas"
+            }`}
           >
-            {watched ? (
+            {g.upcoming ? (
+              <CalendarClock size={14} strokeWidth={2} />
+            ) : watched ? (
               <RotateCcw size={14} strokeWidth={2.4} />
             ) : (
               <Play size={13} fill="currentColor" />
             )}
-            {watched ? t("Watch again") : minsLeft > 0 ? t("Resume") : t("Play")}
+            {g.upcoming
+              ? t("Upcoming")
+              : watched
+                ? t("Watch again")
+                : minsLeft > 0
+                  ? t("Resume")
+                  : t("Play")}
           </button>
           <EpisodeDownloadButton
             meta={meta}
@@ -284,14 +316,21 @@ function EpisodePreview({
             }}
             size={36}
           />
-          <button
-            onClick={() => openEpisodeDetail(meta.id, g.season, g.number, meta)}
-            aria-label={t("Episode details")}
-            title={t("Episode details")}
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-edge-soft text-ink-muted transition-colors hover:border-edge hover:text-ink"
-          >
-            <Info size={15} strokeWidth={2} />
-          </button>
+          <HoverTooltip label={t("Episode details")} align="center" className="shrink-0">
+            <button
+              onClick={() => {
+                if (g.openDetail) {
+                  g.openDetail();
+                  return;
+                }
+                openEpisodeDetail(meta.id, g.season, g.number, meta);
+              }}
+              aria-label={t("Episode details")}
+              className="flex h-9 w-9 items-center justify-center rounded-lg bg-white/[0.06] text-ink-muted transition-colors hover:bg-white/[0.10] hover:text-ink"
+            >
+              <Info size={15} strokeWidth={2} />
+            </button>
+          </HoverTooltip>
         </div>
       </div>
     </div>

@@ -1,22 +1,36 @@
 import type { Meta } from "@/lib/cinemeta";
 import { useView, type PlayEpisode } from "@/lib/view";
+import { parseKitsuId } from "@/lib/providers/kitsu";
+import { splitFranchiseDisplaySeason } from "@/lib/streams/anime-identity-core";
+import { useT } from "@/lib/i18n";
 import { openUrl } from "@/lib/window";
 
 export function AutoExhaustedModal({
   meta,
   episode,
+  absoluteEpisode,
   triedCount,
   onBrowseManually,
 }: {
   meta: Meta;
   episode?: PlayEpisode;
+  absoluteEpisode?: number | null;
   triedCount: number;
   onBrowseManually: () => void;
 }) {
   const { goBack } = useView();
+  const t = useT();
   const title = meta.name ?? "this title";
+  const partSeason = episode
+    ? (splitFranchiseDisplaySeason(parseKitsuId(episode.kitsuStreamId ?? "")) ??
+      splitFranchiseDisplaySeason(parseKitsuId(meta.id)))
+    : null;
   const epSuffix = episode
-    ? ` S${episode.imdbSeason ?? episode.season}E${String(episode.imdbEpisode ?? episode.episode).padStart(2, "0")}`
+    ? absoluteEpisode != null
+      ? ` E${absoluteEpisode}`
+      : partSeason != null
+        ? ` S${partSeason}E${String(episode.episode).padStart(2, "0")}`
+        : ` S${episode.imdbSeason ?? episode.season}E${String(episode.imdbEpisode ?? episode.episode).padStart(2, "0")}`
     : "";
   const subject = `Argus: no working stream for ${title}${epSuffix}`;
   const body =
@@ -25,9 +39,9 @@ export function AutoExhaustedModal({
     `Streams tried: ${triedCount}\n` +
     `\nWhat happened: Argus could not find a working stream automatically.\n` +
     `\n(Add any extra detail here)`;
-  const mailto = `mailto:github.com/archiboltmusk/Argus/issues?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+  const reportUrl = `https://github.com/archiboltmusk/Argus/issues/new?title=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
   return (
-    <main data-tv-focus-scope className="fixed inset-0 z-[120] flex items-center justify-center overflow-hidden bg-black px-6">
+    <main className="fixed inset-0 z-[120] flex items-center justify-center overflow-hidden bg-black px-6">
       <div className="w-full max-w-md rounded-2xl bg-elevated p-8 ring-1 ring-edge-soft">
         <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-ink-subtle">
           Argus
@@ -36,10 +50,13 @@ export function AutoExhaustedModal({
           We could not find a working stream
         </h2>
         <p className="mt-3 text-start text-[14px] leading-relaxed text-ink-muted" dir="auto">
-          Argus checked every available source for {title}{epSuffix} and none of them played.
-          The most common reasons:
+          Argus checked every available source for {title}
+          {epSuffix} and none of them played. The most common reasons:
         </p>
-        <ul className="mt-3 space-y-1.5 text-start text-[13.5px] leading-relaxed text-ink-muted" dir="auto">
+        <ul
+          className="mt-3 space-y-1.5 text-start text-[13.5px] leading-relaxed text-ink-muted"
+          dir="auto"
+        >
           <li dir="auto">· A debrid key (TorBox, Real-Debrid, etc.) is missing or expired.</li>
           <li dir="auto">· No stream addon is installed yet (Torrentio, MediaFusion, Comet).</li>
           <li dir="auto">· This title is too new and no source has it cached yet.</li>
@@ -52,14 +69,13 @@ export function AutoExhaustedModal({
             Browse streams manually
           </button>
           <button
-            onClick={() => openUrl(mailto)}
+            onClick={() => openUrl(reportUrl)}
             className="flex h-11 items-center justify-center rounded-full bg-elevated text-[13.5px] font-medium text-ink ring-1 ring-edge-soft transition-colors hover:bg-raised"
           >
-            Send a bug report
+            {t("Report a bug")}
           </button>
           <button
             onClick={goBack}
-            data-tv-modal-close
             className="mt-1 text-[12.5px] text-ink-subtle transition-colors hover:text-ink-muted"
           >
             Back

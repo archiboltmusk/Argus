@@ -1,7 +1,8 @@
-import { Check, ChevronDown, Plus, Trash2 } from "lucide-react";
+import { Check, ChevronDown, Lock, Plus, Trash2 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import anilistLogo from "@/assets/anilist.png";
 import { AnchoredMenu } from "@/components/anchored-menu";
+import { HoverTooltip } from "@/components/hover-tooltip";
 import { deleteListEntry, fetchListEntry, saveListEntry } from "@/lib/anilist/mutations";
 import { useAnilist } from "@/lib/anilist/provider";
 import { resolveAnilistMediaId } from "@/lib/anilist/sync";
@@ -32,21 +33,27 @@ export function AddToAnilistButton({ argusId, title }: { argusId: string; title:
   const [mediaId, setMediaId] = useState<number | null>(null);
   const [entryId, setEntryId] = useState<number | null>(null);
   const [status, setStatus] = useState<MediaListStatus | null>(null);
-  const [ready, setReady] = useState(false);
+  const [privacy, setPrivacy] = useState(false);
+  const [entryLists, setEntryLists] = useState<string[]>([]);
+  const [availableLists, setAvailableLists] = useState<string[]>([]);
   const [busy, setBusy] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [attempt, setAttempt] = useState(0);
   const btnRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    setAttempt(0);
+  }, [argusId]);
 
   useEffect(() => {
     if (!isConnected) return;
     let cancelled = false;
-    setReady(false);
+    let timer: number | undefined;
     (async () => {
-      const id = await resolveAnilistMediaId(argusId);
+      const id = await resolveAnilistMediaId(argusId).catch(() => null);
       if (cancelled) return;
       if (id == null) {
-        setMediaId(null);
-        setReady(true);
+        if (attempt < 2) timer = window.setTimeout(() => setAttempt((a) => a + 1), 15000);
         return;
       }
       setMediaId(id);
@@ -54,14 +61,17 @@ export function AddToAnilistButton({ argusId, title }: { argusId: string; title:
       if (cancelled) return;
       setEntryId(info?.entry?.id ?? null);
       setStatus(info?.entry?.status ?? null);
-      setReady(true);
+      setPrivacy(info?.entry?.private ?? false);
+      setEntryLists(info?.entry?.customLists ?? []);
+      setAvailableLists(info?.customLists ?? []);
     })();
     return () => {
       cancelled = true;
+      if (timer != null) window.clearTimeout(timer);
     };
-  }, [argusId, isConnected]);
+  }, [argusId, isConnected, attempt]);
 
-  if (!isConnected || !ready || mediaId == null) return null;
+  if (!isConnected || mediaId == null) return null;
 
   const setTo = async (next: MediaListStatus) => {
     setBusy(true);
@@ -84,14 +94,50 @@ export function AddToAnilistButton({ argusId, title }: { argusId: string; title:
     setBusy(true);
     const prevStatus = status;
     const prevEntry = entryId;
+    const prevPrivacy = privacy;
+    const prevLists = entryLists;
     setStatus(null);
     setEntryId(null);
+    setPrivacy(false);
+    setEntryLists([]);
     setMenuOpen(false);
     try {
       await deleteListEntry(prevEntry);
     } catch {
       setStatus(prevStatus);
       setEntryId(prevEntry);
+      setPrivacy(prevPrivacy);
+      setEntryLists(prevLists);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  /** The flags are saved on their own so a status change never clears them. */
+  const togglePrivate = async () => {
+    const next = !privacy;
+    setBusy(true);
+    setPrivacy(next);
+    try {
+      await saveListEntry({ mediaId, private: next });
+    } catch {
+      setPrivacy(!next);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const toggleList = async (name: string) => {
+    const next = entryLists.includes(name)
+      ? entryLists.filter((list) => list !== name)
+      : [...entryLists, name];
+    const prev = entryLists;
+    setBusy(true);
+    setEntryLists(next);
+    try {
+      await saveListEntry({ mediaId, customLists: next });
+    } catch {
+      setEntryLists(prev);
     } finally {
       setBusy(false);
     }
@@ -99,17 +145,18 @@ export function AddToAnilistButton({ argusId, title }: { argusId: string; title:
 
   if (status == null) {
     return (
-      <button
-        type="button"
-        disabled={busy}
-        onClick={() => void setTo("PLANNING")}
-        title={t("Add {title} to AniList", { title })}
-        className="flex h-12 items-center gap-2.5 rounded-full border border-edge bg-canvas/80 px-6 text-[15px] font-medium text-ink shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] transition-[transform,background-color,border-color] duration-200 hover:border-ink-subtle hover:bg-canvas/95 active:scale-[0.98] disabled:opacity-60"
-      >
-        <img src={anilistLogo} alt="" className="h-[18px] w-[18px] rounded-[3px] object-contain" />
-        <Plus size={16} strokeWidth={2.2} className="-ms-1" />
-        {t("Add to AniList")}
-      </button>
+      <HoverTooltip label={t("Add {title} to AniList", { title })} align="center" className="shrink-0">
+        <button
+          type="button"
+          disabled={busy}
+          onClick={() => void setTo("PLANNING")}
+          className="flex h-12 items-center gap-2.5 rounded-full bg-canvas/80 px-6 text-[15px] font-medium text-ink transition-[transform,background-color] duration-200 hover:bg-canvas/95 active:scale-[0.98] disabled:opacity-60"
+        >
+          <img src={anilistLogo} alt="" className="h-[18px] w-[18px] rounded-[3px] object-contain" />
+          <Plus size={16} strokeWidth={2.2} className="-ms-1" />
+          {t("Add to AniList")}
+        </button>
+      </HoverTooltip>
     );
   }
 
@@ -144,6 +191,43 @@ export function AddToAnilistButton({ argusId, title }: { argusId: string; title:
               {s === status && <Check size={15} className="text-ink" />}
             </button>
           ))}
+          <div className="my-1 h-px bg-edge-soft" />
+          <button
+            type="button"
+            onClick={() => void togglePrivate()}
+            className={`flex w-full items-center justify-between gap-3 px-4 py-2.5 text-start text-[13.5px] transition-colors ${
+              privacy ? "text-ink" : "text-ink-muted hover:bg-elevated/60 hover:text-ink"
+            }`}
+          >
+            <span className="flex items-center gap-2.5">
+              <Lock size={14} />
+              {t("Private")}
+            </span>
+            {privacy && <Check size={15} className="shrink-0 text-ink" />}
+          </button>
+          {availableLists.length > 0 && (
+            <>
+              <div className="px-4 pb-1 pt-2 text-[11px] font-semibold uppercase tracking-wide text-ink-subtle">
+                {t("Custom lists")}
+              </div>
+              {availableLists.map((name) => {
+                const included = entryLists.includes(name);
+                return (
+                  <button
+                    key={name}
+                    type="button"
+                    onClick={() => void toggleList(name)}
+                    className={`flex w-full items-center justify-between gap-3 px-4 py-2.5 text-start text-[13.5px] transition-colors ${
+                      included ? "text-ink" : "text-ink-muted hover:bg-elevated/60 hover:text-ink"
+                    }`}
+                  >
+                    <span className="truncate">{name}</span>
+                    {included && <Check size={15} className="shrink-0 text-ink" />}
+                  </button>
+                );
+              })}
+            </>
+          )}
           <div className="my-1 h-px bg-edge-soft" />
           <button
             type="button"

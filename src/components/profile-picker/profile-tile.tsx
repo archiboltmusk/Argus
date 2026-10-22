@@ -1,5 +1,5 @@
 import { Lock, Pencil } from "lucide-react";
-import { CatAvatar } from "@/components/icons/cat-avatar";
+import { AvatarImage } from "@/components/avatar-image";
 import { useT } from "@/lib/i18n";
 import { type Profile } from "@/lib/profiles";
 
@@ -28,7 +28,7 @@ export function ProfileTile({
         <button
           type="button"
           onClick={onSelect}
-          className="block cursor-pointer outline-none"
+          className="block cursor-pointer rounded-full outline-none"
           aria-label={t("Switch to {name}", { name: profile.name })}
           data-tv-initial-focus={initialFocus || undefined}
         >
@@ -36,16 +36,7 @@ export function ProfileTile({
             className={`relative flex ${dim} items-center justify-center overflow-hidden rounded-full bg-elevated ${ring} transition-all duration-200 group-hover:scale-[1.04]`}
             style={{ boxShadow: `0 0 0 3px ${profile.color}` }}
           >
-            {profile.avatar ? (
-              <img
-                src={profile.avatar}
-                alt=""
-                className="h-full w-full object-cover"
-                draggable={false}
-              />
-            ) : (
-              <CatAvatar className="h-full w-full" />
-            )}
+            <AvatarImage src={profile.avatar} className="h-full w-full object-cover" />
           </span>
         </button>
         {profile.passwordHash && (

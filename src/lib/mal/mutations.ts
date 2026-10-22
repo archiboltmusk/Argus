@@ -1,6 +1,5 @@
 import { malRequest } from "./client";
 import type { MalListStatus } from "./types";
-import { kitsuToAnilist } from "@/lib/providers/anime-mapping";
 
 export type SavedEntry = {
   status: MalListStatus;
@@ -47,22 +46,44 @@ export async function resolveMalMediaId(argusId: string): Promise<number | null>
   if (argusId.startsWith("mal:")) return leadingInt(argusId.slice(4));
   if (argusId.startsWith("anilist:")) {
     const id = leadingInt(argusId.slice(8));
-    return id != null ? anilistToMal(id) : null;
+    if (id == null) return null;
+    const { anilistToMal: mappedAnilistToMal } = await import("@/lib/providers/anime-mapping");
+    const viaMap = await mappedAnilistToMal(id).catch(() => null);
+    return viaMap ?? anilistToMal(id);
   }
   if (argusId.startsWith("kitsu:")) {
     const id = leadingInt(argusId.slice(6));
     if (id == null) return null;
-    const anilistId = await kitsuToAnilist(id);
+    const { kitsuToMal, kitsuToAnilist } = await import("@/lib/providers/anime-mapping");
+    const direct = await kitsuToMal(id).catch(() => null);
+    if (direct != null) return direct;
+    const anilistId = await kitsuToAnilist(id).catch(() => null);
     return anilistId != null ? anilistToMal(anilistId) : null;
   }
   return null;
 }
 
-export async function fetchListEntry(malId: number): Promise<ListEntryInfo> {
+export async function fetchListEntry(malId: number, strict = false): Promise<ListEntryInfo> {
   const data = await malRequest<{
+    id: number;
     num_episodes: number | null;
-    my_list_status: RawStatus | null;
+    my_list_status?: RawStatus | null;
   }>(`/anime/${malId}?fields=num_episodes,my_list_status`);
+  if (
+    strict &&
+    (!data ||
+      data.id !== malId ||
+      (data.num_episodes !== null &&
+        (!Number.isInteger(data.num_episodes) || data.num_episodes < 0)) ||
+      (data.my_list_status != null &&
+        (!data.my_list_status ||
+          !["watching", "completed", "on_hold", "dropped", "plan_to_watch"].includes(
+            data.my_list_status.status,
+          ) ||
+          !Number.isInteger(data.my_list_status.num_episodes_watched) ||
+          data.my_list_status.num_episodes_watched < 0)))
+  )
+    throw new Error("The current MyAnimeList watched state could not be read safely.");
   return {
     numEpisodes: data.num_episodes ?? null,
     entry: data.my_list_status

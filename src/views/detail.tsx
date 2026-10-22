@@ -7,13 +7,24 @@ import {
   useSyncExternalStore,
   type ReactNode,
 } from "react";
-import { useQueryClient } from "@tanstack/react-query";
-import { Check, HardDrive, Layers, Pencil, Play, Plus, RotateCcw, Star } from "lucide-react";
-import { animeDetails, type FranchiseEntry } from "@/lib/providers/anime-detail";
+import { Check, Plus } from "lucide-react";
+import { Play } from "@/components/icons/play-filled";
+import { animePlayEpisode } from "./detail/anime-play-episode";
+import {
+  animeDetails,
+  type AnimeDetailExtras,
+  type FranchiseEntry,
+} from "@/lib/providers/anime-detail";
+import { isTextInLanguage } from "@/lib/providers/anime-episode-build";
+import { peekAnimeArt, saveAnimeArt } from "@/lib/providers/anime-art-cache";
 import { imdbToKitsu, tmdbTvToKitsu } from "@/lib/providers/anime-mapping";
-import { kitsuAnime } from "@/lib/providers/kitsu";
+import { kitsuAnime, kitsuMainTvSeries, parseKitsuId } from "@/lib/providers/kitsu";
+import { resolveDetailAnimeEntry } from "./detail/resolve-anime-entry";
+import { isOrphanAnimeCandidate } from "@/lib/anime-detect";
+import { getAnimeCanonicalId, recordAnimeCwId } from "@/lib/anime-cw-ids";
 import { stripFranchiseSuffix } from "@/lib/providers/jikan";
 import { peekCachedLogo, resolveLogo } from "@/lib/logo";
+import { pickLocalizedText } from "@/lib/localized-text";
 import { useMalRating } from "@/lib/mal-rating";
 import type { KitsuEpisode, KitsuStreamer } from "@/lib/providers/kitsu";
 import { AnimeAwardsBlock } from "@/components/anime-awards-block";
@@ -25,16 +36,20 @@ import {
   meta as fetchCinemetaMeta,
   narrowMediaType,
   isAddonNativeMeta,
+  hasEmbeddedStreams,
   type Meta,
 } from "@/lib/cinemeta";
-import { fetchAddonMeta } from "@/lib/addons";
+import { addonBasesForOrigin, fetchAddonMeta, gatherCatalogAddons } from "@/lib/addons";
+import { useCapstanDetail } from "@/lib/streams/plugins/extension/detail-hook";
+import { isCapstanId, titlesAgree } from "@/lib/streams/plugins/extension/detail";
 import { resolveMeta } from "@/lib/meta-resource";
 import { useMdblistScores } from "@/lib/providers/mdblist";
 import { lastPlayedEpisode, readResumeEntry, saveResumeMs } from "@/lib/resume";
+import { advancePastFinished } from "@/lib/detail-resume-advance";
 import { localCwEntry } from "@/lib/local-cw";
 import { omdbPrefetch, omdbScores, type OmdbScores } from "@/lib/providers/omdb";
 import { argusImdbTitle } from "@/lib/providers/argus-imdb";
-import { awardSummary, useAwards } from "@/lib/providers/wikidata";
+import { awardSummary, pickHeroAwards, useAwards } from "@/lib/providers/wikidata";
 import { mergeBundledAwards } from "@/lib/awards-history";
 import {
   tmdbDetails,
@@ -43,12 +58,10 @@ import {
   type TmdbDetail,
   type WatchProvider,
 } from "@/lib/providers/tmdb";
-import { ParentalIcon } from "@/components/icons/parental-icon";
 import { cinemetaDetails } from "@/lib/providers/cinemeta-details";
-import { fetchParentalGuide, type ParentalGuide } from "@/lib/parental-guide";
-import { ParentalGuideHeroCard } from "./detail/parental-guide-section";
 import { useAuth } from "@/lib/auth";
 import { useSettings } from "@/lib/settings";
+import { useContentDrag } from "@/lib/window-drag";
 import {
   CLOUD_OK,
   cloudWriteId,
@@ -58,25 +71,39 @@ import {
 } from "@/lib/stremio";
 import { decodeWatchedEpisodes, stremioMovieWatched } from "@/lib/stremio-watched";
 import { setEpisodesWatchedStremio } from "@/lib/stremio-watched-sync";
-import { isDetectedAnime } from "@/lib/anime-detect";
+import { useHideAnimeMetas } from "@/lib/anime-hide";
 import {
   isMovieWatchedLocal,
   movieWatchedVersion,
   subscribeMovieWatched,
 } from "@/lib/movie-watched";
 import {
+  manualEpisodeKeys,
   manualWatchedState,
   manualWatchedVersion,
   subscribeManualWatched,
 } from "@/lib/manual-watched";
 import { useTogether } from "@/lib/together/provider";
 import { useTrakt } from "@/lib/trakt/provider";
-import { toggleWatchlist, useInWatchlist } from "@/lib/watchlist";
-import { findLocalSeriesEpisodes, useInLocalLibrary } from "@/lib/local-library";
+import { noteLocalImdbId, toggleWatchlist, useInWatchlist } from "@/lib/watchlist";
+import {
+  pullWatchProgressFromNuvio,
+  reconcileNuvioWatched,
+  isNuvioProviderActive,
+} from "@/lib/nuvio/nuvio-sync";
+import { PopIcon } from "@/components/pop-icon";
+import { useInLocalLibrary } from "@/lib/local-library";
+import { LocalLibraryBrand } from "@/components/local-library-brand";
+import { MediaServerBrand, mediaServerProviderName } from "@/components/media-server-brand";
+import { useTitleMediaServers } from "@/hooks/use-title-media-servers";
 import { localPlayerSrc } from "@/lib/local-library/player-src";
-import { playLocalAware } from "@/lib/local-library/playback";
-import { openLocalEpisodes } from "@/lib/player/local-episodes-modal";
-import { markMovieWatched } from "@/lib/mark-watched";
+import { resolveLocalPlayVersions } from "@/lib/local-library/playback";
+import { openLocalVersions } from "@/lib/player/local-versions-modal";
+import { mediaServerConnections } from "@/lib/media-server/connections";
+import { mediaServerItems } from "@/lib/media-server/index-store";
+import { matchingServerItems, serverPlayableCopies } from "@/lib/media-server/selectors";
+import { createMediaServerPlayerSrc, decidePlaybackSource } from "@/lib/media-server/playback";
+import { markMovieWatched, unmarkMovieWatched } from "@/lib/mark-watched";
 import { useIsFavorite, useMediaFavorites } from "@/lib/media-favorites";
 import { openUrl } from "@/lib/window";
 import { profileFromDetail, trackEvent } from "@/lib/discover";
@@ -84,8 +111,9 @@ import { MOVIE_GENRES, TV_GENRES } from "@/lib/feed/tags";
 import { useScrollMemory, useView, type PlayEpisode } from "@/lib/view";
 import { prefetchSegments } from "@/lib/skip-intro";
 import { useT } from "@/lib/i18n";
-import { queryKeys } from "@/lib/query";
 import { AddToListMenu } from "@/components/lists/add-to-list-menu";
+import { HoverTooltip } from "@/components/hover-tooltip";
+import { ReminderButton } from "@/components/reminder-button";
 import type { ListItemInput } from "@/lib/custom-lists";
 import { AddToAnilistButton } from "./detail/add-to-anilist-button";
 import { AddToMalButton } from "@/components/mal/add-to-mal-button";
@@ -93,22 +121,19 @@ import { AddToSimklButton } from "./detail/add-to-simkl-button";
 import { getLocalCache, saveLocalCache } from "@/lib/simkl/activities";
 import { simklRequest } from "@/lib/simkl/client";
 import { CollectionRow } from "./detail/collection-row";
+import { SharedCrewLine } from "./detail/shared-crew-line";
+import { orderByReason, useGraphReasons } from "./detail/use-graph-reasons";
 import { MediaGallery } from "./detail/media-gallery";
 import { useTitleBackdrop } from "@/lib/title-backdrop";
 import { useTitleLogo } from "@/lib/title-logo";
 import { useStableAsset, toHiResBackdrop } from "@/lib/use-stable-asset";
-import { ContentRails, type DetailSection } from "./detail/content-rails";
-import {
-  loadDetailCustomization,
-  saveDetailCustomization,
-  moveSection,
-  toggleSectionHidden,
-  resetDetailCustomization,
-  type DetailCustomization,
-} from "@/lib/detail-customization";
+import { useReducedMotion } from "@/lib/use-reduced-motion";
+import type { DetailSection } from "./detail/content-rails";
+import { DetailLayoutEditor } from "./detail/layout-editor";
 import { EpisodeDownloadButton } from "./detail/episode-download-button";
 import { HeroBackdrop } from "./detail/hero-backdrop";
 import { isTitleUpcoming } from "./detail/helpers";
+import { AccoladeBadges } from "./detail/accolade-badges";
 import { HeroAwardsCorner } from "./detail/hero-awards";
 import { CrunchyrollAwardsCorner } from "./detail/crunchyroll-corner";
 import { findAnyAwardWins, parseAwardYear } from "@/lib/anime-awards";
@@ -127,27 +152,48 @@ import { Pill } from "./detail/pill";
 import { Credit } from "./detail/credit";
 import { TitlePlate } from "./detail/title-plate";
 import { PlayModeHint } from "./detail/play-mode-hint";
+import { usePlayOnTrigger } from "@/components/play-on-trigger";
 import { UpcomingCta } from "./detail/upcoming-cta";
+import { MovieReleaseCountdowns } from "./detail/movie-release-countdowns";
 import { Synopsis } from "./detail/synopsis";
 import { CastCard } from "./detail/cast-card";
-import { PreviewIcon } from "./detail/preview-icon";
+import { UiIcon } from "@/components/ui-icon";
 import { HeroActionOverflow, useHeroActionOverflow } from "./detail/hero-action-overflow";
+import { useTvdbCastFallback } from "./detail/use-tvdb-cast-fallback";
 import { HeroRatings } from "./detail/hero-ratings";
 import { TrailerOverlay } from "./detail/trailer-overlay";
 import { DetailHeroTrailer } from "./detail/detail-hero-trailer";
+import { useScrollUpTrailer } from "./detail/use-scroll-up-trailer";
 import { SeriesEpisodes } from "./detail/series-episodes";
 import { CinemetaEpisodes } from "./detail/cinemeta-episodes";
 import { AnimeEpisodes } from "./detail/anime-episodes";
+import type { SeasonArt } from "./detail/anime-episodes/anime-season-art";
 import { EpisodeGridSkeleton } from "./detail/episode-grid-skeleton";
+import { MovieEntrySkeleton } from "./detail/movie-entry-skeleton";
 import { StreamingLinks } from "./detail/streaming-links";
 import { WatchOn } from "./detail/watch-on";
 import { InfoBlock } from "./detail/info-block";
+import { AnimeTitlesBlock } from "./detail/anime-titles-block";
+import { AnimeAiringBanner } from "./detail/anime-airing-banner";
+import { AnimeStatsDonut } from "./detail/anime-stats-donut";
+import { AnimeRelatedRail } from "./detail/anime-related-rail";
+import { MangaAwardCorner } from "./manga/collection-badge";
+import { CharacterCard } from "./detail/character-card";
+import { useAnimeAnilistDetails } from "./detail/use-anime-anilist-details";
+import { useAnimeCharacters } from "./detail/use-anime-characters";
 import { TraktComments } from "./detail/trakt-comments";
 import { LetterboxdPanel } from "./detail/letterboxd-panel";
+import { RateButton } from "@/components/ratings/rate-button";
+import { detailImdbRating, fetchDetailImdbRating } from "@/lib/detail-imdb-rating";
+import { ratingTarget } from "@/lib/ratings/types";
 import { LetterboxdReviews } from "./detail/letterboxd-reviews";
 import { AnilistComments } from "./detail/anilist-comments";
 import { stremioIdToTraktTarget } from "@/lib/trakt/ids";
 import type { IdResolution } from "@/lib/trakt/ids";
+import { searchAnime } from "@/lib/search";
+import { useTraktRelated } from "@/lib/providers/trakt-related";
+
+const NO_METAS: Meta[] = [];
 
 function parseYear(v: string | number | undefined | null): number {
   if (v == null) return 0;
@@ -193,11 +239,13 @@ export function DetailView({
   episodeHint?: { season: number; episode: number };
 }) {
   const t = useT();
-  const { settings, update } = useSettings();
-  const queryClient = useQueryClient();
+  const { settings } = useSettings();
+  const contentDrag = useContentDrag();
   const settingsRef = useRef(settings);
   settingsRef.current = settings;
-  const [detail, setDetail] = useState<TmdbDetail | null>(null);
+  const [detail, setDetail] = useState<
+    (TmdbDetail & Pick<AnimeDetailExtras, "seasonOverviews">) | null
+  >(null);
   const [animeEpisodes, setAnimeEpisodes] = useState<KitsuEpisode[]>([]);
   const [franchise, setFranchise] = useState<FranchiseEntry[]>([]);
   const [animeCanonicalId, setAnimeCanonicalId] = useState<string | null>(null);
@@ -211,9 +259,60 @@ export function DetailView({
   const [detectedKitsu, setDetectedKitsu] = useState<number | null>(null);
   const [detectingAnime, setDetectingAnime] = useState(false);
   const failedKitsu = useRef<number | null>(null);
+  const addonMetaTriedRef = useRef<string | null>(null);
   const [streamers, setStreamers] = useState<KitsuStreamer[]>([]);
   const [backdrops, setBackdrops] = useState<string[]>([]);
   const [backdropIdx, setBackdropIdx] = useState(0);
+  const [enrichedBg, setEnrichedBg] = useState<string | undefined>(undefined);
+  const [seasonArt, setSeasonArt] = useState<SeasonArt | null>(null);
+  const seasonEntryRef = useRef<string | null>(null);
+  const handleSeasonArt = useCallback(
+    (
+      sel: {
+        background?: string;
+        description?: string;
+        logo?: string;
+        name?: string;
+        entryId: string;
+      } | null,
+    ) => {
+      if (!sel) {
+        seasonEntryRef.current = null;
+        setSeasonArt(null);
+        return;
+      }
+      seasonEntryRef.current = sel.entryId;
+      const cachedLogo = peekAnimeArt(sel.entryId)?.logo;
+      setSeasonArt({
+        background: sel.background,
+        description: sel.description,
+        logo: cachedLogo ?? sel.logo,
+      });
+      if (!cachedLogo && sel.name) {
+        const entryId = sel.entryId;
+        void resolveLogo(
+          settingsRef.current.tmdbKey,
+          { id: entryId, type: "series", name: sel.name },
+          { preferOwn: true },
+        )
+          .then((u) => {
+            if (u && seasonEntryRef.current === entryId) {
+              setSeasonArt((p) => (p ? { ...p, logo: u } : p));
+            }
+          })
+          .catch(() => {});
+      }
+    },
+    [],
+  );
+  // Season picker swaps franchise seasons in-place without re-running animeDetails, so the
+  // localized TMDB series overview must be passed down for the season hero description.
+  const localizedAnimeOverview = useMemo(() => {
+    if (!detail?.overview) return undefined;
+    const iso1 = settings.tmdbLanguage || settings.uiLanguage || "en";
+    if (iso1.split("-")[0]?.toLowerCase() === "en") return undefined;
+    return isTextInLanguage(detail.overview, iso1) ? detail.overview : undefined;
+  }, [settings.tmdbLanguage, settings.uiLanguage, detail?.overview]);
   const pinnedBackdrop = useTitleBackdrop(meta.id);
   const pinnedBackdropHi = pinnedBackdrop
     ? pinnedBackdrop.replace(/\/t\/p\/w\d+\//, "/t/p/original/")
@@ -222,16 +321,18 @@ export function DetailView({
     meta.videos && meta.videos.length > 0 ? meta : null,
   );
   const [libraryItem, setLibraryItem] = useState<LibraryItem | null>(null);
+  const [nuvioEpisodeProgress, setNuvioEpisodeProgress] = useState<{
+    season: number;
+    episode: number;
+    t: number;
+  } | null>(null);
   const { authKey } = useAuth();
   const [loading, setLoading] = useState(true);
   const [trailerOpen, setTrailerOpen] = useState(false);
-  const [layout, setLayout] = useState<DetailCustomization>(loadDetailCustomization);
-  const [layoutEdit, setLayoutEdit] = useState(false);
   const [scores, setScores] = useState<OmdbScores | null>(null);
   const [cinemetaRating, setCinemetaRating] = useState<string | null>(null);
   const [argusImdbRating, setArgusImdbRating] = useState<string | null>(null);
   const [watchProviders, setWatchProviders] = useState<WatchProvider[]>([]);
-  const [parentalGuide, setParentalGuide] = useState<ParentalGuide | null | undefined>(undefined);
   const mdblist = useMdblistScores(
     settings.mdblistKey,
     detail?.imdbId ?? (meta.id.startsWith("tt") ? meta.id : null),
@@ -239,15 +340,25 @@ export function DetailView({
   );
   const scrollRef = useRef<HTMLElement>(null);
 
-  const { setNavStack, openPicker, openPlayer, openFilter, promoteMetaToRoot } = useView();
+  const {
+    setNavStack,
+    openPicker,
+    openPlayer,
+    openFilter,
+    promoteMetaToRoot,
+    openMeta,
+    openManga,
+  } = useView();
+  useTvdbCastFallback(meta, detail, detectedKitsu, setDetail);
   const { snapshot: roomSnapshot, claimHost } = useTogether();
   const { isConnected: traktConnected } = useTrakt();
   const inWatchlist = useInWatchlist(meta.id, [detail?.imdbId]);
   const inLocalLibrary = useInLocalLibrary(meta.id, [detail?.imdbId]);
+  const titleHomeServers = useTitleMediaServers(meta.id, detail?.imdbId);
   const { toggle: toggleFavorite } = useMediaFavorites();
   const isFav = useIsFavorite(meta.id, [detail?.imdbId]);
   const inSession = roomSnapshot.state === "joined" && roomSnapshot.participants.length >= 2;
-  useScrollMemory(`meta:${meta.id}`, scrollRef);
+  useScrollMemory(`meta:${meta.id}`, scrollRef, settings.resumeDetailScroll, true);
 
   useEffect(() => {
     if (!meta.id.startsWith("simkl:")) return;
@@ -352,6 +463,8 @@ export function DetailView({
 
   const idAnime = /^(kitsu|mal|anilist|anidb):/.test(meta.id);
   const isAnime = idAnime || detectedKitsu != null;
+  const anilistExtra = useAnimeAnilistDetails(animeCanonicalId, isAnime);
+  const animeCharacters = useAnimeCharacters(animeCanonicalId, isAnime);
   const stickyAwardName = useRef<string | null>(null);
   useEffect(() => {
     stickyAwardName.current = null;
@@ -371,11 +484,61 @@ export function DetailView({
     };
   }, [detail?.imdbId, meta.id]);
   const addonNative = liveContext || isAddonNativeMeta(meta);
-  const trailerCandidate = detail?.trailerCandidates?.[0] ?? meta.trailerStreams?.[0]?.ytId ?? null;
+  const capstanMeta = useCapstanDetail(meta);
+  const capstanCanonicalId = capstanMeta?.canonicalId ?? null;
+  const trailerCandidates = useMemo(
+    () =>
+      Array.from(
+        new Set(
+          [
+            ...(detail?.trailerCandidates ?? []),
+            ...(meta.trailerStreams?.map((trailer) => trailer.ytId) ?? []),
+            ...(meta.trailers?.map((trailer) => trailer.source) ?? []),
+          ].filter((id): id is string => !!id),
+        ),
+      ),
+    [detail?.trailerCandidates, meta.trailerStreams, meta.trailers],
+  );
+  const trailerCandidate = trailerCandidates[0] ?? null;
+
+  useScrollUpTrailer(
+    scrollRef,
+    settings.scrollUpTrailer && !!trailerCandidate && !trailerOpen,
+    useCallback(() => setTrailerOpen(true), []),
+  );
   const actionRowRef = useRef<HTMLDivElement | null>(null);
   const actionStage = useHeroActionOverflow(actionRowRef, [meta.id]);
   const addToListRef = useRef<HTMLButtonElement | null>(null);
   const [addToListOpen, setAddToListOpen] = useState(false);
+
+  /** The provider's own answer, in a ref so a fetch that was started before it arrived still merges
+   * against it.
+   *
+   * The four callers below each start a fetch and merge the answer when it lands, and their
+   * dependency arrays are about the fetch, not about this. Reached through a closure, a fetch
+   * started before the provider answered would hold the `null` from that render, take the
+   * replace-it branch, and drop the languages a plugin sent — which is what happened: a poster
+   * showed Hindi and the page it opened did not. */
+  const providerMetaRef = useRef<Meta | null>(null);
+  providerMetaRef.current = capstanMeta?.meta ?? null;
+
+  /** Take a fetched meta as the page's full meta, keeping what a plugin told us about the listing.
+   *
+   * The fetched meta is the source for episodes, genres and the year, and it knows nothing about
+   * the line a provider wrote: `listingExtras` is read out of that line and exists on the provider's
+   * answer alone. */
+  const keepProviderListing = useCallback((fetched: Meta) => {
+    const own = providerMetaRef.current;
+    if (!own || own.id !== fetched.id) {
+      setCinemetaFull(fetched);
+      return;
+    }
+    setCinemetaFull({
+      ...fetched,
+      listingExtras: own.listingExtras ?? fetched.listingExtras,
+      listingYear: own.listingYear ?? fetched.listingYear,
+    });
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -386,15 +549,26 @@ export function DetailView({
     setDetectedKitsu(null);
     setDetectingAnime(false);
     failedKitsu.current = null;
+    addonMetaTriedRef.current = null;
     setStreamers([]);
     setBackdrops([]);
     setBackdropIdx(0);
+    setEnrichedBg(undefined);
+    seasonEntryRef.current = null;
+    setSeasonArt(null);
     setCinemetaFull(meta.videos && meta.videos.length > 0 ? meta : null);
+    // A plugin's own page is read separately and lands a tick after this runs, so the reset above
+    // must not be the last word on it: for a plugin row the incoming `meta` has no videos, so this
+    // sets nothing, and the item's own answer is the only thing that can fill it. Restoring it here
+    // as well keeps the two from racing — this effect can re-run on a dependency change while the
+    // plugin's answer is already in hand, and without this the answer would be thrown away and
+    // never asked for again, because the effect that reads it does not depend on this one.
+    if (capstanMeta?.meta.id === meta.id) setCinemetaFull(capstanMeta.meta);
     if (meta.id.startsWith("tt") && !addonNative) {
       fetchCinemetaMeta(narrowMediaType(meta.type), meta.id)
         .then((full) => {
           if (cancelled || !full) return;
-          setCinemetaFull(full);
+          keepProviderListing(full);
         })
         .catch(() => {});
     }
@@ -402,6 +576,37 @@ export function DetailView({
       cancelled = true;
     };
   }, [meta.id, meta.type, addonNative]);
+
+  // A plugin's own rows reach this page as a poster with no addon meta behind them, so the
+  // provider's bridge answer is the only source for this item's year, episode list, and the
+  // languages it wrote on its listing. The id is rechecked because a previous item's answer is
+  // still in state for one render after a move.
+  //
+  // `capstanMeta` is a dependency so this re-runs when the answer arrives, and it runs again when
+  // the answer changes rather than being read once: the other effect that writes this state does
+  // not depend on the answer, so nothing else would put it back.
+  useEffect(() => {
+    if (!capstanMeta || capstanMeta.meta.id !== meta.id) return;
+    const own = capstanMeta.meta;
+    setCinemetaFull(own);
+    // A provider that posted nothing for this item -- a single "episode added" page, say -- still
+    // named the title it belongs to, and the schedule behind that id beats an empty page. The
+    // provider's own list is never overwritten when it has one.
+    const id = capstanMeta.canonicalId;
+    if (own.videos?.length || !id?.startsWith("tt")) return;
+    let cancelled = false;
+    void fetchCinemetaMeta(capstanMeta.kind === "series" ? "series" : "movie", id)
+      .then((full) => {
+        if (cancelled || !full?.videos?.length) return;
+        setCinemetaFull((prev) =>
+          prev && prev.id === meta.id ? { ...prev, videos: full.videos } : full,
+        );
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [capstanMeta, meta.id]);
 
   useEffect(() => {
     if (idAnime || detectedKitsu != null || addonNative) return;
@@ -412,17 +617,75 @@ export function DetailView({
         ? detail.imdbId
         : null;
     if (tmdbTv == null && !imdb) return;
+    // Prefer a previously recorded canonical mapping over another provider
+    // lookup, but validate it before loading details: a special may share the
+    // series' external IDs. Played-cour hints can point at the last watched
+    // cour, so they are not used for detail detection.
+    const recorded =
+      getAnimeCanonicalId(meta.id) ??
+      (imdb != null && imdb !== meta.id ? getAnimeCanonicalId(imdb) : null);
+    const recordedKitsu = recorded != null ? parseKitsuId(recorded) : null;
     let cancelled = false;
     setDetectingAnime(true);
     (async () => {
-      let k = tmdbTv != null && Number.isFinite(tmdbTv) ? await tmdbTvToKitsu(tmdbTv) : null;
+      let k = recordedKitsu != null && recordedKitsu !== failedKitsu.current ? recordedKitsu : null;
+      if (k == null && tmdbTv != null && Number.isFinite(tmdbTv)) k = await tmdbTvToKitsu(tmdbTv);
       if (k == null && imdb) k = await imdbToKitsu(imdb);
+      // Orphan ids (standalone TMDB/IMDb entries with no cross-db mapping --
+      // e.g. Bleach TYBW tt14986406): fall back to Kitsu title search and
+      // accept the hit only when the year verdict agrees.
+      if (k == null) {
+        const name = meta.name || detail?.title;
+        const animeLike = isOrphanAnimeCandidate({
+          type: meta.type,
+          animeFormat: meta.animeFormat,
+          genres: [
+            ...(meta.genres ?? []),
+            ...(detail?.genres ?? []),
+            ...(detail?.genresRich ?? []).map((g) => g.name),
+          ],
+          country: meta.country,
+          originalLanguage: detail?.originalLanguage,
+          productionCountries: (detail?.productionCountriesRich ?? []).map((c) => c.iso),
+        });
+        if (animeLike && name && name.trim().length >= 2) {
+          const hits = await searchAnime(name).catch(() => []);
+          const norm = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, "");
+          const target = norm(name);
+          const yr = parseInt(detail?.year ?? meta.releaseInfo ?? "", 10) || null;
+          // Strict full normalized-name equality (not an 8-char prefix) plus an
+          // exact year match before accepting a Kitsu hit.
+          const candidates = hits.filter((h) => norm(h.name) === target);
+          const pick = yr ? candidates.find((h) => parseInt(h.year ?? "", 10) === yr) : undefined;
+          if (pick?.kitsuId != null && pick.kitsuId !== failedKitsu.current) {
+            const verdict = await kitsuYearVerdict(
+              pick.kitsuId,
+              meta.releaseInfo,
+              detail?.year ?? pick.year ?? undefined,
+            );
+            if (!cancelled && verdict === "ok") k = pick.kitsuId;
+          }
+        }
+      }
+      if (k != null) k = await resolveDetailAnimeEntry(k, meta, detail);
       if (cancelled) return;
       if (k != null && k !== failedKitsu.current) {
-        const verdict = await kitsuYearVerdict(k, meta.releaseInfo, detail?.year);
+        const verdict =
+          k === recordedKitsu ? "ok" : await kitsuYearVerdict(k, meta.releaseInfo, detail?.year);
         if (cancelled) return;
         if (verdict === "ok") setDetectedKitsu(k);
-        else if (verdict === "reject") failedKitsu.current = k;
+        else if (verdict === "reject") {
+          const main = await kitsuMainTvSeries(k).catch(() => null);
+          if (cancelled) return;
+          if (main != null && main !== k && main !== failedKitsu.current) {
+            const mainVerdict = await kitsuYearVerdict(main, meta.releaseInfo, detail?.year);
+            if (cancelled) return;
+            if (mainVerdict === "ok") setDetectedKitsu(main);
+            else failedKitsu.current = k;
+          } else {
+            failedKitsu.current = k;
+          }
+        }
       }
       setDetectingAnime(false);
     })().catch(() => {
@@ -436,20 +699,28 @@ export function DetailView({
     detectedKitsu,
     addonNative,
     meta.id,
+    meta.type,
+    meta.name,
+    meta.animeFormat,
+    detail?.title,
     detail?.imdbId,
     detail?.year,
+    detail?.genres,
+    detail?.genresRich,
+    detail?.originalLanguage,
+    detail?.productionCountriesRich,
+    meta.country,
     meta.releaseInfo,
   ]);
 
   useEffect(() => {
-    if (idAnime || detectedKitsu == null) return;
-    const showYear = parseYear(meta.releaseInfo);
-    const loadedYear = parseYear(detail?.year);
-    if (showYear && loadedYear && Math.abs(showYear - loadedYear) > 3) {
-      failedKitsu.current = detectedKitsu;
-      setDetectedKitsu(null);
+    if (!animeCanonicalId) return;
+    if (meta.id.startsWith("tt") || meta.id.startsWith("tmdb:tv:")) {
+      recordAnimeCwId(meta.id, animeCanonicalId);
     }
-  }, [idAnime, detectedKitsu, detail?.year, meta.releaseInfo]);
+    const imdb = detail?.imdbId;
+    if (imdb?.startsWith("tt") && imdb !== meta.id) recordAnimeCwId(imdb, animeCanonicalId);
+  }, [animeCanonicalId, meta.id, detail?.imdbId]);
 
   useEffect(() => {
     if (meta.type !== "series") return;
@@ -464,7 +735,10 @@ export function DetailView({
     fetchCinemetaMeta(narrowMediaType(meta.type), imdb)
       .then((full) => {
         if (cancelled || !full) return;
-        setCinemetaFull(full);
+        // Merged rather than replaced: a fetched meta has the episodes and the rating this page
+        // wants, and has no idea what the provider wrote on its listing line. Replacing would drop
+        // the languages a plugin sent the moment the fetch landed, which is exactly what it did.
+        keepProviderListing(full);
       })
       .catch(() => {});
     return () => {
@@ -474,31 +748,56 @@ export function DetailView({
 
   useEffect(() => {
     if (meta.type !== "series" && !addonNative) return;
-    const base = meta.addonOrigin?.base;
-    if (!base) return;
-    if (cinemetaFull?.videos && cinemetaFull.videos.length > 0) return;
+    const origin = meta.addonOrigin;
+    if (!origin) return;
+    if (addonMetaTriedRef.current === meta.id) return;
+    const held = cinemetaFull?.videos;
+    if (held && held.length > 0 && (!addonNative || hasEmbeddedStreams(held))) return;
+    addonMetaTriedRef.current = meta.id;
     let cancelled = false;
-    fetchAddonMeta(base, meta.type, meta.id)
-      .then((full) => {
-        if (cancelled || !full?.videos?.length) return;
-        setCinemetaFull(full);
-      })
-      .catch(() => {});
+    void (async () => {
+      const attempt = async (base: string) => {
+        const full = await fetchAddonMeta(base, meta.type, meta.id).catch(() => null);
+        if (cancelled || !full?.videos?.length) return false;
+        keepProviderListing(full);
+        return true;
+      };
+      const direct = origin.base ? origin.base.replace(/\/manifest\.json$/, "") : null;
+      if (direct && (await attempt(direct))) return;
+      if (cancelled) return;
+      const addons = await gatherCatalogAddons(authKey).catch(() => []);
+      if (cancelled) return;
+      for (const base of addonBasesForOrigin(addons, origin)) {
+        if (base === direct) continue;
+        if (await attempt(base)) return;
+        if (cancelled) return;
+      }
+    })();
     return () => {
       cancelled = true;
     };
-  }, [meta.id, meta.type, meta.addonOrigin?.base, addonNative, cinemetaFull?.videos?.length]);
+  }, [meta.id, meta.type, meta.addonOrigin, addonNative, authKey, cinemetaFull?.videos?.length]);
 
   useEffect(() => {
     if (meta.type !== "series") return;
+    // A plugin's own item is answered by the provider, not by a metadata service, and its id names
+    // no title one of them could resolve: `capstan:provider:url` is Cinemeta's 404, and a 404 here
+    // is not harmless. It lands, sets state, and re-runs the effects below it, and each re-run
+    // aborts whatever stream query was in flight — so a plugin that had streams to give appeared to
+    // have none twice before one query happened to finish inside a cycle.
+    //
+    // The origin check above covers an addon but not a plugin: a plugin's origin carries the base it
+    // was installed from rather than a manifest, so `addonOrigin.base` is set for an addon and this
+    // is what is left. `resolveMeta` has nothing to resolve for these ids either way.
     if (meta.addonOrigin?.base) return;
+    if (isCapstanId(meta.id)) return;
     if (/^(tt\d|tmdb:|kitsu:|mal:|anilist:|anidb:|simkl:)/.test(meta.id)) return;
     if (cinemetaFull?.videos && cinemetaFull.videos.length > 0) return;
     let cancelled = false;
     resolveMeta(authKey, narrowMediaType(meta.type), meta.id)
       .then((full) => {
         if (cancelled || !full?.videos?.length) return;
-        setCinemetaFull(full);
+        keepProviderListing(full);
       })
       .catch(() => {});
     return () => {
@@ -508,6 +807,75 @@ export function DetailView({
 
   useEffect(() => {
     setLibraryItem(null);
+    noteLocalImdbId(meta.id, detail?.imdbId);
+    if (settings.accountProvider === "nuvio") {
+      let cancelled = false;
+      pullWatchProgressFromNuvio()
+        .then((progressItems) => {
+          if (cancelled) return;
+          const matches = progressItems.filter(
+            (p) =>
+              p.content_id === meta.id ||
+              (detail?.imdbId && p.content_id === detail.imdbId),
+          );
+          if (matches.length > 0) {
+            matches.sort((a, b) => {
+              const ta = a.updated_at ? Date.parse(a.updated_at) : 0;
+              const tb = b.updated_at ? Date.parse(b.updated_at) : 0;
+              return tb - ta;
+            });
+            const watchedKeys = new Set<string>();
+            for (const m of matches) {
+              if (m.season != null && m.episode != null) {
+                const dur = m.duration_seconds || 1;
+                if (m.progress_seconds > dur * 0.9) {
+                  watchedKeys.add(`${m.season}:${m.episode}`);
+                }
+              }
+            }
+            if (watchedKeys.size > 0) {
+              setStremioWatched(watchedKeys);
+            }
+            let latest = matches[0];
+            if (latest.season != null && latest.episode != null) {
+              const dur = latest.duration_seconds || 1;
+              const isFinished = latest.progress_seconds > dur * 0.9;
+              if (isFinished) {
+                const subsequent = matches.find((m) => {
+                  if (m.season == null || m.episode == null || latest.season == null || latest.episode == null) return false;
+                  return m.season > latest.season || (m.season === latest.season && m.episode > latest.episode);
+                });
+                if (subsequent) {
+                  latest = subsequent;
+                } else {
+                  latest = {
+                    ...latest,
+                    episode: latest.episode + 1,
+                    progress_seconds: 0,
+                  };
+                }
+              }
+            }
+            if (latest) {
+              const offsetMs = Math.max(0, (latest.progress_seconds || 0) * 1000);
+              if (latest.season != null && latest.episode != null) {
+                saveResumeMs(meta.id, offsetMs, latest.season, latest.episode);
+                setNuvioEpisodeProgress({
+                  season: latest.season,
+                  episode: latest.episode,
+                  t: latest.updated_at ? Date.parse(latest.updated_at) : Date.now(),
+                });
+              } else {
+                saveResumeMs(meta.id, offsetMs);
+              }
+            }
+          }
+        })
+        .catch(() => {});
+      return () => {
+        cancelled = true;
+      };
+    }
     if (!authKey || meta.id.startsWith("simkl:")) return;
     const candidates: string[] = [];
     if (meta.id.startsWith("tt")) candidates.push(meta.id);
@@ -530,7 +898,7 @@ export function DetailView({
     return () => {
       cancelled = true;
     };
-  }, [authKey, meta.id, detail?.imdbId]);
+  }, [authKey, meta.id, detail?.imdbId, settings.accountProvider]);
 
   const [stremioWatched, setStremioWatched] = useState<Set<string>>(new Set());
   useEffect(() => {
@@ -549,7 +917,8 @@ export function DetailView({
     if (!libraryItem?.state) return;
     const st = libraryItem.state;
     if (!st.timeOffset || st.timeOffset <= 0) return;
-    const stremioT = Date.parse(libraryItem._mtime ?? "");
+    const rawMt = libraryItem._mtime as unknown;
+    const stremioT = typeof rawMt === "number" ? rawMt : Date.parse(String(rawMt ?? ""));
     if (!Number.isFinite(stremioT)) return;
     if (libraryItem.type === "movie") {
       const local = readResumeEntry(meta.id);
@@ -579,15 +948,24 @@ export function DetailView({
 
   useEffect(() => {
     let cancelled = false;
-    if (addonNative) {
+    // A plugin names an id of its own only sometimes. When it does, the same loaders that describe
+    // every other title can describe this one too; when it does not, there is nothing to resolve
+    // and the item keeps the provider's own answer alone.
+    if (addonNative && !capstanCanonicalId) {
       setLoading(false);
       return;
     }
     setLoading(true);
+    // The catalogue types a row from the first type its provider declares, which is wrong for any
+    // provider that carries both movies and series. The bridge said which it returned, so the
+    // record is asked for as that kind rather than as the guess.
+    const lookup = capstanCanonicalId
+      ? { ...meta, id: capstanCanonicalId, type: capstanMeta?.kind ?? meta.type }
+      : meta;
     const work = isAnime
       ? animeDetails(
           settingsRef.current,
-          detectedKitsu != null ? { ...meta, id: `kitsu:${detectedKitsu}` } : meta,
+          detectedKitsu != null ? { ...meta, id: `kitsu:${detectedKitsu}` } : lookup,
         ).then((res) => {
           if (cancelled) return null;
           if (!res) {
@@ -609,11 +987,22 @@ export function DetailView({
               if (!cancelled) setAnimeEpisodes([...eps]);
             })
             .catch(() => {});
+          void res.heroBgPromise
+            .then((bg) => {
+              if (cancelled || !bg) return;
+              setEnrichedBg(bg);
+              saveAnimeArt(meta.id, { bg });
+            })
+            .catch(() => {});
           void res.extrasPromise
             .then((patch) => {
               if (cancelled) return;
               setDetail((prev) => (prev ? { ...prev, ...patch } : prev));
               if (patch.gallery?.backdrops?.length) setBackdrops(patch.gallery.backdrops);
+              saveAnimeArt(meta.id, {
+                logo: patch.logo,
+                backdrops: patch.gallery?.backdrops,
+              });
             })
             .catch(() => {});
           setAnimeCanonicalId(`kitsu:${res.kitsuId}`);
@@ -621,25 +1010,48 @@ export function DetailView({
           setBackdrops(res.backdrops);
           return res.detail;
         })
-      : queryClient.fetchQuery({
-          queryKey: queryKeys.detail.data(
-            meta.id,
-            meta.type,
-            settingsRef.current.tmdbKey,
-            settingsRef.current.tmdbLanguage,
-          ),
-          queryFn: () =>
-            settingsRef.current.tmdbKey
-              ? tmdbDetails(settingsRef.current.tmdbKey, meta).then(
-                  (data) => data ?? cinemetaDetails(meta),
-                )
-              : cinemetaDetails(meta),
-          staleTime: 30 * 60_000,
-        });
+      : settingsRef.current.tmdbKey
+        ? tmdbDetails(settingsRef.current.tmdbKey, lookup).then((d) => d ?? cinemetaDetails(lookup))
+        : cinemetaDetails(lookup);
     work
       .then((d) => {
         if (cancelled) return;
-        setDetail(d);
+        // The provider named the id, so it is the provider's claim that has to hold up: if the
+        // record it points at is not this title, the page is better off without it.
+        if (d && capstanCanonicalId && !titlesAgree(capstanMeta?.meta.name || meta.name, d.title)) {
+          setDetail(null);
+          setLoading(false);
+          return;
+        }
+        setDetail((prev) => {
+          if (!d) return d;
+          if (
+            prev &&
+            isAnime &&
+            !idAnime &&
+            (settingsRef.current.translateTitles || settingsRef.current.translateDescriptions)
+          ) {
+            const lang = settingsRef.current.tmdbLanguage || settingsRef.current.uiLanguage || "en";
+            const pickedTitle = settingsRef.current.translateTitles
+              ? pickLocalizedText([{ text: prev.title }, { text: d.title }], {
+                  forName: true,
+                  lang,
+                })
+              : undefined;
+            const pickedOverview = settingsRef.current.translateDescriptions
+              ? pickLocalizedText([{ text: prev.overview }, { text: d.overview }], { lang })
+              : undefined;
+            return {
+              ...d,
+              title: pickedTitle ?? (settingsRef.current.translateTitles ? prev.title : d.title),
+              overview:
+                pickedOverview ??
+                (settingsRef.current.translateDescriptions ? prev.overview : d.overview),
+              tagline: settingsRef.current.translateDescriptions ? prev.tagline : d.tagline,
+            };
+          }
+          return d;
+        });
         setLoading(false);
       })
       .catch(() => {
@@ -659,7 +1071,7 @@ export function DetailView({
     isAnime,
     addonNative,
     detectedKitsu,
-    queryClient,
+    capstanCanonicalId,
   ]);
 
   useEffect(() => {
@@ -685,19 +1097,42 @@ export function DetailView({
 
   useEffect(() => {
     setCinemetaRating(null);
-    if (meta.id.startsWith("tt")) return;
-    const imdb = detail?.imdbId;
+    if (isAnime || !settings.showImdbDetail) return;
+    const imdb = meta.id.startsWith("tt") ? meta.id : detail?.imdbId;
     if (!imdb || !imdb.startsWith("tt")) return;
+    if (
+      detailImdbRating({
+        id: meta.id,
+        inline: meta.imdbRating,
+        fullId: cinemetaFull?.id,
+        full: cinemetaFull?.imdbRating,
+        detailId: detail?.imdbId,
+        detail: detail?.rating,
+        detailSource: detail?.ratingSource,
+      })
+    )
+      return;
     let cancelled = false;
-    fetchCinemetaMeta(narrowMediaType(meta.type), imdb)
-      .then((full) => {
-        if (!cancelled && full?.imdbRating) setCinemetaRating(full.imdbRating);
+    fetchDetailImdbRating(imdb, narrowMediaType(meta.type), fetchCinemetaMeta)
+      .then((value) => {
+        if (!cancelled && value) setCinemetaRating(value);
       })
       .catch(() => {});
     return () => {
       cancelled = true;
     };
-  }, [meta.id, meta.type, detail?.imdbId]);
+  }, [
+    meta.id,
+    meta.type,
+    meta.imdbRating,
+    detail?.imdbId,
+    detail?.rating,
+    detail?.ratingSource,
+    cinemetaFull?.id,
+    cinemetaFull?.imdbRating,
+    isAnime,
+    settings.showImdbDetail,
+  ]);
 
   useEffect(() => {
     if (!settings.omdbKey || !detail) return;
@@ -725,40 +1160,33 @@ export function DetailView({
     };
   }, [detail, isAnime, settings.tmdbKey, settings.region]);
 
-  useEffect(() => {
-    setParentalGuide(undefined);
-    const imdbId = detail?.imdbId ?? (meta.id.startsWith("tt") ? meta.id : null);
-    if (!imdbId || !imdbId.startsWith("tt")) {
-      setParentalGuide(null);
-      return;
-    }
-    let cancelled = false;
-    fetchParentalGuide(imdbId, meta.type === "movie" ? "movie" : "tv")
-      .then((g) => {
-        if (!cancelled) setParentalGuide(g);
-      })
-      .catch(() => {
-        if (!cancelled) setParentalGuide(null);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [detail?.imdbId, meta.id, meta.type]);
-
   const rawTitle = detail?.title ?? meta.name;
   const title = isAnime ? stripFranchiseSuffix(rawTitle) : rawTitle;
   const listSeed: ListItemInput = {
     id: meta.id,
     type: meta.type,
     name: title || meta.name,
-    poster: meta.poster ?? detail?.poster,
+    poster: meta.poster ?? cinemetaFull?.poster ?? detail?.poster,
   };
-  const overview = detail?.overview ?? (meta.id.startsWith("tmdb:") ? "" : meta.description) ?? "";
+  const overview =
+    seasonArt?.description ||
+    (detail?.overview ??
+      (meta.id.startsWith("tmdb:") ? "" : (meta.description ?? cinemetaFull?.description)) ??
+      "");
   const tagline = detail?.tagline ?? "";
   const pinnedLogo = useTitleLogo(meta.id);
-  const stableBackdrop = useStableAsset([meta.background, detail?.backdrop], meta.id);
+  const animeArt = isAnime ? peekAnimeArt(meta.id) : undefined;
+  const stableBackdrop = useStableAsset(
+    isAnime
+      ? [animeArt?.bg, enrichedBg]
+      : [animeArt?.bg, meta.background, cinemetaFull?.background, detail?.backdrop],
+    meta.id,
+  );
   const primaryBackdrop =
-    pinnedBackdropHi || stableBackdrop || (loading ? undefined : meta.poster) || undefined;
+    pinnedBackdropHi ||
+    stableBackdrop ||
+    (isAnime ? undefined : loading ? undefined : meta.poster) ||
+    undefined;
   const backdropPool = useMemo(() => {
     const seen = new Set<string>();
     const pool: string[] = [];
@@ -770,7 +1198,9 @@ export function DetailView({
     }
     return pool;
   }, [primaryBackdrop, backdrops]);
-  const carouselOn = settings.heroBackdropCarousel && !pinnedBackdrop && backdropPool.length >= 2;
+  const reducedMotion = useReducedMotion();
+  const carouselOn =
+    settings.heroBackdropCarousel && !pinnedBackdrop && backdropPool.length >= 2 && !reducedMotion;
   useEffect(() => {
     if (!carouselOn) return;
     const id = window.setInterval(() => {
@@ -778,35 +1208,78 @@ export function DetailView({
     }, 12000);
     return () => window.clearInterval(id);
   }, [carouselOn, backdropPool.length]);
-  const backdrop = (carouselOn ? backdropPool[backdropIdx] : backdropPool[0]) || primaryBackdrop;
+  const backdrop =
+    seasonArt?.background ||
+    (carouselOn
+      ? backdropPool[backdropIdx] || primaryBackdrop
+      : isAnime
+        ? primaryBackdrop
+        : backdropPool[0] || primaryBackdrop);
   const stableLogo = useStableAsset(
-    isAnime ? [ownLogo, detail?.logo, meta.logo] : [detail?.logo, meta.logo],
+    isAnime ? [ownLogo, detail?.logo] : [detail?.logo, meta.logo],
     meta.id,
   );
-  const logo = pinnedLogo || stableLogo;
-  const year = detail?.year ?? meta.releaseInfo;
+  const logo =
+    pinnedLogo || seasonArt?.logo || stableLogo || (isAnime && !loading ? meta.logo : undefined);
+  const year = detail?.year ?? meta.releaseInfo ?? cinemetaFull?.releaseInfo;
   const releaseYearNum = parseAwardYear(year);
-  const imdbRatingValue =
-    argusImdbRating ??
-    scores?.imdbRating ??
-    cinemetaRating ??
-    (meta.id.startsWith("tt") ? meta.imdbRating : undefined);
+  const imdbRatingValue = detailImdbRating({
+    id: meta.id,
+    inline: meta.imdbRating,
+    fullId: cinemetaFull?.id,
+    full: cinemetaFull?.imdbRating,
+    detailId: detail?.imdbId,
+    detail: detail?.rating,
+    detailSource: detail?.ratingSource,
+    cinemeta: cinemetaRating,
+    omdb: scores?.imdbRating,
+    argus: argusImdbRating,
+  });
   const malRating = useMalRating(
     isAnime
       ? { ...meta, id: animeCanonicalId ?? meta.id, imdbRating: detail?.rating ?? meta.imdbRating }
       : undefined,
   );
   const rating = isAnime ? malRating : (imdbRatingValue ?? detail?.rating ?? meta.imdbRating);
-  const runtime = detail?.runtime;
-  const genres = detail?.genres ?? meta.genres ?? [];
-  const recommendations = detail?.recommendations ?? [];
-  const similar = detail?.similar ?? [];
-  const liveAwards = useAwards(detail?.imdbId ?? undefined);
+  const runtime = detail?.runtime ?? capstanMeta?.meta.runtime;
+  const genres = detail?.genres ?? meta.genres ?? cinemetaFull?.genres ?? [];
+  const tmdbRecommendations = detail?.recommendations ?? NO_METAS;
+  const similar = detail?.similar ?? NO_METAS;
+  const relatedSeedId = detail?.imdbId ?? (meta.id.startsWith("tt") ? meta.id : null);
+  const wantsRelatedFallback =
+    !isAnime && !detectingAnime && !addonNative && !loading && tmdbRecommendations.length === 0;
+  const relatedFallback = useTraktRelated(
+    wantsRelatedFallback ? relatedSeedId : null,
+    meta.type === "series" ? "show" : "movie",
+  );
+  const recommendations = useMemo(() => {
+    if (tmdbRecommendations.length > 0) return tmdbRecommendations;
+    if (relatedFallback.length === 0) return NO_METAS;
+    const taken = new Set(similar.map((m) => m.id));
+    taken.add(meta.id);
+    const rest = relatedFallback.filter((m) => !taken.has(m.id));
+    return rest.length > 0 ? rest : NO_METAS;
+  }, [tmdbRecommendations, relatedFallback, similar, meta.id]);
+  const shownRecommendations = useHideAnimeMetas(recommendations);
+  const shownSimilar = useHideAnimeMetas(similar);
+  const { crew: sharedCrewFilms, reasons: graphReasons } = useGraphReasons(
+    detail?.imdbId ?? undefined,
+    isAnime,
+  );
+  const reasonedRecommendations = useMemo(
+    () => orderByReason(shownRecommendations, graphReasons),
+    [shownRecommendations, graphReasons],
+  );
+  const reasonedSimilar = useMemo(
+    () => orderByReason(shownSimilar, graphReasons),
+    [shownSimilar, graphReasons],
+  );
+  const liveAwards = useAwards(detail?.imdbId ?? undefined, meta.type === "series");
   const awards = useMemo(
     () => mergeBundledAwards(liveAwards, meta.name, releaseYearNum ?? undefined),
     [liveAwards, meta.name, releaseYearNum],
   );
-  const heroAwardSummary = awardSummary(awards).slice(0, 2);
+  const heroAwardSummary = pickHeroAwards(awardSummary(awards));
   const awardsInDescription = (settings.theme.preset as string) === "elegantfin";
   const renderHeroAwards = () => {
     if (isAnime) {
@@ -831,7 +1304,27 @@ export function DetailView({
   const awardsNode = renderHeroAwards();
   const heroAwardsInline = awardsInDescription ? awardsNode : null;
   const heroAwardsCorner = awardsInDescription ? null : awardsNode;
-  const isSeries = detail?.kind != null ? detail.kind === "tv" : meta.type === "series";
+  const heroAccolades = (
+    <AccoladeBadges imdbId={detail?.imdbId ?? (meta.id.startsWith("tt") ? meta.id : null)} />
+  );
+  const mangaAdaptationPoster = anilistExtra?.adaptations?.find(
+    (n) => n.mediaType === "manga" && n.poster,
+  )?.poster;
+  const mangaAwardCorner =
+    isAnime && !awardsInDescription ? (
+      <MangaAwardCorner title={title || meta.name} fallbackPoster={mangaAdaptationPoster} />
+    ) : null;
+  const isSeries =
+    detail?.kind != null
+      ? detail.kind === "tv"
+      : capstanMeta
+        ? capstanMeta.kind === "series"
+        : meta.type === "series";
+  // A plugin's own episodes are the ones that actually stream, so a resolved record may describe
+  // the title but must not take the list away from the player. It only supplies the list when the
+  // provider offered none.
+  const providerEpisodeList = addonNative && (capstanMeta?.meta.videos?.length ?? 0) > 0;
+  const tmdbEpisodeList = !providerEpisodeList && !!detail && detail.seasons.length > 0;
   const traktResolution = useMemo((): IdResolution => {
     if (isAnime) return { ok: false, reason: "anime" };
     const imdbId = detail?.imdbId ?? (meta.id.startsWith("tt") ? meta.id : null);
@@ -853,10 +1346,16 @@ export function DetailView({
   const playMeta: Meta = {
     ...meta,
     name: title,
+    // The stream request is typed from this, and for a native addon it is passed through whole
+    // (`episode-pipeline-input.ts:77`). The catalogue types a row from the first type its provider
+    // declares, so a provider carrying both movies and series has its series asked for as a movie
+    // -- and the episode branch is then never reached, which is a silent zero streams. The
+    // provider's own word is the one that decides.
+    type: capstanMeta ? capstanMeta.kind : meta.type,
     logo,
     background: backdrop,
     releaseDate: detail?.releaseDate ?? meta.releaseDate,
-    releaseInfo: detail?.year ?? meta.releaseInfo,
+    releaseInfo: detail?.year ?? meta.releaseInfo ?? cinemetaFull?.releaseInfo,
     behaviorHints: meta.behaviorHints ?? cinemetaFull?.behaviorHints,
     videos: meta.videos ?? cinemetaFull?.videos,
   };
@@ -882,14 +1381,20 @@ export function DetailView({
   }, [isAnime, animeCanonicalId, meta.id, meta.type, meta.name, title, settings.tmdbKey]);
 
   useSyncExternalStore(subscribeMovieWatched, movieWatchedVersion, movieWatchedVersion);
+  const isNuvio = settings.accountProvider === "nuvio" || isNuvioProviderActive();
   const watchedMark =
-    meta.type === "movie" && (isMovieWatchedLocal(meta.id) || stremioMovieWatched(libraryItem));
+    meta.type === "movie" &&
+    (isMovieWatchedLocal(meta.id) || (!isNuvio && stremioMovieWatched(libraryItem)));
   const markThisMovieWatched = () => {
-    void markMovieWatched(
-      meta,
-      detail?.imdbId,
-      meta.id.startsWith("tmdb:") ? meta.id.split(":")[2] : null,
-    );
+    const tmdb = meta.id.startsWith("tmdb:") ? meta.id.split(":")[2] : null;
+    if (watchedMark) {
+      setLibraryItem((prev) =>
+        prev?.state ? { ...prev, state: { ...prev.state, flaggedWatched: 0 } } : prev,
+      );
+      void unmarkMovieWatched(meta, detail?.imdbId);
+    } else {
+      void markMovieWatched(meta, detail?.imdbId, tmdb);
+    }
   };
 
   const seriesWatchedVer = useSyncExternalStore(
@@ -897,13 +1402,30 @@ export function DetailView({
     manualWatchedVersion,
     manualWatchedVersion,
   );
-  const prevSeriesWatchedVerRef = useRef(-1);
+  const prevSeriesWatchedVerRef = useRef(seriesWatchedVer);
   const stremioVideosRef = useRef<{ imdb: string; videos: NonNullable<Meta["videos"]> } | null>(
     null,
   );
   useEffect(() => {
+    if (!isNuvio) return;
+    void reconcileNuvioWatched();
+    const onFocus = () => {
+      if (document.visibilityState === "visible") {
+        void reconcileNuvioWatched();
+      }
+    };
+    window.addEventListener("focus", onFocus);
+    document.addEventListener("visibilitychange", onFocus);
+    return () => {
+      window.removeEventListener("focus", onFocus);
+      document.removeEventListener("visibilitychange", onFocus);
+    };
+  }, [isNuvio]);
+
+  useEffect(() => {
     if (seriesWatchedVer === prevSeriesWatchedVerRef.current) return;
-    if (!authKey || !isSeries || isAnime || isDetectedAnime(meta.id)) return;
+    if (isNuvio) return;
+    if (!authKey || !isSeries || idAnime || meta.type === "anime") return;
     const imdb = meta.id.startsWith("tt")
       ? meta.id
       : detail?.imdbId?.startsWith("tt")
@@ -927,28 +1449,22 @@ export function DetailView({
         }
       }
       if (cancelled || !videos || videos.length === 0) return;
-      const prior = await decodeWatchedEpisodes(libraryItem?.state?.watched, videos).catch(
-        () => new Set<string>(),
+      const { watched: localWatched, unwatched: localUnwatched } = manualEpisodeKeys(meta.id);
+      const ok = await setEpisodesWatchedStremio(
+        authKey,
+        playMeta,
+        cid,
+        videos,
+        localWatched,
+        localUnwatched,
       );
-      const merged = new Set<string>(prior);
-      for (const v of videos) {
-        if (v.season == null || v.episode == null) continue;
-        const k = `${v.season}:${v.episode}`;
-        const manual = manualWatchedState(meta.id, v.season, v.episode);
-        if (manual === true) merged.add(k);
-        else if (manual === false) merged.delete(k);
-      }
-      if (cancelled) return;
-      prevSeriesWatchedVerRef.current = seriesWatchedVer;
-      const unchanged = merged.size === prior.size && [...merged].every((k) => prior.has(k));
-      if (unchanged) return;
-      await setEpisodesWatchedStremio(authKey, playMeta, cid, merged, videos);
+      if (ok && !cancelled) prevSeriesWatchedVerRef.current = seriesWatchedVer;
     })();
     return () => {
       cancelled = true;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [seriesWatchedVer, authKey, isSeries, isAnime, cinemetaFull?.videos, detail?.imdbId, meta.id]);
+  }, [seriesWatchedVer, authKey, isSeries, isAnime, cinemetaFull?.videos, detail?.imdbId, meta.id, settings.accountProvider]);
 
   const upcoming = !loading && isTitleUpcoming(detail, meta);
   const currentFranchiseId = animeCanonicalId ?? meta.id;
@@ -997,34 +1513,43 @@ export function DetailView({
         candidates.push({ season, episode, t: Number.isFinite(mt) ? mt : 0 });
       }
     }
-    if (candidates.length === 0) return null;
-    candidates.sort((a, b) => b.t - a.t);
-    return { season: candidates[0].season, episode: candidates[0].episode };
-  }, [meta.id, detail?.imdbId, detail?.id, libraryItem, isAnime, episodeHint]);
+    if (
+      nuvioEpisodeProgress &&
+      typeof nuvioEpisodeProgress.season === "number" &&
+      typeof nuvioEpisodeProgress.episode === "number" &&
+      nuvioEpisodeProgress.season >= 1 &&
+      nuvioEpisodeProgress.episode >= 1
+    ) {
+      candidates.push(nuvioEpisodeProgress);
+    }
+    const eligible = candidates.filter(
+      (c) => manualWatchedState(meta.id, c.season, c.episode) !== false,
+    );
+    if (eligible.length === 0) return null;
+    eligible.sort((a, b) => b.t - a.t);
+    return advancePastFinished(
+      meta.id,
+      { season: eligible[0].season, episode: eligible[0].episode },
+      cinemetaFull?.videos,
+    );
+  }, [
+    meta.id,
+    detail?.imdbId,
+    detail?.id,
+    libraryItem,
+    nuvioEpisodeProgress,
+    isAnime,
+    episodeHint,
+    seriesWatchedVer,
+    cinemetaFull?.videos,
+  ]);
 
   useEffect(() => {
     if (loading) return;
     let targetEp: PlayEpisode | undefined;
     if (isSeries) {
       if (isAnime) {
-        const wantedEp = lastPlay
-          ? animeEpisodes.find(
-              (e) => (e.seasonNumber || 1) === lastPlay.season && e.number === lastPlay.episode,
-            )
-          : animeEpisodes[0];
-        if (wantedEp) {
-          targetEp = {
-            season: wantedEp.seasonNumber || 1,
-            episode: wantedEp.number,
-            name: wantedEp.title,
-            still: wantedEp.thumbnail ?? undefined,
-            overview: wantedEp.synopsis || undefined,
-            kitsuStreamId: wantedEp.streamId,
-            imdbId: wantedEp.imdbId,
-            imdbSeason: wantedEp.imdbSeason,
-            imdbEpisode: wantedEp.imdbEpisode,
-          };
-        }
+        targetEp = animePlayEpisode(animeEpisodes, lastPlay, idAnime, animeCanonicalId);
       } else {
         const lp = lastPlay || { season: 1, episode: 1 };
         targetEp = { season: lp.season, episode: lp.episode };
@@ -1035,78 +1560,163 @@ export function DetailView({
       }
     }
     prefetchSegments(playMeta, targetEp);
-  }, [loading, isSeries, isAnime, lastPlay, animeEpisodes, cinemetaFull?.videos, playMeta]);
+  }, [
+    loading,
+    isSeries,
+    isAnime,
+    lastPlay,
+    idAnime,
+    animeCanonicalId,
+    animeEpisodes,
+    cinemetaFull?.videos,
+    playMeta,
+  ]);
+
+  const episodeName = useCallback(
+    (season: number, episode: number): string | undefined => {
+      const videos = playMeta.videos ?? cinemetaFull?.videos;
+      const match = videos?.find(
+        (v) => (v.season ?? 1) === season && (v.episode ?? v.number) === episode,
+      );
+      return match?.name || match?.title || undefined;
+    },
+    [playMeta.videos, cinemetaFull?.videos],
+  );
 
   const smartPlay = useCallback(
     async (forcePicker = false) => {
       if (inSession) claimHost(true);
       const opts = { autoPlay: !forcePicker && settings.instantPlay, resume: !forcePicker };
-      const launch = (episode: PlayEpisode | undefined) => {
+      const launch = async (episode: PlayEpisode | undefined) => {
         const stream = () => openPicker(playMeta, episode, opts);
         if (forcePicker) {
           stream();
           return;
         }
-        if (isSeries && !isAnime && settings.localPlaybackMode !== "stream") {
-          const tmdbMatch = meta.id.match(/^tmdb:tv:(\d+)$/);
-          const tmdbId = tmdbMatch ? parseInt(tmdbMatch[1], 10) : null;
-          const seriesImdb = detail?.imdbId ?? (meta.id.startsWith("tt") ? meta.id : null);
-          if (findLocalSeriesEpisodes(tmdbId, seriesImdb).length > 0) {
-            openLocalEpisodes({
-              title: playMeta.name,
-              tmdbId,
-              imdbId: seriesImdb,
-              poster: playMeta.poster,
-              videos: cinemetaFull?.videos,
-              initialSeason: episode?.season,
-              highlightEpisode: episode?.episode,
-              onPlayLocal: (e) => openPlayer(localPlayerSrc(e)),
-              onStream: stream,
-            });
-            return;
-          }
+        const tmdbMatch = meta.id.match(/^tmdb:(?:movie|tv):(\d+)$/);
+        const identity = {
+          tmdbId: tmdbMatch ? Number(tmdbMatch[1]) : undefined,
+          imdbId: detail?.imdbId ?? (meta.id.startsWith("tt") ? meta.id : undefined),
+        };
+        const connections = mediaServerConnections();
+        const indexed = await mediaServerItems();
+        const serverItems = matchingServerItems(
+          indexed,
+          identity,
+          isSeries ? "series" : "movie",
+          episode?.season,
+          episode?.episode,
+        );
+        const serverCopies = serverPlayableCopies(serverItems, connections);
+        const local = resolveLocalPlayVersions(playMeta, episode ?? null, detail?.imdbId);
+        const decision = decidePlaybackSource(settings, local.length, serverCopies);
+        if (decision.kind === "online") {
+          stream();
+          return;
         }
-        playLocalAware({
-          meta: playMeta,
-          episode: episode ?? null,
-          extraImdb: detail?.imdbId,
-          mode: settings.localPlaybackMode,
-          source: "manual",
-          playLocal: (e, o) => openPlayer({ ...localPlayerSrc(e), startFromZero: o?.fromStart }),
-          playStream: stream,
-          setMode: (m) => update({ localPlaybackMode: m }),
-        });
-      };
-      if (!isSeries) {
-        launch(undefined);
-        return;
-      }
-      if (isAnime) {
-        const wantedEp = lastPlay
-          ? animeEpisodes.find(
-              (e) => (e.seasonNumber || 1) === lastPlay.season && e.number === lastPlay.episode,
-            )
-          : animeEpisodes[0];
-        if (wantedEp) {
-          launch({
-            season: wantedEp.seasonNumber || 1,
-            episode: wantedEp.number,
-            name: wantedEp.title,
-            still: wantedEp.thumbnail ?? undefined,
-            overview: wantedEp.synopsis || undefined,
-            kitsuStreamId: wantedEp.streamId,
-            imdbId: wantedEp.imdbId,
-            imdbSeason: wantedEp.imdbSeason,
-            imdbEpisode: wantedEp.imdbEpisode,
+        if (decision.kind === "local" && local[0]) {
+          openPlayer(localPlayerSrc(local[0], isAnime, episode));
+          return;
+        }
+        const playServer = (copy: (typeof serverCopies)[number]) => {
+          const connection = connections.find((entry) => entry.id === copy.connectionId);
+          const item = serverItems.find(
+            (entry) => entry.connectionId === copy.connectionId && entry.id === copy.itemId,
+          );
+          if (!connection || !item) return;
+          void createMediaServerPlayerSrc({
+            meta: playMeta,
+            imdbId: identity.imdbId,
+            episode,
+            connection,
+            item,
+            versionId: copy.version.id,
+          }).then(openPlayer);
+        };
+        if (decision.kind === "home-server") {
+          playServer(decision.copy);
+          return;
+        }
+        if (decision.kind === "chooser") {
+          openLocalVersions({
+            title: playMeta.name,
+            poster: playMeta.poster,
+            entries: local,
+            onPlayLocal: (entry) => openPlayer(localPlayerSrc(entry, isAnime, episode)),
+            serverCopies,
+            onPlayServer: playServer,
+            onStream: stream,
           });
           return;
         }
-        launch(undefined);
+      };
+      if (!isSeries) {
+        if (meta.type === "other" && cinemetaFull?.videos?.length) {
+          const first = cinemetaFull.videos[0];
+          await launch({
+            season: first.season ?? 0,
+            episode: first.episode ?? 1,
+            name: first.name ?? first.title,
+            videoId: first.id,
+            still: first.thumbnail,
+          });
+          return;
+        }
+        await launch(undefined);
+        return;
+      }
+      if (isAnime) {
+        await launch(animePlayEpisode(animeEpisodes, lastPlay, idAnime, animeCanonicalId));
         return;
       }
       if (lastPlay) {
-        launch({ season: lastPlay.season, episode: lastPlay.episode });
+        await launch({
+          season: lastPlay.season,
+          episode: lastPlay.episode,
+          name: episodeName(lastPlay.season, lastPlay.episode),
+        });
         return;
+      }
+      if (settings.accountProvider === "nuvio") {
+        const progressItems = await pullWatchProgressFromNuvio().catch(() => []);
+        const matches = progressItems.filter(
+          (p) => p.content_id === meta.id || (detail?.imdbId && p.content_id === detail.imdbId),
+        );
+        matches.sort((a, b) => {
+          const ta = a.updated_at ? Date.parse(a.updated_at) : 0;
+          const tb = b.updated_at ? Date.parse(b.updated_at) : 0;
+          return tb - ta;
+        });
+        let matched = matches[0];
+        if (
+          matched &&
+          typeof matched.season === "number" &&
+          typeof matched.episode === "number" &&
+          matched.season >= 1 &&
+          matched.episode >= 1
+        ) {
+          const dur = matched.duration_seconds || 1;
+          const isFinished = matched.progress_seconds > dur * 0.9;
+          if (isFinished) {
+            const subsequent = matches.find((m) => {
+              if (m.season == null || m.episode == null || matched.season == null || matched.episode == null) return false;
+              return m.season > matched.season || (m.season === matched.season && m.episode > matched.episode);
+            });
+            if (subsequent && typeof subsequent.season === "number" && typeof subsequent.episode === "number") {
+              matched = subsequent;
+            } else {
+              matched = { ...matched, episode: matched.episode + 1 };
+            }
+          }
+          const launchSeason = matched.season ?? 1;
+          const launchEpisode = matched.episode ?? 1;
+          await launch({
+            season: launchSeason,
+            episode: launchEpisode,
+            name: episodeName(launchSeason, launchEpisode),
+          });
+          return;
+        }
       }
       if (authKey) {
         const candidates: string[] = [];
@@ -1128,40 +1738,65 @@ export function DetailView({
               season >= 1 &&
               episode >= 1
             ) {
-              launch({ season, episode });
+              await launch({ season, episode, name: episodeName(season, episode) });
               return;
             }
           }
           if (item) break;
         }
       }
-      launch({ season: 1, episode: 1 });
+      await launch({ season: 1, episode: 1, name: episodeName(1, 1) });
     },
     [
       isSeries,
       isAnime,
+      idAnime,
+      animeCanonicalId,
       animeEpisodes,
       lastPlay,
       openPicker,
       openPlayer,
       playMeta,
       settings.instantPlay,
-      settings.localPlaybackMode,
-      update,
+      settings.playbackSourcePreference,
+      settings.preferredMediaServerId,
       inSession,
       claimHost,
       authKey,
       meta.id,
       detail?.imdbId,
-      cinemetaFull?.videos,
+      episodeName,
     ],
   );
+  const animeResumeTarget =
+    isAnime && lastPlay
+      ? animePlayEpisode(animeEpisodes, lastPlay, idAnime, animeCanonicalId)
+      : undefined;
   const smartPlayLabel =
     inSession && !liveContext
       ? t("Play Together")
       : isSeries && lastPlay
-        ? t("Resume S{s}:E{e}", { s: lastPlay.season, e: lastPlay.episode })
+        ? t("Resume S{s}:E{e}", {
+            s:
+              (lastPlay as { displaySeason?: number }).displaySeason ??
+              animeResumeTarget?.imdbSeason ??
+              lastPlay.season,
+            e: animeResumeTarget?.imdbEpisode ?? lastPlay.episode,
+          })
         : t("Play");
+
+  const playOnTrigger = usePlayOnTrigger(() => ({
+    meta,
+    episode: lastPlay ? { season: lastPlay.season, episode: lastPlay.episode } : undefined,
+  }));
+
+  // The plugin's own line, as the pills read it: the navigation payload's copy when there is one,
+  // otherwise the page's. Every resolution is its own pill, best first, and HDR rides with them.
+  // The `Listing details` pill is gone: it carried the raw line, and the line is a fallback the user
+  // asked not to see. Sizes live only in the tooltip now, which is the trade that removal makes.
+  const listing = meta.listingExtras ?? cinemetaFull?.listingExtras;
+  const listingResolutions = listing?.resolutions ?? [];
+  const listingQuality = listing?.quality ?? [];
 
   const heroPills = (
     <>
@@ -1177,28 +1812,62 @@ export function DetailView({
           {year}
         </Pill>
       )}
-      {parentalGuide?.mpa_rating && (
-        <Pill
-          onClick={() => {
-            document
-              .getElementById("parental-guide")
-              ?.scrollIntoView({ behavior: "smooth", block: "start" });
-          }}
-        >
-          <span className="flex items-center gap-1.5">
-            <ParentalIcon width={12} height={12} strokeWidth={2.2} />
-            {parentalGuide.mpa_rating}
-          </span>
-        </Pill>
-      )}
+      {/* What the plugin wrote on its listing line, in full.
+       *
+       * A poster can only afford a couple of badges, so a listing naming six languages and four
+       * qualities showed two of each and counted the rest. Here there is room for all of them: every
+       * language, and every quality as its own pill, best first.
+       *
+       * Read from the navigation `meta` first, which is the object the poster's own strip read and
+       * so the one known to carry these: this page never consulted it, and every merge between
+       * fetched metas was preserving a field that was already in scope and never looked at. The
+       * page's own copy is only a fallback, for the case where an item is opened by an id with no
+       * navigation payload behind it.
+       *
+       * `pluginQuality` above is the provider's own quality field, which is a different thing from
+       * what its line says, and both are worth having when they disagree. */}
+      {listing?.languages.map((language) => (
+        <Pill key={`lang:${language}`}>{language}</Pill>
+      ))}
+      {/* Every resolution the listing names, best first, then high dynamic range, then how the file
+          was made. The `Listing details` pill is gone — the user asked for the readings rather than
+          the raw line, which means the sizes and the provider's own tags now live only in the
+          poster's tooltip. */}
+      {listingResolutions.map((r) => (
+        <Pill key={`resolution:${r}`}>{r}</Pill>
+      ))}
+      {/* High dynamic range, shown whenever the plugin said the file has any: there is room for it
+          among the pills where there is none on the artwork, and it is not worth a setting of its
+          own when saying nothing simply shows nothing. */}
+      {listing?.hdr && <Pill>{listing.hdr}</Pill>}
+      {listingQuality.map((q) => (
+        <Pill key={`quality:${q}`}>{q}</Pill>
+      ))}
+      {capstanMeta?.contentRating && <Pill>{capstanMeta.contentRating}</Pill>}
       {inLocalLibrary && (
-        <Pill>
-          <span className="flex items-center gap-1.5">
-            <HardDrive size={12} strokeWidth={2.4} />
-            {t("In your local library")}
-          </span>
-        </Pill>
+        <HoverTooltip label={t("In your local library")} side="top" align="center" arrow>
+          <Pill>
+            <LocalLibraryBrand className="h-[17px] w-[17px]" />
+          </Pill>
+        </HoverTooltip>
       )}
+      {titleHomeServers.map((connection) => {
+        const provider = mediaServerProviderName(connection.provider);
+        return (
+          <HoverTooltip
+            key={connection.id}
+            label={t("Available in {name}", { name: provider })}
+            sublabel={connection.name !== provider ? connection.name : undefined}
+            side="top"
+            align="center"
+            arrow
+          >
+            <Pill>
+              <MediaServerBrand provider={connection.provider} name={connection.name} compact />
+            </Pill>
+          </HoverTooltip>
+        );
+      })}
       <HeroRatings
         rating={rating}
         isAnime={isAnime}
@@ -1211,25 +1880,32 @@ export function DetailView({
         onOpenUrl={openUrl}
       />
       {runtime && (
-        <Pill
-          onClick={() => {
-            if (isSeries) {
-              document
-                .querySelector("[data-episodes], [data-anime-episodes]")
-                ?.scrollIntoView({ behavior: "smooth", block: "start" });
-              return;
-            }
-            const minutes = parseInt(String(runtime), 10);
-            if (Number.isFinite(minutes)) {
-              openFilter({ kind: "runtime", mediaType: "movie", value: minutes });
-            }
-          }}
+        <HoverTooltip
+          label={t("Average time")}
+          align="center"
+          disabled={detail?.kind === "movie" || (!isSeries && !isAnime)}
+          className="shrink-0"
         >
-          {runtime}
-        </Pill>
+          <Pill
+            onClick={() => {
+              if (isSeries) {
+                document
+                  .querySelector("[data-episodes], [data-anime-episodes]")
+                  ?.scrollIntoView({ behavior: "smooth", block: "start" });
+                return;
+              }
+              const minutes = parseInt(String(runtime), 10);
+              if (Number.isFinite(minutes)) {
+                openFilter({ kind: "runtime", mediaType: "movie", value: minutes });
+              }
+            }}
+          >
+            {runtime}
+          </Pill>
+        </HoverTooltip>
       )}
       {meta.addonOrigin ? (
-        <span className="flex items-center gap-2 rounded-full border border-edge bg-canvas/80 py-1 ps-1.5 pe-3 text-[12.5px] font-medium text-ink-muted">
+        <span className="flex items-center gap-2 rounded-full bg-canvas/80 py-1 ps-1.5 pe-3 text-[12.5px] font-medium text-ink-muted">
           {meta.addonOrigin.logo ? (
             <img
               src={meta.addonOrigin.logo}
@@ -1270,14 +1946,24 @@ export function DetailView({
           })}
         </div>
       )}
+      {heroAccolades}
     </>
   );
 
+  const hasHeroProviders = isAnime ? streamers.length > 0 : watchProviders.length > 0;
+  const hasHeroAside = !!(heroAwardsInline || hasHeroProviders);
+  const heroGridColumns =
+    overview && hasHeroAside ? "xl:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)]" : "";
+
   return (
-    <main ref={scrollRef} className="absolute inset-0 z-30 overflow-y-auto bg-canvas">
+    <main
+      ref={scrollRef}
+      className="argus-detail-enter absolute inset-0 z-30 overflow-y-auto bg-canvas"
+    >
       <section className="relative">
         <div
           data-tauri-drag-region
+          data-tv-hero-zone
           className="argus-bleed-stremio relative h-[78vh] min-h-[640px] overflow-hidden"
         >
           {carouselOn ? (
@@ -1298,7 +1984,7 @@ export function DetailView({
             <div className="absolute inset-0 animate-pulse bg-white/[0.02]" />
           )}
           {settings.detailTrailerAutoplay && trailerCandidate && (
-            <DetailHeroTrailer candidateId={trailerCandidate} paused={trailerOpen} />
+            <DetailHeroTrailer candidateIds={trailerCandidates} paused={trailerOpen} />
           )}
           <div className="absolute inset-0 bg-gradient-to-t from-canvas via-canvas/55 via-45% to-transparent" />
           <div className="absolute inset-0 bg-gradient-to-r rtl:bg-gradient-to-l from-canvas/85 via-canvas/35 to-transparent" />
@@ -1322,13 +2008,23 @@ export function DetailView({
                   {heroPills}
                 </div>
               ) : (
-                <div className="mt-6 flex items-center justify-between gap-8">
-                  <div className="flex max-w-3xl flex-wrap items-center gap-3 text-[13px] font-medium text-ink-muted">
+                <div className="relative mt-6">
+                  <div
+                    className={`flex flex-wrap items-center gap-3 text-[13px] font-medium text-ink-muted ${
+                      heroAwardsCorner || mangaAwardCorner ? "pe-[240px]" : "max-w-3xl"
+                    }`}
+                  >
                     {heroPills}
                   </div>
-                  {heroAwardsCorner && <div className="shrink-0">{heroAwardsCorner}</div>}
+                  {(heroAwardsCorner || mangaAwardCorner) && (
+                    <div className="absolute end-0 bottom-0 flex translate-y-4 flex-col items-end gap-1.5">
+                      {mangaAwardCorner}
+                      {heroAwardsCorner}
+                    </div>
+                  )}
                 </div>
               )}
+              <MovieReleaseCountdowns detail={detail} />
               <div
                 ref={actionRowRef}
                 className={`mt-9 flex ${awardsInDescription ? "" : "w-fit max-w-full "}items-center gap-3 [&>*]:shrink-0`}
@@ -1338,13 +2034,14 @@ export function DetailView({
                 ) : (
                   <PlayModeHint>
                     <button
+                      {...playOnTrigger}
                       data-tv-initial-focus
                       onClick={() => smartPlay(false)}
                       onContextMenu={(e) => {
                         e.preventDefault();
                         void smartPlay(true);
                       }}
-                      className="flex h-12 items-center gap-2.5 rounded-full bg-ink px-7 text-[15px] font-semibold text-canvas shadow-[0_8px_24px_rgba(0,0,0,0.3),inset_0_1px_0_rgba(255,255,255,0.65),inset_0_-1px_0_rgba(0,0,0,0.18)] transition-transform duration-200 hover:scale-[1.03] active:scale-[0.98]"
+                      className="flex h-12 items-center gap-2.5 rounded-full bg-ink px-7 text-[15px] font-semibold text-canvas transition-transform duration-200 hover:scale-[1.03] active:scale-[0.98]"
                     >
                       <Play size={18} fill="currentColor" />
                       {smartPlayLabel}
@@ -1352,40 +2049,49 @@ export function DetailView({
                   </PlayModeHint>
                 )}
                 {actionStage < 2 && (
-                  <button
-                    type="button"
-                    onClick={() =>
-                      toggleWatchlist({
-                        id: meta.id,
-                        type: meta.type,
-                        name: title || meta.name,
-                        poster: meta.poster ?? detail?.poster,
-                        imdbId: detail?.imdbId,
-                      })
+                  <HoverTooltip
+                    label={
+                      isNuvio
+                        ? t("Synced to Nuvio Cloud")
+                        : traktConnected
+                          ? t("Synced to Trakt")
+                          : t("Saved locally. Connect Trakt in Settings to sync.")
                     }
-                    title={
-                      traktConnected
-                        ? t("Synced to Trakt")
-                        : t("Saved locally. Connect Trakt in Settings to sync.")
-                    }
-                    className={`flex h-12 items-center gap-2.5 whitespace-nowrap rounded-full border px-6 text-[15px] font-medium shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] transition-[transform,background-color,border-color] duration-200 active:scale-[0.98] ${
-                      inWatchlist
-                        ? "border-ink bg-ink/10 text-ink hover:bg-ink/20"
-                        : "border-edge bg-canvas/80 text-ink hover:border-ink-subtle hover:bg-canvas/95"
-                    }`}
+                    align="center"
+                    className="shrink-0"
                   >
-                    {inWatchlist ? (
-                      <>
-                        <Check size={18} strokeWidth={2.4} />
-                        {t("In Watchlist")}
-                      </>
-                    ) : (
-                      <>
-                        <Plus size={18} strokeWidth={2} />
-                        {t("Add to Watchlist")}
-                      </>
-                    )}
-                  </button>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        toggleWatchlist({
+                          id: meta.id,
+                          type: meta.type,
+                          name: title || meta.name,
+                          poster: meta.poster ?? detail?.poster,
+                          imdbId: detail?.imdbId,
+                          background: meta.background,
+                          logo: ownLogo || meta.logo,
+                          description: meta.description,
+                          releaseInfo: meta.releaseInfo,
+                          imdbRating: meta.imdbRating,
+                          genres: meta.genres,
+                          posterShape: ((meta as unknown as Record<string, unknown>).posterShape as "POSTER" | "SQUARE" | "LANDSCAPE") || "POSTER",
+                        })
+                      }
+                      className={`flex h-12 items-center gap-2.5 whitespace-nowrap rounded-full px-6 text-[15px] font-medium transition-[transform,background-color] duration-200 active:scale-[0.98] ${
+                        inWatchlist
+                          ? "bg-ink/15 text-ink hover:bg-ink/20"
+                          : "bg-canvas/80 text-ink hover:bg-canvas/95"
+                      }`}
+                    >
+                      <PopIcon
+                        active={inWatchlist}
+                        activeIcon={<Check size={18} strokeWidth={2.4} />}
+                        inactiveIcon={<Plus size={18} strokeWidth={2} />}
+                      />
+                      {inWatchlist ? t("In Watchlist") : t("Add to Watchlist")}
+                    </button>
+                  </HoverTooltip>
                 )}
                 {actionStage < 2 && isAnime && (
                   <AddToAnilistButton
@@ -1404,6 +2110,18 @@ export function DetailView({
                     argusId={isAnime ? (animeCanonicalId ?? meta.id) : meta.id}
                     title={title || meta.name}
                     type={meta.type === "movie" ? "movie" : "series"}
+                  />
+                )}
+                {!liveContext && (
+                  <RateButton
+                    target={ratingTarget(
+                      {
+                        id: meta.id,
+                        name: title || meta.name,
+                        poster: meta.poster ?? detail?.poster,
+                      },
+                      isAnime ? "anime" : isSeries ? "series" : "movie",
+                    )}
                   />
                 )}
                 {actionStage >= 1 ? (
@@ -1434,6 +2152,13 @@ export function DetailView({
                         name: title || meta.name,
                         poster: meta.poster ?? detail?.poster,
                         imdbId: detail?.imdbId,
+                        background: meta.background,
+                        logo: ownLogo || meta.logo,
+                        description: meta.description,
+                        releaseInfo: meta.releaseInfo,
+                        imdbRating: meta.imdbRating,
+                        genres: meta.genres,
+                        posterShape: ((meta as unknown as Record<string, unknown>).posterShape as "POSTER" | "SQUARE" | "LANDSCAPE") || "POSTER",
                       })
                     }
                     simkl={{
@@ -1444,40 +2169,51 @@ export function DetailView({
                   />
                 ) : (
                   <>
-                    <button
-                      type="button"
-                      onClick={() =>
-                        toggleFavorite({
-                          id: meta.id,
-                          type: meta.type,
-                          name: title || meta.name,
-                          poster: meta.poster ?? detail?.poster,
-                        })
-                      }
-                      aria-label={isFav ? t("Remove from favorites") : t("Add to favorites")}
-                      title={isFav ? t("Favorited") : t("Favorite")}
-                      className={`group flex h-12 w-12 items-center justify-center rounded-full border transition-[transform,background-color,border-color] duration-200 active:scale-[0.94] ${
-                        isFav
-                          ? "border-accent/55 bg-accent/15 text-accent hover:bg-accent/22"
-                          : "border-edge bg-canvas/80 text-ink hover:border-ink-subtle hover:bg-canvas/95"
-                      }`}
+                    <HoverTooltip
+                      label={isFav ? t("Favorited") : t("Add to favorites")}
+                      align="center"
+                      className="shrink-0"
                     >
-                      <Star
-                        size={20}
-                        strokeWidth={isFav ? 0 : 1.9}
-                        fill={isFav ? "currentColor" : "none"}
-                      />
-                    </button>
-                    <button
-                      ref={addToListRef}
-                      type="button"
-                      onClick={() => setAddToListOpen((v) => !v)}
-                      aria-label={t("Add to list")}
-                      title={t("Add to list")}
-                      className="group flex h-12 w-12 items-center justify-center rounded-full border border-edge bg-canvas/80 text-ink transition-[transform,background-color,border-color] duration-200 hover:border-ink-subtle hover:bg-canvas/95 active:scale-[0.94]"
+                      <button
+                        type="button"
+                        onClick={() =>
+                          toggleFavorite({
+                            id: meta.id,
+                            type: meta.type,
+                            name: title || meta.name,
+                            poster: meta.poster ?? detail?.poster,
+                          })
+                        }
+                        aria-label={isFav ? t("Remove from favorites") : t("Add to favorites")}
+                        className={`group flex h-12 w-12 items-center justify-center rounded-full transition-[transform,background-color] duration-200 active:scale-[0.94] ${
+                          isFav
+                            ? "bg-accent/20 text-accent hover:bg-accent/22"
+                            : "bg-canvas/80 text-ink hover:bg-canvas/95"
+                        }`}
+                      >
+                        <PopIcon
+                          active={isFav}
+                          activeIcon={<UiIcon name="unfavorite" className="h-5 w-5" />}
+                          inactiveIcon={<UiIcon name="favorite" className="h-5 w-5" />}
+                        />
+                      </button>
+                    </HoverTooltip>
+                    <HoverTooltip
+                      label={t("Add to list")}
+                      align="center"
+                      disabled={addToListOpen}
+                      className="shrink-0"
                     >
-                      <Layers size={20} strokeWidth={1.9} />
-                    </button>
+                      <button
+                        ref={addToListRef}
+                        type="button"
+                        onClick={() => setAddToListOpen((v) => !v)}
+                        aria-label={t("Add to list")}
+                        className="group flex h-12 w-12 items-center justify-center rounded-full bg-canvas/80 text-ink transition-[transform,background-color] duration-200 hover:bg-canvas/95 active:scale-[0.94]"
+                      >
+                        <UiIcon name="list" className="h-5 w-5" />
+                      </button>
+                    </HoverTooltip>
                     <AddToListMenu
                       item={listSeed}
                       anchorRef={addToListRef}
@@ -1485,39 +2221,57 @@ export function DetailView({
                       onClose={() => setAddToListOpen(false)}
                     />
                     {settings.showWatchedButton && meta.type === "movie" && (
-                      <button
-                        type="button"
-                        onClick={markThisMovieWatched}
-                        aria-label={t("Mark watched")}
-                        title={watchedMark ? t("Marked watched") : t("Mark watched")}
-                        className={`group flex h-12 w-12 items-center justify-center rounded-full border transition-[transform,background-color,border-color] duration-200 active:scale-[0.94] ${
-                          watchedMark
-                            ? "border-accent/55 bg-accent/15 text-accent"
-                            : "border-edge bg-canvas/80 text-ink hover:border-ink-subtle hover:bg-canvas/95"
-                        }`}
+                      <HoverTooltip
+                        label={watchedMark ? t("Marked watched") : t("Mark watched")}
+                        align="center"
+                        className="shrink-0"
                       >
-                        <Check size={20} strokeWidth={2.4} />
-                      </button>
+                        <button
+                          type="button"
+                          onClick={markThisMovieWatched}
+                          aria-label={t("Mark watched")}
+                          className={`group flex h-12 w-12 items-center justify-center rounded-full transition-[transform,background-color] duration-200 active:scale-[0.94] ${
+                            watchedMark
+                              ? "bg-accent/20 text-accent"
+                              : "bg-canvas/80 text-ink hover:bg-canvas/95"
+                          }`}
+                        >
+                          <PopIcon
+                            active={watchedMark}
+                            activeIcon={<UiIcon name="mark-unwatched" className="h-5 w-5" />}
+                            inactiveIcon={<UiIcon name="mark-watched" className="h-5 w-5" />}
+                          />
+                        </button>
+                      </HoverTooltip>
                     )}
                     {trailerCandidate && (
-                      <button
-                        type="button"
-                        onClick={() => setTrailerOpen(true)}
-                        aria-label={t("Watch trailer")}
-                        title={t("Watch trailer")}
-                        className="group flex h-12 w-12 items-center justify-center rounded-full border border-edge bg-canvas/80 text-ink transition-[transform,background-color,border-color] duration-200 hover:border-ink-subtle hover:bg-canvas/95 active:scale-[0.94]"
-                      >
-                        <PreviewIcon size={20} />
-                      </button>
+                      <HoverTooltip label={t("Watch trailer")} align="center" className="shrink-0">
+                        <button
+                          type="button"
+                          onClick={() => setTrailerOpen(true)}
+                          aria-label={t("Watch trailer")}
+                          className="group flex h-12 w-12 items-center justify-center rounded-full bg-canvas/80 text-ink transition-[transform,background-color] duration-200 hover:bg-canvas/95 active:scale-[0.94]"
+                        >
+                          <UiIcon name="trailer" className="h-5 w-5" />
+                        </button>
+                      </HoverTooltip>
                     )}
                     {meta.type === "movie" && <EpisodeDownloadButton meta={meta} variant="bar" />}
                   </>
+                )}
+                {(meta.type === "series" || isAnime) && (
+                  <ReminderButton
+                    id={meta.id}
+                    type="series"
+                    name={title || meta.name}
+                    poster={meta.poster ?? detail?.poster}
+                  />
                 )}
                 {liveContext && (
                   <button
                     type="button"
                     onClick={promoteMetaToRoot}
-                    className="flex h-12 items-center gap-2 rounded-full border border-edge bg-canvas/80 px-5 text-[14px] font-medium text-ink-muted transition-colors hover:border-ink-subtle hover:bg-canvas/95 hover:text-ink"
+                    className="flex h-12 items-center gap-2 rounded-full bg-canvas/80 px-5 text-[14px] font-medium text-ink-muted transition-colors hover:bg-canvas/95 hover:text-ink"
                   >
                     {meta.type === "series" || meta.type === "tv"
                       ? t("Open in TV Shows")
@@ -1532,35 +2286,28 @@ export function DetailView({
         </div>
       </section>
 
-      <div data-tauri-drag-region className="flex flex-col gap-16 px-12 pb-24 pt-14">
-        {(overview || heroAwardsInline || parentalGuide) && (
-          <div className="flex flex-col gap-8 lg:flex-row lg:items-start lg:gap-10">
+      <div {...contentDrag} className="flex flex-col gap-16 px-12 pb-24 pt-14">
+        {(overview || hasHeroAside) && (
+          <div
+            className={`grid min-w-0 grid-cols-1 items-start gap-8 xl:gap-10 ${heroGridColumns}`}
+          >
             {overview && <Synopsis text={overview} />}
-            <div className="flex flex-col gap-4 lg:ms-auto lg:w-[28rem] lg:shrink-0">
-              {parentalGuide && (
-                <ParentalGuideHeroCard
-                  guide={parentalGuide}
-                  imdbId={detail?.imdbId ?? (meta.id.startsWith("tt") ? meta.id : "")}
-                  mediaType={meta.type === "movie" ? "movie" : "tv"}
-                />
-              )}
-              {heroAwardsInline && <div>{heroAwardsInline}</div>}
-            </div>
+            {hasHeroAside && (
+              <div className="flex min-w-0 flex-col gap-6">
+                {isAnime && streamers.length > 0 && <StreamingLinks streamers={streamers} />}
+                {!isAnime && watchProviders.length > 0 && <WatchOn providers={watchProviders} />}
+                {heroAwardsInline}
+              </div>
+            )}
           </div>
         )}
-        {loading && (meta.type === "series" || isAnime) && <EpisodeGridSkeleton />}
-
-        {isAnime && streamers.length > 0 && (
-          <FadeInUp>
-            <StreamingLinks streamers={streamers} />
-          </FadeInUp>
-        )}
-
-        {!isAnime && watchProviders.length > 0 && (
-          <FadeInUp>
-            <WatchOn providers={watchProviders} />
-          </FadeInUp>
-        )}
+        {loading &&
+          (meta.type === "series" || isAnime) &&
+          (meta.type === "movie" || /^(MOVIE|OVA|SPECIAL|MUSIC)$/i.test(meta.animeFormat ?? "") ? (
+            <MovieEntrySkeleton />
+          ) : (
+            <EpisodeGridSkeleton />
+          ))}
 
         {!liveContext &&
           detail &&
@@ -1574,22 +2321,30 @@ export function DetailView({
                 currentId={currentFranchiseId}
                 scrollRef={scrollRef}
                 trackId={animeCanonicalId ?? undefined}
+                episodeHint={episodeHint}
                 imdbId={
                   detail.imdbId ??
                   animeEpisodes.find((e) => e.imdbId)?.imdbId ??
                   (meta.id.startsWith("tt") ? meta.id : null)
                 }
+                onSeasonArt={handleSeasonArt}
+                localizedOverview={localizedAnimeOverview}
+                seasonOverviews={detail.seasonOverviews}
+                tmdbTvId={detail.tmdbTvId}
+                tmdbSeasons={detail.seasons}
+                seasonPosters={detail.seasonPosters}
               />
             </FadeInUp>
           )}
 
-        {!liveContext && detail && !isAnime && isSeries && detail.seasons.length > 0 && (
+        {!liveContext && tmdbEpisodeList && !isAnime && isSeries && (
           <FadeInUp>
             <SeriesEpisodes
               meta={playMeta}
               tvId={detail.id}
               imdbId={detail.imdbId ?? (meta.id.startsWith("tt") ? meta.id : null)}
               seasons={detail.seasons}
+              seasonPosters={detail.seasonPosters}
               lastEpisodeAir={detail.lastEpisodeAir}
               scrollRef={scrollRef}
               cinemetaVideos={cinemetaFull?.videos}
@@ -1602,9 +2357,11 @@ export function DetailView({
 
         {!liveContext &&
           !loading &&
-          (!detail || detail.seasons.length === 0) &&
+          !tmdbEpisodeList &&
           !isAnime &&
-          (isSeries || (addonNative && (meta.type === "channel" || meta.type === "tv"))) &&
+          (isSeries ||
+            (addonNative &&
+              (meta.type === "channel" || meta.type === "tv" || meta.type === "other"))) &&
           cinemetaFull?.videos &&
           (addonNative
             ? cinemetaFull.videos.length > 0
@@ -1612,12 +2369,38 @@ export function DetailView({
                 (v) => v.season != null && v.season > 0 && v.episode != null,
               )) && (
             <FadeInUp>
-              <CinemetaEpisodes meta={playMeta} videos={cinemetaFull.videos} />
+              <CinemetaEpisodes
+                meta={playMeta}
+                tmdbTvId={detail?.tmdbTvId}
+                seasonPosters={detail?.seasonPosters}
+                seasons={detail?.seasons}
+                imdbId={detail?.imdbId ?? (meta.id.startsWith("tt") ? meta.id : null)}
+                videos={cinemetaFull.videos}
+                stremioWatched={stremioWatched}
+                resumeSeason={lastPlay?.season}
+              />
             </FadeInUp>
           )}
 
         {(() => {
           const railSections: DetailSection[] = [];
+          if (isAnime && anilistExtra?.nextAiring) {
+            railSections.push({
+              key: "animeAiring",
+              label: t("Airing"),
+              minHeight: 90,
+              node: (
+                <AnimeAiringBanner
+                  nextAiring={anilistExtra.nextAiring}
+                  reminderSeed={{
+                    id: meta.id,
+                    name: title || meta.name,
+                    poster: meta.poster ?? detail?.poster,
+                  }}
+                />
+              ),
+            });
+          }
           if (
             detail &&
             (detail.directors.length > 0 || detail.creators.length > 0 || detail.writers.length > 0)
@@ -1627,7 +2410,7 @@ export function DetailView({
               label: t("Crew"),
               minHeight: 160,
               node: (
-                <div className="grid grid-cols-1 gap-x-12 gap-y-6 border-b border-edge-soft pb-12 sm:grid-cols-2 lg:grid-cols-3">
+                <div className="grid grid-cols-1 gap-x-12 gap-y-6 pb-12 sm:grid-cols-2 lg:grid-cols-3">
                   {detail.directors.length > 0 && (
                     <Credit
                       label={detail.directors.length === 1 ? t("Director") : t("Directors")}
@@ -1661,6 +2444,7 @@ export function DetailView({
                       people={detail.editor}
                     />
                   )}
+                  <SharedCrewLine films={sharedCrewFilms} />
                 </div>
               ),
             });
@@ -1679,6 +2463,40 @@ export function DetailView({
               ),
             });
           }
+          if (capstanMeta && capstanMeta.cast.length > 0 && !(detail && detail.cast.length > 0)) {
+            railSections.push({
+              key: "cast",
+              label: t("Cast"),
+              minHeight: 240,
+              node: (
+                <Row title={t("Cast · {n}", { n: capstanMeta.cast.length })} min={128}>
+                  {capstanMeta.cast.map((name, i) => (
+                    <CastCard
+                      key={`${name}-${i}`}
+                      // The provider names people and nothing else: no id to open and no photo, so
+                      // the card falls back to its own placeholder exactly as it does for an
+                      // unresolved TMDB credit.
+                      cast={{ id: 0, name, character: "", profilePath: null, order: i }}
+                    />
+                  ))}
+                </Row>
+              ),
+            });
+          }
+          if (isAnime && animeCharacters.length > 0) {
+            railSections.push({
+              key: "animeCharacters",
+              label: t("Characters"),
+              minHeight: 240,
+              node: (
+                <Row title={t("Characters · {n}", { n: animeCharacters.length })} min={128}>
+                  {animeCharacters.map((c) => (
+                    <CharacterCard key={c.id} character={c} />
+                  ))}
+                </Row>
+              ),
+            });
+          }
           if (detail?.collection) {
             railSections.push({
               key: "collection",
@@ -1686,29 +2504,96 @@ export function DetailView({
               node: <CollectionRow collection={detail.collection} currentId={meta.id} />,
             });
           }
-          if (recommendations.length > 0) {
+          if (reasonedRecommendations.length > 0) {
             railSections.push({
               key: "moreLikeThis",
               label: t("More Like This"),
               node: (
                 <Row title={t("More Like This")}>
-                  {recommendations.map((r) => (
+                  {reasonedRecommendations.map((r) => (
+                    <PickCard
+                      key={r.id}
+                      meta={r}
+                      reason={graphReasons.get(r.id)?.label}
+                      reasonDetail={graphReasons.get(r.id)?.detail}
+                    />
+                  ))}
+                </Row>
+              ),
+            });
+          }
+          if (
+            capstanMeta &&
+            capstanMeta.recommendations.length > 0 &&
+            reasonedRecommendations.length === 0
+          ) {
+            railSections.push({
+              key: "moreLikeThis",
+              label: t("More Like This"),
+              node: (
+                <Row title={t("More Like This")}>
+                  {capstanMeta.recommendations.map((r) => (
                     <PickCard key={r.id} meta={r} />
                   ))}
                 </Row>
               ),
             });
           }
-          if (similar.length > 0) {
+          if (reasonedSimilar.length > 0) {
             railSections.push({
               key: "similar",
               label: t("You Might Also Like"),
               node: (
                 <Row title={t("You Might Also Like")}>
-                  {similar.map((r) => (
-                    <PickCard key={`s-${r.id}`} meta={r} />
+                  {reasonedSimilar.map((r) => (
+                    <PickCard
+                      key={`s-${r.id}`}
+                      meta={r}
+                      reason={graphReasons.get(r.id)?.label}
+                      reasonDetail={graphReasons.get(r.id)?.detail}
+                    />
                   ))}
                 </Row>
+              ),
+            });
+          }
+          if (isAnime && anilistExtra && anilistExtra.relatedAnime.length > 0) {
+            railSections.push({
+              key: "animeRelated",
+              label: t("Related Anime"),
+              minHeight: 240,
+              node: (
+                <AnimeRelatedRail
+                  title={t("Related Anime")}
+                  nodes={anilistExtra.relatedAnime}
+                  onOpen={(node) =>
+                    openMeta({
+                      id: `anilist:${node.anilistId}`,
+                      type: node.format === "Movie" ? "movie" : "series",
+                      name: node.title,
+                      poster: node.poster,
+                    })
+                  }
+                />
+              ),
+            });
+          }
+          if (isAnime && anilistExtra && anilistExtra.adaptations.length > 0) {
+            railSections.push({
+              key: "animeAdaptations",
+              label: t("Adaptations"),
+              minHeight: 240,
+              node: (
+                <AnimeRelatedRail
+                  title={t("Adaptations")}
+                  nodes={anilistExtra.adaptations}
+                  badgeCollections
+                  onOpen={async (node) => {
+                    const { searchManga } = await import("@/lib/manga/api");
+                    const found = (await searchManga(node.title, 0))[0];
+                    openManga(found?.id);
+                  }}
+                />
               ),
             });
           }
@@ -1716,10 +2601,11 @@ export function DetailView({
             railSections.push({
               key: "mediaGallery",
               label: t("Media"),
+              minHeight: 210,
               node: <MediaGallery detail={detail} title={title} logo={logo} metaId={meta.id} />,
             });
           }
-          if (isAnime) {
+          if (isAnime || stickyAwardName.current) {
             railSections.push({
               key: "animeAwards",
               label: t("Awards"),
@@ -1741,7 +2627,30 @@ export function DetailView({
               key: "awards",
               label: t("Awards & Recognition"),
               minHeight: 200,
-              node: <AwardsBlock awards={awards} />,
+              node: (
+                <AwardsBlock
+                  awards={awards}
+                  imdbId={detail.imdbId ?? (meta.id.startsWith("tt") ? meta.id : null)}
+                  kind={isSeries ? "series" : "movie"}
+                />
+              ),
+            });
+          }
+          if (
+            isAnime &&
+            anilistExtra &&
+            (anilistExtra.nativeTitle ||
+              anilistExtra.synonyms.length > 0 ||
+              (anilistExtra.englishTitle &&
+                anilistExtra.englishTitle.toLowerCase() !== title.toLowerCase()) ||
+              (anilistExtra.romajiTitle &&
+                anilistExtra.romajiTitle.toLowerCase() !== title.toLowerCase()))
+          ) {
+            railSections.push({
+              key: "animeTitles",
+              label: t("Titles"),
+              minHeight: 120,
+              node: <AnimeTitlesBlock details={anilistExtra} primaryTitle={title} />,
             });
           }
           if (detail) {
@@ -1750,6 +2659,14 @@ export function DetailView({
               label: t("Information"),
               minHeight: 200,
               node: <InfoBlock detail={detail} isAnime={isAnime} />,
+            });
+          }
+          if (isAnime && anilistExtra && anilistExtra.statusDistribution.length > 0) {
+            railSections.push({
+              key: "animeStats",
+              label: t("Statistics"),
+              minHeight: 200,
+              node: <AnimeStatsDonut slices={anilistExtra.statusDistribution} />,
             });
           }
           if (!isAnime && settings.showTraktComments === true) {
@@ -1793,51 +2710,11 @@ export function DetailView({
             });
           }
           if (railSections.length === 0) return null;
-          const railKeys = railSections.map((s) => s.key);
-          const persist = (next: DetailCustomization) => {
-            setLayout(next);
-            saveDetailCustomization(next);
-          };
-          const hasChanges = layout.order.length > 0 || layout.hidden.length > 0;
-          return (
-            <>
-              <div className="flex items-center justify-end gap-2">
-                {layoutEdit && hasChanges && (
-                  <button
-                    onClick={() => persist(resetDetailCustomization())}
-                    className="flex h-8 items-center gap-1.5 rounded-md border border-edge-soft/40 bg-canvas/80 px-2.5 text-[12px] font-medium text-ink-muted transition-colors hover:bg-canvas hover:text-ink"
-                  >
-                    <RotateCcw size={12} strokeWidth={2.2} />
-                    {t("Reset")}
-                  </button>
-                )}
-                <button
-                  onClick={() => setLayoutEdit((v) => !v)}
-                  className={`flex h-8 items-center gap-1.5 rounded-md border px-2.5 text-[12px] font-medium transition-colors ${
-                    layoutEdit
-                      ? "border-ink bg-ink text-canvas hover:opacity-90"
-                      : "border-edge-soft/40 bg-canvas/80 text-ink-muted hover:bg-canvas hover:text-ink"
-                  }`}
-                >
-                  <Pencil size={12} strokeWidth={2.4} />
-                  {layoutEdit ? t("Done editing") : t("Customize layout")}
-                </button>
-              </div>
-              <FadeInUp>
-                <ContentRails
-                  sections={railSections}
-                  custom={layout}
-                  editMode={layoutEdit}
-                  onMove={(k, d) => persist(moveSection(layout, railKeys, k, d))}
-                  onToggleHidden={(k) => persist(toggleSectionHidden(layout, k))}
-                />
-              </FadeInUp>
-            </>
-          );
+          return <DetailLayoutEditor sections={railSections} />;
         })()}
 
         {!loading && !detail && !isAnime && !addonNative && !settings.tmdbKey && (
-          <div className="rounded-2xl border border-dashed border-edge px-6 py-12 text-center text-[14px] text-ink-muted">
+          <div className="rounded-2xl bg-canvas/50 px-6 py-12 text-center text-[14px] text-ink-muted">
             {t("Add a TMDB key in Settings to see cast, related titles, and trailers here.")}
           </div>
         )}

@@ -276,12 +276,13 @@ export class TogetherClient {
       this.failAttempt();
       return;
     }
+    const socket = this.ws;
     this.armWatchdog();
-    this.ws.onopen = () => {
-      if (!this.room) return;
+    socket.onopen = () => {
+      if (this.ws !== socket || !this.room) return;
       this.reconnectAttempt = 0;
       this.lastInboundAt = Date.now();
-      this.sendPing();
+      // The relay reserves its larger avatar payload allowance for the first frame.
       this.sendNow({
         t: "hello",
         room: this.room,
@@ -290,6 +291,7 @@ export class TogetherClient {
         avatar: this.avatar,
         color: this.color,
       });
+      this.sendPing();
       this.flushOutQueue();
       if (this.claimedHost) {
         this.sendNow({ t: "claim-host", room: this.room, clientId: this.clientId, fresh: false });
@@ -304,7 +306,8 @@ export class TogetherClient {
       }
       this.startPing();
     };
-    this.ws.onmessage = (ev) => {
+    socket.onmessage = (ev) => {
+      if (this.ws !== socket) return;
       this.lastInboundAt = Date.now();
       try {
         const msg = JSON.parse(ev.data) as ServerMessage;
@@ -313,16 +316,25 @@ export class TogetherClient {
         // ignore malformed
       }
     };
-    this.ws.onclose = () => {
+    socket.onclose = () => {
+      if (this.ws !== socket) return;
+      this.ws = null;
       this.stopPing();
       this.resetClockState();
       this.clearWatchdog();
       if (this.intentional || this.terminal) return;
+      // Joining resolves the handshake, but a later disconnect is a new failure.
+      // Keep failed handshakes idempotent while allowing established rooms to retry.
+      if (this.joinedThisAttempt) {
+        this.joinedThisAttempt = false;
+        this.attemptResolved = false;
+      }
       this.failAttempt();
     };
-    this.ws.onerror = () => {
+    socket.onerror = () => {
+      if (this.ws !== socket) return;
       try {
-        this.ws?.close();
+        socket.close();
       } catch {
         /* ignore */
       }
@@ -430,9 +442,15 @@ export class TogetherClient {
         return;
       }
       case "participant-left": {
-        const leftName =
-          msg.name ?? this.snapshot.participants.find((p) => p.id === msg.clientId)?.name ?? "Someone";
-        this.emit({ kind: "participant-left", clientId: msg.clientId, name: leftName });
+        const left = this.snapshot.participants.find((p) => p.id === msg.clientId);
+        const leftName = msg.name ?? left?.name ?? "Someone";
+        this.emit({
+          kind: "participant-left",
+          clientId: msg.clientId,
+          name: leftName,
+          avatar: left?.avatar ?? null,
+          color: left?.color ?? null,
+        });
         this.update({
           participants: this.snapshot.participants.filter((p) => p.id !== msg.clientId),
         });
@@ -698,12 +716,13 @@ export class TogetherClient {
       this.reconnectTimer = null;
     }
     if (this.ws) {
+      const socket = this.ws;
+      this.ws = null;
       try {
-        this.ws.close();
+        socket.close();
       } catch {
         // ignore
       }
-      this.ws = null;
     }
   }
 

@@ -1,6 +1,9 @@
 import type { Meta } from "../../cinemeta";
 import { lruSet } from "../../cache";
-import { effectiveTmdbLanguage, get, IMG } from "./tmdb-client";
+import { loadStoredSettings } from "../../settings/load";
+import { effectiveTmdbLanguage, get } from "./tmdb-client";
+import { tmdbBackdropUrl, tmdbPosterUrl } from "./tmdb-image-rungs";
+import { pickTmdbTitle, shouldUseEnglishTitle } from "./tmdb-title-fallback";
 
 const PERSON_NAME_CACHE_MAX = 3000;
 const PERSON_CACHE_MAX = 10;
@@ -29,10 +32,7 @@ function persistPersonNameSoon() {
   if (personNameSaveTimer) clearTimeout(personNameSaveTimer);
   personNameSaveTimer = window.setTimeout(() => {
     try {
-      localStorage.setItem(
-        PERSON_NAME_KEY,
-        JSON.stringify(Object.fromEntries(personNameCache)),
-      );
+      localStorage.setItem(PERSON_NAME_KEY, JSON.stringify(Object.fromEntries(personNameCache)));
     } catch {
       /* ignore */
     }
@@ -46,7 +46,7 @@ function personKey(name: string): string {
 export function tmdbPersonIdCached(name: string): number | null | undefined {
   loadPersonNameCache();
   const k = personKey(name);
-  return personNameCache.has(k) ? personNameCache.get(k) ?? null : undefined;
+  return personNameCache.has(k) ? (personNameCache.get(k) ?? null) : undefined;
 }
 
 export async function tmdbPersonIdByName(
@@ -72,9 +72,7 @@ export async function tmdbPersonIdByName(
     let chosen = ranked[0];
     if (preferDept) {
       const wantedDept = preferDept.toLowerCase();
-      const match = ranked.find(
-        (r) => (r.known_for_department ?? "").toLowerCase() === wantedDept,
-      );
+      const match = ranked.find((r) => (r.known_for_department ?? "").toLowerCase() === wantedDept);
       if (match) chosen = match;
     }
     const id = chosen?.id ?? null;
@@ -127,6 +125,25 @@ export type PersonDetail = {
   crew: PersonCredit[];
 };
 
+const TMDB_DEPARTMENT_LABEL_KEYS: Readonly<Record<string, string>> = {
+  Acting: "Acting",
+  Art: "Art",
+  Camera: "Camera",
+  "Costume & Make-Up": "Costume & Make-Up",
+  Crew: "Crew",
+  Directing: "Directing",
+  Editing: "Editing",
+  Lighting: "Lighting",
+  Production: "Production",
+  Sound: "Sound",
+  "Visual Effects": "Visual Effects",
+  Writing: "Writing",
+};
+
+export function tmdbDepartmentLabelKey(department: string): string | undefined {
+  return TMDB_DEPARTMENT_LABEL_KEYS[department];
+}
+
 const personCache = new Map<number, PersonDetail>();
 const personInflight = new Map<number, Promise<PersonDetail | null>>();
 
@@ -145,18 +162,66 @@ export async function tmdbPerson(key: string, personId: number): Promise<PersonD
 }
 
 async function fetchPerson(key: string, personId: number): Promise<PersonDetail | null> {
+  const settings = loadStoredSettings();
+  const lang = effectiveTmdbLanguage();
+  const langBase = lang.split("-")[0]?.toLowerCase() ?? "";
   const raw = await get<any>(key, `person/${personId}`, {
     append_to_response: "combined_credits,external_ids",
-    language: effectiveTmdbLanguage() || "en",
+    language: lang || "en",
   });
   if (!raw) return null;
+
+  // TMDB falls back to the original-language name (e.g. Japanese for anime staff) when
+  // the requested language has no translation, so prefer the English name in that case.
+  const localized = typeof raw.name === "string" ? raw.name : "";
+  const original = typeof raw.original_name === "string" ? raw.original_name : "";
+  let name = localized;
+  const rawCast: any[] = raw.combined_credits?.cast ?? [];
+  const rawCrew: any[] = raw.combined_credits?.crew ?? [];
+  const needsEnglishName =
+    !!langBase && langBase !== "en" && !!original && localized === original;
+  const needsEnglishCredits =
+    settings.translateTitles &&
+    [...rawCast, ...rawCrew].some((credit) =>
+      shouldUseEnglishTitle({
+        localized: credit.title ?? credit.name ?? "",
+        original: credit.original_title ?? credit.original_name ?? "",
+        originalLanguage: credit.original_language,
+        targetLanguage: lang,
+        translateTitles: true,
+      }),
+    );
+  let enRaw: any = null;
+  if (needsEnglishName || needsEnglishCredits) {
+    enRaw = await get<any>(key, `person/${personId}`, {
+      ...(needsEnglishCredits ? { append_to_response: "combined_credits" } : {}),
+      language: "en-US",
+    });
+    if (needsEnglishName && typeof enRaw?.name === "string" && enRaw.name) name = enRaw.name;
+  }
+  const englishCreditNames = new Map<string, string>();
+  for (const list of [enRaw?.combined_credits?.cast, enRaw?.combined_credits?.crew]) {
+    for (const credit of list ?? []) {
+      const title = credit?.title ?? credit?.name;
+      if (credit?.id != null && credit?.media_type && typeof title === "string" && title.trim()) {
+        englishCreditNames.set(`${credit.media_type}:${credit.id}`, title.trim());
+      }
+    }
+  }
 
   const toCredit = (c: any): PersonCredit => ({
     id: c.id,
     mediaType: c.media_type,
-    title: c.title ?? c.name ?? "",
-    poster: c.poster_path ? `${IMG}/w342${c.poster_path}` : undefined,
-    background: c.backdrop_path ? `${IMG}/w780${c.backdrop_path}` : undefined,
+    title: pickTmdbTitle({
+      localized: c.title ?? c.name ?? "",
+      original: c.original_title ?? c.original_name ?? "",
+      english: englishCreditNames.get(`${c.media_type}:${c.id}`),
+      originalLanguage: c.original_language,
+      targetLanguage: lang,
+      translateTitles: settings.translateTitles,
+    }),
+    poster: tmdbPosterUrl(c.poster_path),
+    background: tmdbBackdropUrl(c.backdrop_path),
     releaseInfo: (c.release_date ?? c.first_air_date)?.slice(0, 4),
     releaseDate: c.release_date ?? c.first_air_date,
     imdbRating: c.vote_average > 0 ? Number(c.vote_average).toFixed(1) : undefined,
@@ -174,7 +239,7 @@ async function fetchPerson(key: string, personId: number): Promise<PersonDetail 
 
   const detail: PersonDetail = {
     id: raw.id,
-    name: raw.name ?? "",
+    name,
     biography: raw.biography ?? "",
     birthday: raw.birthday ?? null,
     deathday: raw.deathday ?? null,
@@ -183,8 +248,8 @@ async function fetchPerson(key: string, personId: number): Promise<PersonDetail 
     profilePath: raw.profile_path ?? null,
     imdbId: raw.external_ids?.imdb_id ?? null,
     homepage: raw.homepage ?? null,
-    cast: (raw.combined_credits?.cast ?? []).map(toCredit),
-    crew: (raw.combined_credits?.crew ?? []).map(toCredit),
+    cast: rawCast.map(toCredit),
+    crew: rawCrew.map(toCredit),
   };
   lruSet(personCache, personId, detail, PERSON_CACHE_MAX);
   return detail;

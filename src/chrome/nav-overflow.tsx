@@ -81,6 +81,8 @@ export function OverflowNav({
 
       <div
         ref={ghostRef}
+        inert
+        data-tv-skip="true"
         aria-hidden
         className="pointer-events-none invisible absolute start-0 top-0 flex w-0 items-center overflow-hidden"
         style={{ gap: gapPx }}
@@ -117,7 +119,12 @@ function MoreMenu({ entries, buttonClassName }: { entries: NavEntry[]; buttonCla
 
   return (
     <div ref={ref} className="relative shrink-0">
-      <MoreButton className={buttonClassName} open={open} active={anyActive} onClick={() => setOpen((o) => !o)} />
+      <MoreButton
+        className={buttonClassName}
+        open={open}
+        active={anyActive}
+        onClick={() => setOpen((o) => !o)}
+      />
       {open && (
         <div
           data-tv-focus-scope
@@ -128,6 +135,8 @@ function MoreMenu({ entries, buttonClassName }: { entries: NavEntry[]; buttonCla
             <button
               key={e.key}
               type="button"
+              data-argus-nav={e.key}
+              aria-current={e.active ? "page" : undefined}
               onClick={() => {
                 e.onSelect();
                 setOpen(false);
@@ -166,7 +175,11 @@ function MoreButton({
       className={`${className} ${active || open ? "text-ink" : ""}`}
     >
       {t("common.more")}
-      <ChevronDown size={14} strokeWidth={2.2} className={`transition-transform ${open ? "rotate-180" : ""}`} />
+      <ChevronDown
+        size={14}
+        strokeWidth={2.2}
+        className={`transition-transform ${open ? "rotate-180" : ""}`}
+      />
     </button>
   );
 }

@@ -43,6 +43,7 @@ export async function resolveCompatibleCastUrl(
   device: CastDeviceInfo,
   debrids: ReturnType<typeof useDebridClients>,
   liveDims: { width: number; height: number },
+  animePreferImdbStreams = false,
 ): Promise<CastResolution> {
   const caps = getDeviceCaps(device);
   const augmented = src.streamRef
@@ -65,12 +66,12 @@ export async function resolveCompatibleCastUrl(
     }
     return { kind: "compat", url: src.url, caps };
   }
-  const cached = peekPickerCache(src.meta, src.episode);
+  const cached = peekPickerCache(src.meta, src.episode, animePreferImdbStreams);
   const candidates: ScoredStream[] = cached?.result.picker.all ?? [];
   const alt = pickBestCompatStream(candidates, caps);
   if (alt) {
     const ac = new AbortController();
-    const r = await resolveStream(alt, debrids, ac.signal, false);
+    const r = await resolveStream(alt, debrids, ac.signal, false, false, undefined, true, false);
     if (r.ok) {
       let url = r.data.url;
       if (r.data.headers && Object.keys(r.data.headers).length > 0) {

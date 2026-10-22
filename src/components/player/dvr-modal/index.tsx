@@ -1,3 +1,4 @@
+import { createPortal } from "react-dom";
 import { X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import type { EpgProgram } from "@/lib/iptv/types";
@@ -44,11 +45,11 @@ export function DvrModal({
 
   if (!open) return null;
 
-  return (
+  return createPortal(
     <div
       data-tv-focus-scope
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
-      className="fixed inset-0 z-[60] flex items-center justify-center bg-black/72 backdrop-blur-md animate-in fade-in duration-200"
+      className="fixed inset-0 z-[210] flex items-center justify-center bg-black/72 backdrop-blur-md animate-in fade-in duration-200"
     >
       <div
         style={{
@@ -78,7 +79,8 @@ export function DvrModal({
           />
         )}
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
 

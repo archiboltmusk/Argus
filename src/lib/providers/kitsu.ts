@@ -1,7 +1,9 @@
 import { lruSet } from "@/lib/cache";
 import type { Meta } from "@/lib/cinemeta";
 import { registerEvictable } from "@/lib/maintenance";
+import { safeFetch } from "@/lib/safe-fetch";
 import { adultContentHidden } from "@/lib/addons-store/adult-filter";
+import { episodeTextLanguage } from "@/lib/episode-text-language";
 
 const KITSU = "https://kitsu.io/api/edge";
 
@@ -48,7 +50,15 @@ type KitsuCharacterAttrs = {
   description?: string;
 };
 
-type Resource<T> = { id: string; type: string; attributes: T; relationships?: Record<string, { data?: { id: string; type: string } | Array<{ id: string; type: string }> }> };
+type Resource<T> = {
+  id: string;
+  type: string;
+  attributes: T;
+  relationships?: Record<
+    string,
+    { data?: { id: string; type: string } | Array<{ id: string; type: string }> }
+  >;
+};
 type Doc<D, I = unknown> = { data: D; included?: Resource<I>[] };
 
 const cache = new Map<string, { v: unknown; t: number }>();
@@ -65,7 +75,7 @@ async function get<T>(path: string): Promise<T | null> {
   const hit = cache.get(url);
   if (hit && Date.now() - hit.t < TTL) return hit.v as T;
   try {
-    const r = await fetch(url, { headers: { Accept: "application/vnd.api+json" } });
+    const r = await safeFetch(url, { headers: { Accept: "application/vnd.api+json" } });
     if (!r.ok) return null;
     const j = (await r.json()) as T;
     cache.set(url, { v: j, t: Date.now() });
@@ -81,6 +91,8 @@ export type KitsuEpisode = {
   seasonNumber: number;
   title: string;
   synopsis: string;
+  titleLanguage?: string;
+  synopsisLanguage?: string;
   thumbnail: string | null;
   thumbnailFallback?: string | null;
   airdate: string | null;
@@ -117,6 +129,7 @@ export type KitsuAnimeDetail = {
   id: number;
   slug: string;
   title: string;
+  altTitles: string[];
   synopsis: string;
   poster?: string;
   backdrop?: string;
@@ -154,6 +167,10 @@ export type KitsuStreamer = {
 
 function pickImg(img?: Img | null): string | undefined {
   return img?.original ?? img?.large ?? img?.medium ?? img?.small ?? undefined;
+}
+
+function pickPoster(img?: Img | null): string | undefined {
+  return img?.medium ?? img?.large ?? img?.original ?? img?.small ?? undefined;
 }
 
 function ratingToTen(raw?: string | null): string | undefined {
@@ -209,8 +226,11 @@ export async function kitsuAnime(id: number): Promise<KitsuAnimeDetail | null> {
     id: Number(j.data.id),
     slug: a.slug ?? "",
     title: a.titles?.en || a.canonicalTitle || a.titles?.en_jp || "Unknown",
+    altTitles: [a.titles?.en, a.titles?.en_jp, a.titles?.ja_jp, a.canonicalTitle].filter(
+      (t): t is string => !!t,
+    ),
     synopsis: a.synopsis || a.description || "",
-    poster: pickImg(a.posterImage),
+    poster: pickPoster(a.posterImage),
     backdrop: pickImg(a.coverImage),
     rating: ratingToTen(a.averageRating),
     episodeCount: a.episodeCount ?? undefined,
@@ -236,7 +256,7 @@ function attrsToMeta(id: string, a: KitsuAnimeAttrs): Meta {
     id: `kitsu:${id}`,
     type: a.subtype === "movie" ? "movie" : "series",
     name: a.titles?.en || a.canonicalTitle || a.titles?.en_jp || "Unknown",
-    poster: pickImg(a.posterImage),
+    poster: pickPoster(a.posterImage),
     background: pickImg(a.coverImage),
     description: a.synopsis || a.description || "",
     releaseInfo: a.startDate ? a.startDate.slice(0, 4) : undefined,
@@ -250,9 +270,12 @@ export async function kitsuSimilarByGenres(
   limit = 18,
 ): Promise<Meta[]> {
   if (genreSlugs.length === 0) return [];
-  const slug = genreSlugs.slice(0, 4).join(",");
+  const slug = genreSlugs[0];
   const ageFilter = adultContentHidden() ? "&filter[ageRating]=G,PG,R" : "";
-  const params = `filter[genres]=${encodeURIComponent(slug)}${ageFilter}&sort=-userCount&page[limit]=${limit + 6}`;
+  // Kitsu rejects page[limit] above 20, so a larger request returned no rows at
+  // all. Twenty is enough to fill the two recommendation rails.
+  const pageLimit = Math.min(limit + 6, 20);
+  const params = `filter[genres]=${encodeURIComponent(slug)}${ageFilter}&sort=-userCount&page[limit]=${pageLimit}`;
   const j = await get<Doc<Resource<KitsuAnimeAttrs>[]>>(`/anime?${params}`);
   if (!j?.data) return [];
   const out: Meta[] = [];
@@ -337,6 +360,8 @@ export async function kitsuEpisodes(id: number, limit = 60): Promise<KitsuEpisod
         seasonNumber: a.seasonNumber ?? 1,
         title: a.canonicalTitle || `Episode ${a.number ?? "?"}`,
         synopsis: a.synopsis || a.description || "",
+        titleLanguage: episodeTextLanguage(a.canonicalTitle, "en"),
+        synopsisLanguage: episodeTextLanguage(a.synopsis || a.description, "en"),
         thumbnail: pickImg(a.thumbnail) ?? null,
         airdate: a.airdate ?? null,
         length: a.length ?? null,
@@ -438,7 +463,7 @@ export async function kitsuRelated(id: number): Promise<KitsuRelated[]> {
         id: `kitsu:${a.id}`,
         type: at.subtype === "movie" ? "movie" : "series",
         name: at.titles?.en || at.canonicalTitle || at.titles?.en_jp || "Unknown",
-        poster: pickImg(at.posterImage),
+        poster: pickPoster(at.posterImage),
         background: pickImg(at.coverImage),
         description: at.synopsis || at.description || "",
         releaseInfo: at.startDate ? at.startDate.slice(0, 4) : undefined,
@@ -453,15 +478,25 @@ const mainTvCache = new Map<number, number | null>();
 
 export async function kitsuMainTvSeries(id: number): Promise<number | null> {
   if (mainTvCache.has(id)) return mainTvCache.get(id)!;
-  const j = await get<Doc<Resource<{ role?: string }>[], { subtype?: string; episodeCount?: number }>>(
-    `/anime/${id}/media-relationships?include=destination&page[limit]=20`,
-  );
+  const j = await get<
+    Doc<Resource<{ role?: string }>[], { subtype?: string; episodeCount?: number }>
+  >(`/anime/${id}/media-relationships?include=destination&page[limit]=20`);
   let best: number | null = null;
   let bestEps = -1;
+  const animeById = new Map<string, { subtype?: string; episodeCount?: number }>();
   for (const inc of j?.included ?? []) {
-    if (inc.type !== "anime" || inc.attributes?.subtype !== "TV") continue;
-    const nid = Number(inc.id);
-    const eps = Number(inc.attributes?.episodeCount ?? 0);
+    if (inc.type === "anime") animeById.set(inc.id, inc.attributes ?? {});
+  }
+  for (const rel of j?.data ?? []) {
+    const role = (rel.attributes?.role ?? "").toLowerCase();
+    if (role !== "parent_story" && role !== "full_story") continue;
+    const destRef = rel.relationships?.destination?.data;
+    const destId = destRef && !Array.isArray(destRef) ? destRef.id : undefined;
+    if (!destId) continue;
+    const a = animeById.get(destId);
+    if (a?.subtype !== "TV") continue;
+    const nid = Number(destId);
+    const eps = Number(a?.episodeCount ?? 0);
     if (Number.isFinite(nid) && nid !== id && eps > bestEps) {
       bestEps = eps;
       best = nid;
@@ -469,4 +504,36 @@ export async function kitsuMainTvSeries(id: number): Promise<number | null> {
   }
   mainTvCache.set(id, best);
   return best;
+}
+
+export type KitsuSearchHit = {
+  id: number;
+  title: string;
+  year: number | null;
+  subtype: string | null;
+};
+
+/**
+ * Kitsu's own text search. ARM and AniZip do not link every brand-new cours, so
+ * a MAL/AniList row whose entry they cannot map can still be reached by the
+ * Kitsu entry that carries episodes (and therefore streams).
+ */
+export async function kitsuSearchAnime(query: string, limit = 8): Promise<KitsuSearchHit[]> {
+  const q = query.trim();
+  if (q.length < 2) return [];
+  const j = await get<Doc<Resource<KitsuAnimeAttrs>[]>>(
+    `/anime?filter%5Btext%5D=${encodeURIComponent(q)}&page%5Blimit%5D=${limit}&sort=-userCount`,
+  );
+  const out: KitsuSearchHit[] = [];
+  for (const a of j?.data ?? []) {
+    const id = Number(a.id);
+    if (!Number.isFinite(id)) continue;
+    out.push({
+      id,
+      title: a.attributes.titles?.en?.trim() || a.attributes.canonicalTitle || "Untitled",
+      year: a.attributes.startDate ? Number(a.attributes.startDate.slice(0, 4)) : null,
+      subtype: a.attributes.subtype ?? null,
+    });
+  }
+  return out;
 }

@@ -24,12 +24,37 @@ pub async fn recognize_now_playing(
             tauri::async_runtime::spawn_blocking(move || capture_loopback(secs))
                 .await
                 .map_err(|e| e.to_string())??;
+        ensure_audible(&pcm)?;
         let wav = pcm_to_wav(&pcm, sample_rate, channels, bits)?;
         audd_recognize(wav, api_token).await
     }
     #[cfg(not(windows))]
     {
         let _ = (api_token, seconds);
+        Err("Song identification is only supported on Windows for now".into())
+    }
+}
+
+#[tauri::command]
+pub async fn recognize_now_playing_ai(
+    api_key: String,
+    model: Option<String>,
+    seconds: Option<u32>,
+) -> Result<Option<SongResult>, String> {
+    #[cfg(windows)]
+    {
+        let secs = seconds.unwrap_or(8).clamp(3, 15);
+        let (pcm, sample_rate, channels, bits) =
+            tauri::async_runtime::spawn_blocking(move || capture_loopback(secs))
+                .await
+                .map_err(|e| e.to_string())??;
+        ensure_audible(&pcm)?;
+        let wav = pcm_to_wav(&pcm, sample_rate, channels, bits)?;
+        crate::song_id_gemini::recognize(wav, api_key, model).await
+    }
+    #[cfg(not(windows))]
+    {
+        let _ = (api_key, model, seconds);
         Err("Song identification is only supported on Windows for now".into())
     }
 }
@@ -90,8 +115,30 @@ fn capture_loopback(seconds: u32) -> Result<(Vec<u8>, u32, u16, u16), String> {
     }
     audio_client.stop_stream().map_err(|e| e.to_string())?;
 
+    let bytes_per_sec = sample_rate as usize * blockalign;
+    let got = queue.len();
+    if got < target_bytes.min(bytes_per_sec * 4) {
+        let secs = got as f32 / bytes_per_sec as f32;
+        return Err(format!(
+            "Argus only captured {secs:.1}s before your playback device went quiet. Keep the scene playing while Argus listens."
+        ));
+    }
+
     let pcm: Vec<u8> = queue.into_iter().take(target_bytes).collect();
     Ok((pcm, sample_rate, channels, bits))
+}
+
+#[cfg(windows)]
+fn ensure_audible(pcm: &[u8]) -> Result<(), String> {
+    let peak = pcm
+        .chunks_exact(2)
+        .map(|c| (i16::from_le_bytes([c[0], c[1]]) as i32).abs())
+        .max()
+        .unwrap_or(0);
+    if peak < 150 {
+        return Err("Argus heard silence on your default playback device. Play the scene with sound, and make sure Windows is playing it through the device set as default.".to_string());
+    }
+    Ok(())
 }
 
 #[cfg(windows)]
@@ -130,7 +177,11 @@ async fn audd_recognize(wav: Vec<u8>, api_token: String) -> Result<Option<SongRe
         .text("return", "apple_music,spotify")
         .part("file", part);
 
-    let client = reqwest::Client::new();
+    let client = reqwest::Client::builder()
+        .connect_timeout(std::time::Duration::from_secs(10))
+        .timeout(std::time::Duration::from_secs(45))
+        .build()
+        .map_err(|e| e.to_string())?;
     let resp = client
         .post("https://api.audd.io/")
         .multipart(form)

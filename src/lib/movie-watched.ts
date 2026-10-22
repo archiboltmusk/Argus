@@ -1,14 +1,86 @@
-const KEY = "argus.moviewatched.v1";
+import { isNuvioProviderActive, getNuvioActiveSlot } from "./active-profile-id";
+import { useSyncExternalStore } from "react";
+import { persistCritical } from "./storage-recovery";
+
+const KEY_PREFIX = "argus.moviewatched.v1.";
+const LEGACY_KEY = "argus.moviewatched.v1";
+const PROFILES_KEY = "argus.profiles.v1";
 
 const subs = new Set<() => void>();
 let version = 0;
 let cache: Set<string> | null = null;
 
-function load(): Set<string> {
-  if (cache) return cache;
+function activeProfileId(): string {
   try {
-    const arr = JSON.parse(localStorage.getItem(KEY) ?? "[]");
-    cache = new Set(Array.isArray(arr) ? arr.filter((x): x is string => typeof x === "string") : []);
+    const raw = localStorage.getItem(PROFILES_KEY);
+    if (!raw) return "";
+    const s = JSON.parse(raw) as {
+      activeId?: string;
+      profiles?: Array<{ id?: string; isPrimary?: boolean; shareStremioWith?: string | null }>;
+    };
+    const profiles = Array.isArray(s.profiles) ? s.profiles : [];
+    const active = profiles.find((p) => p.id === s.activeId) ?? null;
+    const own = active?.id ?? profiles.find((p) => p?.isPrimary)?.id ?? "";
+    if (!own) return "";
+    if (active && typeof active.shareStremioWith === "string" && active.shareStremioWith) {
+      const shared = profiles.find((p) => p.id === active.shareStremioWith);
+      if (shared?.id) return shared.id;
+    }
+    return own;
+  } catch {
+    return "";
+  }
+}
+
+function primaryProfileId(): string {
+  try {
+    const raw = localStorage.getItem(PROFILES_KEY);
+    const s = raw
+      ? (JSON.parse(raw) as { profiles?: Array<{ id?: string; isPrimary?: boolean }> })
+      : null;
+    const primary = s?.profiles?.find((p) => p?.isPrimary);
+    return (primary && typeof primary.id === "string" && primary.id) || activeProfileId();
+  } catch {
+    return activeProfileId();
+  }
+}
+
+function storeKey(): string {
+  if (isNuvioProviderActive()) {
+    const slot = getNuvioActiveSlot();
+    return `argus.moviewatched.nuvio.v1.${slot}`;
+  }
+  const id = activeProfileId();
+  return id ? KEY_PREFIX + id : LEGACY_KEY;
+}
+
+function migrateLegacy(): void {
+  if (isNuvioProviderActive()) return;
+  try {
+    const legacy = localStorage.getItem(LEGACY_KEY);
+    if (!legacy) return;
+    const pid = primaryProfileId();
+    if (!pid) return;
+    const perKey = KEY_PREFIX + pid;
+    if (!localStorage.getItem(perKey)) localStorage.setItem(perKey, legacy);
+    localStorage.removeItem(LEGACY_KEY);
+  } catch {
+    /* noop */
+  }
+}
+
+let currentScope = "";
+
+function load(): Set<string> {
+  const sk = storeKey();
+  if (cache && currentScope === sk) return cache;
+  currentScope = sk;
+  migrateLegacy();
+  try {
+    const arr = JSON.parse(localStorage.getItem(sk) ?? "[]");
+    cache = new Set(
+      Array.isArray(arr) ? arr.filter((x): x is string => typeof x === "string") : [],
+    );
   } catch {
     cache = new Set();
   }
@@ -16,18 +88,26 @@ function load(): Set<string> {
 }
 
 function persist(next: Set<string>): void {
+  const sk = storeKey();
+  currentScope = sk;
   cache = next;
   version += 1;
-  try {
-    localStorage.setItem(KEY, JSON.stringify([...next]));
-  } catch {
-    /* quota */
-  }
+  persistCritical(sk, JSON.stringify([...next]));
   for (const fn of subs) fn();
 }
 
 export function isMovieWatchedLocal(metaId: string): boolean {
   return load().has(metaId);
+}
+
+export function movieWatchedIds(): Set<string> {
+  return load();
+}
+
+const EMPTY_MOVIE_WATCHED_IDS: Set<string> = new Set();
+
+export function useMovieWatchedIds(): Set<string> {
+  return useSyncExternalStore(subscribeMovieWatched, load, () => EMPTY_MOVIE_WATCHED_IDS);
 }
 
 export function setMovieWatchedLocal(metaId: string, watched: boolean): void {
@@ -39,6 +119,16 @@ export function setMovieWatchedLocal(metaId: string, watched: boolean): void {
   persist(next);
 }
 
+export function setMovieWatchedLocalAcknowledged(metaId: string, watched: boolean): void {
+  const next = new Set(load());
+  if (watched) next.add(metaId);
+  else next.delete(metaId);
+  localStorage.setItem(storeKey(), JSON.stringify([...next]));
+  cache = next;
+  version += 1;
+  for (const fn of subs) fn();
+}
+
 export function subscribeMovieWatched(fn: () => void): () => void {
   subs.add(fn);
   return () => {
@@ -48,4 +138,21 @@ export function subscribeMovieWatched(fn: () => void): () => void {
 
 export function movieWatchedVersion(): number {
   return version;
+}
+
+if (typeof window !== "undefined") {
+  let lastScope = storeKey();
+  const onScopeChange = () => {
+    const nextScope = storeKey();
+    if (nextScope === lastScope) return;
+    lastScope = nextScope;
+    cache = null;
+    version += 1;
+    for (const fn of subs) fn();
+  };
+  window.addEventListener("argus:active-profile-changed", onScopeChange);
+  window.addEventListener("argus:profiles-updated", onScopeChange);
+  window.addEventListener("argus:account-provider-changed", onScopeChange);
+  window.addEventListener("argus:nuvio-profile-changed", onScopeChange);
+  window.addEventListener("argus:nuvio-state-changed", onScopeChange);
 }

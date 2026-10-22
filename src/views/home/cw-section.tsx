@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { LogIn } from "lucide-react";
 import stremioWordmark from "@/assets/stremio-wordmark.png";
 import { AuthModal } from "@/components/auth-modal";
@@ -7,17 +7,22 @@ import { Row } from "@/components/row";
 import { useT } from "@/lib/i18n";
 import { type LibraryItem } from "@/lib/stremio";
 import { isLibraryItemWatched } from "@/lib/trakt/library-key";
+import type { ContinueDismiss } from "@/lib/continue-card-actions";
 
 type Props = {
   signedIn: boolean;
   items: LibraryItem[];
   watchedSet?: Set<string>;
-  onDismiss: (item: LibraryItem) => void;
+  onDismiss: ContinueDismiss;
 };
 
 export function CWSection({ signedIn, items, watchedSet, onDismiss }: Props) {
   const t = useT();
   const [showAuth, setShowAuth] = useState(false);
+  const rowKey = useMemo(() => {
+    const first = items[0];
+    return first ? `home:cw:${first._id}` : "home:cw";
+  }, [items]);
 
   const signInButton = signedIn ? null : (
     <button
@@ -36,6 +41,7 @@ export function CWSection({ signedIn, items, watchedSet, onDismiss }: Props) {
     return (
       <>
         <Row
+          key={rowKey}
           title={t("Continue Watching")}
           min={260}
           shape="landscape"

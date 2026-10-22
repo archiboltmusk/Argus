@@ -14,13 +14,12 @@ export type AutoSyncResult = {
   confidence: number;
   /** [fitted time, residual offset] pairs from per-segment alignment. */
   anchors?: Array<[number, number]>;
+  fitWindowIds?: string[];
 };
 
 export const AUTO_SYNC_AVAILABLE = true;
 
-export async function estimateSubtitleOffset(
-  input: AutoSyncInput,
-): Promise<AutoSyncResult | null> {
+export async function estimateSubtitleOffset(input: AutoSyncInput): Promise<AutoSyncResult | null> {
   return invoke<AutoSyncResult | null>("sync_subtitle", {
     url: input.mediaUrl,
     headers: input.headers,

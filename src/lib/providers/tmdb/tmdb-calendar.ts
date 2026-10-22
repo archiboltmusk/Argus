@@ -1,10 +1,39 @@
-import { get, IMG } from "./tmdb-client";
+import { effectiveTmdbLanguage, get } from "./tmdb-client";
+import { loadStoredSettings } from "../../settings/load";
+import { tmdbBackdropUrl, tmdbPosterThumbUrl } from "./tmdb-image-rungs";
+import {
+  pickTmdbTitle,
+  tmdbEnglishTitle,
+  tmdbLanguageBase,
+  type TmdbTranslations,
+} from "./tmdb-title-fallback";
 
-const poster = (p: string | null | undefined) => (p ? `${IMG}/w342${p}` : null);
-const still = (p: string | null | undefined) => (p ? `${IMG}/w780${p}` : null);
-const backdrop = (p: string | null | undefined) => (p ? `${IMG}/w780${p}` : null);
+const poster = (p: string | null | undefined) => tmdbPosterThumbUrl(p) ?? null;
+const still = (p: string | null | undefined) => tmdbBackdropUrl(p) ?? null;
+const backdrop = (p: string | null | undefined) => tmdbBackdropUrl(p) ?? null;
 
 const ANIMATION_GENRE_ID = 16;
+
+function calendarTitle(
+  localized: string | undefined,
+  original: string | undefined,
+  originalLanguage: string | undefined,
+  translations: TmdbTranslations | undefined,
+): string {
+  return pickTmdbTitle({
+    localized: localized ?? "",
+    original: original ?? "",
+    english: tmdbEnglishTitle(translations),
+    originalLanguage,
+    targetLanguage: effectiveTmdbLanguage(),
+    translateTitles: loadStoredSettings().translateTitles,
+  });
+}
+
+function wantsTranslations(): boolean {
+  const base = tmdbLanguageBase(effectiveTmdbLanguage());
+  return loadStoredSettings().translateTitles && !!base && base !== "en";
+}
 
 export type TmdbUpcomingEpisode = {
   season: number;
@@ -49,6 +78,9 @@ export async function tmdbFindByImdb(
 
 type TvDetail = {
   name?: string;
+  original_name?: string;
+  original_language?: string;
+  translations?: TmdbTranslations;
   poster_path?: string | null;
   genres?: Array<{ id: number }>;
   next_episode_to_air?: { season_number?: number } | null;
@@ -68,12 +100,21 @@ type SeasonDetail = {
   }>;
 };
 
+export async function tmdbTvPoster(key: string, tvId: number): Promise<string | null> {
+  const tv = await get<TvDetail>(key, `tv/${tvId}`);
+  return tv ? poster(tv.poster_path) : null;
+}
+
 export async function tmdbTvUpcoming(
   key: string,
   tvId: number,
   inWindow: (date: string) => boolean,
 ): Promise<TmdbTvUpcoming | null> {
-  const tv = await get<TvDetail>(key, `tv/${tvId}`);
+  const tv = await get<TvDetail>(
+    key,
+    `tv/${tvId}`,
+    wantsTranslations() ? { append_to_response: "translations" } : {},
+  );
   if (!tv) return null;
   const isAnime = (tv.genres ?? []).some((g) => g.id === ANIMATION_GENRE_ID);
   const seasons = new Set<number>();
@@ -105,7 +146,12 @@ export async function tmdbTvUpcoming(
       });
     }
   }
-  return { name: tv.name ?? "", poster: poster(tv.poster_path), isAnime, episodes };
+  return {
+    name: calendarTitle(tv.name, tv.original_name, tv.original_language, tv.translations),
+    poster: poster(tv.poster_path),
+    isAnime,
+    episodes,
+  };
 }
 
 export async function tmdbMovieRelease(
@@ -114,16 +160,19 @@ export async function tmdbMovieRelease(
 ): Promise<TmdbMovieRelease | null> {
   const m = await get<{
     title?: string;
+    original_title?: string;
+    original_language?: string;
+    translations?: TmdbTranslations;
     poster_path?: string | null;
     backdrop_path?: string | null;
     release_date?: string | null;
     genres?: Array<{ id: number }>;
     overview?: string;
     vote_average?: number;
-  }>(key, `movie/${movieId}`);
+  }>(key, `movie/${movieId}`, wantsTranslations() ? { append_to_response: "translations" } : {});
   if (!m) return null;
   return {
-    name: m.title ?? "",
+    name: calendarTitle(m.title, m.original_title, m.original_language, m.translations),
     poster: poster(m.poster_path),
     background: backdrop(m.backdrop_path),
     releaseDate: (m.release_date ?? "").slice(0, 10),

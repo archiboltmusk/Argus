@@ -3,14 +3,13 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import whiteBoat from "@/assets/lottie/addons-boat-white.json";
 import darkBoat from "@/assets/lottie/addons-boat-dark.json";
 import argusBoat from "@/assets/lottie/argus-loader.json";
-import {
-  prefetchTopAddonLogos,
-  prefetchedTopAddonLogos,
-} from "@/lib/providers/addon-logo-prefetch";
+import { CustomArtwork } from "./custom-artwork";
+import { prefetchTopAddonLogos, prefetchedTopAddonLogos } from "@/lib/providers/addon-logo-prefetch";
 
-type Size = "sm" | "md" | "lg" | "xl";
+type Size = "xs" | "sm" | "md" | "lg" | "xl";
 
 const SIZE_CLASS: Record<Size, string> = {
+  xs: "h-7 w-7",
   sm: "h-20 w-20",
   md: "h-32 w-32",
   lg: "h-44 w-44",
@@ -22,8 +21,7 @@ const XLINK = "http://www.w3.org/1999/xlink";
 function darkBackground(): boolean {
   if (typeof document === "undefined") return true;
   const probe = document.createElement("div");
-  probe.style.cssText =
-    "background-color:var(--color-canvas);position:absolute;opacity:0;pointer-events:none";
+  probe.style.cssText = "background-color:var(--color-canvas);position:absolute;opacity:0;pointer-events:none";
   document.body.appendChild(probe);
   const m = getComputedStyle(probe).backgroundColor.match(/[\d.]+/g);
   probe.remove();
@@ -53,26 +51,32 @@ export function ArgusLoader({
   className = "",
   keyed = false,
   logos,
-  onReady,
+  original = false,
 }: {
   size?: Size;
   caption?: string;
   className?: string;
   keyed?: boolean;
   logos?: string[];
-  onReady?: () => void;
+  original?: boolean;
 }) {
+  return (
+    <div className={`flex flex-col items-center justify-center gap-2 ${className}`}>
+      {original ? <Boat size={size} keyed={keyed} logos={logos} /> : <CustomArtwork role="loading" className={`argus-loader-art ${SIZE_CLASS[size]}`} fallback={<Boat size={size} keyed={keyed} logos={logos} />} />}
+      {caption && <p className="argus-loader-cap mt-1 text-[12.5px] font-medium uppercase tracking-[0.18em] text-white/70">{caption}</p>}
+    </div>
+  );
+}
+
+function Boat({size, keyed, logos}: {size:Size;keyed:boolean;logos?:string[]}) {
   const ref = useRef<HTMLDivElement | null>(null);
   const cargo = keyed || logos !== undefined;
   const fetched = useTopAddonLogos(keyed && logos === undefined);
   const effective = logos ?? fetched;
   const logosRef = useRef<string[]>([]);
+  logosRef.current = effective;
   const cycleRef = useRef(0);
   const [dark] = useState(darkBackground);
-
-  useEffect(() => {
-    logosRef.current = effective;
-  }, [effective]);
 
   const paint = useCallback(() => {
     const root = ref.current;
@@ -96,11 +100,9 @@ export function ArgusLoader({
   }, []);
 
   useEffect(() => {
-    const container = ref.current;
-    if (!container) return;
-    container.replaceChildren();
+    if (!ref.current) return;
     const anim: AnimationItem = lottie.loadAnimation({
-      container,
+      container: ref.current,
       renderer: "svg",
       loop: true,
       autoplay: true,
@@ -109,7 +111,6 @@ export function ArgusLoader({
     const onLoaded = () => {
       cycleRef.current = 0;
       paint();
-      onReady?.();
     };
     const onLoop = () => {
       cycleRef.current += 3;
@@ -121,22 +122,14 @@ export function ArgusLoader({
       anim.removeEventListener("DOMLoaded", onLoaded);
       anim.removeEventListener("loopComplete", onLoop);
       anim.destroy();
-      container.replaceChildren();
     };
-  }, [dark, paint, cargo, onReady]);
+  }, [dark, paint, cargo]);
 
   useEffect(() => {
     paint();
   }, [effective, paint]);
 
   return (
-    <div className={`flex flex-col items-center justify-center gap-2 ${className}`}>
-      <div ref={ref} className={SIZE_CLASS[size]} aria-hidden />
-      {caption && (
-        <p className="mt-1 text-[12.5px] font-medium uppercase tracking-[0.18em] text-white/70">
-          {caption}
-        </p>
-      )}
-    </div>
+    <div ref={ref} className={`argus-loader-art ${SIZE_CLASS[size]}`} aria-hidden />
   );
 }

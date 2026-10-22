@@ -1,10 +1,15 @@
 import { useEffect, useRef, useState, type RefObject } from "react";
 import type { PlayerBridge } from "@/lib/player/bridge";
-import { readResumeMs, saveResumeMs } from "@/lib/resume";
-import { cloudWriteId, episodeFromVideoId, libraryGetOne } from "@/lib/stremio";
+import { cloudWriteId } from "@/lib/stremio";
+import { resolveStartMs } from "@/lib/player/resume-start";
 import type { PlayerSrc } from "@/lib/view";
 import { videoIdFor } from "./use-stremio-sync";
 import { useSettings } from "@/lib/settings";
+import { playbackStartupProfile } from "@/lib/player/startup-profile";
+import { isLivePlaybackSrc } from "@/lib/player/live-src";
+import { releaseStreamProxy, retainStreamProxy } from "@/lib/stream-proxy";
+import { playerLoadIdentity } from "@/lib/player/load-identity";
+import { isPlaybackActorCurrent } from "@/lib/playback-history";
 
 const RESUME_PROMPT_MIN_SEC = 30;
 const RESTART_THRESHOLD = 0.8;
@@ -25,6 +30,8 @@ export function useBridgeLoad(params: {
   acknowledgeResume: (action: "resume" | "start-over") => void;
   pendingSeekSec: number | null;
   clearPendingSeek: () => void;
+  sourceKey: string;
+  resumeReady: boolean;
 } {
   const {
     bridgeRef,
@@ -49,45 +56,83 @@ export function useBridgeLoad(params: {
   const firstLoadRef = useRef(true);
   const [pendingResumeSec, setPendingResumeSec] = useState<number | null>(null);
   const [pendingSeekSec, setPendingSeekSec] = useState<number | null>(null);
+  const [readyLoadKey, setReadyLoadKey] = useState<string | null>(null);
   const ackRef = useRef<((action: "resume" | "start-over") => void) | null>(null);
+  const sourceIdentity = playerLoadIdentity(src, transcodedUrl ?? src.url, season, episode);
+  const sourceKey = `${bridgeKey}|${sourceIdentity}`;
+
+  useEffect(() => {
+    const sessionId = src.proxySessionId;
+    if (!sessionId) return;
+    retainStreamProxy(sessionId);
+    return () => {
+      releaseStreamProxy(sessionId);
+    };
+  }, [src.proxySessionId]);
 
   useEffect(() => {
     if (!bridgeReady) return;
     const bridge = bridgeRef.current;
     if (!bridge) return;
     const playUrl = transcodedUrl ?? src.url;
-    const loadKey = `${playUrl}|s${season ?? ""}e${episode ?? ""}`;
+    const loadKey = sourceKey;
     if (lastLoadedUrlRef.current === loadKey) return;
-    lastLoadedUrlRef.current = loadKey;
+    setPendingResumeSec(null);
+    setPendingSeekSec(null);
+    ackRef.current = null;
     const isFirstLoad = firstLoadRef.current;
-    firstLoadRef.current = false;
     const isAutoRetry = (src.attempt ?? 0) > 0;
-    const isLive =
-      !!src.meta.id?.startsWith("iptv:") ||
-      (!!src.meta.type && !["movie", "series", "anime"].includes(String(src.meta.type).toLowerCase()));
+    const isLive = isLivePlaybackSrc(src);
     let cancelled = false;
+    const isCurrent = () =>
+      !cancelled && (!src.continuation || isPlaybackActorCurrent(src.continuation.actor));
     (async () => {
       const openingVid = videoIdFor(
         src,
         cloudWriteId(src.meta.id, src.imdbId ?? null, src.imdbIdVerified === true),
       );
-      const resolved = isLive || src.startFromZero
-        ? { ms: 0, fromRemote: false, finished: false }
-        : await resolveStartMs(
-            src.meta.id,
+      const resumeIdentity = {
+        metaId: src.meta.id,
+        authKey,
+        imdbId: src.imdbId ?? null,
+        imdbVerified: src.imdbIdVerified === true,
+      };
+      const shouldResolveResume =
+        !isLive && !src.startFromZero && (resumePlaybackRef.current || resumePromptRef.current);
+      const resumePromise = !shouldResolveResume
+        ? Promise.resolve({ ms: 0, fromRemote: false, finished: false })
+        : resolveStartMs({
+            ...resumeIdentity,
             season,
             episode,
-            authKey,
-            src.imdbId ?? null,
-            src.imdbIdVerified === true,
             openingVid,
-          );
-      const startMs = resolved.ms;
+          });
+      let resolved: Awaited<typeof resumePromise>;
+      try {
+        resolved = await resumePromise;
+      } catch (e) {
+        if (isCurrent()) console.warn("[player] resume lookup failed", e);
+        return;
+      }
+      if (!isCurrent()) return;
+      const startMs = src.startPositionMs ?? resolved.ms;
       const runtimeMin = src.episode?.runtime ?? null;
       const durationMs = runtimeMin && runtimeMin > 0 ? runtimeMin * 60_000 : 0;
       const finishedNearEnd =
         resolved.finished || (durationMs > 0 && startMs / durationMs >= RESTART_THRESHOLD);
-      const startSec = (!resumePlaybackRef.current || finishedNearEnd ? 0 : startMs) / 1000;
+      // A source replacement (for example a home-server quality switch) carries
+      // an explicit position and must preserve it regardless of the user's
+      // automatic resume preference. That preference only governs stored resume
+      // progress when opening an item normally.
+      const hasExplicitStart = src.startPositionMs != null;
+      const startSec =
+        isLive || src.startFromZero
+          ? 0
+          : (hasExplicitStart
+              ? startMs
+              : !resumePlaybackRef.current || finishedNearEnd
+                ? 0
+                : startMs) / 1000;
       const guestInRoom = inRoomRef.current && !isHostRef.current;
       const eligibleForPrompt =
         isFirstLoad &&
@@ -99,50 +144,36 @@ export function useBridgeLoad(params: {
       try {
         await bridge.load({
           url: playUrl,
+          traceId: src.playbackTraceId,
+          startupProfile: playbackStartupProfile(src.streamRef),
           subtitles: src.subtitles,
           notWebReady: src.notWebReady,
           isLive,
           headers: src.headers,
-          startAtSec: guestInRoom
-            ? undefined
-            : eligibleForPrompt
-              ? undefined
-              : startSec > 5
-                ? startSec
-                : isFirstLoad
-                  ? undefined
-                  : 0,
+          title: [src.title, src.subtitle].filter(Boolean).join(" - "),
+          startPaused: eligibleForPrompt || src.startPaused === true || guestInRoom,
+          // Supply resume to the initial load so mpv/HTML5 never start at zero
+          // while a later seek races automatic intro skipping.
+          startAtSec:
+            !guestInRoom && !eligibleForPrompt && (hasExplicitStart ? startSec > 0 : startSec > 5)
+              ? startSec
+              : undefined,
         });
       } catch (e) {
-        if (cancelled) return;
-        console.warn("[player] load failed", e);
+        if (isCurrent()) console.warn("[player] load failed", e);
         return;
       }
-      if (cancelled) return;
-      if (!eligibleForPrompt && !guestInRoom && startSec > 5) {
-        let unsub: (() => void) | null = null;
-        let synced = false;
-        const stop = () => {
-          synced = true;
-          unsub?.();
-        };
-        unsub = bridge.subscribe((s) => {
-          if (cancelled) {
-            stop();
-            return;
-          }
-          if (s.durationSec <= 0) return;
-          stop();
-          if (startSec >= s.durationSec - 20) bridge.seek(0);
-        });
-        if (synced) unsub?.();
-      }
+      if (!isCurrent()) return;
+      lastLoadedUrlRef.current = loadKey;
+      firstLoadRef.current = false;
+      setReadyLoadKey(loadKey);
       if (eligibleForPrompt) {
-        bridge.pause();
+        bridge.pause("resume-prompt");
         setPendingResumeSec(startSec);
         ackRef.current = (action) => {
           ackRef.current = null;
           setPendingResumeSec(null);
+          if (!isCurrent()) return;
           if (action === "resume") {
             setPendingSeekSec(startSec);
           } else {
@@ -151,19 +182,36 @@ export function useBridgeLoad(params: {
         };
         return;
       }
-      if (!inRoomRef.current) {
-        bridge.play().catch(() => {});
+      if (!guestInRoom && (hasExplicitStart ? startSec > 0 : startSec > 5)) {
+        setPendingSeekSec(startSec);
+        return;
+      }
+      if (!inRoomRef.current && !src.startPaused) {
+        bridge.play({ reason: "load" }).catch(() => {});
+      } else if (src.startPaused) {
+        bridge.pause("start-paused");
       }
     })();
     return () => {
       cancelled = true;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [bridgeReady, bridgeKey, src.url, src.notWebReady, src.meta.id, src.subtitles, season, episode, transcodedUrl, authKey]);
-
-  useEffect(() => {
-    lastLoadedUrlRef.current = null;
-  }, [bridgeKey]);
+  }, [
+    bridgeReady,
+    bridgeKey,
+    sourceIdentity,
+    src.url,
+    src.notWebReady,
+    src.playbackTraceId,
+    src.meta.id,
+    src.subtitles,
+    src.startPositionMs,
+    src.startPaused,
+    season,
+    episode,
+    transcodedUrl,
+    authKey,
+  ]);
 
   const acknowledgeResume = (action: "resume" | "start-over") => {
     ackRef.current?.(action);
@@ -171,52 +219,16 @@ export function useBridgeLoad(params: {
 
   const clearPendingSeek = () => setPendingSeekSec(null);
 
-  return { pendingResumeSec, acknowledgeResume, pendingSeekSec, clearPendingSeek };
-}
-
-async function resolveStartMs(
-  metaId: string,
-  season: number | undefined,
-  episode: number | undefined,
-  authKey: string | null,
-  imdbId: string | null,
-  imdbVerified: boolean,
-  openingVid: string | null,
-): Promise<{ ms: number; fromRemote: boolean; finished: boolean }> {
-  const local = readResumeMs(metaId, season, episode);
-  const isEpisode = typeof season === "number" && typeof episode === "number";
-  if (!authKey) return { ms: local, fromRemote: false, finished: false };
-  const matchesEpisode = (
-    item: { state?: { season?: number; episode?: number; video_id?: string } } | null,
-  ) => {
-    if (!item) return false;
-    if (typeof season !== "number" || typeof episode !== "number") return true;
-    const vid = item.state?.video_id;
-    if (openingVid && vid && vid === openingVid) return true;
-    const fromVid = episodeFromVideoId(vid);
-    const se = item.state?.season ?? fromVid?.season;
-    const ep = item.state?.episode ?? fromVid?.episode;
-    return se === season && ep === episode;
+  return {
+    pendingResumeSec: readyLoadKey === sourceKey ? pendingResumeSec : null,
+    acknowledgeResume,
+    pendingSeekSec: readyLoadKey === sourceKey ? pendingSeekSec : null,
+    clearPendingSeek,
+    sourceKey,
+    resumeReady:
+      bridgeReady &&
+      readyLoadKey === sourceKey &&
+      pendingResumeSec == null &&
+      pendingSeekSec == null,
   };
-  const lookups: string[] = [];
-  if (metaId.startsWith("tt")) lookups.push(metaId);
-  else if (imdbVerified && imdbId?.startsWith("tt")) lookups.push(imdbId, metaId);
-  else lookups.push(metaId);
-  for (const lookupId of lookups) {
-    const remote = await libraryGetOne(authKey, lookupId).catch(() => null);
-    if (!remote || !matchesEpisode(remote)) continue;
-    const remoteMs = remote.state?.timeOffset ?? 0;
-    if (remoteMs <= 0) continue;
-    const remoteDuration = remote.state?.duration ?? 0;
-    const flaggedWatched = (remote.state as { flaggedWatched?: number })?.flaggedWatched === 1;
-    const finished =
-      isEpisode &&
-      (flaggedWatched || (remoteDuration > 0 && remoteMs / remoteDuration >= RESTART_THRESHOLD));
-    if (remoteMs >= local) {
-      if (remoteMs > local) saveResumeMs(metaId, remoteMs, season, episode);
-      return { ms: remoteMs, fromRemote: true, finished };
-    }
-    return { ms: local, fromRemote: false, finished };
-  }
-  return { ms: local, fromRemote: false, finished: false };
 }

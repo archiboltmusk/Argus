@@ -1,10 +1,11 @@
 import { safeFetch as fetch } from "@/lib/safe-fetch";
+import type { Settings } from "@/lib/settings";
 import type { SkipKind, SkipSegment } from "./types";
+import { warnProviderFailure } from "./provider-log";
 
 type RawSpan = { start_ms: number | null; end_ms: number | null };
 
 type RawResponse = {
-  tmdb_id?: number;
   tvdb_id?: number;
   type?: string;
   intro?: RawSpan[];
@@ -13,25 +14,35 @@ type RawResponse = {
   preview?: RawSpan[];
 };
 
-let apiKey = "";
-
-// Optional personal key; raises TheIntroDB rate limits. Changing it drops the cache.
-export function setTheIntroDbApiKey(key: string): void {
-  const next = key.trim();
-  if (next === apiKey) return;
-  apiKey = next;
-  cache.clear();
-  inflight.clear();
-  coolingUntil = 0;
-}
+type TheIntroDbKeyed = { theIntroDbKey?: string };
 
 const cache = new Map<string, RawResponse | null>();
 const inflight = new Map<string, Promise<RawResponse | null>>();
 
-// After a server error or rate limit, stop asking for a while instead of
-// hitting the API once per episode.
 const FAILURE_COOLDOWN_MS = 10 * 60 * 1000;
 let coolingUntil = 0;
+
+let apiKey = "";
+let epoch = 0;
+
+export function readTheIntroDbKey(settings: Settings): string {
+  const raw = (settings as Settings & TheIntroDbKeyed).theIntroDbKey;
+  return typeof raw === "string" ? raw.trim() : "";
+}
+
+export function theIntroDbKeyPatch(value: string): Partial<Settings> {
+  return { theIntroDbKey: value.trim() } as Partial<Settings> & TheIntroDbKeyed;
+}
+
+export function setTheIntroDbApiKey(key: string): void {
+  const next = key.trim();
+  if (next === apiKey) return;
+  apiKey = next;
+  epoch += 1;
+  cache.clear();
+  inflight.clear();
+  coolingUntil = 0;
+}
 
 function pickId(metaId: string): { tmdb?: string; imdb?: string } | null {
   if (metaId.startsWith("tmdb:movie:")) return { tmdb: metaId.slice("tmdb:movie:".length) };
@@ -40,11 +51,7 @@ function pickId(metaId: string): { tmdb?: string; imdb?: string } | null {
   return null;
 }
 
-function spanToSegment(
-  span: RawSpan,
-  kind: SkipKind,
-  durationSec: number,
-): SkipSegment | null {
+function spanToSegment(span: RawSpan, kind: SkipKind, durationSec: number): SkipSegment | null {
   const startMs = span.start_ms ?? 0;
   const endMs = span.end_ms ?? (durationSec > 0 ? Math.round(durationSec * 1000) : null);
   if (endMs == null) return null;
@@ -61,28 +68,32 @@ function spanToSegment(
 async function fetchRaw(cacheKey: string): Promise<RawResponse | null> {
   const hit = cache.get(cacheKey);
   if (hit !== undefined) return hit;
+  if (Date.now() < coolingUntil) return null;
   const pending = inflight.get(cacheKey);
   if (pending) return pending;
-  if (Date.now() < coolingUntil) return null;
+  const gen = epoch;
+  const key = apiKey;
   const p = (async () => {
     const res = await fetch(
       `https://api.theintrodb.org/v4/media?${cacheKey}`,
-      apiKey ? { headers: { Authorization: `Bearer ${apiKey}` } } : undefined,
+      key ? { headers: { Authorization: `Bearer ${key}` } } : undefined,
     );
     if (!res.ok) {
-      // 404 means "no data for this title": cache it. Anything else is
-      // transient, so back off and retry later.
-      if (res.status === 404) cache.set(cacheKey, null);
-      else coolingUntil = Date.now() + FAILURE_COOLDOWN_MS;
+      if (res.status === 404) {
+        if (gen === epoch) cache.set(cacheKey, null);
+      } else {
+        if (gen === epoch) coolingUntil = Date.now() + FAILURE_COOLDOWN_MS;
+        warnProviderFailure("theintrodb", res.status, cacheKey);
+      }
       return null;
     }
     const json = (await res.json()) as RawResponse;
-    cache.set(cacheKey, json);
+    if (gen === epoch) cache.set(cacheKey, json);
     return json;
   })()
     .catch(() => null)
     .finally(() => {
-      inflight.delete(cacheKey);
+      if (gen === epoch) inflight.delete(cacheKey);
     });
   inflight.set(cacheKey, p);
   return p;
@@ -102,6 +113,9 @@ export async function fetchIntroDbSegments(
   if (episode) {
     params.set("season", String(episode.season));
     params.set("episode", String(episode.episode));
+  }
+  if (Number.isFinite(durationSec) && durationSec > 0) {
+    params.set("duration_ms", String(Math.round(durationSec * 1000)));
   }
 
   const json = await fetchRaw(params.toString());

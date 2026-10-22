@@ -1,12 +1,10 @@
-import { activeProfileId, activeProfileIsPrimary } from "@/lib/active-profile-id";
+import { activeProfileIsPrimary } from "@/lib/active-profile-id";
+import { readSharedSecret, subscribeSecretsReady, writeSharedSecret } from "@/lib/secret-store";
+import { clearPendingStops } from "./pending-sync";
 import { REFRESH_THRESHOLD_SEC } from "./config";
 import type { TraktSession } from "./types";
 
 const BASE_KEY = "argus.trakt.session.v1";
-
-function keyFor(): string {
-  return `${BASE_KEY}.${activeProfileId()}`;
-}
 
 const subscribers = new Set<() => void>();
 let cached: TraktSession | null = null;
@@ -14,16 +12,7 @@ let loaded = false;
 
 function read(): TraktSession | null {
   try {
-    const key = keyFor();
-    let raw = localStorage.getItem(key);
-    if (!raw) {
-      const legacy = localStorage.getItem(BASE_KEY);
-      if (legacy && activeProfileIsPrimary()) {
-        localStorage.setItem(key, legacy);
-        localStorage.removeItem(BASE_KEY);
-        raw = legacy;
-      }
-    }
+    const raw = readSharedSecret(BASE_KEY);
     if (raw) {
       const parsed = JSON.parse(raw) as TraktSession;
       if (
@@ -38,7 +27,11 @@ function read(): TraktSession | null {
     const settingsRaw = activeProfileIsPrimary() ? localStorage.getItem("argus.settings") : null;
     if (settingsRaw) {
       const s = JSON.parse(settingsRaw);
-      if (typeof s?.traktAccessToken === "string" && typeof s?.traktRefreshToken === "string" && typeof s?.traktExpiresAt === "number") {
+      if (
+        typeof s?.traktAccessToken === "string" &&
+        typeof s?.traktRefreshToken === "string" &&
+        typeof s?.traktExpiresAt === "number"
+      ) {
         const now = Date.now();
         const expiresInSec = Math.floor((s.traktExpiresAt - now) / 1000);
         const session: TraktSession = {
@@ -62,8 +55,7 @@ function read(): TraktSession | null {
 
 function write(session: TraktSession | null): void {
   try {
-    if (session) localStorage.setItem(keyFor(), JSON.stringify(session));
-    else localStorage.removeItem(keyFor());
+    writeSharedSecret(BASE_KEY, session ? JSON.stringify(session) : null);
   } catch {
     return;
   }
@@ -81,6 +73,11 @@ export function resetForProfile(): void {
   for (const fn of subscribers) fn();
 }
 
+// A reader that mounted before the persisted store landed cached a null session, and
+// nothing cleared it: the account stayed signed out for the whole run while its calls
+// went out without a token. The store announcing itself must re-arm this module.
+subscribeSecretsReady(resetForProfile);
+
 export function getSession(): TraktSession | null {
   ensureLoaded();
   return cached;
@@ -88,6 +85,9 @@ export function getSession(): TraktSession | null {
 
 export function setSession(session: TraktSession | null): void {
   ensureLoaded();
+  if (!session || !cached || session.username !== cached.username) {
+    clearPendingStops();
+  }
   cached = session;
   write(session);
   for (const fn of subscribers) fn();

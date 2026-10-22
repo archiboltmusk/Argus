@@ -5,6 +5,7 @@ pub struct CastServerStatus {
     pub bundled: bool,
     pub running: bool,
     pub ready: bool,
+    pub port: Option<u16>,
     pub last_error: Option<String>,
     pub restart_count: u32,
 }
@@ -41,11 +42,12 @@ pub fn stop_stremio_sidecar() {
 
 #[tauri::command]
 pub fn cast_server_status() -> CastServerStatus {
-    let (running, _port, last_error) = crate::torrent_engine::lan_status();
+    let (running, port, last_error) = crate::torrent_engine::lan_status();
     CastServerStatus {
         bundled: running,
         running,
         ready: running,
+        port,
         last_error,
         restart_count: 0,
     }

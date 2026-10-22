@@ -2,46 +2,55 @@ import {
   Children,
   createContext,
   isValidElement,
+  memo,
+  startTransition,
   useCallback,
   useContext,
   useEffect,
   useLayoutEffect,
-  useMemo,
   useRef,
   useState,
   type ReactNode,
 } from "react";
+import { observeResize, observeWithin } from "@/lib/visibility";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { useT } from "@/lib/i18n";
-import { useSettings } from "@/lib/settings";
-import { resetPosterDock as resetPosterDockItems, updatePosterDock } from "@/lib/poster-dock";
-import { POSTER_CARD_ANIMATION, scrollDeltaToRevealCard } from "@/lib/poster-backdrop-expansion";
-import { useView } from "@/lib/view";
 import { ThreeLiquidGlassSurface } from "@/components/ThreeLiquidGlassSurface";
+import { NavChevron } from "./nav-arrow";
+import { useT, useUiLanguage, isRtl as checkRtl } from "@/lib/i18n";
+import { useSettings } from "@/lib/settings";
+import { useViewActions } from "@/lib/view";
+import { resetPosterDock as resetPosterDockItems, updatePosterDock } from "@/lib/poster-dock";
+import { scrollDeltaToRevealCard } from "@/lib/poster-backdrop-expansion";
 import { RowCardExpansionProvider } from "@/components/row-card-expansion";
 
 const GAP = 20;
-const EAGER_COUNT = 6;
-const NEAR_MARGIN = "300px";
-
-function isRtlTrack(el: HTMLDivElement): boolean {
-  return getComputedStyle(el).direction === "rtl";
-}
-
-function readPos(el: HTMLDivElement): number {
-  return isRtlTrack(el) ? -el.scrollLeft : el.scrollLeft;
-}
-
-function writePos(el: HTMLDivElement, pos: number): void {
-  el.scrollLeft = isRtlTrack(el) ? -pos : pos;
-}
 
 function columnSpan(value?: string): number {
   const span = value?.match(/span\s+(\d+)/)?.[1];
   return span ? Math.max(1, Number(span)) : 1;
 }
+const EAGER_COUNT = 6;
+const NEAR_MARGIN = "300px";
+const FAR_RELEASE_MS = 15000;
 
-export type RowShape = "portrait" | "landscape" | "service" | "rank" | "tile";
+export type RowShape = "portrait" | "landscape" | "service" | "rank" | "tile" | "square" | "cta";
+
+export const TV_CARD_MIN = 318;
+
+function holdsPosterCards(children: React.ReactNode): boolean {
+  const first = Children.toArray(children)[0];
+  if (!isValidElement(first)) return false;
+  const type = first.type as { isPosterCard?: boolean };
+  if (!type?.isPosterCard) return false;
+  return (first.props as { kids?: boolean; meta?: { type?: string } }).kids !== true;
+}
+
+export function usePosterRow(min = 144, kids = false): { min: number; shape: RowShape } {
+  const { settings } = useSettings();
+  return settings.rowCardStyle === "tv" && !kids
+    ? { min: TV_CARD_MIN, shape: "landscape" }
+    : { min, shape: "portrait" };
+}
 
 const RowTrackContext = createContext<HTMLDivElement | null>(null);
 export const ScrollRootContext = createContext<HTMLElement | null>(null);
@@ -49,12 +58,14 @@ export const ScrollRootContext = createContext<HTMLElement | null>(null);
 function LazyChild({
   children,
   eager,
+  active,
   shape,
   span,
   expansion,
 }: {
   children: ReactNode;
   eager: boolean;
+  active: boolean;
   shape: RowShape;
   span?: string;
   expansion?: {
@@ -67,37 +78,60 @@ function LazyChild({
   };
 }) {
   const root = useContext(RowTrackContext);
-  const [visible, setVisible] = useState(eager);
+  const [visible, setVisible] = useState(eager && active);
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (visible) return;
     if (!root) return;
     const el = ref.current;
     if (!el) return;
-    const io = new IntersectionObserver(
-      (entries) => {
-        if (entries[0]?.isIntersecting) setVisible(true);
+    // An observer rooted in the horizontal track cannot tell whether the entire row is
+    // off-screen. Gate it with the row's page visibility before mounting card subscriptions.
+    if (!active) {
+      const timer = window.setTimeout(() => {
+        if (!el.contains(document.activeElement)) setVisible(false);
+      }, FAR_RELEASE_MS);
+      return () => window.clearTimeout(timer);
+    }
+    if (eager) startTransition(() => setVisible(true));
+    let hideTimer: number | null = null;
+    const stopIo = observeWithin(
+      el,
+      NEAR_MARGIN,
+      (entry) => {
+        if (entry.isIntersecting) {
+          if (hideTimer != null) {
+            window.clearTimeout(hideTimer);
+            hideTimer = null;
+          }
+          startTransition(() => setVisible(true));
+        } else if (!eager && hideTimer == null) {
+          hideTimer = window.setTimeout(() => {
+            hideTimer = null;
+            if (!el.contains(document.activeElement)) setVisible(false);
+          }, FAR_RELEASE_MS);
+        }
       },
-      { root, rootMargin: NEAR_MARGIN },
+      root,
     );
-    io.observe(el);
     const recheck = window.setTimeout(() => {
       const rect = el.getBoundingClientRect();
       const rr = root.getBoundingClientRect();
+      if (rr.width === 0 || rr.height === 0) return;
       const near = 300;
       const within =
         rect.right > rr.left - near &&
         rect.left < rr.right + near &&
         rect.bottom > rr.top - near &&
         rect.top < rr.bottom + near;
-      if (within) setVisible(true);
+      if (within) startTransition(() => setVisible(true));
     }, 400);
     return () => {
-      io.disconnect();
+      stopIo();
       window.clearTimeout(recheck);
+      if (hideTimer != null) window.clearTimeout(hideTimer);
     };
-  }, [root, visible]);
+  }, [root, eager, active]);
 
   return (
     <div
@@ -107,22 +141,19 @@ function LazyChild({
       data-tv-nav-base-width={expansion?.baseWidth}
       className={
         expansion
-          ? "relative min-w-0 transition-[flex-basis] [transition-duration:var(--row-card-expansion-duration)] ease-[cubic-bezier(0.16,1,0.3,1)]"
+          ? "relative min-w-0 transition-[flex-basis] duration-[480ms] ease-[cubic-bezier(0.16,1,0.3,1)]"
           : undefined
       }
-      style={{
-        ...(expansion
+      style={
+        expansion
           ? {
               flex: "0 0 auto",
               flexBasis: `${expansion.expandedWidth ?? expansion.baseWidth}px`,
-              "--row-card-base-width": `${expansion.baseWidth}px`,
             }
           : span
             ? { gridColumn: span }
-            : undefined),
-        contentVisibility: visible ? "visible" : "auto",
-        containIntrinsicSize: visible ? undefined : "auto 200px",
-      }}
+            : undefined
+      }
     >
       {visible ? (
         expansion ? (
@@ -145,22 +176,44 @@ function LazyChild({
   );
 }
 
-function Skeleton({ shape }: { shape: RowShape }) {
+let pendingWrites: Array<() => void> = [];
+
+function batchWrite(fn: () => void): void {
+  pendingWrites.push(fn);
+  if (pendingWrites.length > 1) return;
+  queueMicrotask(() => {
+    const fns = pendingWrites;
+    pendingWrites = [];
+    // No flushSync here. This runs from every row's ResizeObserver rAF, and forcing a synchronous
+    // commit there turned a no-op measurement into a full render pass per row — the layout storm
+    // the long-frame profiler kept attributing to this file. React batches these on its own.
+    for (const f of fns) f();
+  });
+}
+
+const Skeleton = memo(function Skeleton({ shape }: { shape: RowShape }) {
   const { settings } = useSettings();
+  const radius = settings.posterRadius;
   if (shape === "service") {
     return <div className="h-20 w-full rounded-xl bg-elevated/40" />;
   }
   if (shape === "rank") {
-    return <div className="aspect-[228/268] w-full rounded-xl bg-elevated/30" />;
+    return (
+      <div className="aspect-[228/246] w-full bg-elevated/30" style={{ borderRadius: radius }} />
+    );
   }
   if (shape === "tile") {
     return <div className="aspect-[5/4] w-full rounded-2xl bg-elevated/30" />;
   }
-  const aspect = shape === "landscape" ? "aspect-[16/9]" : "aspect-[2/3]";
+  if (shape === "cta") {
+    return <div className="h-[108px] w-full rounded-[14px] bg-elevated/40" />;
+  }
+  const aspect =
+    shape === "landscape" ? "aspect-[16/9]" : shape === "square" ? "aspect-square" : "aspect-[2/3]";
   const hideText = shape === "portrait" && settings.hidePosterTitles;
   return (
     <div className="flex w-full min-w-0 flex-col gap-2.5">
-      <div className={`${aspect} rounded-xl bg-elevated/40`} />
+      <div className={`${aspect} bg-elevated/40`} style={{ borderRadius: radius }} />
       {!hideText && (
         <div className={`flex flex-col gap-1.5 ${shape === "landscape" ? "" : "h-9"}`}>
           <div className="h-3 w-3/5 rounded bg-elevated/35" />
@@ -169,26 +222,30 @@ function Skeleton({ shape }: { shape: RowShape }) {
       )}
     </div>
   );
-}
+});
 
 export function Row({
   title,
   titleExtra,
+  headerDescription,
   className = "",
   min = 144,
   shape = "portrait",
   scrollKey,
   arrowsAlways = false,
+  alwaysActive = false,
   children,
   onEndReached,
   onViewAll,
   viewAllLabel = "View all",
+  viewAllClassName = "text-ink-subtle hover:text-ink",
   headerRight,
   titleClassName = "text-ink",
   titleScale = 1,
 }: {
   title?: React.ReactNode;
   titleExtra?: React.ReactNode;
+  headerDescription?: React.ReactNode;
   className?: string;
   min?: number;
   shape?: RowShape;
@@ -199,15 +256,24 @@ export function Row({
   onEndReached?: () => void;
   onViewAll?: () => void;
   viewAllLabel?: string;
+  viewAllClassName?: string;
   headerRight?: React.ReactNode;
   titleClassName?: string;
   titleScale?: number;
 }) {
   const { settings } = useSettings();
   const t = useT();
-  const effMin = Math.max(72, Math.round(min * settings.posterScale));
-  const expandingCards = shape === "portrait" && settings.posterBackdropExpansion;
-  const dockEnabled = shape === "portrait" && settings.posterDockMagnification;
+  const { rememberRowScroll, recallRowScroll } = useViewActions();
+  const pageScrollRoot = useContext(ScrollRootContext);
+  const lang = useUiLanguage();
+  const rtl = checkRtl(lang);
+  const tvCards =
+    shape === "portrait" && settings.rowCardStyle === "tv" && holdsPosterCards(children);
+  const effShape: RowShape = tvCards ? "landscape" : shape;
+  const effMin = Math.max(72, Math.round((tvCards ? TV_CARD_MIN : min) * settings.posterScale));
+  const expandingCards = effShape === "portrait" && settings.posterBackdropExpansion;
+  const dockEnabled = effShape === "portrait" && settings.posterDockMagnification;
+  const posterHeightRatio = effShape === "landscape" ? 9 / 16 : effShape === "square" ? 1 : 1.5;
   const containerRef = useRef<HTMLDivElement>(null);
   const trackRef = useRef<HTMLDivElement>(null);
   const [trackEl, setTrackEl] = useState<HTMLDivElement | null>(null);
@@ -220,70 +286,72 @@ export function Row({
   const [canNext, setCanNext] = useState(false);
   const [expandedCard, setExpandedCard] = useState<{
     index: number;
-    width: number;
+    widthScale: number;
   } | null>(null);
   const onEndRef = useRef(onEndReached);
   useEffect(() => {
     onEndRef.current = onEndReached;
   });
 
+  const [near, setNear] = useState(false);
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const onNear = (e: IntersectionObserverEntry) => {
+      startTransition(() => setNear(e.isIntersecting));
+    };
+    return pageScrollRoot
+      ? observeWithin(el, "1600px 0px", onNear, pageScrollRoot)
+      : observeWithin(el, "1600px 0px", onNear);
+  }, [pageScrollRoot]);
+  const measuredRef = useRef({ width: 0, effMin: 0 });
+  // Width reported by the ResizeObserver for this row's container, so the measurement below does
+  // not need a forced layout read.
+  const observedWidthRef = useRef(0);
   const measure = () => {
     const container = containerRef.current;
     if (!container) return;
-    const available = container.clientWidth;
+    const available = observedWidthRef.current;
     if (available <= 0) return;
+    // The ResizeObserver also fires when the track's height changes, which is posters loading, not
+    // a width change. Re-deriving the cell width then wrote the same value and re-laid-out the
+    // whole track for nothing.
+    const previous = measuredRef.current;
+    if (Math.abs(available - previous.width) < 0.5 && effMin === previous.effMin) return;
+    measuredRef.current = { width: available, effMin };
     const fits = Math.max(1, Math.floor((available + GAP) / (effMin + GAP)));
-    setCellWidth((available - (fits - 1) * GAP) / fits);
+    const raw = (available - (fits - 1) * GAP) / fits;
+    const next = (Math.ceil(raw * 64) + 1) / 64;
+    batchWrite(() => setCellWidth(next));
+  };
+  const measureRef = useRef(measure);
+  useLayoutEffect(() => {
+    measureRef.current = measure;
+  });
+
+  const lastScrollPosRef = useRef(0);
+  const readPos = (el: HTMLDivElement) => {
+    const pos = rtl ? -el.scrollLeft : el.scrollLeft;
+    lastScrollPosRef.current = pos;
+    return pos;
+  };
+  const writePos = (el: HTMLDivElement, pos: number) => {
+    lastScrollPosRef.current = pos;
+    el.scrollLeft = rtl ? -pos : pos;
   };
 
   const measureScroll = () => {
     const el = trackRef.current;
     if (!el) return;
     const pos = readPos(el);
-    setCanPrev(pos > 1);
     const remaining = el.scrollWidth - el.clientWidth - pos;
-    setCanNext(remaining > 1);
+    batchWrite(() => {
+      setCanPrev(pos > 1);
+      setCanNext(remaining > 1);
+    });
     if (el.clientWidth > 0 && remaining < 800) onEndRef.current?.();
   };
 
-  const expandRowCard = useCallback(
-    (index: number, width: number) => {
-      if (!expandingCards) return;
-      const baseWidth = cellWidth ?? effMin;
-      const track = trackRef.current;
-      const maxWidth = track ? Math.max(baseWidth, track.clientWidth - GAP * 2) : width;
-      const expandedWidth = Math.max(baseWidth, Math.min(width, maxWidth));
-
-      // Shift the shelf before the width transition begins. Otherwise an edge
-      // card grows outside the viewport and is corrected a frame later, which
-      // makes the target width appear to jump during the animation.
-      const cell = track?.querySelector<HTMLElement>(`[data-row-card-index="${index}"]`);
-      if (track && cell) {
-        const card = cell.getBoundingClientRect();
-        const extraWidth = Math.max(0, expandedWidth - card.width);
-        const projectedCard = isRtlTrack(track)
-          ? { left: card.left - extraWidth, right: card.right }
-          : { left: card.left, right: card.right + extraWidth };
-        const delta = scrollDeltaToRevealCard(projectedCard, track.getBoundingClientRect(), GAP);
-        if (Math.abs(delta) > 0.5) track.scrollLeft += delta;
-      }
-
-      setExpandedCard((current) => {
-        if (current?.index === index && Math.abs(current.width - expandedWidth) < 0.5) {
-          return current;
-        }
-        return { index, width: expandedWidth };
-      });
-    },
-    [cellWidth, effMin, expandingCards],
-  );
-  const collapseRowCard = useCallback((index: number) => {
-    setExpandedCard((current) => (current?.index === index ? null : current));
-  }, []);
-  // Keep native, non-virtual rails. The expanding portrait variant uses flex so
-  // a real cell can widen and move its neighbors without covering them.
-  const items = useMemo(() => Children.toArray(children), [children]);
-  const childCount = items.length;
   const drag = useRef({
     active: false,
     moved: false,
@@ -294,75 +362,138 @@ export function Row({
     lastT: 0,
     vel: 0,
   });
+  const expansionFrameRef = useRef<number | null>(null);
   const expansionSettleRef = useRef<number | null>(null);
   const hadExpandedCardRef = useRef(false);
+
+  const expandRowCard = useCallback(
+    (index: number, width: number) => {
+      if (!expandingCards) return;
+      const baseWidth = cellWidth ?? effMin;
+      const widthScale = Math.max(1, width / baseWidth);
+      setExpandedCard((current) => {
+        if (current?.index === index && Math.abs(current.widthScale - widthScale) < 0.005) {
+          return current;
+        }
+        return { index, widthScale };
+      });
+    },
+    [cellWidth, effMin, expandingCards],
+  );
+  const collapseRowCard = useCallback((index: number) => {
+    setExpandedCard((current) => (current?.index === index ? null : current));
+  }, []);
+
+  const revealExpanded = (track: HTMLDivElement, index: number) => {
+    const cell = track.querySelector<HTMLElement>(`[data-row-card-index="${index}"]`);
+    if (!cell) return;
+    const delta = scrollDeltaToRevealCard(
+      cell.getBoundingClientRect(),
+      track.getBoundingClientRect(),
+      GAP,
+    );
+    if (Math.abs(delta) > 0.5) track.scrollLeft += delta;
+  };
 
   useLayoutEffect(() => {
     const track = trackRef.current;
     const hasExpansion = expandedCard !== null;
     if (!track || (!hasExpansion && !hadExpandedCardRef.current)) return;
     hadExpandedCardRef.current = hasExpansion;
+    if (expansionFrameRef.current !== null) cancelAnimationFrame(expansionFrameRef.current);
     if (expansionSettleRef.current !== null) window.clearTimeout(expansionSettleRef.current);
     track.style.scrollSnapType = "none";
     track.style.scrollBehavior = "auto";
+    if (expandedCard) {
+      const startedAt = performance.now();
+      const keepExpandedCardVisible = () => {
+        expansionFrameRef.current = null;
+        if (!drag.current.active) revealExpanded(track, expandedCard.index);
+        if (performance.now() - startedAt < 520) {
+          expansionFrameRef.current = requestAnimationFrame(keepExpandedCardVisible);
+        }
+      };
+      expansionFrameRef.current = requestAnimationFrame(keepExpandedCardVisible);
+    }
     expansionSettleRef.current = window.setTimeout(() => {
       expansionSettleRef.current = null;
-      if (expandedCard && !drag.current.active) {
-        const cell = track.querySelector<HTMLElement>(
-          `[data-row-card-index="${expandedCard.index}"]`,
-        );
-        if (cell) {
-          const delta = scrollDeltaToRevealCard(
-            cell.getBoundingClientRect(),
-            track.getBoundingClientRect(),
-            GAP,
-          );
-          if (Math.abs(delta) > 0.5) track.scrollLeft += delta;
-        }
-      }
+      if (expandedCard && !drag.current.active) revealExpanded(track, expandedCard.index);
       if (!expandedCard) track.style.scrollSnapType = "";
       track.style.scrollBehavior = "";
       measureScroll();
-    }, POSTER_CARD_ANIMATION.expansionMs + POSTER_CARD_ANIMATION.settleMs);
+    }, 540);
   }, [expandedCard]);
 
   useEffect(
     () => () => {
+      if (expansionFrameRef.current !== null) cancelAnimationFrame(expansionFrameRef.current);
       if (expansionSettleRef.current !== null) window.clearTimeout(expansionSettleRef.current);
     },
     [],
   );
 
+  const childCount = Children.count(children);
+  const restoredRef = useRef(false);
   const userInteractedRef = useRef(false);
-  const { rememberRowScroll } = useView();
+  useEffect(() => {
+    const frame = requestAnimationFrame(() => {
+      measureRef.current();
+      measureScroll();
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [childCount, trackEl, cellWidth, effMin, rtl]);
   useLayoutEffect(() => {
-    measure();
-    // Always pin rails to the first poster unless the user scrolled this session.
-    // Restoring saved scrollLeft made every page open mid-row ("posters scrolled").
-    if (trackEl && cellWidth != null && childCount > 0 && !userInteractedRef.current) {
-      if (readPos(trackEl) !== 0) writePos(trackEl, 0);
+    if (!trackEl || cellWidth == null) return;
+    if (scrollKey && !restoredRef.current && childCount > 0) {
+      const n = recallRowScroll(scrollKey);
+      // A fresh track is already at zero. Only a saved nonzero position needs
+      // synchronous geometry before paint; reading every new track forces layout.
+      if (n != null && n > 0) {
+        const max = trackEl.scrollWidth - trackEl.clientWidth;
+        const target = max > 0 ? Math.min(n, max) : 0;
+        writePos(trackEl, target);
+      }
+      restoredRef.current = true;
+      return;
     }
-    measureScroll();
-  }, [children, childCount, cellWidth, trackEl, effMin]);
+    if (!userInteractedRef.current && lastScrollPosRef.current !== 0) {
+      writePos(trackEl, 0);
+    }
+  }, [childCount, cellWidth, trackEl, scrollKey, recallRowScroll]);
 
   useEffect(() => {
     const container = containerRef.current;
     const track = trackRef.current;
     if (!container || !track) return;
     let roRaf: number | null = null;
-    const ro = new ResizeObserver(() => {
+    const scheduleMeasure = () => {
       if (roRaf != null) return;
       roRaf = requestAnimationFrame(() => {
         roRaf = null;
-        measure();
+        measureRef.current();
         measureScroll();
       });
+    };
+    // One shared ResizeObserver rather than one per row. A view mounts dozens of rows at once, so
+    // each private observer was another object created during the click that switched to it — and
+    // the entry already carries the width, so the measurement needs no layout read either.
+    const stopContainerResize = observeResize(container, (rect) => {
+      if (rect.width <= 0) return;
+      if (Math.abs(rect.width - observedWidthRef.current) < 0.5) return;
+      observedWidthRef.current = rect.width;
+      scheduleMeasure();
     });
-    ro.observe(container);
-    ro.observe(track);
+    let trackWidth = 0;
+    const stopTrackResize = observeResize(track, (rect) => {
+      if (rect.width <= 0) return;
+      if (Math.abs(rect.width - trackWidth) < 0.5) return;
+      trackWidth = rect.width;
+      scheduleMeasure();
+    });
     let saveTimer: number | null = null;
     let scrollRaf: number | null = null;
     const onScroll = () => {
+      readPos(track);
       if (scrollRaf == null) {
         scrollRaf = requestAnimationFrame(() => {
           scrollRaf = null;
@@ -407,24 +538,35 @@ export function Row({
     track.addEventListener("wheel", onWheel, { passive: true });
     track.addEventListener("pointerdown", markInteracted);
     track.addEventListener("keydown", markInteracted);
+    let resetRaf: number | null = null;
     const onReset = (e: Event) => {
       const detail = (e as CustomEvent<{ prefix?: string }>).detail;
       if (!scrollKey) return;
-      // Empty/missing prefix = reset every rail (nav change). Otherwise match prefix.
-      if (detail?.prefix && !scrollKey.startsWith(detail.prefix)) return;
-      if (saveTimer != null) {
-        window.clearTimeout(saveTimer);
-        saveTimer = null;
-      }
-      writePos(track, 0);
-      userInteractedRef.current = false;
-      measureScroll();
+      if (!detail?.prefix || !scrollKey.startsWith(detail.prefix)) return;
+      // Deferred by one frame. This fires from the click handler that switches views, and every
+      // matching row used to write scrollLeft and then read scrollWidth right there — a forced
+      // layout per row, synchronously inside the click. Coalescing the writes into a single frame
+      // lets the browser lay out once, after the click has already been handled. The write below
+      // still fires the track's own scroll handler, which is what updates the arrows.
+      if (resetRaf != null) return;
+      resetRaf = requestAnimationFrame(() => {
+        resetRaf = null;
+        if (saveTimer != null) {
+          window.clearTimeout(saveTimer);
+          saveTimer = null;
+        }
+        writePos(track, 0);
+        rememberRowScroll(scrollKey, 0);
+        userInteractedRef.current = false;
+      });
     };
     window.addEventListener("argus:reset-row-scrolls", onReset);
     return () => {
-      ro.disconnect();
+      stopContainerResize();
+      stopTrackResize();
       if (roRaf != null) cancelAnimationFrame(roRaf);
       if (scrollRaf != null) cancelAnimationFrame(scrollRaf);
+      if (resetRaf != null) cancelAnimationFrame(resetRaf);
       track.removeEventListener("scroll", onScroll);
       track.removeEventListener("wheel", onWheel);
       track.removeEventListener("pointerdown", markInteracted);
@@ -433,8 +575,8 @@ export function Row({
       if (saveTimer != null) window.clearTimeout(saveTimer);
       if (wheelSettle != null) window.clearTimeout(wheelSettle);
       if (rafId.current != null) cancelAnimationFrame(rafId.current);
-      if (scrollKey && readPos(track) > 0) {
-        rememberRowScroll(scrollKey, readPos(track));
+      if (scrollKey && lastScrollPosRef.current > 0) {
+        rememberRowScroll(scrollKey, lastScrollPosRef.current);
       }
     };
   }, [scrollKey, rememberRowScroll]);
@@ -443,21 +585,30 @@ export function Row({
     const el = trackRef.current;
     if (!el) return;
     userInteractedRef.current = true;
-    const delta = (isRtlTrack(el) ? -dir : dir) * el.clientWidth;
-    el.scrollBy({ left: delta, behavior: "smooth" });
+    cancelGlide();
+    const cur = rtl ? -el.scrollLeft : el.scrollLeft;
+    const max = el.scrollWidth - el.clientWidth;
+    const stride = strideRef.current;
+    const raw = cur + dir * el.clientWidth;
+    const target = Math.max(0, Math.min(max, Math.round(raw / stride) * stride));
+    if (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) {
+      el.scrollLeft = rtl ? -target : target;
+      return;
+    }
+    el.style.scrollSnapType = "none";
+    glideTo(el, target, false);
   };
 
   const rafId = useRef<number | null>(null);
   const strideRef = useRef(effMin + GAP);
   strideRef.current = (cellWidth ?? effMin) + GAP;
+
   const dockFrameRef = useRef<number | null>(null);
   const dockPointerXRef = useRef<number | null>(null);
-
   const resetPosterDock = useCallback(() => {
     const track = trackRef.current;
     if (track) resetPosterDockItems(track);
   }, []);
-
   const applyPosterDock = useCallback(() => {
     dockFrameRef.current = null;
     const track = trackRef.current;
@@ -466,18 +617,16 @@ export function Row({
       resetPosterDock();
       return;
     }
-
     updatePosterDock({
       track,
       pointerX,
       cellWidth: cellWidth ?? effMin,
       gap: GAP,
-      scrollPosition: readPos(track),
-      rtl: isRtlTrack(track),
+      scrollPosition: rtl ? -track.scrollLeft : track.scrollLeft,
+      rtl,
       transitionMs: settings.posterDockTransitionMs,
     });
-  }, [cellWidth, dockEnabled, effMin, resetPosterDock, settings.posterDockTransitionMs]);
-
+  }, [cellWidth, dockEnabled, effMin, resetPosterDock, rtl, settings.posterDockTransitionMs]);
   const schedulePosterDock = useCallback(
     (clientX: number) => {
       dockPointerXRef.current = clientX;
@@ -487,7 +636,6 @@ export function Row({
     },
     [applyPosterDock],
   );
-
   useEffect(
     () => () => {
       if (dockFrameRef.current !== null) cancelAnimationFrame(dockFrameRef.current);
@@ -495,7 +643,6 @@ export function Row({
     },
     [resetPosterDock],
   );
-
   useEffect(() => {
     if (!dockEnabled) resetPosterDock();
   }, [dockEnabled, resetPosterDock]);
@@ -508,7 +655,6 @@ export function Row({
   };
 
   const glideTo = (el: HTMLDivElement, target: number, snappy = false) => {
-    const rtl = isRtlTrack(el);
     const start = rtl ? -el.scrollLeft : el.scrollLeft;
     const distance = target - start;
     if (Math.abs(distance) < 2) {
@@ -557,11 +703,11 @@ export function Row({
   };
 
   const onPointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
-    const d = drag.current;
-    const el = trackRef.current;
-    if (dockEnabled && e.pointerType !== "touch" && e.buttons === 0 && !d.active) {
+    if (dockEnabled && e.pointerType !== "touch" && e.buttons === 0 && !drag.current.active) {
       schedulePosterDock(e.clientX);
     }
+    const d = drag.current;
+    const el = trackRef.current;
     if (!d.active || !el) return;
     const dx = e.clientX - d.startX;
     if (!d.moved && Math.abs(dx) < 6) return;
@@ -606,7 +752,7 @@ export function Row({
     const v = d.vel;
     const projection = -((v * Math.abs(v)) / (2 * friction));
     const projectedRaw = el.scrollLeft + projection;
-    const projected = isRtlTrack(el) ? -projectedRaw : projectedRaw;
+    const projected = rtl ? -projectedRaw : projectedRaw;
     const stride = (cellWidth ?? effMin) + GAP;
     const max = el.scrollWidth - el.clientWidth;
     const targetIdx = Math.round(projected / stride);
@@ -625,19 +771,42 @@ export function Row({
     }
   };
 
+  const trackPad = dockEnabled ? "pb-8 pt-14 -mb-8 -mt-14" : "py-5 -my-5 px-2 -mx-2 scroll-px-2";
+  const hasHeader = !!(title || onViewAll || headerRight);
+  const shellRoom = hasHeader ? "" : dockEnabled ? "py-14 -my-14" : "py-5 -my-5";
+
   return (
-    <div className={`flex min-w-0 flex-col gap-5 ps-[9px] ${className}`}>
-      {(title || onViewAll || headerRight) && (
-        <div className="flex items-baseline justify-between gap-4 pe-1">
+    <div
+      className={`argus-row-shell flex min-w-0 flex-col gap-5 ps-[9px] ${shellRoom} ${className}`}
+    >
+      {hasHeader && (
+        <div
+          className="relative z-20 flex items-baseline justify-between gap-4 pe-1"
+          onPointerEnter={() => {
+            if (dockEnabled) {
+              dockPointerXRef.current = null;
+              resetPosterDock();
+            }
+          }}
+          onPointerMove={() => {
+            if (dockEnabled) {
+              dockPointerXRef.current = null;
+              resetPosterDock();
+            }
+          }}
+        >
           {title && (
-            <div className="flex min-w-0 items-center gap-2">
-              <h3
-                className={`truncate font-medium tracking-tight ${titleClassName}`}
-                style={{ fontSize: `${Math.round(17 * settings.rowTitleScale * titleScale)}px` }}
-              >
-                {title}
-              </h3>
-              {titleExtra}
+            <div className="flex min-w-0 flex-col gap-1">
+              <div className="flex min-w-0 items-center gap-2">
+                <h3
+                  className={`truncate font-medium tracking-tight ${titleClassName}`}
+                  style={{ fontSize: `${Math.round(17 * settings.rowTitleScale * titleScale)}px` }}
+                >
+                  {title}
+                </h3>
+                {titleExtra}
+              </div>
+              {headerDescription}
             </div>
           )}
           {(onViewAll || headerRight) && (
@@ -647,7 +816,7 @@ export function Row({
                 <button
                   type="button"
                   onClick={onViewAll}
-                  className="group/va inline-flex shrink-0 items-center gap-1 text-[12.5px] font-medium text-ink-subtle transition-colors hover:text-ink"
+                  className={`group/va inline-flex shrink-0 items-center gap-1 text-[12.5px] font-medium transition-colors ${viewAllClassName}`}
                 >
                   {t(viewAllLabel)}
                   <ChevronRight
@@ -680,36 +849,26 @@ export function Row({
               dockPointerXRef.current = null;
               resetPosterDock();
             }}
-            onKeyDownCapture={() => {
-              // Poster Dock is pointer-only. Clear its last hover transform
-              // before global keyboard navigation moves focus through this row.
-              dockPointerXRef.current = null;
-              resetPosterDock();
-            }}
             onClickCapture={onClickCapture}
             onDragStart={(e) => e.preventDefault()}
-            className={`argus-row-track items-start gap-5 overflow-x-auto px-5 pb-8 pt-14 -mx-5 -mb-8 -mt-14 scroll-ps-5 scroll-pe-5 [scroll-snap-type:x_mandatory] *:snap-start [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] [overflow-anchor:none] overscroll-x-contain [&_img]:select-none [&_img]:[-webkit-user-drag:none] ${
+            data-far={near ? undefined : ""}
+            className={`argus-row-track items-start gap-5 overflow-x-auto overflow-y-hidden ${trackPad} [scroll-snap-type:x_mandatory] [&>*]:[scroll-snap-align:start] [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] [overflow-anchor:none] [overscroll-behavior-x:contain] [&_img]:select-none [&_img]:[-webkit-user-drag:none] ${
               expandingCards
                 ? "argus-expanding-card-scope argus-expanding-row flex flex-nowrap"
                 : "grid grid-flow-col"
             }`}
             style={
               {
+                "--row-poster-height": `${(cellWidth ?? effMin) * posterHeightRatio}px`,
                 ...(expandingCards
-                  ? {
-                      "--row-poster-height": `${(cellWidth ?? effMin) * 1.5}px`,
-                      "--row-card-expansion-duration": `${POSTER_CARD_ANIMATION.expansionMs}ms`,
-                      "--row-card-wide-fade-duration": `${POSTER_CARD_ANIMATION.wideFadeMs}ms`,
-                      "--row-card-title-restore-duration": `${POSTER_CARD_ANIMATION.titleRestoreMs}ms`,
-                    }
+                  ? {}
                   : { gridAutoColumns: cellWidth != null ? `${cellWidth}px` : `${effMin}px` }),
-                willChange: "transform",
-                transform: "translateZ(0)",
+                transform: near ? "translateZ(0)" : undefined,
                 contain: expandingCards ? "style" : "layout style",
               } as React.CSSProperties
             }
           >
-            {items.map((child, i) => {
+            {Children.map(children, (child, i) => {
               const span = isValidElement(child)
                 ? (child.props as { style?: { gridColumn?: string } }).style?.gridColumn
                 : undefined;
@@ -717,10 +876,12 @@ export function Row({
               const baseWidth = (cellWidth ?? effMin) * spanCount + GAP * (spanCount - 1);
               const expanded = expandedCard?.index === i;
               const desiredExpandedWidth =
-                expanded && expandedCard ? expandedCard.width : undefined;
+                expanded && expandedCard
+                  ? (cellWidth ?? effMin) * expandedCard.widthScale
+                  : undefined;
               const viewportLimit = Math.max(
                 baseWidth,
-                (trackEl?.clientWidth ?? desiredExpandedWidth ?? baseWidth) - GAP * 2,
+                (observedWidthRef.current || measuredRef.current.width || baseWidth) - GAP * 2,
               );
               const expandedWidth =
                 desiredExpandedWidth === undefined
@@ -728,9 +889,9 @@ export function Row({
                   : Math.max(baseWidth, Math.min(desiredExpandedWidth, viewportLimit));
               return (
                 <LazyChild
-                  key={i}
-                  eager={i < EAGER_COUNT}
-                  shape={shape}
+                  eager={alwaysActive || i < EAGER_COUNT}
+                  active={alwaysActive || near}
+                  shape={effShape}
                   span={span}
                   expansion={
                     expandingCards
@@ -770,28 +931,30 @@ function EdgeArrow({
   onClick: () => void;
 }) {
   const t = useT();
+  const { settings } = useSettings();
   const label = t(side === "left" ? "Scroll left" : "Scroll right");
-
-  if (always) {
+  if (settings.liquidGlass) {
+    const sideClass = side === "left" ? "start-0 justify-start" : "end-0 justify-end";
     return (
       <div
-        className={`pointer-events-none absolute inset-y-0 z-30 flex w-14 items-center transition-opacity duration-200 ${
-          side === "left" ? "inset-s-0 justify-start" : "inset-e-0 justify-end"
-        } ${visible ? "opacity-100" : "opacity-0"}`}
+        className={`pointer-events-none absolute inset-y-0 z-30 flex w-14 items-center ${sideClass} ${
+          always ? `transition-opacity duration-200 ${visible ? "opacity-100" : "opacity-0"}` : ""
+        }`}
       >
         <ThreeLiquidGlassSurface
           radius="9999px"
           shaderRadius={0.58}
           intensity={0.9}
+          interactive={false}
+          alwaysActive
           style={{
-            boxShadow: "inset 0 1px 0 rgba(255,255,255,0.10), inset 0 -1px 0 rgba(0,0,0,0.05)",
+            boxShadow: "inset 0 1px 0 rgba(255,255,255,0.08), inset 0 -1px 0 rgba(0,0,0,0.04)",
           }}
-          className={`h-11 w-11 pointer-events-auto border border-white/[0.08]
-            transition-opacity duration-200 ${
-              visible
-                ? "opacity-85 group-hover/row:opacity-100 focus-within:opacity-100"
-                : "pointer-events-none opacity-0"
-            }`}
+          className={`h-11 w-11 pointer-events-auto border border-white/[0.06] transition-opacity duration-200 ${
+            visible
+              ? "opacity-85 group-hover/row:opacity-100 focus-within:opacity-100"
+              : "pointer-events-none opacity-0"
+          }`}
           contentClassName="flex h-full w-full items-center justify-center"
         >
           <button
@@ -799,12 +962,7 @@ function EdgeArrow({
             onClick={onClick}
             aria-label={label}
             tabIndex={visible ? 0 : -1}
-            className="
-            flex h-full w-full
-            items-center justify-center
-            rounded-full bg-transparent
-            text-ink outline-none
-          "
+            className="flex h-full w-full items-center justify-center rounded-full bg-transparent text-ink outline-none"
           >
             {side === "left" ? (
               <ChevronLeft size={22} strokeWidth={2.2} className="dir-icon" />
@@ -816,47 +974,34 @@ function EdgeArrow({
       </div>
     );
   }
-
-  const sideClass = side === "left" ? "start-0 justify-start" : "end-0 justify-end";
-
+  const enter = side === "left" ? "-translate-x-2.5" : "translate-x-2.5";
+  const chev = !visible
+    ? "opacity-0"
+    : always
+      ? "opacity-100"
+      : `opacity-0 ${enter} scale-[0.6] group-hover/edge:opacity-100 group-hover/edge:translate-x-0 group-hover/edge:scale-100 group-focus-visible/edge:opacity-100 group-focus-visible/edge:translate-x-0 group-focus-visible/edge:scale-100`;
   return (
     <div
-      className={`pointer-events-none absolute inset-y-0 z-30 flex w-14 items-center ${sideClass}`}
+      className={`pointer-events-none absolute inset-y-0 z-30 flex w-16 -translate-y-[7%] items-center ${
+        side === "left" ? "start-[-40px] justify-start" : "end-[-40px] justify-end"
+      }`}
     >
-      <ThreeLiquidGlassSurface
-        radius="9999px"
-        shaderRadius={0.58}
-        intensity={0.9}
-        style={{
-          boxShadow: "inset 0 1px 0 rgba(255,255,255,0.10), inset 0 -1px 0 rgba(0,0,0,0.05)",
-        }}
-        className={`h-11 w-11 pointer-events-auto border border-white/[0.08]
-            transition-opacity duration-200 ${
-              visible
-                ? "opacity-85 group-hover/row:opacity-100 focus-within:opacity-100"
-                : "pointer-events-none opacity-0"
-            }`}
-        contentClassName="flex h-full w-full items-center justify-center"
+      <button
+        type="button"
+        onClick={onClick}
+        aria-label={label}
+        tabIndex={visible ? 0 : -1}
+        data-tv-skip="true"
+        className={`group/edge grid h-full w-full place-items-center ${
+          visible ? "pointer-events-auto" : "pointer-events-none"
+        }`}
       >
-        <button
-          type="button"
-          onClick={onClick}
-          aria-label={label}
-          tabIndex={visible ? 0 : -1}
-          className="
-      flex h-full w-full
-      items-center justify-center
-      rounded-full bg-transparent
-      text-ink outline-none
-    "
+        <span
+          className={`grid place-items-center text-white drop-shadow-[0_2px_14px_rgba(0,0,0,0.95)] transition-all duration-[320ms] ease-[cubic-bezier(0.34,1.45,0.5,1)] group-active/edge:scale-90 ${chev}`}
         >
-          {side === "left" ? (
-            <ChevronLeft size={22} strokeWidth={2.2} className="dir-icon" />
-          ) : (
-            <ChevronRight size={22} strokeWidth={2.2} className="dir-icon" />
-          )}
-        </button>
-      </ThreeLiquidGlassSurface>
+          <NavChevron dir={side} size={54} />
+        </span>
+      </button>
     </div>
   );
 }

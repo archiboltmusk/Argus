@@ -1,65 +1,40 @@
-export type MangaSource = {
+import type { MangaSummary, MangaChapter, MangaTag } from "./model";
+
+export {
+  MANGA_PAGE,
+  LANGUAGE_NAMES,
+  languageName,
+  languageFlag,
+  chapterLanguages,
+  type MangaSummary,
+  type MangaChapter,
+  type MangaTag,
+} from "./model";
+
+export type SearchAllOpts = {
+  /** Skip the stop-on-first-strong-match early exit and query every source. */
+  exhaustive?: boolean;
+};
+
+export type MangaProvider = {
   id: string;
   name: string;
-  baseUrl: string;
-  enabled: boolean;
+  popular(offset: number, tagId?: string): Promise<MangaSummary[]>;
+  search(query: string, offset: number, tagId?: string): Promise<MangaSummary[]>;
+  detail(id: string): Promise<MangaSummary | null>;
+  chapters(id: string, opts?: { refresh?: boolean }): Promise<MangaChapter[]>;
+  pageUrls(chapterId: string): Promise<string[]>;
+  tags?(): Promise<MangaTag[]>;
+  searchAll?(query: string, opts?: SearchAllOpts): Promise<MangaSummary[]>;
+  setLibrary?(id: string, inLibrary: boolean): Promise<void>;
 };
 
-export type SeriesSummary = {
-  id: string;
-  title: string;
-  cover?: string;
-  description?: string;
-  author?: string;
-  status?: string;
-  tags?: string[];
-};
-
-export type Chapter = {
-  id: string;
-  number: number | null;
-  title: string;
-  volume?: string;
-  date?: string;
-  language?: string;
-  group?: string;
-};
-
-export type SeriesDetail = SeriesSummary & { chapters: Chapter[] };
-
-export type SearchPage = { results: SeriesSummary[]; hasMore: boolean };
-
-export type LibraryEntry = {
-  key: string;
-  sourceId: string;
-  seriesId: string;
-  title: string;
-  cover?: string;
-  addedAt: number;
-};
-
-export type ChapterProgress = {
-  chapterId: string;
-  chapterLabel: string;
-  page: number;
-  total: number;
-  updatedAt: number;
-};
-
-export type SeriesProgress = {
-  last: ChapterProgress | null;
-  read: string[];
-};
-
-export type ReaderMode = "paged" | "webtoon";
-export type ReadingDirection = "ltr" | "rtl";
-export type PageFit = "width" | "height" | "both";
-
-export type ReaderPrefs = {
-  mode: ReaderMode;
-  direction: ReadingDirection;
-  fit: PageFit;
-  spread: boolean;
-};
-
-export const LOCAL_SOURCE_ID = "local";
+export function mangaThrottle(gapMs: number): <T>(task: () => Promise<T>) => Promise<T> {
+  let tail: Promise<unknown> = Promise.resolve();
+  const wait = () => new Promise((r) => setTimeout(r, gapMs));
+  return <T>(task: () => Promise<T>): Promise<T> => {
+    const run = tail.then(task, task) as Promise<T>;
+    tail = run.then(wait, wait);
+    return run;
+  };
+}

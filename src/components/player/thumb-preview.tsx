@@ -1,4 +1,4 @@
-import { Loader2 } from "lucide-react";
+import { Spinner } from "@/components/spinner";
 import { useEffect, useRef, useState } from "react";
 import { thumbCacheGet, thumbCacheNearest, thumbCacheSet, trickplayGet } from "@/lib/trickplay";
 import { useSkipSegmentsView } from "@/lib/skip-intro/segment-store";
@@ -8,9 +8,9 @@ const SEG_LABEL = { intro: "OP", outro: "ED", recap: "Recap", ad: "Ad" } as cons
 const BUCKET_SECONDS = 2;
 const CARD_WIDTH = 192;
 const CARD_HEIGHT = 108;
-const MAX_ATTEMPTS = 24;
-const RETRY_MS = 400;
-const SETTLE_MS = 130;
+const MAX_ATTEMPTS = 96;
+const RETRY_MS = 100;
+const SETTLE_MS = 70;
 const NEAREST_WINDOW = 30;
 
 export function ThumbPreview({
@@ -115,11 +115,13 @@ export function ThumbPreview({
         ) : (
           <div className="h-full w-full bg-gradient-to-br from-white/5 to-transparent" />
         )}
-        {loading && !src && (
-          <div className="absolute inset-0 flex items-center justify-center">
-            <Loader2 className="h-5 w-5 animate-spin text-white/70" />
-          </div>
-        )}
+        <div
+          className={`absolute inset-0 flex items-center justify-center transition-opacity duration-150 ${
+            loading && !src ? "opacity-100" : "opacity-0"
+          }`}
+        >
+          <Spinner size={20} className="text-white/70" />
+        </div>
       </div>
       <div className="mt-1 flex items-center justify-center gap-1">
         {segLabel && (

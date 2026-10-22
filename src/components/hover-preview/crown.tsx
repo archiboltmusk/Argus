@@ -23,7 +23,7 @@ function ArtImage({ art, seed }: { art: PreviewArt; seed: string }) {
   );
 }
 
-function CrownArt({ art, seed }: { art: PreviewArt; seed: string }) {
+export function CrownArt({ art, seed }: { art: PreviewArt; seed: string }) {
   const [stack, setStack] = useState([{ key: 0, art }]);
   const nextKey = useRef(1);
   const lastArt = useRef(art);
