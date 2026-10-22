@@ -1,4 +1,5 @@
 import { useLayoutEffect, useRef, useState } from "react";
+import { StreamSpeedButton } from "@/components/player/stream-speed-button";
 import { ChevronDown, Loader2 } from "lucide-react";
 import { AddonLogo } from "@/components/addon-logo";
 import { CopyLinkButton, resolveStreamLink } from "@/components/player/copy-link-button";
@@ -181,6 +182,11 @@ export function SwitcherRow({
             <span className="inline-flex items-center gap-1.5 rounded-full bg-accent-soft px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.12em] text-accent">
               <Equalizer />
               {t("Now Playing")}
+            </span>
+          )}
+          {!isCurrent && (
+            <span onClick={(e) => e.stopPropagation()}>
+              <StreamSpeedButton stream={stream} />
             </span>
           )}
           {resolving ? (

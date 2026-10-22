@@ -4,6 +4,9 @@ import { useT } from "@/lib/i18n";
 import { ROW_DESC, Section, ToggleRow } from "../shared";
 import { PrivacyRow } from "../privacy-row";
 import { isTauri } from "../player-panel/internals";
+import { useIncognito } from "@/lib/incognito";
+import { togglePanic } from "@/lib/incognito/panic";
+import { SButton } from "../ui";
 
 export function PrivacyTab() {
   const t = useT();
@@ -16,6 +19,15 @@ export function PrivacyTab() {
         )}
       >
         <PrivacyRow />
+      </Section>
+
+      <Section
+        title={t("Panic / incognito")}
+        subtitle={t(
+          "One key pauses Trakt, Simkl and other scrobbling, stops saving progress, hides Continue Watching and clears temporary files. It lasts until you turn it off or restart Argus.",
+        )}
+      >
+        <PanicRows />
       </Section>
 
       <Section
@@ -37,6 +49,30 @@ export function PrivacyTab() {
           <DiscordPresenceRow />
         </Section>
       )}
+    </>
+  );
+}
+
+function PanicRows() {
+  const t = useT();
+  const { settings, update } = useSettings();
+  const on = useIncognito();
+  return (
+    <>
+      <ToggleRow
+        label={t("Enable panic hotkey")}
+        sub={t("Ctrl+Shift+X by default. Change it in the hotkey editor.")}
+        value={settings.panicModeEnabled}
+        onChange={(panicModeEnabled) => update({ panicModeEnabled })}
+      />
+      <div className="flex items-center justify-between gap-3 px-1 py-2">
+        <span className={ROW_DESC}>
+          {on ? t("Incognito is on. Nothing is being tracked.") : t("Incognito is off.")}
+        </span>
+        <SButton onClick={() => void togglePanic()}>
+          {on ? t("Turn off incognito") : t("Go incognito now")}
+        </SButton>
+      </div>
     </>
   );
 }

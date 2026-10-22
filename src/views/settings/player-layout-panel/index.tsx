@@ -353,6 +353,26 @@ export function PlayerLayoutPanel() {
           value={settings.contentAdvisoryDetail}
           onChange={(v) => update({ contentAdvisoryDetail: v })}
         />
+        <ToggleRow
+          label={t("Trigger warnings from DoesTheDogDie")}
+          sub={t(
+            "Show community-voted warnings such as jump scares or animal harm on the title page. DoesTheDogDie does not give timestamps, so these are per title. Needs your own free API key from doesthedogdie.com; Argus sends the title name to their site.",
+          )}
+          value={settings.dtddEnabled}
+          onChange={(v) => update({ dtddEnabled: v })}
+        />
+        {settings.dtddEnabled && (
+          <input
+            type="password"
+            value={settings.dtddKey}
+            onChange={(e) => update({ dtddKey: e.target.value })}
+            placeholder={t("DoesTheDogDie API key")}
+            aria-label={t("DoesTheDogDie API key")}
+            autoComplete="off"
+            spellCheck={false}
+            className="h-10 w-full max-w-[420px] rounded-[10px] border border-edge-soft bg-elevated px-3 text-[14px] text-ink outline-none focus-visible:border-edge"
+          />
+        )}
         {settings.contentAdvisoryToast && (
           <Segmented
             label={t("Content advisory theme")}

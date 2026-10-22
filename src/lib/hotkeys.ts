@@ -55,6 +55,7 @@ export type HotkeyId =
   | "globalSearchFocus"
   | "globalSettingsOpen"
   | "globalProfileNext"
+  | "globalPanic"
   | "mangaMatch";
 
 export type HotkeyDef = {
@@ -90,6 +91,15 @@ export const HOTKEYS: HotkeyDef[] = [
     label: "Switch to next profile",
     description: "Cycle profiles from anywhere. A protected profile still asks for its PIN. Turn it on under Behaviour.",
     defaultBinding: "ctrl+shift+p",
+  },
+  {
+    id: "globalPanic",
+    scope: "Global",
+    group: "Navigation",
+    label: "Panic / incognito",
+    description:
+      "Pause tracking, hide Continue Watching and clear temporary files in one press. Press again to leave. Turn it on under Privacy.",
+    defaultBinding: "ctrl+shift+x",
   },
   {
     id: "globalUiScaleUp",

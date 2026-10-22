@@ -8,6 +8,7 @@ import { pmdbDeleteResumeForTarget, pmdbSaveResume } from "./scrobble";
 import { recordPendingResume, syncPendingResume } from "./pending-sync";
 import { markPmdbWatched } from "./history";
 import type { PmdbTarget } from "./types";
+import { useIncognito } from "@/lib/incognito";
 
 type Snap = {
   status: string;
@@ -25,7 +26,7 @@ const SEEK_SAVE_DEBOUNCE_MS = 800;
 export function usePublicMetaDbScrobble({ src, snap }: { src: PlayerSrc; snap: Snap }): void {
   const { isConnected } = usePublicMetaDb();
   const { settings } = useSettings();
-  const enabled = isConnected && settings.publicmetadbScrobbleEnabled;
+  const enabled = isConnected && settings.publicmetadbScrobbleEnabled && !useIncognito();
 
   const targetRef = useRef<PmdbTarget | null>(null);
   const durationRef = useRef(0);

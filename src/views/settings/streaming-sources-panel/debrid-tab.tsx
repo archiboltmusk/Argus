@@ -21,6 +21,7 @@ import { SRow } from "../ui";
 import { ManualAddonCard, ServiceCard } from "../streaming-panel";
 import { AioStatusModal } from "../aiostatus-modal";
 import { useT } from "@/lib/i18n";
+import { DebridBackupSection, StreamSpeedSection } from "./debrid-backup";
 
 export type DebridKey = "rd" | "tb" | "ad" | "pm" | "dl";
 
@@ -177,6 +178,9 @@ export function DebridTab({
           }
         />
       </Section>
+
+      <DebridBackupSection />
+      <StreamSpeedSection />
 
       <Section
         title={t("Usenet")}

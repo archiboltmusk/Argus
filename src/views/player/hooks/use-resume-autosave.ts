@@ -33,6 +33,7 @@ import { ANIME_CLOUD_ID, CLOUD_OK } from "@/lib/stremio";
 import { syncSeriesWatchedToStremio } from "@/lib/stremio-episode-watched";
 import { isNaturalEnd } from "@/lib/player/playback-end";
 import { playerLoadIdentity } from "@/lib/player/load-identity";
+import { isIncognito } from "@/lib/incognito";
 
 const TICK_MS = 4000;
 const MIN_POSITION_SEC = 5;
@@ -173,7 +174,7 @@ export function useResumeAutosave(params: ResumeAutosaveParams) {
   };
 
   const record = (current: ResumeSession, writeSource = true): void => {
-    if (!current.ready || !current.latest) return;
+    if (!current.ready || !current.latest || isIncognito()) return;
     const {
       src: s, snap: sn, season: se, episode: ep,
       resolvedImdbId: rid, resolvedImdbVerified: rv,

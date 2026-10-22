@@ -8,6 +8,8 @@ import type { SyncIndicatorPosition } from "@/lib/sync-toast-position";
 import type { FullscreenClockFormat, FullscreenClockStyle } from "@/lib/local-time";
 import type { SubtitleOffsetPosition, SubtitleOffsetSize } from "@/lib/player/subtitle-offset";
 import type { BufferSizeId } from "@/lib/player/buffer-profile";
+import type { PassthroughCodec } from "@/lib/player/passthrough";
+import type { DebridSlug } from "@/lib/streams/types";
 import type { UiLanguage } from "@/lib/i18n/languages";
 import type { DisplaySelection } from "@/lib/monitors";
 
@@ -134,6 +136,15 @@ export type Settings = {
   adKey: string;
   pmKey: string;
   dlKey: string;
+  /** Extra API keys per provider, tried in order when the main account hits a quota or outage. */
+  debridBackupKeys: Partial<Record<DebridSlug, string[]>>;
+  debridFailover: boolean;
+  streamSpeedTest: boolean;
+  dtddEnabled: boolean;
+  dtddKey: string;
+  downloadNaming: "default" | "plex";
+  panicModeEnabled: boolean;
+  togetherChatExtras: boolean;
   region: string;
   preferredLanguages: string[];
   requirePreferredLanguage: boolean;
@@ -403,6 +414,12 @@ export type Settings = {
   subBoxColor: string;
   subOpacity: number;
   subLineSpacing: number;
+  subShadowBlur: number;
+  subMarginX: number;
+  /** Raw mpv sub-ass-style-overrides, e.g. `Fontname=Arial,Outline=3`. */
+  subAssStyleOverrides: string;
+  subWordHover: boolean;
+  subWordHoverLang: string;
   subProvidersEnabled: {
     wyzie: boolean;
     opensubtitles: boolean;
@@ -502,6 +519,11 @@ export type Settings = {
   mpvBufferBoost: boolean;
   mpvBufferSize: BufferSizeId;
   mpvDownmixStereo: boolean;
+  /** Sends AC-3, E-AC-3, DTS and TrueHD to an AV receiver untouched. Off by default. */
+  mpvPassthrough: boolean;
+  mpvPassthroughCodecs: PassthroughCodec[];
+  /** Hardware frames stay on the GPU (no copy back). Falls back to auto-copy when unsupported. */
+  mpvZeroCopy: boolean;
   mpvDisplaySync: boolean;
   /** Subtitle providers in preferred order (ties only); empty = off. */
   subSourceOrder: string[];

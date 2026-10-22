@@ -81,6 +81,12 @@ export function MpvPanel() {
                 onChange={(v) => update({ mpvHwdec: v })}
               />
             </SettingRow>
+            <ToggleRow
+              label={t("Zero-copy video (experimental)")}
+              sub={t("Keeps decoded frames in graphics memory instead of copying them back, which lowers heat and battery use on laptops. On a Mac this switches from VideoToolbox copy mode to direct mode. Turn it off if you see a black picture, green frames or stutter. Applies to the next video you play.")}
+              value={settings.mpvZeroCopy}
+              onChange={(mpvZeroCopy) => update({ mpvZeroCopy })}
+            />
           </Section>
 
           <Section title={t("Motion")}>

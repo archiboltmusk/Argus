@@ -1,4 +1,7 @@
-import { memo, useMemo } from "react";
+import { memo, useEffect, useMemo, useRef } from "react";
+import { useSettings } from "@/lib/settings";
+import { parseTimestampNote } from "@/lib/together/chat-extras";
+import { setSharedMarks } from "@/lib/together/shared-marks";
 import { AvatarDock } from "@/components/player/avatar-dock";
 import { ChatOverlay } from "@/components/player/chat-overlay";
 import type { PanelCorner } from "@/lib/player-chrome";
@@ -43,6 +46,7 @@ export const RoomLayer = memo(function RoomLayer({
   onFindCloser,
   foreignNotice,
   onDismissForeign,
+  onSeekTo,
 }: {
   inRoom: boolean;
   pipMode: boolean;
@@ -77,7 +81,25 @@ export const RoomLayer = memo(function RoomLayer({
   onFindCloser: () => void;
   foreignNotice: { title: string | null; from: string } | null;
   onDismissForeign: () => void;
+  onSeekTo: (sec: number) => void;
 }) {
+  const { settings } = useSettings();
+  const extras = settings.togetherChatExtras;
+  // Notes from before this player opened belong to an earlier title.
+  const openedAt = useRef(Date.now());
+  useEffect(() => {
+    if (!extras || !inRoom) {
+      setSharedMarks([]);
+      return;
+    }
+    const marks = chat.flatMap((m) => {
+      if (m.at < openedAt.current) return [];
+      const note = parseTimestampNote(m.text);
+      return note ? [{ sec: note.sec, name: m.name, note: note.note }] : [];
+    });
+    setSharedMarks(marks);
+  }, [chat, extras, inRoom]);
+  useEffect(() => () => setSharedMarks([]), []);
   const everyoneReady = useMemo(
     () => participants.length > 0 && participants.every((p) => p.ready),
     [participants],
@@ -109,6 +131,8 @@ export const RoomLayer = memo(function RoomLayer({
           forceVisible={chromeVisible}
           corner={chatCorner}
           hidden={chatHidden}
+          extras={extras}
+          onSeekTo={onSeekTo}
         />
       )}
 

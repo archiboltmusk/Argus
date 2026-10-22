@@ -1,4 +1,4 @@
-import { MessageCircle, Send } from "lucide-react";
+import { Bookmark, MessageCircle, Send } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { nameColor } from "@/lib/together/colors";
 import type { PanelCorner } from "@/lib/player-chrome";
@@ -6,6 +6,9 @@ import type { ChatMessage } from "@/lib/together/provider";
 import type { Participant } from "@/lib/together/protocol";
 import { useSelfIdentity } from "@/lib/together/use-self-identity";
 import { useT } from "@/lib/i18n";
+import { QUICK_REACTIONS, timestampTag } from "@/lib/together/chat-extras";
+import { getPlaybackPosition } from "@/lib/player/playback-clock";
+import { ChatBody } from "./chat-body";
 
 const RECENT_WINDOW_MS = 7000;
 const COMPOSE_TIMEOUT_MS = 4500;
@@ -26,6 +29,8 @@ export function ChatOverlay({
   forceVisible,
   corner = "bottom-left",
   hidden = false,
+  extras = false,
+  onSeekTo,
 }: {
   messages: ChatMessage[];
   onSend: (text: string) => void;
@@ -34,6 +39,8 @@ export function ChatOverlay({
   forceVisible: boolean;
   corner?: PanelCorner;
   hidden?: boolean;
+  extras?: boolean;
+  onSeekTo?: (sec: number) => void;
 }) {
   const t = useT();
   const selfIdentity = useSelfIdentity();
@@ -120,9 +127,26 @@ export function ChatOverlay({
             isContinuation={isContinuation}
             avatar={ident?.avatar ?? null}
             color={ident?.color ?? null}
+            extras={extras}
+            onSeekTo={onSeekTo}
           />
         );
       })}
+      {composing && extras && (
+        <div className="pointer-events-auto mt-2 flex gap-1.5">
+          {QUICK_REACTIONS.map((emoji) => (
+            <button
+              key={emoji}
+              type="button"
+              onClick={() => onSend(emoji)}
+              className="flex h-8 w-8 items-center justify-center rounded-full border border-white/12 bg-black/55 text-[16px] backdrop-blur-md transition-transform hover:scale-110"
+              aria-label={emoji}
+            >
+              {emoji}
+            </button>
+          ))}
+        </div>
+      )}
       {composing ? (
         <form
           onSubmit={(e) => {
@@ -140,6 +164,20 @@ export function ChatOverlay({
             className="flex-1 bg-transparent text-[13.5px] text-white placeholder:text-white/35 outline-none"
             maxLength={300}
           />
+          {extras && (
+            <button
+              type="button"
+              onClick={() => {
+                setDraft((d) => (/^\[/.test(d) ? d : timestampTag(getPlaybackPosition()) + d));
+                inputRef.current?.focus();
+              }}
+              className="flex h-7 w-7 items-center justify-center rounded-full bg-white/10 text-white/85 transition-colors hover:bg-white/20"
+              aria-label={t("Mark this moment")}
+              title={t("Mark this moment for everyone")}
+            >
+              <Bookmark size={12} strokeWidth={2.4} />
+            </button>
+          )}
           <button
             type="submit"
             className="flex h-7 w-7 items-center justify-center rounded-full bg-white/10 text-white/85 transition-colors hover:bg-white/20"
@@ -170,12 +208,16 @@ function Bubble({
   isContinuation,
   avatar,
   color,
+  extras,
+  onSeekTo,
 }: {
   message: ChatMessage;
   isSelf: boolean;
   isContinuation: boolean;
   avatar: string | null;
   color: string | null;
+  extras: boolean;
+  onSeekTo?: (sec: number) => void;
 }) {
   const tint = color ?? nameColor(message.name);
   if (isContinuation) {
@@ -185,7 +227,7 @@ function Bubble({
         style={{ marginTop: 2, paddingInlineStart: isSelf ? 0 : 32 }}
       >
         <span className="break-words rounded-2xl border border-white/10 bg-black/55 px-3 py-1.5 text-[13.5px] leading-snug text-white backdrop-blur-xl">
-          {message.text}
+          <ChatBody text={message.text} extras={extras} onSeekTo={onSeekTo} />
         </span>
       </div>
     );
@@ -212,7 +254,9 @@ function Bubble({
         <span className="text-[10.5px] font-semibold uppercase tracking-[0.14em] text-white/55">
           {message.name}
         </span>
-        <span className="break-words text-[13.5px] leading-snug text-white">{message.text}</span>
+        <span className="break-words text-[13.5px] leading-snug text-white">
+          <ChatBody text={message.text} extras={extras} onSeekTo={onSeekTo} />
+        </span>
       </div>
     </div>
   );

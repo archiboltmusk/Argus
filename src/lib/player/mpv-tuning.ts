@@ -1,5 +1,7 @@
 import type { Settings } from "@/lib/settings";
+import { isMacDesktop } from "@/lib/platform";
 import { bufferMpvLines, bufferSizeFor } from "./buffer-profile";
+import { passthroughMpvLines } from "./passthrough";
 
 const QUALITY_LINES: Record<Settings["mpvQuality"], string[]> = {
   balanced: [],
@@ -27,6 +29,16 @@ const QUALITY_LINES: Record<Settings["mpvQuality"], string[]> = {
   ],
 };
 
+/**
+ * Keeps decoded frames in GPU memory. Windows and Linux already default to the
+ * non-copy list (`auto-safe`); macOS embeds start on `videotoolbox-copy`, so
+ * this is the line that changes behaviour there.
+ */
+export function zeroCopyHwdecLines(s: Pick<Settings, "mpvZeroCopy" | "mpvHwdec">, mac = isMacDesktop()): string[] {
+  if (!s.mpvZeroCopy || s.mpvHwdec === "off") return [];
+  return [mac ? "hwdec=videotoolbox" : "hwdec=auto-safe"];
+}
+
 export function compileMpvOptions(s: Settings, opts?: { anime4k?: boolean }): string {
   const lines: string[] = [...(QUALITY_LINES[s.mpvQuality] ?? [])];
   if (opts?.anime4k) {
@@ -39,6 +51,8 @@ export function compileMpvOptions(s: Settings, opts?: { anime4k?: boolean }): st
   }
   if (s.mpvHwdec === "on") lines.push("hwdec=yes");
   else if (s.mpvHwdec === "off") lines.push("hwdec=no");
+  lines.push(...zeroCopyHwdecLines(s));
+  lines.push(...passthroughMpvLines(s));
   lines.push(...bufferMpvLines(bufferSizeFor(s)));
   // Locks video to the display refresh and resamples audio to match, which removes
   // the judder 24 fps film shows on a 60 Hz panel. mpv cannot change the OS refresh rate.

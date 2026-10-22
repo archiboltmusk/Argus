@@ -1,6 +1,7 @@
 import { memo, useEffect, useMemo, useRef, useState } from "react";
 import { useActiveKid } from "@/lib/profiles";
 import { useSettings } from "@/lib/settings";
+import { HoverWordLine } from "./subtitle-word-hover";
 
 type Props = {
   text: string;
@@ -63,10 +64,12 @@ export const SubtitleOverlay = memo(function SubtitleOverlay({
     if (style === "outline") {
       return buildOutline(borderColor, borderSize);
     } else if (style === "shadow") {
+      const blur = clamp(settings.subShadowBlur ?? 0, 0, 12);
+      if (blur > 0) return `0 1px ${blur}px rgba(0,0,0,0.95), 0 2px ${blur * 2}px rgba(0,0,0,0.7)`;
       return "0 1px 2px rgba(0,0,0,0.95), 0 2px 6px rgba(0,0,0,0.85), 0 0 18px rgba(0,0,0,0.55)";
     }
     return undefined;
-  }, [style, borderColor, borderSize]);
+  }, [style, borderColor, borderSize, settings.subShadowBlur]);
 
   const baseTextStyle: React.CSSProperties = useMemo(
     () => ({
@@ -150,9 +153,13 @@ export const SubtitleOverlay = memo(function SubtitleOverlay({
         {text && (
           <div className="max-w-[80%]" style={boxStyle}>
             <div style={baseTextStyle}>
-              {lines.map((line, i) => (
-                <div key={i}>{line}</div>
-              ))}
+              {lines.map((line, i) =>
+                settings.subWordHover && !kid ? (
+                  <HoverWordLine key={i} line={line} lang={settings.subWordHoverLang} />
+                ) : (
+                  <div key={i}>{line}</div>
+                ),
+              )}
             </div>
           </div>
         )}

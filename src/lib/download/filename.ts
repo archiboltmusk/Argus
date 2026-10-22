@@ -49,3 +49,33 @@ function qualityTag(streamLabel?: string | null): string {
   const cleaned = sanitizeName(streamLabel).replace(/\s+/g, " ").trim().slice(0, 40);
   return cleaned ? ` [${cleaned}]` : "";
 }
+
+function releaseYear(meta: Meta): string | null {
+  const m = /\b(19|20)\d{2}\b/.exec(meta.releaseInfo ?? "");
+  return m ? m[0] : null;
+}
+
+/**
+ * Plex and Kodi both read `Show (Year)/Season 01/Show - S01E02 - Title.ext` and
+ * `Movie (Year)/Movie (Year).ext`, so a finished download scans without renaming.
+ */
+export function buildPlexLayout(
+  meta: Meta,
+  episode: PlayEpisode | undefined,
+  url: string,
+): { folders: string[]; filename: string } {
+  const ext = extensionFromUrl(url);
+  const base = sanitizeName(meta.name || "video");
+  const year = releaseYear(meta);
+  const withYear = year ? `${base} (${year})` : base;
+  if (!episode) return { folders: [withYear], filename: `${withYear}.${ext}` };
+  const season = episode.imdbSeason ?? episode.season;
+  const number = episode.imdbEpisode ?? episode.episode;
+  const s = String(season).padStart(2, "0");
+  const e = String(number).padStart(2, "0");
+  const title = episode.name ? sanitizeName(episode.name) : "";
+  return {
+    folders: [withYear, `Season ${s}`],
+    filename: `${base} - S${s}E${e}${title ? ` - ${title}` : ""}.${ext}`,
+  };
+}
