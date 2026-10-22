@@ -80,7 +80,7 @@ export type SportsMatchDetail = SportsGame & {
   awayProfile?: MMAFighterProfile;
 };
 
-const BASE = "https://site.api.espn.com/apis/site/v2/sports";
+export const BASE = "https://site.api.espn.com/apis/site/v2/sports";
 
 export type LeagueDef = {
   key: string;
@@ -341,7 +341,7 @@ export const LEAGUES: LeagueDef[] = [
     group: "rugby",
   },
 ];
-const BY_KEY = new Map(LEAGUES.map((l) => [l.key, l] as const));
+export const BY_KEY = new Map(LEAGUES.map((l) => [l.key, l] as const));
 export const DEFAULT_SPORTS_LEAGUES = ["ROSHN", "EPL", "UCL", "NBA", "NFL"];
 
 export const LEAGUE_GROUPS: { key: string; label: string; labelEn: string; icon: string }[] = [
@@ -483,7 +483,7 @@ async function fetchLeagueLastResults(def: LeagueDef): Promise<SportsGame[]> {
   return [];
 }
 
-function parseEvents(events: unknown[], def: LeagueDef): SportsGame[] {
+export function parseEvents(events: unknown[], def: LeagueDef): SportsGame[] {
   const out: SportsGame[] = [];
   for (const evRaw of events) {
     const ev = evRaw as Record<string, unknown>;

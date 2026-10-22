@@ -469,6 +469,7 @@ export type Settings = {
   iptvEpgOffsetHours: number;
   sidebarCollapsed: boolean;
   wrappedButton: boolean;
+  sportsPage: boolean;
   feedLocaleBias: boolean;
   uiLanguage: UiLanguage;
   cropMode: string;
