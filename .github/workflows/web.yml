@@ -1,0 +1,82 @@
+name: Web
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "src/**"
+      - "index.html"
+      - "public/**"
+      - "vite.config.ts"
+      - "package.json"
+      - "pnpm-lock.yaml"
+      - "scripts/web-smoke.mjs"
+      - ".github/workflows/web.yml"
+  pull_request:
+    paths:
+      - "vite.config.ts"
+      - ".github/workflows/web.yml"
+      - "scripts/web-smoke.mjs"
+  workflow_dispatch:
+
+concurrency:
+  group: web-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NODE_OPTIONS: --max-old-space-size=8192
+
+jobs:
+  build:
+    name: Web build
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v6
+      - uses: pnpm/action-setup@v5
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm run setup:fonts
+      # Served under /<repo>/ on GitHub Pages.
+      - run: pnpm run build:web
+        env:
+          ARGUS_WEB_BASE: /${{ github.event.repository.name }}/
+      - name: Smoke test in Chromium
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/pw" "$RUNNER_TEMP/site"
+          (cd "$RUNNER_TEMP/pw" && npm init -y >/dev/null && npm i playwright@1.49.1 && npx playwright install --with-deps chromium)
+          ln -s "$PWD/dist-web" "$RUNNER_TEMP/site/${{ github.event.repository.name }}"
+          python3 -m http.server 4173 --directory "$RUNNER_TEMP/site" >/dev/null 2>&1 &
+          sleep 2
+          PLAYWRIGHT_DIR="$RUNNER_TEMP/pw" node scripts/web-smoke.mjs "http://127.0.0.1:4173/${{ github.event.repository.name }}/"
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: web-smoke
+          path: web-smoke.png
+          if-no-files-found: ignore
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist-web
+
+  # Needs Pages enabled with source "GitHub Actions" and the repo variable
+  # ARGUS_WEB_DEPLOY=true; until then the build above still runs.
+  deploy:
+    name: Deploy to GitHub Pages
+    needs: build
+    if: github.ref == 'refs/heads/main' && vars.ARGUS_WEB_DEPLOY == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

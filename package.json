@@ -23,6 +23,7 @@
     "shipyard": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/build-shipyard.ps1",
     "release:beta": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/release-beta.ps1",
     "release:stable": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/release-beta.ps1 -Channel stable",
+    "build:web": "vite build --mode web",
     "build:tv": "tsc -b && vite build --mode android",
     "android:init": "tauri android init",
     "android:dev": "tauri android dev",
