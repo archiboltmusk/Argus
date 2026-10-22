@@ -77,7 +77,7 @@ async function expandZips(files: File[]): Promise<File[]> {
             : ext === "svg"
               ? "image/svg+xml"
               : `image/${ext}`;
-        out.push(new File([bytes], base, { type: mime }));
+        out.push(new File([bytes as BlobPart], base, { type: mime }));
       }
     } catch {
       /* skip unreadable zip */

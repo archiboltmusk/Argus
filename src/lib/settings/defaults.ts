@@ -194,6 +194,7 @@ export const DEFAULT: Settings = {
   addonHealthTracking: true,
   addonHealthProbes: false,
   addonConformanceChecks: true,
+  addonTestAll: true,
   usenetNzbAdd: false,
   bestLinkScoring: true,
   preferredReleaseGroups: "",

@@ -107,7 +107,7 @@ async function toIconDataUrl(name: string, bytes: Uint8Array): Promise<string | 
   if (ext === "svg") return `data:image/svg+xml;base64,${bytesToBase64(bytes)}`;
   const mime = MIME[ext];
   if (!mime) return null;
-  const url = URL.createObjectURL(new Blob([bytes], { type: mime }));
+  const url = URL.createObjectURL(new Blob([bytes as BlobPart], { type: mime }));
   try {
     const img = await new Promise<HTMLImageElement>((resolve, reject) => {
       const im = new Image();

@@ -96,7 +96,7 @@ function proxyImage(url: string, thumbWidthPx?: number): Promise<string | null> 
       if (!resp.ok) throw new Error(`status ${resp.status}`);
       const type = resp.headers?.["content-type"] || resp.contentType || "image/jpeg";
       if (type && !type.startsWith("image/")) throw new Error(`type ${type}`);
-      const created = URL.createObjectURL(new Blob([base64ToBytes(resp.body)], { type }));
+      const created = URL.createObjectURL(new Blob([base64ToBytes(resp.body) as BlobPart], { type }));
       blobCache.set(key, created);
       if (thumbWidthPx != null) thumbKeys.add(key);
       return created;

@@ -305,7 +305,7 @@ async function tauriArgusFetch(
   if (resp.url) responseHeaders.set(FINAL_URL_HEADER, resp.url);
   const bodyless = init?.method?.toUpperCase() === "HEAD" || [204, 205, 304].includes(resp.status);
   const body = bodyless ? null : responseType === "base64" ? base64ToBytes(resp.body) : resp.body;
-  return new Response(body, {
+  return new Response(body as BodyInit | null, {
     status: resp.status,
     headers: responseHeaders,
   });

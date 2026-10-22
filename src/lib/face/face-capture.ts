@@ -17,7 +17,7 @@ export function imageDataUrlToBlob(dataUrl: string): Blob {
     bytes = new TextEncoder().encode(decodeURIComponent(payload));
   }
   if (bytes.byteLength === 0) throw new Error("empty image data");
-  return new Blob([bytes], { type: match[1].toLowerCase() });
+  return new Blob([bytes as BlobPart], { type: match[1].toLowerCase() });
 }
 
 export async function captureFaceFrame(): Promise<ImageBitmap | null> {

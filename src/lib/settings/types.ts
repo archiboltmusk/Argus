@@ -231,6 +231,7 @@ export type Settings = {
   addonHealthTracking: boolean;
   addonHealthProbes: boolean;
   addonConformanceChecks: boolean;
+  addonTestAll: boolean;
   usenetNzbAdd: boolean;
   screensaver: boolean;
   screensaverStyle: "ambient" | "catBoat" | "halloween" | "custom";

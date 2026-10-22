@@ -714,6 +714,10 @@ async fn spawn_shadow(url: &str, session: &str, pending: Pending) -> Result<Shad
 
     let mut cmd = Command::new(&bin);
     cmd.kill_on_drop(true);
+    // The bundled mpv lives inside Argus.app, so macOS gives a helper that starts
+    // NSApplication its own Argus Dock icon unless it is told not to.
+    #[cfg(target_os = "macos")]
+    cmd.arg("--macos-app-activation-policy=prohibited");
     cmd.args(&args)
         .stdin(Stdio::null())
         .stdout(Stdio::null())
