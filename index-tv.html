@@ -37,6 +37,27 @@
             /Android ?TV|Google ?TV|SMART-?TV|Tizen|Web ?0S|WebOS|NetCast|BRAVIA|HbbTV|CrKey|VIDAA/i.test(
               ua,
             );
+          /* A phone is not a television, and the TV canvas is far too wide for it. A phone
+             gets the same Big Picture layout on a 960px canvas, which fits a phone held
+             sideways at a readable size. Settings, Argus phone layout, turns this off.
+             Keep the 960 in step with PHONE_CANVAS in src/lib/phone-layout.ts. */
+          if (
+            !tv &&
+            /Android/i.test(ua) &&
+            Math.min(screen.width, screen.height) < 600
+          ) {
+            var off = false;
+            try {
+              off =
+                JSON.parse(localStorage.getItem("argus.settings") || "{}").androidPhoneLayout ===
+                false;
+            } catch (e) {}
+            if (off) return;
+            document.documentElement.setAttribute("data-phone", "");
+            var phoneMeta = document.querySelector('meta[name="viewport"]');
+            if (phoneMeta) phoneMeta.setAttribute("content", "width=960, viewport-fit=cover");
+            return;
+          }
           if (!tv) return;
           if (Math.abs(CANVAS - window.innerWidth) < 48) return;
           var m = document.querySelector('meta[name="viewport"]');
@@ -145,6 +166,26 @@
         #boot, .boot-mark, .boot-spin, .boot-spin .arc { animation: none; transition: none; }
         .boot-spin .arc { stroke-dasharray: 90, 126; }
       }
+      /* Held upright, a phone shows the 960px canvas at about 40%, which cannot be read.
+         The prompt is drawn in canvas pixels, so it needs to be large. */
+      #rotate-hint {
+        display: none;
+      }
+      @media (orientation: portrait) {
+        html[data-phone] #rotate-hint {
+          position: fixed;
+          inset: 0;
+          z-index: 2147483600;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 80px;
+          text-align: center;
+          background: #08090a;
+          color: #f4f5f7;
+          font: 600 64px/1.3 system-ui, sans-serif;
+        }
+      }
     </style>
   </head>
   <body>
@@ -172,6 +213,7 @@
       </span>
     </div>
     <div id="root"></div>
+    <div id="rotate-hint" aria-hidden="true">Turn your phone sideways to use Argus</div>
     <script>
       try {
         var art = JSON.parse(localStorage.getItem('argus.custom-artwork.v1') || '{}').launch;

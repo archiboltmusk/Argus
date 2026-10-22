@@ -233,6 +233,7 @@ export type Settings = {
   addonConformanceChecks: boolean;
   usenetNzbAdd: boolean;
   playFromArchives: boolean;
+  androidPhoneLayout: boolean;
   screensaver: boolean;
   screensaverStyle: "ambient" | "catBoat" | "halloween" | "custom";
   screensaverMedia: ScreensaverMedia[];
