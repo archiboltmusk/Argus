@@ -2,6 +2,8 @@ node_modules
 __pycache__/
 dist
 dist-ssr
+dist-web
+web-smoke.png
 *.local
 *.bak
 *.bak-orig

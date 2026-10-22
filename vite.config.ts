@@ -50,11 +50,15 @@ function servePublicMediapipe() {
 
 export default defineConfig(({ mode }) => {
   const android = mode === "android" || process.env.ARGUS_TARGET === "android";
+  // Static browser build: main entry only, no Tauri windows. The base path is
+  // set for hosting under a subpath such as GitHub Pages.
+  const web = mode === "web";
   const devHost = process.env.TAURI_DEV_HOST;
   return {
     staged: { "*": "vp check --fix" },
     plugins: [react(), tailwindcss(), silenceMediapipeSourcemap(), servePublicMediapipe()],
     clearScreen: false,
+    ...(web ? { base: process.env.ARGUS_WEB_BASE || "/" } : {}),
     define: {
       __APP_VERSION__: JSON.stringify(pkg.version),
       __IS_BETA_BUILD__: JSON.stringify(process.env.ARGUS_CHANNEL !== "stable"),
@@ -86,13 +90,15 @@ export default defineConfig(({ mode }) => {
             rollupOptions: { input: { tv: "index-tv.html", main: "index.html" } },
           },
         }
-      : {
-          build: {
-            rollupOptions: {
-              input: { main: "index.html", retro: "retro-player.html", tray: "tray.html" },
+      : web
+        ? { build: { outDir: "dist-web", rollupOptions: { input: { main: "index.html" } } } }
+        : {
+            build: {
+              rollupOptions: {
+                input: { main: "index.html", retro: "retro-player.html", tray: "tray.html" },
+              },
             },
-          },
-        }),
+          }),
     server: {
       host: devHost || "127.0.0.1",
       port: 1420,

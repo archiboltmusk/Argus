@@ -65,7 +65,12 @@ fn main() {
         "motw",
         "largepage",
     ].iter().map(|&s| format!("vendor/unrar/{s}.cpp")).collect();
-    cc::Build::new()
+    let mut build = cc::Build::new();
+    // bionic has no lutimes(); take the utimensat() path, which it supports.
+    if std::env::var("CARGO_CFG_TARGET_OS").as_deref() == Ok("android") {
+        build.define("UNIX_TIME_NS", None);
+    }
+    build
         .cpp(true) // Switch to C++ library compilation.
         .opt_level(2)
         .std("c++14")
