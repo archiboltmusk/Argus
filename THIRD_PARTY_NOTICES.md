@@ -32,6 +32,8 @@ SOFTWARE.
 
 The macOS app bundles `ffmpeg` (version 7.1.1), built in CI from the official source at https://ffmpeg.org/releases/ffmpeg-7.1.1.tar.xz with `--disable-gpl --disable-nonfree --enable-version3`, so it is licensed under the GNU LGPL v3 or later. It is used as a separate executable for subtitle auto-sync. Linked statically with OpenSSL 3 (Apache-2.0). The exact build flags are in `.github/workflows/ci.yml`. FFmpeg is a trademark of Fabrice Bellard. Source and license: https://ffmpeg.org/legal.html
 
+The Windows and Linux builds bundle `ffmpeg` and `ffprobe` from the BtbN FFmpeg-Builds `gpl` variant (https://github.com/BtbN/FFmpeg-Builds), licensed under the GNU GPL v3 or later. They run as separate executables and are not linked into Argus. Source and build scripts: https://github.com/BtbN/FFmpeg-Builds and https://ffmpeg.org/download.html.
+
 ## PDF.js (Apache-2.0)
 
 The Books reader renders PDF files with pdfjs-dist (https://github.com/mozilla/pdf.js),
