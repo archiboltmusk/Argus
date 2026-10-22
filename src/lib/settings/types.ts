@@ -217,6 +217,8 @@ export type Settings = {
   p2pAutoConsent: boolean;
   p2pUploadEnabled: boolean;
   communityAddonDirectories: boolean;
+  addonHealthTracking: boolean;
+  addonHealthProbes: boolean;
   streamCacheRetentionHours: number;
   streamCacheMaxGb: number;
   deleteWatchedDownloads: boolean;

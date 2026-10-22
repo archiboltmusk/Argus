@@ -179,6 +179,8 @@ export const DEFAULT: Settings = {
   p2pAutoConsent: false,
   p2pUploadEnabled: false,
   communityAddonDirectories: false,
+  addonHealthTracking: true,
+  addonHealthProbes: false,
   streamCacheRetentionHours: 24,
   streamCacheMaxGb: 0,
   deleteWatchedDownloads: false,

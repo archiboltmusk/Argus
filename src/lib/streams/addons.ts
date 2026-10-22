@@ -6,6 +6,8 @@ import { hasUncachedMarker } from "./cached";
 import { infoHashFromSources, infoHashFromUrl } from "@/lib/torrent/magnet";
 import type { Stream } from "./types";
 import { resourceUrl } from "@/lib/stremio-protocol";
+import { addonStatus, recordAddonOutcome } from "@/lib/addon-health/store";
+import { loadStoredSettings } from "@/lib/settings/load";
 
 const TIMEOUT_MS_FAST = 8000;
 const TIMEOUT_MS_SLOW = 22000;
@@ -24,7 +26,23 @@ function timeoutFor(addon: Addon): number {
   const id = addon.manifest.id ?? "";
   const url = addon.transportUrl ?? "";
   const slow = SLOW_ADDON_PATTERNS.some((re) => re.test(name) || re.test(id) || re.test(url));
-  return slow ? TIMEOUT_MS_SLOW : TIMEOUT_MS_FAST;
+  const base = slow ? TIMEOUT_MS_SLOW : TIMEOUT_MS_FAST;
+  // Do not make every play wait on an addon that has been failing; it still gets a short try.
+  if (trackingOn() && addonStatus(addon.manifest.id) === "failing") {
+    return Math.min(base, FAILING_TIMEOUT_MS);
+  }
+  return base;
+}
+
+const FAILING_TIMEOUT_MS = 4000;
+
+function trackingOn(): boolean {
+  return loadStoredSettings().addonHealthTracking !== false;
+}
+
+function record(addon: Addon, ok: boolean, startedAt: number, reason?: string) {
+  if (!trackingOn()) return;
+  recordAddonOutcome(addon.manifest.id, ok, Math.round(performance.now() - startedAt), reason);
 }
 
 export type StreamRequest = {
@@ -172,10 +190,13 @@ async function fetchOne(
     });
     if (!res.ok) {
       dwarn(`[addons] ${addon.manifest.name} returned ${res.status} for ${type}/${id}`);
+      // 404 means "nothing for this title", which a healthy addon also says.
+      record(addon, res.status === 404, startedAt, `http-${res.status}`);
       return [];
     }
     const json = (await res.json()) as { streams?: RawStream[] };
     const list = json.streams ?? [];
+    record(addon, true, startedAt);
     const ranked = isAddonRanked(addon);
     return list.map((s) => {
       const mapped = {
@@ -199,8 +220,10 @@ async function fetchOne(
   } catch (e) {
     if (timedOut) {
       dwarn(`[addons] ${addon.manifest.name} timed out after ${limit}ms — dropped`);
+      record(addon, false, startedAt, "timeout");
     } else if (!signal.aborted) {
       dwarn(`[addons] ${addon.manifest.name} failed`, e);
+      record(addon, false, startedAt, "error");
     }
     return [];
   } finally {

@@ -4656,5 +4656,13 @@
   "Syncing subtitles to speech": "Syncing subtitles to speech",
   "Synced": "Synced",
   "Auto-sync subtitles to speech": "Auto-sync subtitles to speech",
-  "In the background, match each subtitle line to when it is spoken, correcting offsets, framerate drift and edited cuts. Needs ffmpeg installed. Playback starts immediately and subtitles snap into place when ready.": "In the background, match each subtitle line to when it is spoken, correcting offsets, framerate drift and edited cuts. Needs ffmpeg installed. Playback starts immediately and subtitles snap into place when ready."
+  "In the background, match each subtitle line to when it is spoken, correcting offsets, framerate drift and edited cuts. Needs ffmpeg installed. Playback starts immediately and subtitles snap into place when ready.": "In the background, match each subtitle line to when it is spoken, correcting offsets, framerate drift and edited cuts. Needs ffmpeg installed. Playback starts immediately and subtitles snap into place when ready.",
+  "Addon health": "Addon health",
+  "Argus remembers, on this device only, which installed addons answer and which fail. Nothing is sent anywhere.": "Argus remembers, on this device only, which installed addons answer and which fail. Nothing is sent anywhere.",
+  "Track addon reliability": "Track addon reliability",
+  "Record whether each addon answered your requests. Addons that keep failing get a short wait instead of slowing every play, and show a status in the addon list.": "Record whether each addon answered your requests. Addons that keep failing get a short wait instead of slowing every play, and show a status in the addon list.",
+  "Check addons in the background": "Check addons in the background",
+  "Every few hours, ask each installed addon for a public-domain film to see whether it still works. Off by default because it contacts your addons.": "Every few hours, ask each installed addon for a public-domain film to see whether it still works. Off by default because it contacts your addons.",
+  "Not responding": "Not responding",
+  "Unreliable": "Unreliable"
 }

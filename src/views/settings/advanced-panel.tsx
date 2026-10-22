@@ -110,6 +110,15 @@ export function AdvancedPanel() {
       </Section>
 
       <Section
+        title={t("Addon health")}
+        subtitle={t(
+          "Argus remembers, on this device only, which installed addons answer and which fail. Nothing is sent anywhere.",
+        )}
+      >
+        <AddonHealthRows />
+      </Section>
+
+      <Section
         title={t("Privacy")}
         subtitle={t(
           "Argus sends no telemetry. This also drops outbound ad, analytics, and tracker requests that addons or metadata providers try to make, before they leave your machine.",
@@ -212,6 +221,27 @@ function CommunityDirectoriesRow() {
         );
       }}
     />
+  );
+}
+
+function AddonHealthRows() {
+  const t = useT();
+  const { settings, update } = useSettings();
+  return (
+    <>
+      <ToggleRow
+        label={t("Track addon reliability")}
+        sub={t("Record whether each addon answered your requests. Addons that keep failing get a short wait instead of slowing every play, and show a status in the addon list.")}
+        value={settings.addonHealthTracking}
+        onChange={(v) => update({ addonHealthTracking: v })}
+      />
+      <ToggleRow
+        label={t("Check addons in the background")}
+        sub={t("Every few hours, ask each installed addon for a public-domain film to see whether it still works. Off by default because it contacts your addons.")}
+        value={settings.addonHealthProbes}
+        onChange={(v) => update({ addonHealthProbes: v })}
+      />
+    </>
   );
 }
 
