@@ -10,7 +10,8 @@ if (!pubkey) {
 const file = "src-tauri/tauri.conf.json";
 const conf = JSON.parse(readFileSync(file, "utf8"));
 const [major, minor] = conf.version.split(".");
-conf.version = `${major}.${minor}.${process.env.GITHUB_RUN_NUMBER}`;
+// desktop.yml passes the Mac build's version so all platforms share one feed entry.
+conf.version = process.env.ARGUS_VERSION || `${major}.${minor}.${process.env.GITHUB_RUN_NUMBER}`;
 conf.plugins.updater.pubkey = pubkey;
 writeFileSync(file, JSON.stringify(conf, null, 2));
 console.log("version", conf.version);
