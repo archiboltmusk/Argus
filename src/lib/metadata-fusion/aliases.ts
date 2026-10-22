@@ -1,4 +1,4 @@
-import { loadStoredSettings } from "@/lib/settings";
+import { loadStoredSettings } from "@/lib/settings/load";
 import { get as tmdbGet } from "@/lib/providers/tmdb/tmdb-client";
 import { tmdbIdFromImdb } from "@/lib/providers/tmdb/tmdb-imdb-resolve";
 import { tvmazeShow } from "@/lib/providers/tvmaze";
