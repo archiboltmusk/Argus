@@ -110,6 +110,15 @@ export function AdvancedPanel() {
       </Section>
 
       <Section
+        title={t("Quality matching")}
+        subtitle={t(
+          "Argus checks what your display can show and ranks streams to match, so HDR and Dolby Vision files are not preferred on a screen that cannot use them.",
+        )}
+      >
+        <CapabilityRow />
+      </Section>
+
+      <Section
         title={t("Addon health")}
         subtitle={t(
           "Argus remembers, on this device only, which installed addons answer and which fail. Nothing is sent anywhere.",
@@ -220,6 +229,19 @@ function CommunityDirectoriesRow() {
           0,
         );
       }}
+    />
+  );
+}
+
+function CapabilityRow() {
+  const t = useT();
+  const { settings, update } = useSettings();
+  return (
+    <ToggleRow
+      label={t("Match streams to my display")}
+      sub={t("On a screen without HDR, prefer SDR releases. In the web player, avoid Dolby Vision files that would show wrong colors. Audio codecs the native player cannot play are already ranked lower.")}
+      value={settings.capabilityMatching}
+      onChange={(v) => update({ capabilityMatching: v })}
     />
   );
 }

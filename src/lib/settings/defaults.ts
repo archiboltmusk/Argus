@@ -180,6 +180,7 @@ export const DEFAULT: Settings = {
   p2pUploadEnabled: false,
   communityAddonDirectories: false,
   addonHealthTracking: true,
+  capabilityMatching: true,
   addonHealthProbes: false,
   streamCacheRetentionHours: 24,
   streamCacheMaxGb: 0,

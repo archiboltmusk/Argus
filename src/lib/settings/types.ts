@@ -218,6 +218,7 @@ export type Settings = {
   p2pUploadEnabled: boolean;
   communityAddonDirectories: boolean;
   addonHealthTracking: boolean;
+  capabilityMatching: boolean;
   addonHealthProbes: boolean;
   streamCacheRetentionHours: number;
   streamCacheMaxGb: number;
