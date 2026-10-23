@@ -10225,6 +10225,18 @@
   "What happens when you hit Play on a title. Instant just starts; Manual lets you pick the source.": "What happens when you hit Play on a title. Instant just starts; Manual lets you pick the source.",
   "What is shared": "What is shared",
   "What is this group about?": "What is this group about?",
+<<<<<<< Updated upstream
+=======
+  "Not on TMDB? Keep as “{title}”": "Not on TMDB? Keep as “{title}”",
+  "Could not load: {names}": "Could not load: {names}",
+  "Could not play this download ({code})": "Could not play this download ({code})",
+  "Add a Real-Debrid, AllDebrid or Debrid-Link key in Streaming Sources to browse your cloud here.": "Add a Real-Debrid, AllDebrid or Debrid-Link key in Streaming Sources to browse your cloud here.",
+  "Connect a debrid service": "Connect a debrid service",
+  "Debrid cloud": "Debrid cloud",
+  "{n} completed downloads": "{n} completed downloads",
+  "Search cloud downloads": "Search cloud downloads",
+  "No completed downloads found.": "No completed downloads found.",
+>>>>>>> Stashed changes
   "What is this title?": "What is this title?",
   "What is this?": "What is this?",
   "What it leaned on": "What it leaned on",
