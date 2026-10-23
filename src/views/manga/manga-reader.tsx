@@ -18,9 +18,9 @@ import {
   getMangaMatchEntry,
   type MangaMatchRequest,
 } from "@/lib/manga-match";
-import { anilistMangaAuthed } from "@/lib/manga/tracking-anilist";
-import { malMangaAuthed } from "@/lib/manga/tracking-mal";
-import type { MangaTracker } from "@/lib/manga/sync";
+import { anilistMangaAuthed, pushAnilistManga } from "@/lib/manga/tracking-anilist";
+import { malMangaAuthed, pushMalManga } from "@/lib/manga/tracking-mal";
+import { emitMangaSync, type MangaTracker } from "@/lib/manga/sync";
 import { activeMangaSourceId, listMangaSources } from "@/lib/manga/sources";
 import { useProfiles } from "@/lib/profiles";
 import { effectiveBinding, formatBindingForDisplay, matchesBinding } from "@/lib/hotkeys";
@@ -48,6 +48,7 @@ import { useBookTurnQueue } from "./manga-reader/hooks/use-book-turn-queue";
 import {
   BG,
   BG_HEX,
+  COLOR_FILTER_CSS,
   doublePageStyle,
   loadPrefs,
   pageStyle,
@@ -430,6 +431,43 @@ export function MangaReader({
       updatedAt: Date.now(),
     });
     recordMangaChapterRead(pid, manga.id, chapter.id);
+    const chapNum = Math.floor(Number(chapter.chapter));
+    if (manga.title && Number.isFinite(chapNum) && chapNum > 0) {
+      if (anilistMangaAuthed() && settings.anilistAutoSync) {
+        const match = getMangaMatchEntry(pid, "anilist", titleKey);
+        if (match?.trackerId !== null) {
+          emitMangaSync("anilist", { kind: "syncing", title: manga.title, chapter: chapNum });
+          void pushAnilistManga(manga.title, chapNum, match?.trackerId).then((res) => {
+            if (res.result === "synced") {
+              emitMangaSync("anilist", { kind: "ok", title: manga.title, chapter: chapNum });
+            } else if (res.result === "error" || res.result === "title-miss") {
+              emitMangaSync("anilist", {
+                kind: "error",
+                title: manga.title,
+                error: res.result === "title-miss" ? "title-miss" : "update-not-confirmed",
+              });
+            }
+          });
+        }
+      }
+      if (malMangaAuthed() && settings.malAutoSync) {
+        const match = getMangaMatchEntry(pid, "mal", titleKey);
+        if (match?.trackerId !== null) {
+          emitMangaSync("mal", { kind: "syncing", title: manga.title, chapter: chapNum });
+          void pushMalManga(manga.title, chapNum, match?.trackerId).then((res) => {
+            if (res.result === "synced") {
+              emitMangaSync("mal", { kind: "ok", title: manga.title, chapter: chapNum });
+            } else if (res.result === "error" || res.result === "title-miss") {
+              emitMangaSync("mal", {
+                kind: "error",
+                title: manga.title,
+                error: res.result === "title-miss" ? "title-miss" : "update-not-confirmed",
+              });
+            }
+          });
+        }
+      }
+    }
     if (nextIndex == null) return;
     const n = chapters[nextIndex];
     if (!n) return;
@@ -922,6 +960,54 @@ export function MangaReader({
     />
   );
 
+  // Next-chapter background preloader: prefetch the first 5 pages once past 70% of current chapter
+  const preloadedNextRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (loading || failed || total === 0 || nextIndex == null) return;
+    if (currentPage < Math.floor(total * 0.7)) return;
+    const nextChap = chapters[nextIndex];
+    if (!nextChap || preloadedNextRef.current === nextChap.id) return;
+    preloadedNextRef.current = nextChap.id;
+    let cancelled = false;
+    void downloadedPages(nextChap.id)
+      .then((local) => local ?? chapterPages(nextChap.id))
+      .then((urls) => {
+        if (cancelled) return;
+        for (const u of urls.slice(0, 5)) {
+          const img = new Image();
+          img.referrerPolicy = "no-referrer";
+          img.src = u;
+        }
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [loading, failed, total, currentPage, nextIndex, chapters]);
+
+  // Hands-free auto-scroll in long-strip / horizontal mode
+  useEffect(() => {
+    const speed = prefs.autoScrollSpeed ?? 0;
+    if (paged || loading || failed || speed <= 0 || settingsOpen || bookmarksOpen) return;
+    let raf = 0;
+    const stepScroll = () => {
+      const node = scrollRef.current;
+      if (node) {
+        const px = speed * 0.85;
+        if (horizontal) {
+          node.scrollBy({ left: (rtl ? -1 : 1) * px, behavior: "auto" });
+        } else {
+          node.scrollBy({ top: px, behavior: "auto" });
+        }
+      }
+      raf = requestAnimationFrame(stepScroll);
+    };
+    raf = requestAnimationFrame(stepScroll);
+    return () => cancelAnimationFrame(raf);
+  }, [prefs.autoScrollSpeed, paged, horizontal, rtl, loading, failed, settingsOpen, bookmarksOpen]);
+
+  const filterCss = COLOR_FILTER_CSS[prefs.colorFilter ?? "none"];
+
   return createPortal(
     <div
       ref={disableMangaPersistence ? undefined : chapterContext}
@@ -930,6 +1016,7 @@ export function MangaReader({
       <div
         ref={scrollRef}
         dir={horizontal ? (rtl ? "rtl" : "ltr") : undefined}
+        style={filterCss ? { filter: filterCss } : undefined}
         className={`absolute inset-0 overscroll-contain ${
           book ? "overflow-hidden" : horizontal ? "overflow-auto" : "overflow-y-auto"
         }`}

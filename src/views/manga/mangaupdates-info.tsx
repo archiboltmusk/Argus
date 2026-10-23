@@ -181,7 +181,7 @@ function SeriesLink({
       const found = (await searchManga(item.title, 0).catch(() => []))[0];
       onOpenManga(found ? found.id : `title:${encodeURIComponent(item.title)}`);
     } catch {
-      onOpenManga(`title:${encodeURIComponent(item.title)}`);
+      setMissing(true);
     } finally {
       setBusy(false);
     }

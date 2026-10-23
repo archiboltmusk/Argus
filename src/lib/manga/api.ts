@@ -22,9 +22,7 @@ import {
   filterSafeManga,
   isAdultManga,
   isAdultTag,
-  setHideAdultManga,
   shouldHideAdultManga,
-  subscribeHideAdultManga,
 } from "./model";
 import type { MangaChapter, MangaProvider, MangaSummary } from "./types";
 

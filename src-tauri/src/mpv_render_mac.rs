@@ -1,4 +1,5 @@
 #![cfg(target_os = "macos")]
+#![allow(deprecated)]
 
 use std::ffi::{c_char, c_void, CString};
 use std::ptr::NonNull;

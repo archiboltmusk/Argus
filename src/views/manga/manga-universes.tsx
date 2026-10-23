@@ -1,4 +1,4 @@
-import { ChevronLeft, ChevronRight, Loader2, Users } from "lucide-react";
+import { BookOpen, ChevronLeft, ChevronRight, Compass, Loader2, Sparkles, Users } from "lucide-react";
 import { useEffect, useState } from "react";
 import { usePageVisible } from "@/lib/visibility";
 import { useT } from "@/lib/i18n";
@@ -6,7 +6,9 @@ import { mangaBackdrop } from "@/lib/manga/backdrop";
 import { topCharacterImage } from "@/lib/manga/character";
 import { universeLogo } from "@/lib/manga/universe-logo";
 import { searchMangaEverywhere } from "@/lib/manga/api";
+import { mangaUpdatesFor, type MangaUpdatesInfo } from "@/lib/manga/mangaupdates";
 import { MANGA_UNIVERSES, type MangaUniverse } from "@/lib/manga/universes";
+import { MangaAdaptationCard, MangaRecommendedRail } from "./manga-extras";
 
 const AMES = '"QR Ames Beta", var(--font-display), serif';
 const NEUTRAL = "linear-gradient(135deg, oklch(0.3 0.02 260), oklch(0.21 0.02 260))";
@@ -223,6 +225,173 @@ function pickBestMatch(results: Candidate[], query: string, name: string): Candi
   return best;
 }
 
+function UniverseHub({
+  universe,
+  onBack,
+  onOpenManga,
+}: {
+  universe: MangaUniverse;
+  onBack: () => void;
+  onOpenManga: (mangaId: string) => void;
+}) {
+  const t = useT();
+  const art = useBackdrop(universe.query, universe.backdrop);
+  const logo = useUniverseLogo(universe.noLogo ? "" : universe.query, universe.logo);
+  const [muInfo, setMuInfo] = useState<MangaUpdatesInfo | null>(null);
+  const [openingTitle, setOpeningTitle] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    setMuInfo(null);
+    void mangaUpdatesFor(universe.query)
+      .then((info) => {
+        if (!cancelled) setMuInfo(info);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [universe.query]);
+
+  const openByTitle = async (targetTitle: string, altQuery?: string) => {
+    if (openingTitle) return;
+    setOpeningTitle(targetTitle);
+    try {
+      const queries = altQuery && altQuery !== targetTitle ? [altQuery, targetTitle] : [targetTitle];
+      let found: Candidate | null = null;
+      for (const q of queries) {
+        const results = await searchMangaEverywhere(q).catch(() => []);
+        found = pickBestMatch(results, q, targetTitle);
+        if (found) break;
+      }
+      onOpenManga(found ? found.id : `title:${encodeURIComponent(targetTitle)}`);
+    } finally {
+      setOpeningTitle(null);
+    }
+  };
+
+  return (
+    <div className="animate-fade-in flex flex-col gap-8">
+      <div className="relative overflow-hidden rounded-3xl ring-1 ring-edge-soft">
+        <div className="absolute inset-0" style={{ background: NEUTRAL }} />
+        {art && (
+          <img
+            src={art}
+            alt=""
+            className="absolute inset-0 h-full w-full object-cover"
+            style={{ objectPosition: "center 22%" }}
+          />
+        )}
+        <div className="absolute inset-0 bg-gradient-to-t from-canvas via-canvas/70 to-black/35" />
+        <div className="relative z-10 flex min-h-[280px] flex-col justify-between p-8">
+          <button
+            type="button"
+            onClick={onBack}
+            className="inline-flex w-fit items-center gap-1.5 rounded-xl bg-canvas/70 px-4 py-2 text-[14px] font-medium text-ink ring-1 ring-edge-soft backdrop-blur-md transition-all hover:bg-elevated active:scale-[0.97]"
+          >
+            <ChevronLeft size={18} strokeWidth={2.4} />
+            {t("All Universes")}
+          </button>
+
+          <div className="mt-8 flex flex-col gap-4">
+            {logo ? (
+              <img
+                src={logo}
+                alt={universe.name}
+                className="max-h-20 w-auto max-w-[300px] object-contain object-left drop-shadow-[0_4px_18px_rgba(0,0,0,0.85)]"
+              />
+            ) : (
+              <h1
+                className="text-[40px] font-semibold tracking-tight text-white drop-shadow-[0_3px_16px_rgba(0,0,0,0.9)]"
+                style={{ fontFamily: AMES }}
+              >
+                {universe.name}
+              </h1>
+            )}
+            {muInfo?.description && (
+              <p className="line-clamp-3 max-w-2xl text-[14.5px] leading-relaxed text-ink-muted">
+                {muInfo.description}
+              </p>
+            )}
+            <div className="flex flex-wrap items-center gap-3 pt-1">
+              <button
+                type="button"
+                disabled={openingTitle !== null}
+                onClick={() => void openByTitle(universe.name, universe.query)}
+                className="inline-flex h-11 items-center gap-2 rounded-full bg-ink px-6 text-[14px] font-semibold text-canvas shadow-lg transition-transform hover:scale-[1.02] active:scale-[0.98] disabled:opacity-60"
+              >
+                {openingTitle === universe.name ? (
+                  <Loader2 size={16} className="animate-spin" />
+                ) : (
+                  <BookOpen size={17} />
+                )}
+                {t("Read {title}", { title: universe.name })}
+              </button>
+              {muInfo?.year && (
+                <span className="rounded-full bg-elevated/70 px-3 py-1 text-[12.5px] text-ink-muted ring-1 ring-edge-soft backdrop-blur-sm">
+                  {muInfo.year}
+                </span>
+              )}
+              {muInfo?.latestChapter != null && (
+                <span className="rounded-full bg-elevated/70 px-3 py-1 text-[12.5px] text-ink-muted ring-1 ring-edge-soft backdrop-blur-sm">
+                  {t("Ch. {n}", { n: muInfo.latestChapter })}
+                </span>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <MangaAdaptationCard title={universe.name} info={muInfo} heroBg={art} />
+
+      {muInfo && muInfo.related.length > 0 && (
+        <section className="flex flex-col gap-4">
+          <div className="flex items-center gap-2">
+            <Compass size={16} className="text-accent" />
+            <h2 className="text-[16px] font-semibold tracking-tight text-ink">
+              {t("Spin-offs, Sequels & Side Stories in this Universe")}
+            </h2>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {muInfo.related.map((rel) => {
+              const busy = openingTitle === rel.title;
+              return (
+                <button
+                  key={`${rel.id}-${rel.title}`}
+                  type="button"
+                  disabled={openingTitle !== null}
+                  onClick={() => void openByTitle(rel.title)}
+                  className="group flex items-center justify-between gap-3 rounded-2xl border border-edge-soft bg-elevated/35 px-4 py-3.5 text-start transition-all hover:border-edge hover:bg-elevated/70 active:scale-[0.99] disabled:opacity-60"
+                >
+                  <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+                    <span className="truncate text-[14px] font-medium text-ink group-hover:text-accent">
+                      {rel.title}
+                    </span>
+                    <span className="inline-flex items-center gap-1 text-[12px] text-ink-subtle">
+                      <Sparkles size={11} className="text-accent/80" />
+                      {rel.relation}
+                    </span>
+                  </div>
+                  {busy ? (
+                    <Loader2 size={15} className="shrink-0 animate-spin text-ink-subtle" />
+                  ) : (
+                    <ChevronRight
+                      size={16}
+                      className="shrink-0 text-ink-subtle transition-transform group-hover:translate-x-0.5"
+                    />
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        </section>
+      )}
+
+      <MangaRecommendedRail title={universe.name} onOpen={onOpenManga} />
+    </div>
+  );
+}
+
 export function MangaUniverses({
   onOpen,
   onBack,
@@ -231,23 +400,18 @@ export function MangaUniverses({
   onBack: () => void;
 }) {
   const t = useT();
-  const [selecting, setSelecting] = useState<string | null>(null);
-  const select = async (u: MangaUniverse) => {
-    if (selecting) return;
-    setSelecting(u.id);
-    try {
-      const queries = u.name !== u.query ? [u.query, u.name] : [u.query];
-      let found: Candidate | null = null;
-      for (const q of queries) {
-        const results = await searchMangaEverywhere(q).catch(() => []);
-        found = pickBestMatch(results, u.query, u.name);
-        if (found) break;
-      }
-      onOpen(found ? found.id : `title:${encodeURIComponent(u.name)}`);
-    } finally {
-      setSelecting(null);
-    }
-  };
+  const [activeUniverse, setActiveUniverse] = useState<MangaUniverse | null>(null);
+
+  if (activeUniverse) {
+    return (
+      <UniverseHub
+        universe={activeUniverse}
+        onBack={() => setActiveUniverse(null)}
+        onOpenManga={onOpen}
+      />
+    );
+  }
+
   return (
     <div className="animate-fade-in flex flex-col gap-6">
       <button
@@ -274,9 +438,9 @@ export function MangaUniverses({
           <UniverseCard
             key={u.id}
             universe={u}
-            onSelect={() => void select(u)}
-            loading={selecting === u.id}
-            disabled={selecting !== null}
+            onSelect={() => setActiveUniverse(u)}
+            loading={false}
+            disabled={false}
           />
         ))}
       </div>

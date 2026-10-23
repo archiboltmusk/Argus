@@ -23,7 +23,6 @@ import {
   resumeChapters,
   streamChapters,
   popularManga,
-  searchManga,
   type MangaChapter,
   type MangaSummary,
 } from "@/lib/manga/api";
@@ -47,6 +46,7 @@ import { MangaReader } from "./manga/manga-reader";
 import { MangaSourcesView } from "./manga/manga-sources-panel";
 import { MangaUniverses, UniversesCta } from "./manga/manga-universes";
 import { AnilistMangaRows } from "./manga/anilist-manga-rows";
+import { MalMangaRows } from "./manga/mal-manga-rows";
 import { MangaHiddenRows } from "./manga/manga-row-visibility";
 import { BecauseYouWatched } from "./manga/because-you-watched";
 import { useMangaFavorites } from "@/lib/manga-favorites";
@@ -281,6 +281,9 @@ export function MangaView() {
         <MangaHiddenRows />
         <LazyMount minHeight={280}>
           <AnilistMangaRows onOpen={openMangaByTitle} />
+        </LazyMount>
+        <LazyMount minHeight={280}>
+          <MalMangaRows onOpen={openMangaByTitle} />
         </LazyMount>
         <LazyMount minHeight={280}>
           <BecauseYouWatched onOpen={openMangaItem} />

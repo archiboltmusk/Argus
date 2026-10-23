@@ -115,13 +115,15 @@ export function SubSyncBar({ delaySec, onDelay, onEnterSync, syncAvailable }: Pr
         {/* Center Side: Sync Controls */}
         <div className="flex items-center gap-[2px] rounded-xl bg-raised p-[2px] shadow-inner">
           <StepBtn label="−0.5s" onClick={() => applyDelay(delaySec - 0.5)} wide />
-          <StepBtn label="−0.1s" onClick={() => applyDelay(delaySec - 0.1)} />
+          <StepBtn label="−0.25s" onClick={() => applyDelay(delaySec - 0.25)} wide />
+          <StepBtn label="−0.05s" onClick={() => applyDelay(delaySec - 0.05)} wide />
 
           <div className="mx-1.5 flex h-10 w-[96px] items-center justify-center rounded-lg bg-elevated">
             <DelayDisplay value={delaySec} nonZero={isNonZero} onReset={() => applyDelay(0)} />
           </div>
 
-          <StepBtn label="+0.1s" onClick={() => applyDelay(delaySec + 0.1)} />
+          <StepBtn label="+0.05s" onClick={() => applyDelay(delaySec + 0.05)} wide />
+          <StepBtn label="+0.25s" onClick={() => applyDelay(delaySec + 0.25)} wide />
           <StepBtn label="+0.5s" onClick={() => applyDelay(delaySec + 0.5)} wide />
         </div>
 
