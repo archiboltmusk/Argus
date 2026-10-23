@@ -14,7 +14,7 @@ export function usePlayerHotkeys(params: {
   snap: PlayerSnapshot;
   metaId: string;
   noteTitle: string;
-  noteLink?: string;
+  noteLink?: (positionSec: number, speed: number) => string | undefined;
   svpActive: boolean;
   drawMode: boolean;
   setDrawMode: Dispatch<SetStateAction<boolean>>;
@@ -121,7 +121,7 @@ export function usePlayerHotkeys(params: {
     toggleSleep: () =>
       sleep.mode.kind === "off" ? sleep.set({ kind: "end_episode" }) : sleep.cancel(),
     onCopyTimestamp: () =>
-      void navigator.clipboard?.writeText(timestampNote(noteTitle, snap.positionSec, noteLink)),
+      void navigator.clipboard?.writeText(timestampNote(noteTitle, snap.positionSec, noteLink?.(snap.positionSec, snap.rate))),
     onScreenshot: quickToolsEnabled ? () => frameGrab.trigger() : undefined,
     onGifRecord: quickToolsEnabled ? () => gif.toggle() : undefined,
     onClipRecord: quickToolsEnabled ? () => clip.openChooser() : undefined,

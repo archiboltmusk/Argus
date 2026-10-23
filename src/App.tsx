@@ -204,6 +204,7 @@ import { getNavFocusTarget } from "@/lib/keyboard-navigation/geometry";
 import { SFX } from "@/lib/sfx";
 import { startMusicTaskbarButtons, syncMusicTaskbarArtwork } from "@/lib/music/taskbar-buttons";
 import { resetMusicForProfile } from "@/lib/music/player";
+import { writePlayerPrefs } from "@/lib/player-prefs";
 import { useCourseShareSync } from "@/lib/local-library/course-share";
 import { startMediaSessionWindowTracking } from "@/lib/media-session";
 
@@ -1404,6 +1405,7 @@ function Shell({ onReady }: { onReady?: () => void }) {
         onDeepLinkOpenList,
         onDeepLinkOpenMusic,
         onOpenLocalFile,
+        onDeepLinkOpenLocal,
         onOpenProfileEdit,
         isProfileEditUrl,
       }) => {
@@ -1461,8 +1463,26 @@ function Shell({ onReady }: { onReady?: () => void }) {
               notWebReady: true,
             });
           });
+          const stopLocal = onDeepLinkOpenLocal(({ id, t, speed }) => {
+            void Promise.all([
+              import("@/lib/local-library"),
+              import("@/lib/local-library/player-src"),
+            ]).then(async ([{ localLibraryReady, readLocalLibrary }, { localPlayerSrc }]) => {
+              await localLibraryReady();
+              const entry = readLocalLibrary().find((e) => e.id === id);
+              // A link from another machine or a removed file has nothing to open.
+              if (!entry) {
+                setView("library");
+                return;
+              }
+              const src = localPlayerSrc(entry);
+              if (speed != null) writePlayerPrefs(src.meta.id, { rate: speed });
+              openPlayer({ ...src, startPositionMs: t != null ? t * 1000 : undefined });
+            });
+          });
           dispose = () => {
             stopBridge();
+            stopLocal();
             stopListener();
             stopOpen();
             stopOpenList();
