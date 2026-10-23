@@ -355,6 +355,17 @@ export function addToWatchlist(input: string | WatchlistInput): void {
   write(map);
 }
 
+export function addManyToWatchlist(inputs: WatchlistInput[]): void {
+  if (inputs.length === 0) return;
+  const map = read();
+  for (const input of inputs) {
+    if (map.has(input.id)) continue;
+    const entry = toEntry(input);
+    map.set(entry.id, entry);
+  }
+  write(map);
+}
+
 export function noteLocalImdbId(id: string, imdbId: string | null | undefined): void {
   const tt = validTt(imdbId);
   if (!tt || tt === id) return;

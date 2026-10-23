@@ -10,6 +10,7 @@ import { ProfilesStrip } from "./account/profiles-strip";
 import { StartupDefaults } from "./account/startup-defaults";
 import { SettingsScopeCard } from "./account/settings-scope-card";
 import { StremioCard } from "./account/stremio-card";
+import { StremioImportCard } from "./account/stremio-import-card";
 import { SyncedAddonsCard } from "./account/synced-addons-card";
 import { ARGUS_HOSTED } from "@/lib/config/endpoints";
 import { ArgusAccountPanel } from "@/views/account/argus-account-panel";
@@ -277,6 +278,7 @@ function StremioTab() {
         subtitle={t("Library, watch progress, and addon collection sync from this account.")}
       >
         <StremioCard />
+        <StremioImportCard />
       </Section>
       <Section
         title={t("Synced addons")}
