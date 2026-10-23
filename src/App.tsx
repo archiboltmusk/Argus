@@ -935,7 +935,7 @@ function Shell({ onReady }: { onReady?: () => void }) {
     return () => window.clearTimeout(timer);
   }, [settings.addonHealthProbes, settings.addonConformanceChecks, safeMode]);
   const searchOpen = useSearchOpen();
-  const { setOpen: setSearchOpen } = useSearchActions();
+  const { setOpen: setSearchOpen, setQuery: setSearchQuery } = useSearchActions();
   const bigPicture = useBigPicture().active;
   const bigPictureBootChecked = useRef(false);
   const uiScaleRef = useRef(settings.uiScale);
@@ -1407,9 +1407,46 @@ function Shell({ onReady }: { onReady?: () => void }) {
         onOpenLocalFile,
         onDeepLinkOpenLocal,
         onOpenProfileEdit,
+        onOpenMagnet,
         isProfileEditUrl,
       }) => {
         void startDeepLinkBridge().then((stopBridge) => {
+          const handleMagnet = (magnet: string) => {
+            setSearchQuery(magnet);
+            setSearchOpen(true);
+          };
+          const stopMagnet = onOpenMagnet((magnet) => {
+            handleMagnet(magnet);
+          });
+          const onPaste = (e: ClipboardEvent) => {
+            const target = e.target as HTMLElement | null;
+            if (
+              target &&
+              (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable)
+            ) {
+              return;
+            }
+            const text = e.clipboardData?.getData("text")?.trim();
+            if (text && /^magnet:\?xt=urn:[a-z0-9]+/i.test(text)) {
+              e.preventDefault();
+              handleMagnet(text);
+            }
+          };
+          const onDrop = (e: DragEvent) => {
+            const text = e.dataTransfer?.getData("text")?.trim();
+            if (text && /^magnet:\?xt=urn:[a-z0-9]+/i.test(text)) {
+              e.preventDefault();
+              handleMagnet(text);
+            }
+          };
+          const onDragOver = (e: DragEvent) => {
+            if (e.dataTransfer?.types.includes("text/plain")) {
+              e.preventDefault();
+            }
+          };
+          window.addEventListener("paste", onPaste);
+          window.addEventListener("dragover", onDragOver);
+          window.addEventListener("drop", onDrop);
           const stopListener = onDeepLinkInstall((rawUrl) => {
             if (window.__argusInstallerOpen) return;
             if (isProfileEditUrl(rawUrl)) return;
@@ -1489,6 +1526,10 @@ function Shell({ onReady }: { onReady?: () => void }) {
             stopOpenMusic();
             stopEdit();
             stopFile();
+            stopMagnet();
+            window.removeEventListener("paste", onPaste);
+            window.removeEventListener("dragover", onDragOver);
+            window.removeEventListener("drop", onDrop);
           };
         });
       },
@@ -1496,7 +1537,7 @@ function Shell({ onReady }: { onReady?: () => void }) {
     return () => {
       dispose?.();
     };
-  }, [setView, openMeta, openPlayer, openList, openPerson, openManga, openEBook]);
+  }, [setView, openMeta, openPlayer, openList, openPerson, openManga, openEBook, setSearchOpen, setSearchQuery]);
 
   useEffect(() => {
     if (topKind === "anime" && settings.hideContent.anime) setView("home");
