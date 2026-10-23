@@ -44,6 +44,7 @@ import { WatchlistTab } from "./library/watchlist-tab";
 import { LetterboxdTab } from "./library/letterboxd-tab";
 import { MediaServersTab } from "./library/media-servers-tab";
 import { TorboxTab } from "./library/torbox-tab";
+import { DebridCloudTab, useBrowsableDebrids } from "./library/debrid-cloud-tab";
 import torboxLogo from "@/assets/addon-logos/torbox.png";
 import { pushActivityHint } from "@/lib/discord/activity-hint";
 import { HeroCarousel } from "@/components/hero-carousel";
@@ -70,6 +71,7 @@ function readSavedTab(): Tab {
       v === "local" ||
       v === "media-servers" ||
       v === "torbox" ||
+      v === "debrid-cloud" ||
       v === "lists" ||
       v === "groups" ||
       v === "favorites" ||
@@ -191,6 +193,7 @@ export function LibraryView({ active }: { active: boolean }) {
           {tab === "local" && <LocalTab scrollRef={scrollRef} />}
           {tab === "media-servers" && <MediaServersTab scrollRef={scrollRef} />}
           {tab === "torbox" && <TorboxTab />}
+          {tab === "debrid-cloud" && <DebridCloudTab />}
           {tab === "lists" && <MyListsTab />}
           {tab === "groups" && <MyGroupsTab />}
           {tab === "favorites" && <FavoritesTab />}
@@ -243,6 +246,7 @@ function Header({
   const t = useT();
   const { setView } = useView();
   const { settings, update } = useSettings();
+  const hasDebridCloud = useBrowsableDebrids().length > 0;
   return (
     <header className="flex flex-col gap-5">
       <div className="flex items-end justify-between gap-6">
@@ -312,6 +316,12 @@ function Header({
           <img src={torboxLogo} alt="" className="h-3.5 w-3.5 object-contain" />
           TorBox
         </TabBtn>
+        {hasDebridCloud && (
+          <TabBtn active={tab === "debrid-cloud"} onClick={() => onTab("debrid-cloud")}>
+            <Server size={14} strokeWidth={2.2} />
+            {t("Debrid cloud")}
+          </TabBtn>
+        )}
         <TabBtn active={tab === "lists"} onClick={() => onTab("lists")}>
           <UiIcon name="list" className="h-3.5 w-3.5" />
           {t("My Lists")}

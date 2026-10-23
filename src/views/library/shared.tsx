@@ -17,6 +17,7 @@ export type Tab =
   | "local"
   | "media-servers"
   | "torbox"
+  | "debrid-cloud"
   | "lists"
   | "groups"
   | "favorites"
