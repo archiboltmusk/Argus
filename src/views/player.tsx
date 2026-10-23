@@ -116,6 +116,7 @@ import { WebErrorCard } from "./player/web-error-card";
 import { EndScreen } from "./player/end-screen";
 import { useEndScreen } from "./player/hooks/use-end-screen";
 import { LeaveConfirmModal } from "@/components/player/leave-confirm-modal";
+import { AmbientEdgeGlow } from "@/components/player/ambient-edge-glow";
 import { HdrStageBridge } from "./player/hdr-stage-bridge";
 import { setSkipSegmentsView } from "@/lib/skip-intro/segment-store";
 import { markStreamDead, STUB_TTL_MS } from "@/lib/dead-streams";
@@ -435,7 +436,7 @@ function NativePlayerView({ src }: { src: PlayerSrc }) {
     continueWatching,
     stopWatching,
   } = useStillWatching({
-    enabled: settings.stillWatching,
+    enabled: settings.stillWatching && !settings.bingeMode,
     threshold: settings.stillWatchingAfter,
     onContinue: goToEpisode,
     onStop: () => closePlayerRef.current(),
@@ -451,7 +452,10 @@ function NativePlayerView({ src }: { src: PlayerSrc }) {
   useAutoNextEpisode({
     src,
     snap,
-    nextEp: settings.autoPlayNextEpisode && !queueOrSleepArmed ? airedNext : null,
+    nextEp:
+      (settings.autoPlayNextEpisode || settings.bingeMode) && !queueOrSleepArmed
+        ? airedNext
+        : null,
     canChangeEpisode,
     cancelled: autoNextCancelled,
     startedNearEndRef,
@@ -1689,6 +1693,10 @@ function NativePlayerView({ src }: { src: PlayerSrc }) {
           durationSec={snap.durationSec}
         />
       )}
+      <AmbientEdgeGlow
+        active={settings.ambientGlow && playing && !docked && !pipMode && !src.pipDocked}
+        backdrop={src.meta.background ?? src.meta.poster}
+      />
       <div
         ref={videoMountRef}
         data-player-video-mount

@@ -764,6 +764,11 @@ export function useTrackAutoload(params: {
     bridgeRef.current?.setAudioDevice?.(settings.audioDevice);
   }, [engine, settings.audioDevice, bridgeRef]);
   useEffect(() => {
+    if (engine !== "mpv") return;
+    bridgeRef.current?.setAudioNormalize(settings.audioNormalize);
+    bridgeRef.current?.setAudioProfile?.(settings.audioProfile);
+  }, [engine, settings.audioNormalize, settings.audioProfile, bridgeRef]);
+  useEffect(() => {
     const subIdSig = subtitleAutoSelectionSignature(snap.subtitleTracks);
     const audioIdSig = JSON.stringify(
       snap.audioTracks.map((track) => [playbackAudioChoice(track), track.label, track.default]),

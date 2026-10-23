@@ -489,6 +489,8 @@ export const DEFAULT: Settings = {
   audioDelayRemember: true,
   audioOutputLatencyMs: 0,
   audioProfile: "off",
+  ambientGlow: true,
+  bingeMode: false,
   audioDevice: "",
   bandwidthMbps: 0,
   nextEpisodeLeadSec: -1,

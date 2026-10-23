@@ -6,6 +6,7 @@ import type { TrackInfo } from "@/lib/player/bridge";
 import { modalOverlayClose, modalOverlayEmitState, modalOverlayOpen } from "@/lib/modal-overlay";
 import { languageName, normalizeLang, trackLanguageName } from "@/lib/subtitles/language";
 import { useT } from "@/lib/i18n";
+import { useSettings } from "@/lib/settings";
 import { useMenuSide } from "./menu-side";
 import { Tooltip } from "./transport/tooltip";
 import { watchOutsideMouseDown } from "@/lib/player/overlay-dismiss";
@@ -218,7 +219,61 @@ function MenuBody(props: Props & { onClose: () => void }) {
         )}
       </div>
 
+      <AudioEnhancementSection engine={engine} />
       <DelayRow delay={delaySec} onDelay={onDelay} disabled={engine === "html5"} />
+    </div>
+  );
+}
+
+function AudioEnhancementSection({ engine }: { engine: "html5" | "mpv" }) {
+  const t = useT();
+  const { settings, update } = useSettings();
+  if (engine === "html5") return null;
+
+  const current = settings.audioProfile ?? "off";
+
+  const profiles: Array<{ id: typeof settings.audioProfile; label: string }> = [
+    { id: "off", label: t("Flat") },
+    { id: "speech-clarity", label: t("Speech Clarity") },
+    { id: "night", label: t("Night Mode") },
+    { id: "bass", label: t("Bass Boost") },
+  ];
+
+  return (
+    <div className="flex flex-col gap-2 border-t border-edge-soft px-4 py-2.5 bg-canvas/20">
+      <div className="flex items-center justify-between">
+        <span className="text-[12px] font-semibold text-ink">{t("Audio Enhancement")}</span>
+        <button
+          type="button"
+          onClick={() => update({ audioNormalize: !settings.audioNormalize })}
+          className={`rounded px-2 py-0.5 text-[11px] font-medium transition-colors ${
+            settings.audioNormalize
+              ? "bg-accent/20 text-accent font-semibold"
+              : "bg-raised text-ink-subtle hover:text-ink"
+          }`}
+        >
+          {settings.audioNormalize ? t("Normalized") : t("Normalize")}
+        </button>
+      </div>
+      <div className="grid grid-cols-2 gap-1.5">
+        {profiles.map((p) => {
+          const isSel = current === p.id;
+          return (
+            <button
+              key={p.id}
+              type="button"
+              onClick={() => update({ audioProfile: p.id })}
+              className={`flex items-center justify-center rounded-lg px-2.5 py-1.5 text-[11.5px] font-medium transition-colors ${
+                isSel
+                  ? "bg-accent text-canvas font-semibold shadow-sm"
+                  : "bg-raised text-ink-muted hover:bg-canvas/55 hover:text-ink"
+              }`}
+            >
+              {p.label}
+            </button>
+          );
+        })}
+      </div>
     </div>
   );
 }

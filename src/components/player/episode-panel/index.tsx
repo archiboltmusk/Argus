@@ -325,6 +325,22 @@ export function EpisodePanel({
                       </button>
                     </div>
                   )}
+                  {isSeries && (
+                    <button
+                      type="button"
+                      onClick={() => update({ bingeMode: !settings.bingeMode })}
+                      aria-pressed={settings.bingeMode}
+                      title={t("Binge Mode: auto-skips recaps & intros, continuous marathon playback")}
+                      className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] font-semibold transition-all ${
+                        settings.bingeMode
+                          ? "bg-amber-400 text-black shadow-sm ring-1 ring-amber-300"
+                          : "bg-white/10 text-ink-subtle hover:bg-white/15 hover:text-ink"
+                      }`}
+                    >
+                      <span>⚡</span>
+                      {t("Binge")}
+                    </button>
+                  )}
                   <button
                     aria-label={t("Close")}
                     onClick={onClose}
