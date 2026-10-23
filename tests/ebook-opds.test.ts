@@ -130,3 +130,19 @@ test("feed URL validation", () => {
 test("rejects non-catalog XML", () => {
   assert.throws(() => parseOpdsAtom("<html><body/></html>", BASE));
 });
+
+test("link picker accepts epub by extension and skips other formats", () => {
+  const feed = parseOpdsAtom(
+    `<feed xmlns="http://www.w3.org/2005/Atom">
+      <entry><title>A</title><link rel="http://opds-spec.org/acquisition" type="application/octet-stream" href="/dl/a.epub"/></entry>
+      <entry><title>B</title><link rel="http://opds-spec.org/acquisition" href="/dl/b.epub"/></entry>
+      <entry><title>C</title><link rel="http://opds-spec.org/acquisition" type="application/x-mobipocket-ebook" href="/dl/c.mobi"/></entry>
+      <entry><title>D</title><link rel="http://opds-spec.org/acquisition" type="application/octet-stream" href="/dl/d.pdf"/></entry>
+    </feed>`,
+    BASE,
+  );
+  assert.deepEqual(
+    feed.entries.map((entry) => opdsBook(entry)?.epubUrl),
+    ["https://books.example/dl/a.epub", "https://books.example/dl/b.epub", undefined, undefined],
+  );
+});

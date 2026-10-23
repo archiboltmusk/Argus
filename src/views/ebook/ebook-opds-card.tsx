@@ -127,7 +127,7 @@ export function OpdsCatalogCard() {
       </div>
       <details className={`${CARD} px-4 py-3`}>
         <summary className="cursor-pointer text-[14px] font-medium text-ink">
-          {t("Public-domain catalog suggestions")}
+          {t("Sample Open Feeds (Tap to Add)")}
         </summary>
         <p className="mt-2 text-[12.5px] text-ink-subtle">
           {t("Openly licensed or public-domain libraries. Nothing is added until you tap one.")}

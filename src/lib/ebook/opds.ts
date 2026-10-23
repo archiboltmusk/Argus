@@ -34,6 +34,7 @@ export type OpdsAuth = {
 export type OpdsConnection = { url: string; auth?: OpdsAuth };
 
 const MAX_FEED_BYTES = 8 * 1024 * 1024;
+const MAX_ENTRIES_PER_PAGE = 300;
 const MAX_EPUB_BYTES = 200 * 1024 * 1024;
 const EPUB_TYPE = "application/epub+zip";
 const ACQUISITION = "http://opds-spec.org/acquisition";
@@ -166,6 +167,7 @@ export function parseOpdsAtom(xml: string, url: string): OpdsFeed {
     url,
     entries: feed.children
       .filter((item) => item.name === "entry")
+      .slice(0, MAX_ENTRIES_PER_PAGE)
       .map((item) => entryFromAtom(item, url)),
     next: links.find((link) => link.rel === "next")?.href,
     search: search?.href ?? (description ? `opensearch:${description.href}` : undefined),
@@ -231,7 +233,10 @@ export function parseOpds2(json: unknown, url: string): OpdsFeed {
         });
     }
   }
-  for (const pub of Array.isArray(root.publications) ? root.publications : []) {
+  for (const pub of (Array.isArray(root.publications) ? root.publications : []).slice(
+    0,
+    MAX_ENTRIES_PER_PAGE,
+  )) {
     const item = record(pub);
     const meta = record(item.metadata);
     const acquisition = jsonLinks(item.links, url).map((link) =>
@@ -268,9 +273,23 @@ export function parseOpdsFeed(body: string, url: string): OpdsFeed {
   return parseOpdsAtom(body, url);
 }
 
-/** The acquisition link a book can be read from. Only EPUB is readable in the reader today. */
+function isEpubLink(link: OpdsLink): boolean {
+  if (/^application\/epub(\+zip)?\b/i.test(link.type)) return true;
+  // Some servers label downloads octet-stream or omit the type, so the file name decides.
+  if (link.type && !/octet-stream|binary/i.test(link.type)) return false;
+  try {
+    return /\.epub\d?$/i.test(new URL(link.href).pathname);
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * The acquisition link a book can be read from. Only EPUB is readable in the reader today,
+ * so mobipocket and PDF links are skipped.
+ */
 export function epubLink(entry: OpdsEntry): OpdsLink | undefined {
-  return entry.links.find((link) => link.rel.startsWith(ACQUISITION) && link.type === EPUB_TYPE);
+  return entry.links.find((link) => link.rel.startsWith(ACQUISITION) && isEpubLink(link));
 }
 
 export function opdsBook(entry: OpdsEntry): OpdsBook | null {
