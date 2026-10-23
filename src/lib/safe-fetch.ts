@@ -17,6 +17,10 @@ import {
 
 const SUBTITLE_CREDENTIAL_HEADER = "x-argus-subtitle-credential";
 
+/** Internal renderer-to-native marker for a request made by a sandboxed plugin. Native then holds
+ * it to https and the public network on every redirect hop. It must never be sent upstream. */
+export const STRICT_HTTPS_HEADER = "X-Argus-Strict-Https";
+
 const isTauri = typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
 
 declare global {
@@ -224,11 +228,16 @@ async function invokeArgusFetch(
   const headers: Record<string, string> = {};
   let credentialHandle: string | undefined;
   let publicNetworkOnly = false;
+  let strictHttps = false;
   if (init?.headers) {
     const h = new Headers(init.headers as HeadersInit);
     h.forEach((v, k) => {
       if (k.toLowerCase() === SUBTITLE_CREDENTIAL_HEADER) {
         credentialHandle = v;
+        return;
+      }
+      if (k.toLowerCase() === STRICT_HTTPS_HEADER.toLowerCase()) {
+        strictHttps = v === "1";
         return;
       }
       if (k.toLowerCase() === SUBTITLE_PUBLIC_NETWORK_HEADER.toLowerCase()) {
@@ -266,6 +275,7 @@ async function invokeArgusFetch(
       maxResponseBytes,
       credentialHandle,
       publicNetworkOnly,
+      strictHttps,
       allowLocalNetwork,
       followRedirects:
         init?.redirect === "manual" || init?.redirect === "error" ? false : undefined,
@@ -577,6 +587,15 @@ export const safeFetchStream: typeof fetch = (input, init) => {
   return fetch(input, init);
 };
 
+function isStrictPluginUrl(raw: string): boolean {
+  try {
+    const url = new URL(raw);
+    return url.protocol === "https:" && !url.username && !url.password;
+  } catch {
+    return false;
+  }
+}
+
 export function safeFetchBytes(
   input: RequestInfo | URL,
   init?: RequestInit,
@@ -588,6 +607,11 @@ export function safeFetchBytes(
   const policyHeaders = new Headers(init?.headers as HeadersInit | undefined);
   const publicNetworkOnly = policyHeaders.get(SUBTITLE_PUBLIC_NETWORK_HEADER) === "1";
   policyHeaders.delete(SUBTITLE_PUBLIC_NETWORK_HEADER);
+  const strictHttps = policyHeaders.get(STRICT_HTTPS_HEADER) === "1";
+  policyHeaders.delete(STRICT_HTTPS_HEADER);
+  if (strictHttps && (!target || !isStrictPluginUrl(target))) {
+    return Promise.reject(new TypeError("plugin requests must use https"));
+  }
   const cleanInit = init
     ? {
         ...init,

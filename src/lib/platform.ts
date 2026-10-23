@@ -44,6 +44,14 @@ export function isWindowsDesktop(): boolean {
   return osClass() === "windows";
 }
 
+/** Whether user-installed script plugins may run here. They are a desktop capability: on mobile and
+ * TV builds, and in the browser, Argus keeps to declarative feeds, because store guidelines (Apple
+ * 2.5.2 among them) do not allow an app to download and run code that changes what it does. */
+export function scriptPluginsSupported(): boolean {
+  const os = osClass();
+  return os === "linux" || os === "macos" || os === "windows";
+}
+
 export function isAndroid(): boolean {
   return osClass() === "android";
 }

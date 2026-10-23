@@ -2,6 +2,9 @@ import { safeFetch, safeFetchBase64, safeFetchBytes } from "@/lib/safe-fetch";
 import { assertSafeUrl } from "@/lib/manga/plugins/host-http";
 import { PluginWorker } from "@/lib/manga/plugins/worker-host";
 import { setSecret } from "@/lib/secret-store";
+import { scriptPluginsSupported } from "@/lib/platform";
+import { sha256Bytes, sha256Hex } from "./hash";
+import { assessTrust, confirmUntrustedPlugin, rememberTrustedKey } from "./trust";
 import { pluginIdFor } from "./manifest";
 import { installNativeArchive, requireAndroidExtensions, uninstallNativeExtension } from "./native";
 import { disposeStreamPlugin } from "./runtime";
@@ -22,17 +25,6 @@ const MAX_ARCHIVE_BYTES = 16 * 1024 * 1024;
  * This is also what bounds the download, so an icon past it is left to the url rather than stored. */
 const MAX_ICON_BYTES = 512 * 1024;
 const READY_TIMEOUT = 10_000;
-
-async function sha256Bytes(bytes: Uint8Array): Promise<string> {
-  const digest = await crypto.subtle.digest("SHA-256", bytes as BufferSource);
-  return Array.from(new Uint8Array(digest))
-    .map((b) => b.toString(16).padStart(2, "0"))
-    .join("");
-}
-
-async function sha256Hex(text: string): Promise<string> {
-  return sha256Bytes(new TextEncoder().encode(text));
-}
 
 export async function fetchEntryCode(
   entry: StreamRepoEntry,
@@ -113,6 +105,7 @@ async function probe(plugin: InstalledStreamPlugin): Promise<void> {
   const worker = new PluginWorker(workerPluginFor(plugin), {
     readyTimeoutMs: READY_TIMEOUT,
     httpPolicy: { sameSiteHeaders: true, publicOnly: true },
+    allowedHosts: plugin.format === "argus" ? plugin.hosts : undefined,
   });
   try {
     const meta = await worker.meta();
@@ -134,6 +127,7 @@ function fromEntry(
   hash: string,
   etag: string | undefined,
   prior: InstalledStreamPlugin | undefined,
+  signer: string | null = null,
 ): InstalledStreamPlugin {
   const now = Date.now();
   return {
@@ -162,6 +156,7 @@ function fromEntry(
     enabled: prior?.enabled ?? true,
     repoDisabled: !entry.enabled,
     verified: !!entry.sha256,
+    signer,
     incompatible: null,
     installedAt: prior?.installedAt ?? now,
     updatedAt: now,
@@ -199,16 +194,43 @@ async function installArchiveEntry(
   return plugin;
 }
 
+/** Signed plugins are checked, unsigned ones are allowed, and neither is installed on trust. A new
+ * plugin, or one whose signing key changed, asks once; an update of one already accepted does not.
+ * A signature that does not verify is refused rather than treated as unsigned. */
+async function confirmTrust(
+  entry: StreamRepoEntry,
+  prior: InstalledStreamPlugin | undefined,
+): Promise<string | null> {
+  const trust = await assessTrust(entry);
+  if (trust.signed && !trust.valid) throw new PluginError("signature");
+  const signer = trust.valid ? trust.signer : null;
+  const known = trust.valid && trust.keyKnown;
+  const accepted = !!prior && (prior.signer ?? null) === signer;
+  if (!known && !accepted) {
+    const ok = await confirmUntrustedPlugin({
+      name: entry.name,
+      author: entry.author,
+      hosts: entry.hosts,
+      signer,
+    });
+    if (!ok) throw new PluginError("declined");
+  }
+  if (signer) rememberTrustedKey(signer);
+  return signer;
+}
+
 export async function installEntry(
   repo: StreamRepoRecord,
   entry: StreamRepoEntry,
 ): Promise<InstalledStreamPlugin> {
+  if (!scriptPluginsSupported()) throw new PluginError("desktop-only");
+  const prior = streamPluginById(pluginIdFor(repo.url, entry.id));
+  const signer = await confirmTrust(entry, prior);
   if (entry.format === "android-extension") return installArchiveEntry(repo, entry);
   const { code, etag } = await fetchEntryCode(entry);
   const hash = await sha256Hex(code);
   if (entry.sha256 && entry.sha256 !== hash) throw new PluginError("checksum");
-  const prior = streamPluginById(pluginIdFor(repo.url, entry.id));
-  const plugin = fromEntry(repo, entry, code, hash, etag, prior);
+  const plugin = fromEntry(repo, entry, code, hash, etag, prior, signer);
   await probe(plugin);
   plugin.icon = (await fetchIcon(entry.icon)) ?? plugin.icon;
   disposeStreamPlugin(plugin.id);

@@ -1,0 +1,17 @@
+{
+  "name": "Argus example plugins",
+  "type": "stream",
+  "plugins": [
+    {
+      "id": "json-catalog",
+      "name": "JSON catalog",
+      "version": "1.0.0",
+      "author": "Argus",
+      "description": "Reads a JSON Feed you control and offers its playable attachments for matching titles. Read-only.",
+      "entry": "plugin.js",
+      "sha256": "4a22bd6d531b98ad298d1ef3d8cb5895cb64304764a346ca08b3da74a7fe1bce",
+      "permissions": { "hosts": ["feeds.example.org"] },
+      "types": ["movie", "series"]
+    }
+  ]
+}

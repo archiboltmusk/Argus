@@ -15,6 +15,11 @@ const BROWSER_UA: &str =
 const MAX_CONCURRENT_FETCHES: usize = 48;
 const DEFAULT_TIMEOUT_MS: u64 = 30_000;
 const MAX_REDIRECTS: usize = 10;
+// Limits for requests made on behalf of a sandboxed plugin (`strict_https`).
+const STRICT_MAX_URL_LEN: usize = 4096;
+const STRICT_MAX_BODY_BYTES: usize = 1024 * 1024;
+const STRICT_MAX_RESPONSE_BYTES: u64 = 8 * 1024 * 1024;
+const STRICT_MAX_TIMEOUT_MS: u64 = 30_000;
 
 fn fetch_semaphore() -> &'static Semaphore {
     static SEM: OnceLock<Semaphore> = OnceLock::new();
@@ -377,6 +382,49 @@ pub(crate) async fn validate_target(url: &reqwest::Url, allow_local: bool) -> Re
     Ok(())
 }
 
+/// A plugin may only reach an https URL without embedded credentials. Checked on the first request
+/// and on every redirect hop, so a redirect cannot lead somewhere the first URL could not.
+fn validate_strict_url(url: &reqwest::Url) -> Result<(), String> {
+    if url.as_str().len() > STRICT_MAX_URL_LEN {
+        return Err("plugin url too long".to_string());
+    }
+    if url.scheme() != "https" {
+        return Err(format!("plugin requests must use https: {}", url.scheme()));
+    }
+    if !url.username().is_empty() || url.password().is_some() {
+        return Err("plugin url must not carry credentials".to_string());
+    }
+    if url.host_str().is_none_or(str::is_empty) {
+        return Err("plugin url has no host".to_string());
+    }
+    Ok(())
+}
+
+fn apply_strict_limits(args: &mut ArgusFetchArgs) -> Result<(), String> {
+    let body_len = args
+        .body
+        .as_ref()
+        .map(String::len)
+        .or_else(|| args.body_base64.as_ref().map(|value| value.len() / 4 * 3))
+        .unwrap_or(0);
+    if body_len > STRICT_MAX_BODY_BYTES {
+        return Err("plugin request body too large".to_string());
+    }
+    args.timeout_ms = Some(
+        args.timeout_ms
+            .unwrap_or(STRICT_MAX_TIMEOUT_MS)
+            .min(STRICT_MAX_TIMEOUT_MS),
+    );
+    args.max_response_bytes = Some(
+        args.max_response_bytes
+            .unwrap_or(STRICT_MAX_RESPONSE_BYTES)
+            .min(STRICT_MAX_RESPONSE_BYTES),
+    );
+    args.allow_local_network = Some(false);
+    args.credential_handle = None;
+    Ok(())
+}
+
 fn is_https_downgrade(a: &reqwest::Url, b: &reqwest::Url) -> bool {
     a.scheme() == "https" && b.scheme() == "http"
 }
@@ -479,6 +527,9 @@ pub struct ArgusFetchArgs {
     pub public_network_only: Option<bool>,
     pub allow_local_network: Option<bool>,
     pub follow_redirects: Option<bool>,
+    /// Set for requests made by a sandboxed plugin: https only on every hop, no URL credentials,
+    /// public network only, and bounded timeout, body and response size.
+    pub strict_https: Option<bool>,
     pub thumb_width_px: Option<u32>,
 }
 
@@ -496,8 +547,11 @@ pub struct ArgusFetchResponse {
 #[tauri::command]
 pub async fn argus_fetch(
     app: tauri::AppHandle,
-    args: ArgusFetchArgs,
+    mut args: ArgusFetchArgs,
 ) -> Result<ArgusFetchResponse, String> {
+    if args.strict_https.unwrap_or(false) {
+        apply_strict_limits(&mut args)?;
+    }
     let timeout = Duration::from_millis(args.timeout_ms.unwrap_or(DEFAULT_TIMEOUT_MS));
     let _permit = acquire_fetch_permit().await?;
     run_with_deadline(timeout, argus_fetch_inner(app, args)).await
@@ -508,7 +562,8 @@ async fn argus_fetch_inner(
     args: ArgusFetchArgs,
 ) -> Result<ArgusFetchResponse, String> {
     let timeout = Duration::from_millis(args.timeout_ms.unwrap_or(DEFAULT_TIMEOUT_MS));
-    let public_network_only = args.public_network_only.unwrap_or(false);
+    let strict_https = args.strict_https.unwrap_or(false);
+    let public_network_only = args.public_network_only.unwrap_or(false) || strict_https;
     let allow_local_network = args.allow_local_network.unwrap_or(false);
     let follow_redirects = args.follow_redirects.unwrap_or(true);
 
@@ -517,6 +572,9 @@ async fn argus_fetch_inner(
         reqwest::Method::from_bytes(method.as_bytes()).map_err(|e| format!("method: {}", e))?;
 
     let mut current_url = reqwest::Url::parse(&args.url).map_err(|e| format!("url: {}", e))?;
+    if strict_https {
+        validate_strict_url(&current_url)?;
+    }
     validate_target(&current_url, allow_local_network).await?;
 
     let mut subtitle_credential = args
@@ -646,6 +704,9 @@ async fn argus_fetch_inner(
             .map_err(|e| format!("redirect url: {}", e))?;
         if next_url.scheme() != "http" && next_url.scheme() != "https" {
             return Err(format!("redirect bad scheme: {}", next_url.scheme()));
+        }
+        if strict_https {
+            validate_strict_url(&next_url)?;
         }
         if is_https_downgrade(&current_url, &next_url) {
             return Err("redirect from HTTPS to HTTP is not allowed".to_string());
@@ -990,6 +1051,53 @@ mod tests {
             let ip: std::net::IpAddr = value.parse().unwrap();
             assert!(is_public_network_ip(ip), "{value}");
         }
+    }
+
+    #[test]
+    fn strict_url_requires_plain_https() {
+        for value in [
+            "http://example.com/a",
+            "https://user:pw@example.com/a",
+            "https://user@example.com/a",
+            "ftp://example.com/a",
+            "file:///etc/passwd",
+        ] {
+            let url: reqwest::Url = value.parse().unwrap();
+            assert!(validate_strict_url(&url).is_err(), "{value}");
+        }
+        let ok: reqwest::Url = "https://example.com/a?b=1".parse().unwrap();
+        assert!(validate_strict_url(&ok).is_ok());
+        let long: reqwest::Url = format!("https://example.com/{}", "a".repeat(5000))
+            .parse()
+            .unwrap();
+        assert!(validate_strict_url(&long).is_err());
+    }
+
+    #[test]
+    fn strict_limits_clamp_and_strip() {
+        let mut args = ArgusFetchArgs {
+            url: "https://example.com".into(),
+            method: None,
+            headers: None,
+            body: None,
+            body_base64: None,
+            timeout_ms: Some(600_000),
+            response_type: None,
+            max_response_bytes: Some(u64::MAX),
+            credential_handle: Some("handle".into()),
+            public_network_only: None,
+            allow_local_network: Some(true),
+            follow_redirects: None,
+            strict_https: Some(true),
+            thumb_width_px: None,
+        };
+        apply_strict_limits(&mut args).unwrap();
+        assert_eq!(args.timeout_ms, Some(STRICT_MAX_TIMEOUT_MS));
+        assert_eq!(args.max_response_bytes, Some(STRICT_MAX_RESPONSE_BYTES));
+        assert_eq!(args.allow_local_network, Some(false));
+        assert!(args.credential_handle.is_none());
+        args.body = Some("x".repeat(STRICT_MAX_BODY_BYTES + 1));
+        assert!(apply_strict_limits(&mut args).is_err());
     }
 
     #[test]

@@ -2,10 +2,12 @@ import { useEffect, useState } from "react";
 import { Info } from "./icons";
 import { useT } from "@/lib/i18n";
 import { loadPluginKinds } from "@/lib/plugins";
+import { scriptPluginsSupported } from "@/lib/platform";
 import { schedulePluginAutoCheck } from "@/lib/plugins/auto-check";
 import { useSettings } from "@/lib/settings";
 import { InstalledTab } from "./plugins-panel/installed-tab";
 import { RepositoriesTab } from "./plugins-panel/repositories-tab";
+import { UntrustedPluginPrompt } from "./plugins-panel/untrusted-plugin-prompt";
 import { Section } from "./shared";
 import { useSubTabs } from "./sub-tabs";
 
@@ -24,12 +26,12 @@ export function PluginsPanel() {
   useSubTabs(tabs, tab, (id) => setTab(id as Tab));
 
   useEffect(() => {
-    if (!isTauri) return;
+    if (!isTauri || !scriptPluginsSupported()) return;
     void loadPluginKinds();
     schedulePluginAutoCheck(settings.pluginsAutoCheck);
   }, [settings.pluginsAutoCheck]);
 
-  if (!isTauri) {
+  if (!isTauri || !scriptPluginsSupported()) {
     return (
       <Section title={t("Desktop only")}>
         <div className="flex items-start gap-2.5 rounded-[10px] bg-elevated px-4 py-3">
@@ -44,6 +46,7 @@ export function PluginsPanel() {
 
   return (
     <div key={tab} className="argus-cascade flex flex-col gap-10">
+      <UntrustedPluginPrompt />
       {tab === "plugins" ? (
         <InstalledTab onAddRepository={() => setTab("repositories")} />
       ) : (

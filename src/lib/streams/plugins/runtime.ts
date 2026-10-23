@@ -2,17 +2,19 @@ import { PluginWorker } from "@/lib/manga/plugins/worker-host";
 import { dwarn } from "@/lib/debug";
 import { runExtensionPlugin } from "./extension/run";
 import { acquire, release } from "./gate";
+import { sha256Hex } from "./hash";
 import { requireAndroidExtensions } from "./native";
 import { PRELUDE_VERSION } from "./provider-compat/prelude";
 import { settingsFingerprint, workerPluginFor } from "./source";
 import { saveStreamPlugin, streamPluginById } from "./store";
-import type {
-  InstalledStreamPlugin,
-  PluginCheckResult,
-  PluginHealth,
-  PluginLogLine,
-  StreamPluginRequest,
-  StreamPluginSettingsField,
+import {
+  PluginError,
+  type InstalledStreamPlugin,
+  type PluginCheckResult,
+  type PluginHealth,
+  type PluginLogLine,
+  type StreamPluginRequest,
+  type StreamPluginSettingsField,
 } from "./types";
 
 const IDLE_MS = 5 * 60_000;
@@ -102,11 +104,26 @@ function spawn(plugin: InstalledStreamPlugin): Slot {
     },
     httpPolicy: { sameSiteHeaders: true, publicOnly: true, openHeaders: true, maxBytes: MAX_BYTES },
     readyTimeoutMs: READY_TIMEOUT,
+    allowedHosts: plugin.format === "argus" ? plugin.hosts : undefined,
   });
   const slot: Slot = { worker, key: workerKey(plugin), lastUsed: Date.now(), requests: 0 };
   slots.set(plugin.id, slot);
   startSweep();
   return slot;
+}
+
+/** The hash taken at install is checked again, against the code in the store, each time a worker is
+ * about to start. Code that no longer matches is never run: the plugin is switched off and marked. */
+async function verifyIntegrity(plugin: InstalledStreamPlugin): Promise<void> {
+  if (plugin.format === "android-extension") return;
+  const live = slots.get(plugin.id);
+  if (live && live.key === workerKey(plugin)) return;
+  const stored = streamPluginById(plugin.id) ?? plugin;
+  if ((await sha256Hex(stored.code)) === stored.hash) return;
+  disposeStreamPlugin(plugin.id);
+  await saveStreamPlugin({ ...stored, enabled: false, filesChanged: true });
+  pushLog(plugin.id, "error", "stored code no longer matches its install hash; plugin switched off");
+  throw new PluginError("integrity");
 }
 
 export function streamWorkerFor(plugin: InstalledStreamPlugin): PluginWorker {
@@ -234,6 +251,7 @@ export async function runStreamPlugin(
         },
       });
     } else {
+      await verifyIntegrity(plugin);
       const worker = streamWorkerFor(plugin);
       requestsBefore = requestCount(plugin);
       value = await worker.call("streams", [req], timeoutMs, signal);
@@ -358,6 +376,7 @@ function normalizeField(v: unknown): StreamPluginSettingsField | null {
 export async function streamPluginSettingsFields(
   plugin: InstalledStreamPlugin,
 ): Promise<StreamPluginSettingsField[]> {
+  await verifyIntegrity(plugin);
   const worker = new PluginWorker(workerPluginFor(plugin), {
     readyTimeoutMs: READY_TIMEOUT,
     denyHttp: true,

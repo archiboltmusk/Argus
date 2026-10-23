@@ -1,3 +1,4 @@
+import { scriptPluginsSupported } from "@/lib/platform";
 import { SANDBOX_SOURCE } from "./sandbox";
 import { runPluginGrpc, runPluginHttp, type PluginHttpPolicy } from "./host-http";
 import { serializeHtml } from "./host-parse";
@@ -25,6 +26,9 @@ export type PluginWorkerOptions = {
   httpPolicy?: PluginHttpPolicy & { sameSiteHeaders?: boolean };
   readyTimeoutMs?: number;
   denyHttp?: boolean;
+  /** Hosts the plugin declared. When set, a request to any other host is refused, subdomains of a
+   * declared host included. Left empty, only the network rules apply. */
+  allowedHosts?: string[];
 };
 
 const MAX_CONCURRENT_HTTP = 6;
@@ -33,6 +37,27 @@ let globalHttpInflight = 0;
 const globalHttpQueue: Array<() => void> = [];
 const MAX_HTML_BYTES = 6 * 1024 * 1024;
 const CANCEL_ACK_MS = 250;
+const DEFAULT_READY_MS = 5_000;
+/** A plugin's answer is cloned into the app, so it is bounded as a request body is. */
+const MAX_RESULT_CHARS = 4 * 1024 * 1024;
+/** The bridge is the only way out of the worker, so the number of requests it will carry for one
+ * plugin is bounded too: a script stuck in a loop cannot turn it into a request flood. */
+const MAX_HTTP_PER_WINDOW = 300;
+const HTTP_WINDOW_MS = 60_000;
+
+export function hostAllowed(url: string, allowed: string[] | undefined): boolean {
+  if (!allowed || allowed.length === 0) return true;
+  let host: string;
+  try {
+    host = new URL(url).hostname.toLowerCase();
+  } catch {
+    return false;
+  }
+  return allowed.some((entry) => {
+    const h = entry.toLowerCase().replace(/^\*\./, "");
+    return h !== "" && (host === h || host.endsWith("." + h));
+  });
+}
 
 export class PluginWorker {
   private plugin: InstalledPlugin;
@@ -47,6 +72,7 @@ export class PluginWorker {
   private seq = 0;
   private httpInflight = 0;
   private httpQueue: Array<() => void> = [];
+  private httpStamps: number[] = [];
 
   constructor(plugin: InstalledPlugin, opts: PluginWorkerOptions = {}) {
     this.plugin = plugin;
@@ -62,6 +88,9 @@ export class PluginWorker {
   }
 
   private ensure(): Promise<PluginMeta> {
+    if (!scriptPluginsSupported()) {
+      return Promise.reject(new Error("script plugins are available in the desktop app only"));
+    }
     if (!this.ready) this.ready = this.spawn();
     return this.ready;
   }
@@ -77,12 +106,10 @@ export class PluginWorker {
     return new Promise<PluginMeta>((resolve, reject) => {
       this.readyResolve = resolve;
       this.readyReject = reject;
-      if (this.opts.readyTimeoutMs) {
-        this.readyTimer = setTimeout(() => {
-          this.readyTimer = null;
-          if (this.readyReject) this.crash("did not start in time");
-        }, this.opts.readyTimeoutMs);
-      }
+      this.readyTimer = setTimeout(() => {
+        this.readyTimer = null;
+        if (this.readyReject) this.crash("did not start in time");
+      }, this.opts.readyTimeoutMs ?? DEFAULT_READY_MS);
       w.postMessage({
         type: "init",
         source: this.plugin.source,
@@ -174,7 +201,8 @@ export class PluginWorker {
         this.dispose();
         break;
       case "result":
-        this.settle(m.id, m.value, null);
+        if (resultTooLarge(m.value)) this.settle(m.id, null, new Error("plugin result too large"));
+        else this.settle(m.id, m.value, null);
         break;
       case "error":
         this.settle(m.id, null, new Error(m.error));
@@ -209,6 +237,11 @@ export class PluginWorker {
       this.send({ type: "bridgeResult", id, ok: false, error: "network not available here" });
       return;
     }
+    const refusal = this.refuseRequest(url);
+    if (refusal) {
+      this.send({ type: "bridgeResult", id, ok: false, error: refusal });
+      return;
+    }
     this.opts.onHttpRequest?.(url);
     await this.acquireHttp();
     try {
@@ -228,6 +261,11 @@ export class PluginWorker {
     requestBase64: string,
     opts: PluginGrpcOpts,
   ): Promise<void> {
+    const refusal = this.refuseRequest(url);
+    if (refusal) {
+      this.send({ type: "bridgeResult", id, ok: false, error: refusal });
+      return;
+    }
     await this.acquireHttp();
     try {
       const value = await runPluginGrpc(url, requestBase64, { ...opts, ...this.headerGate(url) });
@@ -237,6 +275,16 @@ export class PluginWorker {
     } finally {
       this.releaseHttp();
     }
+  }
+
+  private refuseRequest(url: unknown): string | null {
+    if (typeof url !== "string") return "url rejected";
+    if (!hostAllowed(url, this.opts.allowedHosts)) return "host not declared by the plugin";
+    const now = Date.now();
+    this.httpStamps = this.httpStamps.filter((t) => now - t < HTTP_WINDOW_MS);
+    if (this.httpStamps.length >= MAX_HTTP_PER_WINDOW) return "too many requests";
+    this.httpStamps.push(now);
+    return null;
   }
 
   private async acquireHttp(): Promise<void> {
@@ -313,6 +361,16 @@ export class PluginWorker {
       URL.revokeObjectURL(this.url);
       this.url = null;
     }
+  }
+}
+
+function resultTooLarge(value: unknown): boolean {
+  if (typeof value === "string") return value.length > MAX_RESULT_CHARS;
+  if (value === null || typeof value !== "object") return false;
+  try {
+    return JSON.stringify(value).length > MAX_RESULT_CHARS;
+  } catch {
+    return true;
   }
 }
 

@@ -104,8 +104,11 @@ test("argus manifests keep their richer fields", () => {
           name: "One",
           version: "2",
           entry: "one.js",
+          author: "Someone",
           sha256: "a".repeat(64),
-          hosts: ["Example-Site.to"],
+          permissions: { hosts: ["Example-Site.to"] },
+          publicKey: "ed25519:AAAA",
+          signature: "BBBB",
           idPrefixes: ["tt"],
           nsfw: true,
           minArgus: "0.9.130",
@@ -123,6 +126,42 @@ test("argus manifests keep their richer fields", () => {
   assert.deepEqual(e.idPrefixes, ["tt"]);
   assert.equal(e.nsfw, true);
   assert.equal(e.timeoutMs, 60_000);
+  assert.equal(e.author, "Someone");
+  assert.equal(e.publicKey, "ed25519:AAAA");
+  assert.equal(e.signature, "BBBB");
+});
+
+test("argus entries missing author, version, hash or declared hosts are skipped", () => {
+  const complete = {
+    id: "ok",
+    name: "Ok",
+    version: "1",
+    entry: "ok.js",
+    author: "Someone",
+    sha256: "b".repeat(64),
+    permissions: { hosts: ["api.example.org"] },
+  };
+  const parsed = parseStreamRepoManifest(
+    {
+      name: "Repo",
+      type: "stream",
+      plugins: [
+        complete,
+        { ...complete, id: "no-author", author: undefined },
+        { ...complete, id: "no-version", version: undefined },
+        { ...complete, id: "no-hash", sha256: undefined },
+        { ...complete, id: "bad-hash", sha256: "zz" },
+        { ...complete, id: "no-hosts", permissions: undefined },
+        { ...complete, id: "junk-hosts", permissions: { hosts: ["localhost", "not a host", "*"] } },
+        { ...complete, id: "legacy-hosts", permissions: undefined, hosts: ["api.example.org"] },
+      ],
+    },
+    "https://example.com/argus/manifest.json",
+  );
+  assert.deepEqual(
+    parsed.entries.map((e) => e.id),
+    ["ok", "legacy-hosts"],
+  );
 });
 
 test("manga repositories and junk are refused with a reason", () => {

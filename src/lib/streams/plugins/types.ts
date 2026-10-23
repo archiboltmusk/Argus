@@ -26,6 +26,9 @@ export type StreamRepoEntry = {
   version: string;
   entry: string;
   sha256?: string;
+  /** Optional Ed25519 signature by the author, as `ed25519:<base64 key>` and base64. */
+  publicKey?: string;
+  signature?: string;
   icon?: string;
   description?: string;
   author?: string;
@@ -86,6 +89,8 @@ export type InstalledStreamPlugin = {
   enabled: boolean;
   repoDisabled: boolean;
   verified: boolean;
+  /** The key that signed the installed version, when it was signed and the signature held. */
+  signer?: string | null;
   incompatible: string | null;
   installedAt: number;
   updatedAt: number;
