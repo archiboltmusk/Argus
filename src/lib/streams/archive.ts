@@ -9,11 +9,15 @@ import type { Stream } from "./types";
 export async function fetchArchiveStreams(q: LibraryQuery, signal: AbortSignal): Promise<Stream[]> {
   if (q.type !== "movie" || !q.title) return [];
   try {
-    const res = await fetch(searchUrl(q.title), { signal });
-    if (!res.ok) return [];
-    const docs = parseSearch(await res.json()).filter(
-      (d) => docYearMatches(d, q.year) && fuzzyCoverage(q.title, d.title ?? "") >= 0.99,
-    );
+    const search = async (loose: boolean) => {
+      const res = await fetch(searchUrl(q.title, loose), { signal });
+      if (!res.ok) return [];
+      return parseSearch(await res.json()).filter(
+        (d) => docYearMatches(d, q.year) && fuzzyCoverage(q.title, d.title ?? "") >= 0.99,
+      );
+    };
+    let docs = await search(false);
+    if (!docs.length) docs = await search(true);
     const out: Stream[] = [];
     for (const doc of docs.slice(0, 2)) {
       const meta = await fetch(`https://archive.org/metadata/${encodeURIComponent(doc.identifier)}`, { signal });

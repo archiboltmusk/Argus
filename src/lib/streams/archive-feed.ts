@@ -6,10 +6,20 @@ export type ArchiveFile = { name: string; format?: string; size?: string | numbe
 const VIDEO_FORMATS = new Set(["h.264", "mpeg4", "512kb mpeg4", "matroska", "ogg video", "h.264 hd"]);
 const VIDEO_EXT = /\.(mp4|m4v|mkv|ogv|webm)$/i;
 
-export function searchUrl(title: string): string {
+/** `loose` ANDs the words instead of requiring the exact phrase, which catches archive titles that
+ *  interleave extra words or punctuation (e.g. "Dersho Khokar Kando - 1959 print"). */
+export function searchUrl(title: string, loose = false): string {
   const safe = title.replace(/["\\]/g, " ").trim();
   const u = new URL("https://archive.org/advancedsearch.php");
-  u.searchParams.set("q", `title:("${safe}") AND mediatype:movies`);
+  const clause = loose
+    ? safe
+        .split(/\s+/)
+        .filter(Boolean)
+        .map((w) => `title:(${w.replace(/[^\p{L}\p{N}]/gu, "")})`)
+        .filter((c) => c !== "title:()")
+        .join(" AND ")
+    : `title:("${safe}")`;
+  u.searchParams.set("q", `${clause} AND mediatype:movies`);
   for (const f of ["identifier", "title", "year"]) u.searchParams.append("fl[]", f);
   u.searchParams.set("rows", "6");
   u.searchParams.set("output", "json");

@@ -29,3 +29,11 @@ test("only playable video files, biggest first", () => {
   assert.equal(s.length, 2);
   assert.equal(s[0].url, "https://archive.org/download/nold/big/file%20one.mp4");
 });
+
+test("loose search ANDs the words and strips punctuation", () => {
+  const u = new URL(searchUrl("Dersho Khokar, Kando!", true));
+  assert.equal(
+    u.searchParams.get("q"),
+    "title:(Dersho) AND title:(Khokar) AND title:(Kando) AND mediatype:movies",
+  );
+});
