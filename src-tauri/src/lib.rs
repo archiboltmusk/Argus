@@ -90,6 +90,8 @@ mod fullscreen;
 #[cfg(desktop)]
 mod games;
 #[cfg(desktop)]
+mod open_access;
+#[cfg(desktop)]
 mod video_archive;
 #[cfg(desktop)]
 mod video_archive_command;
@@ -1035,6 +1037,7 @@ pub fn run() {
         .manage(proxy_state)
         .manage(mpv_state)
         .manage(music::MusicState::new())
+        .manage(open_access::OpenAccessState::default())
         .manage(pip_state)
         .manage(pip_window_state)
         .manage(fullscreen_state)
@@ -1532,6 +1535,12 @@ pub fn run() {
             installer_handoff::modify_open,
             install_features::install_features,
             video_archive_command::archive_extract_video,
+            open_access::add_oa_source,
+            open_access::list_oa_sources,
+            open_access::set_oa_source_enabled,
+            open_access::remove_oa_source,
+            open_access::sync_oa_source,
+            open_access::search_open_access,
             power::power_inhibit,
             argus_set_webview_memory_low,
             argus_set_webview_visible,

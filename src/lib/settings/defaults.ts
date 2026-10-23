@@ -198,6 +198,7 @@ export const DEFAULT: Settings = {
   communityAddonDirectories: false,
   metadataFusion: true,
   internetArchive: false,
+  openAccessIndex: false,
   indexers: [],
   addonHealthTracking: true,
   addonHealthProbes: false,
