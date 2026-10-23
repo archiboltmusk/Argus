@@ -328,6 +328,7 @@ export function LocalTab({ scrollRef }: { scrollRef?: RefObject<HTMLElement | nu
         onClose={() => scan.setPending(null)}
       />
       <IdentifyModal
+        allowCustom
         target={identify}
         onClose={() => setIdentify(null)}
         onResolved={onResolveIdentify}
