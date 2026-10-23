@@ -1,7 +1,5 @@
-import lottie, { type AnimationItem } from "lottie-web";
 import { Check } from "lucide-react";
-import { useEffect, useRef } from "react";
-import installBoat from "@/assets/lottie/install-boat-white.json";
+import { ArgusEyeLoader } from "@/components/argus-eye-loader";
 import { CustomArtwork } from "@/components/custom-artwork";
 import { useT } from "@/lib/i18n";
 
@@ -9,49 +7,20 @@ export type OverlayPhase =
   | { kind: "installing"; name: string | null }
   | { kind: "success"; name: string; logo: string | null };
 
-const XLINK = "http://www.w3.org/1999/xlink";
-
 function InstallBoat({ logo }: { logo: string | null }) {
-  const ref = useRef<HTMLDivElement | null>(null);
-  const logoRef = useRef<string | null>(logo);
-  logoRef.current = logo;
-
-  useEffect(() => {
-    const host = ref.current;
-    if (!host) return;
-    const anim: AnimationItem = lottie.loadAnimation({
-      container: host,
-      renderer: "svg",
-      loop: true,
-      autoplay: true,
-      animationData: installBoat,
-    });
-
-    const keyLogo = () => {
-      const url = logoRef.current;
-      host.querySelectorAll<SVGImageElement>("image").forEach((img) => {
-        img.setAttribute("preserveAspectRatio", "xMidYMid meet");
-        img.setAttribute("referrerpolicy", "no-referrer");
-        if (url) {
-          img.setAttributeNS(XLINK, "href", url);
-          img.setAttribute("href", url);
-          img.style.opacity = "1";
-        } else {
-          img.style.opacity = "0";
-        }
-      });
-    };
-
-    anim.addEventListener("DOMLoaded", keyLogo);
-    anim.addEventListener("loopComplete", keyLogo);
-    return () => {
-      anim.removeEventListener("DOMLoaded", keyLogo);
-      anim.removeEventListener("loopComplete", keyLogo);
-      anim.destroy();
-    };
-  }, []);
-
-  return <div ref={ref} className="h-60 w-60" aria-hidden />;
+  return (
+    <div className="relative flex h-60 w-60 items-center justify-center" aria-hidden>
+      <ArgusEyeLoader className="h-full w-full text-ink" />
+      {logo && (
+        <img
+          src={logo}
+          alt=""
+          referrerPolicy="no-referrer"
+          className="absolute h-12 w-12 rounded-lg object-contain"
+        />
+      )}
+    </div>
+  );
 }
 
 export function InstallOverlay({ phase, logo }: { phase: OverlayPhase; logo: string | null }) {
