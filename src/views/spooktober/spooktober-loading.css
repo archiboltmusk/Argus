@@ -8,7 +8,7 @@
 .spooktober-scenery-svg .sky-depth>ellipse,.spooktober-scenery-svg .middle-depth>ellipse { display:none; }
 .spooktober-scenery-svg .art-foreground-wall { display:none!important; }
 .spooktober-loading-title { position:absolute;top:80px;left:clamp(36px,5.4cqw,84px);margin:0;font:400 78px/1.05 SpooktoberNightmare,serif;letter-spacing:-.015em; }
-.spooktober-loading-boat { position:absolute;top:46%;left:50%;translate:-50% -50%;display:flex;flex-direction:column;align-items:center;gap:10px;color:var(--color-ink-muted);font:500 13px/1.5 var(--font-sans); }
-.spooktober-loading-boat p { margin:0;white-space:nowrap; }
+.spooktober-loading-art { position:absolute;top:46%;left:50%;translate:-50% -50%;display:flex;flex-direction:column;align-items:center;gap:10px;color:var(--color-ink-muted);font:500 13px/1.5 var(--font-sans); }
+.spooktober-loading-art p { margin:0;white-space:nowrap; }
 @container (max-width:1100px) { .spooktober-loading-title { font-size:68px; } }
 @container (max-width:750px) { .spooktober-loading-title { top:76px;left:25px;font-size:56px; } }

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { boatBuilt } from "./setup-boat";
+import { eyeBuilt } from "./setup-eye";
 import { SetupArgus, type ArgusSession } from "./setup-argus";
 import { SetupRecovery } from "./setup-recovery";
 import {
@@ -77,7 +77,7 @@ function OnboardFlow({ token, onExit }: { token: string; onExit: () => void }) {
   const stepIndex = active ? queue.indexOf(active) : Math.max(stepCount - 1, 0);
 
   // Taken from this run's own confirmations, not from `passed`. A skipped step
-  // must never build a piece of the boat, or the finish screen hands back a
+  // must never build a piece of the eye, or the finish screen hands back a
   // whole one to somebody who set nothing up.
   const landed = queue.filter((s) => link.deliveryOf(s) === "confirmed").length;
   const chrome: SetupChrome = {
@@ -85,7 +85,7 @@ function OnboardFlow({ token, onExit }: { token: string; onExit: () => void }) {
     idleHost: link.idleHost,
     stepIndex,
     stepCount,
-    built: boatBuilt(landed, stepCount),
+    built: eyeBuilt(landed, stepCount),
   };
 
   const pass = (step: SetupStepId) =>

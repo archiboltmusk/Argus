@@ -247,7 +247,7 @@ export type Settings = {
   playFromArchives: boolean;
   androidPhoneLayout: boolean;
   screensaver: boolean;
-  screensaverStyle: "ambient" | "catBoat" | "halloween" | "custom";
+  screensaverStyle: "ambient" | "eye" | "halloween" | "custom";
   screensaverMedia: ScreensaverMedia[];
   screensaverMediaId: string | null;
   screensaverDelayMin: number;

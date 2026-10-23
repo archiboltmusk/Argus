@@ -1,3 +1,4 @@
+import { ArgusEyeLoader } from "@/components/argus-eye-loader";
 import { NavGlyph } from "@/components/icons/nav-glyph";
 import { UiIcon } from "@/components/ui-icon";
 import { PopIcon } from "@/components/pop-icon";
@@ -128,12 +129,7 @@ function MangaDetailError({ onBack, onRetry }: { onBack: () => void; onRetry: ()
         <BackButton onBack={onBack} />
       </div>
       <div className="mx-auto flex min-h-[54vh] max-w-md flex-col items-center justify-center gap-6 text-center">
-        <img
-          src="/manga-paper-boat.png"
-          alt=""
-          draggable={false}
-          className="w-60 max-w-full object-contain drop-shadow-[0_16px_36px_rgba(0,0,0,0.4)]"
-        />
+        <ArgusEyeLoader className="h-60 w-60 max-w-full text-ink-muted" />
         <div className="flex flex-col gap-2">
           <h1 className="font-display text-[26px] font-medium tracking-tight text-ink">
             {t("This title would not open")}

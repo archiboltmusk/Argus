@@ -14,7 +14,7 @@ import watercolor from "@/assets/app-icons/watercolor.png";
 import animeInk from "@/assets/app-icons/anime-ink.png";
 import animeInkBw from "@/assets/app-icons/anime-ink-bw.png";
 import diamond from "@/assets/app-icons/stremio.png";
-import boat from "@/assets/app-icons/boat.png";
+import eyeWhite from "@/assets/app-icons/eye-white.png";
 
 export type AppIconPreset = { id: string; label: string; src: string };
 
@@ -30,7 +30,7 @@ export const APP_ICON_PRESETS: AppIconPreset[] = [
   { id: "origami-mint", label: "Origami", src: origamiMint },
   { id: "clay-peach", label: "Clay", src: clayPeach },
   { id: "monochrome", label: "Monochrome", src: monochrome },
-  { id: "boat", label: "White", src: boat },
+  { id: "eye-white", label: "White", src: eyeWhite },
   { id: "blueprint", label: "Blueprint", src: blueprint },
   { id: "terminal", label: "Terminal", src: terminal },
   { id: "pixel-arcade", label: "Pixel", src: pixelArcade },

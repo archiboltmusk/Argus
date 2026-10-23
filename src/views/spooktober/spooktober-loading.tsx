@@ -11,7 +11,7 @@ export function SpooktoberLoadingScene({ onBack }: { onBack?: () => void }) {
     <section className="spooktober-loading-scene" role="status" aria-label={t("spooktober.loading")}>
       <div className="spooktober-loading-scenery" aria-hidden dangerouslySetInnerHTML={{ __html: graveyardScenery }} />
       <h1 className="spooktober-loading-title" aria-hidden>Spooktober</h1>
-      <div className="spooktober-loading-boat" aria-hidden><ArgusLoader size="sm" /><p>{t("spooktober.loading")}</p></div>
+      <div className="spooktober-loading-art" aria-hidden><ArgusLoader size="sm" /><p>{t("spooktober.loading")}</p></div>
     </section>
   );
 }

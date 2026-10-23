@@ -31,7 +31,7 @@ const BUNDLED: Array<{ match: (id: string, name: string) => boolean; src: string
   { match: (id, n) => id === "org.stremio.local" || /^local files\b/i.test(n) || /local.?files/i.test(id), src: localFilesLogo },
 ];
 
-export const BOAT_ADDON_LOGOS: string[] = [
+export const ADDON_LOGOS: string[] = [
   torrentioLogo,
   cometLogo,
   mediafusionLogo,
