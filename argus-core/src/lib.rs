@@ -4,6 +4,8 @@
 //! logic can run in the WebView via wasm-bindgen and in native shells via direct rlib
 //! linkage.
 
+pub mod merge;
+pub mod node;
 pub mod parser;
 pub mod scoring;
 pub mod trust;
