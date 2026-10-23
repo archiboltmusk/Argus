@@ -29,18 +29,6 @@ pub(super) fn create_core(label: &str) -> Result<Mpv, String> {
     .map_err(|error| format!("music mpv init: {error}"))
 }
 
-pub(super) fn probe_core() -> Result<Mpv, String> {
-    force_c_numeric_locale();
-    Mpv::with_initializer(|init| {
-        init.set_property("video", "no")?;
-        init.set_property("vo", "null")?;
-        init.set_property("terminal", "no")?;
-        let _ = init.set_property("media-controls", "no");
-        Ok(())
-    })
-    .map_err(|error| format!("Music output detection: {error}"))
-}
-
 pub(super) fn apply_network_cache(mpv: &Mpv) {
     let _ = mpv.set_property("cache", "yes");
     let _ = mpv.set_property("cache-secs", "30");
@@ -51,7 +39,11 @@ pub(super) fn apply_network_cache(mpv: &Mpv) {
     let _ = mpv.set_property("network-timeout", "30");
 }
 
-pub(super) fn read_music_audio_devices(mpv: &Mpv) -> Result<Vec<crate::mpv::AudioDevice>, String> {
+pub(super) fn read_music_audio_devices() -> Result<Vec<crate::mpv::AudioDevice>, String> {
+    crate::mpv::with_audio_device_enumerator(read_device_list)?
+}
+
+fn read_device_list(mpv: &Mpv) -> Result<Vec<crate::mpv::AudioDevice>, String> {
     let node = mpv
         .get_property::<MpvNode>("audio-device-list")
         .map_err(|error| format!("Read music outputs: {error}"))?;

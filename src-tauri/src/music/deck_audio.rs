@@ -19,14 +19,6 @@ pub struct MusicDeckState {
 }
 
 impl MusicDeck {
-    pub(super) async fn audio_devices(
-        &self,
-    ) -> Option<Result<Vec<crate::mpv::AudioDevice>, String>> {
-        let slot = self.inner.lock().await;
-        slot.as_ref()
-            .map(|session| core_setup::read_music_audio_devices(&session.mpv))
-    }
-
     pub(super) async fn apply_audio(
         &self,
         settings: &MusicAudioSettings,
