@@ -36,7 +36,9 @@ export type LocalEntry = {
   addedAt: number;
   needsReview?: boolean;
   isAnime?: boolean;
-  source?: "tmdb" | "nfo";
+  source?: "tmdb" | "nfo" | "courses";
+  /** Courses mode: the lecture name without its numeric prefix. */
+  lessonTitle?: string;
   folder?: string;
   localArt?: { poster?: string; logo?: string; backdrop?: string };
   /** External subtitle sidecars found beside this exact video file. */
@@ -56,6 +58,7 @@ let persistQueue = Promise.resolve();
 
 function normalizeEntries(entries: LocalEntry[]): LocalEntry[] {
   return entries.map((entry) => {
+    if (entry.source === "courses") return entry;
     const parsed = parseFilename(entry.filename);
     if (parsed.type !== "show" || parsed.season == null || parsed.episode == null) return entry;
     if (

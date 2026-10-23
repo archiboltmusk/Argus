@@ -5,6 +5,7 @@ import { useFrameGrab } from "./use-frame-grab";
 import { useGifRecorder } from "./use-gif-recorder";
 import { useKeyboardShortcuts } from "./use-keyboard-shortcuts";
 import { useLiveChannelOverlay } from "./use-live-channel-overlay";
+import { timestampNote } from "@/lib/study-note";
 import { useSleepTimer } from "./use-sleep-timer";
 import { useVideoFill, ZOOM_STEP } from "./use-video-fill";
 
@@ -12,6 +13,8 @@ export function usePlayerHotkeys(params: {
   bridgeRef: RefObject<PlayerBridge | null>;
   snap: PlayerSnapshot;
   metaId: string;
+  noteTitle: string;
+  noteLink?: (positionSec: number, speed: number) => string | undefined;
   svpActive: boolean;
   drawMode: boolean;
   setDrawMode: Dispatch<SetStateAction<boolean>>;
@@ -49,6 +52,8 @@ export function usePlayerHotkeys(params: {
     bridgeRef,
     snap,
     metaId,
+    noteTitle,
+    noteLink,
     svpActive,
     drawMode,
     setDrawMode,
@@ -115,6 +120,8 @@ export function usePlayerHotkeys(params: {
     },
     toggleSleep: () =>
       sleep.mode.kind === "off" ? sleep.set({ kind: "end_episode" }) : sleep.cancel(),
+    onCopyTimestamp: () =>
+      void navigator.clipboard?.writeText(timestampNote(noteTitle, snap.positionSec, noteLink?.(snap.positionSec, snap.rate))),
     onScreenshot: quickToolsEnabled ? () => frameGrab.trigger() : undefined,
     onGifRecord: quickToolsEnabled ? () => gif.toggle() : undefined,
     onClipRecord: quickToolsEnabled ? () => clip.openChooser() : undefined,

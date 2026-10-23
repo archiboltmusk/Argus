@@ -1,3 +1,4 @@
+import { parseLocalDeepLink, type DeepLinkLocal } from "@/lib/local-library/deep-link";
 import { makeSafeTauriUnlisten } from "@/lib/tauri-unlisten";
 import { focusWindow } from "@/lib/window";
 import { emitTogetherInvite, parseTogetherDeepLink } from "@/lib/together/invite";
@@ -12,6 +13,7 @@ import {
 const EVENT = "argus:deeplink-install";
 const OPEN_EVENT = "argus:deeplink-open";
 const OPEN_LIST_EVENT = "argus:deeplink-open-list";
+const OPEN_LOCAL_EVENT = "argus:deeplink-open-local";
 const PROFILE_EDIT_EVENT = "argus:deeplink-profile-edit";
 
 type DeepLinkDetail = { rawUrl: string };
@@ -157,6 +159,26 @@ export function parseStremioOpen(url: string): DeepLinkOpen | null {
   return null;
 }
 
+export function emitDeepLinkOpenLocal(link: DeepLinkLocal): void {
+  window.dispatchEvent(new CustomEvent<DeepLinkLocal>(OPEN_LOCAL_EVENT, { detail: link }));
+}
+
+export function onDeepLinkOpenLocal(handler: (link: DeepLinkLocal) => void): () => void {
+  const listener = (e: Event) => {
+    const detail = (e as CustomEvent<DeepLinkLocal>).detail;
+    if (detail?.id) handler(detail);
+  };
+  window.addEventListener(OPEN_LOCAL_EVENT, listener);
+  return () => window.removeEventListener(OPEN_LOCAL_EVENT, listener);
+}
+
+function routeLocal(url: string): boolean {
+  const link = parseLocalDeepLink(url);
+  if (!link) return false;
+  emitDeepLinkOpenLocal(link);
+  return true;
+}
+
 export function shareDeepLink(type: string, id: string): string {
   return `argus://detail/${encodeURIComponent(type)}/${encodeURIComponent(id)}`;
 }
@@ -242,6 +264,7 @@ export async function startDeepLinkBridge(): Promise<() => void> {
           emitDeepLinkOpenList(list);
           continue;
         }
+        if (routeLocal(u)) continue;
         if (routeMusic(u)) continue;
         if (isProfileEditUrl(u)) {
           emitOpenProfileEdit();
@@ -268,7 +291,8 @@ export async function startDeepLinkBridge(): Promise<() => void> {
           emitDeepLinkOpenList(list);
           return;
         }
-        if (routeMusic(u)) return;
+        if (routeLocal(u)) return;
+      if (routeMusic(u)) return;
         if (isProfileEditUrl(u)) {
           emitOpenProfileEdit();
           return;
@@ -304,6 +328,7 @@ export async function startDeepLinkBridge(): Promise<() => void> {
         emitDeepLinkOpenList(list);
         return;
       }
+      if (routeLocal(u)) return;
       if (routeMusic(u)) return;
       if (isProfileEditUrl(u)) {
         emitOpenProfileEdit();

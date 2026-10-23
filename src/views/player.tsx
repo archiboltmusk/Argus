@@ -130,6 +130,9 @@ import { PlayerInteractionLockControls } from "@/components/player/player-intera
 import { usePlayerInteractionLock } from "./player/hooks/use-player-interaction-lock";
 import { isNextAired } from "@/lib/cw-resurface";
 import { exitAnyFullscreen } from "@/lib/fullscreen-state";
+import { shareDeepLink } from "@/lib/deep-link";
+import { localDeepLink } from "@/lib/local-library/deep-link";
+import { readLocalLibrary } from "@/lib/local-library";
 
 let hdrFallbackNoticeShown = false;
 
@@ -1109,6 +1112,13 @@ function NativePlayerView({ src }: { src: PlayerSrc }) {
     bridgeRef,
     snap,
     metaId: src.meta.id,
+    noteTitle: src.title ?? src.meta.name,
+    noteLink: (positionSec, speed) => {
+      // Local files are found again by library entry id, which also carries the time.
+      const local = src.url ? readLocalLibrary().find((e) => e.path === src.url) : undefined;
+      if (local) return localDeepLink(local.id, positionSec, speed);
+      return src.meta.id.startsWith("local:") ? undefined : shareDeepLink(src.meta.type, src.meta.id);
+    },
     svpActive,
     drawMode,
     setDrawMode,

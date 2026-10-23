@@ -21,6 +21,7 @@ mod fonts;
 mod gamepad;
 mod http_fetch;
 mod http_redirect;
+mod course_share;
 mod local_lib;
 mod log_privacy;
 mod media_server;
@@ -1850,6 +1851,8 @@ pub fn run() {
             streams::streams_parse,
             streams::streams_core_version,
             local_lib::argus_scan_folder,
+            course_share::course_share_set,
+            course_share::course_share_remove,
             tray::tray_set_prefs,
             tray::tray_set_custom_themes,
             #[cfg(windows)]

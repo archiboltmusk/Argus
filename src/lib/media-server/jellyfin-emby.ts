@@ -48,6 +48,9 @@ function normalized(
 ): MediaServerItem | null {
   const map: Record<string, MediaServerItem["kind"]> = {
     Movie: "movie",
+    // Home Videos / Music Videos libraries hold plain Video items with no provider ids.
+    Video: "movie",
+    MusicVideo: "movie",
     Series: "series",
     Season: "season",
     Episode: "episode",
@@ -264,7 +267,8 @@ export class JellyfinEmbyAdapter implements MediaServerAdapter {
     const params = new URLSearchParams({
       ParentId: library.id,
       Recursive: "true",
-      IncludeItemTypes: "Movie,Series,Season,Episode",
+      IncludeItemTypes:
+        library.kind === "mixed" ? "Movie,Series,Season,Episode,Video,MusicVideo" : "Movie,Series,Season,Episode",
       Fields: fields,
       StartIndex: String(start),
       Limit: String(limit),

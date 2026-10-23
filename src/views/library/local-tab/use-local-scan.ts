@@ -5,11 +5,12 @@ import {
   removeLocalFolder,
   type LocalEntry,
 } from "@/lib/local-library";
+import { assignLessons } from "@/lib/local-library/courses";
 import { clearSidecarCache, countNfoFor } from "@/lib/local-library/sidecars";
 import { localPathKey, removedLocalPaths } from "@/lib/local-library/removals";
 import { useSettings } from "@/lib/settings";
 import { useT } from "@/lib/i18n";
-import { buildNfoEntry, buildTmdbEntry, type ScannedFile } from "./scan";
+import { buildCourseEntry, buildNfoEntry, buildTmdbEntry, type ScannedFile } from "./scan";
 import { type ScanMode } from "./scan-mode-modal";
 
 export type PendingScan = {
@@ -18,7 +19,7 @@ export type PendingScan = {
   nfoCount: number;
   restoreRemoved: boolean;
 };
-export type SourceFolder = { path: string; count: number };
+export type SourceFolder = { path: string; count: number; isCourse: boolean };
 
 export function useLocalScan({
   items,
@@ -88,12 +89,15 @@ export function useLocalScan({
       setProgress({ found: 0, total: files.length });
       const tmdbKey = settings.tmdbKey?.trim() || null;
       const entries: LocalEntry[] = [];
+      const lessons = mode === "courses" ? assignLessons(files) : null;
       try {
         for (let i = 0; i < files.length; i++) {
           const f = files[i];
           const parsed = parseFilename(f.filename);
-          const built =
-            mode === "nfo"
+          const lesson = lessons?.get(f.path);
+          const built = lesson
+            ? buildCourseEntry(f, lesson)
+            : mode === "nfo"
               ? await buildNfoEntry(f, parsed, tmdbKey)
               : await buildTmdbEntry(f, parsed, tmdbKey);
           entries.push(folder ? { ...built, folder } : built);
@@ -117,7 +121,8 @@ export function useLocalScan({
       const folder = pending?.folder;
       const restoreRemoved = pending?.restoreRemoved;
       setPending(null);
-      update({ localScanMode: mode });
+      // Courses is chosen per folder; remembering it would turn every auto-scan into one.
+      if (mode !== "courses") update({ localScanMode: mode });
       if (files.length) void runScan(files, mode, folder, restoreRemoved);
     },
     [pending, runScan, update],
@@ -125,9 +130,14 @@ export function useLocalScan({
 
   const folders = useMemo<SourceFolder[]>(() => {
     const counts = new Map<string, number>();
-    for (const e of items) if (e.folder) counts.set(e.folder, (counts.get(e.folder) ?? 0) + 1);
+    const courseFolders = new Set<string>();
+    for (const e of items)
+      if (e.folder) {
+        counts.set(e.folder, (counts.get(e.folder) ?? 0) + 1);
+        if (e.source === "courses") courseFolders.add(e.folder);
+      }
     return [...counts.entries()]
-      .map(([path, count]) => ({ path, count }))
+      .map(([path, count]) => ({ path, count, isCourse: courseFolders.has(path) }))
       .sort((a, b) => a.path.localeCompare(b.path, undefined, { sensitivity: "base" }));
   }, [items]);
 
@@ -152,6 +162,8 @@ export function useLocalScan({
       const known = new Set(itemsRef.current.map((entry) => localPathKey(entry.path)));
       const removed = removedLocalPaths();
       const fresh: { file: ScannedFile; folder: string }[] = [];
+      // Lesson numbers depend on a folder's full contents, not only its new files.
+      const everyScanned: ScannedFile[] = [];
       const { invoke } = await import("@tauri-apps/api/core");
       for (const folder of targets) {
         let scanned: ScannedFile[] = [];
@@ -164,6 +176,7 @@ export function useLocalScan({
           console.warn("[library] auto-scan skipped a folder", folder.path, cause);
           continue;
         }
+        everyScanned.push(...scanned);
         for (const file of scanned)
           if (!known.has(localPathKey(file.path)) && !removed.has(localPathKey(file.path)))
             fresh.push({ file, folder: folder.path });
@@ -175,12 +188,18 @@ export function useLocalScan({
         settings.localScanMode ?? (nfoCount > 0 ? "nfo" : "tmdb");
       const tmdbKey = settings.tmdbKey?.trim() || null;
       const built: LocalEntry[] = [];
+      const courseFolders = new Set(
+        itemsRef.current.filter((entry) => entry.source === "courses").map((entry) => entry.folder),
+      );
+      const lessons = courseFolders.size ? assignLessons(everyScanned) : null;
       setProgress({ found: 0, total: fresh.length });
       for (let i = 0; i < fresh.length; i++) {
         const { file, folder } = fresh[i];
         const parsed = parseFilename(file.filename);
-        const entry =
-          mode === "nfo"
+        const lesson = courseFolders.has(folder) ? lessons?.get(file.path) : undefined;
+        const entry = lesson
+          ? buildCourseEntry(file, lesson)
+          : mode === "nfo"
             ? await buildNfoEntry(file, parsed, tmdbKey)
             : await buildTmdbEntry(file, parsed, tmdbKey);
         built.push({ ...entry, folder });

@@ -33,6 +33,7 @@ export type HotkeyId =
   | "playerPanscanUp"
   | "playerPanscanDown"
   | "playerScreenshot"
+  | "playerCopyTimestamp"
   | "playerGifRecord"
   | "playerClipRecord"
   | "playerSpeedDown"
@@ -205,6 +206,14 @@ export const HOTKEYS: HotkeyDef[] = [
     label: "Screenshot",
     description: "Save the current frame (video only, no subtitles) as a PNG to Pictures/Argus.",
     defaultBinding: "p",
+  },
+  {
+    id: "playerCopyTimestamp",
+    scope: "Player",
+    group: "Playback",
+    label: "Copy timestamp note",
+    description: "Copy the current time and title as a Markdown line for your study notes.",
+    defaultBinding: "ctrl+shift+c",
   },
   {
     id: "playerGifRecord",
@@ -452,7 +461,7 @@ export const HOTKEYS: HotkeyDef[] = [
     scope: "Player",
     group: "Speed",
     label: "Speed down",
-    description: "Slow playback by 0.25x.",
+    description: "Slow playback by the speed step (0.25x by default).",
     defaultBinding: "[",
   },
   {
@@ -460,7 +469,7 @@ export const HOTKEYS: HotkeyDef[] = [
     scope: "Player",
     group: "Speed",
     label: "Speed up",
-    description: "Speed playback up by 0.25x.",
+    description: "Speed playback up by the speed step (0.25x by default).",
     defaultBinding: "]",
   },
 

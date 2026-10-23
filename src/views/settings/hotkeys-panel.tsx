@@ -298,6 +298,17 @@ export function HotkeysPanel() {
                 />
               </div>
             )}
+            <div className="flex items-center justify-between gap-4 rounded-xl border border-edge-soft bg-canvas/40 px-4 py-3">
+              <span className="text-[14px] font-medium text-ink">{t("Speed step")}</span>
+              <Segmented
+                value={String(settings.playerSpeedStep)}
+                options={[
+                  { value: "0.25", label: "0.25x" },
+                  { value: "0.1", label: "0.1x" },
+                ]}
+                onChange={(v) => update({ playerSpeedStep: Number(v) === 0.1 ? 0.1 : 0.25 })}
+              />
+            </div>
             <SeekStepRow
               label={t("Seek step")}
               sub={t("Choose how far the keyboard arrows and player seek buttons jump.")}

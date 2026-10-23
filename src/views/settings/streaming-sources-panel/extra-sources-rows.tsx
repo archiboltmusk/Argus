@@ -2,6 +2,8 @@ import { useSettings } from "@/lib/settings";
 import { useT } from "@/lib/i18n";
 import { Section, ToggleRow } from "../shared";
 import { WebDavSection } from "../webdav-section";
+import { ArchiveSection } from "../archive-section";
+import { VideoFeedsSection } from "../video-feeds-section";
 import { IndexersSection } from "../indexers-section";
 
 export function ExtraSourcesRows() {
@@ -32,6 +34,8 @@ export function ExtraSourcesRows() {
         />
       </Section>
       <WebDavSection />
+      <VideoFeedsSection />
+      <ArchiveSection />
       <Section title={t("Title matching")}>
         <ToggleRow
           label={t("Match alternate and regional titles")}

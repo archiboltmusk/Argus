@@ -4,6 +4,7 @@ import { isKnownLanguage, normalizeLang } from "@/lib/subtitles/language";
 import { episodeSpanLabel, parseEpisodeSpan } from "@/lib/episode-span";
 
 export function episodeLabel(e: LocalEntry): string | null {
+  if (e.source === "courses" && e.episode != null) return `Lesson ${e.episode}`;
   if (e.type === "show" && e.season != null && e.episode != null) {
     return episodeSpanLabel({
       season: e.season,
@@ -70,7 +71,12 @@ export function localPlayerSrc(
     episodeSpan,
     url: entry.path,
     title: entry.title,
-    subtitle: ["Local", epLabel ?? (entry.year ? String(entry.year) : entry.filename)]
+    subtitle: [
+      "Local",
+      entry.lessonTitle
+        ? `${epLabel} · ${entry.lessonTitle}`
+        : (epLabel ?? (entry.year ? String(entry.year) : entry.filename)),
+    ]
       .filter(Boolean)
       .join(" · "),
     notWebReady: true,

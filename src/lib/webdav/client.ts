@@ -55,7 +55,7 @@ export function parseMultistatus(xml: string, base: string): WebDavEntry[] {
       size: Number.isFinite(len) && len > 0 ? len : undefined,
     });
   }
-  return out.sort((a, b) => Number(b.isDir) - Number(a.isDir) || a.name.localeCompare(b.name));
+  return out.sort((a, b) => Number(b.isDir) - Number(a.isDir) || a.name.localeCompare(b.name, undefined, { numeric: true }));
 }
 
 export async function listWebDav(cfg: WebDavConfig, url: string): Promise<WebDavEntry[]> {
