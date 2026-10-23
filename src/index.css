@@ -2407,6 +2407,74 @@ main[data-kids="on"]::-webkit-scrollbar-thumb:hover {
   animation: argus-shimmer 5.4s ease-in-out infinite;
 }
 
+.argus-eye {
+  overflow: visible;
+}
+.argus-eye > g,
+.argus-eye-lid {
+  transform-box: view-box;
+  transform-origin: 32px 32px;
+}
+@keyframes argus-eye-blink {
+  0%,
+  8%,
+  62%,
+  100% {
+    transform: scaleY(1);
+  }
+  30%,
+  42% {
+    transform: scaleY(0.04);
+  }
+}
+@keyframes argus-eye-glance {
+  0%,
+  45% {
+    transform: translateX(0);
+  }
+  60%,
+  72% {
+    transform: translateX(-9px);
+  }
+  86% {
+    transform: translateX(8px);
+  }
+  100% {
+    transform: translateX(0);
+  }
+}
+@keyframes argus-eye-pupil {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  55% {
+    transform: scale(1.35);
+  }
+}
+.argus-eye-ball,
+.argus-eye-lid-top,
+.argus-eye-lid-bottom {
+  animation: argus-eye-blink 3.6s var(--ease-in-out) infinite;
+}
+.argus-eye-iris {
+  animation: argus-eye-glance 3.6s var(--ease-in-out) infinite;
+}
+.argus-eye-pupil {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: argus-eye-pupil 1.8s var(--ease-in-out) infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .argus-eye-ball,
+  .argus-eye-lid-top,
+  .argus-eye-lid-bottom,
+  .argus-eye-iris,
+  .argus-eye-pupil {
+    animation: none;
+  }
+}
+
 @keyframes argus-loader-pulse {
   0%,
   100% {
