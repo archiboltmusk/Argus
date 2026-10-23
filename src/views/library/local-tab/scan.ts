@@ -1,6 +1,7 @@
 import { parseFilename, type LocalEntry } from "@/lib/local-library";
 import { effectiveTmdbLanguage } from "@/lib/providers/tmdb/tmdb-client";
 import { imageRequestLang } from "@/lib/providers/tmdb/tmdb-image-lang";
+import type { CourseLesson } from "@/lib/local-library/courses";
 import {
   findLocalArt,
   findNfo,
@@ -72,6 +73,26 @@ export async function buildTmdbEntry(
     source: "tmdb",
     needsReview: needsReview || undefined,
     isAnime: tmdb.isAnime || undefined,
+    subtitlePaths: f.subtitlePaths,
+  };
+}
+
+/** Courses mode: no online lookup. `lesson` comes from assignLessons for the file's folder. */
+export function buildCourseEntry(f: ScannedFile, lesson: CourseLesson): LocalEntry {
+  return {
+    id: hashPath(f.path),
+    path: f.path,
+    filename: f.filename,
+    title: lesson.course,
+    lessonTitle: lesson.lessonTitle,
+    year: null,
+    type: "show",
+    size: f.size ?? null,
+    season: 1,
+    episode: lesson.lesson,
+    episodeEnd: lesson.lesson,
+    addedAt: Date.now(),
+    source: "courses",
     subtitlePaths: f.subtitlePaths,
   };
 }

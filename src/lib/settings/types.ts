@@ -472,7 +472,7 @@ export type Settings = {
    * Existing entries are never rebuilt, so anything corrected with Identify stays corrected. */
   localAutoScan: boolean;
   /** How an auto-scan identifies a new file, remembered from the last manual scan. */
-  localScanMode: "tmdb" | "nfo" | null;
+  localScanMode: "tmdb" | "nfo" | "courses" | null;
   catalogsPinned: string[];
   catalogsHidden: string[];
   posterBaseUrl: string;
@@ -542,6 +542,9 @@ export type Settings = {
   zeroWaitPlayback: boolean;
   /** Mood and natural-language terms in library search. */
   smartLibrarySearch: boolean;
+  /** Video podcast / YouTube channel and playlist feeds (official RSS/Atom only). */
+  videoFeedsEnabled: boolean;
+  videoFeeds: Array<{ id: string; name: string; url: string }>;
   webdavEnabled: boolean;
   webdavUrl: string;
   webdavUser: string;
@@ -565,6 +568,8 @@ export type Settings = {
   /** Hold Space or the left mouse button on the video to play faster, release to restore. */
   holdSpeedEnabled: boolean;
   holdSpeedRate: number;
+  /** Amount the speed up/down hotkeys change playback speed by. */
+  playerSpeedStep: 0.1 | 0.25;
   tvNavigation: boolean;
   playerTvNavigation: boolean;
   bigPictureButton: boolean;

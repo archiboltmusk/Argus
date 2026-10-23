@@ -1,9 +1,9 @@
 import { useEffect } from "react";
 import { createPortal } from "react-dom";
-import { FileText, Film, X } from "lucide-react";
+import { FileText, Film, GraduationCap, X } from "lucide-react";
 import { useT } from "@/lib/i18n";
 
-export type ScanMode = "tmdb" | "nfo";
+export type ScanMode = "tmdb" | "nfo" | "courses";
 
 export function ScanModeModal({
   isOpen,
@@ -77,6 +77,14 @@ export function ScanModeModal({
             disabled={nfoCount === 0}
             disabledHint={t("No .nfo files here")}
             onClick={() => onPick("nfo")}
+          />
+          <ModeButton
+            icon={<GraduationCap size={18} strokeWidth={2} />}
+            title={t("Courses / Other")}
+            sub={t(
+              "No online matching. Each folder becomes a course and its files play in order of their number (01, 02, 03…).",
+            )}
+            onClick={() => onPick("courses")}
           />
         </div>
       </div>

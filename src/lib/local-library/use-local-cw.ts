@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { findLocalSeriesEpisodes, useLocalLibrary, type LocalEntry } from "@/lib/local-library";
+import { findLocalSeriesEpisodes, localShowEpisodes, useLocalLibrary, type LocalEntry } from "@/lib/local-library";
 import { localTitleKey } from "@/lib/local-library/group-key";
 import { listLocalCw, subscribeLocalCw } from "@/lib/local-cw";
 import { localToLibraryItem } from "@/lib/continue-watching";
@@ -132,7 +132,10 @@ export function useLocalContinueWatching(): LocalCwCard[] {
 }
 
 function nextLocalEpisode(current: LocalEntry): LocalEntry | null {
-  const episodes = findLocalSeriesEpisodes(current.tmdbId, current.imdbId);
+  const episodes =
+    current.tmdbId == null && current.imdbId == null
+      ? localShowEpisodes(current)
+      : findLocalSeriesEpisodes(current.tmdbId, current.imdbId);
   if (episodes.length === 0) return null;
   const season = current.season ?? 0;
   const episode = current.episode ?? 0;
