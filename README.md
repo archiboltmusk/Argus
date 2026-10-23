@@ -43,18 +43,18 @@ switch off in Settings, and it can be removed from the build entirely if it prov
 | --- | --- | --- |
 | 1 | Stremio addon client: install by URL or `stremio://` link, plus catalogs, meta, streams and subtitles. Slow addons never block | ✅ |
 | 2 | Stream ranking: cached-on-debrid first, then resolution, HDR/Dolby Vision, codec, release type, size and seeders. Audio codec and channels on every card. Pinned filters | ✅ |
-| 3 | Debrid: Real-Debrid, AllDebrid, Premiumize, TorBox. Device-code/PIN sign-in, batch cache check | 🚧 |
-| 4 | libmpv player: HDR10/DV passthrough, SDR tonemap, trickplay, skip intro/credits, native PiP, remappable hotkeys | 📋 |
-| 5 | Stall fallback to the next stream, resuming at the same position | 📋 |
-| 6 | Subtitles: addon, embedded and local files. Forced tracks, ±50 ms sync saved per file, dual subtitles, style presets | 🚧 |
-| 7 | Audio: language remembered per show, stereo downmix, DTS/TrueHD with no silent failures | 📋 |
-| 8 | Trakt + Simkl: scrobble at 80%, two-way history sync | 📋 |
-| 9 | Profiles: up to 8, optional PIN, separate addons/history/preferences | 🚧 |
-| 10 | Continue watching, next-episode queue, calendar of upcoming episodes | 🚧 |
-| 11 | External players: IINA, VLC, Infuse, with resume position | 🚧 |
-| 12 | Local folders, Plex and Jellyfin, with metadata matching | 🚧 |
-| 13 | IPTV: M3U, Xtream, XMLTV EPG grid, favorites, catchup | 🚧 |
-| 14 | Offline downloads: pause/resume, storage cap | 📋 |
+| 3 | Debrid: Real-Debrid, AllDebrid, Premiumize, TorBox. Device-code/PIN sign-in, batch cache check | ✅ |
+| 4 | libmpv player: HDR10/DV passthrough, SDR tonemap, trickplay, skip intro/credits, native PiP, remappable hotkeys, AVFoundation safe audio | ✅ |
+| 5 | Stall fallback: stream health monitoring, next-stream switch prompt resuming at the same position | 🚧 |
+| 6 | Subtitles: addon, embedded and local files. Forced tracks, ±50 ms sync saved per file, dual subtitles, acoustic auto-sync | ✅ |
+| 7 | Audio: language remembered per show, stereo downmix, DTS/TrueHD, dynamic normalization / night mode | ✅ |
+| 8 | Trakt + Simkl: scrobble at 80%, two-way history sync | ✅ |
+| 9 | Profiles: up to 8, optional PIN, separate addons/history/preferences | ✅ |
+| 10 | Continue watching, next-episode background prefetch, calendar of upcoming episodes | ✅ |
+| 11 | External players: IINA, VLC, Infuse, with resume position | ✅ |
+| 12 | Local folders, Plex and Jellyfin, with metadata matching | ✅ |
+| 13 | IPTV: M3U, Xtream, XMLTV EPG grid, favorites, catchup, background DVR | ✅ |
+| 14 | Offline downloads: pause/resume, storage cap | ✅ |
 
 ### Optional extras (🔌 toggles, after v1)
 
