@@ -1,20 +1,27 @@
-import { BookCheck, ChevronDown, Clock3, Loader2, Sparkles } from "lucide-react";
+import { BookCheck, ChevronDown, Clock3, EyeOff, Loader2, Sparkles } from "lucide-react";
 import { Search } from "@/components/icons/search-icon";
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useT } from "@/lib/i18n";
+import { useSettings } from "@/lib/settings";
 import { Row } from "@/components/row";
 import {
   MANGA_PAGE,
+  clearMangaCache,
+  filterSafeManga,
   popularManga,
   popularMangaStream,
   searchManga,
   searchMangaStream,
+  setHideAdultManga,
+  shouldHideAdultManga,
+  subscribeHideAdultManga,
   type MangaSummary,
 } from "@/lib/manga/api";
 import { useMangaFavorites } from "@/lib/manga-favorites";
 import { subscribeMangaLibraryChanged } from "@/lib/manga/library-events";
 import { activeMangaSource, activeMangaSourceId, subscribeMangaSources } from "@/lib/manga/sources";
 import type { SuwayomiSource } from "@/lib/manga/sources/suwayomi/provider";
+import { notifySuwayomiSourcesChanged } from "@/lib/manga/sources/suwayomi/source-events";
 import {
   bySuwayomiSourceOrder,
   loadSuwayomiSourceOrder,
@@ -34,6 +41,7 @@ import { searchExtensions } from "./manga-browse/extensions-search";
 import { LanguageDropdown } from "./manga-browse/language-dropdown";
 import {
   cachedSuwayomiSources,
+  invalidateSuwayomiSources,
   langFilterMatches,
   loadMangaLangFilter,
   subscribeMangaLangFilter,
@@ -59,10 +67,12 @@ export function MangaBrowse({
   onOpenLibrary?: () => void;
 }) {
   const t = useT();
+  const { settings, update } = useSettings();
   const [query, setQuery] = useState("");
   const [tagId, setTagId] = useState("");
   const [sortMode, setSortMode] = useState<SortMode>("latest");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
+  const [hideAdult, setHideAdultState] = useState<boolean>(() => shouldHideAdultManga());
   const { items: favItems } = useMangaFavorites();
   const [items, setItems] = useState<MangaSummary[]>([]);
   const [searchGroups, setSearchGroups] = useState<SearchResultGroup[]>([]);
@@ -102,9 +112,31 @@ export function MangaBrowse({
 
   const reload = useCallback(() => setReloadTick((n) => n + 1), []);
 
-  useEffect(() => subscribeMangaLibraryChanged(() => {
-    if (/(?:^|::)category:\d+$/.test(tagRef.current)) reload();
-  }), [reload]);
+  useEffect(() => subscribeHideAdultManga((hide) => setHideAdultState(hide)), []);
+
+  const toggleHideAdult = useCallback(() => {
+    const next = !hideAdult;
+    setHideAdultState(next);
+    setHideAdultManga(next);
+    if (settings.hideContent?.adult !== next) {
+      update({ hideContent: { ...settings.hideContent, adult: next } });
+    }
+    clearMangaCache();
+    const base = activeMangaSource()?.baseUrl ?? "";
+    if (base) {
+      invalidateSuwayomiSources(base);
+      notifySuwayomiSourcesChanged(base);
+    }
+    reload();
+  }, [hideAdult, settings.hideContent, update, reload]);
+
+  useEffect(
+    () =>
+      subscribeMangaLibraryChanged(() => {
+        if (/(?:^|::)category:\d+$/.test(tagRef.current)) reload();
+      }),
+    [reload],
+  );
 
   const sourceRef = useRef(activeMangaSourceId());
   const activeSource = activeMangaSource();
@@ -132,9 +164,6 @@ export function MangaBrowse({
     [reload],
   );
 
-  // The arrange modal lives here (parent), so re-read the per-server order here when
-  // the active server changes. The parent remounts AllExtensionsView via `key`, but
-  // this component state persists, so we resync the order on server switch.
   useEffect(
     () =>
       subscribeSuwayomiSourceOrder(() => {
@@ -182,7 +211,9 @@ export function MangaBrowse({
               (source, chunk) => {
                 if (id !== reqRef.current || chunk.length === 0) return;
                 setStatus("ready");
-                const fresh = chunk.filter((manga) => !seenRef.current.has(manga.id));
+                const fresh = filterSafeManga(chunk).filter(
+                  (manga) => !seenRef.current.has(manga.id),
+                );
                 fresh.forEach((manga) => seenRef.current.add(manga.id));
                 if (!fresh.length) return;
                 setItems((previous) => [...previous, ...fresh]);
@@ -277,6 +308,10 @@ export function MangaBrowse({
       list = favs.length ? [...favs, ...rest] : items;
     }
 
+    if (hideAdult) {
+      list = filterSafeManga(list);
+    }
+
     if (statusFilter !== "all") {
       list = list.filter((manga) => mangaStatus(manga.status) === statusFilter);
     }
@@ -287,20 +322,21 @@ export function MangaBrowse({
       return [...list].sort((a, b) => chapterNumber(b.lastChapter) - chapterNumber(a.lastChapter));
     }
     return list;
-  }, [items, favItems, tagId, query, sortMode, statusFilter]);
+  }, [items, favItems, tagId, query, sortMode, statusFilter, hideAdult]);
 
-  // Search results follow the arranged extension order, with sources that have
-  // no custom position falling in alphabetically after the ordered ones.
   const sortedSearchGroups = useMemo(
     () =>
-      [...searchGroups].sort(
-        bySuwayomiSourceOrder(
-          orderedIds,
-          (g) => g.sourceId,
-          (g) => g.name,
+      [...searchGroups]
+        .map((g) => (hideAdult ? { ...g, items: filterSafeManga(g.items) } : g))
+        .filter((g) => g.items.length > 0)
+        .sort(
+          bySuwayomiSourceOrder(
+            orderedIds,
+            (g) => g.sourceId,
+            (g) => g.name,
+          ),
         ),
-      ),
-    [searchGroups, orderedIds],
+    [searchGroups, orderedIds, hideAdult],
   );
 
   const loadMore = useCallback(() => {
@@ -393,28 +429,43 @@ export function MangaBrowse({
               onClick={() => setStatusFilter(statusFilter === "ongoing" ? "all" : "ongoing")}
               label={t("Ongoing")}
             />
+            <span className="mx-1 h-5 w-px bg-edge-soft" />
+            <FilterButton
+              active={hideAdult}
+              onClick={toggleHideAdult}
+              icon={<EyeOff size={14} />}
+              label={t("Hide 18+")}
+            />
           </>
         ) : (
-          <div className="ms-auto">
-            <ArrangeExtensions
-              sources={reorderSources}
-              order={orderedIds}
-              onOrder={(ids) => {
-                setOrderedIds(ids);
-                saveSuwayomiSourceOrder(activeMangaSource()?.baseUrl ?? "", ids);
-              }}
-              onReset={() => {
-                setOrderedIds([]);
-                saveSuwayomiSourceOrder(activeMangaSource()?.baseUrl ?? "", []);
-              }}
+          <>
+            <FilterButton
+              active={hideAdult}
+              onClick={toggleHideAdult}
+              icon={<EyeOff size={14} />}
+              label={t("Hide 18+")}
             />
-          </div>
+            <div className="ms-auto">
+              <ArrangeExtensions
+                sources={reorderSources}
+                order={orderedIds}
+                onOrder={(ids) => {
+                  setOrderedIds(ids);
+                  saveSuwayomiSourceOrder(activeMangaSource()?.baseUrl ?? "", ids);
+                }}
+                onReset={() => {
+                  setOrderedIds([]);
+                  saveSuwayomiSourceOrder(activeMangaSource()?.baseUrl ?? "", []);
+                }}
+              />
+            </div>
+          </>
         )}
       </div>
 
       {allExtensionsMode ? (
         <AllExtensionsView
-          key={activeSource?.id ?? ""}
+          key={`${activeSource?.id ?? ""}:${hideAdult ? "sfw" : "all"}`}
           onOpen={onOpen}
           onBrowseExtension={onBrowseExtension}
           orderedIds={orderedIds}

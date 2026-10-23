@@ -236,9 +236,14 @@ export function MangaUniverses({
     if (selecting) return;
     setSelecting(u.id);
     try {
-      const results = await searchMangaEverywhere(u.query).catch(() => []);
-      const found = pickBestMatch(results, u.query, u.name);
-      if (found) onOpen(found.id);
+      const queries = u.name !== u.query ? [u.query, u.name] : [u.query];
+      let found: Candidate | null = null;
+      for (const q of queries) {
+        const results = await searchMangaEverywhere(q).catch(() => []);
+        found = pickBestMatch(results, u.query, u.name);
+        if (found) break;
+      }
+      onOpen(found ? found.id : `title:${encodeURIComponent(u.name)}`);
     } finally {
       setSelecting(null);
     }

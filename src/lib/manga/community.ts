@@ -16,7 +16,19 @@ export type CommunitySource = {
 const ENDPOINT = `${ARGUS_API_BASE}/api/manga-sources`;
 const CACHE_KEY = "argus.manga.catalog.v1";
 
-const SEED: CommunitySource[] = [];
+const SEED: CommunitySource[] = [
+  {
+    id: "mangadex",
+    name: "MangaDex",
+    kind: "builtin",
+    provider: "mangadex",
+    baseUrl: "https://mangadex.org",
+    iconUrl: "https://mangadex.org/favicon.ico",
+    note: "Built-in community manga reader (18+ hidden)",
+    lang: "en",
+    order: 1,
+  },
+];
 
 function withSeed(list: CommunitySource[]): CommunitySource[] {
   if (SEED.length === 0) return list;

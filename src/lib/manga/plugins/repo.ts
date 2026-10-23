@@ -125,7 +125,7 @@ export async function fetchRepo(url: string): Promise<PluginRepo> {
   };
   const name = typeof json.name === "string" ? json.name : "Repository";
   const plugins = Array.isArray(json.plugins)
-    ? json.plugins.map(toManifest).filter((m): m is PluginManifest => m != null)
+    ? json.plugins.map(toManifest).filter((m): m is PluginManifest => m != null && !m.nsfw)
     : [];
   const foreign = plugins.length === 0 ? (classifyForeign(parsed) ?? undefined) : undefined;
   return { name, url: target, plugins, foreign };

@@ -1,3 +1,4 @@
+import { anilistRequest } from "@/lib/anilist/client";
 import { setItemWithRecovery } from "@/lib/storage-recovery";
 import {
   activeMangaProvider,
@@ -13,9 +14,18 @@ import {
   streamAggregateChapters,
   withProviderTag,
 } from "./sources/aggregate";
+import { mangadexProvider } from "./sources/mangadex";
 import { suwayomiSourcesRevision } from "./sources/suwayomi/source-events";
 import { mangaLibraryRevision } from "./library-events";
 import { loadMangaLangFilter, mangaLangFilterRevision } from "./lang-filter";
+import {
+  filterSafeManga,
+  isAdultManga,
+  isAdultTag,
+  setHideAdultManga,
+  shouldHideAdultManga,
+  subscribeHideAdultManga,
+} from "./model";
 import type { MangaChapter, MangaProvider, MangaSummary } from "./types";
 
 export {
@@ -23,6 +33,12 @@ export {
   chapterLanguages,
   languageName,
   languageFlag,
+  filterSafeManga,
+  isAdultManga,
+  isAdultTag,
+  setHideAdultManga,
+  shouldHideAdultManga,
+  subscribeHideAdultManga,
   type MangaSummary,
   type MangaChapter,
   type MangaTag,
@@ -137,7 +153,8 @@ async function cached<T>(
 ): Promise<T> {
   await ensureMangaSources();
   const sid = activeMangaSourceId();
-  const key = `${sid}|${kind}|${parts}`;
+  const hideFlag = shouldHideAdultManga() ? "sfw" : "all";
+  const key = `${sid}|${hideFlag}|${kind}|${parts}`;
   const hit = cache.get(key);
   if (hit && Date.now() - hit.at < ttl) return hit.p as Promise<T>;
 
@@ -146,7 +163,7 @@ async function cached<T>(
 
   if (!opts.disk) return remember(key, call(), "");
 
-  const disk = `${sid}|${opts.disk.key}`;
+  const disk = `${sid}|${hideFlag}|${opts.disk.key}`;
   const rec = diskRead<T>(disk);
   const age = rec ? Date.now() - rec.at : Number.POSITIVE_INFINITY;
 
@@ -179,6 +196,7 @@ async function cached<T>(
 
 export function clearMangaCache(): void {
   cache.clear();
+  virtualResolveCache.clear();
   try {
     const stale: string[] = [];
     for (let i = 0; i < localStorage.length; i++) {
@@ -193,15 +211,18 @@ export function clearMangaCache(): void {
 
 export function popularManga(offset = 0, tagId?: string) {
   const tag = tagId ?? "";
-  // Extension installs/updates/uninstalls change the sources behind the merged
-  // popular feed, so include the source revision in the key (same pattern as
-  // searchMangaEverywhere) to invalidate both the in-memory and disk caches.
   const revision = suwayomiSourcesRevision();
-  return cached("pop2", `${revision}|${offset}|${tag}`, 5 * MIN, (p) => p.popular(offset, tagId), {
-    tries: 3,
-    timeout: 10_000,
-    disk: offset === 0 ? { key: `pop2|${revision}|${tag}`, ...POPULAR_DISK } : undefined,
-  });
+  return cached(
+    "pop2",
+    `${revision}|${offset}|${tag}`,
+    5 * MIN,
+    (p) => p.popular(offset, tagId).then(filterSafeManga),
+    {
+      tries: 3,
+      timeout: 10_000,
+      disk: offset === 0 ? { key: `pop2|${revision}|${tag}`, ...POPULAR_DISK } : undefined,
+    },
+  );
 }
 
 export function searchManga(query: string, offset = 0, tagId?: string) {
@@ -209,7 +230,7 @@ export function searchManga(query: string, offset = 0, tagId?: string) {
     "search",
     `${mangaLibraryRevision()}|${query}|${offset}|${tagId ?? ""}`,
     5 * MIN,
-    (p) => withProviderTag(p, tagId, (tag) => p.search(query, offset, tag)),
+    (p) => withProviderTag(p, tagId, (tag) => p.search(query, offset, tag)).then(filterSafeManga),
   );
 }
 
@@ -219,7 +240,7 @@ export function searchMangaEverywhere(query: string) {
     "searchAll",
     `${revision}|${query}`,
     5 * MIN,
-    (p) => p.searchAll?.(query) ?? p.search(query, 0),
+    (p) => (p.searchAll?.(query) ?? p.search(query, 0)).then(filterSafeManga),
     {
       tries: 1,
       timeout: 30_000,
@@ -235,7 +256,7 @@ export function searchMangaEverywhereExhaustive(query: string) {
     "searchAllEx",
     `${revision}|${query}`,
     5 * MIN,
-    (p) => p.searchAll?.(query, { exhaustive: true }) ?? p.search(query, 0),
+    (p) => (p.searchAll?.(query, { exhaustive: true }) ?? p.search(query, 0)).then(filterSafeManga),
     {
       tries: 1,
       timeout: 60_000,
@@ -246,10 +267,11 @@ export function searchMangaEverywhereExhaustive(query: string) {
 /** Search every configured source and return IDs routed back to the source that owns them. */
 export async function searchMangaAcrossSources(query: string): Promise<MangaSummary[]> {
   await ensureMangaSources();
-  return streamAll(
-    (provider) => provider.searchAll?.(query) ?? provider.search(query, 0),
+  const list = await streamAll(
+    (provider) => (provider.searchAll?.(query) ?? provider.search(query, 0)).then(filterSafeManga),
     () => {},
   );
+  return filterSafeManga(list);
 }
 
 type Chunk = (items: MangaSummary[]) => void;
@@ -263,43 +285,52 @@ async function streamOrCall(
   onChunk: Chunk,
 ): Promise<MangaSummary[]> {
   await ensureMangaSources();
+  const safeRun = (p: MangaProvider) => run(p).then(filterSafeManga);
+  const safeChunk: Chunk = (items) => {
+    const clean = filterSafeManga(items);
+    if (clean.length) onChunk(clean);
+  };
   const sid = activeMangaSourceId();
+  const hideFlag = shouldHideAdultManga() ? "sfw" : "all";
   if (sid !== "all") {
-    const data = (await cached(kind, parts, ttl, run, opts)) as MangaSummary[];
-    onChunk(data);
+    const data = filterSafeManga((await cached(kind, parts, ttl, safeRun, opts)) as MangaSummary[]);
+    safeChunk(data);
     return data;
   }
 
-  const key = `${sid}|${kind}|${parts}`;
+  const key = `${sid}|${hideFlag}|${kind}|${parts}`;
   const hit = cache.get(key);
   if (hit && Date.now() - hit.at < ttl) {
-    const data = (await hit.p) as MangaSummary[];
-    onChunk(data);
+    const data = filterSafeManga((await hit.p) as MangaSummary[]);
+    safeChunk(data);
     return data;
   }
 
-  const disk = opts.disk ? `${sid}|${opts.disk.key}` : "";
+  const disk = opts.disk ? `${sid}|${hideFlag}|${opts.disk.key}` : "";
   if (disk && opts.disk) {
     const rec = diskRead<MangaSummary[]>(disk);
     const age = rec ? Date.now() - rec.at : Number.POSITIVE_INFINITY;
     if (rec && age < opts.disk.fresh) {
-      settle(key, rec.data);
-      onChunk(rec.data);
-      return rec.data;
+      const clean = filterSafeManga(rec.data);
+      settle(key, clean);
+      safeChunk(clean);
+      return clean;
     }
     if (rec && age < opts.disk.stale) {
-      settle(key, rec.data);
-      onChunk(rec.data);
-      void streamAll(run, () => {}).then((m) => {
-        if (!m.length) return;
-        settle(key, m);
-        diskWrite(disk, m);
+      const clean = filterSafeManga(rec.data);
+      settle(key, clean);
+      safeChunk(clean);
+      void streamAll(safeRun, () => {}).then((m) => {
+        const cleanFresh = filterSafeManga(m);
+        if (!cleanFresh.length) return;
+        settle(key, cleanFresh);
+        diskWrite(disk, cleanFresh);
       });
-      return rec.data;
+      return clean;
     }
   }
 
-  const merged = await streamAll(run, onChunk);
+  const merged = filterSafeManga(await streamAll(safeRun, safeChunk));
   if (merged.length) {
     settle(key, merged);
     if (disk) diskWrite(disk, merged);
@@ -339,14 +370,172 @@ export function searchMangaStream(
   );
 }
 
-export function mangaDetail(id: string) {
+function normTitleKey(s: string): string {
+  return s.toLowerCase().replace(/[^\p{L}\p{N}]+/gu, "");
+}
+
+function pickBestTitleMatch(results: MangaSummary[], query: string): MangaSummary | null {
+  if (!results.length) return null;
+  const key = normTitleKey(query);
+  if (!key) return results[0];
+  let best = results[0];
+  let bestScore = -Infinity;
+  for (const r of results) {
+    const titles = [r.title, r.altTitle].filter((t): t is string => !!t).map(normTitleKey);
+    let score = 0;
+    if (titles.some((t) => t === key)) score += 100;
+    else if (titles.some((t) => t.startsWith(key) || key.startsWith(t))) score += 55;
+    else if (titles.some((t) => t.includes(key) || key.includes(t))) score += 25;
+    if (r.cover) score += 5;
+    score -= Math.min(...titles.map((t) => Math.abs(t.length - key.length))) / 25;
+    if (score > bestScore) {
+      bestScore = score;
+      best = r;
+    }
+  }
+  return best;
+}
+
+const ANILIST_FALLBACK_QUERY = `query ($s: String) {
+  Page(perPage: 1) {
+    media(search: $s, type: MANGA, isAdult: false) {
+      id
+      isAdult
+      title { english romaji }
+      coverImage { extraLarge large }
+      startDate { year }
+      status
+      description(asHtml: false)
+      chapters
+    }
+  }
+}`;
+
+async function fetchAnilistFallback(title: string, id: string): Promise<MangaSummary | null> {
+  try {
+    const data = await anilistRequest<{
+      Page?: {
+        media?: Array<{
+          id: number;
+          isAdult?: boolean | null;
+          title?: { english?: string | null; romaji?: string | null } | null;
+          coverImage?: { extraLarge?: string | null; large?: string | null } | null;
+          startDate?: { year?: number | null } | null;
+          status?: string | null;
+          description?: string | null;
+          chapters?: number | null;
+        }> | null;
+      } | null;
+    }>(ANILIST_FALLBACK_QUERY, { s: title }, undefined, true);
+    const node = data?.Page?.media?.[0];
+    if (!node || node.isAdult) return null;
+    const eng = node.title?.english?.trim();
+    const rom = node.title?.romaji?.trim();
+    const displayTitle = eng || rom || title;
+    const altTitle = eng && rom && eng.toLowerCase() !== rom.toLowerCase() ? rom : undefined;
+    const description = node.description
+      ? node.description
+          .replace(/<br\s*\/?>/gi, "\n")
+          .replace(/<[^>]+>/g, "")
+          .trim()
+      : undefined;
+    return {
+      id,
+      title: displayTitle,
+      altTitle,
+      cover: node.coverImage?.extraLarge ?? node.coverImage?.large ?? undefined,
+      year: node.startDate?.year ?? undefined,
+      status: node.status ? node.status.toLowerCase() : undefined,
+      description,
+      lastChapter: node.chapters != null ? String(node.chapters) : undefined,
+    };
+  } catch {
+    return null;
+  }
+}
+
+type VirtualResolved = {
+  resolvedId: string | null;
+  fallback: MangaSummary | null;
+};
+
+const virtualResolveCache = new Map<string, Promise<VirtualResolved>>();
+
+function parseVirtualTitle(id: string): string | null {
+  if (id.startsWith("title:")) {
+    return decodeURIComponent(id.slice("title:".length)).trim() || null;
+  }
+  return null;
+}
+
+function resolveVirtualManga(id: string): Promise<VirtualResolved> {
+  const title = parseVirtualTitle(id);
+  if (!title) return Promise.resolve({ resolvedId: id, fallback: null });
+  const cacheKey = `${activeMangaSourceId()}|${id}`;
+  const hit = virtualResolveCache.get(cacheKey);
+  if (hit) return hit;
+
+  const p = (async (): Promise<VirtualResolved> => {
+    const fallbackP = fetchAnilistFallback(title, id);
+
+    let match: MangaSummary | null = null;
+    const everywhere = await withTimeout(searchMangaEverywhere(title), 7_000).catch(() => []);
+    match = pickBestTitleMatch(everywhere, title);
+
+    if (!match) {
+      const across = await withTimeout(searchMangaAcrossSources(title), 7_000).catch(() => []);
+      match = pickBestTitleMatch(across, title);
+    }
+
+    if (!match) {
+      const md = await withTimeout(mangadexProvider.search(title, 0), 7_000).catch(() => []);
+      const mdMatch = pickBestTitleMatch(md, title);
+      if (mdMatch) {
+        match = {
+          ...mdMatch,
+          id: activeMangaSourceId() === "mangadex" ? mdMatch.id : `mangadex::${mdMatch.id}`,
+        };
+      }
+    }
+
+    const fallback = await fallbackP;
+    return {
+      resolvedId: match?.id ?? null,
+      fallback: fallback ?? (match ? { ...match, id } : { id, title }),
+    };
+  })();
+
+  virtualResolveCache.set(cacheKey, p);
+  return p;
+}
+
+export function mangaDetail(id: string): Promise<MangaSummary | null> {
+  if (parseVirtualTitle(id)) {
+    return (async () => {
+      const { resolvedId, fallback } = await resolveVirtualManga(id);
+      if (!resolvedId) return fallback;
+      const detail = await mangaDetail(resolvedId).catch(() => null);
+      if (!detail) return fallback;
+      return {
+        ...fallback,
+        ...detail,
+        id,
+        cover: detail.cover ?? fallback?.cover,
+        description: detail.description || fallback?.description,
+        year: detail.year ?? fallback?.year,
+        status: detail.status ?? fallback?.status,
+        altTitle: detail.altTitle ?? fallback?.altTitle,
+      };
+    })();
+  }
   return cached(
     "detail",
     id,
     20 * MIN,
-    (provider) => {
+    async (provider) => {
       const routed = routeById(id);
-      return routed ? routed.provider.detail(routed.orig) : provider.detail(id);
+      const item = await (routed ? routed.provider.detail(routed.orig) : provider.detail(id));
+      return item && !isAdultManga(item) ? item : null;
     },
     { timeout: 15_000 },
   );
@@ -355,20 +544,37 @@ export function mangaDetail(id: string) {
 export function mangaChapters(
   id: string,
   opts?: { tries?: number; timeout?: number; refresh?: boolean },
-) {
+): Promise<MangaChapter[]> {
+  if (parseVirtualTitle(id)) {
+    return resolveVirtualManga(id).then(({ resolvedId }) =>
+      resolvedId ? mangaChapters(resolvedId, opts) : [],
+    );
+  }
   return cached(
     "chapters",
     id,
     opts?.refresh ? 0 : 20 * MIN,
-    (provider) => {
+    async (provider) => {
       const routed = routeById(id);
-      return routed ? routed.provider.chapters(routed.orig, opts) : provider.chapters(id, opts);
+      if (routed) {
+        const chs = await routed.provider.chapters(routed.orig, opts);
+        return chs.map((c) => ({
+          ...c,
+          id: c.id.includes("::") ? c.id : `${routed.provider.id}::${c.id}`,
+        }));
+      }
+      return provider.chapters(id, opts);
     },
     { timeout: 15_000, ...opts },
   );
 }
 
 export function resumeChapters(id: string): Promise<MangaChapter[]> {
+  if (parseVirtualTitle(id)) {
+    return resolveVirtualManga(id).then(({ resolvedId }) =>
+      resolvedId ? resumeChapters(resolvedId) : [],
+    );
+  }
   // Resume only needs the copy the user was reading, not every source's copy
   // by title. The aggregate title search fans out to all providers and almost
   // always exceeds the resume timeout, which pushed Continue Reading back to
@@ -385,7 +591,7 @@ export function resumeChapters(id: string): Promise<MangaChapter[]> {
           const chs = await routed.provider.chapters(routed.orig);
           return chs.map((c) => ({
             ...c,
-            id: `${routed.provider.id}::${c.id}`,
+            id: c.id.includes("::") ? c.id : `${routed.provider.id}::${c.id}`,
           }));
         }
         const subs = aggregateSubProviders();
@@ -394,7 +600,7 @@ export function resumeChapters(id: string): Promise<MangaChapter[]> {
         const chs = await hint.chapters(id);
         return chs.map((c) => ({
           ...c,
-          id: `${hint.id}::${c.id}`,
+          id: c.id.includes("::") ? c.id : `${hint.id}::${c.id}`,
         }));
       },
       {
@@ -411,6 +617,11 @@ export async function streamChapters(
   onChunk: (chs: MangaChapter[]) => void,
   opts?: { refresh?: boolean },
 ): Promise<void> {
+  if (parseVirtualTitle(id)) {
+    const { resolvedId } = await resolveVirtualManga(id);
+    if (!resolvedId) return;
+    return streamChapters(resolvedId, onChunk, opts);
+  }
   await ensureMangaSources();
   if (opts?.refresh) cache.delete(`${activeMangaSourceId()}|chapters.own|${id}`);
   const subs = aggregateSubProviders();
@@ -457,7 +668,7 @@ export function mangaTags() {
     "tags",
     `${revision}|${lib}|${langRev}|${langKey}`,
     30 * MIN,
-    (p) => (p.tags ? p.tags() : Promise.resolve([])),
+    (p) => (p.tags ? p.tags() : Promise.resolve([])).then((list) => list.filter((t) => !isAdultTag(t))),
     { tries: 1 },
   );
 }

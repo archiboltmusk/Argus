@@ -4,6 +4,7 @@ import { aggregateProvider } from "./sources/aggregate";
 import { makeSuwayomiProvider } from "./sources/suwayomi/provider";
 import { makeLocalProvider } from "./sources/local";
 import { makeHtmlProvider, type HtmlSourceConfig } from "./sources/html";
+import { mangadexProvider } from "./sources/mangadex";
 import {
   communityCatalog,
   refreshCommunityCatalog,
@@ -42,7 +43,9 @@ export type MangaSource = {
   config?: HtmlSourceConfig;
 };
 
-const BUILTIN_PROVIDERS: Record<string, MangaProvider> = {};
+const BUILTIN_PROVIDERS: Record<string, MangaProvider> = {
+  mangadex: mangadexProvider,
+};
 
 const CONFIGURED_KEY = "argus.manga.configured.v1";
 const CUSTOM_KEY = "argus.manga.sources.v1";
@@ -83,10 +86,12 @@ function warmSuwayomiAuth(): void {
 function configuredIds(): string[] {
   try {
     const raw = localStorage.getItem(CONFIGURED_KEY);
-    const arr = raw ? JSON.parse(raw) : [];
-    return Array.isArray(arr) ? arr.filter((x) => typeof x === "string") : [];
+    if (!raw) return ["mangadex"];
+    const arr = JSON.parse(raw);
+    const list = Array.isArray(arr) ? arr.filter((x) => typeof x === "string") : [];
+    return list.length > 0 ? list : ["mangadex"];
   } catch {
-    return [];
+    return ["mangadex"];
   }
 }
 
@@ -188,7 +193,7 @@ function writeResolved(list: MangaSource[]): void {
 
 function pluginSources(): MangaSource[] {
   return installedPluginsSync()
-    .filter((p) => p.enabled)
+    .filter((p) => p.enabled && !p.nsfw)
     .map((p) => ({
       id: p.id,
       name: p.name,
@@ -201,7 +206,7 @@ function pluginSources(): MangaSource[] {
 
 function mangayomiSources(): MangaSource[] {
   return mangayomiSourcesSync()
-    .filter((s) => s.enabled)
+    .filter((s) => s.enabled && !s.isNsfw)
     .map((s) => ({
       id: s.id,
       name: s.lang && s.lang !== "all" ? `${s.name} (${s.lang})` : s.name,
@@ -289,15 +294,18 @@ export function activeMangaSource(): MangaSource {
 }
 
 function providerForSource(src: MangaSource): MangaProvider {
+  if (src.builtin && src.provider && BUILTIN_PROVIDERS[src.provider]) {
+    return BUILTIN_PROVIDERS[src.provider];
+  }
   if (src.kind === "suwayomi") return { ...makeSuwayomiProvider(src.baseUrl), id: src.id };
   if (src.kind === "local") return { ...makeLocalProvider(src.baseUrl), id: src.id };
   if (src.kind === "html" && src.config) return makeHtmlProvider(src.id, src.config);
   if (src.kind === "plugin") {
-    const installed = installedPluginsSync().find((p) => p.id === src.id);
+    const installed = installedPluginsSync().find((p) => p.id === src.id && !p.nsfw);
     return installed ? pluginProvider(installed) : EMPTY_PROVIDER;
   }
   if (src.kind === "mangayomi") {
-    const record = mangayomiSourcesSync().find((s) => s.id === src.id);
+    const record = mangayomiSourcesSync().find((s) => s.id === src.id && !s.isNsfw);
     return record ? makeMangayomiProvider(record) : EMPTY_PROVIDER;
   }
   return EMPTY_PROVIDER;
