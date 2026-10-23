@@ -238,6 +238,7 @@ export type Settings = {
   communityAddonDirectories: boolean;
   metadataFusion: boolean;
   internetArchive: boolean;
+  openAccessIndex: boolean;
   indexers: import("@/lib/streams/indexer-feed").Indexer[];
   addonHealthTracking: boolean;
   addonHealthProbes: boolean;

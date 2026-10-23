@@ -5,6 +5,7 @@ import { WebDavSection } from "../webdav-section";
 import { ArchiveSection } from "../archive-section";
 import { VideoFeedsSection } from "../video-feeds-section";
 import { IndexersSection } from "../indexers-section";
+import { OpenAccessSection } from "../open-access-section";
 
 export function ExtraSourcesRows() {
   const t = useT();
@@ -24,6 +25,20 @@ export function ExtraSourcesRows() {
           value={settings.internetArchive}
           onChange={(internetArchive) => update({ internetArchive })}
         />
+      </Section>
+      <Section
+        title={t("Open-access search")}
+        subtitle={t(
+          "Search the metadata of open-access repositories you add (OAI-PMH, such as arXiv or PubMed Central). Argus ships none, stores titles and abstracts only, and opens results in your browser.",
+        )}
+      >
+        <ToggleRow
+          label={t("Open-access index")}
+          sub={t("Keep a local search index of the repositories below. Off by default.")}
+          value={settings.openAccessIndex}
+          onChange={(openAccessIndex) => update({ openAccessIndex })}
+        />
+        {settings.openAccessIndex ? <OpenAccessSection /> : null}
       </Section>
       <Section title={t("Addon directories")}>
         <ToggleRow
