@@ -546,6 +546,8 @@ export type Settings = {
   videoFeedsEnabled: boolean;
   videoFeeds: Array<{ id: string; name: string; url: string }>;
   /** Local course folders shared on the LAN as a Stremio addon. Each token is the secret in the addon URL. */
+  /** Browse and play openly licensed video from the Internet Archive. */
+  archiveCatalogEnabled: boolean;
   courseShares: Array<{ token: string; folder: string; name: string }>;
   webdavEnabled: boolean;
   webdavUrl: string;

@@ -444,6 +444,7 @@ export const DEFAULT: Settings = {
   smartLibrarySearch: true,
   videoFeedsEnabled: false,
   videoFeeds: [],
+  archiveCatalogEnabled: false,
   courseShares: [],
   webdavEnabled: false,
   webdavUrl: "",
