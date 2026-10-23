@@ -1,0 +1,20 @@
+[package]
+name = "argus-sync"
+version = "0.1.0"
+edition = "2021"
+license = "MIT"
+description = "Transport-agnostic, mergeable library state for Argus: hybrid-clock last-writer-wins map and encrypted op log."
+
+[lib]
+crate-type = ["rlib"]
+
+[dependencies]
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+chacha20poly1305 = { version = "0.10", default-features = false, features = ["alloc"] }
+
+[profile.release]
+opt-level = "z"
+lto = true
+strip = true
+codegen-units = 1
