@@ -59,7 +59,7 @@ jobs:
           name: web-smoke
           path: web-smoke.png
           if-no-files-found: ignore
-      - uses: actions/upload-pages-artifact@v3
+      - uses: actions/upload-pages-artifact@v5
         with:
           path: dist-web
 
