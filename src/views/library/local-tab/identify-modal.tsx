@@ -17,7 +17,8 @@ type Candidate = {
 };
 
 export type IdentifyResolution = {
-  tmdbId: number;
+  /** Null when the title has no TMDB entry and the user keeps it as typed. */
+  tmdbId: number | null;
   imdbId: string | null;
   poster: string | null;
   title: string;
@@ -66,7 +67,9 @@ export function IdentifyModal({
   target,
   onClose,
   onResolved,
+  allowCustom = false,
 }: {
+  allowCustom?: boolean;
   target: LocalEntry[] | null;
   onClose: () => void;
   onResolved: (ids: string[], res: IdentifyResolution) => void;
@@ -125,6 +128,22 @@ export function IdentifyModal({
   const noKey = useMemo(() => !key, [key]);
 
   if (!head || !target) return null;
+
+  const keepCustom = () => {
+    const title = query.trim() || head.title;
+    onResolved(
+      target.map((e) => e.id),
+      {
+        tmdbId: null,
+        imdbId: null,
+        poster: null,
+        title,
+        year: head.year,
+        type: kind === "tv" ? "show" : "movie",
+      },
+    );
+    onClose();
+  };
 
   const pick = async (c: Candidate) => {
     setPicking(c.tmdbId);
@@ -256,6 +275,17 @@ export function IdentifyModal({
               </button>
             ))}
           </div>
+        )}
+
+        {allowCustom && (
+          <button
+            type="button"
+            disabled={!query.trim()}
+            onClick={keepCustom}
+            className="rounded-2xl bg-canvas/50 px-4 py-2.5 text-start text-[12.5px] font-semibold text-ink ring-1 ring-edge-soft transition-colors hover:bg-canvas/70 disabled:opacity-50"
+          >
+            {t("Not on TMDB? Keep as “{title}”", { title: query.trim() })}
+          </button>
         )}
       </div>
     </div>,

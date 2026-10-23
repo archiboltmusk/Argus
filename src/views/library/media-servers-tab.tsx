@@ -556,13 +556,15 @@ export function MediaServersTab({ scrollRef }: { scrollRef?: RefObject<HTMLEleme
     }
   };
   const resolveReview = async (title: MediaServerTitle, resolution: IdentifyResolution) => {
+    if (resolution.tmdbId == null) return;
+    const tmdbId = resolution.tmdbId;
     const targets = items.filter((item) =>
       title.itemKeys.includes(`${item.connectionId}:${item.id}`),
     );
     await Promise.all(
       targets.map((item) =>
         setManualMapping(item.connectionId, item.id, {
-          tmdbId: resolution.tmdbId,
+          tmdbId,
           imdbId: resolution.imdbId ?? undefined,
           ...(item.kind === "episode"
             ? { season: item.identity.season, episode: item.identity.episode }
