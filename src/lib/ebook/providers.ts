@@ -20,6 +20,17 @@ import {
   gutendexSearch,
   type GutendexBook,
 } from "./gutendex";
+import {
+  downloadOpdsEpub,
+  fetchOpdsFeed,
+  loadOpdsConnection,
+  navigationLink,
+  opdsBook,
+  resolveSearchTemplate,
+  searchUrl,
+  type OpdsBook,
+  type OpdsFeed,
+} from "./opds";
 import { listEBookSources, type EBookHtmlSourceConfig, type EBookSource } from "./sources";
 import gutenbergLogo from "@/assets/gutenberg.png";
 import { safeFetch } from "@/lib/safe-fetch";
@@ -434,6 +445,133 @@ function gutendexProvider(source: EBookSource): Provider {
   return provider;
 }
 
+const opdsEpubs = new Map<string, Promise<EpubBook>>();
+const opdsBooks = new Map<string, OpdsBook>();
+const OPDS_MAX_DEPTH = 3;
+
+function opdsProvider(source: EBookSource): Provider {
+  const provider = {
+    id: source.id,
+    name: source.name,
+    iconUrl: sourceFavicon(`https://${source.location}`),
+  } as Provider;
+  const connection = () => {
+    const found = loadOpdsConnection(source.id);
+    if (!found) throw new Error("This catalog's address is missing. Remove it and add it again.");
+    return found;
+  };
+  const offsets = new Map<string, Map<number, string>>();
+  let root: Promise<OpdsFeed> | null = null;
+  let landing: Promise<string> | null = null;
+  const rootFeed = () => (root ??= fetchOpdsFeed(connection(), connection().url));
+  const summary = (book: OpdsBook): EBook => ({
+    id: routeId(provider.id, book.epubUrl),
+    source: "source",
+    providerId: provider.id,
+    sourceItemId: book.epubUrl,
+    providerName: provider.name,
+    title: book.title,
+    authors: book.authors,
+    description: book.summary,
+    genres: book.categories,
+    cover: book.cover,
+  });
+  // Many catalogs open on a menu (Popular, New, By author...). Follow the first
+  // browsable entry, preferring popular/new shelves, until a feed that holds books.
+  const findLanding = async (): Promise<string> => {
+    let feed = await rootFeed();
+    for (let depth = 0; depth < OPDS_MAX_DEPTH; depth++) {
+      if (feed.entries.some((entry) => opdsBook(entry))) return feed.url;
+      const links = feed.entries.flatMap((entry) => {
+        const link = navigationLink(entry);
+        return link ? [link] : [];
+      });
+      const pick = links.find((link) => /popular|new|recent|latest/i.test(link.rel)) ?? links[0];
+      if (!pick) break;
+      feed = await fetchOpdsFeed(connection(), pick.href);
+    }
+    return feed.url;
+  };
+  const page = async (key: string, start: () => Promise<string>, offset: number) => {
+    let map = offsets.get(key);
+    if (!map) {
+      map = new Map([[0, await start()]]);
+      offsets.set(key, map);
+    }
+    const url = map.get(offset);
+    if (!url) return [];
+    const feed = await fetchOpdsFeed(connection(), url);
+    const books = feed.entries.flatMap((entry) => {
+      const book = opdsBook(entry);
+      return book ? [book] : [];
+    });
+    for (const book of books) opdsBooks.set(`${source.id}\n${book.epubUrl}`, book);
+    if (feed.next && books.length) map.set(offset + books.length, feed.next);
+    return books.map(summary);
+  };
+  provider.popular = (offset) => page("popular", () => (landing ??= findLanding()), offset);
+  provider.search = async (query, offset) => {
+    const term = query.trim();
+    if (!term) return provider.popular(offset);
+    return page(
+      `search:${term}`,
+      async () => {
+        const template = await resolveSearchTemplate(connection(), await rootFeed());
+        if (!template) throw new Error("This catalog does not offer search.");
+        return searchUrl(template, term);
+      },
+      offset,
+    );
+  };
+  provider.detail = async (id) => {
+    const book = opdsBooks.get(`${source.id}\n${id}`);
+    if (book) return summary(book);
+    return {
+      id: routeId(provider.id, id),
+      source: "source",
+      providerId: provider.id,
+      sourceItemId: id,
+      providerName: provider.name,
+      title: localTitle(decodeURIComponent(id.split("/").pop() ?? id)),
+      authors: [],
+      description: "",
+      genres: [],
+    };
+  };
+  const epubFor = (id: string): Promise<EpubBook> => {
+    const key = `${source.id}\n${id}`;
+    let pending = opdsEpubs.get(key);
+    if (!pending) {
+      pending = downloadOpdsEpub(connection(), id).then((buffer) => parseEpub(buffer));
+      opdsEpubs.set(key, pending);
+      void pending.catch(() => {
+        if (opdsEpubs.get(key) === pending) opdsEpubs.delete(key);
+      });
+      if (opdsEpubs.size > LOCAL_EPUB_CACHE_LIMIT) {
+        const oldest = opdsEpubs.keys().next().value;
+        if (oldest !== undefined) opdsEpubs.delete(oldest);
+      }
+    }
+    return pending;
+  };
+  provider.chapters = async (id) => {
+    const epub = await epubFor(id);
+    return epub.chapters.map((chapter, index) => ({
+      id: JSON.stringify([id, chapter.path]),
+      title: chapter.title,
+      position: index,
+    }));
+  };
+  provider.content = async (id) => {
+    const [bookId, chapter] = JSON.parse(id) as [string, string];
+    const content = readEpubChapterContent(await epubFor(bookId), chapter);
+    return { text: cleanSourceText(content.text), images: content.images };
+  };
+  provider.chapterLocations = async (id, chapters) =>
+    epubChapterLocationSources(chapters, new Map([[id, await epubFor(id)]]));
+  return provider;
+}
+
 function localProvider(source: EBookSource): Provider {
   const provider = { id: source.id, name: source.name, iconUrl: source.iconUrl } as Provider;
   const find = async (id: string) =>
@@ -734,6 +872,9 @@ async function providers(): Promise<Provider[]> {
     ...listEBookSources()
       .filter((source) => source.kind === "gutendex")
       .map(gutendexProvider),
+    ...listEBookSources()
+      .filter((source) => source.kind === "opds")
+      .map(opdsProvider),
     ...installedEBookPlugins()
       .filter((plugin) => plugin.enabled)
       .map(pluginProvider),

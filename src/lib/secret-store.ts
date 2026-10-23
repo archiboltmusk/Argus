@@ -11,6 +11,7 @@ const SECRET_PREFIXES = [
   "argus.media-server.token.v1",
   "argus.plex-auth.device.v1",
   "argus.publicmetadb.session.v1",
+  "argus.ebook.opds.v1",
 ];
 
 let store: Record<string, string> = {};
@@ -35,6 +36,7 @@ const IMMEDIATE_KEY_PREFIXES = [
   "argus.media-server.token.v1",
   "argus.plex-auth.device.v1",
   "argus.publicmetadb.session.v1",
+  "argus.ebook.opds.v1",
 ];
 
 function isImmediateKey(key: string): boolean {

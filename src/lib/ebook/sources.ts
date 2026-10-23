@@ -1,5 +1,6 @@
 import { setItemWithRecovery } from "@/lib/storage-recovery";
 import { GUTENDEX_BASE, GUTENDEX_NAME } from "./gutendex";
+import { deleteOpdsConnection, saveOpdsConnection, validateOpdsUrl, type OpdsAuth } from "./opds";
 
 export type EBookHtmlSourceConfig = {
   name: string;
@@ -32,7 +33,7 @@ export type EBookHtmlSourceConfig = {
 export type EBookSource = {
   id: string;
   name: string;
-  kind: "local" | "html" | "gutendex";
+  kind: "local" | "html" | "gutendex" | "opds";
   location: string;
   iconUrl?: string;
   config?: EBookHtmlSourceConfig;
@@ -55,7 +56,10 @@ function read(): EBookSource[] {
             typeof source.id === "string" &&
             typeof source.name === "string" &&
             typeof source.location === "string" &&
-            (source.kind === "local" || source.kind === "html" || source.kind === "gutendex"),
+            (source.kind === "local" ||
+              source.kind === "html" ||
+              source.kind === "gutendex" ||
+              source.kind === "opds"),
         )
       : [];
   } catch {
@@ -144,6 +148,21 @@ export function addEBookHtmlSource(config: EBookHtmlSourceConfig): boolean {
   return write([...sources.filter((source) => source.id !== id), next]);
 }
 
+/**
+ * The full feed URL (which can embed a Kavita-style API key) and the login live in the
+ * secret store; the visible source record keeps only the host.
+ */
+export function addEBookOpds(name: string, rawUrl: string, auth?: OpdsAuth): boolean {
+  const url = validateOpdsUrl(rawUrl);
+  const id = sourceId("opds", url);
+  const hasAuth = !!(auth?.username || auth?.apiKey);
+  saveOpdsConnection(id, { url, auth: hasAuth ? auth : undefined });
+  const host = new URL(url).host;
+  const next: EBookSource = { id, name: name.trim() || host, kind: "opds", location: host };
+  return write([...read().filter((source) => source.id !== id), next]);
+}
+
 export function removeEBookSource(id: string): void {
+  deleteOpdsConnection(id);
   write(read().filter((source) => source.id !== id));
 }
