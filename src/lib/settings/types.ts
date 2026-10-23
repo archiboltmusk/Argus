@@ -545,6 +545,8 @@ export type Settings = {
   /** Video podcast / YouTube channel and playlist feeds (official RSS/Atom only). */
   videoFeedsEnabled: boolean;
   videoFeeds: Array<{ id: string; name: string; url: string }>;
+  /** Local course folders shared on the LAN as a Stremio addon. Each token is the secret in the addon URL. */
+  courseShares: Array<{ token: string; folder: string; name: string }>;
   webdavEnabled: boolean;
   webdavUrl: string;
   webdavUser: string;

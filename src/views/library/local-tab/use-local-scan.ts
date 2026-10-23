@@ -19,7 +19,7 @@ export type PendingScan = {
   nfoCount: number;
   restoreRemoved: boolean;
 };
-export type SourceFolder = { path: string; count: number };
+export type SourceFolder = { path: string; count: number; isCourse: boolean };
 
 export function useLocalScan({
   items,
@@ -130,9 +130,14 @@ export function useLocalScan({
 
   const folders = useMemo<SourceFolder[]>(() => {
     const counts = new Map<string, number>();
-    for (const e of items) if (e.folder) counts.set(e.folder, (counts.get(e.folder) ?? 0) + 1);
+    const courseFolders = new Set<string>();
+    for (const e of items)
+      if (e.folder) {
+        counts.set(e.folder, (counts.get(e.folder) ?? 0) + 1);
+        if (e.source === "courses") courseFolders.add(e.folder);
+      }
     return [...counts.entries()]
-      .map(([path, count]) => ({ path, count }))
+      .map(([path, count]) => ({ path, count, isCourse: courseFolders.has(path) }))
       .sort((a, b) => a.path.localeCompare(b.path, undefined, { sensitivity: "base" }));
   }, [items]);
 

@@ -204,6 +204,7 @@ import { getNavFocusTarget } from "@/lib/keyboard-navigation/geometry";
 import { SFX } from "@/lib/sfx";
 import { startMusicTaskbarButtons, syncMusicTaskbarArtwork } from "@/lib/music/taskbar-buttons";
 import { resetMusicForProfile } from "@/lib/music/player";
+import { useCourseShareSync } from "@/lib/local-library/course-share";
 import { startMediaSessionWindowTracking } from "@/lib/media-session";
 
 const importAnime = () => import("@/views/anime");
@@ -921,6 +922,7 @@ function Shell({ onReady }: { onReady?: () => void }) {
     chromeHidden,
   } = useView();
   const { settings, update } = useSettings();
+  useCourseShareSync();
   const safeMode = useSafeMode();
   useEffect(() => {
     if (!settings.addonHealthProbes || safeMode) return;

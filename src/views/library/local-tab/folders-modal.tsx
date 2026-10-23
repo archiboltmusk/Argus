@@ -1,7 +1,13 @@
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
-import { AlertTriangle, Folder, FolderPlus, Loader2, RefreshCw, Trash2, X } from "lucide-react";
+import { AlertTriangle, Check, Copy, Folder, FolderPlus, Loader2, RefreshCw, Share2, Trash2, X } from "lucide-react";
 import { useT } from "@/lib/i18n";
+import { useSettings } from "@/lib/settings";
+import {
+  registerCourseShare,
+  unregisterCourseShare,
+  type CourseShare,
+} from "@/lib/local-library/course-share";
 import type { SourceFolder } from "./use-local-scan";
 
 function baseName(path: string): string {
@@ -28,6 +34,51 @@ export function FoldersModal({
 }) {
   const t = useT();
   const [removeTarget, setRemoveTarget] = useState<SourceFolder | null>(null);
+  const { settings, update } = useSettings();
+  const [shareUrls, setShareUrls] = useState<Record<string, string>>({});
+  const [shareError, setShareError] = useState<string | null>(null);
+  const [copied, setCopied] = useState<string | null>(null);
+  const shareFor = (path: string) => settings.courseShares.find((x) => x.folder === path);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    for (const share of settings.courseShares)
+      void registerCourseShare(share)
+        .then((url) => setShareUrls((prev) => ({ ...prev, [share.folder]: url })))
+        .catch(() => {});
+  }, [isOpen, settings.courseShares]);
+
+  const startShare = async (folder: SourceFolder) => {
+    setShareError(null);
+    const share: CourseShare = {
+      token: crypto.randomUUID(),
+      folder: folder.path,
+      name: baseName(folder.path),
+    };
+    try {
+      const url = await registerCourseShare(share);
+      setShareUrls((prev) => ({ ...prev, [folder.path]: url }));
+      update({ courseShares: [...settings.courseShares, share] });
+    } catch (e) {
+      setShareError(e instanceof Error ? e.message : String(e));
+    }
+  };
+
+  const stopShare = (share: CourseShare) => {
+    void unregisterCourseShare(share.token).catch(() => {});
+    setShareUrls((prev) => {
+      const { [share.folder]: _gone, ...rest } = prev;
+      return rest;
+    });
+    update({ courseShares: settings.courseShares.filter((x) => x.token !== share.token) });
+  };
+
+  const copyUrl = (path: string, url: string) => {
+    void navigator.clipboard?.writeText(url).then(() => {
+      setCopied(path);
+      setTimeout(() => setCopied(null), 1500);
+    });
+  };
 
   useEffect(() => {
     if (!isOpen) return;
@@ -96,6 +147,21 @@ export function FoldersModal({
               <span className="shrink-0 text-[11.5px] font-medium text-ink-muted">
                 {f.count === 1 ? t("1 file") : t("{n} files", { n: f.count })}
               </span>
+              {f.isCourse && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    const share = shareFor(f.path);
+                    if (share) stopShare(share);
+                    else void startShare(f);
+                  }}
+                  title={shareFor(f.path) ? t("Stop sharing") : t("Share as Stremio addon")}
+                  aria-label={shareFor(f.path) ? t("Stop sharing") : t("Share as Stremio addon")}
+                  className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full transition-colors ${shareFor(f.path) ? "bg-accent text-white" : "bg-raised text-ink-muted hover:bg-elevated hover:text-ink"}`}
+                >
+                  <Share2 size={14} strokeWidth={2.2} />
+                </button>
+              )}
               <button
                 type="button"
                 onClick={() => onRescan(f.path)}
@@ -122,6 +188,32 @@ export function FoldersModal({
               </button>
             </div>
           ))}
+          {shareError && <p className="px-1 text-[12px] text-danger">{shareError}</p>}
+          {folders
+            .filter((f) => shareUrls[f.path])
+            .map((f) => (
+              <div
+                key={`share-${f.path}`}
+                className="flex flex-col gap-1.5 rounded-2xl border border-edge-soft bg-canvas/40 px-4 py-3"
+              >
+                <span className="text-[12px] font-semibold text-ink">
+                  {t("Sharing {name} on your network", { name: baseName(f.path) })}
+                </span>
+                <span className="text-[11.5px] leading-snug text-ink-muted">
+                  {t(
+                    "Paste this link into Stremio on another device on the same network. Anyone with the link can watch these lessons while Argus is open. Stop sharing to revoke it.",
+                  )}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => copyUrl(f.path, shareUrls[f.path])}
+                  className="flex items-center gap-2 break-all rounded-lg bg-elevated px-3 py-2 text-start text-[11px] text-ink"
+                >
+                  {copied === f.path ? <Check size={13} /> : <Copy size={13} />}
+                  <span className="min-w-0 flex-1">{shareUrls[f.path]}</span>
+                </button>
+              </div>
+            ))}
         </div>
 
         <button
