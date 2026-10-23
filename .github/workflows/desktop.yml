@@ -196,12 +196,12 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/download-artifact@v5
+      - uses: actions/download-artifact@v8
         if: needs.windows.result == 'success'
         with:
           name: Argus-windows-x64
           path: win
-      - uses: actions/download-artifact@v5
+      - uses: actions/download-artifact@v8
         if: needs.linux.result == 'success'
         with:
           name: Argus-linux-x64
