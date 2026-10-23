@@ -453,11 +453,11 @@ function parseStoredSettings(raw: string | null): { settings: Settings; cacheabl
           : DEFAULT.fullscreenClockEnabled,
       controllerCursor: sanitizeControllerCursor(parsed.controllerCursor),
       screensaverStyle:
-        parsed.screensaverStyle === "catBoat" ||
-        parsed.screensaverStyle === "halloween" ||
-        parsed.screensaverStyle === "custom"
-          ? parsed.screensaverStyle
-          : "ambient",
+        (parsed.screensaverStyle as string) === "catBoat" || parsed.screensaverStyle === "eye"
+          ? "eye"
+          : parsed.screensaverStyle === "halloween" || parsed.screensaverStyle === "custom"
+            ? parsed.screensaverStyle
+            : "ambient",
       screensaverMedia: sanitizeScreensaverMedia(parsed.screensaverMedia),
       screensaverMediaId:
         typeof parsed.screensaverMediaId === "string" ? parsed.screensaverMediaId : null,

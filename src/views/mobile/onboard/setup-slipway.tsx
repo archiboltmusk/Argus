@@ -1,11 +1,11 @@
 import { useRef } from "react";
-import { SetupBoat } from "./setup-boat";
+import { SetupEye } from "./setup-eye";
 import { StepMark } from "./setup-marks";
 import type { SetupStepId } from "./setup-wire";
 
 /**
  * The band every step opens with: the real mark of the service on the quay,
- * Argus's boat on the waterline, and one more piece of that boat for every
+ * Argus's eye on the waterline, and one more piece of that eye for every
  * step the TV has confirmed. `built` is captured at mount so arriving at a
  * later step does not replay pieces the viewer already earned; only a piece
  * that lands while this screen is open is hoisted.
@@ -29,7 +29,7 @@ export function SetupSlipway({
       }`}
     >
       <StepMark step={step} className={won ? "h-14 w-14" : "h-11 w-11"} />
-      <SetupBoat
+      <SetupEye
         built={built}
         animate={animate}
         ghost

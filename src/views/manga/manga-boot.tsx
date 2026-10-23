@@ -1,3 +1,4 @@
+import { ArgusEyeLoader } from "@/components/argus-eye-loader";
 import { Loader2, RotateCcw } from "lucide-react";
 import { useT } from "@/lib/i18n";
 
@@ -36,12 +37,7 @@ export function MangaBootstrapError({
   return (
     <main className={SHELL}>
       <div className={INNER}>
-      <img
-        src="/manga-paper-boat.png"
-        alt=""
-        draggable={false}
-        className="w-52 max-w-full object-contain drop-shadow-[0_16px_36px_rgba(0,0,0,0.4)]"
-      />
+      <ArgusEyeLoader className="h-52 w-52 max-w-full text-ink-muted" />
       <div className="flex flex-col gap-2.5">
         <h1 className="font-display text-[26px] font-medium leading-tight text-ink">
           {t("Could not reach the source list")}

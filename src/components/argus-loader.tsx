@@ -28,12 +28,12 @@ export function ArgusLoader({
 }) {
   return (
     <div className={`flex flex-col items-center justify-center gap-2 ${className}`}>
-      {original ? <Boat size={size} keyed={keyed} logos={logos} /> : <CustomArtwork role="loading" className={`argus-loader-art ${SIZE_CLASS[size]}`} fallback={<Boat size={size} keyed={keyed} logos={logos} />} />}
+      {original ? <Eye size={size} keyed={keyed} logos={logos} /> : <CustomArtwork role="loading" className={`argus-loader-art ${SIZE_CLASS[size]}`} fallback={<Eye size={size} keyed={keyed} logos={logos} />} />}
       {caption && <p className="argus-loader-cap mt-1 text-[12.5px] font-medium uppercase tracking-[0.18em] text-white/70">{caption}</p>}
     </div>
   );
 }
 
-function Boat({ size }: { size: Size; keyed: boolean; logos?: string[] }) {
+function Eye({ size }: { size: Size; keyed: boolean; logos?: string[] }) {
   return <ArgusEyeLoader className={`argus-loader-art text-ink ${SIZE_CLASS[size]}`} />;
 }

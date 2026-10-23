@@ -16,7 +16,7 @@ const BUILD_ORDER: readonly Part[] = ["lid", "pupil"];
 /** Paint order. */
 const PAINT_ORDER: readonly Part[] = ["lid", "pupil"];
 
-export const BOAT_PARTS = BUILD_ORDER.length;
+export const EYE_PARTS = BUILD_ORDER.length;
 
 const PATH_OF: Record<Part, string> = { lid: LID_D, pupil: PUPIL_D };
 const HOIST_OF: Record<Part, string> = {
@@ -25,14 +25,14 @@ const HOIST_OF: Record<Part, string> = {
 };
 const LAG = ["", "setup-lag-1", "setup-lag-2"];
 
-/** How much of the boat a run of steps is worth, so a one-step queue still
-    finishes with a whole boat and a skipped step never fakes one. */
-export function boatBuilt(confirmed: number, total: number): number {
+/** How much of the eye a run of steps is worth, so a one-step queue still
+    finishes with a whole eye and a skipped step never fakes one. */
+export function eyeBuilt(confirmed: number, total: number): number {
   if (total <= 0 || confirmed <= 0) return 0;
-  return Math.min(BOAT_PARTS, Math.ceil((BOAT_PARTS * confirmed) / total));
+  return Math.min(EYE_PARTS, Math.ceil((EYE_PARTS * confirmed) / total));
 }
 
-export function SetupBoat({
+export function SetupEye({
   built,
   animate = "none",
   ghost,
@@ -47,7 +47,7 @@ export function SetupBoat({
   className?: string;
 }) {
   return (
-    <span className={`setup-boat ${className ?? ""}`} aria-hidden>
+    <span className={`setup-eye ${className ?? ""}`} aria-hidden>
       {PAINT_ORDER.map((part) => {
         const step = BUILD_ORDER.indexOf(part);
         const earned = step < built;
@@ -60,7 +60,7 @@ export function SetupBoat({
               ? HOIST_OF[part]
               : "";
         return (
-          <svg key={part} viewBox={VIEW_BOX} fill="currentColor" className={`setup-boat-part ${hoist}`}>
+          <svg key={part} viewBox={VIEW_BOX} fill="currentColor" className={`setup-eye-part ${hoist}`}>
             <path d={PATH_OF[part]} />
           </svg>
         );

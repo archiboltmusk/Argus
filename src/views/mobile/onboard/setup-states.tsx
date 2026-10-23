@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 import { Loader2, MonitorSmartphone, TimerOff, WifiOff } from "lucide-react";
 import { useT } from "@/lib/i18n";
 import { useReducedMotion } from "@/lib/use-reduced-motion";
-import { SetupBoat } from "./setup-boat";
+import { SetupEye } from "./setup-eye";
 import { StepMark } from "./setup-marks";
 import { SetupShell, type SetupChrome } from "./setup-shell";
 import { SetupButton, SetupCard, SetupHeading } from "./setup-ui";
@@ -172,10 +172,10 @@ const STEP_LABEL: Record<SetupStepId, string> = {
 };
 
 /**
- * The boat the viewer assembled a piece at a time is shown whole here for the
+ * The eye the viewer assembled a piece at a time is shown whole here for the
  * first time, then leaves in the direction they are being told to look. The
  * departure is gated in JS rather than by a media query: its end state is
- * off-screen, so the global reduced-motion clamp would resolve it to a boat
+ * off-screen, so the global reduced-motion clamp would resolve it to an eye
  * that simply is not there.
  */
 export function SetupDone({
@@ -198,7 +198,7 @@ export function SetupDone({
     >
       {built > 0 && (
         <div className="overflow-hidden border-b border-edge-soft pt-4">
-          <SetupBoat
+          <SetupEye
             built={built}
             animate={reduced ? "none" : "all"}
             className={`w-[104px] text-accent ${reduced ? "" : "setup-depart"}`}

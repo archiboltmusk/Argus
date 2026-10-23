@@ -96,12 +96,8 @@ const NAMES: Record<string, string> = {
   ebook: "eBook",
   "wt-waiting-dark": "Watch together (dark)",
   "wt-waiting-white": "Watch together (light)",
-  "addons-boat-dark": "Addons boat (dark)",
-  "addons-boat-white": "Addons boat (light)",
-  "install-boat-white": "Install boat",
   "argus-loader": "Argus loader",
   "flame-streak": "Flame streak",
-  "voyage-boat": "Voyage boat",
   "mark-unwatched": "Mark unwatched",
   "mark-watched": "Mark watched",
   "customize-subtitles": "Customize subtitles",
@@ -469,7 +465,7 @@ export function IconsPanel() {
 
       <Section
         title={t("Everything else that moves")}
-        subtitle={t("Loaders, boats, and the bits between screens.")}
+        subtitle={t("Loaders and the bits between screens.")}
       >
         <AnimationSet glob={LOTTIE_MAIN} download={download} />
       </Section>
@@ -477,7 +473,7 @@ export function IconsPanel() {
       <Section
         title={t("Argus and the installer")}
         subtitle={t(
-          "The Big Picture opener and the boat that builds itself while Argus installs.",
+          "The Big Picture opener and the eye that opens while Argus installs.",
         )}
       >
         <AnimationSet glob={LOTTIE_APP} download={download} />

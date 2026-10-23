@@ -7,7 +7,7 @@ export type OverlayPhase =
   | { kind: "installing"; name: string | null }
   | { kind: "success"; name: string; logo: string | null };
 
-function InstallBoat({ logo }: { logo: string | null }) {
+function InstallEye({ logo }: { logo: string | null }) {
   return (
     <div className="relative flex h-60 w-60 items-center justify-center" aria-hidden>
       <ArgusEyeLoader className="h-full w-full text-ink" />
@@ -31,7 +31,7 @@ export function InstallOverlay({ phase, logo }: { phase: OverlayPhase; logo: str
   return (
     <div className="absolute inset-0 z-20 flex items-center justify-center bg-canvas/92 backdrop-blur-xl animate-in fade-in duration-200">
       <div className="flex flex-col items-center gap-3 animate-in zoom-in-95 duration-300">
-        <CustomArtwork role="loading" className="h-60 w-60" fallback={<InstallBoat logo={cargoLogo} />} />
+        <CustomArtwork role="loading" className="h-60 w-60" fallback={<InstallEye logo={cargoLogo} />} />
         <div className="flex flex-col items-center gap-1.5">
           {installing ? (
             <span className="text-[10.5px] font-bold uppercase tracking-[0.26em] text-accent">

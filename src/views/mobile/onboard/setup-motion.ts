@@ -6,12 +6,12 @@
  * JS by useReducedMotion and must never be applied from CSS alone.
  */
 export const SETUP_MOTION_CSS = `
-.setup-boat {
+.setup-eye {
   position: relative;
   display: block;
   aspect-ratio: 700 / 642.88;
 }
-.setup-boat-part {
+.setup-eye-part {
   position: absolute;
   inset: 0;
   width: 100%;

@@ -18,7 +18,7 @@ export type SetupChrome = {
   idleHost?: boolean;
   stepIndex: number;
   stepCount: number;
-  /** Pieces of Argus's mark this run has earned, 0 to BOAT_PARTS. */
+  /** Pieces of Argus's mark this run has earned, 0 to EYE_PARTS. */
   built: number;
 };
 
