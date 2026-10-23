@@ -24,7 +24,10 @@ fn unsupported_reason() -> Option<String> {
         return Some("Native SVP is not accessible from the Flatpak sandbox".to_string());
     }
     #[cfg(not(any(windows, target_os = "linux")))]
-    return Some("SVP integration is currently supported on Windows and Linux".to_string());
+    {
+        return Some("SVP integration is currently supported on Windows and Linux".to_string());
+    }
+    #[cfg(any(windows, target_os = "linux"))]
     None
 }
 
