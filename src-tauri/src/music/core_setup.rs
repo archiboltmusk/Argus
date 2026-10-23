@@ -20,6 +20,10 @@ pub(super) fn create_core(label: &str) -> Result<Mpv, String> {
         ] {
             init.set_property(name, value)?;
         }
+        #[cfg(target_os = "macos")]
+        {
+            let _ = init.set_property("ao", "avfoundation");
+        }
         Ok(())
     })
     .map_err(|error| format!("music mpv init: {error}"))

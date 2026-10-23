@@ -464,6 +464,15 @@ fn apply_pre_init(
     set("terminal", "no");
     set("log-file", "");
     set("msg-level", "all=warn,vo=v,d3d11=v,gpu=v,win32=v");
+    #[cfg(target_os = "macos")]
+    {
+        // Avoid upstream libmpv SIGSEGV on macOS (mpv#18383 / #18384).
+        // On macOS 15+ / 27+, ao_coreaudio channel layout negotiation fails, causing mpv
+        // to fall back to avfoundation without unregistering the CoreAudio hotplug listener.
+        // Subsequent audio device changes invoke hotplug_cb on a freed ao, crashing in mp_msg_va.
+        // Explicitly defaulting to avfoundation on macOS prevents the broken listener from being registered.
+        set("ao", "avfoundation");
+    }
     let is_live = args.is_live.unwrap_or(false);
     set("ytdl", if is_live { "yes" } else { "no" });
     let mut user_agent = "VLC/3.0.20 LibVLC/3.0.20".to_string();
