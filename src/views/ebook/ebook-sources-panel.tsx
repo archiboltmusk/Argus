@@ -46,6 +46,7 @@ import {
   subscribeEBookSources,
   type EBookSource,
 } from "@/lib/ebook/sources";
+import { OpdsCatalogCard } from "./ebook-opds-card";
 import { PluginGuide } from "@/views/manga/manga-sources-panel/plugin-guide";
 import {
   googleBooksApiKey,
@@ -446,7 +447,7 @@ function SourceRow({ source }: { source: EBookSource }) {
             <span className="truncate text-[13px] text-ink-subtle">{source.location}</span>
           </span>
           <span className="text-[12px] font-medium text-ink-muted">
-            {source.kind === "local" ? t("Folder") : t("Site")}
+            {source.kind === "local" ? t("Folder") : source.kind === "opds" ? t("Catalog") : t("Site")}
           </span>
           <button
             type="button"
@@ -1074,6 +1075,7 @@ export function EBookSourcesView({ onBack }: { onBack: () => void }) {
               <div className="grid gap-3">
                 <GutenbergQuickAdd />
                 <LocalFolder />
+                <OpdsCatalogCard />
               </div>
             </div>
           </WorkspaceSection>
