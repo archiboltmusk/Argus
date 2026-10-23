@@ -413,7 +413,7 @@ export async function installAddon(id: string, transportUrl: string): Promise<Ad
 
 export async function installFromUrl(
   rawUrl: string,
-  options: { replaceId?: string } = {},
+  options: { replaceId?: string; skipStremioSync?: boolean } = {},
 ): Promise<InstallResult> {
   const parsed = parseAddonUrl(rawUrl);
   if (parsed.kind === "error") throw new Error(parsed.message);
@@ -438,7 +438,9 @@ export async function installFromUrl(
   next.push({ id, transportUrl: parsed.url, installedAt: Date.now(), manifest });
   saveInstalled(next);
   const addon: Addon = { manifest, transportUrl: parsed.url };
-  const syncedToStremio = await pushToStremio(addon, "install", replacedUrls);
+  const syncedToStremio = options.skipStremioSync
+    ? false
+    : await pushToStremio(addon, "install", replacedUrls);
   return { addon, syncedToStremio, replaced: replacedById || replacedByOld };
 }
 
