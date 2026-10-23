@@ -50,6 +50,12 @@ export function errorText(t: T, e: unknown): string {
       return t("Not a stream plugin: it exports no getStreams or streams function.");
     case "too-large":
       return t("File is larger than 2 MB.");
+    case "declined":
+      return t("Install cancelled.");
+    case "signature":
+      return t("The plugin's signature does not match its author's key.");
+    case "integrity":
+      return t("The stored plugin no longer matches the checksum taken at install. It was switched off.");
     case "checksum":
       return t("Checksum did not match the manifest.");
     case "start-failed":

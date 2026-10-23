@@ -20,6 +20,8 @@ mod ebook_tts;
 mod fonts;
 mod gamepad;
 mod http_fetch;
+#[cfg(desktop)]
+mod plugin_trust;
 mod http_redirect;
 mod local_lib;
 mod log_privacy;
@@ -1789,6 +1791,7 @@ pub fn run() {
             multiview::multiview_visibility,
             multiview::multiview_stop_all,
             http_fetch::argus_fetch,
+            plugin_trust::plugin_verify_signature,
             http_fetch::argus_upload,
             http_fetch::clear_thumb_cache,
             http_fetch::thumb_cache_size,

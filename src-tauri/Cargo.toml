@@ -108,6 +108,7 @@ leveldb-sys = { path = "vendor/leveldb-sys", features = ["snappy"] }
 trash = "=5.2.9"
 libmpv2 = "4"
 libmpv2-sys = "4"
+ring = "0.17"
 tauri-plugin-single-instance = { version = "2", features = ["deep-link"] }
 tauri-plugin-updater = "2"
 minisign-verify = "0.2"

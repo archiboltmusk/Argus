@@ -135,6 +135,22 @@ function entryUrl(file: string, manifestUrl: string): string | null {
   }
 }
 
+const HOST_PATTERN = /^(\*\.)?[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)+$/;
+
+/** The hosts a plugin declares. `permissions.hosts` is the field; a top-level `hosts` is still read
+ * for manifests written before permissions had a place of their own. */
+function declaredHosts(o: Record<string, unknown>): string[] {
+  const permissions =
+    o.permissions && typeof o.permissions === "object"
+      ? (o.permissions as Record<string, unknown>)
+      : null;
+  return strList(permissions?.hosts ?? o.hosts)
+    .map((h) => h.toLowerCase())
+    .filter((h) => HOST_PATTERN.test(h));
+}
+
+/** An Argus plugin entry has to say who wrote it, which version it is, what it may reach and the
+ * hash of what it serves. An entry that leaves one out is skipped rather than installed on trust. */
 function argusEntry(v: unknown, manifestUrl: string): StreamRepoEntry | null {
   if (!v || typeof v !== "object") return null;
   const o = v as Record<string, unknown>;
@@ -142,21 +158,27 @@ function argusEntry(v: unknown, manifestUrl: string): StreamRepoEntry | null {
   const name = str(o.name);
   const file = str(o.entry);
   const entry = file ? entryUrl(file, manifestUrl) : null;
-  if (!id || !name || !entry) return null;
+  const sha256 = /^[0-9a-f]{64}$/i.test(str(o.sha256)) ? str(o.sha256).toLowerCase() : undefined;
+  const hosts = declaredHosts(o);
+  if (!id || !name || !entry || !str(o.author) || !str(o.version) || !sha256 || !hosts.length) {
+    return null;
+  }
   const idPrefixes = strList(o.idPrefixes);
   return {
     id,
     name,
-    version: str(o.version, "0") || "0",
+    version: str(o.version),
     entry,
-    sha256: /^[0-9a-f]{64}$/i.test(str(o.sha256)) ? str(o.sha256).toLowerCase() : undefined,
+    sha256,
+    publicKey: str(o.publicKey) || undefined,
+    signature: str(o.signature) || undefined,
     icon: str(o.icon) || undefined,
     description: str(o.description) || undefined,
     author: str(o.author) || undefined,
     lang: strList(o.lang),
     types: typesOf(o.types),
     idPrefixes: idPrefixes.length ? idPrefixes : ["tt", "tmdb:"],
-    hosts: strList(o.hosts).map((h) => h.toLowerCase()),
+    hosts,
     settings: o.settings === true,
     nsfw: o.nsfw === true,
     enabled: o.enabled !== false,

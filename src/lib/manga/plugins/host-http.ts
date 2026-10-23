@@ -1,4 +1,9 @@
-import { FINAL_URL_HEADER, safeFetch, safeFetchBase64, safeFetchBytes } from "@/lib/safe-fetch";
+import {
+  FINAL_URL_HEADER,
+  STRICT_HTTPS_HEADER,
+  safeFetchBase64,
+  safeFetchBytes,
+} from "@/lib/safe-fetch";
 import { isBlockedUrl } from "@/lib/privacy/blocklist";
 import { SUBTITLE_PUBLIC_NETWORK_HEADER } from "@/lib/subtitles/provider-url";
 import { sameSiteHost } from "@/lib/same-site-host";
@@ -11,8 +16,12 @@ export type PluginHttpPolicy = {
 };
 
 const MAX_BYTES = 8 * 1024 * 1024;
-const MAX_TIMEOUT = 45_000;
-const DEFAULT_TIMEOUT = 20_000;
+const MAX_TIMEOUT = 30_000;
+const DEFAULT_TIMEOUT = 10_000;
+const MAX_URL_LENGTH = 4096;
+const MAX_REQUEST_BODY_BYTES = 1024 * 1024;
+const MAX_REQUEST_HEADERS = 64;
+const MAX_HEADER_VALUE_LENGTH = 8192;
 
 const PLUGIN_UA =
   "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36";
@@ -99,6 +108,29 @@ export function assertSafeUrl(raw: string): string {
   if (isPrivateHost(u.hostname)) throw new Error("blocked private host: " + u.hostname);
   if (isBlockedUrl(u.href)) throw new Error("blocked tracker host: " + u.hostname);
   return u.href;
+}
+
+/** What a plugin may ask the host to fetch: a plain https URL on the public network. Native holds
+ * the same line again on every redirect hop, so this is the first check and not the only one. */
+export function assertPluginUrl(raw: string): string {
+  if (typeof raw !== "string" || raw.length > MAX_URL_LENGTH) throw new Error("url rejected");
+  const target = assertSafeUrl(raw);
+  const u = new URL(target);
+  if (u.protocol !== "https:") throw new Error("plugin requests must use https");
+  if (u.username || u.password) throw new Error("plugin url must not carry credentials");
+  return target;
+}
+
+function assertBridgeRequest(opts: PluginHttpOpts | undefined): void {
+  if (!opts) return;
+  if (typeof opts.body === "string" && opts.body.length > MAX_REQUEST_BODY_BYTES) {
+    throw new Error("request body too large");
+  }
+  const headers = opts.headers ? Object.entries(opts.headers) : [];
+  if (headers.length > MAX_REQUEST_HEADERS) throw new Error("too many request headers");
+  for (const [, value] of headers) {
+    if (String(value).length > MAX_HEADER_VALUE_LENGTH) throw new Error("request header too large");
+  }
 }
 
 function hostOf(raw?: string | null): string | null {
@@ -245,7 +277,8 @@ export async function runPluginHttp(
   opts: PluginHttpOpts,
   policy?: PluginHttpPolicy,
 ): Promise<PluginHttpResult> {
-  const target = assertSafeUrl(url);
+  const target = assertPluginUrl(url);
+  assertBridgeRequest(opts);
   const method = (opts.method || "GET").toUpperCase();
   const timeout = Math.min(Math.max(opts.timeoutMs || DEFAULT_TIMEOUT, 1_000), MAX_TIMEOUT);
   const headers = filterHeaders(
@@ -262,19 +295,19 @@ export async function runPluginHttp(
   }
   const init: RequestInit = {
     method,
-    headers,
+    headers: {
+      ...headers,
+      [SUBTITLE_PUBLIC_NETWORK_HEADER]: "1",
+      [STRICT_HTTPS_HEADER]: "1",
+    },
     redirect: opts.redirect === "manual" || opts.redirect === "error" ? "manual" : "follow",
     credentials: "omit",
     signal: AbortSignal.timeout(timeout),
   };
   if (typeof opts.body === "string" && method !== "GET" && method !== "HEAD") init.body = opts.body;
-  if (opts.responseType === "base64" && policy?.publicOnly) {
-    const raw = safeFetchBase64(
-      target,
-      { ...init, headers: { ...headers, [SUBTITLE_PUBLIC_NETWORK_HEADER]: "1" } },
-      timeout,
-      Math.min(policy.maxBytes ?? MAX_BYTES, MAX_BYTES),
-    );
+  const maxBytes = Math.min(policy?.maxBytes ?? MAX_BYTES, MAX_BYTES);
+  if (opts.responseType === "base64") {
+    const raw = safeFetchBase64(target, init, timeout, maxBytes);
     if (raw) {
       const r = await raw;
       return {
@@ -286,14 +319,7 @@ export async function runPluginHttp(
       };
     }
   }
-  const res = policy?.publicOnly
-    ? await safeFetchBytes(
-        target,
-        { ...init, headers: { ...headers, [SUBTITLE_PUBLIC_NETWORK_HEADER]: "1" } },
-        timeout,
-        Math.min(policy.maxBytes ?? MAX_BYTES, MAX_BYTES),
-      )
-    : await safeFetch(target, init);
+  const res = await safeFetchBytes(target, init, timeout, maxBytes);
   const bytes = await readCapped(res);
   const body = opts.responseType === "base64" ? toBase64(bytes) : new TextDecoder().decode(bytes);
   const finalUrl = res.headers.get(FINAL_URL_HEADER) ?? undefined;
@@ -305,7 +331,7 @@ export async function runPluginGrpc(
   requestBase64: string,
   opts: PluginGrpcOpts,
 ): Promise<PluginGrpcResult> {
-  const target = assertSafeUrl(url);
+  const target = assertPluginUrl(url);
   const message = fromBase64(requestBase64);
   const frame = new Uint8Array(message.length + 5);
   new DataView(frame.buffer).setUint32(1, message.length);
@@ -331,7 +357,11 @@ export async function runPluginGrpc(
     target,
     {
       method: "POST",
-      headers,
+      headers: {
+        ...headers,
+        [SUBTITLE_PUBLIC_NETWORK_HEADER]: "1",
+        [STRICT_HTTPS_HEADER]: "1",
+      },
       body: frame,
       redirect: "follow",
       credentials: "omit",
