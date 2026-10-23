@@ -130,6 +130,7 @@ import { PlayerInteractionLockControls } from "@/components/player/player-intera
 import { usePlayerInteractionLock } from "./player/hooks/use-player-interaction-lock";
 import { isNextAired } from "@/lib/cw-resurface";
 import { exitAnyFullscreen } from "@/lib/fullscreen-state";
+import { shareDeepLink } from "@/lib/deep-link";
 
 let hdrFallbackNoticeShown = false;
 
@@ -1109,6 +1110,10 @@ function NativePlayerView({ src }: { src: PlayerSrc }) {
     bridgeRef,
     snap,
     metaId: src.meta.id,
+    noteTitle: src.title ?? src.meta.name,
+    noteLink: src.meta.id.startsWith("local:")
+      ? undefined
+      : shareDeepLink(src.meta.type, src.meta.id),
     svpActive,
     drawMode,
     setDrawMode,

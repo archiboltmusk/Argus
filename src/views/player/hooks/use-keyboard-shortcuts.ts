@@ -44,6 +44,7 @@ export function useKeyboardShortcuts(params: {
   toggleDvr?: () => void;
   toggleSleep?: () => void;
   onScreenshot?: () => void;
+  onCopyTimestamp?: () => void;
   onGifRecord?: () => void;
   onClipRecord?: () => void;
   onToggleCrop?: () => void;
@@ -84,6 +85,7 @@ export function useKeyboardShortcuts(params: {
     toggleDvr,
     toggleSleep,
     onScreenshot,
+    onCopyTimestamp,
     onGifRecord,
     onClipRecord,
     onToggleCrop,
@@ -483,6 +485,12 @@ export function useKeyboardShortcuts(params: {
         e.preventDefault();
         if (e.repeat) return;
         onScreenshot();
+        return;
+      }
+      if (match("playerCopyTimestamp") && onCopyTimestamp) {
+        e.preventDefault();
+        if (e.repeat) return;
+        onCopyTimestamp();
         return;
       }
       if (match("playerGifRecord") && onGifRecord) {
