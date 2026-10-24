@@ -15,14 +15,22 @@ export const ARGUS_API_BASE = resolveBase(
  */
 export const ARGUS_HOSTED = !new URL(ARGUS_API_BASE).hostname.endsWith(".invalid");
 
+export const HARBOR_FALLBACK_BASE = "https://harborcommunity.site";
+
 export const ARGUS_TRAKT_BASE = resolveBase(
   import.meta.env.VITE_ARGUS_TRAKT_BASE,
-  ARGUS_API_BASE,
+  HARBOR_FALLBACK_BASE,
 );
 
-export const ARGUS_MAL_BASE = resolveBase(import.meta.env.VITE_ARGUS_MAL_BASE, ARGUS_API_BASE);
+export const ARGUS_MAL_BASE = resolveBase(
+  import.meta.env.VITE_ARGUS_MAL_BASE,
+  HARBOR_FALLBACK_BASE,
+);
 
-export const ARGUS_TVDB_BASE = resolveBase(import.meta.env.VITE_ARGUS_TVDB_BASE, ARGUS_API_BASE);
+export const ARGUS_TVDB_BASE = resolveBase(
+  import.meta.env.VITE_ARGUS_TVDB_BASE,
+  HARBOR_FALLBACK_BASE,
+);
 
 export const ARGUS_BUGS_BASE = resolveBase(
   import.meta.env.VITE_ARGUS_BUGS_BASE,

@@ -488,6 +488,9 @@ fn apply_pre_init(
         // Subsequent audio device changes invoke hotplug_cb on a freed ao, crashing in mp_msg_va.
         // Explicitly defaulting to avfoundation on macOS prevents the broken listener from being registered.
         set("ao", "avfoundation");
+        // Ensure mpv never creates a secondary application dock icon or steals activation policy on macOS.
+        // Setting macos-app-activation-policy=accessory keeps mpv auxiliary to Argus.
+        let _ = set("macos-app-activation-policy", "accessory");
     }
     let is_live = args.is_live.unwrap_or(false);
     set("ytdl", if is_live { "yes" } else { "no" });
