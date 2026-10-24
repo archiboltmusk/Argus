@@ -14,6 +14,8 @@ import {
   undersizedNewReleasePenalty,
 } from "./scoring-size";
 import type { CorpusStats, ScoreOptions } from "./scoring-types";
+import { calculateRatingScoreAdjustment } from "../stream-ratings";
+import { disambiguateRelease } from "../disambiguation";
 
 export function scoreStream(
   s: ParsedStream,
@@ -280,6 +282,41 @@ export function scoreStream(
   if (recency.delta !== 0) {
     score += recency.delta;
     reasons.push(recency);
+  }
+
+  // Same-Name & Same-Year Movie Disambiguation
+  if (opts.canonicalTitle || opts.director) {
+    const expectedYear = opts.releaseDate ? parseInt(opts.releaseDate.slice(0, 4), 10) : null;
+    const disambig = disambiguateRelease(s, {
+      canonicalTitle: opts.canonicalTitle,
+      expectedYear,
+      runtimeMinutes: opts.runtimeMinutes,
+      director: opts.director,
+    });
+    for (const p of disambig.penalties) {
+      score += p.delta;
+      reasons.push({ signal: p.reason, delta: p.delta });
+    }
+    for (const b of disambig.bonuses) {
+      score += b.delta;
+      reasons.push({ signal: b.reason, delta: b.delta });
+    }
+  }
+
+  // Community / Local Ratings & Report Flags (Upvotes / Downvotes / Wrong movie reports)
+  const ratingAdjust = calculateRatingScoreAdjustment(s);
+  if (ratingAdjust.delta !== 0) {
+    score += ratingAdjust.delta;
+    reasons.push({
+      signal: ratingAdjust.isVerifiedGood
+        ? "community-verified-pristine"
+        : ratingAdjust.isFlaggedWrong
+          ? "reported-wrong-movie"
+          : ratingAdjust.isFlaggedDead
+            ? "reported-bad-link"
+            : "community-feedback",
+      delta: ratingAdjust.delta,
+    });
   }
 
   return { ...s, score, reasons, tier: tierOf(s) };
