@@ -435,9 +435,9 @@ export function MangaReader({
     if (manga.title && Number.isFinite(chapNum) && chapNum > 0) {
       if (anilistMangaAuthed() && settings.anilistAutoSync) {
         const match = getMangaMatchEntry(pid, "anilist", titleKey);
-        if (match?.trackerId !== null) {
+        if (match?.id !== null) {
           emitMangaSync("anilist", { kind: "syncing", title: manga.title, chapter: chapNum });
-          void pushAnilistManga(manga.title, chapNum, match?.trackerId).then((res) => {
+          void pushAnilistManga(manga.title, chapNum, match?.id).then((res) => {
             if (res.result === "synced") {
               emitMangaSync("anilist", { kind: "ok", title: manga.title, chapter: chapNum });
             } else if (res.result === "error" || res.result === "title-miss") {
@@ -452,9 +452,9 @@ export function MangaReader({
       }
       if (malMangaAuthed() && settings.malAutoSync) {
         const match = getMangaMatchEntry(pid, "mal", titleKey);
-        if (match?.trackerId !== null) {
+        if (match?.id !== null) {
           emitMangaSync("mal", { kind: "syncing", title: manga.title, chapter: chapNum });
-          void pushMalManga(manga.title, chapNum, match?.trackerId).then((res) => {
+          void pushMalManga(manga.title, chapNum, match?.id).then((res) => {
             if (res.result === "synced") {
               emitMangaSync("mal", { kind: "ok", title: manga.title, chapter: chapNum });
             } else if (res.result === "error" || res.result === "title-miss") {
