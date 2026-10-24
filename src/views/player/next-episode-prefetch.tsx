@@ -8,6 +8,7 @@ import { useSettings } from "@/lib/settings";
 import { fetchAddonStreams } from "@/lib/streams/addons";
 import { buildEpisodePipelineInput } from "@/lib/streams/episode-pipeline-input";
 import { isPluginAddon } from "@/lib/streams/plugins";
+import { probeTopStreams } from "@/lib/streams/top-stream-prober";
 import type { PlayEpisode } from "@/lib/view";
 import { useAddons } from "@/views/play-picker/use-addons";
 import { useAnimeAltTitles } from "@/views/play-picker/use-anime-alt-titles";
@@ -93,7 +94,7 @@ export function NextEpisodePrefetch({
         });
         const addon = input.addons.find((a) => a.manifest.id === addonId);
         if (!addon) return;
-        await fetchAddonStreams(
+        const streams = await fetchAddonStreams(
           [addon],
           input.request,
           ac.signal,
@@ -103,7 +104,10 @@ export function NextEpisodePrefetch({
           input.addonRanks,
           input.forcedAddonBases,
           true,
-        ).catch(() => {});
+        ).catch(() => []);
+        if (streams && streams.length > 0 && !ac.signal.aborted) {
+          void probeTopStreams(streams as any, 2, ac.signal);
+        }
       })()
         .catch(() => {})
         .finally(() => {

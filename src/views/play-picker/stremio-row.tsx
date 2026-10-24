@@ -1,5 +1,6 @@
 import { Check, Download } from "lucide-react";
 import { StreamSpeedButton } from "@/components/player/stream-speed-button";
+import { BandwidthConfidenceBadge } from "@/components/player/bandwidth-confidence-badge";
 import { Play } from "@/components/icons/play-filled";
 import { AddonLogo } from "@/components/addon-logo";
 import { CopyLinkButton, resolveStreamLink } from "@/components/player/copy-link-button";
@@ -76,6 +77,7 @@ export function StremioRow({
           <div className="flex flex-wrap items-center gap-1.5">
             <HostMatchChip match={match} />
             <StreamHostChip url={stream.url} stream={stream} />
+            <BandwidthConfidenceBadge stream={stream} />
             {dubSub && <DubSubPill kind={dubSub} size="sm" />}
             {badges.map((k) => (
               <FormatBadge key={k} kind={k} size="sm" />

@@ -4,6 +4,7 @@ import { Flag } from "@/components/flag";
 import { DubSubPill, streamDubSub } from "@/components/dub-sub-pill";
 import { CopyLinkButton, resolveStreamLink } from "@/components/player/copy-link-button";
 import { FormatBadge, RuleBadges, streamBadges } from "@/components/format-badge";
+import { BandwidthConfidenceBadge } from "@/components/player/bandwidth-confidence-badge";
 import { HostMatchChip } from "@/components/host-match-chip";
 import type { Meta } from "@/lib/cinemeta";
 import { useT } from "@/lib/i18n";
@@ -250,6 +251,7 @@ export function PrimaryCard({
                   </span>
                 )}
                 <EditionChip stream={stream} />
+                <BandwidthConfidenceBadge stream={stream} />
               </div>
             )}
           </div>
