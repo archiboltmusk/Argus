@@ -101,6 +101,7 @@ import { clearMediaControls, updateMediaControls } from "@/lib/media-session";
 import { usePlayerMedia } from "./player/hooks/use-player-media";
 import { useTrickplay } from "./player/hooks/use-trickplay";
 import { useStreamPill } from "./player/hooks/use-stream-pill";
+import { useStallFallback } from "./player/hooks/use-stall-fallback";
 import { useStubDetection } from "./player/hooks/use-stub-detection";
 import { useBridgeLoad } from "./player/hooks/use-bridge-load";
 import { useSportsDockSurface } from "./player/hooks/use-sports-dock-surface";
@@ -1328,6 +1329,19 @@ function NativePlayerView({ src }: { src: PlayerSrc }) {
     inRoom,
     streamCheckOpen,
   });
+  const {
+    stallOffer,
+    acceptOffer: acceptStallFallback,
+    dismissOffer: dismissStallFallback,
+  } = useStallFallback({
+    src: activeMediaSrc,
+    snap,
+    debrids,
+    autoSwitchEnabled: settings.autoNextStreamOnStall,
+    onSwitchStream,
+    openSwitcher: () => setSwitcherOpen(true),
+    inRoom,
+  });
 
   const playStreamRef = liveStreamRef ?? src.streamRef;
   const playUrl = liveUrl ?? src.url;
@@ -1603,6 +1617,9 @@ function NativePlayerView({ src }: { src: PlayerSrc }) {
     foreignNotice,
     onDismissForeign: () => setForeignNotice(null),
     streamPillVariant,
+    stallOffer,
+    acceptStallFallback,
+    dismissStallFallback,
     mpvEmbedWindowsActive,
     setStreamCheckOpen,
     dismissStreamPill,

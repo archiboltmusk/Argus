@@ -97,7 +97,7 @@ export default defineConfig(({ mode }) => {
               rollupOptions: {
                 input: {
                   main: "index.html",
-                  retro: "retro-player.html",
+                  ...(process.platform !== "darwin" ? { retro: "retro-player.html" } : {}),
                   tray: "tray.html",
                 } as Record<string, string>,
               },

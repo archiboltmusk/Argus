@@ -836,7 +836,10 @@ export function createMpvBridge(mpvOptions?: MpvOptions): PlayerBridge {
     } else if (raw.event === "property-change") {
       const name = raw.name;
       const data = raw.data;
-      if (name === "time-pos" && typeof data === "number") snap.positionSec = data;
+      if (name === "time-pos" && typeof data === "number") {
+        snap.positionSec = data;
+        snap.lastDecodedFrameAt = Date.now();
+      }
       if (name === "path" && typeof data === "string") observedMediaPath = data;
       if (name === "duration" && typeof data === "number") snap.durationSec = data;
       if (name === "pause" && typeof data === "boolean") {
@@ -988,6 +991,12 @@ export function createMpvBridge(mpvOptions?: MpvOptions): PlayerBridge {
       if (name === "height" && typeof data === "number") snap.videoSourceHeight = data;
       if (name === "video-params/gamma" && typeof data === "string" && data) snap.hdrGamma = data;
       if (name === "demuxer-cache-duration" && typeof data === "number") snap.bufferedSec = data;
+      if (name === "core-idle" && typeof data === "boolean") {
+        snap.coreIdle = data;
+        if (data && !observedPaused && snap.status === "playing") {
+          snap.buffering = true;
+        }
+      }
       if (name === "paused-for-cache" && typeof data === "boolean") snap.buffering = data;
       if (name === "af") {
         const repr = typeof data === "string" ? data : JSON.stringify(data ?? "");
@@ -1020,6 +1029,8 @@ export function createMpvBridge(mpvOptions?: MpvOptions): PlayerBridge {
     } else if (raw.event === "file-loaded") {
       markPlaybackTrace(activeTraceId, "file-loaded");
       snap.status = observedPaused === true ? "paused" : "playing";
+      snap.lastDecodedFrameAt = Date.now();
+      snap.coreIdle = false;
       snap.errorCode = null;
       snap.errorMessage = null;
       emit();
@@ -1033,6 +1044,8 @@ export function createMpvBridge(mpvOptions?: MpvOptions): PlayerBridge {
       }
       snap.status = observedPaused === true ? "paused" : "playing";
       snap.buffering = false; // Playback recovered, including when the user remains paused.
+      snap.lastDecodedFrameAt = Date.now();
+      snap.coreIdle = false;
       if (snap.status === "playing" && pendingAudioDeviceReload) scheduleAudioDeviceReload();
       snap.firstFrameReady = true;
       if (currentIsLive === false && currentStartupProfile && steadyBufferLoadId !== mediaLoadId) {

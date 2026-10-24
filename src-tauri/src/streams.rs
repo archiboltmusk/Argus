@@ -54,6 +54,41 @@ pub async fn streams_parse(streams: Vec<Stream>) -> Result<Vec<ParsedStream>, St
 }
 
 #[tauri::command]
+pub async fn streams_next_fallback(
+    candidates: Vec<ScoredStream>,
+    current_url: Option<String>,
+    current_info_hash: Option<String>,
+    active_debrids: Vec<String>,
+) -> Option<usize> {
+    argus_core::fallback::next_fallback_stream(
+        &candidates,
+        current_url.as_deref(),
+        current_info_hash.as_deref(),
+        &active_debrids,
+    )
+}
+
+#[tauri::command]
 pub fn streams_core_version() -> String {
     env!("CARGO_PKG_VERSION").to_string()
 }
+
+#[tauri::command]
+pub async fn debrid_check_cached_batch(
+    provider: String,
+    api_key: String,
+    hashes: Vec<String>,
+) -> Result<std::collections::HashMap<String, bool>, String> {
+    let p = argus_core::debrid::DebridProvider::from_slug(&provider)
+        .ok_or_else(|| format!("unknown debrid provider: {provider}"))?;
+    Ok(argus_core::debrid::check_cache_provider(p, &api_key, &hashes, None).await)
+}
+
+#[tauri::command]
+pub async fn debrid_check_all_cached(
+    providers: Vec<argus_core::debrid::ProviderCreds>,
+    hashes: Vec<String>,
+) -> Result<std::collections::HashMap<String, std::collections::HashMap<String, bool>>, String> {
+    Ok(argus_core::debrid::check_cache_all_providers(&providers, &hashes, None).await)
+}
+

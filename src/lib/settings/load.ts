@@ -148,7 +148,7 @@ let cachedRaw: string | null = null;
 let cachedSettings: Settings | null = null;
 
 export function loadStoredSettings(rawKey: string = STORAGE_KEY): Settings {
-  const raw = localStorage.getItem(rawKey);
+  const raw = typeof localStorage !== "undefined" ? localStorage.getItem(rawKey) : null;
   if (cachedSettings && cachedKey === rawKey && cachedRaw === raw) return cachedSettings;
   const { settings, cacheable } = parseStoredSettings(raw);
   cachedKey = rawKey;

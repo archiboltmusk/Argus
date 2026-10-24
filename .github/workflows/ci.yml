@@ -89,6 +89,7 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm run typecheck
+      - run: pnpm test
       # PRs already typecheck; the bundler build runs once the change lands.
       - if: github.event_name != 'pull_request'
         run: pnpm run build

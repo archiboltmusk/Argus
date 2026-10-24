@@ -305,6 +305,7 @@ const OBSERVED_PROPS: &[(&str, u64, PropertyKind)] = &[
     // so upscaler presets need these to know how much headroom the window has.
     ("width", 22, PropertyKind::Int64),
     ("height", 23, PropertyKind::Int64),
+    ("core-idle", 24, PropertyKind::Flag),
 ];
 
 #[derive(Clone, Copy)]

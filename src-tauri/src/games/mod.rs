@@ -1,3 +1,4 @@
+#![allow(unused_imports, dead_code)]
 mod pokemon_bank;
 mod pokemon_save_discovery;
 mod retro_save_path;

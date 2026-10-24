@@ -3,7 +3,7 @@
   "identifier": "games-steam-store",
   "description": "Open a selected Steam game storefront in the installed Steam client.",
   "windows": ["main"],
-  "platforms": ["windows", "linux", "macOS"],
+  "platforms": ["windows", "linux"],
   "permissions": [
     {
       "identifier": "opener:allow-open-url",
