@@ -37,7 +37,7 @@ test("native invites reject other schemes, malformed relays and incomplete rooms
 test("an invite carrying the retired public relay joins through the replacement", () => {
   const query = new URLSearchParams({ "argus-relay": "wss://pub.argus.site", "argus-room": "ABC234" });
   assert.deepEqual(parseTogetherDeepLink(`argus://together?${query}`), {
-    relayUrl: "wss://pub.arguscommunity.site",
+    relayUrl: "wss://pub.harborcommunity.site",
     roomCode: "ABC234",
   });
 });

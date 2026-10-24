@@ -1,8 +1,9 @@
 export const REQUIRED_RELAY_VERSION = 11;
-export const ARGUS_PUBLIC_RELAY = "wss://pub.arguscommunity.site";
+export const HARBOR_PUBLIC_RELAY = "wss://pub.harborcommunity.site";
+export const ARGUS_PUBLIC_RELAY = HARBOR_PUBLIC_RELAY;
 
 export function migratePublicRelayUrl(url: string): string {
-  return /^(?:(?:wss?|https?):\/\/)?(?:pub\.argus\.site|argus\.invalid)\/?$/i.test(url.trim())
+  return /^(?:(?:wss?|https?):\/\/)?(?:pub\.argus\.site|pub\.arguscommunity\.site|argus\.invalid)\/?$/i.test(url.trim())
     ? ARGUS_PUBLIC_RELAY
     : url;
 }
@@ -17,5 +18,5 @@ export function isPublicRelay(url: string): boolean {
     .toLowerCase()
     .replace(/^(wss?|https?):\/\//, "")
     .replace(/\/.*$/, "");
-  return host === "pub.arguscommunity.site";
+  return host === "pub.arguscommunity.site" || host === "pub.harborcommunity.site";
 }
