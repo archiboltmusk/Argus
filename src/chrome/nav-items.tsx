@@ -3,7 +3,7 @@ import { useSportsEnabled } from "@/lib/sports/enabled";
 import { usePluginCataloguesAvailable } from "@/lib/streams/plugins/available";
 import { useInstallFeatures } from "@/lib/features/install";
 import { SportsNavIcon } from "@/components/icons/sports-nav-icon";
-import { Popcorn, Puzzle } from "lucide-react";
+import { GraduationCap, Popcorn, Puzzle } from "lucide-react";
 import { NavGlyph } from "@/components/icons/nav-glyph";
 import { NavLottie } from "@/components/icons/nav-lottie";
 import lotHome from "@/assets/lottie/nav/home.json";
@@ -71,6 +71,7 @@ export type NavItemId =
   | "live"
   | "sports"
   | "vod"
+  | "education"
   | "calendar"
   | "library"
   | "collections"
@@ -239,6 +240,16 @@ const NAV_ITEMS_ALL: NavItem[] = [
       />
     ),
     view: "vod",
+  },
+  {
+    id: "education",
+    label: "nav.education",
+    render: (active) => (
+      <div className={`flex items-center justify-center transition-colors ${active ? "text-accent" : "text-ink-subtle hover:text-ink"}`}>
+        <GraduationCap size={24} strokeWidth={active ? 2.4 : 2} />
+      </div>
+    ),
+    view: "education",
   },
   {
     id: "calendar",

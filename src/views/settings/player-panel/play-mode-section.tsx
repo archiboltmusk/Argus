@@ -142,6 +142,14 @@ export function PlayModePanel() {
             onChange={(v) => update({ rememberLastStream: v })}
           />
         </Anchored>
+        <ToggleRow
+          label={t("Ambient edge glow (Ambilight)")}
+          sub={t(
+            "Casts a soft, dynamic ambient backlight behind the video player reflecting the colors of the media. Turn off for a pure pitch-black backdrop.",
+          )}
+          value={settings.ambientGlow}
+          onChange={(v) => update({ ambientGlow: v })}
+        />
       </SettingGroup>
 
       <SettingGroup label={t("Resume")}>

@@ -308,6 +308,7 @@ const SportsView = lazy(() => importSports().then((m) => ({ default: m.SportsVie
 const DownloadsView = lazy(() => importDownloads().then((m) => ({ default: m.DownloadsView })));
 const MangaView = lazy(() => import("@/views/manga").then((m) => ({ default: m.MangaView })));
 const EBookView = lazy(() => import("@/views/ebook").then((m) => ({ default: m.EBookView })));
+const EducationView = lazy(() => import("@/views/education").then((m) => ({ default: m.EducationView })));
 const OnboardingModal = lazy(() =>
   importOnboarding().then((m) => ({ default: m.OnboardingModal })),
 );
@@ -1645,6 +1646,7 @@ function Shell({ onReady }: { onReady?: () => void }) {
   const matchDetailTop = topKind === "match-detail";
   const vodTop = topKind === "vod";
   const downloadsTop = topKind === "downloads";
+  const educationTop = topKind === "education";
   const mangaTop = topKind === "manga" && installFeatures.manga;
   const ebookTop = topKind === "ebook" && installFeatures.ebook;
   const peopleTop = topKind === "people";
@@ -1752,6 +1754,7 @@ function Shell({ onReady }: { onReady?: () => void }) {
   const liveAlive = useIdleEvict(liveTop);
   const vodAlive = useIdleEvict(vodTop);
   const downloadsAlive = useIdleEvict(downloadsTop);
+  const educationAlive = useIdleEvict(educationTop);
   const mangaAlive = useIdleEvict(mangaTop);
   const ebookAlive = useIdleEvict(ebookTop);
   const peopleAlive = useIdleEvict(peopleTop);
@@ -2057,6 +2060,13 @@ function Shell({ onReady }: { onReady?: () => void }) {
               <div {...layerProps(downloadsTop)}>
                 <Suspense fallback={null}>
                   <DownloadsView active={downloadsTop} />
+                </Suspense>
+              </div>
+            )}
+            {educationAlive && (
+              <div {...layerProps(educationTop)}>
+                <Suspense fallback={null}>
+                  <EducationView />
                 </Suspense>
               </div>
             )}
