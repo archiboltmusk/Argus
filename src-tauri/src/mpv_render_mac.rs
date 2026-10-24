@@ -90,6 +90,10 @@ unsafe fn make_video_window(
     let _: () = msg_send![&*window, setHasShadow: false];
     let _: () = msg_send![&*window, setIgnoresMouseEvents: true];
     let _: () = msg_send![&*window, setReleasedWhenClosed: false];
+    // NSWindowCollectionBehaviorTransient (1 << 3) | NSWindowCollectionBehaviorIgnoresCycle (1 << 6)
+    // Ensures auxiliary/child window never appears as a separate dock icon or window-cycle target.
+    let transient_behavior: usize = (1 << 3) | (1 << 6);
+    let _: () = msg_send![&*window, setCollectionBehavior: transient_behavior];
     Ok(window)
 }
 

@@ -6,7 +6,9 @@ use objc2_app_kit::NSWindow;
 
 const CAN_JOIN_ALL_SPACES: usize = 1 << 0;
 const MANAGED: usize = 1 << 2;
+const TRANSIENT: usize = 1 << 3;
 const STATIONARY: usize = 1 << 4;
+const IGNORES_CYCLE: usize = 1 << 6;
 const FULL_SCREEN_PRIMARY: usize = 1 << 7;
 const FULL_SCREEN_AUXILIARY: usize = 1 << 8;
 
@@ -20,7 +22,7 @@ pub fn enter_pip_window(ns_window_ptr: i64) {
     unsafe {
         let raw: *mut AnyObject = ns_window_ptr as *mut AnyObject;
         let win: &NSWindow = &*(raw as *const NSWindow);
-        let behavior: usize = CAN_JOIN_ALL_SPACES | FULL_SCREEN_AUXILIARY | STATIONARY;
+        let behavior: usize = CAN_JOIN_ALL_SPACES | FULL_SCREEN_AUXILIARY | STATIONARY | TRANSIENT | IGNORES_CYCLE;
         let _: () = msg_send![win, setCollectionBehavior: behavior];
         let _: () = msg_send![win, setLevel: LEVEL_FLOATING];
     }
