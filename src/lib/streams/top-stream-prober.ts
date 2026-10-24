@@ -1,7 +1,6 @@
 import {
   probeStreamSpeed,
   getCachedProbeSpeed,
-  gradeSpeed,
   type SpeedProbeResult,
 } from "./speed-probe";
 import type { ScoredStream, Stream } from "./types";
@@ -57,9 +56,42 @@ export async function probeTopStreams(
   return results;
 }
 
+function estimateStreamRequiredMbps(s: ScoredStream): number {
+  if (s.size && s.size > 0) {
+    // Assume 90 minutes average runtime = 5400s
+    return (s.size * 8) / (5400 * 1_000_000);
+  }
+  if (s.resolution === "4K") return 22;
+  if (s.resolution === "1080p") return s.codec === "AV1" || s.codec === "HEVC" ? 3.5 : 7.0;
+  if (s.resolution === "720p") return 2.0;
+  return 1.5;
+}
+
+function calculateProbeAdjustment(s: ScoredStream, probe: SpeedProbeResult | undefined): number {
+  if (!probe) return 0;
+  if (!probe.ok) return -80;
+
+  const required = estimateStreamRequiredMbps(s);
+  const ratio = probe.mbps / Math.max(required, 0.5);
+
+  if (ratio >= 2.0) {
+    // Verified CDN delivery with >= 2x playback headroom: seamless streaming guaranteed
+    return 35;
+  }
+  if (ratio >= 1.2) {
+    // Solid headroom
+    return 15;
+  }
+  if (ratio < 0.85) {
+    // Insufficient throughput to sustain playback: will inevitably buffer
+    return -60;
+  }
+  return 0;
+}
+
 /**
- * Re-ranks candidates taking measured CDN speed into account.
- * Fast links receive a score boost; unreachably slow or timed-out links are penalized.
+ * Re-ranks candidates taking measured CDN throughput and required stream bitrate into account.
+ * Links with proven >=2x bandwidth headroom are promoted; links that cannot sustain bitrate are demoted.
  */
 export function applySpeedProbeBonuses(
   streams: ScoredStream[],
@@ -69,24 +101,8 @@ export function applySpeedProbeBonuses(
     const probeA = a.url ? probes.get(a.url) : undefined;
     const probeB = b.url ? probes.get(b.url) : undefined;
 
-    let scoreA = a.score;
-    let scoreB = b.score;
-
-    if (probeA?.ok) {
-      const grade = gradeSpeed(probeA.mbps);
-      if (grade === "fast") scoreA += 25;
-      else if (grade === "slow") scoreA -= 40;
-    } else if (probeA && !probeA.ok) {
-      scoreA -= 80;
-    }
-
-    if (probeB?.ok) {
-      const grade = gradeSpeed(probeB.mbps);
-      if (grade === "fast") scoreB += 25;
-      else if (grade === "slow") scoreB -= 40;
-    } else if (probeB && !probeB.ok) {
-      scoreB -= 80;
-    }
+    const scoreA = a.score + calculateProbeAdjustment(a, probeA);
+    const scoreB = b.score + calculateProbeAdjustment(b, probeB);
 
     return scoreB - scoreA;
   });

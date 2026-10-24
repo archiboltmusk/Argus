@@ -31,12 +31,32 @@ describe("Top Stream Speed Prober", () => {
     assert.strictEqual(ranked[0].name, streamB.name);
   });
 
-  it("penalizes unreachable links", () => {
-    const probes = new Map<string, SpeedProbeResult>();
-    probes.set(streamA.url!, { ok: false, reason: "unreachable" });
-    probes.set(streamB.url!, { ok: true, latencyMs: 50, mbps: 20.0, bytes: 500000 });
+  it("promotes bandwidth-efficient 1080p HEVC over oversized 4K on modest 6 Mbps connection", () => {
+    const stream4K: ScoredStream = {
+      name: "4K REMUX (35 Mbps)",
+      url: "https://cdn.example.com/4k.mkv",
+      score: 110,
+      resolution: "4K",
+      size: 25 * 1024 * 1024 * 1024, // 25 GB
+    } as any;
 
-    const ranked = applySpeedProbeBonuses([streamA, streamB], probes);
-    assert.strictEqual(ranked[0].name, streamB.name);
+    const stream1080pHEVC: ScoredStream = {
+      name: "1080p HEVC 10-bit (2.5 Mbps)",
+      url: "https://cdn.example.com/1080p-hevc.mkv",
+      score: 90,
+      resolution: "1080p",
+      codec: "HEVC",
+      size: 2 * 1024 * 1024 * 1024, // 2 GB
+    } as any;
+
+    const probes = new Map<string, SpeedProbeResult>();
+    // User connection is ~6 Mbps
+    probes.set(stream4K.url!, { ok: true, latencyMs: 80, mbps: 6.0, bytes: 500000 });
+    probes.set(stream1080pHEVC.url!, { ok: true, latencyMs: 80, mbps: 6.0, bytes: 500000 });
+
+    const ranked = applySpeedProbeBonuses([stream4K, stream1080pHEVC], probes);
+    // 1080p HEVC has >2x playback headroom (6 Mbps / ~2.9 Mbps > 2.0) and gets boosted
+    // 4K has severe deficit (6 Mbps / ~37 Mbps < 0.85) and gets demoted
+    assert.strictEqual(ranked[0].name, stream1080pHEVC.name);
   });
 });

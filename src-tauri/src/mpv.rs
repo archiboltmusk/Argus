@@ -1156,9 +1156,9 @@ pub async fn mpv_start(
             if full_dl {
                 "100000"
             } else if high_bitrate {
-                "45"
+                "90"
             } else {
-                "30"
+                "60"
             },
         );
         let _ = mpv.set_property("cache-pause", "yes");
@@ -1198,9 +1198,9 @@ pub async fn mpv_start(
             if full_dl {
                 "100000"
             } else if high_bitrate {
-                "45"
+                "90"
             } else {
-                "30"
+                "60"
             },
         );
         let _ = mpv.set_property("cache-on-disk", "yes");

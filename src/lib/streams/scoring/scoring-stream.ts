@@ -53,12 +53,15 @@ export function scoreStream(
     }
   }
 
-  if (s.codec === "HEVC") {
-    score += 1;
-    reasons.push({ signal: "HEVC", delta: 1 });
-  } else if (s.codec === "AV1") {
-    score += 1;
-    reasons.push({ signal: "AV1", delta: 1 });
+  const isBandwidthConstrained = opts.bandwidthMbps != null && opts.bandwidthMbps <= 30;
+  if (s.codec === "AV1") {
+    const delta = isBandwidthConstrained ? 18 : 4;
+    score += delta;
+    reasons.push({ signal: "AV1-efficiency", delta });
+  } else if (s.codec === "HEVC") {
+    const delta = isBandwidthConstrained ? 12 : 3;
+    score += delta;
+    reasons.push({ signal: "HEVC-efficiency", delta });
   }
 
   const audioDelta = audioPoints(s);
