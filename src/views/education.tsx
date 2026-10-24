@@ -12,6 +12,7 @@ import {
   ExternalLink,
   Trash2,
   Copy,
+  Sparkles,
 } from "lucide-react";
 import { useT } from "@/lib/i18n";
 import { useView } from "@/lib/view";
@@ -20,8 +21,10 @@ import { useLocalLibrary, type LocalEntry } from "@/lib/local-library";
 import { localPlayerSrc } from "@/lib/local-library/player-src";
 import { CURATED_COURSES } from "@/lib/education/catalogs";
 import type { CourseCategory, CuratedCourse, StudyNote } from "@/lib/education/types";
-import { useStudyNotes, deleteStudyNote, exportNotesAsMarkdown } from "@/lib/education/notes";
+import { useStudyNotes, deleteStudyNote, exportNotesAsMarkdown, getDueStudyNotes } from "@/lib/education/notes";
 import { registerCourseShare } from "@/lib/local-library/course-share";
+import { InicetWarRoomBanner } from "./education/inicet-war-room-banner";
+import { DailyWateringDeck } from "./education/daily-watering-deck";
 
 export function EducationView() {
   const t = useT();
@@ -33,8 +36,13 @@ export function EducationView() {
   const [activeCategory, setActiveCategory] = useState<CourseCategory>("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [showNotesDrawer, setShowNotesDrawer] = useState(false);
+  const [showWateringDeck, setShowWateringDeck] = useState(false);
   const [sharedTokens, setSharedTokens] = useState<Record<string, string>>({});
   const [copiedShareFolder, setCopiedShareFolder] = useState<string | null>(null);
+
+  const dueNotes = useMemo(() => {
+    return getDueStudyNotes();
+  }, [notes]);
 
   // Group local course lectures by course title/folder
   const localCourseFolders = useMemo(() => {
@@ -169,6 +177,22 @@ export function EducationView() {
 
           <button
             type="button"
+            onClick={() => setShowWateringDeck(true)}
+            disabled={dueNotes.length === 0}
+            className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-sky-500 to-indigo-600 px-4 py-2 text-[12.5px] font-semibold text-white hover:opacity-95 active:scale-[0.98] transition shadow-sm disabled:opacity-40"
+            title="Daily Active Recall Spaced Repetition Session"
+          >
+            <Sparkles size={15} />
+            <span>{t("Water the Tree")}</span>
+            {dueNotes.length > 0 && (
+              <span className="flex h-4 min-w-4 items-center justify-center rounded-full bg-white text-sky-600 px-1 text-[10px] font-black">
+                {dueNotes.length}
+              </span>
+            )}
+          </button>
+
+          <button
+            type="button"
             onClick={() => setShowNotesDrawer(true)}
             className="flex items-center gap-2 rounded-xl bg-accent px-4 py-2 text-[12.5px] font-medium text-white hover:opacity-90 active:scale-[0.98] transition shadow-sm"
           >
@@ -185,6 +209,16 @@ export function EducationView() {
 
       {/* Main Body */}
       <div className="mt-8 flex flex-col gap-10">
+        {/* INICET 7-Day Sprint War Room Banner */}
+        <InicetWarRoomBanner />
+
+        {/* Daily Watering Flashcard Deck (Modal or Expanded View) */}
+        {showWateringDeck && (
+          <DailyWateringDeck
+            notes={notes}
+            onClose={() => setShowWateringDeck(false)}
+          />
+        )}
         {/* Section 1: Local Course Folders */}
         {localCourseFolders.length > 0 && (
           <section className="flex flex-col gap-4">

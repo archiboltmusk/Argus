@@ -1,5 +1,6 @@
 import { useSyncExternalStore } from "react";
-import type { StudyNote } from "./types";
+import type { StudyNote, FSRSRating } from "./types";
+import { createInitialCard, scheduleReview, isCardDue } from "./fsrs";
 
 const KEY = "argus.study.notes.v1";
 
@@ -60,14 +61,44 @@ export function saveStudyNote(note: Omit<StudyNote, "id" | "createdAt">): StudyN
     ...note,
     id: `note_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
     createdAt: Date.now(),
+    fsrs: note.fsrs ?? createInitialCard(),
   };
   commit([created, ...existing]);
   return created;
 }
 
+export function updateStudyNote(id: string, updates: Partial<StudyNote>): void {
+  const existing = readNotes();
+  commit(
+    existing.map((n) => {
+      if (n.id !== id) return n;
+      return { ...n, ...updates };
+    }),
+  );
+}
+
+export function reviewStudyNote(id: string, rating: FSRSRating): void {
+  const existing = readNotes();
+  commit(
+    existing.map((n) => {
+      if (n.id !== id) return n;
+      const currentFSRS = n.fsrs ?? createInitialCard(n.createdAt);
+      return {
+        ...n,
+        fsrs: scheduleReview(currentFSRS, rating),
+      };
+    }),
+  );
+}
+
 export function deleteStudyNote(id: string): void {
   const existing = readNotes();
   commit(existing.filter((note) => note.id !== id));
+}
+
+export function getDueStudyNotes(now = Date.now()): StudyNote[] {
+  const all = readNotes();
+  return all.filter((n) => isCardDue(n.fsrs, now));
 }
 
 export function exportNotesAsMarkdown(input?: string | StudyNote[]): string {
@@ -87,6 +118,10 @@ export function exportNotesAsMarkdown(input?: string | StudyNote[]): string {
     lines.push(`### [${note.timestampLabel}] ${note.itemTitle}`);
     if (note.snapshotDataUrl) {
       lines.push(`![](${note.snapshotDataUrl})`);
+      lines.push("");
+    }
+    if (note.occlusions && note.occlusions.length > 0) {
+      lines.push(`> 🧠 **Image Occlusion Card**: Contains ${note.occlusions.length} masked active-recall regions.`);
       lines.push("");
     }
     lines.push(note.markdown);
