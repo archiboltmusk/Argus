@@ -15,19 +15,20 @@ export function InicetWarRoomBanner() {
   };
 
   return (
-    <div className="flex flex-col gap-3 rounded-2xl bg-gradient-to-r from-amber-500/10 via-orange-500/5 to-rose-500/10 border border-amber-500/30 p-5 shadow-sm">
+    <div className="relative overflow-hidden rounded-2xl border border-edge-soft bg-surface/40 p-6 shadow-sm backdrop-blur-md">
+      <div className="absolute -right-20 -top-20 h-56 w-56 rounded-full bg-amber-500/10 blur-3xl pointer-events-none" />
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2.5">
-          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-amber-500 text-black shadow font-bold">
-            <Zap size={20} className="fill-black" />
+        <div className="flex items-center gap-3">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-500/15 text-amber-400 border border-amber-500/30">
+            <Zap size={20} className="fill-amber-400" />
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h3 className="text-[15px] font-bold text-ink leading-tight">
+              <h3 className="text-[15px] font-semibold text-ink leading-tight">
                 INICET Nov 1 War Room (7-Day Sprint)
               </h3>
-              <span className="rounded-full bg-rose-500/20 px-2 py-0.5 text-[10px] font-bold text-rose-500 flex items-center gap-1 border border-rose-500/30">
-                <Flame size={11} className="fill-rose-500" /> High-Yield Vault
+              <span className="rounded-full bg-rose-500/15 px-2 py-0.5 text-[10px] font-semibold text-rose-400 flex items-center gap-1 border border-rose-500/25">
+                <Flame size={11} className="fill-rose-400" /> High-Yield Vault
               </span>
             </div>
             <p className="text-[12px] text-ink-muted mt-0.5">
@@ -40,7 +41,7 @@ export function InicetWarRoomBanner() {
           <button
             type="button"
             onClick={() => setActiveTableId(null)}
-            className="text-xs font-semibold text-ink-subtle hover:text-ink px-2.5 py-1 rounded-lg bg-raised transition"
+            className="text-xs font-medium text-ink-subtle hover:text-ink px-3 py-1.5 rounded-lg bg-surface border border-edge hover:bg-raised transition"
           >
             Close Table
           </button>

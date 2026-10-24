@@ -18,6 +18,8 @@ import {
   AlertCircle,
   Zap,
   Database,
+  Layers,
+  Flame,
 } from "lucide-react";
 import { useT } from "@/lib/i18n";
 import { useView } from "@/lib/view";
@@ -40,6 +42,7 @@ import { InicetWarRoomBanner } from "./education/inicet-war-room-banner";
 import { DailyWateringDeck } from "./education/daily-watering-deck";
 import { QBankRunner } from "./education/qbank-drill";
 import { QBankManager } from "./education/qbank-manager";
+import { Row } from "@/components/row";
 
 export function EducationView() {
   const t = useT();
@@ -185,50 +188,84 @@ export function EducationView() {
   );
 
   return (
-    <div className="flex h-full w-full flex-col overflow-y-auto bg-canvas px-8 py-7 text-ink select-none">
+    <div className="flex h-full w-full flex-col overflow-y-auto bg-canvas px-12 pt-28 pb-16 text-ink select-none">
       {/* Top Header */}
-      <div className="flex items-center justify-between border-b border-edge/60 pb-6">
-        <div className="flex items-center gap-3.5">
-          <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-accent/15 text-accent shadow-inner">
-            <GraduationCap size={26} strokeWidth={2.4} />
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 border-b border-edge/60 pb-8">
+        <div className="flex items-center gap-4">
+          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-accent/15 text-accent shadow-inner border border-accent/20">
+            <GraduationCap size={32} strokeWidth={2.2} />
           </div>
           <div>
-            <h1 className="text-2xl font-bold tracking-tight text-ink flex items-center gap-2">
-              <span>{t("Education Hub")}</span>
+            <div className="flex items-center gap-3">
+              <h1 className="text-3xl font-bold tracking-tight text-ink">
+                {t("Education Hub")}
+              </h1>
               <span className="rounded-full bg-accent/10 px-2.5 py-0.5 text-[11px] font-semibold text-accent border border-accent/20">
                 {t("Free & Open")}
               </span>
-            </h1>
-            <p className="text-[13px] text-ink-muted mt-0.5">
+            </div>
+            <p className="text-[13.5px] text-ink-muted mt-1 max-w-2xl leading-relaxed">
               {t("Democratizing education with high-yield medical, engineering, and competitive exam masterclasses.")}
             </p>
           </div>
         </div>
 
-        {/* Header Actions */}
-        <div className="flex items-center gap-2.5">
+        {/* Header Action Pills */}
+        <div className="flex items-center gap-2 flex-wrap">
           <button
             type="button"
-            onClick={() => openSettings("library")}
-            className="flex items-center gap-2 rounded-xl border border-edge bg-surface px-3.5 py-2 text-[12.5px] font-medium text-ink hover:bg-raised transition shadow-sm"
+            onClick={() => setShowQBank(true)}
+            className="flex items-center gap-2 rounded-xl bg-accent px-4 py-2.5 text-[13px] font-semibold text-white shadow-sm hover:opacity-95 active:scale-[0.98] transition"
+            title="Open Clinical Vignette QBank Drill & Grand Test Simulation"
           >
-            <FolderPlus size={15} />
-            <span>{t("Scan Local Course")}</span>
+            <Zap size={15} className="fill-white" />
+            <span>{t("Clinical QBank Drill")}</span>
           </button>
 
           <button
             type="button"
-            onClick={() => openSettings("streaming")}
-            className="flex items-center gap-2 rounded-xl border border-edge bg-surface px-3.5 py-2 text-[12.5px] font-medium text-ink hover:bg-raised transition shadow-sm"
+            onClick={() => setShowWateringDeck(true)}
+            disabled={dueNotes.length === 0}
+            className="flex items-center gap-2 rounded-xl border border-edge bg-surface px-3.5 py-2.5 text-[12.5px] font-medium text-ink hover:bg-raised active:scale-[0.98] transition shadow-sm disabled:opacity-40"
+            title="Daily Active Recall Spaced Repetition Session"
           >
-            <Rss size={15} />
-            <span>{t("Lecture RSS / Feeds")}</span>
+            <Sparkles size={15} className="text-sky-400" />
+            <span>{t("Water the Tree")}</span>
+            {dueNotes.length > 0 && (
+              <span className="flex h-4 min-w-4 items-center justify-center rounded-full bg-accent text-white px-1 text-[10px] font-black">
+                {dueNotes.length}
+              </span>
+            )}
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setShowNotesDrawer(true)}
+            className="flex items-center gap-2 rounded-xl border border-edge bg-surface px-3.5 py-2.5 text-[12.5px] font-medium text-ink hover:bg-raised transition shadow-sm"
+          >
+            <FileText size={15} className="text-ink-muted" />
+            <span>{t("My Study Notes")}</span>
+            {notes.length > 0 && (
+              <span className="flex h-4 min-w-4 items-center justify-center rounded-full bg-raised px-1 text-[10px] font-bold text-ink-muted">
+                {notes.length}
+              </span>
+            )}
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setShowQBankManager(true)}
+            className="flex items-center gap-1.5 rounded-xl border border-edge bg-surface px-3 py-2.5 text-[12.5px] font-medium text-ink hover:bg-raised transition shadow-sm"
+            title="Manage packs, catalog downloads, and question authoring"
+          >
+            <Database size={15} className="text-ink-muted" />
+            <span>{t("QBank Packs")}</span>
           </button>
 
           <button
             type="button"
             onClick={() => globalFileInputRef.current?.click()}
-            className="flex items-center gap-1.5 rounded-xl border border-edge bg-surface px-3 py-2 text-[12.5px] font-medium text-ink hover:bg-raised transition shadow-sm"
+            className="flex items-center gap-1.5 rounded-xl border border-edge bg-surface px-3 py-2.5 text-[12.5px] font-medium text-ink hover:bg-raised transition shadow-sm"
             title="Import Educational JSON, JSONL, or .json.gz file directly into Argus"
           >
             <Upload size={15} className="text-emerald-500" />
@@ -244,52 +281,20 @@ export function EducationView() {
 
           <button
             type="button"
-            onClick={() => setShowQBankManager(true)}
-            className="flex items-center gap-1.5 rounded-xl border border-edge bg-surface px-3 py-2 text-[12.5px] font-medium text-ink hover:bg-raised transition shadow-sm"
-            title="Import/Export QBank Packs and Author Clinical Questions"
+            onClick={() => openSettings("library")}
+            className="flex items-center gap-1.5 rounded-xl border border-edge bg-surface px-3 py-2.5 text-[12.5px] font-medium text-ink hover:bg-raised transition shadow-sm"
           >
-            <Database size={15} className="text-accent" />
-            <span>{t("QBank Packs")}</span>
+            <FolderPlus size={15} className="text-ink-muted" />
+            <span>{t("Scan Local Course")}</span>
           </button>
 
           <button
             type="button"
-            onClick={() => setShowQBank(true)}
-            className="flex items-center gap-2 rounded-xl bg-amber-500 hover:bg-amber-400 px-4 py-2 text-[12.5px] font-bold text-black transition shadow-sm active:scale-[0.98]"
-            title="Open Clinical Vignette QBank Drill & Grand Test Simulation"
+            onClick={() => openSettings("streaming")}
+            className="flex items-center gap-1.5 rounded-xl border border-edge bg-surface px-3 py-2.5 text-[12.5px] font-medium text-ink hover:bg-raised transition shadow-sm"
           >
-            <Zap size={15} className="fill-black" />
-            <span>{t("Clinical QBank Drill")}</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setShowWateringDeck(true)}
-            disabled={dueNotes.length === 0}
-            className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-sky-500 to-indigo-600 px-4 py-2 text-[12.5px] font-semibold text-white hover:opacity-95 active:scale-[0.98] transition shadow-sm disabled:opacity-40"
-            title="Daily Active Recall Spaced Repetition Session"
-          >
-            <Sparkles size={15} />
-            <span>{t("Water the Tree")}</span>
-            {dueNotes.length > 0 && (
-              <span className="flex h-4 min-w-4 items-center justify-center rounded-full bg-white text-sky-600 px-1 text-[10px] font-black">
-                {dueNotes.length}
-              </span>
-            )}
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setShowNotesDrawer(true)}
-            className="flex items-center gap-2 rounded-xl bg-accent px-4 py-2 text-[12.5px] font-medium text-white hover:opacity-90 active:scale-[0.98] transition shadow-sm"
-          >
-            <FileText size={15} />
-            <span>{t("My Study Notes")}</span>
-            {notes.length > 0 && (
-              <span className="flex h-4 min-w-4 items-center justify-center rounded-full bg-white/20 px-1 text-[10px] font-bold">
-                {notes.length}
-              </span>
-            )}
+            <Rss size={15} className="text-ink-muted" />
+            <span>{t("Feeds")}</span>
           </button>
         </div>
       </div>
@@ -351,70 +356,70 @@ export function EducationView() {
         {/* Section 1: Local Course Folders */}
         {localCourseFolders.length > 0 && (
           <section className="flex flex-col gap-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <h2 className="text-lg font-semibold text-ink flex items-center gap-2">
-                  <BookOpen size={18} className="text-accent" />
-                  <span>{t("My Local Courses")}</span>
-                </h2>
-                <p className="text-[12px] text-ink-muted">
-                  {t("Sequential video lecture libraries scanned from your local drives.")}
-                </p>
-              </div>
+            <div>
+              <h2 className="text-xl font-bold tracking-tight text-ink flex items-center gap-2.5">
+                <BookOpen size={20} className="text-accent" />
+                <span>{t("My Local Courses")}</span>
+              </h2>
+              <p className="text-[12.5px] text-ink-muted mt-0.5">
+                {t("Sequential video lecture libraries scanned from your local drives.")}
+              </p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {localCourseFolders.map((course) => {
-                const firstLesson = course.lessons[0];
-                const isShared = !!sharedTokens[course.folder];
-                const isCopied = copiedShareFolder === course.folder;
+            <div className="-mx-2">
+              <Row min={260} shape="landscape" alwaysActive scrollKey="education:local">
+                {localCourseFolders.map((course) => {
+                  const firstLesson = course.lessons[0];
+                  const isShared = !!sharedTokens[course.folder];
+                  const isCopied = copiedShareFolder === course.folder;
 
-                return (
-                  <div
-                    key={course.folder}
-                    className="flex flex-col justify-between rounded-2xl border border-edge bg-surface/60 p-5 hover:border-edge-soft hover:bg-surface transition shadow-sm"
-                  >
-                    <div>
-                      <div className="flex items-start justify-between gap-2">
-                        <h3 className="text-[15px] font-semibold text-ink line-clamp-1">{course.title}</h3>
-                        <span className="rounded-md bg-raised px-2 py-0.5 text-[11px] font-mono text-ink-muted shrink-0">
-                          {course.lessons.length} {t("lessons")}
-                        </span>
+                  return (
+                    <div
+                      key={course.folder}
+                      className="group/card relative aspect-[16/9] w-full cursor-pointer overflow-hidden rounded-2xl border border-edge-soft bg-surface/70 p-5 shadow-sm transition-[border-color,transform] duration-300 hover:-translate-y-1 hover:border-edge flex flex-col justify-between"
+                    >
+                      <div>
+                        <div className="flex items-start justify-between gap-2">
+                          <h3 className="text-[15px] font-bold text-ink line-clamp-1">{course.title}</h3>
+                          <span className="rounded-full bg-accent/15 px-2 py-0.5 text-[10px] font-semibold text-accent shrink-0">
+                            {course.lessons.length} {t("lessons")}
+                          </span>
+                        </div>
+                        <p className="text-[11.5px] font-mono text-ink-subtle truncate mt-1">
+                          {course.folder}
+                        </p>
                       </div>
-                      <p className="text-[11.5px] font-mono text-ink-subtle truncate mt-1">
-                        {course.folder}
-                      </p>
-                    </div>
 
-                    <div className="mt-5 flex items-center justify-between pt-3 border-t border-edge/40">
-                      <button
-                        type="button"
-                        onClick={() => firstLesson && openPlayer(localPlayerSrc(firstLesson))}
-                        className="flex items-center gap-1.5 rounded-lg bg-accent/15 px-3 py-1.5 text-[12px] font-medium text-accent hover:bg-accent/25 transition"
-                      >
-                        <Play size={13} fill="currentColor" />
-                        <span>{t("Resume Course")}</span>
-                      </button>
+                      <div className="flex items-center justify-between pt-3 border-t border-edge-soft/60">
+                        <button
+                          type="button"
+                          onClick={() => firstLesson && openPlayer(localPlayerSrc(firstLesson))}
+                          className="flex items-center gap-1.5 rounded-xl bg-accent px-3 py-1.5 text-[12px] font-semibold text-white shadow-sm hover:opacity-90 transition"
+                        >
+                          <Play size={13} fill="currentColor" />
+                          <span>{t("Resume Course")}</span>
+                        </button>
 
-                      <button
-                        type="button"
-                        onClick={() => handleToggleShare(course.folder, course.title)}
-                        className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-[11.5px] font-medium transition ${
-                          isCopied
-                            ? "bg-emerald-500/15 text-emerald-600"
-                            : isShared
-                            ? "bg-raised text-ink hover:bg-raised/80"
-                            : "text-ink-muted hover:bg-raised hover:text-ink"
-                        }`}
-                        title={t("Stream over LAN to Stremio or TV")}
-                      >
-                        {isCopied ? <Check size={13} /> : <Share2 size={13} />}
-                        <span>{isCopied ? t("URL Copied!") : isShared ? t("Copy Feed") : t("Share to LAN")}</span>
-                      </button>
+                        <button
+                          type="button"
+                          onClick={() => handleToggleShare(course.folder, course.title)}
+                          className={`flex items-center gap-1.5 rounded-xl px-2.5 py-1.5 text-[11.5px] font-medium transition ${
+                            isCopied
+                              ? "bg-emerald-500/15 text-emerald-500"
+                              : isShared
+                              ? "bg-surface border border-edge text-ink"
+                              : "text-ink-muted hover:bg-surface hover:text-ink"
+                          }`}
+                          title={t("Stream over LAN to Stremio or TV")}
+                        >
+                          {isCopied ? <Check size={13} /> : <Share2 size={13} />}
+                          <span>{isCopied ? t("Copied!") : isShared ? t("Copy Feed") : t("Share LAN")}</span>
+                        </button>
+                      </div>
                     </div>
-                  </div>
-                );
-              })}
+                  );
+                })}
+              </Row>
             </div>
           </section>
         )}
@@ -422,50 +427,54 @@ export function EducationView() {
         {/* Section 2: Subscribed Feeds */}
         {subscribedFeeds.length > 0 && (
           <section className="flex flex-col gap-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <h2 className="text-lg font-semibold text-ink flex items-center gap-2">
-                  <Rss size={18} className="text-amber-500" />
-                  <span>{t("Subscribed Channels & Playlists")}</span>
-                </h2>
-                <p className="text-[12px] text-ink-muted">
-                  {t("RSS feeds and YouTube playlist feeds synced into your player.")}
-                </p>
-              </div>
+            <div>
+              <h2 className="text-xl font-bold tracking-tight text-ink flex items-center gap-2.5">
+                <Rss size={20} className="text-amber-500" />
+                <span>{t("Subscribed Channels & Playlists")}</span>
+              </h2>
+              <p className="text-[12.5px] text-ink-muted mt-0.5">
+                {t("RSS feeds and YouTube playlist feeds synced into your player.")}
+              </p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-              {subscribedFeeds.map((feed) => (
-                <div
-                  key={feed.id}
-                  onClick={() => openSettings("streaming")}
-                  className="flex items-center justify-between p-4 rounded-xl border border-edge bg-surface/50 hover:bg-surface cursor-pointer transition"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-amber-500/10 text-amber-500">
-                      <Rss size={16} />
+            <div className="-mx-2">
+              <Row min={240} shape="landscape" alwaysActive scrollKey="education:feeds">
+                {subscribedFeeds.map((feed) => (
+                  <div
+                    key={feed.id}
+                    onClick={() => openSettings("streaming")}
+                    className="group/card relative aspect-[16/9] w-full cursor-pointer overflow-hidden rounded-2xl border border-edge-soft bg-surface/70 p-5 shadow-sm transition-[border-color,transform] duration-300 hover:-translate-y-1 hover:border-edge flex flex-col justify-between"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-500/15 text-amber-500 border border-amber-500/20">
+                        <Rss size={18} />
+                      </div>
+                      <div className="min-w-0">
+                        <h4 className="text-[14px] font-bold text-ink truncate">{feed.name}</h4>
+                        <p className="text-[11px] font-mono text-ink-subtle truncate max-w-[180px]">{feed.url}</p>
+                      </div>
                     </div>
-                    <div className="min-w-0">
-                      <h4 className="text-[13.5px] font-semibold text-ink truncate">{feed.name}</h4>
-                      <p className="text-[11px] text-ink-subtle truncate max-w-[200px]">{feed.url}</p>
+
+                    <div className="flex items-center justify-between pt-3 border-t border-edge-soft/60 text-xs text-ink-muted group-hover/card:text-ink">
+                      <span>{t("Configure in Streaming Settings")}</span>
+                      <ExternalLink size={14} className="text-ink-subtle shrink-0" />
                     </div>
                   </div>
-                  <ExternalLink size={14} className="text-ink-subtle shrink-0" />
-                </div>
-              ))}
+                ))}
+              </Row>
             </div>
           </section>
         )}
 
         {/* Section 3: Curated Open Courses Catalog */}
-        <section className="flex flex-col gap-4 pb-12">
+        <section className="flex flex-col gap-5 pb-16">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>
-              <h2 className="text-lg font-semibold text-ink flex items-center gap-2">
-                <GraduationCap size={19} className="text-accent" />
+              <h2 className="text-xl font-bold text-ink tracking-tight flex items-center gap-2.5">
+                <GraduationCap size={22} className="text-accent" />
                 <span>{t("Curated Coaching-Alternative Catalogs")}</span>
               </h2>
-              <p className="text-[12px] text-ink-muted">
+              <p className="text-[12.5px] text-ink-muted mt-0.5">
                 {t("Comprehensive courses from world-class universities and open medical faculties.")}
               </p>
             </div>
@@ -479,11 +488,11 @@ export function EducationView() {
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder={t("Filter by subject or topic…")}
-                  className="rounded-xl border border-edge bg-surface ps-8 pe-3 py-1.5 text-[12.5px] text-ink placeholder:text-ink-subtle outline-none focus:border-accent"
+                  className="rounded-xl border border-edge-soft bg-surface/80 ps-8 pe-3 py-1.5 text-[12.5px] text-ink placeholder:text-ink-subtle outline-none focus:border-accent"
                 />
               </div>
 
-              <div className="flex items-center rounded-xl border border-edge bg-surface p-1 gap-1">
+              <div className="flex items-center rounded-xl border border-edge-soft bg-surface/60 p-1 gap-1">
                 {(
                   [
                     { id: "all", label: t("All") },
@@ -510,72 +519,92 @@ export function EducationView() {
             </div>
           </div>
 
-          {/* Cards Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 mt-2">
-            {filteredCurated.map((course) => {
-              const isSubscribed = (settings.videoFeeds || []).some((f) => f.url === course.feedUrl);
+          {/* Native Row Horizontal Carousel for Curated Courses */}
+          <div className="-mx-2">
+            <Row
+              min={280}
+              shape="landscape"
+              alwaysActive
+              scrollKey={`education:courses:${activeCategory}`}
+            >
+              {filteredCurated.map((course) => {
+                const isSubscribed = (settings.videoFeeds || []).some((f) => f.url === course.feedUrl);
 
-              return (
-                <div
-                  key={course.id}
-                  className="flex flex-col justify-between overflow-hidden rounded-2xl border border-edge bg-surface shadow-sm hover:border-edge-soft transition group"
-                >
-                  <div className="relative aspect-video w-full overflow-hidden bg-canvas">
+                return (
+                  <div
+                    key={course.id}
+                    className="group/card relative aspect-[16/9] w-full cursor-pointer overflow-hidden rounded-2xl border border-edge-soft text-start shadow-[0_4px_18px_-10px_rgba(0,0,0,0.5)] ring-1 ring-inset ring-white/0 transition-[border-color,transform] duration-300 hover:-translate-y-1 hover:border-edge hover:ring-white/15"
+                  >
                     <img
                       src={course.thumbnail}
                       alt={course.title}
-                      className="h-full w-full object-cover group-hover:scale-105 transition duration-300"
+                      loading="lazy"
+                      draggable={false}
+                      className="absolute inset-0 h-full w-full object-cover transition duration-500 group-hover/card:scale-105"
                     />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
-                    <span className="absolute bottom-2.5 start-3 rounded-md bg-black/60 px-2 py-0.5 text-[10.5px] font-medium text-white/90 backdrop-blur-sm">
-                      {course.provider}
+                    <div
+                      aria-hidden
+                      className="absolute inset-0 bg-black/30 transition-colors duration-300 group-hover/card:bg-black/10"
+                    />
+                    <div
+                      aria-hidden
+                      className="absolute inset-0 bg-gradient-to-t from-black/92 via-black/45 to-transparent"
+                    />
+
+                    {/* Top Badges */}
+                    <span className="absolute start-3.5 top-3 inline-flex items-center gap-1.5 rounded-full bg-black/50 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.14em] text-white/90 backdrop-blur-md">
+                      <Layers size={11} strokeWidth={2.4} />
+                      <span>{course.provider}</span>
                     </span>
+
                     {course.totalLessons && (
-                      <span className="absolute bottom-2.5 end-3 rounded-md bg-accent/90 px-2 py-0.5 text-[10.5px] font-bold text-white backdrop-blur-sm">
+                      <span className="absolute end-3.5 top-3 inline-flex items-center gap-1 rounded-full bg-accent/90 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-white backdrop-blur-md">
                         {course.totalLessons} {t("Lectures")}
                       </span>
                     )}
-                  </div>
 
-                  <div className="flex flex-1 flex-col justify-between p-4">
-                    <div>
-                      <h3 className="text-[14px] font-semibold text-ink line-clamp-1 leading-snug">
+                    {/* Bottom Metadata & Subscribe Button */}
+                    <div className="absolute inset-x-0 bottom-0 p-4 flex flex-col gap-1.5">
+                      <h3 className="text-[14.5px] font-bold text-white line-clamp-1 leading-snug drop-shadow-md">
                         {course.title}
                       </h3>
-                      <p className="mt-1 text-[12px] text-ink-muted line-clamp-2 leading-relaxed">
+                      <p className="text-[12px] text-white/70 line-clamp-2 leading-relaxed drop-shadow">
                         {course.description}
                       </p>
 
-                      <div className="mt-3 flex flex-wrap gap-1.5">
-                        {course.tags.map((tag) => (
-                          <span
-                            key={tag}
-                            className="rounded-md bg-raised px-2 py-0.5 text-[10.5px] font-medium text-ink-subtle"
-                          >
-                            #{tag}
-                          </span>
-                        ))}
+                      <div className="mt-2 flex items-center justify-between pt-2 border-t border-white/10">
+                        <div className="flex items-center gap-1.5">
+                          {course.tags.slice(0, 2).map((tag) => (
+                            <span
+                              key={tag}
+                              className="rounded-md bg-white/10 px-2 py-0.5 text-[10px] font-medium text-white/80 backdrop-blur-sm"
+                            >
+                              #{tag}
+                            </span>
+                          ))}
+                        </div>
+
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleSubscribeFeed(course);
+                          }}
+                          className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-[11px] font-semibold transition ${
+                            isSubscribed
+                              ? "bg-white/20 text-white backdrop-blur-md"
+                              : "bg-accent hover:opacity-90 text-white shadow-sm"
+                          }`}
+                        >
+                          <Rss size={12} />
+                          <span>{isSubscribed ? t("Subscribed") : t("Add to Library")}</span>
+                        </button>
                       </div>
                     </div>
-
-                    <div className="mt-4 pt-3 border-t border-edge/40 flex items-center justify-between">
-                      <button
-                        type="button"
-                        onClick={() => handleSubscribeFeed(course)}
-                        className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[12px] font-medium transition ${
-                          isSubscribed
-                            ? "bg-raised text-ink-muted"
-                            : "bg-accent/15 text-accent hover:bg-accent/25"
-                        }`}
-                      >
-                        <Rss size={13} />
-                        <span>{isSubscribed ? t("Feed Subscribed") : t("Add to Library")}</span>
-                      </button>
-                    </div>
                   </div>
-                </div>
-              );
-            })}
+                );
+              })}
+            </Row>
           </div>
         </section>
       </div>
