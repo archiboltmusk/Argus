@@ -553,6 +553,16 @@ fn apply_pre_init(
     set("cursor-autohide", "200");
     set("volume-max", "600");
     set("sub-codepage", "utf-8");
+
+    // Infuse-grade smooth scrubbing & streaming buffer:
+    // Expand network cache to 64MiB and backbuffer to 32MiB to allow instant rewinds without re-buffering.
+    set("demuxer-max-bytes", "67108864"); // 64 MiB forward buffer
+    set("demuxer-max-back-bytes", "33554432"); // 32 MiB rewind buffer
+    set("network-timeout", "15");
+    // Resume audio/video instantly on seek without muting
+    set("hr-seek", "default");
+    set("audio-pitch-correction", "yes");
+
     let _ = init.set_property("background-color", "#000000");
     let _ = init.set_property("background", "color");
     let _ = init.set_property("media-controls", "no");

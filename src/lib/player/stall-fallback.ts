@@ -1,7 +1,7 @@
 import type { ScoredStream } from "@/lib/streams/types";
 import type { DebridStore } from "@/lib/debrid/types";
 
-export const STALL_TIMEOUT_MS = 8000;
+export const STALL_TIMEOUT_MS = 3500;
 
 export function isStreamPlayable(
   stream: ScoredStream,
@@ -29,6 +29,19 @@ export function findNextFallbackStream(
   currentInfoHash: string | null | undefined,
   debrids: DebridStore[],
 ): ScoredStream | null {
+  // First priority: Same torrent file / infoHash, but resolved via alternate healthy Debrid provider
+  if (currentInfoHash) {
+    const sameTorrent = candidates.find(
+      (s) =>
+        s.infoHash &&
+        s.infoHash.toLowerCase() === currentInfoHash.toLowerCase() &&
+        s.url !== currentUrl &&
+        isStreamPlayable(s, debrids),
+    );
+    if (sameTorrent) return sameTorrent;
+  }
+
+  // Second priority: Alternate candidate streams
   for (const s of candidates) {
     // Skip current stream by info hash
     if (currentInfoHash && s.infoHash && s.infoHash.toLowerCase() === currentInfoHash.toLowerCase()) {
