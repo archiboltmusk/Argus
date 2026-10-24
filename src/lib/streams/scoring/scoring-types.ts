@@ -23,6 +23,10 @@ export type ScoreOptions = {
   penalizeDubs?: boolean;
   /** Lower-case info hashes this device saw fail. */
   demotedHashes?: string[];
+  /** Canonical title for same-name disambiguation */
+  canonicalTitle?: string;
+  /** Director name for same-year duplicate disambiguation */
+  director?: string;
 };
 
 export type CorpusStats = {
