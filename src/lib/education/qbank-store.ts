@@ -93,10 +93,24 @@ export function sanitizePolyglotQuestion(raw: any, index: number, packId: string
 
   // 2. Extract Options
   let options: string[] = [];
+  let optionCorrectFromFlag: number | null = null;
+
   if (Array.isArray(raw.options)) {
-    options = raw.options.map(String);
+    options = raw.options.map((opt: any, idx: number) => {
+      if (opt && typeof opt === "object") {
+        if (opt.correct === true) optionCorrectFromFlag = idx;
+        return String(opt.text || opt.label || JSON.stringify(opt));
+      }
+      return String(opt);
+    });
   } else if (Array.isArray(raw.choices)) {
-    options = raw.choices.map((c: any) => (typeof c === "object" ? c.text || c.choice || JSON.stringify(c) : String(c)));
+    options = raw.choices.map((c: any, idx: number) => {
+      if (typeof c === "object") {
+        if (c.correct === true) optionCorrectFromFlag = idx;
+        return c.text || c.choice || JSON.stringify(c);
+      }
+      return String(c);
+    });
   } else if (raw.options && typeof raw.options === "object") {
     // {"A": "Option 1", "B": "Option 2"}
     options = ["A", "B", "C", "D", "E"]
@@ -111,18 +125,24 @@ export function sanitizePolyglotQuestion(raw: any, index: number, packId: string
   }
 
   // 3. Extract Correct Index
-  let correctIndex = 0;
-  const rawAns = raw.correctIndex ?? raw.answer_idx ?? raw.answer ?? raw.correct_answer ?? raw.correct ?? raw.label;
-  if (typeof rawAns === "number" && rawAns >= 0 && rawAns < options.length) {
-    correctIndex = rawAns;
-  } else if (typeof rawAns === "string") {
-    const trimmed = rawAns.trim().toUpperCase();
-    if (trimmed.length === 1 && trimmed >= "A" && trimmed <= "E") {
-      correctIndex = trimmed.charCodeAt(0) - 65;
-    } else {
-      // String match against options
-      const foundIdx = options.findIndex((opt) => opt.toLowerCase().includes(trimmed.toLowerCase()));
-      if (foundIdx !== -1) correctIndex = foundIdx;
+  let correctIndex = optionCorrectFromFlag ?? 0;
+  if (optionCorrectFromFlag === null) {
+    const rawAns = raw.correctIndex ?? raw.answer_idx ?? raw.answer ?? raw.correct_answer ?? raw.correct ?? raw.label;
+    if (typeof rawAns === "number" && rawAns >= 0 && rawAns < options.length) {
+      correctIndex = rawAns;
+    } else if (typeof rawAns === "string") {
+      const trimmed = rawAns.trim();
+      const firstChar = trimmed[0]?.toUpperCase();
+      if (trimmed.length === 1 && firstChar >= "A" && firstChar <= "E") {
+        correctIndex = firstChar.charCodeAt(0) - 65;
+      } else if (trimmed.length >= 2 && trimmed[1] === "." && firstChar >= "A" && firstChar <= "E") {
+        // e.g. "D. The absolute contraindication..."
+        correctIndex = firstChar.charCodeAt(0) - 65;
+      } else {
+        // String match against options
+        const foundIdx = options.findIndex((opt) => opt.toLowerCase().includes(trimmed.toLowerCase()));
+        if (foundIdx !== -1) correctIndex = foundIdx;
+      }
     }
   }
 
@@ -242,8 +262,27 @@ export function importQBankPack(rawText: string, customTitle?: string): { succes
       return { success: true, pack };
     }
 
-    // Case 2: Array of raw questions or object with data array
-    const questionsArray = Array.isArray(parsed) ? parsed : parsed.data || parsed.results || parsed.items || parsed.questions;
+    // Case 2: Array of raw questions or object with data array / tests container
+    let questionsArray = Array.isArray(parsed) ? parsed : parsed.data || parsed.results || parsed.items || parsed.questions;
+
+    // Handle nested format like archiboltmusk/qbank: { "tests": [ { "id": "...", "questions": [...] } ] }
+    if (!questionsArray && parsed.tests && Array.isArray(parsed.tests)) {
+      const flattened: any[] = [];
+      for (const t of parsed.tests) {
+        if (Array.isArray(t.questions)) {
+          for (const q of t.questions) {
+            flattened.push({
+              ...q,
+              topic: t.title || t.id,
+              subject: t.subject || parsed.subject || "Clinical",
+            });
+          }
+        }
+      }
+      if (flattened.length > 0) {
+        questionsArray = flattened;
+      }
+    }
 
     if (Array.isArray(questionsArray)) {
       const packId = `pack_import_${Date.now()}`;
@@ -289,7 +328,9 @@ export async function importFromGitHubUrl(url: string, title?: string): Promise<
       return { success: false, error: `HTTP ${res.status}: Failed to fetch file from URL.` };
     }
 
-    const text = await res.text();
+    const buffer = await res.arrayBuffer();
+    const { readEducationalFileText } = await import("./json-gz-importer");
+    const text = await readEducationalFileText(buffer);
     return importQBankPack(text, title);
   } catch (err: any) {
     return { success: false, error: err?.message || "Network error fetching remote dataset." };

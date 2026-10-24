@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useRef, type ChangeEvent } from "react";
 import {
   GraduationCap,
   FolderPlus,
@@ -13,6 +13,11 @@ import {
   Trash2,
   Copy,
   Sparkles,
+  Download,
+  Upload,
+  AlertCircle,
+  Zap,
+  Database,
 } from "lucide-react";
 import { useT } from "@/lib/i18n";
 import { useView } from "@/lib/view";
@@ -21,15 +26,20 @@ import { useLocalLibrary, type LocalEntry } from "@/lib/local-library";
 import { localPlayerSrc } from "@/lib/local-library/player-src";
 import { CURATED_COURSES } from "@/lib/education/catalogs";
 import type { CourseCategory, CuratedCourse, StudyNote } from "@/lib/education/types";
-import { useStudyNotes, deleteStudyNote, exportNotesAsMarkdown, getDueStudyNotes } from "@/lib/education/notes";
+import {
+  useStudyNotes,
+  deleteStudyNote,
+  exportNotesAsMarkdown,
+  exportNotesAsJson,
+  getDueStudyNotes,
+} from "@/lib/education/notes";
+import { importEducationalFile } from "@/lib/education/json-gz-importer";
 import { registerCourseShare } from "@/lib/local-library/course-share";
 import { generateAnkiDeckPackage } from "@/lib/education/anki-exporter";
-import { Download } from "lucide-react";
 import { InicetWarRoomBanner } from "./education/inicet-war-room-banner";
 import { DailyWateringDeck } from "./education/daily-watering-deck";
 import { QBankRunner } from "./education/qbank-drill";
 import { QBankManager } from "./education/qbank-manager";
-import { Zap, Database } from "lucide-react";
 
 export function EducationView() {
   const t = useT();
@@ -46,6 +56,39 @@ export function EducationView() {
   const [showQBankManager, setShowQBankManager] = useState(false);
   const [sharedTokens, setSharedTokens] = useState<Record<string, string>>({});
   const [copiedShareFolder, setCopiedShareFolder] = useState<string | null>(null);
+  const [importNotice, setImportNotice] = useState<{ success: boolean; message: string } | null>(null);
+  const globalFileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleGlobalFileUpload = async (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    try {
+      const res = await importEducationalFile(file);
+      if (res.success) {
+        setImportNotice({
+          success: true,
+          message:
+            res.type === "qbank"
+              ? `Successfully imported QBank Pack "${res.title}" with ${res.count} questions!`
+              : `Successfully imported ${res.count} study cards and notes into your deck!`,
+        });
+      } else {
+        setImportNotice({
+          success: false,
+          message: res.error || "Failed to parse educational JSON / GZ file.",
+        });
+      }
+    } catch (err: any) {
+      setImportNotice({
+        success: false,
+        message: err?.message || "Error reading file.",
+      });
+    }
+
+    if (globalFileInputRef.current) globalFileInputRef.current.value = "";
+    setTimeout(() => setImportNotice(null), 5000);
+  };
 
   const dueNotes = useMemo(() => {
     return getDueStudyNotes();
@@ -184,6 +227,23 @@ export function EducationView() {
 
           <button
             type="button"
+            onClick={() => globalFileInputRef.current?.click()}
+            className="flex items-center gap-1.5 rounded-xl border border-edge bg-surface px-3 py-2 text-[12.5px] font-medium text-ink hover:bg-raised transition shadow-sm"
+            title="Import Educational JSON, JSONL, or .json.gz file directly into Argus"
+          >
+            <Upload size={15} className="text-emerald-500" />
+            <span>{t("Import .json / .json.gz")}</span>
+          </button>
+          <input
+            type="file"
+            ref={globalFileInputRef}
+            accept=".json,.jsonl,.gz,.txt"
+            onChange={handleGlobalFileUpload}
+            className="hidden"
+          />
+
+          <button
+            type="button"
             onClick={() => setShowQBankManager(true)}
             className="flex items-center gap-1.5 rounded-xl border border-edge bg-surface px-3 py-2 text-[12.5px] font-medium text-ink hover:bg-raised transition shadow-sm"
             title="Import/Export QBank Packs and Author Clinical Questions"
@@ -236,6 +296,28 @@ export function EducationView() {
 
       {/* Main Body */}
       <div className="mt-8 flex flex-col gap-10">
+        {importNotice && (
+          <div
+            className={`flex items-center justify-between gap-3 rounded-2xl p-4 text-xs font-medium border shadow-lg animate-in fade-in slide-in-from-top-2 duration-200 ${
+              importNotice.success
+                ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
+                : "bg-rose-500/10 text-rose-400 border-rose-500/30"
+            }`}
+          >
+            <div className="flex items-center gap-2.5">
+              {importNotice.success ? <Check size={16} /> : <AlertCircle size={16} />}
+              <span className="text-[13px]">{importNotice.message}</span>
+            </div>
+            <button
+              type="button"
+              onClick={() => setImportNotice(null)}
+              className="rounded-lg p-1 text-ink-subtle hover:text-ink transition"
+            >
+              ✕
+            </button>
+          </div>
+        )}
+
         {/* QBank Pack Manager Modal */}
         {showQBankManager && (
           <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/75 backdrop-blur-md p-4">
@@ -519,12 +601,56 @@ function NotesDrawer({
   const t = useT();
   const [copiedAll, setCopiedAll] = useState(false);
   const [downloadedAnki, setDownloadedAnki] = useState(false);
+  const [downloadedJson, setDownloadedJson] = useState(false);
+  const [drawerNotice, setDrawerNotice] = useState<{ success: boolean; message: string } | null>(null);
+  const drawerFileInputRef = useRef<HTMLInputElement>(null);
 
   const handleExportAll = () => {
     const md = exportNotesAsMarkdown(notes);
     void navigator.clipboard.writeText(md);
     setCopiedAll(true);
     setTimeout(() => setCopiedAll(false), 2000);
+  };
+
+  const handleExportJson = () => {
+    const jsonStr = exportNotesAsJson(notes);
+    const blob = new Blob([jsonStr], { type: "application/json;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `argus-notes-${Date.now()}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+    setDownloadedJson(true);
+    setTimeout(() => setDownloadedJson(false), 2000);
+  };
+
+  const handleDrawerFileUpload = async (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    try {
+      const res = await importEducationalFile(file);
+      if (res.success) {
+        setDrawerNotice({
+          success: true,
+          message: `Imported ${res.count} cards / questions (${res.type})!`,
+        });
+      } else {
+        setDrawerNotice({
+          success: false,
+          message: res.error || "Failed to import JSON file.",
+        });
+      }
+    } catch (err: any) {
+      setDrawerNotice({
+        success: false,
+        message: err?.message || "File processing error.",
+      });
+    }
+
+    if (drawerFileInputRef.current) drawerFileInputRef.current.value = "";
+    setTimeout(() => setDrawerNotice(null), 4000);
   };
 
   const handleExportAnki = () => {
@@ -559,31 +685,73 @@ function NotesDrawer({
         </div>
 
         {/* Drawer Actions */}
-        <div className="flex items-center justify-between bg-canvas/40 px-6 py-2.5 border-b border-edge/40">
-          <span className="text-[12px] text-ink-muted">
-            {notes.length} {t("saved note timestamps")}
-          </span>
-          <div className="flex items-center gap-3">
-            <button
-              type="button"
-              onClick={handleExportAnki}
-              disabled={notes.length === 0}
-              className="flex items-center gap-1.5 text-[12px] font-medium text-emerald-500 hover:underline disabled:opacity-40"
-              title="Export as native Anki-importable deck with Image Occlusion"
-            >
-              {downloadedAnki ? <Check size={13} /> : <Download size={13} />}
-              <span>{downloadedAnki ? t("Downloaded Anki Deck!") : t("Export Anki Deck")}</span>
-            </button>
-            <button
-              type="button"
-              onClick={handleExportAll}
-              disabled={notes.length === 0}
-              className="flex items-center gap-1.5 text-[12px] font-medium text-accent hover:underline disabled:opacity-40"
-            >
-              {copiedAll ? <Check size={13} /> : <Copy size={13} />}
-              <span>{copiedAll ? t("Copied Markdown!") : t("Copy Markdown")}</span>
-            </button>
+        <div className="flex flex-col gap-2 bg-canvas/40 px-6 py-3 border-b border-edge/40">
+          <div className="flex items-center justify-between">
+            <span className="text-[12px] text-ink-muted">
+              {notes.length} {t("saved note timestamps")}
+            </span>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => drawerFileInputRef.current?.click()}
+                className="flex items-center gap-1 text-[11.5px] font-medium text-emerald-400 hover:underline"
+                title="Import Notes or Cards from JSON, JSONL, or .json.gz"
+              >
+                <Upload size={12} />
+                <span>{t("Import JSON")}</span>
+              </button>
+              <input
+                type="file"
+                ref={drawerFileInputRef}
+                accept=".json,.jsonl,.gz,.txt"
+                onChange={handleDrawerFileUpload}
+                className="hidden"
+              />
+
+              <button
+                type="button"
+                onClick={handleExportJson}
+                disabled={notes.length === 0}
+                className="flex items-center gap-1 text-[11.5px] font-medium text-sky-400 hover:underline disabled:opacity-40"
+                title="Export Notes as JSON"
+              >
+                <Download size={12} />
+                <span>{downloadedJson ? t("Saved JSON!") : t("JSON")}</span>
+              </button>
+              <button
+                type="button"
+                onClick={handleExportAnki}
+                disabled={notes.length === 0}
+                className="flex items-center gap-1 text-[11.5px] font-medium text-amber-400 hover:underline disabled:opacity-40"
+                title="Export as native Anki-importable deck with Image Occlusion"
+              >
+                {downloadedAnki ? <Check size={12} /> : <Download size={12} />}
+                <span>{downloadedAnki ? t("Saved Anki!") : t("Anki")}</span>
+              </button>
+              <button
+                type="button"
+                onClick={handleExportAll}
+                disabled={notes.length === 0}
+                className="flex items-center gap-1 text-[11.5px] font-medium text-accent hover:underline disabled:opacity-40"
+              >
+                {copiedAll ? <Check size={12} /> : <Copy size={12} />}
+                <span>{copiedAll ? t("Copied!") : t("Markdown")}</span>
+              </button>
+            </div>
           </div>
+
+          {drawerNotice && (
+            <div
+              className={`flex items-center gap-2 p-2 rounded-lg text-[11.5px] font-medium border ${
+                drawerNotice.success
+                  ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
+                  : "bg-rose-500/10 text-rose-400 border-rose-500/30"
+              }`}
+            >
+              {drawerNotice.success ? <Check size={13} /> : <AlertCircle size={13} />}
+              <span>{drawerNotice.message}</span>
+            </div>
+          )}
         </div>
 
         {/* Notes List */}
