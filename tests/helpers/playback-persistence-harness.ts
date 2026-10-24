@@ -62,6 +62,7 @@ export function playbackPersistenceHarness(kind: "local" | "cloud" = "local") {
     isNaturalEnd, playerLoadIdentity,
     cloudWriteId: (id: string, resolved: string, verified: boolean) => id.startsWith("tt") ? id : verified ? resolved : null,
     useProfiles: () => ({ activeProfile: { id: profileId } }),
+    isIncognito: () => false,
     recordWatchedBy: noop, recordAnimeCwId: noop,
     resumeLibraryGetOne: async () => libraryItem, libraryGetOne: () => cloudRead(),
     libraryGetOneStrict: async () => libraryItem,

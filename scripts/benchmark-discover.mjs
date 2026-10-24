@@ -5,7 +5,14 @@ import ts from "typescript";
 
 export function readSource(file, baseline = false) {
   return baseline
-    ? execFileSync("git", ["show", `HEAD:${file}`], { encoding: "utf8" })
+    ? execFileSync("git", ["show", `HEAD:${file}`], {
+        encoding: "utf8",
+        env: {
+          ...process.env,
+          GIT_CONFIG_GLOBAL: process.env.GIT_CONFIG_GLOBAL || "/dev/null",
+          GIT_CONFIG_SYSTEM: process.env.GIT_CONFIG_SYSTEM || "/dev/null",
+        },
+      })
     : readFileSync(file, "utf8");
 }
 

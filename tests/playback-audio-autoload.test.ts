@@ -51,6 +51,7 @@ async function fixture(remembered = true) {
       setAudioNormalize() {},
       setAudioProfile() {},
       setAudioDevice() {},
+      setAudioDelay() {},
       setSubDelay() {},
       setSubtitleTrack() {},
     },

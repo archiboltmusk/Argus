@@ -53,6 +53,7 @@ function radio(candidates: any[], related: any[]) {
       normalizeName: (value: string) => value.toLowerCase(),
       normalizeTitle: (value: string) => value.toLowerCase(),
     },
+    "./source-consent": { musicSourceAllowed: () => true },
     "./sources": { searchMusic: async () => [] },
     "./player": { getMusicState: () => ({ recents: [], likedTracks: [] }) },
     "./catalog": {

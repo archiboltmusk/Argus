@@ -101,6 +101,7 @@ audit-rest.txt
 installer/src-tauri/payload/
 installer/payload-stage/
 !installer/**/*.md
+!android-extension-compat/**/*.md
 # local design references and perf captures, not for distribution
 tools/tv-refs/
 docs/tv-perf/
@@ -126,7 +127,10 @@ gemini.key
 
 # Games artwork: 8.6MB of static files referenced by URL, not imported, so ignoring
 # them cannot break a build. Source under src/assets/games stays tracked because it is imported.
-/public/games/
+/public/games/*
+!/public/games/eve
+!/public/games/rewards
+!/public/games/roms
 
 # Built separately from pinned GPL sources; see tools/pokemon-engine/README.md.
 !tools/pokemon-engine/README.md

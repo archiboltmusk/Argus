@@ -130,9 +130,9 @@ pub fn next_fallback_stream(
         // Torrent stream must have cached debrid
         if stream.info_hash.is_some() && !active_debrids.is_empty() {
             let cached = &s.parsed.cached;
-            let is_cached = active_debrids.iter().any(|d| {
-                cached.get(d).copied().unwrap_or(false)
-            });
+            let is_cached = active_debrids
+                .iter()
+                .any(|d| cached.get(d).copied().unwrap_or(false));
             if is_cached {
                 return true;
             }
@@ -213,7 +213,10 @@ mod tests {
         d.on_buffering(t0 + Duration::from_secs(5));
         assert!(!d.is_stalled(t0 + Duration::from_secs(7)));
         assert!(d.is_stalled(t0 + Duration::from_secs(8)));
-        assert!(!d.is_stalled(t0 + Duration::from_secs(20)), "only reports once");
+        assert!(
+            !d.is_stalled(t0 + Duration::from_secs(20)),
+            "only reports once"
+        );
         d.on_playing();
         d.on_buffering(t0 + Duration::from_secs(30));
         assert!(!d.is_stalled(t0 + Duration::from_secs(35)));
@@ -258,22 +261,13 @@ mod tests {
 
         // When currently playing stream 1 (url "https://stream1.mp4"),
         // it skips s1 (current) and s2 (uncached torrent), and selects s3 (cached RD)!
-        let next = next_fallback_stream(
-            &candidates,
-            Some("https://stream1.mp4"),
-            None,
-            &debrids,
-        );
+        let next = next_fallback_stream(&candidates, Some("https://stream1.mp4"), None, &debrids);
         assert_eq!(next, Some(2));
 
         // When currently playing s3 (hash "hash_rd_cached"),
         // it selects s4 (next http stream)!
-        let next_after_s3 = next_fallback_stream(
-            &candidates,
-            None,
-            Some("hash_rd_cached"),
-            &debrids,
-        );
+        let next_after_s3 =
+            next_fallback_stream(&candidates, None, Some("hash_rd_cached"), &debrids);
         assert_eq!(next_after_s3, Some(0)); // s1 is https://stream1.mp4 which is playable
     }
 }

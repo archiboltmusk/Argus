@@ -62,6 +62,10 @@ function harness(t, options = {}) {
   let cursor = 0;
   let pending = [];
   const react = {
+    lazy: (fn) => (props) => ({ type: "lazy", props }),
+    useLayoutEffect(effect, deps) {
+      effect();
+    },
     useRef(initial) {
       const index = cursor++;
       return (hooks[index] ??= { current: initial });
@@ -104,6 +108,8 @@ function harness(t, options = {}) {
       useExitPresence: () => ({ mounted: search.open, closing: false }),
     },
     "@/lib/use-window-fullscreen": { useWindowFullscreen: () => fullscreen },
+    "@/lib/profiles": { useProfiles: () => ({ activeProfile: { id: "p_main" } }) },
+    "@/lib/features/install": { useInstallFeatures: () => ({ plugins: true, games: false, music: true, ebook: true, manga: true }) },
     "@/lib/search-display-state": {
       getSearchDisplayState: () => ({
         currentResults: null,

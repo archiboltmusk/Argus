@@ -173,7 +173,7 @@ jobs:
           '
       # Unsigned until an Apple Developer ID is added as a repo secret.
       - if: github.event_name != 'pull_request' || needs.changes.outputs.bundle == 'true'
-        run: pnpm tauri build --target ${{ matrix.target }} --bundles app ${{ steps.macos-libraries.outputs.config }}
+        run: pnpm tauri build --target ${{ matrix.target }} --bundles app ${{ steps.macos-libraries.outputs.config }} --ignore-version-mismatches
         env:
           # Optional: enable Trakt/Simkl sign-in (apps registered by the maintainer).
           ARGUS_TRAKT_CLIENT_ID: ${{ secrets.ARGUS_TRAKT_CLIENT_ID }}

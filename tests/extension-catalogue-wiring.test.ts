@@ -41,7 +41,7 @@ test("a page is read out of the sections the bridge writes, not a flat list", ()
 test("a plugin's own catalogs go through the browse surface every addon catalog uses", () => {
   assert.match(
     browse,
-    /const out: BrowseCatalog\[\] = extensionCatalogs\(\);/,
+    /const out: BrowseCatalog\[\] = extensionCatalogs\(/,
     "listBrowseCatalogs must include the plugin rows",
   );
   const fetcher = browse.slice(browse.indexOf("export function browseFetcher"));

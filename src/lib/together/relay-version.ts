@@ -2,7 +2,7 @@ export const REQUIRED_RELAY_VERSION = 11;
 export const ARGUS_PUBLIC_RELAY = "wss://pub.arguscommunity.site";
 
 export function migratePublicRelayUrl(url: string): string {
-  return /^(?:(?:wss?|https?):\/\/)?pub\.argus\.site\/?$/i.test(url.trim())
+  return /^(?:(?:wss?|https?):\/\/)?(?:pub\.argus\.site|argus\.invalid)\/?$/i.test(url.trim())
     ? ARGUS_PUBLIC_RELAY
     : url;
 }

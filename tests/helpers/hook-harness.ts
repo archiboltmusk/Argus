@@ -34,6 +34,7 @@ export function hookHarness(file: string, exportName: string, mocks: Record<stri
   const api: any = {};
   new Function("require", "exports", ...Object.keys(globals), output)((name: string) => {
     if (name === "react") return react;
+    if (name === "@/lib/incognito") return mocks[name] ?? { isIncognito: () => false, useIncognito: () => false };
     if (!(name in mocks)) throw new Error(`Unexpected dependency ${name}`);
     return mocks[name];
   }, api, ...Object.values(globals));

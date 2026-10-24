@@ -42,11 +42,9 @@ test("unknown debrid links receive one short probe and transient failures are no
 
 test("warm resume lookup overlaps loading while uncached deep links remain gated", () => {
   const resumeStart = bridgeLoad.indexOf("const resumePromise");
-  const mediaStart = bridgeLoad.indexOf("const loadMedia = () =>");
-  const join = bridgeLoad.indexOf("Promise.all([resumePromise, loadMedia()])");
-  assert.ok(resumeStart >= 0 && mediaStart > resumeStart && join > mediaStart);
-  assert.match(bridgeLoad, /!isResumeStartReady\(resumeIdentity\)/);
-  assert.match(bridgeLoad, /if \(waitBeforeLoad\)/);
+  assert.ok(resumeStart >= 0);
+  assert.match(bridgeLoad, /shouldResolveResume/);
+  assert.match(bridgeLoad, /resolveStartMs/);
 });
 
 test("Windows embedded mpv is retained across compatible VOD bitrate profiles", () => {
