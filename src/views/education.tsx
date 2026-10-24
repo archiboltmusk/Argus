@@ -26,7 +26,8 @@ import { registerCourseShare } from "@/lib/local-library/course-share";
 import { InicetWarRoomBanner } from "./education/inicet-war-room-banner";
 import { DailyWateringDeck } from "./education/daily-watering-deck";
 import { QBankRunner } from "./education/qbank-drill";
-import { Zap } from "lucide-react";
+import { QBankManager } from "./education/qbank-manager";
+import { Zap, Database } from "lucide-react";
 
 export function EducationView() {
   const t = useT();
@@ -40,6 +41,7 @@ export function EducationView() {
   const [showNotesDrawer, setShowNotesDrawer] = useState(false);
   const [showWateringDeck, setShowWateringDeck] = useState(false);
   const [showQBank, setShowQBank] = useState(false);
+  const [showQBankManager, setShowQBankManager] = useState(false);
   const [sharedTokens, setSharedTokens] = useState<Record<string, string>>({});
   const [copiedShareFolder, setCopiedShareFolder] = useState<string | null>(null);
 
@@ -180,6 +182,16 @@ export function EducationView() {
 
           <button
             type="button"
+            onClick={() => setShowQBankManager(true)}
+            className="flex items-center gap-1.5 rounded-xl border border-edge bg-surface px-3 py-2 text-[12.5px] font-medium text-ink hover:bg-raised transition shadow-sm"
+            title="Import/Export QBank Packs and Author Clinical Questions"
+          >
+            <Database size={15} className="text-accent" />
+            <span>{t("QBank Packs")}</span>
+          </button>
+
+          <button
+            type="button"
             onClick={() => setShowQBank(true)}
             className="flex items-center gap-2 rounded-xl bg-amber-500 hover:bg-amber-400 px-4 py-2 text-[12.5px] font-bold text-black transition shadow-sm active:scale-[0.98]"
             title="Open Clinical Vignette QBank Drill & Grand Test Simulation"
@@ -222,6 +234,19 @@ export function EducationView() {
 
       {/* Main Body */}
       <div className="mt-8 flex flex-col gap-10">
+        {/* QBank Pack Manager Modal */}
+        {showQBankManager && (
+          <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/75 backdrop-blur-md p-4">
+            <QBankManager
+              onStartPackDrill={(_pack) => {
+                setShowQBankManager(false);
+                setShowQBank(true);
+              }}
+              onClose={() => setShowQBankManager(false)}
+            />
+          </div>
+        )}
+
         {/* Clinical QBank Drill Modal / Overlay */}
         {showQBank && (
           <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/75 backdrop-blur-md p-4">

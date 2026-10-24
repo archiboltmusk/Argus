@@ -1,6 +1,27 @@
+export type SubjectCategory =
+  | "Pathology"
+  | "Pharmacology"
+  | "Medicine"
+  | "Surgery"
+  | "OBGYN"
+  | "Microbiology"
+  | "Radiology"
+  | "Biochemistry"
+  | "Anatomy"
+  | "Physiology"
+  | "Pediatrics"
+  | "Orthopedics"
+  | "Ophthalmology"
+  | "ENT"
+  | "Dermatology"
+  | "Psychiatry"
+  | "Anesthesia"
+  | "FMT"
+  | "PSM";
+
 export type ClinicalQuestion = {
   id: string;
-  subject: "Pathology" | "Pharmacology" | "Medicine" | "Surgery" | "OBGYN" | "Microbiology" | "Radiology" | "Biochemistry";
+  subject: SubjectCategory;
   topic: string;
   vignette: string;
   imageUrl?: string;
@@ -13,6 +34,22 @@ export type ClinicalQuestion = {
     bottomLine: string;
   };
   highYieldTags: string[];
+  author?: string;
+  sourceExam?: string; // e.g. "INI-CET Nov 2024", "NEET PG 2024"
+  packId?: string;
+};
+
+export type QBankPack = {
+  id: string;
+  title: string;
+  description: string;
+  author: string;
+  version: string;
+  subject?: SubjectCategory | "Mixed";
+  totalQuestions: number;
+  createdAt: number;
+  updatedAt: number;
+  questions: ClinicalQuestion[];
 };
 
 export type QBankSessionState = {
