@@ -1,5 +1,8 @@
 // Newly introduced UI copy remains usable until each locale provides an override.
 const uiFallback: Record<string, string> = {
+  "QBank Packs": "QBank Packs",
+  "Clinical QBank Drill": "Clinical QBank Drill",
+  "Water the Tree": "Water the Tree",
   "Study Mode Note": "Study Mode Note",
   "Ambient edge glow (Ambilight)": "Ambient edge glow (Ambilight)",
   "Casts a soft, dynamic ambient backlight behind the video player reflecting the colors of the media. Turn off for a pure pitch-black backdrop.":
