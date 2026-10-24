@@ -102,6 +102,7 @@ installer/src-tauri/payload/
 installer/payload-stage/
 !installer/**/*.md
 !android-extension-compat/**/*.md
+!src-tauri/resources/argus-stream-blocker/README.md
 # local design references and perf captures, not for distribution
 tools/tv-refs/
 docs/tv-perf/
