@@ -23,6 +23,8 @@ import { CURATED_COURSES } from "@/lib/education/catalogs";
 import type { CourseCategory, CuratedCourse, StudyNote } from "@/lib/education/types";
 import { useStudyNotes, deleteStudyNote, exportNotesAsMarkdown, getDueStudyNotes } from "@/lib/education/notes";
 import { registerCourseShare } from "@/lib/local-library/course-share";
+import { generateAnkiDeckPackage } from "@/lib/education/anki-exporter";
+import { Download } from "lucide-react";
 import { InicetWarRoomBanner } from "./education/inicet-war-room-banner";
 import { DailyWateringDeck } from "./education/daily-watering-deck";
 import { QBankRunner } from "./education/qbank-drill";
@@ -516,12 +518,26 @@ function NotesDrawer({
 }) {
   const t = useT();
   const [copiedAll, setCopiedAll] = useState(false);
+  const [downloadedAnki, setDownloadedAnki] = useState(false);
 
   const handleExportAll = () => {
     const md = exportNotesAsMarkdown(notes);
     void navigator.clipboard.writeText(md);
     setCopiedAll(true);
     setTimeout(() => setCopiedAll(false), 2000);
+  };
+
+  const handleExportAnki = () => {
+    const pkg = generateAnkiDeckPackage(notes, "Argus Study Mode Deck");
+    const blob = new Blob([pkg.textData], { type: "text/tab-separated-values;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = pkg.filename;
+    a.click();
+    URL.revokeObjectURL(url);
+    setDownloadedAnki(true);
+    setTimeout(() => setDownloadedAnki(false), 2000);
   };
 
   return (
@@ -547,15 +563,27 @@ function NotesDrawer({
           <span className="text-[12px] text-ink-muted">
             {notes.length} {t("saved note timestamps")}
           </span>
-          <button
-            type="button"
-            onClick={handleExportAll}
-            disabled={notes.length === 0}
-            className="flex items-center gap-1.5 text-[12px] font-medium text-accent hover:underline disabled:opacity-40"
-          >
-            {copiedAll ? <Check size={13} /> : <Copy size={13} />}
-            <span>{copiedAll ? t("Copied Markdown!") : t("Export to Obsidian / Anki")}</span>
-          </button>
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={handleExportAnki}
+              disabled={notes.length === 0}
+              className="flex items-center gap-1.5 text-[12px] font-medium text-emerald-500 hover:underline disabled:opacity-40"
+              title="Export as native Anki-importable deck with Image Occlusion"
+            >
+              {downloadedAnki ? <Check size={13} /> : <Download size={13} />}
+              <span>{downloadedAnki ? t("Downloaded Anki Deck!") : t("Export Anki Deck")}</span>
+            </button>
+            <button
+              type="button"
+              onClick={handleExportAll}
+              disabled={notes.length === 0}
+              className="flex items-center gap-1.5 text-[12px] font-medium text-accent hover:underline disabled:opacity-40"
+            >
+              {copiedAll ? <Check size={13} /> : <Copy size={13} />}
+              <span>{copiedAll ? t("Copied Markdown!") : t("Copy Markdown")}</span>
+            </button>
+          </div>
         </div>
 
         {/* Notes List */}

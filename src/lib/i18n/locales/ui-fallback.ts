@@ -1,5 +1,8 @@
 // Newly introduced UI copy remains usable until each locale provides an override.
 const uiFallback: Record<string, string> = {
+  "Downloaded Anki Deck!": "Downloaded Anki Deck!",
+  "Export Anki Deck": "Export Anki Deck",
+  "Copy Markdown": "Copy Markdown",
   "QBank Packs": "QBank Packs",
   "Clinical QBank Drill": "Clinical QBank Drill",
   "Water the Tree": "Water the Tree",
