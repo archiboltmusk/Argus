@@ -19,7 +19,6 @@ import {
   Zap,
   Database,
   Layers,
-  Flame,
 } from "lucide-react";
 import { useT } from "@/lib/i18n";
 import { useView } from "@/lib/view";
