@@ -1,8 +1,8 @@
-import { Check, AlertCircle } from "lucide-react";
+import { Check, AlertCircle, Sparkles } from "lucide-react";
 import { useT } from "@/lib/i18n";
 import { useActiveKid } from "@/lib/profiles";
 
-type Variant = "check" | "stalled" | "failed";
+type Variant = "check" | "stalled" | "failed" | "upgrade";
 
 export function StreamCheckPill({
   variant,
@@ -36,12 +36,16 @@ export function StreamCheckPill({
       ? { title: t("Is the channel playing right?"), sub: t("Wrong channel or source?"), icon: Check, accent: "rgba(255,255,255,0.85)" }
       : variant === "stalled"
         ? { title: t("Channel is taking a while"), sub: t("This source is slow. Try another."), icon: AlertCircle, accent: "#f59e0b" }
-        : { title: t("Channel won't load"), sub: t("Try another source."), icon: AlertCircle, accent: "#ef4444" }
+        : variant === "upgrade"
+          ? { title: t("Better stream available"), sub: t("Higher quality detected"), icon: Sparkles, accent: "#38bdf8" }
+          : { title: t("Channel won't load"), sub: t("Try another source."), icon: AlertCircle, accent: "#ef4444" }
     : variant === "check"
       ? { title: t("Does this stream look right?"), sub: t("Wrong episode or quality?"), icon: Check, accent: "rgba(255,255,255,0.85)" }
       : variant === "stalled"
         ? { title: t("Stream is taking a while"), sub: t("Probably not cached. Pick another?"), icon: AlertCircle, accent: "#f59e0b" }
-        : { title: t("Stream failed to load"), sub: t("Try a different source."), icon: AlertCircle, accent: "#ef4444" };
+        : variant === "upgrade"
+          ? { title: t("Higher quality found"), sub: t("Better resolution or audio detected"), icon: Sparkles, accent: "#38bdf8" }
+          : { title: t("Stream failed to load"), sub: t("Try a different source."), icon: AlertCircle, accent: "#ef4444" };
 
   const Icon = copy.icon;
   const title = customTitle ?? copy.title;

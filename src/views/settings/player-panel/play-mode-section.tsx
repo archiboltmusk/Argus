@@ -207,6 +207,14 @@ export function PlayModePanel() {
           </Nested>
         )}
         <ToggleRow
+          label={t("Suggest higher quality streams when found")}
+          sub={t(
+            "If slower addons or debrid sources finish resolving a better quality release (4K UHD, HDR, Dolby Atmos, or Remux) while watching, suggest switching with one click.",
+          )}
+          value={settings.suggestQualityUpgrade}
+          onChange={(v) => update({ suggestQualityUpgrade: v })}
+        />
+        <ToggleRow
           label={t("Keep same source on next episode")}
           sub={t(
             "When auto-playing the next episode, keep the same release/source you were just watching instead of Argus's top-ranked stream. Falls back to the best stream if that source isn't available.",

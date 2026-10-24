@@ -175,6 +175,9 @@ export type PlayerOverlayLayersProps = {
   stallOffer?: StallOffer | null;
   acceptStallFallback?: () => void;
   dismissStallFallback?: () => void;
+  upgradeOffer?: import("./hooks/use-quality-upgrade").QualityUpgradeOffer | null;
+  acceptUpgrade?: () => void;
+  dismissUpgrade?: () => void;
   mpvEmbedWindowsActive: boolean;
   setStreamCheckOpen: (v: boolean) => void;
   dismissStreamPill: () => void;
@@ -508,6 +511,19 @@ export const PlayerOverlayLayers = memo(function PlayerOverlayLayers(p: PlayerOv
           dismissLabel={t("Stay on current")}
           onDismiss={p.dismissStallFallback ?? (() => {})}
           onPickAnother={p.acceptStallFallback ?? p.pickAnotherOrGuide}
+        />
+      ) : p.upgradeOffer && !p.switcherOpen ? (
+        <StreamCheckPill
+          variant="upgrade"
+          visible
+          compact={p.mpvEmbedWindowsActive}
+          live={p.liveOverlay.isLive}
+          customTitle={t("Higher quality found")}
+          customSub={p.upgradeOffer.summary}
+          actionLabel={t("Upgrade stream")}
+          dismissLabel={t("Keep current")}
+          onDismiss={p.dismissUpgrade ?? (() => {})}
+          onPickAnother={p.acceptUpgrade ?? p.pickAnotherOrGuide}
         />
       ) : (
         p.streamPillVariant && !p.switcherOpen && (

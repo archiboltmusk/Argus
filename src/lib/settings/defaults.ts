@@ -277,6 +277,7 @@ export const DEFAULT: Settings = {
   instantPlaybackPreparation: false,
   autoNextStreamOnStall: false,
   autoNextStreamOnStallSec: 10,
+  suggestQualityUpgrade: true,
   fullscreenMode: "fullscreen",
   seasonSourceLock: false,
   rememberLastStream: true,

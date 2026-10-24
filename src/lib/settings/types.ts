@@ -348,6 +348,7 @@ export type Settings = {
   instantPlaybackPreparation: boolean;
   autoNextStreamOnStall: boolean;
   autoNextStreamOnStallSec: number;
+  suggestQualityUpgrade: boolean;
   fullscreenMode: "fullscreen" | "borderless" | "maximized";
   seasonSourceLock: boolean;
   rememberLastStream: boolean;

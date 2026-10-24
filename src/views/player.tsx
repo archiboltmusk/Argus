@@ -102,6 +102,7 @@ import { usePlayerMedia } from "./player/hooks/use-player-media";
 import { useTrickplay } from "./player/hooks/use-trickplay";
 import { useStreamPill } from "./player/hooks/use-stream-pill";
 import { useStallFallback } from "./player/hooks/use-stall-fallback";
+import { useQualityUpgrade } from "./player/hooks/use-quality-upgrade";
 import { useStubDetection } from "./player/hooks/use-stub-detection";
 import { useBridgeLoad } from "./player/hooks/use-bridge-load";
 import { useSportsDockSurface } from "./player/hooks/use-sports-dock-surface";
@@ -1348,6 +1349,18 @@ function NativePlayerView({ src }: { src: PlayerSrc }) {
     openSwitcher: () => setSwitcherOpen(true),
     inRoom,
   });
+  const {
+    upgradeOffer,
+    acceptUpgrade,
+    dismissUpgrade,
+  } = useQualityUpgrade({
+    src: activeMediaSrc,
+    snap,
+    debrids,
+    enabled: settings.suggestQualityUpgrade,
+    onSwitchStream,
+    inRoom,
+  });
 
   const playStreamRef = liveStreamRef ?? src.streamRef;
   const playUrl = liveUrl ?? src.url;
@@ -1626,6 +1639,9 @@ function NativePlayerView({ src }: { src: PlayerSrc }) {
     stallOffer,
     acceptStallFallback,
     dismissStallFallback,
+    upgradeOffer,
+    acceptUpgrade,
+    dismissUpgrade,
     mpvEmbedWindowsActive,
     setStreamCheckOpen,
     dismissStreamPill,
