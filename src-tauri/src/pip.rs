@@ -98,7 +98,7 @@ pub async fn pip_open(
             .resizable(true)
             .always_on_top(true)
             .decorations(false)
-            .skip_taskbar(false)
+            .skip_taskbar(true)
             .visible(true)
             .focused(true);
         let window = crate::browser_args::match_main(&app_for_window, builder)
