@@ -41,6 +41,8 @@ import { InicetWarRoomBanner } from "./education/inicet-war-room-banner";
 import { DailyWateringDeck } from "./education/daily-watering-deck";
 import { QBankRunner } from "./education/qbank-drill";
 import { QBankManager } from "./education/qbank-manager";
+import { getAllQuestions, getInicetHighYieldQuestions } from "@/lib/education/qbank-store";
+import { CLINICAL_QBANK_STARTER } from "@/lib/education/qbank-data";
 import { Row } from "@/components/row";
 
 export function EducationView() {
@@ -214,7 +216,23 @@ export function EducationView() {
         <div className="flex items-center gap-2 flex-wrap">
           <button
             type="button"
-            onClick={() => setShowQBank(true)}
+            onClick={() => {
+              // Priority 1: High-yield INICET vignettes if available across installed packs
+              const highYield = getInicetHighYieldQuestions();
+              if (highYield.length > 0) {
+                setActiveDrillQuestions(highYield);
+              } else {
+                // Priority 2: All imported questions
+                const allImported = getAllQuestions();
+                if (allImported.length > 0) {
+                  setActiveDrillQuestions(allImported);
+                } else {
+                  // Fallback: Starter pack
+                  setActiveDrillQuestions(CLINICAL_QBANK_STARTER);
+                }
+              }
+              setShowQBank(true);
+            }}
             className="flex items-center gap-2 rounded-xl bg-accent px-4 py-2.5 text-[13px] font-semibold text-white shadow-sm hover:opacity-95 active:scale-[0.98] transition"
             title="Open Clinical Vignette QBank Drill & Grand Test Simulation"
           >
