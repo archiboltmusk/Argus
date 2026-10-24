@@ -6,6 +6,7 @@
   "type": "module",
   "scripts": {
     "check": "vp check",
+    "fix:i18n": "node scripts/auto-heal-i18n.mjs",
     "dev": "vite --config vite.config.ts",
     "build": "tsc -b && vite build",
     "build:desktop": "tsc -b && vite build",
