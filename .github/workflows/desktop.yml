@@ -57,7 +57,7 @@ jobs:
           key: x86_64-pc-windows-msvc
           cache-on-failure: true
           save-if: ${{ github.ref == 'refs/heads/main' }}
-      - uses: pnpm/action-setup@v5
+      - uses: pnpm/action-setup@v6
       - uses: actions/setup-node@v6
         with:
           node-version: 24
@@ -141,7 +141,7 @@ jobs:
           key: x86_64-unknown-linux-gnu
           cache-on-failure: true
           save-if: ${{ github.ref == 'refs/heads/main' }}
-      - uses: pnpm/action-setup@v5
+      - uses: pnpm/action-setup@v6
       - uses: actions/setup-node@v6
         with:
           node-version: 24
