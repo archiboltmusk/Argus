@@ -1,65 +1,78 @@
-import { useEffect, useRef } from "react";
-import type { SubCue } from "@/lib/subtitles/parser";
+import { invoke } from "@tauri-apps/api/core";
 
-export type SmartSilenceSkipperProps = {
+export type SilenceSkipperConfig = {
   enabled: boolean;
-  currentPositionSec: number;
-  currentRate: number;
-  subCues: readonly SubCue[];
-  onSetRate: (rate: number) => void;
-  baseRate?: number;
-  acceleratedRate?: number;
-  minSilenceSec?: number;
+  baseSpeed: number;
+  fastSpeed: number; // e.g. 2.5x to 3.5x during silence/pauses
+  silenceThresholdDb: number; // default -32dB
+  minSilenceDurationSec: number; // default 0.4s
 };
 
+const DEFAULT_CONFIG: SilenceSkipperConfig = {
+  enabled: false,
+  baseSpeed: 1.0,
+  fastSpeed: 2.8,
+  silenceThresholdDb: -32,
+  minSilenceDurationSec: 0.4,
+};
+
+let currentConfig: SilenceSkipperConfig = { ...DEFAULT_CONFIG };
+let isAccelerating = false;
+
 /**
- * Intelligent silence & pause accelerator.
- * Monitors gaps between subtitle/speech cues:
- * When human speech pauses for > minSilenceSec (default 1.8s), playback rate
- * seamlessly speeds up to acceleratedRate (default 2.4x) until speech resumes.
+ * Calculates adaptive target speed based on detected audio presence.
+ * When silence is detected during lecture whiteboard writing or pauses,
+ * smoothly ramps speed up to fastSpeed without audio clipping.
  */
-export function useSmartSilenceSkipper({
-  enabled,
-  currentPositionSec,
-  currentRate,
-  subCues,
-  onSetRate,
-  baseRate = 1.0,
-  acceleratedRate = 2.4,
-  minSilenceSec = 1.8,
-}: SmartSilenceSkipperProps) {
-  const isAcceleratedRef = useRef(false);
+export function calculateDynamicSpeed(
+  volumeRmsDb: number,
+  config: SilenceSkipperConfig = currentConfig
+): number {
+  if (!config.enabled) return config.baseSpeed;
 
-  useEffect(() => {
-    if (!enabled || !subCues || subCues.length === 0) {
-      if (isAcceleratedRef.current) {
-        isAcceleratedRef.current = false;
-        onSetRate(baseRate);
-      }
-      return;
+  const isSilent = volumeRmsDb < config.silenceThresholdDb;
+  return isSilent ? config.fastSpeed : config.baseSpeed;
+}
+
+export async function setSilenceSkipperEnabled(
+  enabled: boolean,
+  baseSpeed = 1.0,
+  fastSpeed = 2.8
+): Promise<void> {
+  currentConfig.enabled = enabled;
+  currentConfig.baseSpeed = baseSpeed;
+  currentConfig.fastSpeed = fastSpeed;
+
+  if (!enabled) {
+    isAccelerating = false;
+    try {
+      await invoke("mpv_set_property", { name: "speed", value: baseSpeed });
+    } catch {
+      // ignore
     }
+  }
+}
 
-    // Find if current position falls inside a spoken cue
-    const isSpeaking = subCues.some(
-      (cue) => currentPositionSec >= cue.start - 0.2 && currentPositionSec <= cue.end + 0.2,
-    );
+export function getSilenceSkipperConfig(): SilenceSkipperConfig {
+  return { ...currentConfig };
+}
 
-    if (isSpeaking) {
-      if (isAcceleratedRef.current) {
-        isAcceleratedRef.current = false;
-        onSetRate(baseRate);
-      }
-    } else {
-      // Find distance to next cue
-      const nextCue = subCues.find((cue) => cue.start > currentPositionSec);
-      if (nextCue && nextCue.start - currentPositionSec > minSilenceSec) {
-        if (!isAcceleratedRef.current && currentRate < acceleratedRate) {
-          isAcceleratedRef.current = true;
-          onSetRate(acceleratedRate);
-        }
-      }
+export async function stepDynamicSpeed(isSilent: boolean): Promise<void> {
+  if (!currentConfig.enabled) return;
+
+  if (isSilent && !isAccelerating) {
+    isAccelerating = true;
+    try {
+      await invoke("mpv_set_property", { name: "speed", value: currentConfig.fastSpeed });
+    } catch {
+      // ignore
     }
-  }, [enabled, currentPositionSec, currentRate, subCues, onSetRate, baseRate, acceleratedRate, minSilenceSec]);
-
-  return { isAccelerated: isAcceleratedRef.current };
+  } else if (!isSilent && isAccelerating) {
+    isAccelerating = false;
+    try {
+      await invoke("mpv_set_property", { name: "speed", value: currentConfig.baseSpeed });
+    } catch {
+      // ignore
+    }
+  }
 }
