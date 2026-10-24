@@ -11,6 +11,10 @@ export function StreamCheckPill({
   onPickAnother,
   compact,
   live,
+  customTitle,
+  customSub,
+  actionLabel,
+  dismissLabel,
 }: {
   variant: Variant;
   visible: boolean;
@@ -18,6 +22,10 @@ export function StreamCheckPill({
   onPickAnother: () => void;
   compact?: boolean;
   live?: boolean;
+  customTitle?: string;
+  customSub?: string;
+  actionLabel?: string;
+  dismissLabel?: string;
 }) {
   const t = useT();
   const kid = useActiveKid();
@@ -36,6 +44,8 @@ export function StreamCheckPill({
         : { title: t("Stream failed to load"), sub: t("Try a different source."), icon: AlertCircle, accent: "#ef4444" };
 
   const Icon = copy.icon;
+  const title = customTitle ?? copy.title;
+  const sub = customSub ?? copy.sub;
 
   return (
     <div
@@ -49,22 +59,22 @@ export function StreamCheckPill({
         <Icon size={14} strokeWidth={2.4} style={{ color: copy.accent }} />
       </span>
       <div className="flex min-w-0 flex-col leading-tight">
-        <span className="text-[13px] font-semibold text-white">{copy.title}</span>
-        <span className="text-[11px] text-white/55">{copy.sub}</span>
+        <span className="text-[13px] font-semibold text-white">{title}</span>
+        <span className="text-[11px] text-white/55">{sub}</span>
       </div>
       <div className="flex items-center gap-1.5 ps-1">
         <button
           onClick={onDismiss}
           className="flex h-7 items-center gap-1 rounded-full px-3 text-[11.5px] font-semibold text-white/75 transition-colors hover:bg-white/8 hover:text-white"
-          aria-label={t("Dismiss")}
+          aria-label={dismissLabel ?? (variant === "check" ? t("Looks good") : t("Dismiss"))}
         >
-          {variant === "check" ? t("Looks good") : t("Dismiss")}
+          {dismissLabel ?? (variant === "check" ? t("Looks good") : t("Dismiss"))}
         </button>
         <button
           onClick={onPickAnother}
           className="flex h-7 items-center gap-1.5 rounded-full bg-white/12 px-3 text-[11.5px] font-semibold text-white transition-colors hover:bg-white/22"
         >
-          {live ? t("Other sources") : t("Pick another")}
+          {actionLabel ?? (live ? t("Other sources") : t("Pick another"))}
         </button>
       </div>
     </div>

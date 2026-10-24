@@ -175,6 +175,10 @@ async function fixture(argusSignedIn = false, stremioSignedIn = false, kid = fal
       },
     },
     "@/components/parental-pin-modal": { ParentalPinModal: () => null },
+    "@/lib/config/endpoints": {
+      ARGUS_HOSTED: true,
+      ARGUS_API_BASE: "https://api.argus.test",
+    },
     "@/lib/profile-password": { verifyProfilePassword: async () => true },
     "@/chrome/sidebar/status-control": { StatusDot: () => null, StatusPicker: () => null },
   };

@@ -115,6 +115,21 @@ export function createTorbox(apiKey: string): DebridStore {
 
   async function cacheCheck(hashes: string[], signal: AbortSignal): Promise<DebridResult<CacheMap>> {
     if (hashes.length === 0) return { ok: true, data: {} };
+    const isTauri =
+      typeof window !== "undefined" && ("__TAURI__" in window || "__TAURI_INTERNALS__" in window);
+    if (isTauri) {
+      try {
+        const { invoke } = await import("@tauri-apps/api/core");
+        const data = await invoke<CacheMap>("debrid_check_cached_batch", {
+          provider: "tb",
+          apiKey,
+          hashes,
+        });
+        return { ok: true, data };
+      } catch (e) {
+        dwarn("[torbox] native cache check failed, using web fallback", e);
+      }
+    }
     const BATCH = 25;
     const batches: string[][] = [];
     for (let i = 0; i < hashes.length; i += BATCH) {

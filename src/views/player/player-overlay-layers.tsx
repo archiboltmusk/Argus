@@ -1,8 +1,10 @@
 import { memo, type ComponentProps, type RefObject } from "react";
+import { useT } from "@/lib/i18n";
 import { DrawCanvas, StrokesLayer, type Stroke } from "@/components/player/draw-canvas";
 import { cropTransform } from "./hooks/use-video-fill";
 import { StreamSwitcher } from "@/components/player/stream-switcher";
 import { StreamCheckPill } from "@/components/player/stream-check-pill";
+import type { StallOffer } from "./hooks/use-stall-fallback";
 import { AdReportButton } from "@/components/player/ad-report-button";
 import { XrayOverlay } from "@/components/player/xray/xray-overlay";
 import { BufferingIndicator } from "@/components/player/buffering-indicator";
@@ -170,6 +172,9 @@ export type PlayerOverlayLayersProps = {
   foreignNotice: Room["foreignNotice"];
   onDismissForeign: () => void;
   streamPillVariant: Pill["variant"] | null;
+  stallOffer?: StallOffer | null;
+  acceptStallFallback?: () => void;
+  dismissStallFallback?: () => void;
   mpvEmbedWindowsActive: boolean;
   setStreamCheckOpen: (v: boolean) => void;
   dismissStreamPill: () => void;
@@ -201,6 +206,7 @@ export type PlayerOverlayLayersProps = {
 };
 
 export const PlayerOverlayLayers = memo(function PlayerOverlayLayers(p: PlayerOverlayLayersProps) {
+  const t = useT();
   const roomAvatarTopLeft =
     p.inRoom && !p.avatarsHidden && p.participants.length > 0 && p.avatarsCorner === "top-left";
   const roomAvatarTopRight =
@@ -467,19 +473,57 @@ export const PlayerOverlayLayers = memo(function PlayerOverlayLayers(p: PlayerOv
         onSeekTo={p.seekTo}
       />
 
-      {p.streamPillVariant && !p.switcherOpen && (
+      {p.stallOffer && !p.switcherOpen ? (
         <StreamCheckPill
-          variant={p.streamPillVariant}
+          variant="stalled"
           visible
           compact={p.mpvEmbedWindowsActive}
           live={p.liveOverlay.isLive}
-          onDismiss={
-            p.streamPillVariant === "check"
-              ? () => p.setStreamCheckOpen(false)
-              : p.dismissStreamPill
+          customTitle={t("Playback stalled")}
+          customSub={
+            p.stallOffer.nextStream
+              ? p.stallOffer.secondsLeft != null
+                ? t("Switching to next stream ({stream}) in {s}s...", {
+                    stream:
+                      p.stallOffer.nextStream.resolution ??
+                      p.stallOffer.nextStream.parsedTitle ??
+                      "next stream",
+                    s: p.stallOffer.secondsLeft,
+                  })
+                : t("Next stream available: {stream}", {
+                    stream:
+                      p.stallOffer.nextStream.resolution ??
+                      p.stallOffer.nextStream.parsedTitle ??
+                      "next stream",
+                  })
+              : t("Stream connection stalled. Pick another?")
           }
-          onPickAnother={p.pickAnotherOrGuide}
+          actionLabel={
+            p.stallOffer.secondsLeft != null
+              ? t("Switch now")
+              : p.stallOffer.nextStream
+                ? t("Switch stream")
+                : t("Pick another")
+          }
+          dismissLabel={t("Stay on current")}
+          onDismiss={p.dismissStallFallback ?? (() => {})}
+          onPickAnother={p.acceptStallFallback ?? p.pickAnotherOrGuide}
         />
+      ) : (
+        p.streamPillVariant && !p.switcherOpen && (
+          <StreamCheckPill
+            variant={p.streamPillVariant}
+            visible
+            compact={p.mpvEmbedWindowsActive}
+            live={p.liveOverlay.isLive}
+            onDismiss={
+              p.streamPillVariant === "check"
+                ? () => p.setStreamCheckOpen(false)
+                : p.dismissStreamPill
+            }
+            onPickAnother={p.pickAnotherOrGuide}
+          />
+        )
       )}
 
       <P2pStatusChip

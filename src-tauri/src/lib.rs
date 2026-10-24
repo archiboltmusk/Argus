@@ -90,8 +90,12 @@ mod dvr;
 mod external_player;
 #[cfg(desktop)]
 mod fullscreen;
-#[cfg(desktop)]
+#[cfg(all(desktop, feature = "games"))]
 mod games;
+#[cfg(all(desktop, not(feature = "games")))]
+mod games_stub;
+#[cfg(all(desktop, not(feature = "games")))]
+use games_stub as games;
 #[cfg(desktop)]
 mod open_access;
 #[cfg(desktop)]
@@ -939,12 +943,15 @@ pub fn run() {
     if music::try_run_connector_worker() {
         return;
     }
+    #[cfg(not(target_os = "macos"))]
     if games::try_run_achievement_worker() {
         return;
     }
+    #[cfg(not(target_os = "macos"))]
     if games::try_run_archive_worker() {
         return;
     }
+    #[cfg(not(target_os = "macos"))]
     if games::try_run_hydra_import_worker() {
         return;
     }
@@ -1090,6 +1097,7 @@ pub fn run() {
             if !cfg!(feature = "context-review") {
                 proc_guard::reap_orphans();
             }
+            #[cfg(not(target_os = "macos"))]
             games::initialize_download_preparation(app.handle());
             music::initialize(app.handle()).map_err(std::io::Error::other)?;
             #[cfg(windows)]
@@ -1860,8 +1868,11 @@ pub fn run() {
             torrent_engine::torrent_engine_set_upload,
             transcode::cast_ffmpeg_present,
             streams::streams_run_pipeline,
+            streams::streams_next_fallback,
             streams::streams_parse,
             streams::streams_core_version,
+            streams::debrid_check_cached_batch,
+            streams::debrid_check_all_cached,
             local_lib::argus_scan_folder,
             course_share::course_share_set,
             course_share::course_share_remove,

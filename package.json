@@ -20,6 +20,7 @@
     "check:capstan": "node scripts/capstan-stage.mjs --check",
     "tauri": "tauri",
     "tauri:build:linux-system": "tauri build --config src-tauri/tauri.linux-system.conf.json",
+    "build:mac": "tauri build --bundles app,dmg",
     "shipyard": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/build-shipyard.ps1",
     "release:beta": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/release-beta.ps1",
     "release:stable": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/release-beta.ps1 -Channel stable",
@@ -89,7 +90,7 @@
     "@vitejs/plugin-react": "^4.7.0",
     "cheerio": "^1.2.0",
     "jsdom": "^30.0.1",
-    "typescript": "~7.0.2",
+    "typescript": "~5.8.3",
     "vite": "^7.0.4",
     "vite-plugin-static-copy": "^2.0.0"
   },
