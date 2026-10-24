@@ -96,6 +96,75 @@ export function deleteStudyNote(id: string): void {
   commit(existing.filter((note) => note.id !== id));
 }
 
+export function importNotesFromJson(
+  rawText: string,
+): { success: boolean; count: number; error?: string } {
+  try {
+    const parsed = JSON.parse(rawText);
+    const candidateArray: any[] = Array.isArray(parsed)
+      ? parsed
+      : Array.isArray(parsed.notes)
+      ? parsed.notes
+      : [parsed];
+
+    const validNotes: StudyNote[] = [];
+    const now = Date.now();
+
+    for (let i = 0; i < candidateArray.length; i++) {
+      const item = candidateArray[i];
+      if (!item || typeof item !== "object") continue;
+
+      const markdown = String(item.markdown || item.text || item.content || item.front || "");
+      if (!markdown.trim() && !item.snapshotDataUrl) continue;
+
+      const note: StudyNote = {
+        id: String(item.id || `imported_note_${now}_${i}_${Math.random().toString(36).slice(2, 6)}`),
+        itemId: String(item.itemId || item.courseId || "external_resource"),
+        itemTitle: String(item.itemTitle || item.title || item.course || "Imported Study Deck"),
+        timestampSec: typeof item.timestampSec === "number" ? item.timestampSec : 0,
+        timestampLabel: String(item.timestampLabel || "00:00"),
+        markdown,
+        snapshotDataUrl: item.snapshotDataUrl || undefined,
+        createdAt: typeof item.createdAt === "number" ? item.createdAt : now,
+        occlusions: Array.isArray(item.occlusions) ? item.occlusions : undefined,
+        fsrs: item.fsrs && typeof item.fsrs === "object" ? item.fsrs : createInitialCard(now),
+        highYield: Boolean(item.highYield ?? true),
+        topic: item.topic ? String(item.topic) : undefined,
+      };
+
+      validNotes.push(note);
+    }
+
+    if (validNotes.length === 0) {
+      return { success: false, count: 0, error: "No valid study notes or flashcards found in JSON file." };
+    }
+
+    const existing = readNotes();
+    const existingIds = new Set(existing.map((n) => n.id));
+    const merged = [...existing];
+
+    for (const note of validNotes) {
+      if (existingIds.has(note.id)) {
+        // update existing
+        const idx = merged.findIndex((m) => m.id === note.id);
+        if (idx !== -1) merged[idx] = note;
+      } else {
+        merged.push(note);
+      }
+    }
+
+    commit(merged);
+    return { success: true, count: validNotes.length };
+  } catch (err: any) {
+    return { success: false, count: 0, error: err?.message || "Invalid JSON syntax." };
+  }
+}
+
+export function exportNotesAsJson(input?: string | StudyNote[]): string {
+  const notes = Array.isArray(input) ? input : getStudyNotes(input);
+  return JSON.stringify(notes, null, 2);
+}
+
 export function getDueStudyNotes(now = Date.now()): StudyNote[] {
   const all = readNotes();
   return all.filter((n) => isCardDue(n.fsrs, now));

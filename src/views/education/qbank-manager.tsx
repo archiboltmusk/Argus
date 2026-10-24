@@ -20,6 +20,7 @@ import {
   deletePack,
   addSingleQuestion,
 } from "@/lib/education/qbank-store";
+import { readEducationalFileText } from "@/lib/education/json-gz-importer";
 import { VERIFIED_COMMUNITY_DATASETS } from "@/lib/education/community-catalogs";
 import type { QBankPack, SubjectCategory } from "@/lib/education/qbank-types";
 
@@ -73,13 +74,12 @@ export function QBankManager({ onStartPackDrill, onClose }: QBankManagerProps) {
   const [rationale, setRationale] = useState("");
   const [bottomLine, setBottomLine] = useState("");
 
-  const handleFileUpload = (e: ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = async (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const content = event.target?.result as string;
+    try {
+      const content = await readEducationalFileText(file);
       const res = importQBankPack(content);
       if (res.success) {
         setImportStatus({
@@ -89,9 +89,10 @@ export function QBankManager({ onStartPackDrill, onClose }: QBankManagerProps) {
       } else {
         setImportStatus({ success: false, message: res.error || "Failed to import pack." });
       }
-      setTimeout(() => setImportStatus(null), 4000);
-    };
-    reader.readAsText(file);
+    } catch (err: any) {
+      setImportStatus({ success: false, message: err?.message || "Failed to process file." });
+    }
+    setTimeout(() => setImportStatus(null), 4000);
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
@@ -277,12 +278,12 @@ export function QBankManager({ onStartPackDrill, onClose }: QBankManagerProps) {
 
             {/* Local File Upload Bar */}
             <div className="flex items-center justify-between bg-canvas/30 p-3 rounded-xl border border-edge/60 text-xs">
-              <span className="text-ink-muted">Have a local file? Upload any JSON or JSONL file:</span>
+              <span className="text-ink-muted">Have a local file? Upload JSON, JSONL, or compressed (.json.gz):</span>
               <div>
                 <input
                   type="file"
                   ref={fileInputRef}
-                  accept=".json,.jsonl,.txt"
+                  accept=".json,.jsonl,.gz,.txt"
                   onChange={handleFileUpload}
                   className="hidden"
                 />
@@ -292,7 +293,7 @@ export function QBankManager({ onStartPackDrill, onClose }: QBankManagerProps) {
                   className="flex items-center gap-1.5 rounded-lg bg-raised hover:bg-edge px-3 py-1 text-xs font-medium text-ink transition"
                 >
                   <Upload size={12} />
-                  <span>Upload Local File</span>
+                  <span>Upload .json / .json.gz</span>
                 </button>
               </div>
             </div>

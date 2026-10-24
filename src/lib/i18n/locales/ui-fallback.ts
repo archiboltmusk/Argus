@@ -1,5 +1,12 @@
 // Newly introduced UI copy remains usable until each locale provides an override.
 const uiFallback: Record<string, string> = {
+  "Import .json / .json.gz": "Import .json / .json.gz",
+  "Import JSON": "Import JSON",
+  "Saved JSON!": "Saved JSON!",
+  "JSON": "JSON",
+  "Saved Anki!": "Saved Anki!",
+  "Anki": "Anki",
+  "Markdown": "Markdown",
   "Downloaded Anki Deck!": "Downloaded Anki Deck!",
   "Export Anki Deck": "Export Anki Deck",
   "Copy Markdown": "Copy Markdown",
