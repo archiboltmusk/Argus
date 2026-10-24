@@ -15,6 +15,24 @@ export type SpeedGrade = "fast" | "ok" | "slow";
 const SAMPLE_BYTES = 1_500_000;
 const TIMEOUT_MS = 8000;
 
+// Global memory cache for probed URLs so repeated views do not re-probe
+const probeCache = new Map<string, { result: SpeedProbeResult; timestamp: number }>();
+const PROBE_CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
+
+export function getCachedProbeSpeed(url: string): SpeedProbeResult | null {
+  const hit = probeCache.get(url);
+  if (!hit) return null;
+  if (Date.now() - hit.timestamp > PROBE_CACHE_TTL_MS) {
+    probeCache.delete(url);
+    return null;
+  }
+  return hit.result;
+}
+
+export function cacheProbeSpeed(url: string, result: SpeedProbeResult): void {
+  probeCache.set(url, { result, timestamp: Date.now() });
+}
+
 /** Download the first ~1.5 MB of a direct link and time it. Never touches the player. */
 export async function probeStreamSpeed(
   url: string,
@@ -60,12 +78,14 @@ export async function probeStreamSpeed(
     }
     const tEnd = now();
     const seconds = Math.max((tEnd - tHeaders) / 1000, 0.001);
-    return {
+    const result: SpeedProbeResult = {
       ok: true,
       latencyMs: Math.max(0, Math.round(tHeaders - t0)),
       mbps: Math.round(((bytes * 8) / seconds / 1_000_000) * 10) / 10,
       bytes,
     };
+    cacheProbeSpeed(url, result);
+    return result;
   } catch {
     if (opts.signal?.aborted) return { ok: false, reason: "aborted" };
     return { ok: false, reason: timedOut ? "timeout" : "unreachable" };
