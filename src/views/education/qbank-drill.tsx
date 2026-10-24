@@ -332,25 +332,27 @@ export function QBankRunner({
               <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-500 flex items-center gap-1">
                 <CheckCircle2 size={13} /> Why Option {String.fromCharCode(65 + activeQuestion.correctIndex)} is Correct
               </span>
-              <p className="text-[13px] text-ink leading-relaxed">
+              <div className="text-[13px] text-ink leading-relaxed whitespace-pre-line">
                 {activeQuestion.explanation.correctRationale}
-              </p>
+              </div>
             </div>
 
             {/* Distractor Breakdown */}
-            <div className="flex flex-col gap-2 pt-2 border-t border-edge/60">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-ink-subtle">
-                Distractor Breakdown (Why the other options fail):
-              </span>
-              <div className="flex flex-col gap-1.5">
-                {activeQuestion.explanation.distractorBreakdown.map((d, i) => (
-                  <div key={i} className="text-[12px] bg-surface/60 p-2 rounded-lg border border-edge/50">
-                    <span className="font-semibold text-rose-500">{d.option}: </span>
-                    <span className="text-ink-muted">{d.reason}</span>
-                  </div>
-                ))}
+            {activeQuestion.explanation.distractorBreakdown.length > 0 && (
+              <div className="flex flex-col gap-2 pt-2 border-t border-edge/60">
+                <span className="text-[11px] font-bold uppercase tracking-wider text-ink-subtle">
+                  Distractor Breakdown (Why the other options fail):
+                </span>
+                <div className="flex flex-col gap-1.5">
+                  {activeQuestion.explanation.distractorBreakdown.map((d, i) => (
+                    <div key={i} className="text-[12px] bg-surface/60 p-2.5 rounded-lg border border-edge/50">
+                      <span className="font-semibold text-rose-500">{d.option}: </span>
+                      <span className="text-ink-muted leading-relaxed">{d.reason}</span>
+                    </div>
+                  ))}
+                </div>
               </div>
-            </div>
+            )}
 
             {/* Bottom Line Rule */}
             <div className="flex items-center gap-2 rounded-lg bg-sky-500/10 border border-sky-500/20 p-2.5 text-xs text-sky-500 font-medium">

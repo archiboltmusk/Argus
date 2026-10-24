@@ -2,6 +2,7 @@ import { useSyncExternalStore } from "react";
 import type { ClinicalQuestion, QBankPack, QuestionDepthLevel, SubjectCategory } from "./qbank-types";
 import { CLINICAL_QBANK_STARTER } from "./qbank-data";
 import { classifyInicetQuestion } from "./inicet-classifier";
+import { cleanExplanationPayload } from "./explanation-cleaner";
 
 const PACKS_KEY = "argus.qbank.packs.v1";
 
@@ -163,8 +164,8 @@ export function sanitizePolyglotQuestion(raw: any, index: number, packId: string
     }
   }
 
-  // 4. Extract Explanation / Rationale
-  let correctRationale =
+  // 4. Extract Explanation / Rationale & Distractor Breakdown
+  let rawExplanation =
     raw.explanation?.correctRationale ||
     raw.explanation?.text ||
     raw.explanation ||
@@ -173,8 +174,8 @@ export function sanitizePolyglotQuestion(raw: any, index: number, packId: string
     raw.analysis ||
     "Diagnostic rationale confirmed by clinical presentation.";
 
-  if (typeof correctRationale !== "string") {
-    correctRationale = JSON.stringify(correctRationale);
+  if (typeof rawExplanation !== "string") {
+    rawExplanation = JSON.stringify(rawExplanation);
   }
 
   // 5. Extract Distractor Breakdown
@@ -187,6 +188,11 @@ export function sanitizePolyglotQuestion(raw: any, index: number, packId: string
       reason: String(reason),
     }));
   }
+
+  // Clean raw HTML artifacts, customMeta tags, and parse embedded distractor breakdown & references
+  const cleaned = cleanExplanationPayload(rawExplanation, distractorBreakdown);
+  const correctRationale = cleaned.correctRationale;
+  distractorBreakdown = cleaned.distractorBreakdown;
 
   // 6. Extract Trap & Bottom Line
   const examinerTrap =
@@ -201,7 +207,7 @@ export function sanitizePolyglotQuestion(raw: any, index: number, packId: string
     raw.bottomLine ||
     raw.takeaway ||
     raw.pearl ||
-    "Core high-yield principle for clinical recall.";
+    (cleaned.reference ? `Reference: ${cleaned.reference}` : "Core high-yield principle for clinical recall.");
 
   // 7. Extract Subject
   const validSubjects: SubjectCategory[] = [
