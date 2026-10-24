@@ -5,7 +5,7 @@ import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 import pkg from "./package.json" with { type: "json" };
 
-declare const process: { env: Record<string, string | undefined> };
+import process from "node:process";
 
 function silenceMediapipeSourcemap() {
   return {
