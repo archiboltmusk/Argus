@@ -94,6 +94,7 @@ unsafe fn make_video_window(
     // Ensures auxiliary/child window never appears as a separate dock icon or window-cycle target.
     let transient_behavior: usize = (1 << 3) | (1 << 6);
     let _: () = msg_send![&*window, setCollectionBehavior: transient_behavior];
+    let _: () = msg_send![&*window, setExcludedFromWindowsMenu: true];
     Ok(window)
 }
 
