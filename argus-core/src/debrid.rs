@@ -194,7 +194,10 @@ pub fn parse_alldebrid_response(
     if let Some(arr) = magnets {
         for item in arr {
             let hash = item.get("hash").and_then(|h| h.as_str());
-            let instant = item.get("instant").and_then(|i| i.as_bool()).unwrap_or(false);
+            let instant = item
+                .get("instant")
+                .and_then(|i| i.as_bool())
+                .unwrap_or(false);
             if let Some(h) = hash {
                 let lh = h.to_ascii_lowercase();
                 if instant && requested_set.contains(&lh) {
@@ -288,8 +291,9 @@ mod net {
                     .header("Accept", "application/json"))
             }
             DebridProvider::TorBox => {
-                let mut url = reqwest::Url::parse("https://api.torbox.app/v1/api/torrents/checkcached")
-                    .map_err(|e| e.to_string())?;
+                let mut url =
+                    reqwest::Url::parse("https://api.torbox.app/v1/api/torrents/checkcached")
+                        .map_err(|e| e.to_string())?;
                 {
                     let mut q = url.query_pairs_mut();
                     q.append_pair("format", "object");
@@ -305,7 +309,8 @@ mod net {
             }
             DebridProvider::AllDebrid => {
                 let url = "https://api.alldebrid.com/v4/magnet/instant?agent=Argus";
-                let params: Vec<(&str, &str)> = batch.iter().map(|h| ("magnets[]", h.as_str())).collect();
+                let params: Vec<(&str, &str)> =
+                    batch.iter().map(|h| ("magnets[]", h.as_str())).collect();
                 Ok(client
                     .post(url)
                     .header("Authorization", format!("Bearer {api_key}"))
@@ -349,7 +354,10 @@ mod net {
         }
 
         let req = build_batch_request(client, provider, api_key, batch)?;
-        let resp = req.send().await.map_err(|e| format!("request error: {e}"))?;
+        let resp = req
+            .send()
+            .await
+            .map_err(|e| format!("request error: {e}"))?;
 
         if !resp.status().is_success() {
             return Err(format!("status {}: {}", resp.status(), provider.slug()));
@@ -488,15 +496,42 @@ mod tests {
 
     #[test]
     fn test_provider_slugs() {
-        assert_eq!(DebridProvider::from_slug("rd"), Some(DebridProvider::RealDebrid));
-        assert_eq!(DebridProvider::from_slug("realdebrid"), Some(DebridProvider::RealDebrid));
-        assert_eq!(DebridProvider::from_slug("real-debrid"), Some(DebridProvider::RealDebrid));
-        assert_eq!(DebridProvider::from_slug("tb"), Some(DebridProvider::TorBox));
-        assert_eq!(DebridProvider::from_slug("torbox"), Some(DebridProvider::TorBox));
-        assert_eq!(DebridProvider::from_slug("ad"), Some(DebridProvider::AllDebrid));
-        assert_eq!(DebridProvider::from_slug("alldebrid"), Some(DebridProvider::AllDebrid));
-        assert_eq!(DebridProvider::from_slug("pm"), Some(DebridProvider::Premiumize));
-        assert_eq!(DebridProvider::from_slug("dl"), Some(DebridProvider::DebridLink));
+        assert_eq!(
+            DebridProvider::from_slug("rd"),
+            Some(DebridProvider::RealDebrid)
+        );
+        assert_eq!(
+            DebridProvider::from_slug("realdebrid"),
+            Some(DebridProvider::RealDebrid)
+        );
+        assert_eq!(
+            DebridProvider::from_slug("real-debrid"),
+            Some(DebridProvider::RealDebrid)
+        );
+        assert_eq!(
+            DebridProvider::from_slug("tb"),
+            Some(DebridProvider::TorBox)
+        );
+        assert_eq!(
+            DebridProvider::from_slug("torbox"),
+            Some(DebridProvider::TorBox)
+        );
+        assert_eq!(
+            DebridProvider::from_slug("ad"),
+            Some(DebridProvider::AllDebrid)
+        );
+        assert_eq!(
+            DebridProvider::from_slug("alldebrid"),
+            Some(DebridProvider::AllDebrid)
+        );
+        assert_eq!(
+            DebridProvider::from_slug("pm"),
+            Some(DebridProvider::Premiumize)
+        );
+        assert_eq!(
+            DebridProvider::from_slug("dl"),
+            Some(DebridProvider::DebridLink)
+        );
         assert_eq!(DebridProvider::from_slug("unknown"), None);
     }
 

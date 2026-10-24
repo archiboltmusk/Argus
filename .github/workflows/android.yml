@@ -68,7 +68,7 @@ jobs:
       # Cleartext to the local torrent engine and the Android TV launcher entry.
       - run: node scripts/android-patch-manifest.mjs
       - name: Build release APK
-        run: pnpm tauri android build --apk --target aarch64 --ci
+        run: pnpm tauri android build --apk --target aarch64 --ci --ignore-version-mismatches
       # Release APKs come out unsigned and cannot be installed. Sign with the
       # ANDROID_KEYSTORE_* secrets when set so updates over an older install
       # work; otherwise fall back to a throwaway key (fresh installs only).

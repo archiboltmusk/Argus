@@ -13,7 +13,12 @@ test("profile-background storage reads legacy fractions and clamps percentages",
     transaction: () => ({
       objectStore: () => ({
         get: (key) => {
-          const request = { result: key === "bg_picker" ? "test-image" : dim };
+          const result = (key === "bg_picker" || key === "bg_picker_stremio")
+            ? "test-image"
+            : (key === "bg_picker_dim" || key === "bg_picker_dim_stremio")
+              ? dim
+              : null;
+          const request = { result };
           queueMicrotask(() => request.onsuccess());
           return request;
         },

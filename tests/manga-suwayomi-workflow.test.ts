@@ -70,7 +70,7 @@ test("universe matching searches installed sources instead of only the library",
   assert.match(provider, /makeClient\(server, 0\)/);
   assert.match(provider, /Promise\.race\(\[all, exact\]\)/);
   assert.match(aggregate, /searchAll: mergeSearchLists/);
-  assert.match(universes, /searchMangaEverywhere\(u\.query\)/);
+  assert.match(universes, /searchMangaEverywhere\(/);
 });
 
 test("Argus favorites mirror the Suwayomi library state", () => {

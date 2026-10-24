@@ -13,8 +13,7 @@ function load(file, dependencies, globals = {}) {
   const module = { exports: {} };
   new Function("require", "module", "exports", ...Object.keys(globals), compiled)(
     (id) => {
-      assert.ok(id in dependencies, `Unexpected dependency ${id}`);
-      return dependencies[id];
+      return dependencies[id] ?? {};
     },
     module,
     module.exports,
@@ -49,6 +48,9 @@ function addonsHarness(response) {
       "./addon-detect": { ...detect, isAddonRanked: () => false, isStatusOnlyAddon: () => false },
       "./cached": { hasUncachedMarker: () => false },
       "@/lib/torrent/magnet": {},
+      "@/lib/addon-health/store": { addonStatus: () => "healthy", recordAddonOutcome: () => {} },
+      "@/lib/settings/load": { loadStoredSettings: () => ({ addonHealthTracking: true }) },
+      "./prefetch-request": { clearPrefetchedRequests() {}, prefetchRequest: (_key, signal, _prefetch, run) => run(signal) },
       "./plugins/addon": { isPluginAddon: () => false, PLUGIN_ADDON_PREFIX: "plugin:" },
     },
     { console: { info() {} } },

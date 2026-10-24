@@ -151,6 +151,7 @@ export type MpvOptions = {
   renderer?: "gpu-next" | "gpu";
   forceYuv420p?: boolean;
   extraOptions?: string;
+  cacheDir?: string;
   fullDownload?: boolean;
   separateDisplay?: MonitorInfo | null;
   separateCoverTaskbar?: boolean;
@@ -170,6 +171,7 @@ function mpvReuseConfigKey(options: MpvOptions | undefined, hdrToSdr: boolean): 
     renderer: options?.renderer ?? "gpu-next",
     forceYuv420p: options?.forceYuv420p === true,
     extraOptions: options?.extraOptions ?? "",
+    cacheDir: options?.cacheDir?.trim() || "",
     fullDownload: options?.fullDownload === true,
   });
 }
@@ -1278,6 +1280,7 @@ export function createMpvBridge(mpvOptions?: MpvOptions): PlayerBridge {
             renderer: opts.renderer ?? "gpu-next",
             forceYuv420p: opts.forceYuv420p === true,
             extraOptions: opts.extraOptions || undefined,
+            cacheDir: opts.cacheDir?.trim() || null,
             separateDisplay: opts.embed === true ? null : (opts.separateDisplay ?? null),
             separateCoverTaskbar: opts.separateCoverTaskbar ?? true,
           },

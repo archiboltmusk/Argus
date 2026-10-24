@@ -139,6 +139,7 @@ function scanHarness(h: ReturnType<typeof harness>, files: LocalEntry[]) {
     },
     "@/lib/local-library": h.library,
     "@/lib/local-library/removals": h.removals,
+    "@/lib/local-library/courses": { assignLessons: () => new Map() },
     "@/lib/local-library/sidecars": { clearSidecarCache() {}, countNfoFor: async () => 0 },
     "@/lib/settings": { useSettings: () => ({ settings: {}, update() {} }) },
     "@/lib/i18n": { useT: () => (text: string) => text },

@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
 import ts from "typescript";
-import { sanitizeSeekStep } from "../src/lib/seek-step.ts";
+import { sanitizeHoldSpeedRate, sanitizeSeekStep } from "../src/lib/seek-step.ts";
 import * as language from "../src/lib/subtitles/language.ts";
 import { sanitizeScreensaverMedia } from "../src/lib/screensaver/media.ts";
 import * as controllerCursor from "../src/lib/gamepad/cursor.ts";
@@ -24,7 +24,7 @@ function fixture() {
     },
     "@/lib/subtitles/language": language,
     "@/lib/screensaver/media": { sanitizeScreensaverMedia },
-    "@/lib/seek-step": { sanitizeSeekStep },
+    "@/lib/seek-step": { sanitizeSeekStep, sanitizeHoldSpeedRate },
     "@/lib/ai-models": { migrateModelId: identity, providerTabFor: () => "openrouter" },
     "@/lib/local-time": {
       DEFAULT_FULLSCREEN_CLOCK_SIZE_PX: 18,
@@ -48,6 +48,7 @@ function fixture() {
         return adoptionWorks;
       },
     },
+    "@/lib/library-groups": { normalizeLibraryGroups: (v: unknown) => (Array.isArray(v) ? v : []) },
   };
   function load(path: string): any {
     const compiled = ts.transpileModule(readFileSync(new URL(path, import.meta.url), "utf8"), {

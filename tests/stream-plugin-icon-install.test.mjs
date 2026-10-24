@@ -52,6 +52,13 @@ function installer({ fetched, prior, fails = false, disabled = false } = {}) {
     "./runtime": { disposeStreamPlugin() {} },
     "./source": { workerPluginFor: (p) => p },
     "./store": { streamPluginById: () => prior, saveStreamPlugin: async (p) => saved.push(p) },
+    "@/lib/platform": { isAndroid: () => true, scriptPluginsSupported: () => true },
+    "./hash": { sha256Bytes: async () => new Uint8Array(32), sha256Hex: async () => "dummyhash" },
+    "./trust": {
+      assessTrust: async () => ({ trusted: true }),
+      confirmUntrustedPlugin: async () => true,
+      rememberTrustedKey: async () => {},
+    },
     "./types": { PluginError: class extends Error {} },
   };
   const module = { exports: {} };

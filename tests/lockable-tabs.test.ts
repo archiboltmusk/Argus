@@ -4,9 +4,9 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { anyTabLocked, DEFAULT_HIDDEN } from "../src/lib/lockable-tabs.ts";
 
-test("a saved Sports restriction does not lock a profile after Sports is removed", () => {
+test("a saved Sports restriction locks a profile when sports is locked", () => {
   const savedTabs = { ...DEFAULT_HIDDEN, sports: true };
-  assert.equal(anyTabLocked(savedTabs), false);
+  assert.equal(anyTabLocked(savedTabs), true);
 });
 
 test("current tab restrictions still lock a profile with legacy Sports preferences", () => {

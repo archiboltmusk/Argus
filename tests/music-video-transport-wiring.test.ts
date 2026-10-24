@@ -39,7 +39,7 @@ function loadPlayer() {
         invoke: async (command: string, args: any) => {
           calls.push({ command, args });
           if (command === "music_db_init")
-            return { likedIds: [], likedTracks: [], recents: [], queue: [one, two] };
+            return { likedIds: [], likedTracks: [], recents: [one], queue: [one, two] };
           if (command === "music_source_candidates") return [];
           return undefined;
         },
@@ -70,7 +70,19 @@ function loadPlayer() {
         queueInsertIndex: (q: any[], i: number) => (i < 0 ? 0 : i + 1),
       };
     if (name === "./preferences")
-      return { readMusicPreference: () => null, writeMusicPreference: () => {} };
+      return {
+        readMusicPreference: () => null,
+        readStoredMusicPreference: () => null,
+        writeMusicPreference: () => {},
+      };
+    if (name === "./transport")
+      return {
+        musicAdvance: (queue: any[], index: number) =>
+          index >= 0 && index < queue.length - 1 ? queue[index + 1] : null,
+        musicPrevious: (queue: any[], index: number) => (index > 0 ? queue[index - 1] : null),
+        musicWarmTargets: () => [],
+        resetMusicOrder: () => {},
+      };
     if (name === "./audio-settings")
       return {
         clampMusicVolume: (value: number) => value,
@@ -95,9 +107,13 @@ function loadPlayer() {
         broadcastDeckState: () => {},
         sendDeckAdopted: () => {},
         serveDeckCommands: () => () => {},
+        isDeckWindow: () => false,
       };
     if (name === "./deck-primary")
-      return { createDeckAdoption: () => ({ deck: () => 0, adopt: () => false }) };
+      return {
+        createDeckAdoption: () => ({ deck: () => 0, adopt: () => false }),
+        nativePlaybackAdoption: () => null,
+      };
     if (name === "./casting")
       return {
         getMusicSpeakerState: () => ({ active: false, device: null, positionSec: 0 }),
@@ -109,7 +125,53 @@ function loadPlayer() {
         stopMusicSpeaker: async () => {},
         subscribeMusicSpeakerState: () => () => {},
       };
-    throw Error(name);
+    return {
+      backingTrackVersion: () => null,
+      compatibleVocalVersion: () => true,
+      shouldResolvePreferredSource: () => false,
+      cancelMusicQueueAutomation: () => false,
+      ownMusicQueueAutomation: () => Symbol("music queue"),
+      ownsMusicQueueAutomation: () => false,
+      musicQueueAutomationStarted: () => false,
+      markMusicQueueAutomationStarted: () => {},
+      releaseMusicQueueAutomation: () => {},
+      activeProfileId: () => "default",
+      activeProfileIsPrimary: () => true,
+      hydrateListeningAffinity: async () => {},
+      observeMusicListening: () => {},
+      hydrateMusicContextTracks: async () => {},
+      hydrateMusicRecentContexts: async () => {},
+      hydrateMusicDestinations: async () => {},
+      hydratePinnedMusicPlaylists: async () => {},
+      hydrateArtistBlockStore: async () => {},
+      hydrateLikedArtistStore: async () => {},
+      nativePlaybackAdoption: () => null,
+      isDeckWindow: () => false,
+      beginMusicQueue: () => {},
+      readStoredMusicPreference: () => null,
+      filterBlockedTracks: (t: any) => t,
+      filterMusicSourceCandidates: (c: any) => c,
+      musicPlaybackSourceAllowed: () => true,
+      subscribeMusicSourceConsent: () => () => {},
+      hydrateMusicSourceConsent: async () => {},
+      peekPinnedSource: () => null,
+      loadPinnedSources: async () => {},
+      isWindowsDesktop: () => false,
+      engineSnapshot: async () => ({ live: false, paused: true, deck: 0 }),
+      rankByExplicitness: (candidates: any) => candidates,
+      explicitnessOf: () => 0,
+      adoptRequestedIdentity: (candidate: any, original: any) => ({
+        ...candidate,
+        collectionOrigin: { id: original.id, connectorId: original.connectorId },
+      }),
+      pinSourceFor: () => {},
+      unpinSourceFor: () => {},
+      readMusicPreference: () => null,
+      writeMusicPreference: () => {},
+      clampMusicVolume: (v: any) => v,
+      initializeMusicAudioSettings: async () => {},
+      subscribeMusicAudioSettings: () => () => {},
+    };
   };
   const module = { exports: {} as any };
   new Function("require", "module", "exports", source)(resolve, module, module.exports);

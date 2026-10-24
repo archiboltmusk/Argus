@@ -77,16 +77,18 @@ function persistSoon(): Promise<void> {
 
 function schedulePersist(): void {
   if (persistTimer != null) return;
-  persistTimer = window.setTimeout(() => {
+  const setTimer = typeof window !== "undefined" ? window.setTimeout : setTimeout;
+  persistTimer = setTimer(() => {
     persistTimer = null;
     void persistSoon();
-  }, 200);
+  }, 200) as unknown as number;
 }
 
 /** Flushes any pending secret writes immediately, for callers about to leave the page. */
 export async function flushSecrets(): Promise<void> {
   if (persistTimer != null) {
-    window.clearTimeout(persistTimer);
+    const clear = typeof window !== "undefined" ? window.clearTimeout : clearTimeout;
+    clear(persistTimer);
     persistTimer = null;
   }
   await persistSoon();
@@ -137,7 +139,9 @@ export async function loadSecrets(): Promise<void> {
   // already removed the localStorage copies they would have fallen back to, so every
   // connected account read as signed out until something re-read it. Tell them now.
   try {
-    window.dispatchEvent(new Event(SECRETS_READY));
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new Event(SECRETS_READY));
+    }
   } catch {
     void 0;
   }
@@ -148,8 +152,11 @@ export const SECRETS_READY = "argus:secrets-ready";
 
 export function subscribeSecretsReady(fn: () => void): () => void {
   if (loaded && rustAvailable) fn();
-  window.addEventListener(SECRETS_READY, fn);
-  return () => window.removeEventListener(SECRETS_READY, fn);
+  if (typeof window !== "undefined") {
+    window.addEventListener(SECRETS_READY, fn);
+    return () => window.removeEventListener(SECRETS_READY, fn);
+  }
+  return () => {};
 }
 
 export function getSecret(key: string): string | null {

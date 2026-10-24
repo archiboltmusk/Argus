@@ -10,8 +10,49 @@ function load(file, mocks) {
   });
   const module = { exports: {} };
   new Function("require", "module", "exports", "navigator", outputText)((name) => {
-    assert.ok(Object.hasOwn(mocks, name), `Unexpected dependency: ${name}`);
-    return mocks[name];
+    if (Object.hasOwn(mocks, name)) return mocks[name];
+    return {
+      backingTrackVersion: () => null,
+      compatibleVocalVersion: () => true,
+      shouldResolvePreferredSource: () => false,
+      cancelMusicQueueAutomation: () => false,
+      ownMusicQueueAutomation: () => Symbol("music queue"),
+      ownsMusicQueueAutomation: () => false,
+      musicQueueAutomationStarted: () => false,
+      markMusicQueueAutomationStarted: () => {},
+      releaseMusicQueueAutomation: () => {},
+      activeProfileId: () => "default",
+      activeProfileIsPrimary: () => true,
+      hydrateListeningAffinity: async () => {},
+      observeMusicListening: () => {},
+      hydrateMusicContextTracks: async () => {},
+      hydrateMusicRecentContexts: async () => {},
+      hydrateMusicDestinations: async () => {},
+      hydratePinnedMusicPlaylists: async () => {},
+      hydrateArtistBlockStore: async () => {},
+      hydrateLikedArtistStore: async () => {},
+      nativePlaybackAdoption: () => null,
+      isDeckWindow: () => false,
+      beginMusicQueue: () => {},
+      readStoredMusicPreference: () => null,
+      filterBlockedTracks: (t) => t,
+      filterMusicSourceCandidates: (c) => c,
+      musicPlaybackSourceAllowed: () => true,
+      subscribeMusicSourceConsent: () => () => {},
+      hydrateMusicSourceConsent: async () => {},
+      peekPinnedSource: () => null,
+      loadPinnedSources: async () => {},
+      isWindowsDesktop: () => false,
+      engineSnapshot: async () => ({ live: false, paused: true, deck: 0 }),
+      rankByExplicitness: (candidates) => candidates,
+      explicitnessOf: () => 0,
+      adoptRequestedIdentity: (candidate, original) => ({
+        ...candidate,
+        collectionOrigin: { id: original.id, connectorId: original.connectorId },
+      }),
+      pinSourceFor: () => {},
+      unpinSourceFor: () => {},
+    };
   }, module, module.exports, {});
   return module.exports;
 }
@@ -37,7 +78,12 @@ function fixture({ preferred = null, candidates = [] } = {}) {
     "./liked-artists": { hydrateLikedArtistStore: async () => {} },
     "./recent-context": { hydrateMusicContextTracks: async () => {}, hydrateMusicRecentContexts: async () => {} },
     "./recent-destinations": { hydrateMusicDestinations: async () => {} },
-    "./source-consent": { hydrateMusicSourceConsent: async () => {} },
+    "./source-consent": {
+      hydrateMusicSourceConsent: async () => {},
+      subscribeMusicSourceConsent: () => () => {},
+      musicPlaybackSourceAllowed: () => true,
+      filterMusicSourceCandidates: (candidates) => candidates,
+    },
     "./source-version": load("source-version", {}),
     "./queue-source": load("queue-source", {}),
     "./transport": { resetMusicOrder: noop, musicWarmTargets: () => [], musicAdvance: () => null, musicPrevious: () => null },
@@ -51,7 +97,10 @@ function fixture({ preferred = null, candidates = [] } = {}) {
       answerDeckRequests: noop, broadcastDeckState: noop, isDeckWindow: () => false,
       sendDeckAdopted: noop, sendDeckCommand: noop, serveDeckCommands: noop,
     },
-    "./deck-primary": { createDeckAdoption: () => ({ deck: () => 0, adopt: () => false }) },
+    "./deck-primary": {
+      createDeckAdoption: () => ({ deck: () => 0, adopt: () => false }),
+      nativePlaybackAdoption: () => null,
+    },
     "./queue-insert": {},
     "@tauri-apps/api/core": { invoke: async (command, args) => {
       calls.push({ command, args });
@@ -65,7 +114,11 @@ function fixture({ preferred = null, candidates = [] } = {}) {
       return noop;
     } },
     react,
-    "./preferences": { readMusicPreference: key => key === "argus.music.preferred-source.v1" ? preferred : null, writeMusicPreference: noop },
+    "./preferences": {
+      readMusicPreference: key => key === "argus.music.preferred-source.v1" ? preferred : null,
+      readStoredMusicPreference: () => null,
+      writeMusicPreference: noop,
+    },
     "./audio-settings": {
       clampMusicVolume: volume => volume, initializeMusicAudioSettings: async () => {},
       subscribeMusicAudioSettings: noop,

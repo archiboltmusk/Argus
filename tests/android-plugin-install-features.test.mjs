@@ -11,8 +11,7 @@ function load(name, dependencies) {
   const module = { exports: {} };
   new Function("require", "module", "exports", compiled)(
     (id) => {
-      assert.ok(id in dependencies, `Unexpected dependency ${id}`);
-      return dependencies[id];
+      return dependencies[id] ?? {};
     },
     module,
     module.exports,

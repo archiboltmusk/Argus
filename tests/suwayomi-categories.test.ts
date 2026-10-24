@@ -50,14 +50,19 @@ function setup(mode: "rest" | "graphql", options: { failCategories?: boolean; fa
   const model = load("sources/suwayomi/model", {
     "@/lib/safe-fetch": {},
     "@/lib/manga/types": { mangaThrottle: () => (fn: () => unknown) => fn() },
+    "@/lib/manga/model": { isAdultManga: () => false, shouldHideAdultManga: () => false },
     "./base-url": { normalizeSuwayomiBase: (base: string) => base },
     "./auth-registry": { registerSuwayomiAuth: () => {}, suwayomiAuthFor: () => undefined },
   });
   model.makeClient = () => client;
   const rest = load("sources/suwayomi/rest", { "./model": model });
-  const graphql = load("sources/suwayomi/graphql", { "./model": model });
+  const graphql = load("sources/suwayomi/graphql", {
+    "./model": model,
+    "./server-message": { cleanServerMessage: (s: string) => s },
+  });
   const transport = load("sources/suwayomi/transport", {
     "./model": model, "./rest": rest, "./graphql": graphql,
+    "@/lib/manga/model": { isAdultManga: () => false, shouldHideAdultManga: () => false },
     "./auth-registry": { registerSuwayomiSourceBase: () => {} },
   });
   const provider = load("sources/suwayomi/provider", {
@@ -113,6 +118,7 @@ test("aggregate categories remain owned by their server, including duplicate cat
   const unrelated = { id: "unrelated", tags: async () => [], popular: async () => { foreignCalls++; return []; } };
   const { aggregateProvider, withProviderTag } = load("sources/aggregate", {
     "@/lib/manga/sources": { aggregateSubProviders: () => [first, second, unrelated] },
+    "./mangadex": { mangadexProvider: { id: "mangadex" } },
   });
   const tags = await aggregateProvider.tags();
   assert.ok(tags.some((tag: any) => tag.id === "first::category:0"));

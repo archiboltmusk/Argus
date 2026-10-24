@@ -111,11 +111,11 @@ export function useContinueWatching(excludeId?: string, limit = 12): CwCard[] {
     setExternalCwSources({
       trakt: cwSources.trakt,
       simkl: cwSources.simkl,
-      publicmetadb: cwSources.publicmetadb,
+      ...(cwSources.publicmetadb !== undefined ? { publicmetadb: cwSources.publicmetadb } : {}),
     });
   }, [cwSources.trakt, cwSources.simkl, cwSources.publicmetadb]);
   const externalCw = useExternalCw(
-    !hideSharedCw && (cwSources.trakt || cwSources.simkl || cwSources.publicmetadb),
+    !hideSharedCw && Boolean(cwSources.trakt || cwSources.simkl || cwSources.publicmetadb),
   );
   const [items, setItems] = useState<LibraryItem[]>([]);
   const [localVersion, setLocalVersion] = useState(0);

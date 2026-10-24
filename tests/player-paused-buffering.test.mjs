@@ -68,7 +68,7 @@ function html5SnapshotHarness() {
     const readAudioTracks = () => [], readCustomSubtitleTracks = () => [];
     const markPlaybackTrace = () => {}, finishPlaybackTrace = () => {}, emit = () => {};
     const pendingVolume = 1, subDelaySec = 0, mapErrorCode = code => code;
-    let activeTraceId = null;
+    let activeTraceId = null, hlsFatal = null;
     return (${refresh});
   `,
   )(video, snap);

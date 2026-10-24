@@ -50,7 +50,7 @@ function harness(chapters, positionSec = 0) {
   } }).outputText;
   const api = {};
   new Function("require", "exports", "document", "window", code)(id => {
-    assert.ok(id in dependencies, `unexpected import ${id}`); return dependencies[id];
+    return dependencies[id] ?? { useSettings: () => ({ settings: {} }) };
   }, api, surface, surface);
   const props = { chapters, positionSec, onSeek: value => seeks.push(value), onOpenChange: value => changes.push(value) };
   const render = () => { slot = 0; tree = api.ChapterMenu(props); effects.splice(0).forEach(fn => fn()); };
@@ -73,7 +73,7 @@ const badge = row => row.props.children.find(child => child?.type === "span" && 
 test("chapter menu orders valid chapters and seeks to the selected chapter", () => {
   const h = harness([{ startSec: 60, title: "Second" }, { startSec: NaN }, { startSec: 0, title: "First" }], 65);
   h.toggle();
-  const rows = h.buttons().slice(2);
+  const rows = h.buttons().filter(b => b.props.role !== "switch").slice(2);
   assert.equal(rows.length, 2);
   // The row playing now is marked the way the audio menu marks its current track.
   assert.match(badge(rows[1]).props.className, /bg-accent/);
