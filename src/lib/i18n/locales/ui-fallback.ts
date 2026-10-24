@@ -1,6 +1,9 @@
 // Newly introduced UI copy remains usable until each locale provides an override.
 const uiFallback: Record<string, string> = {
   "Study Mode Note": "Study Mode Note",
+  "Ambient edge glow (Ambilight)": "Ambient edge glow (Ambilight)",
+  "Casts a soft, dynamic ambient backlight behind the video player reflecting the colors of the media. Turn off for a pure pitch-black backdrop.":
+    "Casts a soft, dynamic ambient backlight behind the video player reflecting the colors of the media. Turn off for a pure pitch-black backdrop.",
   "Captured frame": "Captured frame",
   "Capturing frame…": "Capturing frame…",
   "Notes & Key Takeaways (Markdown supported)": "Notes & Key Takeaways (Markdown supported)",
