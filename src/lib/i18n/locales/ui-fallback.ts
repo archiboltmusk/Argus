@@ -1,5 +1,15 @@
 // Newly introduced UI copy remains usable until each locale provides an override.
 const uiFallback: Record<string, string> = {
+  "chrome.safetyNetLabel": "chrome.safetyNetLabel",
+  "chrome.safetyNetHeading": "chrome.safetyNetHeading",
+  "Better stream available": "Better stream available",
+  "Higher quality detected": "Higher quality detected",
+  "Higher quality found": "Higher quality found",
+  "Better resolution or audio detected": "Better resolution or audio detected",
+  "Upgrade stream": "Upgrade stream",
+  "Keep current": "Keep current",
+  "Suggest higher quality streams when found": "Suggest higher quality streams when found",
+  "If slower addons or debrid sources finish resolving a better quality release (4K UHD, HDR, Dolby Atmos, or Remux) while watching, suggest switching with one click.": "If slower addons or debrid sources finish resolving a better quality release (4K UHD, HDR, Dolby Atmos, or Remux) while watching, suggest switching with one click.",
   "Feeds": "Feeds",
   "Share LAN": "Share LAN",
   "Configure in Streaming Settings": "Configure in Streaming Settings",

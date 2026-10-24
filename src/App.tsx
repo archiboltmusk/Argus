@@ -78,6 +78,7 @@ import { CustomCodeMount } from "@/components/custom-code-mount";
 import { MemoryHud } from "@/components/memory-hud";
 import { Profiled } from "@/components/profiled";
 import { OfflineBanner } from "@/chrome/offline-banner";
+import { CustomLayoutSafetyNet } from "@/chrome/custom-layout-safety-net";
 
 const MobileShell = lazy(() =>
   import("@/views/mobile/mobile-shell").then((m) => ({ default: m.MobileShell })),
@@ -2344,6 +2345,9 @@ function Shell({ onReady }: { onReady?: () => void }) {
               <div aria-hidden className="argus-chrome-proxy fixed end-3 top-3 z-[40]">
                 <TogetherButton />
               </div>
+            )}
+            {!settingsTop && !playerActive && !pickerTop && layout === "custom" && (
+              <CustomLayoutSafetyNet />
             )}
             {!immersive && !playerActive && !pickerTop && !bigPicture && layout === "custom" && (
               <div className="argus-bp-proxy">

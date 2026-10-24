@@ -205,6 +205,8 @@ const en: Record<string, string> = {
   "chrome.lockedShort": "{label} · locked",
   "chrome.argusHome": "Argus home",
   "chrome.sectionLibrary": "Library",
+  "chrome.safetyNetHeading": "Navigation",
+  "chrome.safetyNetLabel": "Menu",
 
   "profile.whoWatching": "Who's watching",
   "profile.editThis": "Edit this profile",
