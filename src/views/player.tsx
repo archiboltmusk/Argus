@@ -117,6 +117,7 @@ import { WebErrorCard } from "./player/web-error-card";
 import { EndScreen } from "./player/end-screen";
 import { useEndScreen } from "./player/hooks/use-end-screen";
 import { LeaveConfirmModal } from "@/components/player/leave-confirm-modal";
+import { StudyNotesModal } from "./player/study-notes-modal";
 import { AmbientEdgeGlow } from "@/components/player/ambient-edge-glow";
 import { HdrStageBridge } from "./player/hdr-stage-bridge";
 import { setSkipSegmentsView } from "@/lib/skip-intro/segment-store";
@@ -517,6 +518,7 @@ function NativePlayerView({ src }: { src: PlayerSrc }) {
   );
   const cast = usePlayerCast({ src: castSource, debrids, snapRef, bridgeRef, settings });
   const returnTargetRef = useRef(activeMediaSrc);
+  const [studyNotesOpen, setStudyNotesOpen] = useState(false);
   returnTargetRef.current = activeMediaSrc;
   const returnToPlayerRef = useRef<(options?: PlayerReturnOptions) => Promise<void>>(
     async () => {},
@@ -1168,6 +1170,10 @@ function NativePlayerView({ src }: { src: PlayerSrc }) {
     onRestartServer: restartStreamServer,
     gif,
     clip,
+    onOpenStudyNotes: () => {
+      bridgeRef.current?.pause();
+      setStudyNotesOpen(true);
+    },
     videoFill,
     onVolumeFeedback: showVolumeFeedback,
   });
@@ -1887,6 +1893,13 @@ function NativePlayerView({ src }: { src: PlayerSrc }) {
         />
       )}
       {!tenFoot && <LeaveConfirmModal />}
+      <StudyNotesModal
+        open={studyNotesOpen}
+        onClose={() => setStudyNotesOpen(false)}
+        title={src.title ?? src.meta.name}
+        sourceId={src.meta.id}
+        onResumePlayback={() => bridgeRef.current?.play()}
+      />
       <HdrStageBridge
         active={hdrStageRequested}
         payload={{
