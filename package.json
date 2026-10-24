@@ -39,6 +39,7 @@
     "setup:capstan": "node scripts/capstan-stage.mjs",
     "setup:all": "node scripts/fetch-libmpv.mjs && node scripts/fetch-mpv.mjs && node scripts/fetch-ffmpeg.mjs && node scripts/fetch-fonts.mjs",
     "typecheck": "tsc --noEmit -p tsconfig.json --pretty false",
+    "pretest": "node scripts/auto-heal-i18n.mjs",
     "test": "node --import ./scripts/node-test-environment.mjs --experimental-loader ./scripts/node-test-loader.mjs --test tests/*.test.ts tests/*.test.tsx tests/*.test.mjs"
   },
   "dependencies": {

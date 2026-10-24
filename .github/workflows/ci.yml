@@ -88,6 +88,7 @@ jobs:
           node-version: 24
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      - run: node scripts/auto-heal-i18n.mjs
       - run: pnpm run typecheck
       - run: pnpm test
       # PRs already typecheck; the bundler build runs once the change lands.
