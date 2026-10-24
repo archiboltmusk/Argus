@@ -11,6 +11,7 @@ import {
   Globe,
   Link2,
   FolderDown,
+  Zap,
 } from "lucide-react";
 import {
   useQBankPacks,
@@ -25,7 +26,7 @@ import { VERIFIED_COMMUNITY_DATASETS } from "@/lib/education/community-catalogs"
 import type { QBankPack, SubjectCategory } from "@/lib/education/qbank-types";
 
 export type QBankManagerProps = {
-  onStartPackDrill?: (pack: QBankPack) => void;
+  onStartPackDrill?: (pack: QBankPack, filterLevel?: "all" | "high-yield") => void;
   onClose: () => void;
 };
 
@@ -337,18 +338,30 @@ export function QBankManager({ onStartPackDrill, onClose }: QBankManagerProps) {
 
                       <div className="flex items-center gap-2">
                         {onStartPackDrill && (
-                          <button
-                            type="button"
-                            onClick={() => onStartPackDrill(pack)}
-                            className="flex items-center gap-1 rounded-lg bg-emerald-500 hover:bg-emerald-400 px-3 py-1 text-xs font-semibold text-white transition shadow-sm"
-                          >
-                            <span>Drill Pack</span>
-                          </button>
+                          <>
+                            <button
+                              type="button"
+                              onClick={() => onStartPackDrill(pack, "high-yield")}
+                              className="flex items-center gap-1 rounded-lg bg-amber-500 hover:bg-amber-400 px-2.5 py-1 text-xs font-semibold text-black transition shadow-sm"
+                              title="Drill only authentic multi-step clinical vignettes and INICET traps (Level 3 & 4)"
+                            >
+                              <Zap size={12} className="fill-black" />
+                              <span>INICET Vignettes</span>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => onStartPackDrill(pack, "all")}
+                              className="flex items-center gap-1 rounded-lg bg-raised hover:bg-edge px-2.5 py-1 text-xs font-semibold text-ink transition shadow-sm"
+                              title="Drill all questions including single-liner facts"
+                            >
+                              <span>All ({pack.totalQuestions})</span>
+                            </button>
+                          </>
                         )}
                         <button
                           type="button"
                           onClick={() => handleCopyPack(pack.id)}
-                          className="flex items-center gap-1 rounded-lg bg-raised hover:bg-edge px-2.5 py-1 text-xs font-medium text-ink transition"
+                          className="flex items-center gap-1 rounded-lg bg-raised hover:bg-edge px-2 py-1 text-xs font-medium text-ink transition"
                           title="Export Pack JSON"
                         >
                           {isCopied ? <Check size={12} className="text-emerald-500" /> : <Download size={12} />}

@@ -184,6 +184,27 @@ export function QBankRunner({
             <span className="rounded-md bg-accent/15 px-2 py-0.5 text-[11px] font-semibold text-accent">
               {activeQuestion.subject}
             </span>
+            {activeQuestion.depthLevel && (
+              <span
+                className={`rounded-md px-2 py-0.5 text-[10px] font-mono font-bold uppercase tracking-wider ${
+                  activeQuestion.depthLevel === "L4_InicetTrap"
+                    ? "bg-rose-500/15 text-rose-400 border border-rose-500/30"
+                    : activeQuestion.depthLevel === "L3_MultiStepClinical"
+                      ? "bg-amber-500/15 text-amber-400 border border-amber-500/30"
+                      : activeQuestion.depthLevel === "L2_ImageSpotter"
+                        ? "bg-cyan-500/15 text-cyan-400 border border-cyan-500/30"
+                        : "bg-surface text-ink-subtle border border-edge"
+                }`}
+              >
+                {activeQuestion.depthLevel === "L4_InicetTrap"
+                  ? "INICET Trap"
+                  : activeQuestion.depthLevel === "L3_MultiStepClinical"
+                    ? "Multi-Step Vignette"
+                    : activeQuestion.depthLevel === "L2_ImageSpotter"
+                      ? "Spotter"
+                      : "Recall L1"}
+              </span>
+            )}
             <span className="rounded-md bg-raised px-2 py-0.5 text-[11px] font-mono text-ink-subtle">
               {activeQuestion.topic}
             </span>

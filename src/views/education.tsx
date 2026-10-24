@@ -55,6 +55,7 @@ export function EducationView() {
   const [showNotesDrawer, setShowNotesDrawer] = useState(false);
   const [showWateringDeck, setShowWateringDeck] = useState(false);
   const [showQBank, setShowQBank] = useState(false);
+  const [activeDrillQuestions, setActiveDrillQuestions] = useState<import("@/lib/education/qbank-types").ClinicalQuestion[] | undefined>();
   const [showQBankManager, setShowQBankManager] = useState(false);
   const [sharedTokens, setSharedTokens] = useState<Record<string, string>>({});
   const [copiedShareFolder, setCopiedShareFolder] = useState<string | null>(null);
@@ -326,7 +327,15 @@ export function EducationView() {
         {showQBankManager && (
           <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/75 backdrop-blur-md p-4">
             <QBankManager
-              onStartPackDrill={(_pack) => {
+              onStartPackDrill={(pack, filterLevel) => {
+                let qs = pack.questions;
+                if (filterLevel === "high-yield") {
+                  qs = pack.questions.filter(
+                    (q) => q.depthLevel === "L3_MultiStepClinical" || q.depthLevel === "L4_InicetTrap",
+                  );
+                  if (qs.length === 0) qs = pack.questions;
+                }
+                setActiveDrillQuestions(qs);
                 setShowQBankManager(false);
                 setShowQBank(true);
               }}
@@ -338,7 +347,13 @@ export function EducationView() {
         {/* Clinical QBank Drill Modal / Overlay */}
         {showQBank && (
           <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/75 backdrop-blur-md p-4">
-            <QBankRunner onClose={() => setShowQBank(false)} />
+            <QBankRunner
+              questions={activeDrillQuestions}
+              onClose={() => {
+                setShowQBank(false);
+                setActiveDrillQuestions(undefined);
+              }}
+            />
           </div>
         )}
 

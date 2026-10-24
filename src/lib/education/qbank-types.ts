@@ -19,6 +19,19 @@ export type SubjectCategory =
   | "FMT"
   | "PSM";
 
+export type QuestionDepthLevel =
+  | "L1_Recall" // Single-liner / straightforward fact memory
+  | "L2_ImageSpotter" // High-resolution clinical / histology / radiology spotter
+  | "L3_MultiStepClinical" // Real 2-step clinical presentation vignette
+  | "L4_InicetTrap"; // High-cognitive INICET trap / Assertion-Reason / Near-peer distractor
+
+export type InicetQuestionFormat =
+  | "SingleBestAnswer"
+  | "MultipleTrueFalse"
+  | "AssertionReasoning"
+  | "MatchingMatrix"
+  | "ImageSpotter";
+
 export type ClinicalQuestion = {
   id: string;
   subject: SubjectCategory;
@@ -34,6 +47,9 @@ export type ClinicalQuestion = {
     bottomLine: string;
   };
   highYieldTags: string[];
+  depthLevel?: QuestionDepthLevel;
+  format?: InicetQuestionFormat;
+  clinicalScore?: number; // 0 to 100
   author?: string;
   sourceExam?: string; // e.g. "INI-CET Nov 2024", "NEET PG 2024"
   packId?: string;

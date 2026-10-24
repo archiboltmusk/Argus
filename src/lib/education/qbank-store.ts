@@ -1,6 +1,7 @@
 import { useSyncExternalStore } from "react";
-import type { ClinicalQuestion, QBankPack, SubjectCategory } from "./qbank-types";
+import type { ClinicalQuestion, QBankPack, QuestionDepthLevel, SubjectCategory } from "./qbank-types";
 import { CLINICAL_QBANK_STARTER } from "./qbank-data";
+import { classifyInicetQuestion } from "./inicet-classifier";
 
 const PACKS_KEY = "argus.qbank.packs.v1";
 
@@ -69,6 +70,22 @@ export function useQBankPacks(): QBankPack[] {
 export function getAllQuestions(): ClinicalQuestion[] {
   const packs = readPacks();
   return packs.flatMap((p) => p.questions);
+}
+
+/**
+ * Filter questions by INICET cognitive depth level
+ */
+export function getQuestionsByDepth(levels: QuestionDepthLevel[]): ClinicalQuestion[] {
+  const all = getAllQuestions();
+  const set = new Set(levels);
+  return all.filter((q) => q.depthLevel && set.has(q.depthLevel));
+}
+
+/**
+ * Returns only authentic multi-step clinical vignettes and INICET traps
+ */
+export function getInicetHighYieldQuestions(): ClinicalQuestion[] {
+  return getQuestionsByDepth(["L3_MultiStepClinical", "L4_InicetTrap"]);
 }
 
 /**
@@ -194,13 +211,29 @@ export function sanitizePolyglotQuestion(raw: any, index: number, packId: string
   ];
   const rawSubject = raw.subject || raw.category || raw.system || "Medicine";
   const matchedSubject = validSubjects.find((s) => s.toLowerCase() === String(rawSubject).toLowerCase()) || "Medicine";
+  const imgUrl = raw.imageUrl || raw.image || raw.figure;
+
+  // Run INICET cognitive depth and pattern classifier
+  const classification = classifyInicetQuestion(vignette, options, Boolean(imgUrl));
+
+  const tags = Array.isArray(raw.highYieldTags)
+    ? [...raw.highYieldTags]
+    : Array.isArray(raw.tags)
+      ? [...raw.tags]
+      : ["Open Data", matchedSubject];
+
+  if (classification.depthLevel === "L4_InicetTrap") {
+    tags.push("INICET Trap");
+  } else if (classification.depthLevel === "L3_MultiStepClinical") {
+    tags.push("Clinical Vignette");
+  }
 
   return {
     id: raw.id || `q_${packId}_${index}_${Math.random().toString(36).slice(2, 6)}`,
     subject: matchedSubject,
     topic: raw.topic || raw.theme || "Clinical Case",
     vignette,
-    imageUrl: raw.imageUrl || raw.image || raw.figure,
+    imageUrl: imgUrl,
     options,
     correctIndex: Math.min(correctIndex, options.length - 1),
     examinerTrap,
@@ -209,11 +242,10 @@ export function sanitizePolyglotQuestion(raw: any, index: number, packId: string
       distractorBreakdown,
       bottomLine,
     },
-    highYieldTags: Array.isArray(raw.highYieldTags)
-      ? raw.highYieldTags
-      : Array.isArray(raw.tags)
-        ? raw.tags
-        : ["Open Data", matchedSubject],
+    highYieldTags: Array.from(new Set(tags)),
+    depthLevel: raw.depthLevel || classification.depthLevel,
+    format: raw.format || classification.format,
+    clinicalScore: raw.clinicalScore ?? classification.score,
     author: raw.author,
     sourceExam: raw.sourceExam || raw.exam,
     packId,
