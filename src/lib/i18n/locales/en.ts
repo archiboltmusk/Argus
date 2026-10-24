@@ -165,6 +165,7 @@ const en: Record<string, string> = {
   "nav.live": "Live TV",
   "nav.sports": "Sports",
   "nav.playlists": "Playlists",
+  "nav.education": "Education",
   "nav.calendar": "Calendar",
   "nav.library": "My Library",
   "nav.downloads": "Downloads",

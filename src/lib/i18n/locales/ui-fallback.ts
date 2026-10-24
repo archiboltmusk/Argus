@@ -1,5 +1,9 @@
 // Newly introduced UI copy remains usable until each locale provides an override.
 const uiFallback: Record<string, string> = {
+  "Feeds": "Feeds",
+  "Share LAN": "Share LAN",
+  "Configure in Streaming Settings": "Configure in Streaming Settings",
+  "Subscribed": "Subscribed",
   "Import .json / .json.gz": "Import .json / .json.gz",
   "Import JSON": "Import JSON",
   "Saved JSON!": "Saved JSON!",
