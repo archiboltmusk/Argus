@@ -19,6 +19,7 @@ import {
   Zap,
   Database,
   Layers,
+  Activity,
 } from "lucide-react";
 import { useT } from "@/lib/i18n";
 import { useView } from "@/lib/view";
@@ -41,6 +42,7 @@ import { InicetWarRoomBanner } from "./education/inicet-war-room-banner";
 import { DailyWateringDeck } from "./education/daily-watering-deck";
 import { QBankRunner } from "./education/qbank-drill";
 import { QBankManager } from "./education/qbank-manager";
+import { PatientCaseSimulator } from "./education/patient-case-simulator";
 import { getAllQuestions, getInicetHighYieldQuestions } from "@/lib/education/qbank-store";
 import { CLINICAL_QBANK_STARTER } from "@/lib/education/qbank-data";
 import { Row } from "@/components/row";
@@ -57,6 +59,7 @@ export function EducationView() {
   const [showNotesDrawer, setShowNotesDrawer] = useState(false);
   const [showWateringDeck, setShowWateringDeck] = useState(false);
   const [showQBank, setShowQBank] = useState(false);
+  const [showSimulator, setShowSimulator] = useState(false);
   const [activeDrillQuestions, setActiveDrillQuestions] = useState<import("@/lib/education/qbank-types").ClinicalQuestion[] | undefined>();
   const [showQBankManager, setShowQBankManager] = useState(false);
   const [sharedTokens, setSharedTokens] = useState<Record<string, string>>({});
@@ -214,6 +217,16 @@ export function EducationView() {
 
         {/* Header Action Pills */}
         <div className="flex items-center gap-2 flex-wrap">
+          <button
+            type="button"
+            onClick={() => setShowSimulator(true)}
+            className="flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-[13px] font-semibold text-white shadow-sm hover:bg-emerald-500 active:scale-[0.98] transition border border-emerald-500/30"
+            title="Open Interactive Clinical Case & Resident Emergency Simulator"
+          >
+            <Activity size={15} className="text-white" />
+            <span>{t("Clinical Case Simulator")}</span>
+          </button>
+
           <button
             type="button"
             onClick={() => {
@@ -647,6 +660,11 @@ export function EducationView() {
           notes={notes}
           onClose={() => setShowNotesDrawer(false)}
         />
+      )}
+
+      {/* Patient Case / Resident Doctor Simulator Overlay */}
+      {showSimulator && (
+        <PatientCaseSimulator onClose={() => setShowSimulator(false)} />
       )}
     </div>
   );
