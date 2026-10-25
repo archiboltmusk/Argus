@@ -212,6 +212,7 @@ export const DEFAULT: Settings = {
   preferredReleaseGroups: "",
   preferredHosts: "",
   deadLinkDemotion: true,
+  hideZeroSeederStreams: true,
   useMalAvatar: false,
   traktClientId: "",
   traktClientSecret: "",

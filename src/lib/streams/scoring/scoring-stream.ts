@@ -156,6 +156,11 @@ export function scoreStream(
     reasons.push({ signal: "dead-link", delta: -200 });
   }
 
+  if (s.infoHash && opts.verifiedHashes?.includes(s.infoHash.toLowerCase())) {
+    score += 150;
+    reasons.push({ signal: "verified-correct-link", delta: 150 });
+  }
+
   if (
     opts.preferredReleaseGroup &&
     s.releaseGroupNormalized &&

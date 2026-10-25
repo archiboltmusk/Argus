@@ -23,6 +23,7 @@ export type TrustOptions = {
   requirePreferredLanguage?: boolean;
   isAnime?: boolean;
   expectedTitles?: string[] | null;
+  hideZeroSeeders?: boolean;
 };
 
 export type Rejection = {
@@ -159,6 +160,11 @@ function checkOne(
 
   if (TRAILER_RX.test(haystack)) {
     return "trailer-or-extra";
+  }
+
+  // Purge dead torrents reporting 0 seeders when enabled and not already a direct playable URL.
+  if (opts.hideZeroSeeders && s.infoHash && !s.url && s.seeders === 0) {
+    return "dead-torrent-zero-seeders";
   }
 
   if (

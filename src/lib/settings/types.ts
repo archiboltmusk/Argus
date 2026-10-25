@@ -267,6 +267,8 @@ export type Settings = {
   preferredReleaseGroups: string;
   preferredHosts: string;
   deadLinkDemotion: boolean;
+  /** Automatically hide uncached P2P streams that report 0 seeders. */
+  hideZeroSeederStreams: boolean;
   contentAdvisoryTheme: "colored" | "monochrome";
   contentAdvisoryShowIgnore: boolean;
   playerVolumeHud: boolean;

@@ -2,6 +2,7 @@
 // does not pick the same broken release first. Local only, nothing is sent.
 
 const KEY = "argus:dead-links:v1";
+const VERIFIED_KEY = "argus:verified-links:v1";
 const QUICK_EXIT_SEC = 20;
 const THRESHOLD = 2;
 const TTL_MS = 7 * 24 * 3600 * 1000;
@@ -60,11 +61,82 @@ export function recordPlayOutcome(
   write(kv, store);
 }
 
+export function markHashAsDead(
+  infoHash: string | null | undefined,
+  kv: KV | null = defaultKv(),
+  now = Date.now(),
+) {
+  if (!infoHash || !kv) return;
+  const h = infoHash.toLowerCase();
+  const store = read(kv, now);
+  store[h] = { count: Math.max(THRESHOLD, (store[h]?.count ?? 0) + THRESHOLD), at: now };
+  write(kv, store);
+}
+
+export function unmarkHashDead(
+  infoHash: string | null | undefined,
+  kv: KV | null = defaultKv(),
+  now = Date.now(),
+) {
+  if (!infoHash || !kv) return;
+  const h = infoHash.toLowerCase();
+  const store = read(kv, now);
+  if (store[h]) {
+    delete store[h];
+    write(kv, store);
+  }
+}
+
 export function demotedHashes(kv: KV | null = defaultKv(), now = Date.now()): string[] {
   if (!kv) return [];
   return Object.entries(read(kv, now))
     .filter(([, e]) => e.count >= THRESHOLD)
     .map(([h]) => h);
+}
+
+export function markHashAsCorrect(
+  infoHash: string | null | undefined,
+  kv: KV | null = defaultKv(),
+  now = Date.now(),
+) {
+  if (!infoHash || !kv) return;
+  const h = infoHash.toLowerCase();
+  unmarkHashDead(h, kv, now);
+  try {
+    const raw = JSON.parse(kv.getItem(VERIFIED_KEY) ?? "{}") as Store;
+    raw[h] = { count: (raw[h]?.count ?? 0) + 1, at: now };
+    kv.setItem(VERIFIED_KEY, JSON.stringify(raw));
+  } catch {}
+}
+
+export function unmarkHashCorrect(
+  infoHash: string | null | undefined,
+  kv: KV | null = defaultKv(),
+) {
+  if (!infoHash || !kv) return;
+  const h = infoHash.toLowerCase();
+  try {
+    const raw = JSON.parse(kv.getItem(VERIFIED_KEY) ?? "{}") as Store;
+    if (raw[h]) {
+      delete raw[h];
+      kv.setItem(VERIFIED_KEY, JSON.stringify(raw));
+    }
+  } catch {}
+}
+
+export function verifiedCorrectHashes(
+  kv: KV | null = defaultKv(),
+  now = Date.now(),
+): string[] {
+  if (!kv) return [];
+  try {
+    const raw = JSON.parse(kv.getItem(VERIFIED_KEY) ?? "{}") as Store;
+    return Object.entries(raw)
+      .filter(([, e]) => e && typeof e.count === "number" && now - e.at < TTL_MS)
+      .map(([h]) => h);
+  } catch {
+    return [];
+  }
 }
 
 export function parseGroupList(raw: string): string[] {

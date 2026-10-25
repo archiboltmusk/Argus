@@ -1,4 +1,4 @@
-import { ChevronDown, Download, ExternalLink, Loader2, Zap } from "lucide-react";
+import { ChevronDown, Download, ExternalLink, Loader2, Skull, ThumbsUp, Zap } from "lucide-react";
 import { StreamSpeedButton } from "@/components/player/stream-speed-button";
 import { Play } from "@/components/icons/play-filled";
 import { useEffect, useMemo, useState } from "react";
@@ -10,6 +10,7 @@ import { HostMatchChip } from "@/components/host-match-chip";
 import { useT } from "@/lib/i18n";
 import { useDebridClients } from "@/lib/debrid/registry";
 import { useSettings } from "@/lib/settings";
+import { markHashAsCorrect, markHashAsDead, unmarkHashCorrect, verifiedCorrectHashes } from "@/lib/streams/dead-links";
 import type { ScoredStream } from "@/lib/streams/types";
 import type { PlayEpisode } from "@/lib/view";
 import { EditionChip } from "./edition-chip";
@@ -202,6 +203,33 @@ function SourceRow({
             n: stream.contributors.length - 1,
           });
 
+  const [manuallyDead, setManuallyDead] = useState(false);
+  const [isCorrect, setIsCorrect] = useState(() =>
+    stream.infoHash ? verifiedCorrectHashes().includes(stream.infoHash.toLowerCase()) : false,
+  );
+
+  const handleMarkDead = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (stream.infoHash) {
+      markHashAsDead(stream.infoHash);
+      setManuallyDead(true);
+    }
+  };
+
+  const handleToggleCorrect = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!stream.infoHash) return;
+    if (isCorrect) {
+      unmarkHashCorrect(stream.infoHash);
+      setIsCorrect(false);
+    } else {
+      markHashAsCorrect(stream.infoHash);
+      setIsCorrect(true);
+    }
+  };
+
+  if (manuallyDead) return null;
+
   return (
     <li className={divider ? "border-t border-edge-soft/30" : ""}>
       <button
@@ -236,6 +264,32 @@ function SourceRow({
         </div>
         <div className="flex shrink-0 flex-col items-end gap-2 pt-0.5">
           <div className="flex items-center gap-3">
+            {stream.infoHash && (
+              <>
+                <button
+                  type="button"
+                  onClick={handleToggleCorrect}
+                  title={isCorrect ? t("Unmark correct link") : t("Mark as correct working link")}
+                  aria-label={isCorrect ? t("Unmark correct link") : t("Mark as correct working link")}
+                  className={`p-1 transition-all ${
+                    isCorrect
+                      ? "text-emerald-400 opacity-100"
+                      : "opacity-0 group-hover:opacity-60 hover:!opacity-100 text-ink-subtle hover:text-emerald-400"
+                  }`}
+                >
+                  <ThumbsUp size={13} strokeWidth={isCorrect ? 2.8 : 2.2} fill={isCorrect ? "currentColor" : "none"} />
+                </button>
+                <button
+                  type="button"
+                  onClick={handleMarkDead}
+                  title={t("Mark link as dead/broken")}
+                  aria-label={t("Mark link as dead/broken")}
+                  className="opacity-0 group-hover:opacity-60 hover:!opacity-100 p-1 text-ink-subtle hover:text-red-400 transition-opacity"
+                >
+                  <Skull size={13} strokeWidth={2.2} />
+                </button>
+              </>
+            )}
             <StreamSpeedButton stream={stream} />
             {link && <CopyLinkButton url={link} />}
             <HostMatchChip match={match} />

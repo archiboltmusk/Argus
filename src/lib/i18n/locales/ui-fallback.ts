@@ -1,5 +1,11 @@
 // Newly introduced UI copy remains usable until each locale provides an override.
 const uiFallback: Record<string, string> = {
+  "Mark as correct working link": "Mark as correct working link",
+  "Unmark correct link": "Unmark correct link",
+  "Mark link as dead/broken": "Mark link as dead/broken",
+  "Hide dead torrents (0 seeders)": "Hide dead torrents (0 seeders)",
+  "Automatically filters out uncached peer-to-peer torrents that report 0 seeders so you only see active, working streams.":
+    "Automatically filters out uncached peer-to-peer torrents that report 0 seeders so you only see active, working streams.",
   "Preset: Prowlarr": "Preset: Prowlarr",
   "Preset: Jackett": "Preset: Jackett",
   "Indexer URL (e.g. Prowlarr or Jackett Torznab URL)": "Indexer URL (e.g. Prowlarr or Jackett Torznab URL)",

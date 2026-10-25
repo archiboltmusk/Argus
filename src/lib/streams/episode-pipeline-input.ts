@@ -7,7 +7,7 @@ import type { PlayEpisode } from "@/lib/view";
 import { resolveAddonRanks } from "./addon-priority";
 import { animeAbsoluteFromScopedId, splitAnimeStreamCoordinates } from "./anime-identity-core";
 import type { PipelineInput } from "./pipeline";
-import { demotedHashes, parseGroupList, parseHostList } from "@/lib/streams/dead-links";
+import { demotedHashes, parseGroupList, parseHostList, verifiedCorrectHashes } from "@/lib/streams/dead-links";
 import { PLUGIN_ADDON_PREFIX, isPluginAddon, pluginAddonById, pluginIdFromCatalogueBase, pluginsForAddon } from "./plugins/addon";
 import { preferredAnimeImdbStreamId, unverifiedAnimeSeasonId } from "./stream-ids";
 import type { Stream } from "./types";
@@ -221,6 +221,7 @@ export function buildEpisodePipelineInput(params: {
       allowSizeOutliers: !strictMode,
       isAnime: animeReq,
       expectedTitles: animeReq ? (animeTitles ?? null) : null,
+      hideZeroSeeders: settings.hideZeroSeederStreams !== false,
     },
     score: {
       activeDebrids: debrids.map((d) => d.slug),
@@ -240,6 +241,7 @@ export function buildEpisodePipelineInput(params: {
       bitrateSweetSpot: settings.bestLinkScoring,
       penalizeDubs: settings.bestLinkScoring,
       demotedHashes: settings.deadLinkDemotion ? demotedHashes() : undefined,
+      verifiedHashes: verifiedCorrectHashes(),
       canonicalTitle: meta.name,
       capabilities: settings.capabilityMatching
         ? detectScoreCapabilities(
