@@ -5,6 +5,7 @@ import {
 } from "./speed-probe";
 import type { ScoredStream, Stream } from "./types";
 import { recordHostThroughput, recordHostFailure, getHostScoreBonus, getHostEwmaMbps } from "./host-health";
+import { shouldConserveBatteryPower } from "@/lib/player/power-awareness";
 
 function headersOf(stream: Stream): Record<string, string> | undefined {
   const hints = stream.behaviorHints;
@@ -106,6 +107,8 @@ export function applySpeedProbeBonuses(
   streams: ScoredStream[],
   probes: Map<string, SpeedProbeResult>,
 ): ScoredStream[] {
+  const conserveBattery = shouldConserveBatteryPower();
+
   return streams.slice().sort((a, b) => {
     const probeA = a.url ? probes.get(a.url) : undefined;
     const probeB = b.url ? probes.get(b.url) : undefined;
@@ -113,8 +116,21 @@ export function applySpeedProbeBonuses(
     const hostBonusA = getHostScoreBonus(a.url);
     const hostBonusB = getHostScoreBonus(b.url);
 
-    const scoreA = a.score + calculateProbeAdjustment(a, probeA) + hostBonusA;
-    const scoreB = b.score + calculateProbeAdjustment(b, probeB) + hostBonusB;
+    // Battery / Thermal Awareness:
+    // When running on battery power, heavily penalize massive 4K/remux streams (-35)
+    // and promote energy-efficient 1080p/HEVC/AV1 streams (+20) for 3x longer battery life.
+    let batteryBonusA = 0;
+    let batteryBonusB = 0;
+    if (conserveBattery) {
+      if (a.resolution === "4K") batteryBonusA -= 35;
+      else if (a.resolution === "1080p" && (a.codec === "HEVC" || a.codec === "AV1")) batteryBonusA += 20;
+
+      if (b.resolution === "4K") batteryBonusB -= 35;
+      else if (b.resolution === "1080p" && (b.codec === "HEVC" || b.codec === "AV1")) batteryBonusB += 20;
+    }
+
+    const scoreA = a.score + calculateProbeAdjustment(a, probeA) + hostBonusA + batteryBonusA;
+    const scoreB = b.score + calculateProbeAdjustment(b, probeB) + hostBonusB + batteryBonusB;
 
     return scoreB - scoreA;
   });

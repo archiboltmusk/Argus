@@ -715,7 +715,7 @@ export const DEFAULT: Settings = {
   adSkipEnabled: false,
   adReportAlwaysShow: false,
   adReportFirstSeen: false,
-  xrayEnabled: false,
+  xrayEnabled: true,
   xrayLiveScan: true,
   auddApiKey: "",
   secondaryPrivileges: { ...DEFAULT_SECONDARY_PRIVILEGES },
