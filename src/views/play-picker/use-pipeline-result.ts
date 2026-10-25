@@ -13,6 +13,7 @@ import { clearAddonStreamCache, type AddonProgress } from "@/lib/streams/addons"
 import { pluginCacheTokens } from "@/lib/streams/plugins";
 import { runPipeline, type PipelineResult } from "@/lib/streams/pipeline";
 import { probeTopStreams, applySpeedProbeBonuses } from "@/lib/streams/top-stream-prober";
+import { prewarmCandidateStream } from "@/lib/streams/prewarm-candidate";
 import { buildEpisodePipelineInput } from "@/lib/streams/episode-pipeline-input";
 import { hasAnimeStreamIds, preferredAnimeImdbStreamId } from "@/lib/streams/stream-ids";
 import type { PlayEpisode } from "@/lib/view";
@@ -187,6 +188,8 @@ export function usePipelineResult({
 
         if (!ac.signal.aborted) {
           setAutoSettleReady(true);
+          // Prewarm candidate top stream socket/buffer for instant click-to-play
+          prewarmCandidateStream(r.picker.primary);
         }
       })
       .catch((e) => {
