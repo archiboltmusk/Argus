@@ -1,5 +1,8 @@
 // Newly introduced UI copy remains usable until each locale provides an override.
 const uiFallback: Record<string, string> = {
+  "Preset: Prowlarr": "Preset: Prowlarr",
+  "Preset: Jackett": "Preset: Jackett",
+  "Indexer URL (e.g. Prowlarr or Jackett Torznab URL)": "Indexer URL (e.g. Prowlarr or Jackett Torznab URL)",
   "3D Spatial Audio": "3D Spatial Audio",
   "Whisper Vocal Isolate": "Whisper Vocal Isolate",
   "Dialogue Auto-Ducking": "Dialogue Auto-Ducking",
