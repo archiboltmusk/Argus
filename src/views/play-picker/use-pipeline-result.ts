@@ -12,6 +12,7 @@ import { useSettings } from "@/lib/settings";
 import { clearAddonStreamCache, type AddonProgress } from "@/lib/streams/addons";
 import { pluginCacheTokens } from "@/lib/streams/plugins";
 import { runPipeline, type PipelineResult } from "@/lib/streams/pipeline";
+import { probeTopStreams, applySpeedProbeBonuses } from "@/lib/streams/top-stream-prober";
 import { buildEpisodePipelineInput } from "@/lib/streams/episode-pipeline-input";
 import { hasAnimeStreamIds, preferredAnimeImdbStreamId } from "@/lib/streams/stream-ids";
 import type { PlayEpisode } from "@/lib/view";
@@ -163,6 +164,27 @@ export function usePipelineResult({
         setPipelineDone(true);
         setAutoSettleReady(true);
         setPickerCache(meta, episode, r, configHash, true, animePreference);
+
+        // Background CDN speed verification: probe top candidate streams and promote the fastest
+        void probeTopStreams(r.picker.all, 3, ac.signal)
+          .then((probes) => {
+            if (ac.signal.aborted || probes.size === 0) return;
+            const reRanked = applySpeedProbeBonuses(r.picker.all, probes);
+            setResult((prev) => {
+              if (!prev || ac.signal.aborted) return prev;
+              const next: PipelineResult = {
+                ...prev,
+                picker: {
+                  ...prev.picker,
+                  primary: reRanked[0] ?? prev.picker.primary,
+                  all: reRanked,
+                },
+              };
+              setPickerCache(meta, episode, next, configHash, true, animePreference);
+              return next;
+            });
+          })
+          .catch(() => {});
       })
       .catch((e) => {
         if (ac.signal.aborted) return;
