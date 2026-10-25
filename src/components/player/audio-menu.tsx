@@ -236,6 +236,7 @@ function AudioEnhancementSection({ engine }: { engine: "html5" | "mpv" }) {
     { id: "off", label: t("Flat") },
     { id: "spatial-3d", label: t("3D Spatial Audio") },
     { id: "whisper", label: t("Whisper Vocal Isolate") },
+    { id: "dialogue-ducking", label: t("Dialogue Auto-Ducking") },
     { id: "speech-clarity", label: t("Speech Clarity") },
     { id: "night", label: t("Night Mode") },
     { id: "bass", label: t("Bass Boost") },

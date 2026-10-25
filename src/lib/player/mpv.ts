@@ -184,6 +184,7 @@ const AUDIO_PROFILE_AF: Record<string, string> = {
   night: "lavfi=[highpass=f=95,equalizer=f=2400:t=q:w=1.2:g=4.5,acompressor=ratio=4:threshold=-21dB:attack=15:release=200:makeup=4dB]",
   "spatial-3d": "lavfi=[surround=chl_out=stereo:level_in=1.2:level_out=1.0:lfe=1:angle=90,extrastereo=m=1.35]",
   whisper: "lavfi=[highpass=f=120,lowpass=f=6500,equalizer=f=2800:t=q:w=1.0:g=7.5,equalizer=f=400:t=q:w=1.2:g=-6.0,acompressor=threshold=-24dB:ratio=5:attack=10:release=140:makeup=5dB]",
+  "dialogue-ducking": "lavfi=[highpass=f=90,equalizer=f=2500:t=q:w=1.2:g=4.0,acompressor=threshold=-18dB:ratio=3.5:attack=20:release=250:makeup=2dB,speechnorm=p=0.4:e=4.0:r=0.0001:l=1]",
 };
 
 const DEFAULT_UA = "VLC/3.0.20 LibVLC/3.0.20";

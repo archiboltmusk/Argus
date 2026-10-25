@@ -21,8 +21,18 @@ export function prewarmCandidateStream(stream: ScoredStream | null | undefined):
     if (first) prewarmedUrls.delete(first);
   }
 
-  // Silently trigger background probe / warm connection
-  void probeStreamSpeed(url, { sampleBytes: 1_000_000 }).catch(() => {});
+  // Silently trigger background probe / warm connection (pre-buffers 2MB for instantaneous start)
+  void probeStreamSpeed(url, { sampleBytes: 2_000_000 }).catch(() => {});
+}
+
+/**
+ * Deep Pre-Cache ("Watch Smooth"):
+ * Pulls up to 15MB into fast memory/socket cache for high-bitrate or slow networks
+ */
+export function deepPrecacheStream(stream: ScoredStream | null | undefined): void {
+  if (!stream?.url) return;
+  const url = stream.url;
+  void probeStreamSpeed(url, { sampleBytes: 15_000_000 }).catch(() => {});
 }
 
 /**

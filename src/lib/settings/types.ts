@@ -609,7 +609,7 @@ export type Settings = {
   audioDelayRemember: boolean;
   /** Extra audio delay in ms for slow outputs such as Bluetooth headphones. */
   audioOutputLatencyMs: number;
-  audioProfile: "off" | "bass" | "voice" | "speech-clarity" | "bass-reduce" | "night" | "spatial-3d" | "whisper";
+  audioProfile: "off" | "bass" | "voice" | "speech-clarity" | "bass-reduce" | "night" | "spatial-3d" | "whisper" | "dialogue-ducking";
   ambientGlow: boolean;
   bingeMode: boolean;
   audioDevice: string;
