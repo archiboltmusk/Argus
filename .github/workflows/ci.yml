@@ -40,21 +40,30 @@ jobs:
           fetch-depth: 0
       - id: diff
         run: |
-          if [ "${{ github.event_name }}" != "pull_request" ]; then
-            echo "native=true" >> "$GITHUB_OUTPUT"
-            echo "bundle=true" >> "$GITHUB_OUTPUT"; exit 0
+          IS_RELEASE=false
+          if [[ "${{ github.ref }}" == refs/tags/v* ]] || [ "${{ github.event_name }}" = "workflow_dispatch" ] || echo "${{ github.event.head_commit.message }}" | grep -qiE '\[(release|build-app)\]'; then
+            IS_RELEASE=true
           fi
+
+          if [ "$IS_RELEASE" = "true" ]; then
+            echo "native=true" >> "$GITHUB_OUTPUT"
+            echo "bundle=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          # Everyday pushes & PRs skip heavy 30-minute packaging builds
+          echo "bundle=false" >> "$GITHUB_OUTPUT"
+
+          if [ "${{ github.event_name }}" != "pull_request" ]; then
+            echo "native=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
           FILES=$(git diff --name-only "${{ github.event.pull_request.base.sha }}" "${{ github.sha }}")
           if echo "$FILES" | grep -qE '^(src-tauri/|argus-core/|\.github/workflows/|package\.json$|pnpm-lock\.yaml$)'; then
             echo "native=true" >> "$GITHUB_OUTPUT"
           else
             echo "native=false" >> "$GITHUB_OUTPUT"
-          fi
-          # Packaging changes need the full .dmg build; plain Rust edits only a cargo check.
-          if echo "$FILES" | grep -qE '^(src-tauri/(tauri[^/]*\.json|Cargo\.toml|Cargo\.lock|build\.rs|Info\.plist|entitlements[^/]*)|scripts/|\.github/workflows/ci\.yml|package\.json$|pnpm-lock\.yaml$)'; then
-            echo "bundle=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "bundle=false" >> "$GITHUB_OUTPUT"
           fi
 
   core:
@@ -99,7 +108,7 @@ jobs:
     name: macOS .dmg (${{ matrix.arch }})
     # Runs in parallel with the checks; publish waits for all of them.
     needs: [changes]
-    if: needs.changes.outputs.native == 'true'
+    if: needs.changes.outputs.bundle == 'true'
     timeout-minutes: 60
     strategy:
       fail-fast: false
@@ -231,8 +240,8 @@ jobs:
   # Publishes as soon as the .dmg and every check have passed.
   publish:
     name: Publish release
-    needs: [core, ui, macos]
-    if: github.event_name != 'pull_request'
+    needs: [changes, core, ui, macos]
+    if: needs.changes.outputs.bundle == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:

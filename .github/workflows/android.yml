@@ -3,6 +3,7 @@ name: Android
 on:
   push:
     branches: [main]
+    tags: ["v*"]
     paths:
       - "src/**"
       - "src-tauri/**"
@@ -32,6 +33,7 @@ env:
 jobs:
   apk:
     name: Android arm64 APK
+    if: startsWith(github.ref, 'refs/tags/v') || github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[release]') || contains(github.event.head_commit.message, '[android]')
     runs-on: ubuntu-latest
     timeout-minutes: 90
     steps:
