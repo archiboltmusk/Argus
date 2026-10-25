@@ -1,5 +1,9 @@
 // Newly introduced UI copy remains usable until each locale provides an override.
 const uiFallback: Record<string, string> = {
+  "Buffer runway": "Buffer runway",
+  "CDN download": "CDN download",
+  "Optimal cap ({mbps}M) active": "Optimal cap ({mbps}M) active",
+  "Auto-apply {mbps}M cap": "Auto-apply {mbps}M cap",
   "chrome.safetyNetLabel": "chrome.safetyNetLabel",
   "chrome.safetyNetHeading": "chrome.safetyNetHeading",
   "Better stream available": "Better stream available",

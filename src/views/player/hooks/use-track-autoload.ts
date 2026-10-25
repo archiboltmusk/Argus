@@ -8,7 +8,7 @@ import { publishSubtitleSearch } from "@/components/player/subtitle-menu/subtitl
 import { publishSubtitleContext } from "@/components/player/subtitle-menu/subtitle-context-store";
 import { readPlayerPrefs, writePlayerPrefs, type PerShowPrefs } from "@/lib/player-prefs";
 import { playbackSourceKey, readActualPlaybackFor } from "@/lib/playback-history";
-import { playbackAudioChoice, selectPlaybackAudio } from "@/lib/player/audio-choice";
+import { playbackAudioChoice, selectPlaybackAudio, pickBestAudioTrack } from "@/lib/player/audio-choice";
 import { tmdbImdbId } from "@/lib/providers/tmdb";
 import type { Addon } from "@/lib/addons";
 import type { GeneratedSubtitleGroup } from "@/lib/subtitles/types";
@@ -832,7 +832,8 @@ export function useTrackAutoload(params: {
           // A known choice is explicit user intent, even if its title matches
           // an automatic-selection exclusion such as "commentary".
           selectPlaybackAudio(snap.audioTracks, rememberedAudio) ??
-          pickBestTrack(allow(snap.audioTracks), audioLangs);
+          pickBestTrack(allow(snap.audioTracks), audioLangs) ??
+          pickBestAudioTrack(allow(snap.audioTracks), audioLangs[0] ?? "eng");
         effAudio = want ?? cur;
         if (want) {
           if (!cur || cur.id !== want.id) bridgeRef.current?.setAudioTrack(want.id);
