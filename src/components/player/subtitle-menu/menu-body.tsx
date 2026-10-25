@@ -6,7 +6,6 @@ import {
   RotateCw,
   Search as SearchIcon,
   Sparkles,
-  Wand2,
   X,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
@@ -166,7 +165,7 @@ export function MenuBody(props: SubtitleMenuProps & { onClose: () => void }) {
 
       const ok = await props.onAddSubtitle(blobUrl, "en", name, {
         format: "srt",
-        timingMeasurementStatus: "exact",
+        timingMeasurementStatus: "measured",
       });
 
       if (ok === false) {
