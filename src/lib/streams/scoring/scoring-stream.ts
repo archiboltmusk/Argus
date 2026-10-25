@@ -260,8 +260,10 @@ export function scoreStream(
   // Heavily promote standard web-friendly MP4/HLS streams (+40) and demote difficult MKV/DTS (-50)
   // so web users get an instant, flawless playback experience without VLC error cards.
   if (opts.capabilities?.isWeb) {
-    const isWebNativeContainer = s.container === "mp4" || s.container === "m4v" || s.container === "webm" || !!s.url?.includes(".m3u8");
-    const isWebNativeAudio = s.audio.codec === "AAC" || s.audio.codec === "Opus" || s.audio.codec === "MP3" || !s.audio.codec;
+    const isWebNativeContainer =
+      s.container === "mp4" || s.container === "m4v" || s.container === "webm" || !!s.url?.includes(".m3u8");
+    const isWebNativeAudio =
+      s.audio.codec === "AAC" || s.audio.codec === "Opus" || s.audio.codec === "Other" || !s.audio.codec;
     if (isWebNativeContainer && isWebNativeAudio) {
       score += 40;
       reasons.push({ signal: "web-friendly-stream", delta: 40 });
