@@ -28,12 +28,16 @@ export function scoreStream(
   const cached = isCachedOnActive(s, opts.activeDebrids);
   const directPlayable = !!s.url;
   const isEasynews = /easynews/i.test(s.addonName ?? "") || /easynews/i.test(s.parsedTitle ?? "");
+  const hasDebridConfigured = !!opts.activeDebrids && opts.activeDebrids.length > 0;
+
   if (cached || isEasynews) {
     score += 60;
     reasons.push({ signal: cached ? "cached" : "easynews-direct", delta: 60 });
   } else if (directPlayable) {
-    score += 25;
-    reasons.push({ signal: "direct url", delta: 25 });
+    // When user has no debrid, direct free HTTP web streams are the #1 best option
+    const delta = hasDebridConfigured ? 25 : 60;
+    score += delta;
+    reasons.push({ signal: hasDebridConfigured ? "direct url" : "direct-free-stream", delta });
   }
 
   const resBoost = resolutionPoints(s);
@@ -81,13 +85,15 @@ export function scoreStream(
       score += seedDelta;
       reasons.push({ signal: `seeders=${s.seeders}`, delta: seedDelta });
     } else if (!s.url && s.infoHash && s.seeders === 0) {
-      score -= 20;
-      reasons.push({ signal: "zero-seeders-stale-meta", delta: -20 });
+      const deadPenalty = hasDebridConfigured ? -20 : -80;
+      score += deadPenalty;
+      reasons.push({ signal: "zero-seeders-stale-meta", delta: deadPenalty });
     }
   }
   if (s.infoHash && s.seeders === 0 && !cached) {
-    score -= 8;
-    reasons.push({ signal: "zero-seeders-soft", delta: -8 });
+    const deadPenalty = hasDebridConfigured ? -8 : -40;
+    score += deadPenalty;
+    reasons.push({ signal: "zero-seeders-soft", delta: deadPenalty });
   }
 
   const expectedYear = opts.releaseDate
