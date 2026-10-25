@@ -255,6 +255,22 @@ export function scoreStream(
     reasons.push({ signal: "webview2-unfriendly", delta: playabilityDelta });
   }
 
+  // Web Browser sandbox auto-profile:
+  // In the browser, native HTML5 cannot play MKV containers, DTS audio, or HEVC on many platforms.
+  // Heavily promote standard web-friendly MP4/HLS streams (+40) and demote difficult MKV/DTS (-50)
+  // so web users get an instant, flawless playback experience without VLC error cards.
+  if (opts.capabilities?.isWeb) {
+    const isWebNativeContainer = s.container === "mp4" || s.container === "m4v" || s.container === "webm" || !!s.url?.includes(".m3u8");
+    const isWebNativeAudio = s.audio.codec === "AAC" || s.audio.codec === "Opus" || s.audio.codec === "MP3" || !s.audio.codec;
+    if (isWebNativeContainer && isWebNativeAudio) {
+      score += 40;
+      reasons.push({ signal: "web-friendly-stream", delta: 40 });
+    } else if (s.container === "mkv" || s.audio.codec === "DTS" || s.audio.codec === "TrueHD") {
+      score -= 50;
+      reasons.push({ signal: "web-incompatible-format", delta: -50 });
+    }
+  }
+
   const bitratePenalty = bitrateBudgetPenalty(s, opts, cached);
   if (bitratePenalty.delta < 0) {
     score += bitratePenalty.delta;

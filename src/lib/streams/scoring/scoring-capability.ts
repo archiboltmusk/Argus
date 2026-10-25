@@ -5,6 +5,8 @@ export type ScoreCapabilities = {
   hdrDisplay: boolean;
   /** "mpv" tone-maps and handles Dolby Vision itself; the web engine cannot. */
   engine: "mpv" | "html5";
+  /** Running in web browser sandbox */
+  isWeb?: boolean;
 };
 
 /**
