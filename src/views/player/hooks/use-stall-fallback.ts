@@ -8,11 +8,10 @@ import { peekPickerCache } from "@/lib/picker-cache";
 import { prepareCachedDebridStreams } from "@/lib/debrid/playback-preparation";
 import { prewarmCandidateStream } from "@/lib/streams/prewarm-candidate";
 import { recordHostFailure, recordHostThroughput } from "@/lib/streams/host-health";
-import { markStreamDead, STUB_TTL_MS } from "@/lib/dead-streams";
+import { markStreamDead, SOFT_STALL_TTL_MS } from "@/lib/dead-streams";
 import {
   evaluateStallStatus,
   findNextFallbackStream,
-  STALL_TIMEOUT_MS,
 } from "@/lib/player/stall-fallback";
 
 export type StallOffer = {
@@ -78,22 +77,27 @@ export function useStallFallback(params: {
     }
   }, [src.url, src.meta, src.episode, src.isLive, inRoom, src.streamRef?.infoHash, debrids]);
 
-  // Track decoded frame / position advancement
+  // Track decoded frame / position advancement and buffer recovery
   useEffect(() => {
     const pos = snap.positionSec;
-    if (Math.abs(pos - lastPosRef.current) > 0.1 || snap.lastDecodedFrameAt) {
+    const progressAdvance = Math.abs(pos - lastPosRef.current) > 0.1 || snap.lastDecodedFrameAt;
+    const bufferHealthy = snap.bufferedSec >= 1.5;
+
+    if (progressAdvance) {
       lastPosRef.current = pos;
       lastProgressAtRef.current = Date.now();
       // Record healthy steady playback advancement for host EWMA
       if (src.url && snap.status === "playing" && pos > 5) {
         recordHostThroughput(src.url, 15);
       }
-      // Clear offer if playback resumed on its own
-      if (!switchingRef.current) {
-        setStallOffer(null);
-      }
     }
-  }, [snap.positionSec, snap.lastDecodedFrameAt, snap.status, src.url]);
+
+    // Elastic Recovery: If the video resumed decoding frames OR buffer is healthy again,
+    // immediately cancel any pending stall offer so momentary speed drops don't switch links!
+    if ((progressAdvance || bufferHealthy) && !switchingRef.current) {
+      setStallOffer(null);
+    }
+  }, [snap.positionSec, snap.lastDecodedFrameAt, snap.bufferedSec, snap.status, src.url]);
 
   // Periodic stall evaluator (runs every 500ms while active)
   useEffect(() => {
@@ -115,7 +119,8 @@ export function useStallFallback(params: {
         lastDecodedFrameAt: snap.lastDecodedFrameAt,
         lastProgressAt: lastProgressAtRef.current,
         now,
-        stallTimeoutMs: autoSwitchEnabled ? 4000 : STALL_TIMEOUT_MS,
+        stallTimeoutMs: autoSwitchEnabled ? 8000 : 12000,
+        bufferedSec: snap.bufferedSec,
       });
 
       if (stall.isStalled) {
@@ -154,6 +159,7 @@ export function useStallFallback(params: {
     snap.buffering,
     snap.coreIdle,
     snap.lastDecodedFrameAt,
+    snap.bufferedSec,
     debrids,
     autoSwitchEnabled,
     inRoom,
@@ -172,11 +178,12 @@ export function useStallFallback(params: {
         if (src.url) {
           recordHostFailure(src.url);
         }
-        // Mark current failing stream dead for 4 hours so it won't be picked again in loops
+        // Soft Cooldown (90s): Mark stream stalled with a 90-second soft cooldown so temporary speed drops
+        // do not permanently ban links that recover later
         if (src.streamRef) {
-          markStreamDead(src.streamRef, "playback-stalled", STUB_TTL_MS);
+          markStreamDead(src.streamRef, "playback-stalled", SOFT_STALL_TTL_MS);
         } else if (src.url) {
-          markStreamDead({ url: src.url }, "playback-stalled", STUB_TTL_MS);
+          markStreamDead({ url: src.url }, "playback-stalled", SOFT_STALL_TTL_MS);
         }
         void onSwitchStream(stallOffer.nextStream).finally(() => {
           switchingRef.current = false;
@@ -214,9 +221,9 @@ export function useStallFallback(params: {
       recordHostFailure(src.url);
     }
     if (src.streamRef) {
-      markStreamDead(src.streamRef, "playback-stalled", STUB_TTL_MS);
+      markStreamDead(src.streamRef, "playback-stalled", SOFT_STALL_TTL_MS);
     } else if (src.url) {
-      markStreamDead({ url: src.url }, "playback-stalled", STUB_TTL_MS);
+      markStreamDead({ url: src.url }, "playback-stalled", SOFT_STALL_TTL_MS);
     }
     void onSwitchStream(target).finally(() => {
       switchingRef.current = false;

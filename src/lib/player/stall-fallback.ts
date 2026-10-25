@@ -121,6 +121,7 @@ export function evaluateStallStatus(params: {
   lastProgressAt: number;
   now: number;
   stallTimeoutMs?: number;
+  bufferedSec?: number;
 }): StallState {
   const {
     status,
@@ -130,10 +131,18 @@ export function evaluateStallStatus(params: {
     lastProgressAt,
     now,
     stallTimeoutMs = STALL_TIMEOUT_MS,
+    bufferedSec = 0,
   } = params;
 
   // Manual pause or ended playback is never considered a stall
   if (status === "paused" || status === "ended" || status === "idle") {
+    return { isStalled: false, stalledDurationMs: 0 };
+  }
+
+  // If the player demuxer still has >= 1.5 seconds of forward buffer cached,
+  // speed drops are transient and the pipeline is still receiving packets.
+  // Never declare a stall while buffer is healthy.
+  if (bufferedSec >= 1.5) {
     return { isStalled: false, stalledDurationMs: 0 };
   }
 
