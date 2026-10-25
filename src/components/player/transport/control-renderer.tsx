@@ -76,6 +76,7 @@ import { EpisodeNavBtn } from "./episode-nav-btn";
 import { TimeStart, TimeEnd } from "./time-display";
 import { WindowControlButtons } from "./window-control-buttons";
 import { IdentifySongButton } from "@/components/identify-song-button";
+import { TogetherButton } from "@/chrome/topbar";
 
 export type ControlContext = {
   t?: (key: string, vars?: Record<string, string | number>) => string;
@@ -623,6 +624,9 @@ export function renderControl(id: PlayerControlId, ctx: ControlContext): ReactNo
     case "cast": {
       if (ctx.tight) return null;
       return <CastButton onClick={ctx.onCast} capabilities={ctx.capabilities} />;
+    }
+    case "together": {
+      return <TogetherButton variant="ghost" popoverPlacement="above-left" />;
     }
     case "fullscreen": {
       return (
