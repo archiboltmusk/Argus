@@ -240,6 +240,7 @@ export function buildEpisodePipelineInput(params: {
       bitrateSweetSpot: settings.bestLinkScoring,
       penalizeDubs: settings.bestLinkScoring,
       demotedHashes: settings.deadLinkDemotion ? demotedHashes() : undefined,
+      canonicalTitle: meta.name,
       capabilities: settings.capabilityMatching
         ? detectScoreCapabilities(
             "__TAURI_INTERNALS__" in window && settings.playerEngine !== "html5" ? "mpv" : "html5",
