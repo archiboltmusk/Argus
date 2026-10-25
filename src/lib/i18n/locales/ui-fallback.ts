@@ -1,5 +1,6 @@
 // Newly introduced UI copy remains usable until each locale provides an override.
 const uiFallback: Record<string, string> = {
+  "One view of every stream": "One view of every stream",
   "Mark as correct working link": "Mark as correct working link",
   "Unmark correct link": "Unmark correct link",
   "Mark link as dead/broken": "Mark link as dead/broken",
