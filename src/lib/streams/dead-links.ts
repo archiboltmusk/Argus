@@ -161,7 +161,105 @@ export function parseHostList(raw: string): string[] {
     .filter(Boolean);
 }
 
-/** Host of a direct-HTTP stream URL, or null for torrents and malformed URLs. */
+/** Key identifying a stream across torrents, URLs or addon payloads. */
+export function streamTargetKey(stream: {
+  infoHash?: string | null;
+  url?: string | null;
+  addonId?: string | null;
+  title?: string | null;
+  name?: string | null;
+} | null | undefined): string | null {
+  if (!stream) return null;
+  if (stream.infoHash) return stream.infoHash.toLowerCase();
+  if (stream.url) {
+    try {
+      const u = new URL(stream.url);
+      return `u:${u.hostname}${u.pathname}`.toLowerCase();
+    } catch {
+      return `u:${stream.url.toLowerCase()}`;
+    }
+  }
+  const addon = stream.addonId ? `${stream.addonId}:` : "";
+  const label = stream.title || stream.name;
+  if (label) return `t:${addon}${label}`.toLowerCase();
+  return null;
+}
+
+export function isStreamTargetVerified(
+  stream: {
+    infoHash?: string | null;
+    url?: string | null;
+    addonId?: string | null;
+    title?: string | null;
+    name?: string | null;
+  } | null | undefined,
+  kv: KV | null = defaultKv(),
+  now = Date.now(),
+): boolean {
+  const key = streamTargetKey(stream);
+  if (!key) return false;
+  return verifiedCorrectHashes(kv, now).includes(key);
+}
+
+export function isStreamTargetDead(
+  stream: {
+    infoHash?: string | null;
+    url?: string | null;
+    addonId?: string | null;
+    title?: string | null;
+    name?: string | null;
+  } | null | undefined,
+  kv: KV | null = defaultKv(),
+  now = Date.now(),
+): boolean {
+  const key = streamTargetKey(stream);
+  if (!key) return false;
+  return demotedHashes(kv, now).includes(key);
+}
+
+export function markStreamAsCorrect(
+  stream: {
+    infoHash?: string | null;
+    url?: string | null;
+    addonId?: string | null;
+    title?: string | null;
+    name?: string | null;
+  } | null | undefined,
+  kv: KV | null = defaultKv(),
+  now = Date.now(),
+) {
+  const key = streamTargetKey(stream);
+  if (key) markHashAsCorrect(key, kv, now);
+}
+
+export function unmarkStreamCorrect(
+  stream: {
+    infoHash?: string | null;
+    url?: string | null;
+    addonId?: string | null;
+    title?: string | null;
+    name?: string | null;
+  } | null | undefined,
+  kv: KV | null = defaultKv(),
+) {
+  const key = streamTargetKey(stream);
+  if (key) unmarkHashCorrect(key, kv);
+}
+
+export function markStreamAsDead(
+  stream: {
+    infoHash?: string | null;
+    url?: string | null;
+    addonId?: string | null;
+    title?: string | null;
+    name?: string | null;
+  } | null | undefined,
+  kv: KV | null = defaultKv(),
+  now = Date.now(),
+) {
+  const key = streamTargetKey(stream);
+  if (key) markHashAsDead(key, kv, now);
+}
 export function streamHost(url: string | null | undefined): string | null {
   if (!url) return null;
   try {

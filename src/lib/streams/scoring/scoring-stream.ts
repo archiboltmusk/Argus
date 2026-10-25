@@ -151,12 +151,27 @@ export function scoreStream(
     }
   }
 
-  if (s.infoHash && opts.demotedHashes?.includes(s.infoHash.toLowerCase())) {
+  const targetKey = s.infoHash
+    ? s.infoHash.toLowerCase()
+    : s.url
+      ? (() => {
+          try {
+            const u = new URL(s.url);
+            return `u:${u.hostname}${u.pathname}`.toLowerCase();
+          } catch {
+            return `u:${s.url.toLowerCase()}`;
+          }
+        })()
+      : s.title || s.name
+        ? `t:${s.addonId ? `${s.addonId}:` : ""}${s.title || s.name}`.toLowerCase()
+        : null;
+
+  if (targetKey && opts.demotedHashes?.includes(targetKey)) {
     score -= 200;
     reasons.push({ signal: "dead-link", delta: -200 });
   }
 
-  if (s.infoHash && opts.verifiedHashes?.includes(s.infoHash.toLowerCase())) {
+  if (targetKey && opts.verifiedHashes?.includes(targetKey)) {
     score += 150;
     reasons.push({ signal: "verified-correct-link", delta: 150 });
   }
