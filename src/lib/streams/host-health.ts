@@ -147,6 +147,15 @@ export function getHostScoreBonus(url: string | null | undefined): number {
   return 0;
 }
 
+/** Get host's recorded EWMA throughput in Mbps (if known) */
+export function getHostEwmaMbps(url: string | null | undefined): number | null {
+  const host = streamHost(url);
+  if (!host) return null;
+  const store = loadStore();
+  const metric = store[host];
+  return metric && metric.sampleCount > 0 ? metric.ewmaMbps : null;
+}
+
 /** Reset host health history (testing/maintenance) */
 export function clearHostHealthStore(): void {
   inMemoryStore = {};

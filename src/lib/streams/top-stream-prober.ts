@@ -4,7 +4,7 @@ import {
   type SpeedProbeResult,
 } from "./speed-probe";
 import type { ScoredStream, Stream } from "./types";
-import { recordHostThroughput, recordHostFailure, getHostScoreBonus } from "./host-health";
+import { recordHostThroughput, recordHostFailure, getHostScoreBonus, getHostEwmaMbps } from "./host-health";
 
 function headersOf(stream: Stream): Record<string, string> | undefined {
   const hints = stream.behaviorHints;
@@ -72,24 +72,29 @@ function estimateStreamRequiredMbps(s: ScoredStream): number {
 }
 
 function calculateProbeAdjustment(s: ScoredStream, probe: SpeedProbeResult | undefined): number {
-  if (!probe) return 0;
-  if (!probe.ok) return -80;
-
   const required = estimateStreamRequiredMbps(s);
-  const ratio = probe.mbps / Math.max(required, 0.5);
 
-  if (ratio >= 2.0) {
-    // Verified CDN delivery with >= 2x playback headroom: seamless streaming guaranteed
-    return 35;
+  // If live probe is not available, check historical host EWMA throughput
+  const measuredMbps = probe && probe.ok ? probe.mbps : (s.url ? getHostEwmaMbps(s.url) : null);
+
+  if (measuredMbps != null) {
+    const ratio = measuredMbps / Math.max(required, 0.5);
+    if (ratio >= 2.0) {
+      // Verified CDN delivery with >= 2x playback headroom: seamless streaming guaranteed
+      return 35;
+    }
+    if (ratio >= 1.2) {
+      // Solid headroom
+      return 15;
+    }
+    if (ratio < 0.85) {
+      // Insufficient throughput to sustain playback: will inevitably buffer
+      return -60;
+    }
+    return 0;
   }
-  if (ratio >= 1.2) {
-    // Solid headroom
-    return 15;
-  }
-  if (ratio < 0.85) {
-    // Insufficient throughput to sustain playback: will inevitably buffer
-    return -60;
-  }
+
+  if (probe && !probe.ok) return -80;
   return 0;
 }
 

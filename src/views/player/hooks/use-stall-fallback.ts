@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { PlayerSnapshot } from "@/lib/player/bridge";
+import type { PlayerSnapshot, PlayerBridge } from "@/lib/player/bridge";
 import type { PlayerSrc } from "@/lib/view";
 import type { DebridStore } from "@/lib/debrid/types";
 import type { ScoredStream } from "@/lib/streams/types";
@@ -27,6 +27,7 @@ export function useStallFallback(params: {
   onSwitchStream: (stream: ScoredStream) => Promise<void>;
   openSwitcher: () => void;
   inRoom?: boolean;
+  bridgeRef?: React.RefObject<PlayerBridge | null>;
 }) {
   const {
     src,
@@ -36,6 +37,7 @@ export function useStallFallback(params: {
     onSwitchStream,
     openSwitcher,
     inRoom = false,
+    bridgeRef,
   } = params;
 
   const [stallOffer, setStallOffer] = useState<StallOffer | null>(null);
@@ -48,6 +50,8 @@ export function useStallFallback(params: {
   const autoSwapTimestampsRef = useRef<number[]>([]);
   // Seek grace period: protect user scrubs from being mistaken for stalls
   const seekGraceUntilRef = useRef<number>(0);
+  const microStretchActiveRef = useRef<boolean>(false);
+  const originalRateRef = useRef<number>(1.0);
 
   // Reset tracking on source change & pre-resolve hot standby fallback stream
   useEffect(() => {
@@ -105,6 +109,21 @@ export function useStallFallback(params: {
     // immediately cancel any pending stall offer so momentary speed drops don't switch links!
     if ((progressAdvance || bufferHealthy) && !switchingRef.current) {
       setStallOffer(null);
+    }
+
+    // Micro-Time-Stretching (Twitch/YouTube technique):
+    // When buffer runway dips dangerously low (< 1.2s), subtly apply 0.95x speed to give
+    // network runway time to replenish without ever freezing. Restore 1.0x once buffer >= 3.0s.
+    if (bridgeRef?.current && snap.status === "playing" && !src.isLive && !inRoom) {
+      const buf = snap.bufferedSec;
+      if (buf > 0 && buf < 1.2 && !microStretchActiveRef.current && (snap.rate ?? 1.0) >= 0.98) {
+        microStretchActiveRef.current = true;
+        originalRateRef.current = snap.rate ?? 1.0;
+        bridgeRef.current.setRate(0.95 * originalRateRef.current);
+      } else if (microStretchActiveRef.current && (buf >= 3.0 || buf === 0)) {
+        microStretchActiveRef.current = false;
+        bridgeRef.current.setRate(originalRateRef.current);
+      }
     }
   }, [snap.positionSec, snap.lastDecodedFrameAt, snap.bufferedSec, snap.status, src.url]);
 

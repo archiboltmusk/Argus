@@ -24,3 +24,12 @@ export function prewarmCandidateStream(stream: ScoredStream | null | undefined):
   // Silently trigger background probe / warm connection
   void probeStreamSpeed(url, { sampleBytes: 1_000_000 }).catch(() => {});
 }
+
+/**
+ * Pre-warm the top N candidate streams (primary and hot standby runners-up)
+ */
+export function prewarmTopCandidates(streams: ScoredStream[], count = 2): void {
+  for (let i = 0; i < Math.min(streams.length, count); i++) {
+    prewarmCandidateStream(streams[i]);
+  }
+}

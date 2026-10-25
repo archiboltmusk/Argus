@@ -1348,6 +1348,7 @@ function NativePlayerView({ src }: { src: PlayerSrc }) {
     onSwitchStream,
     openSwitcher: () => setSwitcherOpen(true),
     inRoom,
+    bridgeRef,
   });
   const {
     upgradeOffer,
