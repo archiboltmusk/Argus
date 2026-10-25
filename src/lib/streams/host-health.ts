@@ -120,14 +120,15 @@ export function getHostScoreBonus(url: string | null | undefined): number {
   const metric = store[host];
   if (!metric) return 0;
 
-  // Circuit breaker: Host has failed 2+ times recently (within 20 mins)
+  // Circuit breaker: Host has failed 3+ times recently (within 20 mins)
+  // Requiring 3 failures prevents a single missing/broken video from penalizing an entire multi-tenant CDN host
   const now = Date.now();
-  if (metric.consecutiveFailures >= 2 && metric.lastFailureAt && now - metric.lastFailureAt < 20 * 60 * 1000) {
+  if (metric.consecutiveFailures >= 3 && metric.lastFailureAt && now - metric.lastFailureAt < 20 * 60 * 1000) {
     return -75; // Heavily de-rank unviable CDN host
   }
 
-  if (metric.consecutiveFailures >= 1 && metric.lastFailureAt && now - metric.lastFailureAt < 5 * 60 * 1000) {
-    return -40;
+  if (metric.consecutiveFailures >= 2 && metric.lastFailureAt && now - metric.lastFailureAt < 5 * 60 * 1000) {
+    return -35;
   }
 
   // Consistent fast host with adequate samples

@@ -122,7 +122,7 @@ import { StudyNotesModal } from "./player/study-notes-modal";
 import { AmbientEdgeGlow } from "@/components/player/ambient-edge-glow";
 import { HdrStageBridge } from "./player/hdr-stage-bridge";
 import { setSkipSegmentsView } from "@/lib/skip-intro/segment-store";
-import { markStreamDead, STUB_TTL_MS } from "@/lib/dead-streams";
+import { markStreamDead, STUB_TTL_MS, SOFT_STALL_TTL_MS } from "@/lib/dead-streams";
 import type { VolumeIndicatorState } from "@/components/player/volume-indicator";
 import type { ToastInfo } from "@/views/addons/addons-types";
 import { SFX } from "@/lib/sfx";
@@ -743,7 +743,7 @@ function NativePlayerView({ src }: { src: PlayerSrc }) {
       }
       const s = stallSrcRef.current;
       autoAdvancedRef.current = true;
-      if (s.streamRef) markStreamDead(s.streamRef, "load-failed", STUB_TTL_MS);
+      if (s.streamRef) markStreamDead(s.streamRef, "load-failed", SOFT_STALL_TTL_MS);
       exitPlayback();
       openPicker(s.meta, s.episode, {
         autoPlay: true,

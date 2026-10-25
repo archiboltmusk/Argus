@@ -26,5 +26,9 @@ test("Host Health EWMA penalizes failing hosts and boosts consistent fast hosts"
   // Record 2 failures for failingUrl
   recordHostFailure(failingUrl);
   recordHostFailure(failingUrl);
+  assert.equal(getHostScoreBonus(failingUrl), -35); // Soft penalty for 2 failures
+
+  // 3rd failure trips the circuit breaker
+  recordHostFailure(failingUrl);
   assert.equal(getHostScoreBonus(failingUrl), -75); // Circuit breaker penalty
 });

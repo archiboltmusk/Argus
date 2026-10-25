@@ -46,6 +46,8 @@ export function useStallFallback(params: {
 
   // Circuit breaker: Rate limit automatic failovers (max 3 auto-swaps per 60 seconds)
   const autoSwapTimestampsRef = useRef<number[]>([]);
+  // Seek grace period: protect user scrubs from being mistaken for stalls
+  const seekGraceUntilRef = useRef<number>(0);
 
   // Reset tracking on source change & pre-resolve hot standby fallback stream
   useEffect(() => {
@@ -80,7 +82,14 @@ export function useStallFallback(params: {
   // Track decoded frame / position advancement and buffer recovery
   useEffect(() => {
     const pos = snap.positionSec;
-    const progressAdvance = Math.abs(pos - lastPosRef.current) > 0.1 || snap.lastDecodedFrameAt;
+    const delta = Math.abs(pos - lastPosRef.current);
+    // User manual seek detected: position jump > 2.0s without continuous frames
+    if (delta > 2.0) {
+      seekGraceUntilRef.current = Date.now() + 8000;
+      lastProgressAtRef.current = Date.now();
+      setStallOffer(null);
+    }
+    const progressAdvance = delta > 0.1 || snap.lastDecodedFrameAt;
     const bufferHealthy = snap.bufferedSec >= 1.5;
 
     if (progressAdvance) {
@@ -101,7 +110,8 @@ export function useStallFallback(params: {
 
   // Periodic stall evaluator (runs every 500ms while active)
   useEffect(() => {
-    if (src.isLive || inRoom || isLocalUrl(src.url)) return;
+    const isLiveStream = src.isLive || /\.m3u8(\?|#|$)/i.test(src.url) || src.url.includes("/live/");
+    if (isLiveStream || inRoom || isLocalUrl(src.url)) return;
     if (snap.status === "paused" || snap.status === "ended") {
       lastProgressAtRef.current = Date.now();
       setStallOffer(null);
@@ -110,7 +120,7 @@ export function useStallFallback(params: {
 
     const interval = window.setInterval(() => {
       const now = Date.now();
-      if (now < dismissedUntilRef.current || switchingRef.current) return;
+      if (now < dismissedUntilRef.current || now < seekGraceUntilRef.current || switchingRef.current) return;
 
       const stall = evaluateStallStatus({
         status: snap.status,
