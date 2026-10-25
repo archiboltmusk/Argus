@@ -34,7 +34,12 @@ const { buildEpisodePipelineInput } = load("../src/lib/streams/episode-pipeline-
   "./anime-identity-core": { animeAbsoluteFromScopedId, splitAnimeStreamCoordinates },
   "./plugins/addon": pluginMocks,
   "./stream-ids": { preferredAnimeImdbStreamId, unverifiedAnimeSeasonId },
-  "@/lib/streams/dead-links": { demotedHashes: () => new Set(), parseGroupList: () => [], parseHostList: () => [] },
+  "@/lib/streams/dead-links": {
+    demotedHashes: () => new Set(),
+    verifiedCorrectHashes: () => [],
+    parseGroupList: () => [],
+    parseHostList: () => [],
+  },
   "@/lib/capabilities": { detectScoreCapabilities: () => ({}) },
   "@/lib/metadata-fusion/aliases": { cachedAliases: () => [], loadAliases: () => {} },
 });
