@@ -83,7 +83,7 @@ export function useStallFallback(params: {
         lastDecodedFrameAt: snap.lastDecodedFrameAt,
         lastProgressAt: lastProgressAtRef.current,
         now,
-        stallTimeoutMs: STALL_TIMEOUT_MS,
+        stallTimeoutMs: autoSwitchEnabled ? 4000 : STALL_TIMEOUT_MS,
       });
 
       if (stall.isStalled) {

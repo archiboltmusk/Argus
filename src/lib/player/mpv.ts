@@ -211,7 +211,7 @@ function defaultVodBufferProperties(
   }
   return [
     ["cache-secs", "300"],
-    ["cache-pause-wait", highBitrate ? "2" : "1"],
+    ["cache-pause-wait", highBitrate ? "5" : "4"],
     ["demuxer-max-bytes", highBitrate ? "768MiB" : "512MiB"],
     ["demuxer-max-back-bytes", "64MiB"],
     ["demuxer-readahead-secs", "300"],
