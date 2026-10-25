@@ -165,9 +165,9 @@ export function usePipelineResult({
         setPipelineDone(true);
         setPickerCache(meta, episode, r, configHash, true, animePreference);
 
-        // Background CDN speed verification: probe top candidate streams and promote the fastest
+        // Background CDN speed verification: probe top candidate streams (up to 6) and promote the fastest
         try {
-          const probes = await probeTopStreams(r.picker.all, 3, ac.signal);
+          const probes = await probeTopStreams(r.picker.all, 6, ac.signal);
           if (!ac.signal.aborted && probes.size > 0) {
             const reRanked = applySpeedProbeBonuses(r.picker.all, probes);
             setResult((prev) => {

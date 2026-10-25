@@ -19,7 +19,7 @@ function headersOf(stream: Stream): Record<string, string> | undefined {
  */
 export async function probeTopStreams(
   streams: ScoredStream[],
-  maxProbeCount = 3,
+  maxProbeCount = 6,
   signal?: AbortSignal,
 ): Promise<Map<string, SpeedProbeResult>> {
   const results = new Map<string, SpeedProbeResult>();
