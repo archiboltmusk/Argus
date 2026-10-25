@@ -4,6 +4,8 @@ export type SubtitleContentContext = {
   candidateIds: string[];
   stremioId: string | null;
   filename: string | null;
+  mediaUrl?: string | null;
+  headers?: Record<string, string> | null;
   /**
    * Anime-aware search coordinates for the playing episode: seasonal anime
    * carry season + within-season episode, long-running anime only the

@@ -1571,6 +1571,7 @@ pub fn run() {
             subsync::fingerprint::compute_chromaprint,
             subsync::asr::asr_transcribe_windows,
             subsync::asr::asr_verify,
+            subsync::asr::asr_generate_subtitles,
             sub_extract::subtitle_extract,
             sub_extract::subtitle_extract_ass,
             cast_server::stop_stremio_sidecar,

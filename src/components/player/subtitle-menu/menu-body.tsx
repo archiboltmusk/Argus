@@ -6,9 +6,12 @@ import {
   RotateCw,
   Search as SearchIcon,
   Sparkles,
+  Wand2,
   X,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
+import { invoke } from "@tauri-apps/api/core";
+import { useSubtitleContext } from "./subtitle-context-store";
 import { Flag } from "@/components/flag";
 import { hasImportedSubTitle, markImportedSub, useImportedSubs } from "@/lib/player/imported-subs";
 import { setSecondarySub } from "@/lib/player/secondary-sub";
@@ -127,6 +130,60 @@ export function MenuBody(props: SubtitleMenuProps & { onClose: () => void }) {
   const applyBestMatch = () => {
     if (!best || best.track.id === selectedId) return;
     onSelect(best.track.id);
+  };
+
+  const subContext = useSubtitleContext();
+  const [generatingWhisper, setGeneratingWhisper] = useState(false);
+  const [whisperStatus, setWhisperStatus] = useState<string | null>(null);
+
+  const generateWithWhisper = async () => {
+    if (!subContext?.mediaUrl) {
+      setLocalError(tr("No stream URL available to extract audio."));
+      return;
+    }
+    setLocalError(null);
+    setGeneratingWhisper(true);
+    setWhisperStatus(tr("Transcribing audio with local Whisper…"));
+
+    try {
+      const srt = await invoke<string>("asr_generate_subtitles", {
+        url: subContext.mediaUrl,
+        headers: subContext.headers ?? null,
+        lang: null,
+      });
+
+      if (!srt || srt.trim().length === 0) {
+        setLocalError(tr("No speech detected or Whisper transcription returned empty."));
+        setGeneratingWhisper(false);
+        setWhisperStatus(null);
+        return;
+      }
+
+      // Convert SRT to a Data URL / Blob URL for the player to mount
+      const blob = new Blob([srt], { type: "text/plain;charset=utf-8" });
+      const blobUrl = URL.createObjectURL(blob);
+      const name = "Whisper AI (Mac Metal)";
+
+      const ok = await props.onAddSubtitle(blobUrl, "en", name, {
+        format: "srt",
+        timingMeasurementStatus: "exact",
+      });
+
+      if (ok === false) {
+        setLocalError(tr("Could not mount generated subtitles into the player."));
+      } else {
+        markImportedSub(name);
+        setActiveLang(ALL_LANGS);
+        setJustImported(name);
+        window.setTimeout(() => onClose(), 1700);
+      }
+    } catch (e: any) {
+      console.error("[whisper] failed to generate subtitles:", e);
+      setLocalError(typeof e === "string" ? e : (e?.message ?? tr("Whisper transcription failed.")));
+    } finally {
+      setGeneratingWhisper(false);
+      setWhisperStatus(null);
+    }
   };
 
   const loadLocal = async () => {
@@ -459,6 +516,13 @@ export function MenuBody(props: SubtitleMenuProps & { onClose: () => void }) {
             </div>
           )}
 
+          {whisperStatus && (
+            <div className="flex shrink-0 items-center gap-2 border-t border-edge-soft bg-accent-soft/20 px-3 py-1.5 text-[11.5px] text-accent">
+              <Loader2 size={12} className="animate-spin" />
+              <span>{whisperStatus}</span>
+            </div>
+          )}
+
           {localError && (
             <div className="shrink-0 border-t border-edge-soft bg-danger/10 px-3 py-1.5 text-[11.5px] text-danger">
               {localError}
@@ -477,15 +541,31 @@ export function MenuBody(props: SubtitleMenuProps & { onClose: () => void }) {
               {searchOpen ? tr("Hide search") : tr("Find more subtitles")}
             </button>
             {isTauri && (
-              <HoverTooltip label={tr("Load a .srt or .ass from your computer")} align="end">
-                <button
-                  onClick={() => void loadLocal()}
-                  className="flex h-full shrink-0 items-center gap-2 border-s border-edge-soft px-3 py-2 text-[12px] font-semibold text-ink-muted transition-colors hover:bg-canvas/40 hover:text-ink"
-                >
-                  <FolderOpen size={12} strokeWidth={2.2} />
-                  {tr("Load file")}
-                </button>
-              </HoverTooltip>
+              <>
+                <HoverTooltip label={tr("Generate subtitles offline with local Whisper ASR on Mac Metal")} align="end">
+                  <button
+                    disabled={generatingWhisper}
+                    onClick={() => void generateWithWhisper()}
+                    className="flex h-full shrink-0 items-center gap-1.5 border-s border-edge-soft px-3 py-2 text-[12px] font-semibold text-accent transition-colors hover:bg-accent-soft/20 disabled:opacity-50"
+                  >
+                    {generatingWhisper ? (
+                      <Loader2 size={12} className="animate-spin" />
+                    ) : (
+                      <Sparkles size={12} strokeWidth={2.2} />
+                    )}
+                    {tr("Generate")}
+                  </button>
+                </HoverTooltip>
+                <HoverTooltip label={tr("Load a .srt or .ass from your computer")} align="end">
+                  <button
+                    onClick={() => void loadLocal()}
+                    className="flex h-full shrink-0 items-center gap-2 border-s border-edge-soft px-3 py-2 text-[12px] font-semibold text-ink-muted transition-colors hover:bg-canvas/40 hover:text-ink"
+                  >
+                    <FolderOpen size={12} strokeWidth={2.2} />
+                    {tr("Load file")}
+                  </button>
+                </HoverTooltip>
+              </>
             )}
           </div>
         </section>

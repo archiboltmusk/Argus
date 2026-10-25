@@ -3,7 +3,7 @@ use std::io::Write;
 use std::path::PathBuf;
 use tauri::{Emitter, Manager};
 
-const MODEL_URL: &str = "https://argus.invalid/models/ggml-tiny.bin";
+const MODEL_URL: &str = "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-tiny.bin";
 const MODEL_FILE: &str = "ggml-tiny.bin";
 const MIN_VALID_BYTES: u64 = 1_000_000;
 

@@ -398,6 +398,60 @@ pub async fn asr_verify(
     }
 }
 
+#[tauri::command]
+pub async fn asr_generate_subtitles(
+    app: tauri::AppHandle,
+    url: String,
+    headers: Option<HashMap<String, String>>,
+    lang: Option<String>,
+) -> Result<String, String> {
+    url_guard::validate_media_url(&url, true)?;
+
+    #[cfg(not(feature = "asr-whisper"))]
+    return Err("Whisper ASR is not compiled into this build".to_string());
+
+    #[cfg(feature = "asr-whisper")]
+    {
+        let model_path = crate::asr_model::asr_ensure_model(app).await?;
+        let engine = load_engine(&model_path)?;
+        let hdrs = headers.unwrap_or_default();
+
+        let pcm = extract_pcm(&url, &hdrs, 0.0, None, None).await?;
+        let segments = engine.transcribe(&pcm, lang.as_deref().filter(|s| !s.is_empty()), false)?;
+
+        let mut srt = String::new();
+        for (i, seg) in segments.iter().enumerate() {
+            let t0_ms = (seg.t0 * 1000.0).round() as u64;
+            let t1_ms = (seg.t1 * 1000.0).round() as u64;
+
+            let h0 = t0_ms / 3_600_000;
+            let m0 = (t0_ms % 3_600_000) / 60_000;
+            let s0 = (t0_ms % 60_000) / 1000;
+            let ms0 = t0_ms % 1000;
+
+            let h1 = t1_ms / 3_600_000;
+            let m1 = (t1_ms % 3_600_000) / 60_000;
+            let s1 = (t1_ms % 60_000) / 1000;
+            let ms1 = t1_ms % 1000;
+
+            let text = seg.text.trim();
+            if text.is_empty() {
+                continue;
+            }
+
+            srt.push_str(&format!("{}\n", i + 1));
+            srt.push_str(&format!(
+                "{:02}:{:02}:{:02},{:03} --> {:02}:{:02}:{:02},{:03}\n",
+                h0, m0, s0, ms0, h1, m1, s1, ms1
+            ));
+            srt.push_str(text);
+            srt.push_str("\n\n");
+        }
+
+        Ok(srt)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

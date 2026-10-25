@@ -208,6 +208,8 @@ export function useTrackAutoload(params: {
       ),
       stremioId: src.meta.id ?? null,
       filename: subtitleStreamDescriptor(src.streamRef) ?? null,
+      mediaUrl: src.url ?? null,
+      headers: (src.streamRef as any)?.behaviorHints?.proxyHeaders?.request ?? null,
     });
     return () => publishSubtitleContext(null);
   }, [resolutionSettled, resolvedImdbId, resolvedImdbVerified, src]);
@@ -292,6 +294,8 @@ export function useTrackAutoload(params: {
         candidateIds,
         stremioId: src.meta.id ?? null,
         filename: subtitleStreamDescriptor(src.streamRef) ?? null,
+        mediaUrl: src.url ?? null,
+        headers: (src.streamRef as any)?.behaviorHints?.proxyHeaders?.request ?? null,
         searchSeason,
         searchEpisode,
       });

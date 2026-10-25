@@ -1,5 +1,12 @@
 // Newly introduced UI copy remains usable until each locale provides an override.
 const uiFallback: Record<string, string> = {
+  "No stream URL available to extract audio.": "No stream URL available to extract audio.",
+  "Transcribing audio with local Whisper…": "Transcribing audio with local Whisper…",
+  "No speech detected or Whisper transcription returned empty.": "No speech detected or Whisper transcription returned empty.",
+  "Could not mount generated subtitles into the player.": "Could not mount generated subtitles into the player.",
+  "Whisper transcription failed.": "Whisper transcription failed.",
+  "Generate subtitles offline with local Whisper ASR on Mac Metal": "Generate subtitles offline with local Whisper ASR on Mac Metal",
+  "Generate": "Generate",
   "One view of every stream": "One view of every stream",
   "Mark as correct working link": "Mark as correct working link",
   "Unmark correct link": "Unmark correct link",
