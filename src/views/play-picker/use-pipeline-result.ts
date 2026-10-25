@@ -156,19 +156,18 @@ export function usePipelineResult({
         setAddonQuorum(progress);
       },
     )
-      .then((r) => {
+      .then(async (r) => {
         if (ac.signal.aborted) return;
         stampAddonOrder(r.picker.all, r.raw.addon);
         setResult(r);
         setLoading(false);
         setPipelineDone(true);
-        setAutoSettleReady(true);
         setPickerCache(meta, episode, r, configHash, true, animePreference);
 
         // Background CDN speed verification: probe top candidate streams and promote the fastest
-        void probeTopStreams(r.picker.all, 3, ac.signal)
-          .then((probes) => {
-            if (ac.signal.aborted || probes.size === 0) return;
+        try {
+          const probes = await probeTopStreams(r.picker.all, 3, ac.signal);
+          if (!ac.signal.aborted && probes.size > 0) {
             const reRanked = applySpeedProbeBonuses(r.picker.all, probes);
             setResult((prev) => {
               if (!prev || ac.signal.aborted) return prev;
@@ -183,8 +182,12 @@ export function usePipelineResult({
               setPickerCache(meta, episode, next, configHash, true, animePreference);
               return next;
             });
-          })
-          .catch(() => {});
+          }
+        } catch {}
+
+        if (!ac.signal.aborted) {
+          setAutoSettleReady(true);
+        }
       })
       .catch((e) => {
         if (ac.signal.aborted) return;
