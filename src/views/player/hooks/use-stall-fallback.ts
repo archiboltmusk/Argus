@@ -5,6 +5,8 @@ import type { DebridStore } from "@/lib/debrid/types";
 import type { ScoredStream } from "@/lib/streams/types";
 import { isLocalUrl } from "@/lib/player/local-url";
 import { peekPickerCache } from "@/lib/picker-cache";
+import { prepareCachedDebridStreams } from "@/lib/debrid/playback-preparation";
+import { markStreamDead, STUB_TTL_MS } from "@/lib/dead-streams";
 import {
   evaluateStallStatus,
   findNextFallbackStream,
@@ -41,14 +43,30 @@ export function useStallFallback(params: {
   const lastPosRef = useRef<number>(snap.positionSec);
   const switchingRef = useRef(false);
 
-  // Reset tracking on source change
+  // Reset tracking on source change & pre-resolve hot standby fallback stream
   useEffect(() => {
     lastProgressAtRef.current = Date.now();
     lastPosRef.current = snap.positionSec;
     setStallOffer(null);
     switchingRef.current = false;
     dismissedUntilRef.current = 0;
-  }, [src.url]);
+
+    // Hot Standby Stream: As soon as a stream starts playing, quietly pre-resolve
+    // the #1 next best fallback stream into cache so any future failover is instant (0ms delay)
+    if (!src.isLive && !inRoom && debrids.length > 0) {
+      const cacheEntry = peekPickerCache(src.meta, src.episode);
+      const candidates = cacheEntry?.result?.picker?.all ?? [];
+      const currentHash = src.streamRef?.infoHash;
+      const standby = findNextFallbackStream(candidates, src.url, currentHash, debrids);
+      if (standby) {
+        const hint = src.episode
+          ? { season: src.episode.season ?? null, episode: src.episode.episode ?? null }
+          : undefined;
+        const ac = new AbortController();
+        void prepareCachedDebridStreams([standby], debrids, hint, ac.signal).catch(() => {});
+      }
+    }
+  }, [src.url, src.meta, src.episode, src.isLive, inRoom, src.streamRef?.infoHash, debrids]);
 
   // Track decoded frame / position advancement
   useEffect(() => {
@@ -97,7 +115,7 @@ export function useStallFallback(params: {
           if (prev) return prev;
           return {
             nextStream,
-            secondsLeft: autoSwitchEnabled && nextStream ? 4 : null,
+            secondsLeft: autoSwitchEnabled && nextStream ? 1 : null,
           };
         });
       }
@@ -127,6 +145,12 @@ export function useStallFallback(params: {
       if (stallOffer.nextStream && !switchingRef.current) {
         switchingRef.current = true;
         setStallOffer(null);
+        // Mark current failing stream dead for 4 hours so it won't be picked again in loops
+        if (src.streamRef) {
+          markStreamDead(src.streamRef, "playback-stalled", STUB_TTL_MS);
+        } else if (src.url) {
+          markStreamDead({ url: src.url }, "playback-stalled", STUB_TTL_MS);
+        }
         void onSwitchStream(stallOffer.nextStream).finally(() => {
           switchingRef.current = false;
         });
@@ -158,10 +182,15 @@ export function useStallFallback(params: {
     switchingRef.current = true;
     const target = stallOffer.nextStream;
     setStallOffer(null);
+    if (src.streamRef) {
+      markStreamDead(src.streamRef, "playback-stalled", STUB_TTL_MS);
+    } else if (src.url) {
+      markStreamDead({ url: src.url }, "playback-stalled", STUB_TTL_MS);
+    }
     void onSwitchStream(target).finally(() => {
       switchingRef.current = false;
     });
-  }, [stallOffer, onSwitchStream, openSwitcher]);
+  }, [stallOffer, onSwitchStream, openSwitcher, src.streamRef, src.url]);
 
   return {
     stallOffer,

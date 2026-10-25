@@ -1,5 +1,6 @@
 import type { ScoredStream } from "@/lib/streams/types";
 import type { DebridStore } from "@/lib/debrid/types";
+import { isStreamDead } from "@/lib/dead-streams";
 
 export const STALL_TIMEOUT_MS = 8000;
 
@@ -7,6 +8,11 @@ export function isStreamPlayable(
   stream: ScoredStream,
   debrids: DebridStore[],
 ): boolean {
+  // If the stream has been flagged dead or stubbed, don't consider it playable
+  if (isStreamDead(stream)) {
+    return false;
+  }
+
   // Direct HTTP streams are playable without debrid
   if (!stream.infoHash && stream.url) {
     if (stream.url.startsWith("http://") || stream.url.startsWith("https://")) {
