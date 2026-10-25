@@ -4,6 +4,7 @@ import {
   type SpeedProbeResult,
 } from "./speed-probe";
 import type { ScoredStream, Stream } from "./types";
+import { recordHostThroughput, recordHostFailure, getHostScoreBonus } from "./host-health";
 
 function headersOf(stream: Stream): Record<string, string> | undefined {
   const hints = stream.behaviorHints;
@@ -48,6 +49,9 @@ export async function probeTopStreams(
         });
         if (res.ok) {
           results.set(s.url, res);
+          recordHostThroughput(s.url, res.mbps, res.latencyMs);
+        } else {
+          recordHostFailure(s.url);
         }
       } catch {}
     }),
@@ -101,8 +105,11 @@ export function applySpeedProbeBonuses(
     const probeA = a.url ? probes.get(a.url) : undefined;
     const probeB = b.url ? probes.get(b.url) : undefined;
 
-    const scoreA = a.score + calculateProbeAdjustment(a, probeA);
-    const scoreB = b.score + calculateProbeAdjustment(b, probeB);
+    const hostBonusA = getHostScoreBonus(a.url);
+    const hostBonusB = getHostScoreBonus(b.url);
+
+    const scoreA = a.score + calculateProbeAdjustment(a, probeA) + hostBonusA;
+    const scoreB = b.score + calculateProbeAdjustment(b, probeB) + hostBonusB;
 
     return scoreB - scoreA;
   });

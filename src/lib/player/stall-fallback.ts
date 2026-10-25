@@ -1,8 +1,22 @@
-import type { ScoredStream } from "@/lib/streams/types";
+import type { ScoredStream, Resolution } from "@/lib/streams/types";
 import type { DebridStore } from "@/lib/debrid/types";
 import { isStreamDead } from "@/lib/dead-streams";
+import { getHostScoreBonus } from "@/lib/streams/host-health";
 
 export const STALL_TIMEOUT_MS = 8000;
+
+const RESOLUTION_LADDER_ORDER: Record<string, number> = {
+  "4K": 4,
+  "1080p": 3,
+  "720p": 2,
+  "480p": 1,
+  SD: 0,
+};
+
+function resolutionRank(res?: Resolution | null): number {
+  if (!res) return 2.5; // Unknown default between 720p and 1080p
+  return RESOLUTION_LADDER_ORDER[res] ?? 2.5;
+}
 
 export function isStreamPlayable(
   stream: ScoredStream,
@@ -48,23 +62,49 @@ export function findNextFallbackStream(
     if (sameTorrent) return sameTorrent;
   }
 
-  // Second priority: Alternate candidate streams
-  for (const s of candidates) {
-    // Skip current stream by info hash
+  // Find the currently playing stream to reference its resolution for intelligent downshifting
+  const currentStream = candidates.find(
+    (s) =>
+      (currentUrl && s.url && s.url === currentUrl) ||
+      (currentInfoHash && s.infoHash && s.infoHash.toLowerCase() === currentInfoHash.toLowerCase()),
+  );
+  const currentResRank = currentStream ? resolutionRank(currentStream.resolution) : 3; // Default 1080p rank
+
+  // Filter playable alternate candidates
+  const eligible = candidates.filter((s) => {
     if (currentInfoHash && s.infoHash && s.infoHash.toLowerCase() === currentInfoHash.toLowerCase()) {
-      continue;
+      return false;
     }
-    // Skip current stream by URL
     if (currentUrl && s.url && s.url === currentUrl) {
-      continue;
+      return false;
     }
+    return isStreamPlayable(s, debrids);
+  });
 
-    if (isStreamPlayable(s, debrids)) {
-      return s;
-    }
-  }
+  if (eligible.length === 0) return null;
 
-  return null;
+  // Smart Adaptive Downshift Sorting:
+  // When a stream stalls, preferring a stream with <= current resolution prevents
+  // failing over to an even heavier 4K stream that will stall immediately.
+  // Combines resolution adaptation with CDN host health bonus.
+  const sorted = eligible.slice().sort((a, b) => {
+    const aRank = resolutionRank(a.resolution);
+    const bRank = resolutionRank(b.resolution);
+
+    // Penalize streams heavier than the one that just stalled
+    const aExcessPenalty = aRank > currentResRank ? 40 : 0;
+    const bExcessPenalty = bRank > currentResRank ? 40 : 0;
+
+    const aHostBonus = getHostScoreBonus(a.url);
+    const bHostBonus = getHostScoreBonus(b.url);
+
+    const scoreA = a.score - aExcessPenalty + aHostBonus;
+    const scoreB = b.score - bExcessPenalty + bHostBonus;
+
+    return scoreB - scoreA;
+  });
+
+  return sorted[0] ?? null;
 }
 
 export type StallState = {
