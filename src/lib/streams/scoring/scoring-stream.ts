@@ -57,7 +57,8 @@ export function scoreStream(
     }
   }
 
-  const isBandwidthConstrained = opts.bandwidthMbps != null && opts.bandwidthMbps <= 30;
+  const isBandwidthConstrained =
+    opts.bandwidthMbps != null && opts.bandwidthMbps > 0 && opts.bandwidthMbps <= 30;
   if (s.codec === "AV1") {
     const delta = isBandwidthConstrained ? 18 : 4;
     score += delta;

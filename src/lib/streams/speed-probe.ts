@@ -29,7 +29,13 @@ export function getCachedProbeSpeed(url: string): SpeedProbeResult | null {
   return hit.result;
 }
 
+const MAX_PROBE_CACHE_SIZE = 100;
+
 export function cacheProbeSpeed(url: string, result: SpeedProbeResult): void {
+  if (probeCache.size >= MAX_PROBE_CACHE_SIZE && !probeCache.has(url)) {
+    const oldestKey = probeCache.keys().next().value;
+    if (oldestKey) probeCache.delete(oldestKey);
+  }
   probeCache.set(url, { result, timestamp: Date.now() });
 }
 
