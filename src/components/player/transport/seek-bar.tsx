@@ -199,6 +199,7 @@ export function SeekBar({
           scrubbing={scrub != null}
           hovered={hover != null}
           segments={segmentSpans}
+          durationSec={durationSec}
         />
         {sharedMarks.map((mark, index) =>
           durationSec > 0 && mark.sec >= 0 && mark.sec <= durationSec ? (

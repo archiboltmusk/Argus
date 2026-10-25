@@ -162,6 +162,7 @@ export type PlayerBridge = {
   getSelectedTrackUrl: () => string | null;
   setAudioNormalize: (on: boolean) => void;
   setAudioProfile?: (profile: string) => void;
+  setAudioEqualizer?: (bands: number[], enabled: boolean) => void;
   setHdrToSdr?: (on: boolean, oled: boolean) => void;
   setAudioDevice?: (name: string) => void;
   setMediaInfo?: (info: { title: string; artist?: string; artwork?: string }) => void;

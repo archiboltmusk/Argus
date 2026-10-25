@@ -767,7 +767,16 @@ export function useTrackAutoload(params: {
     if (engine !== "mpv") return;
     bridgeRef.current?.setAudioNormalize(settings.audioNormalize);
     bridgeRef.current?.setAudioProfile?.(settings.audioProfile);
-  }, [engine, settings.audioNormalize, settings.audioProfile, bridgeRef]);
+    bridgeRef.current?.setAudioEqualizer?.(settings.audioEqualizerBands, settings.audioEqualizerEnabled);
+    bridgeRef.current?.setAudioEqualizer?.(settings.audioEqualizerBands, settings.audioEqualizerEnabled);
+  }, [
+    engine,
+    settings.audioNormalize,
+    settings.audioProfile,
+    settings.audioEqualizerBands,
+    settings.audioEqualizerEnabled,
+    bridgeRef,
+  ]);
   useEffect(() => {
     const subIdSig = subtitleAutoSelectionSignature(snap.subtitleTracks);
     const audioIdSig = JSON.stringify(
@@ -789,6 +798,7 @@ export function useTrackAutoload(params: {
     autoTrackKeyRef.current = key;
     bridgeRef.current?.setAudioNormalize(settings.audioNormalize);
     bridgeRef.current?.setAudioProfile?.(settings.audioProfile);
+    bridgeRef.current?.setAudioEqualizer?.(settings.audioEqualizerBands, settings.audioEqualizerEnabled);
 
     const prefs = readPlayerPrefs(src.meta.id);
     const isAnime =

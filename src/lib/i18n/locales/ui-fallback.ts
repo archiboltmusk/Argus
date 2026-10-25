@@ -1,5 +1,22 @@
 // Newly introduced UI copy remains usable until each locale provides an override.
 const uiFallback: Record<string, string> = {
+  "3D Spatial Audio": "3D Spatial Audio",
+  "Whisper Vocal Isolate": "Whisper Vocal Isolate",
+  "Dialogue Auto-Ducking": "Dialogue Auto-Ducking",
+  "10-Band EQ": "10-Band EQ",
+  "10-Band Graphic Equalizer": "10-Band Graphic Equalizer",
+  "Bypassed": "Bypassed",
+  "Clinical Case Simulator": "Clinical Case Simulator",
+  "Smart resume 5-second rewind": "Smart resume 5-second rewind",
+  "Automatically rewinds 5 seconds when resuming playback (past 15 seconds) so you can catch up on dialogue and context effortlessly, matching Netflix and Apple TV+.":
+    "Automatically rewinds 5 seconds when resuming playback (past 15 seconds) so you can catch up on dialogue and context effortlessly, matching Netflix and Apple TV+.",
+  "Audio & action timeline heatmap": "Audio & action timeline heatmap",
+  "Subtly renders an energy heatmap over the timeline to highlight high-intensity action and dialogue scenes.":
+    "Subtly renders an energy heatmap over the timeline to highlight high-intensity action and dialogue scenes.",
+  "Heads-up: a few addons (like AIOStatus) don't pre-fill from the URL. If the form loads blank, paste the existing manifest URL into their \"Import from URL\" field to restore your settings.":
+    "Heads-up: a few addons (like AIOStatus) don't pre-fill from the URL. If the form loads blank, paste the existing manifest URL into their \"Import from URL\" field to restore your settings.",
+  "Posters, logos, and title art load in the first available language from this list. \"Original\" uses the title's own language. Needs a TMDB key.":
+    "Posters, logos, and title art load in the first available language from this list. \"Original\" uses the title's own language. Needs a TMDB key.",
   "Buffer runway": "Buffer runway",
   "CDN download": "CDN download",
   "Optimal cap ({mbps}M) active": "Optimal cap ({mbps}M) active",

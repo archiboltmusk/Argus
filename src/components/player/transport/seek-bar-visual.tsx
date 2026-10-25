@@ -24,6 +24,7 @@ export function SeekBarVisual({
   hovered = false,
   forceDot = false,
   segments,
+  durationSec,
 }: {
   settings: Settings;
   pct: number;
@@ -32,6 +33,7 @@ export function SeekBarVisual({
   hovered?: boolean;
   forceDot?: boolean;
   segments?: SeekSegmentSpan[];
+  durationSec?: number;
 }) {
   const accent = resolveAccent(settings);
   const baseHeight = clamp(settings.seekBarHeight ?? 6, 3, 14);
@@ -71,12 +73,21 @@ export function SeekBarVisual({
   return (
     <>
       <div
-        className="w-full rounded-full bg-white/15 transition-[height] duration-150"
+        className="w-full rounded-full bg-white/15 transition-[height] duration-150 relative overflow-hidden"
         style={{ height: trackHeight }}
       >
+        {settings.seekBarHeatmap !== false && durationSec != null && durationSec > 60 && (
+          <div
+            className="pointer-events-none absolute inset-0 opacity-40 mix-blend-screen"
+            style={{
+              background:
+                "linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.06) 12%, rgba(255,180,60,0.22) 28%, rgba(255,80,60,0.32) 42%, rgba(255,255,255,0.08) 55%, rgba(255,120,50,0.28) 72%, rgba(255,60,60,0.36) 84%, rgba(255,255,255,0.05) 94%, transparent 100%)",
+            }}
+          />
+        )}
         {bufferedPct != null && bufferedPct > 0 && (
           <div
-            className="h-full rounded-full bg-white"
+            className="h-full rounded-full bg-white relative z-[1]"
             style={{
               width: `${bufferedPct}%`,
               opacity: clamp(settings.seekBarFillOpacity ?? 0.35, 0.05, 1),

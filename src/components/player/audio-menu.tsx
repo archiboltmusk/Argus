@@ -1,4 +1,4 @@
-import { Check, Languages, RotateCcw, Search, X } from "lucide-react";
+import { Check, Languages, RotateCcw, Search, Sliders, X } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 import { Flag } from "@/components/flag";
@@ -228,6 +228,7 @@ function MenuBody(props: Props & { onClose: () => void }) {
 function AudioEnhancementSection({ engine }: { engine: "html5" | "mpv" }) {
   const t = useT();
   const { settings, update } = useSettings();
+  const [eqOpen, setEqOpen] = useState(false);
   if (engine === "html5") return null;
 
   const current = settings.audioProfile ?? "off";
@@ -242,21 +243,61 @@ function AudioEnhancementSection({ engine }: { engine: "html5" | "mpv" }) {
     { id: "bass", label: t("Bass Boost") },
   ];
 
+  const eqFrequencies = [
+    "31Hz",
+    "63Hz",
+    "125Hz",
+    "250Hz",
+    "500Hz",
+    "1kHz",
+    "2kHz",
+    "4kHz",
+    "8kHz",
+    "16kHz",
+  ];
+  const eqBands = settings.audioEqualizerBands?.length === 10
+    ? settings.audioEqualizerBands
+    : [0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+
+  const handleBandChange = (index: number, val: number) => {
+    const next = [...eqBands];
+    next[index] = val;
+    update({ audioEqualizerBands: next, audioEqualizerEnabled: true });
+  };
+
+  const handleResetEq = () => {
+    update({ audioEqualizerBands: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0], audioEqualizerEnabled: false });
+  };
+
   return (
     <div className="flex flex-col gap-2 border-t border-edge-soft px-4 py-2.5 bg-canvas/20">
       <div className="flex items-center justify-between">
         <span className="text-[12px] font-semibold text-ink">{t("Audio Enhancement")}</span>
-        <button
-          type="button"
-          onClick={() => update({ audioNormalize: !settings.audioNormalize })}
-          className={`rounded px-2 py-0.5 text-[11px] font-medium transition-colors ${
-            settings.audioNormalize
-              ? "bg-accent/20 text-accent font-semibold"
-              : "bg-raised text-ink-subtle hover:text-ink"
-          }`}
-        >
-          {settings.audioNormalize ? t("Normalized") : t("Normalize")}
-        </button>
+        <div className="flex items-center gap-1.5">
+          <button
+            type="button"
+            onClick={() => setEqOpen(!eqOpen)}
+            className={`flex items-center gap-1 rounded px-2 py-0.5 text-[11px] font-medium transition-colors ${
+              eqOpen || settings.audioEqualizerEnabled
+                ? "bg-accent/20 text-accent font-semibold"
+                : "bg-raised text-ink-subtle hover:text-ink"
+            }`}
+          >
+            <Sliders className="h-3 w-3" />
+            {t("10-Band EQ")}
+          </button>
+          <button
+            type="button"
+            onClick={() => update({ audioNormalize: !settings.audioNormalize })}
+            className={`rounded px-2 py-0.5 text-[11px] font-medium transition-colors ${
+              settings.audioNormalize
+                ? "bg-accent/20 text-accent font-semibold"
+                : "bg-raised text-ink-subtle hover:text-ink"
+            }`}
+          >
+            {settings.audioNormalize ? t("Normalized") : t("Normalize")}
+          </button>
+        </div>
       </div>
       <div className="grid grid-cols-2 gap-1.5">
         {profiles.map((p) => {
@@ -277,6 +318,57 @@ function AudioEnhancementSection({ engine }: { engine: "html5" | "mpv" }) {
           );
         })}
       </div>
+
+      {eqOpen && (
+        <div className="mt-2 flex flex-col gap-2 rounded-xl bg-canvas/60 p-3 border border-edge-soft">
+          <div className="flex items-center justify-between">
+            <span className="text-[11.5px] font-semibold text-ink flex items-center gap-1.5">
+              <Sliders className="h-3 w-3 text-accent" />
+              {t("10-Band Graphic Equalizer")}
+            </span>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => update({ audioEqualizerEnabled: !settings.audioEqualizerEnabled })}
+                className={`text-[10.5px] font-semibold transition-colors ${
+                  settings.audioEqualizerEnabled ? "text-accent" : "text-ink-subtle hover:text-ink"
+                }`}
+              >
+                {settings.audioEqualizerEnabled ? t("Active") : t("Bypassed")}
+              </button>
+              <button
+                type="button"
+                onClick={handleResetEq}
+                className="text-[10.5px] text-ink-subtle hover:text-ink"
+              >
+                {t("Reset")}
+              </button>
+            </div>
+          </div>
+          <div className="grid grid-cols-5 gap-2 pt-1">
+            {eqFrequencies.map((freq, idx) => {
+              const gain = eqBands[idx] ?? 0;
+              return (
+                <div key={freq} className="flex flex-col items-center gap-1">
+                  <span className="text-[9.5px] font-mono text-ink-muted">{freq}</span>
+                  <input
+                    type="range"
+                    min={-12}
+                    max={12}
+                    step={1}
+                    value={gain}
+                    onChange={(e) => handleBandChange(idx, Number(e.target.value))}
+                    className="h-16 w-3 accent-accent cursor-pointer [writing-mode:vertical-lr] [direction:rtl]"
+                  />
+                  <span className="text-[9.5px] font-mono text-ink-subtle">
+                    {gain > 0 ? `+${gain}` : gain}dB
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

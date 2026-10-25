@@ -254,6 +254,11 @@ export type Settings = {
   screensaverDelayMin: number;
   resumePrompt: boolean;
   resumePlayback: boolean;
+  /**
+   * When resuming an in-progress video (>15s), rewind 5 seconds to provide
+   * instantaneous context retrieval without disorientation (Netflix/Apple TV+ parity).
+   */
+  resumeMicroRewind: boolean;
   keepFullscreenOnExit: boolean;
   fullscreenRestorePosition: boolean;
   contentAdvisoryToast: boolean;
@@ -610,6 +615,9 @@ export type Settings = {
   /** Extra audio delay in ms for slow outputs such as Bluetooth headphones. */
   audioOutputLatencyMs: number;
   audioProfile: "off" | "bass" | "voice" | "speech-clarity" | "bass-reduce" | "night" | "spatial-3d" | "whisper" | "dialogue-ducking";
+  /** 10-band equalizer gains in dB (-12 to +12) for [31.5Hz, 63Hz, 125Hz, 250Hz, 500Hz, 1kHz, 2kHz, 4kHz, 8kHz, 16kHz] */
+  audioEqualizerBands: number[];
+  audioEqualizerEnabled: boolean;
   ambientGlow: boolean;
   bingeMode: boolean;
   audioDevice: string;
@@ -776,6 +784,7 @@ export type Settings = {
   seekBarImage: string;
   seekBarFill: boolean;
   seekBarChapters: boolean;
+  seekBarHeatmap: boolean;
   seekBarFillOpacity: number;
   seekDotShape: "circle" | "square" | "image" | "hidden";
   seekDotHover: boolean;

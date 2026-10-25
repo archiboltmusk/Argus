@@ -216,6 +216,13 @@ export function SeekBarPanel() {
             <span className={SLIDER_VALUE}>{`${fillPct}%`}</span>
           </div>
         </SettingRow>
+
+        <ToggleRow
+          label={t("Audio & action timeline heatmap")}
+          sub={t("Subtly renders an energy heatmap over the timeline to highlight high-intensity action and dialogue scenes.")}
+          value={settings.seekBarHeatmap}
+          onChange={(v) => update({ seekBarHeatmap: v })}
+        />
       </SettingGroup>
 
       <SettingGroup label={t("Seek dot shape")}>

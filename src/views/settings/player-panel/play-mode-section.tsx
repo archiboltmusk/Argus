@@ -171,6 +171,14 @@ export function PlayModePanel() {
           value={settings.resumePrompt}
           onChange={(v) => update({ resumePrompt: v })}
         />
+        <ToggleRow
+          label={t("Smart resume 5-second rewind")}
+          sub={t(
+            "Automatically rewinds 5 seconds when resuming playback (past 15 seconds) so you can catch up on dialogue and context effortlessly, matching Netflix and Apple TV+.",
+          )}
+          value={settings.resumeMicroRewind}
+          onChange={(v) => update({ resumeMicroRewind: v })}
+        />
       </SettingGroup>
 
       <SettingGroup label={t("Streams")}>

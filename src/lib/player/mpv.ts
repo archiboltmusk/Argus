@@ -280,15 +280,31 @@ function normalizeMediaPath(path: string): string {
   return path.replace(/\\/g, "/");
 }
 
+export const MPV_EQ_FREQUENCIES = [31.5, 63, 125, 250, 500, 1000, 2000, 4000, 8000, 16000] as const;
+
+function buildMpvEqualizerAf(bands: number[]): string {
+  if (!bands || bands.length === 0 || bands.every((g) => Math.abs(g) < 0.1)) return "";
+  const filters: string[] = [];
+  MPV_EQ_FREQUENCIES.forEach((freq, idx) => {
+    const gain = Math.max(-12, Math.min(12, bands[idx] ?? 0));
+    if (Math.abs(gain) >= 0.1) {
+      filters.push(`equalizer=f=${freq}:width_type=o:w=1.0:g=${gain.toFixed(1)}`);
+    }
+  });
+  return filters.length > 0 ? `lavfi=[${filters.join(",")}]` : "";
+}
+
 export function createMpvBridge(mpvOptions?: MpvOptions): PlayerBridge {
   let host: HTMLElement | null = null;
   let snap: PlayerSnapshot = initialPlayerSnapshot();
   let profileAf = "";
+  let equalizerAf = "";
   let hdrToSdr = mpvOptions?.hdrToSdr ?? true;
   const applyAudioFilters = () => {
     const parts: string[] = [];
     if (snap.audioNormalize) parts.push("dynaudnorm=f=500:g=31:p=0.9:m=4:b=1");
     if (profileAf) parts.push(profileAf);
+    if (equalizerAf) parts.push(equalizerAf);
     if (parts.length > 0) parts.push("lavfi=[alimiter=limit=0.97]");
     invoke("mpv_command", { cmd: ["af", "set", parts.join(",")] }).catch(() => {});
   };
@@ -1523,6 +1539,10 @@ export function createMpvBridge(mpvOptions?: MpvOptions): PlayerBridge {
     },
     setAudioProfile(profile) {
       profileAf = AUDIO_PROFILE_AF[profile] ?? "";
+      applyAudioFilters();
+    },
+    setAudioEqualizer(bands, enabled) {
+      equalizerAf = enabled ? buildMpvEqualizerAf(bands) : "";
       applyAudioFilters();
     },
     setHdrToSdr(on, oled) {
