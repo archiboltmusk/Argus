@@ -5,7 +5,6 @@ import cloudflareLogo from "@/assets/cloudflare.webp";
 import { useSettings } from "@/lib/settings";
 import { useT } from "@/lib/i18n";
 import { InfoTip, ROW_ACTION } from "../kit";
-import { isTauri } from "./internals";
 import { runSpeedTest, type SpeedTestResult } from "./speed-test-run";
 
 const SPEEDTEST_COOLDOWN_MS = 90_000;
@@ -38,14 +37,6 @@ function MethodTip() {
 }
 
 export function SpeedTestButton() {
-  const t = useT();
-  if (!isTauri) {
-    return (
-      <span className="inline-flex h-[22px] shrink-0 items-center rounded-[6px] bg-elevated px-2 text-[13px] font-bold uppercase leading-[17px] tracking-[0.72px] text-ink-subtle">
-        {t("Desktop only")}
-      </span>
-    );
-  }
   return <SpeedTestButtonInner />;
 }
 
