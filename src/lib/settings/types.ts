@@ -392,6 +392,11 @@ export type Settings = {
   playbackCacheDir: string;
   remoteStreamServerUrl: string;
   remoteStreamServerStrict: boolean;
+  streamServerUrls: string[];
+  selectedStreamServerUrl: string;
+  streamingHttpsEndpoint: string;
+  torrentProfile: "default" | "soft" | "fast" | "ultra-fast";
+  transcodeProfile: string;
   castAlwaysTranscode: boolean;
   playerAnime4kShaders: string[];
   playerAnime4kMode: string;

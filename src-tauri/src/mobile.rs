@@ -27,7 +27,13 @@ use crate::{
 // actually route through; no packet is sent.
 #[tauri::command]
 fn lan_ip() -> Option<String> {
+    lan_ips().into_iter().next()
+}
+
+#[tauri::command]
+fn lan_ips() -> Vec<String> {
     use std::net::{IpAddr, UdpSocket};
+    let mut out = Vec::new();
     for target in ["1.1.1.1:80", "8.8.8.8:80", "192.168.1.1:80"] {
         let Ok(sock) = UdpSocket::bind("0.0.0.0:0") else {
             continue;
@@ -39,12 +45,13 @@ fn lan_ip() -> Option<String> {
             continue;
         };
         if let IpAddr::V4(v4) = addr.ip() {
-            if !v4.is_loopback() && !v4.is_unspecified() {
-                return Some(v4.to_string());
+            let s = v4.to_string();
+            if !v4.is_loopback() && !v4.is_unspecified() && !out.contains(&s) {
+                out.push(s);
             }
         }
     }
-    None
+    out
 }
 
 pub fn run() {
@@ -79,6 +86,7 @@ pub fn run() {
         })
         .invoke_handler(tauri::generate_handler![
             lan_ip,
+            lan_ips,
             crate::save_text_file,
             crate::argus_take_pending_file,
             crate::argus_set_webview_memory_low,
@@ -113,6 +121,7 @@ pub fn run() {
             torrent_engine::torrent_engine_restart,
             torrent_engine::torrent_engine_hard_reset,
             torrent_engine::torrent_engine_set_options,
+            torrent_engine::torrent_engine_set_profile,
             web_server::web_serve_start,
             web_server::web_serve_stop,
             web_server::web_serve_status,

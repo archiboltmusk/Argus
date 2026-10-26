@@ -519,6 +519,27 @@ function parseStoredSettings(raw: string | null): { settings: Settings; cacheabl
         languageName,
       ),
       castAlwaysTranscode: parsed.castAlwaysTranscode ?? DEFAULT.castAlwaysTranscode,
+      streamServerUrls: Array.isArray(parsed.streamServerUrls)
+        ? parsed.streamServerUrls.filter((u): u is string => typeof u === "string" && u.trim().length > 0)
+        : DEFAULT.streamServerUrls,
+      selectedStreamServerUrl:
+        typeof parsed.selectedStreamServerUrl === "string" && parsed.selectedStreamServerUrl.trim()
+          ? parsed.selectedStreamServerUrl.trim()
+          : parsed.remoteStreamServerUrl?.trim() || DEFAULT.selectedStreamServerUrl,
+      streamingHttpsEndpoint:
+        typeof parsed.streamingHttpsEndpoint === "string"
+          ? parsed.streamingHttpsEndpoint.trim()
+          : DEFAULT.streamingHttpsEndpoint,
+      torrentProfile:
+        parsed.torrentProfile === "soft" ||
+        parsed.torrentProfile === "fast" ||
+        parsed.torrentProfile === "ultra-fast"
+          ? parsed.torrentProfile
+          : DEFAULT.torrentProfile,
+      transcodeProfile:
+        typeof parsed.transcodeProfile === "string"
+          ? parsed.transcodeProfile.trim()
+          : DEFAULT.transcodeProfile,
       showMalBadge: parsed.showMalBadge ?? DEFAULT.showMalBadge,
       badgePlacement:
         parsed.badgePlacement === "top" || parsed.badgePlacement === "bottom"
