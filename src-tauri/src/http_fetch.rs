@@ -781,7 +781,7 @@ async fn argus_fetch_inner(
         res.text().await.unwrap_or_default()
     };
 
-    if is_cloudflare_challenge(status, cf_mitigated.as_deref(), &body) {
+    if current_method != reqwest::Method::HEAD && is_cloudflare_challenge(status, cf_mitigated.as_deref(), &body) {
         if let Some(h) = original_host.as_deref() {
             crate::cf_solver::cf_invalidate(h);
         }
@@ -828,10 +828,15 @@ const BACKGROUND_PROVIDER_HOSTS: &[&str] = &[
     "api.skipdb.tv",
     "letterboxd.com",
     "www.letterboxd.com",
+    "comet.elfhosted.com",
+    "elfhosted.com",
 ];
 
 fn solver_host_allowed(host: &str) -> bool {
     let host = host.trim_end_matches('.').to_ascii_lowercase();
+    if host.contains("comet") || host.contains("elfhosted") || host.contains("debrid") || host.contains("torbox") {
+        return false;
+    }
     !BACKGROUND_PROVIDER_HOSTS.contains(&host.as_str())
 }
 

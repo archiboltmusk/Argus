@@ -265,6 +265,57 @@ pub async fn probe_media_duration(url: &str, headers: &HashMap<String, String>) 
     stdout.trim().parse::<f32>().ok().filter(|&d| d > 10.0)
 }
 
+pub fn segments_to_srt(segments: &[AsrSegment]) -> String {
+    let mut srt = String::new();
+    let mut idx = 1;
+    for seg in segments {
+        let text = seg.text.trim();
+        if text.is_empty()
+            || text == "..."
+            || text == "."
+            || text == "-"
+            || text.starts_with("[_")
+            || text.starts_with("<|")
+        {
+            continue;
+        }
+
+        let mut t0 = seg.t0;
+        let mut t1 = seg.t1;
+        if t1 <= t0 {
+            t1 = t0 + 1.5;
+        } else if t1 - t0 < 0.8 {
+            t1 = t0 + 0.8;
+        }
+
+        let t0_ms = (t0 * 1000.0).round() as u64;
+        let t1_ms = (t1 * 1000.0).round() as u64;
+
+        let h0 = t0_ms / 3_600_000;
+        let m0 = (t0_ms % 3_600_000) / 60_000;
+        let s0 = (t0_ms % 60_000) / 1000;
+        let ms0 = t0_ms % 1000;
+
+        let h1 = t1_ms / 3_600_000;
+        let m1 = (t1_ms % 3_600_000) / 60_000;
+        let s1 = (t1_ms % 60_000) / 1000;
+        let ms1 = t1_ms % 1000;
+
+        srt.push_str(&format!("{}
+", idx));
+        srt.push_str(&format!(
+            "{:02}:{:02}:{:02},{:03} --> {:02}:{:02}:{:02},{:03}
+",
+            h0, m0, s0, ms0, h1, m1, s1, ms1
+        ));
+        srt.push_str(text);
+        srt.push_str("
+
+");
+        idx += 1;
+    }
+    srt
+}
 pub async fn generate(
     app: &tauri::AppHandle,
     engine: &dyn AsrEngine,
@@ -313,6 +364,7 @@ pub async fn generate(
         }
 
         if let Ok(segs) = engine.transcribe(&pcm, lang, translate) {
+            let mut added_any = false;
             for mut seg in segs {
                 seg.t0 += start;
                 seg.t1 += start;
@@ -322,7 +374,17 @@ pub async fn generate(
                         tk.t1 += start;
                     }
                     out.push(seg);
+                    added_any = true;
                 }
+            }
+            if added_any {
+                let current_srt = segments_to_srt(&out);
+                let _ = app.emit("asr://live-cues", serde_json::json!({
+                    "chunk": chunk_idx,
+                    "total": total_chunks,
+                    "srt": current_srt,
+                    "count": out.len(),
+                }));
             }
         }
 
@@ -500,50 +562,7 @@ pub async fn asr_generate_subtitles(
         )
         .await?;
 
-        let mut srt = String::new();
-        let mut idx = 1;
-        for seg in &segments {
-            let text = seg.text.trim();
-            if text.is_empty()
-                || text == "..."
-                || text == "."
-                || text == "-"
-                || text.starts_with("[_")
-                || text.starts_with("<|")
-            {
-                continue;
-            }
-
-            let mut t0 = seg.t0;
-            let mut t1 = seg.t1;
-            if t1 <= t0 {
-                t1 = t0 + 1.5;
-            } else if t1 - t0 < 0.8 {
-                t1 = t0 + 0.8;
-            }
-
-            let t0_ms = (t0 * 1000.0).round() as u64;
-            let t1_ms = (t1 * 1000.0).round() as u64;
-
-            let h0 = t0_ms / 3_600_000;
-            let m0 = (t0_ms % 3_600_000) / 60_000;
-            let s0 = (t0_ms % 60_000) / 1000;
-            let ms0 = t0_ms % 1000;
-
-            let h1 = t1_ms / 3_600_000;
-            let m1 = (t1_ms % 3_600_000) / 60_000;
-            let s1 = (t1_ms % 60_000) / 1000;
-            let ms1 = t1_ms % 1000;
-
-            srt.push_str(&format!("{}\n", idx));
-            srt.push_str(&format!(
-                "{:02}:{:02}:{:02},{:03} --> {:02}:{:02}:{:02},{:03}\n",
-                h0, m0, s0, ms0, h1, m1, s1, ms1
-            ));
-            srt.push_str(text);
-            srt.push_str("\n\n");
-            idx += 1;
-        }
+        let srt = segments_to_srt(&segments);
 
         if srt.is_empty() {
             return Err("No intelligible dialogue found in stream".to_string());

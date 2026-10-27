@@ -153,8 +153,17 @@ export function MenuBody(props: SubtitleMenuProps & { onClose: () => void }) {
     setWhisperStatus(tr("Transcribing audio with local Whisper…"));
 
     let unlistenProgress: (() => void) | null = null;
+    let unlistenLive: (() => void) | null = null;
+    let filePath: string | null = null;
+    let mountedTrack = false;
+    const name = "Whisper AI (Live Transcription)";
+
     try {
       if (isTauri) {
+        const pathMod = await import("@tauri-apps/api/path");
+        const dir = await pathMod.join(await pathMod.tempDir(), "argus-subs");
+        filePath = await pathMod.join(dir, `whisper-live-${Date.now()}.srt`);
+
         const { listen } = await import("@tauri-apps/api/event");
         unlistenProgress = await listen<{
           current: number;
@@ -165,7 +174,36 @@ export function MenuBody(props: SubtitleMenuProps & { onClose: () => void }) {
           const pct = Math.round((event.payload.current / event.payload.total) * 100);
           const mins = Math.floor(event.payload.currentSec / 60);
           const totalMins = Math.floor(event.payload.totalSec / 60);
-          setWhisperStatus(`Transcribing with Whisper (${pct}% · ${mins}m / ${totalMins}m)…`);
+          setWhisperStatus(`Live Whisper transcription (${pct}% · ${mins}m / ${totalMins}m)…`);
+        });
+
+        unlistenLive = await listen<{
+          chunk: number;
+          total: number;
+          srt: string;
+          count: number;
+        }>("asr://live-cues", async (event) => {
+          if (!filePath) return;
+          try {
+            await invoke("save_text_file", { path: filePath, contents: event.payload.srt });
+            if (!mountedTrack) {
+              mountedTrack = true;
+              const ok = await props.onAddSubtitle(filePath, "en", name, {
+                format: "srt",
+                timingMeasurementStatus: "measured",
+              });
+              if (ok !== false) {
+                markImportedSub(name);
+                setActiveLang(ALL_LANGS);
+                setJustImported(name);
+              }
+            } else {
+              // Reload subtitles in mpv so newly appended live dialogue is immediately displayed
+              await invoke("mpv_command", { cmd: ["sub-reload"] }).catch(() => {});
+            }
+          } catch (err) {
+            console.warn("[whisper] live cue update error:", err);
+          }
         });
       }
 
@@ -183,25 +221,29 @@ export function MenuBody(props: SubtitleMenuProps & { onClose: () => void }) {
         return;
       }
 
-      // Save SRT to a temp file on disk so mpv (and HTML5 video) can mount it
-      const pathMod = await import("@tauri-apps/api/path");
-      const dir = await pathMod.join(await pathMod.tempDir(), "argus-subs");
-      const filePath = await pathMod.join(dir, `whisper-${Date.now()}.srt`);
+      if (!filePath) {
+        const pathMod = await import("@tauri-apps/api/path");
+        const dir = await pathMod.join(await pathMod.tempDir(), "argus-subs");
+        filePath = await pathMod.join(dir, `whisper-${Date.now()}.srt`);
+      }
       await invoke("save_text_file", { path: filePath, contents: srt });
 
-      const name = "Whisper AI (Mac Metal)";
+      if (!mountedTrack) {
+        const ok = await props.onAddSubtitle(filePath, "en", name, {
+          format: "srt",
+          timingMeasurementStatus: "measured",
+        });
 
-      const ok = await props.onAddSubtitle(filePath, "en", name, {
-        format: "srt",
-        timingMeasurementStatus: "measured",
-      });
-
-      if (ok === false) {
-        setLocalError(tr("Could not mount generated subtitles into the player."));
+        if (ok === false) {
+          setLocalError(tr("Could not mount generated subtitles into the player."));
+        } else {
+          markImportedSub(name);
+          setActiveLang(ALL_LANGS);
+          setJustImported(name);
+          window.setTimeout(() => onClose(), 1700);
+        }
       } else {
-        markImportedSub(name);
-        setActiveLang(ALL_LANGS);
-        setJustImported(name);
+        await invoke("mpv_command", { cmd: ["sub-reload"] }).catch(() => {});
         window.setTimeout(() => onClose(), 1700);
       }
     } catch (e: any) {
@@ -209,6 +251,7 @@ export function MenuBody(props: SubtitleMenuProps & { onClose: () => void }) {
       setLocalError(typeof e === "string" ? e : (e?.message ?? tr("Whisper transcription failed.")));
     } finally {
       unlistenProgress?.();
+      unlistenLive?.();
       setGeneratingWhisper(false);
       setWhisperStatus(null);
     }

@@ -149,7 +149,11 @@ async function resolveStreamForPlatform(
     // Let mpv validate an extensionless media URL instead of delaying it behind
     // a separate HEAD request that many signed/CDN URLs reject. Automatic picks
     // retain the webpage guard because they have no user confirmation step.
-    if (!userCommitted && !stream.infoHash && !VIDEO_EXT_RE.test(stream.url)) {
+    const isCometOrDebrid =
+      /comet|elfhosted|debrid|realdebrid|alldebrid|premiumize|torbox/i.test(
+        stream.url + " " + (stream.addonName ?? "") + " " + (stream.addonId ?? "")
+      );
+    if (!userCommitted && !stream.infoHash && !isCometOrDebrid && !VIDEO_EXT_RE.test(stream.url)) {
       if (await probeIsWebPage(stream.url, headers, signal)) {
         return { ok: false, code: "web-page", tried: [], webUrl: stream.url };
       }
