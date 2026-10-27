@@ -1,4 +1,4 @@
-import { ArrowUpDown, Columns2, FlaskConical, RefreshCw, Rows3, Settings2 } from "lucide-react";
+import { ArrowUpDown, Columns2, FlaskConical, RefreshCw, Rows3, Settings2, Wand2 } from "lucide-react";
 import { useState } from "react";
 import { testReasonLabel } from "@/lib/addon-health/test-addon";
 import {
@@ -16,6 +16,7 @@ import type { ResolvedAddon } from "@/lib/addons-store/store";
 import { useT } from "@/lib/i18n";
 import { addonKey, idOf, nameOf, resourceLabels, subtitleFromManifest } from "./addons-utils";
 import { useAddonTests, type AddonTestState } from "./use-addon-tests";
+import { AddonOptimizerModal } from "./optimizer-modal";
 
 const LAYOUT_KEY = "argus.addons.installedLayout";
 
@@ -43,6 +44,7 @@ export function InstalledPane({
   const t = useT();
   const { settings } = useSettings();
   const tests = useAddonTests();
+  const [optimizerOpen, setOptimizerOpen] = useState(false);
   const [layout, setLayout] = useState<InstalledLayout>(readLayout);
   const switchLayout = (next: InstalledLayout) => {
     setLayout(next);
@@ -122,6 +124,14 @@ export function InstalledPane({
             {tests.running ? t("Testing") : t("Test all addons")}
           </button>
         )}
+        <button
+          onClick={() => setOptimizerOpen(true)}
+          title={t("Analyze add-on health, remove redundancies, and optimize configuration")}
+          className="flex h-9 shrink-0 items-center gap-1.5 rounded-full border border-accent/40 bg-accent/10 px-3 text-[11.5px] font-semibold uppercase tracking-[0.14em] text-accent transition-colors hover:bg-accent/20 hover:border-accent"
+        >
+          <Wand2 size={13} strokeWidth={2.4} />
+          <span>{t("Optimize")}</span>
+        </button>
         {onReorder && (
           <button
             onClick={onReorder}
@@ -168,6 +178,12 @@ export function InstalledPane({
             </div>
           ))}
         </div>
+      )}
+      {optimizerOpen && (
+        <AddonOptimizerModal
+          installed={installed}
+          onClose={() => setOptimizerOpen(false)}
+        />
       )}
     </div>
   );
