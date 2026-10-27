@@ -1,14 +1,20 @@
 import { ArrowUpDown, Columns2, FlaskConical, RefreshCw, Rows3, Settings2 } from "lucide-react";
 import { useState } from "react";
 import { testReasonLabel } from "@/lib/addon-health/test-addon";
-import { useAddonScore, useAddonStatus } from "@/lib/addon-health/store";
+import {
+  useAddonLastSuccess,
+  useAddonMedianMs,
+  useAddonRecommendation,
+  useAddonScore,
+  useAddonStatus,
+} from "@/lib/addon-health/store";
 import { useSettings } from "@/lib/settings";
 import { AddonLogo, resolveAddonLogo } from "@/components/addon-logo";
 import { HoverTooltip } from "@/components/hover-tooltip";
 import { isAddonEnabled, setAddonEnabled } from "@/lib/addon-store";
 import type { ResolvedAddon } from "@/lib/addons-store/store";
 import { useT } from "@/lib/i18n";
-import { addonKey, idOf, nameOf, subtitleFromManifest } from "./addons-utils";
+import { addonKey, idOf, nameOf, resourceLabels, subtitleFromManifest } from "./addons-utils";
 import { useAddonTests, type AddonTestState } from "./use-addon-tests";
 
 const LAYOUT_KEY = "argus.addons.installedLayout";
@@ -167,6 +173,18 @@ export function InstalledPane({
   );
 }
 
+
+function formatRelative(ms: number | null): string | null {
+  if (!ms) return null;
+  const diffSec = Math.max(0, Math.floor((Date.now() - ms) / 1000));
+  if (diffSec < 60) return "just now";
+  const diffMin = Math.floor(diffSec / 60);
+  if (diffMin < 60) return `${diffMin}m ago`;
+  const diffHr = Math.floor(diffMin / 60);
+  if (diffHr < 24) return `${diffHr}h ago`;
+  return `${Math.floor(diffHr / 24)}d ago`;
+}
+
 function splitColumnMajor<T>(items: T[]): T[][] {
   if (items.length < 2) return [items];
   const mid = Math.ceil(items.length / 2);
@@ -194,10 +212,14 @@ function InstalledRow({
 }) {
   const t = useT();
   const r = resolved;
+  const [enabled, setEnabled] = useState(() => isAddonEnabled(r.transportUrl));
   const health = useAddonStatus(idOf(r));
   const score = useAddonScore(idOf(r));
+  const medianMs = useAddonMedianMs(idOf(r));
+  const lastSuccess = useAddonLastSuccess(idOf(r));
   const [busy, setBusy] = useState(false);
-  const [enabled, setEnabled] = useState(() => isAddonEnabled(r.transportUrl));
+  const recommendation = useAddonRecommendation(idOf(r), enabled);
+  const resources = resourceLabels(r.manifest?.resources);
   const isConfigurable =
     r.manifest?.behaviorHints?.configurable === true ||
     r.manifest?.behaviorHints?.configurationRequired === true;
@@ -253,24 +275,78 @@ function InstalledRow({
           size={large ? "tile" : "lg"}
         />
       </div>
-      <div className={`flex min-w-0 flex-1 flex-col ${large ? "gap-1" : "gap-0.5"} ${enabled ? "" : "opacity-55"}`}>
-        <span className={`truncate font-medium text-ink ${large ? "text-[16px]" : "text-[14px]"}`}>
-          {nameOf(r)}
-        </span>
-        <span className={`truncate text-ink-subtle ${large ? "text-[13px]" : "text-[11.5px]"}`}>
-          {enabled ? subtitleFromManifest(r) : t("Off · catalogs and streams hidden")}
-          {enabled && health === "failing" && (
-            <span className="ms-2 font-semibold text-danger">{t("Not responding")}</span>
+      <div className={`flex min-w-0 flex-1 flex-col ${large ? "gap-1.5" : "gap-1"} ${enabled ? "" : "opacity-55"}`}>
+        <div className="flex flex-wrap items-center gap-2">
+          <span className={`truncate font-medium text-ink ${large ? "text-[16px]" : "text-[14px]"}`}>
+            {nameOf(r)}
+          </span>
+          {enabled && (
+            <div className="flex flex-wrap items-center gap-1.5">
+              {health === "healthy" && (
+                <span className="inline-flex items-center gap-1 rounded bg-emerald-500/15 px-1.5 py-0.5 text-[10.5px] font-semibold text-emerald-400 ring-1 ring-emerald-500/30">
+                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                  {t("Healthy")}
+                  {score != null && <span className="tabular-nums font-mono">({score}%)</span>}
+                </span>
+              )}
+              {health === "degraded" && (
+                <span className="inline-flex items-center gap-1 rounded bg-amber-500/15 px-1.5 py-0.5 text-[10.5px] font-semibold text-amber-300 ring-1 ring-amber-500/30">
+                  <span className="h-1.5 w-1.5 rounded-full bg-amber-400" />
+                  {t("Degraded")}
+                  {score != null && <span className="tabular-nums font-mono">({score}%)</span>}
+                </span>
+              )}
+              {health === "failing" && (
+                <span className="inline-flex items-center gap-1 rounded bg-red-500/15 px-1.5 py-0.5 text-[10.5px] font-semibold text-red-400 ring-1 ring-red-500/30">
+                  <span className="h-1.5 w-1.5 rounded-full bg-red-400" />
+                  {t("Failing")}
+                </span>
+              )}
+              {health === "unknown" && (
+                <span className="rounded bg-canvas/40 px-1.5 py-0.5 text-[10px] font-medium text-ink-subtle ring-1 ring-edge-soft/60">
+                  {t("Needs data")}
+                </span>
+              )}
+              {medianMs != null && (
+                <span className="text-[11px] tabular-nums text-ink-subtle font-mono">
+                  ~{medianMs}ms
+                </span>
+              )}
+              {lastSuccess != null && (
+                <span className="text-[11px] text-ink-subtle/80">
+                  · {formatRelative(lastSuccess)}
+                </span>
+              )}
+              {recommendation === "quarantine" && (
+                <span className="rounded bg-red-500/20 px-1.5 py-0.5 text-[10px] font-bold text-red-300 ring-1 ring-red-500/40">
+                  {t("Recommend: Pause")}
+                </span>
+              )}
+              {recommendation === "investigate" && (
+                <span className="rounded bg-amber-500/20 px-1.5 py-0.5 text-[10px] font-bold text-amber-300 ring-1 ring-amber-500/40">
+                  {t("Recommend: Inspect")}
+                </span>
+              )}
+            </div>
           )}
-          {enabled && score != null && (
-            <span className="ms-2 tabular-nums text-ink-muted" title={t("Reliability score from your recent requests")}>
-              {score}
-            </span>
+        </div>
+        <div className="flex flex-wrap items-center gap-1.5">
+          {enabled && resources.length > 0 && (
+            <div className="flex items-center gap-1">
+              {resources.slice(0, 3).map((res) => (
+                <span
+                  key={res}
+                  className="rounded bg-canvas/50 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-ink-muted ring-1 ring-edge-soft/50"
+                >
+                  {res === "stream" ? t("Streams") : res === "subtitles" ? t("Subtitles") : res === "catalog" ? t("Catalogs") : res === "meta" ? t("Metadata") : res}
+                </span>
+              ))}
+            </div>
           )}
-          {enabled && health === "degraded" && (
-            <span className="ms-2 font-semibold text-amber-300">{t("Unreliable")}</span>
-          )}
-        </span>
+          <span className={`truncate text-ink-subtle ${large ? "text-[12.5px]" : "text-[11.5px]"}`}>
+            {enabled ? subtitleFromManifest(r) : t("Off · catalogs and streams hidden")}
+          </span>
+        </div>
         {enabled && test && <TestLine test={test} />}
       </div>
       {onTest && !busy && (

@@ -1,5 +1,15 @@
 import { useSyncExternalStore } from "react";
-import { pushOutcome, reliabilityScore, statusOf, type AddonHealth, type HealthStatus } from "./health";
+import {
+  lastSuccessAt,
+  medianMs,
+  pushOutcome,
+  recommendAction,
+  reliabilityScore,
+  statusOf,
+  type AddonHealth,
+  type AddonRecommendation,
+  type HealthStatus,
+} from "./health";
 
 const KEY = "argus.addonHealth.v1";
 
@@ -36,12 +46,35 @@ export function recordAddonOutcome(addonId: string, ok: boolean, ms: number, rea
   persist();
 }
 
+export function addonHealth(addonId: string): AddonHealth | undefined {
+  return load()[addonId];
+}
+
 export function addonStatus(addonId: string): HealthStatus {
   return statusOf(load()[addonId]);
 }
 
 export function addonScore(addonId: string): number | null {
   return reliabilityScore(load()[addonId]);
+}
+
+export function addonMedianMs(addonId: string): number | null {
+  return medianMs(load()[addonId]);
+}
+
+export function addonLastSuccess(addonId: string): number | null {
+  return lastSuccessAt(load()[addonId]);
+}
+
+export function useAddonHealth(addonId: string): AddonHealth | undefined {
+  return useSyncExternalStore(
+    (cb) => {
+      listeners.add(cb);
+      return () => listeners.delete(cb);
+    },
+    () => addonHealth(addonId),
+    () => undefined,
+  );
 }
 
 export function useAddonScore(addonId: string): number | null {
@@ -55,13 +88,6 @@ export function useAddonScore(addonId: string): number | null {
   );
 }
 
-export function clearAddonHealth(addonId: string) {
-  const all = { ...load() };
-  delete all[addonId];
-  cache = all;
-  persist();
-}
-
 export function useAddonStatus(addonId: string): HealthStatus {
   return useSyncExternalStore(
     (cb) => {
@@ -71,4 +97,44 @@ export function useAddonStatus(addonId: string): HealthStatus {
     () => addonStatus(addonId),
     () => "unknown" as HealthStatus,
   );
+}
+
+export function useAddonMedianMs(addonId: string): number | null {
+  return useSyncExternalStore(
+    (cb) => {
+      listeners.add(cb);
+      return () => listeners.delete(cb);
+    },
+    () => addonMedianMs(addonId),
+    () => null,
+  );
+}
+
+export function useAddonLastSuccess(addonId: string): number | null {
+  return useSyncExternalStore(
+    (cb) => {
+      listeners.add(cb);
+      return () => listeners.delete(cb);
+    },
+    () => addonLastSuccess(addonId),
+    () => null,
+  );
+}
+
+export function useAddonRecommendation(addonId: string, enabled: boolean): AddonRecommendation {
+  return useSyncExternalStore(
+    (cb) => {
+      listeners.add(cb);
+      return () => listeners.delete(cb);
+    },
+    () => recommendAction(load()[addonId], enabled),
+    () => "needs-data" as AddonRecommendation,
+  );
+}
+
+export function clearAddonHealth(addonId: string) {
+  const all = { ...load() };
+  delete all[addonId];
+  cache = all;
+  persist();
 }

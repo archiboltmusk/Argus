@@ -46,3 +46,32 @@ export function medianMs(h: AddonHealth | undefined): number | null {
   ok.sort((a, b) => a - b);
   return ok[Math.floor(ok.length / 2)];
 }
+
+export function lastSuccessAt(h: AddonHealth | undefined): number | null {
+  const ok = (h?.outcomes ?? []).filter((o) => o.ok);
+  if (ok.length === 0) return null;
+  return ok[ok.length - 1].at;
+}
+
+export function sampleCount(h: AddonHealth | undefined): number {
+  return h?.outcomes.length ?? 0;
+}
+
+export function recentFailureReason(h: AddonHealth | undefined): string | null {
+  const bad = (h?.outcomes ?? []).filter((o) => !o.ok);
+  if (bad.length === 0) return null;
+  return bad[bad.length - 1].reason ?? null;
+}
+
+export type AddonRecommendation = "keep" | "investigate" | "quarantine" | "remove" | "needs-data";
+
+export function recommendAction(h: AddonHealth | undefined, enabled: boolean): AddonRecommendation {
+  if (!enabled) return "remove";
+  const count = sampleCount(h);
+  if (count < MIN_SAMPLES) return "needs-data";
+  const st = statusOf(h);
+  if (st === "healthy") return "keep";
+  if (st === "degraded") return "investigate";
+  if (st === "failing") return "quarantine";
+  return "needs-data";
+}
