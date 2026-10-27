@@ -167,12 +167,15 @@ export function MenuBody(props: SubtitleMenuProps & { onClose: () => void }) {
         return;
       }
 
-      // Convert SRT to a Data URL / Blob URL for the player to mount
-      const blob = new Blob([srt], { type: "text/plain;charset=utf-8" });
-      const blobUrl = URL.createObjectURL(blob);
+      // Save SRT to a temp file on disk so mpv (and HTML5 video) can mount it
+      const pathMod = await import("@tauri-apps/api/path");
+      const dir = await pathMod.join(await pathMod.tempDir(), "argus-subs");
+      const filePath = await pathMod.join(dir, `whisper-${Date.now()}.srt`);
+      await invoke("save_text_file", { path: filePath, contents: srt });
+
       const name = "Whisper AI (Mac Metal)";
 
-      const ok = await props.onAddSubtitle(blobUrl, "en", name, {
+      const ok = await props.onAddSubtitle(filePath, "en", name, {
         format: "srt",
         timingMeasurementStatus: "measured",
       });
