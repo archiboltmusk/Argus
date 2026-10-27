@@ -1,4 +1,4 @@
-name: Codex CI Auto-Fix
+name: Local Model CI Auto-Fix
 
 # Only react to failed CI runs on main. Never run the fixer on untrusted PR code.
 on:
@@ -178,7 +178,7 @@ jobs:
         if: steps.diff.outputs.has_patch == 'true'
         uses: actions/upload-artifact@v7
         with:
-          name: codex-candidate-patch
+          name: local-model-candidate-patch
           path: codex.patch
           if-no-files-found: error
           retention-days: 2
@@ -285,4 +285,4 @@ jobs:
             --base main \
             --head "codex/ci-autofix-$RUN_ID" \
             --title "fix(ci): propose verified automatic fix" \
-            --body "Codex generated a minimal patch after CI failed at commit `$FAILED_SHA`. The UI typecheck, UI tests, production build, and Rust core checks passed on the patch. Review before merging. Failed run: $FAILED_URL"
+            --body "The local Qwen2.5-Coder model generated a minimal patch after CI failed at commit `$FAILED_SHA`. The UI typecheck, UI tests, production build, and Rust core checks passed on the patch. Review before merging. Failed run: $FAILED_URL"
