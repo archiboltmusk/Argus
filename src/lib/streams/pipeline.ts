@@ -354,7 +354,7 @@ export async function runPipeline(
   const [librarySettled, addonSettled] = await Promise.allSettled([
     fetchLibraryStreams(input.debrids, input.query, signal, libraryListsPromise).then((s) => {
       library = s;
-      emitPartialNow();
+      if (presets.length === 0) emitPartialNow();
       return s;
     }),
     presets.length > 0

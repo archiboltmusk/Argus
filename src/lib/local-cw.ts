@@ -113,10 +113,13 @@ function readAll(key: string): Record<string, LocalCwEntry> {
 }
 
 function writeAll(key: string, all: Record<string, LocalCwEntry>, acknowledged = false): void {
-  cache.set(key, all);
+  const previous = cache.get(key);
   try {
     localStorage.setItem(key, JSON.stringify(all));
+    cache.set(key, all);
   } catch (error) {
+    if (previous !== undefined) cache.set(key, previous);
+    else cache.delete(key);
     if (acknowledged)
       throw new Error("Could not save the change. Check available storage and try again.", {
         cause: error,

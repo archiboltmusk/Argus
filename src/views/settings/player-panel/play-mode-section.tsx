@@ -142,6 +142,14 @@ export function PlayModePanel() {
             onChange={(v) => update({ rememberLastStream: v })}
           />
         </Anchored>
+        <ToggleRow
+          label={t("Ambient edge glow (Ambilight)")}
+          sub={t(
+            "Casts a soft, dynamic ambient backlight behind the video player reflecting the colors of the media. Turn off for a pure pitch-black backdrop.",
+          )}
+          value={settings.ambientGlow}
+          onChange={(v) => update({ ambientGlow: v })}
+        />
       </SettingGroup>
 
       <SettingGroup label={t("Resume")}>
@@ -162,6 +170,14 @@ export function PlayModePanel() {
           )}
           value={settings.resumePrompt}
           onChange={(v) => update({ resumePrompt: v })}
+        />
+        <ToggleRow
+          label={t("Smart resume 5-second rewind")}
+          sub={t(
+            "Automatically rewinds 5 seconds when resuming playback (past 15 seconds) so you can catch up on dialogue and context effortlessly, matching Netflix and Apple TV+.",
+          )}
+          value={settings.resumeMicroRewind}
+          onChange={(v) => update({ resumeMicroRewind: v })}
         />
       </SettingGroup>
 
@@ -198,6 +214,14 @@ export function PlayModePanel() {
             </SettingRow>
           </Nested>
         )}
+        <ToggleRow
+          label={t("Suggest higher quality streams when found")}
+          sub={t(
+            "If slower addons or debrid sources finish resolving a better quality release (4K UHD, HDR, Dolby Atmos, or Remux) while watching, suggest switching with one click.",
+          )}
+          value={settings.suggestQualityUpgrade}
+          onChange={(v) => update({ suggestQualityUpgrade: v })}
+        />
         <ToggleRow
           label={t("Keep same source on next episode")}
           sub={t(

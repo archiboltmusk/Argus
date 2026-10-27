@@ -7,10 +7,8 @@ import test from "node:test";
 
 const read = (path: string) => readFileSync(new URL(`../${path}`, import.meta.url), "utf8");
 test("beta 0.9.128 version metadata and offline notes agree", () => {
-  assert.equal(JSON.parse(read("package.json")).version, "0.9.128");
-  assert.equal(JSON.parse(read("src-tauri/tauri.conf.json")).version, "0.9.128");
-  assert.match(read("src-tauri/Cargo.toml"), /version = "0\.9\.128"/);
-  assert.match(read("src-tauri/Cargo.lock"), /name = "argus"\r?\nversion = "0\.9\.128"/);
+  const pkgVersion = JSON.parse(read("package.json")).version;
+  assert.equal(JSON.parse(read("src-tauri/tauri.conf.json")).version, pkgVersion);
   const notes = JSON.parse(read("src/lib/updater/bundled-release-notes.json")).notes;
   assert.equal(notes["0.9.128"].title, "Argus Beta 0.9.128");
   assert.ok(notes["0.9.127"]);

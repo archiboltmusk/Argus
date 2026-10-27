@@ -47,6 +47,7 @@ function searchHarness() {
     "./use-collection-hits": { useCollectionHits: () => [] },
     "./person-top-match": { matchPersonForQuery: () => null },
     "@/lib/search-display-state": { getSearchDisplayState: () => ({ currentResults: null }) },
+    "@/lib/features/install": { useInstallFeatures: () => ({ plugins: true, games: false, music: true, ebook: true, manga: true }) },
     "@/lib/torrent/magnet": { isMagnetInput: () => false, isDirectVideoUrl: () => false },
   };
   const source = readFileSync(

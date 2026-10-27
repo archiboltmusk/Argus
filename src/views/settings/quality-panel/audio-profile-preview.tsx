@@ -3,6 +3,7 @@ import { PreviewShell } from "../preview-shell";
 
 const CURVES: Record<string, number[]> = {
   off: [50, 50, 50, 50, 50, 50, 50],
+  "speech-clarity": [32, 38, 55, 92, 100, 72, 48],
   bass: [100, 92, 74, 52, 42, 40, 40],
   voice: [36, 40, 62, 90, 95, 70, 45],
   "bass-reduce": [20, 28, 42, 55, 55, 55, 55],
@@ -14,6 +15,7 @@ export function AudioProfilePreview({ profile }: { profile: string }) {
   const curve = CURVES[profile] ?? CURVES.off;
   const notes: Record<string, string> = {
     off: t("No shaping. The track plays exactly as it was mixed."),
+    "speech-clarity": t("Boosts vocal presence and speech frequencies while leveling loud action scenes."),
     bass: t("Low end lifted, for weight on speakers that do not have it."),
     voice: t("Mid range lifted, so dialogue sits forward of the music and effects."),
     "bass-reduce": t("Low end pulled back, kinder to small speakers and to the neighbours."),

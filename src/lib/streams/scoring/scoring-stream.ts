@@ -14,6 +14,8 @@ import {
   undersizedNewReleasePenalty,
 } from "./scoring-size";
 import type { CorpusStats, ScoreOptions } from "./scoring-types";
+import { calculateRatingScoreAdjustment } from "../stream-ratings";
+import { disambiguateRelease } from "../disambiguation";
 
 export function scoreStream(
   s: ParsedStream,
@@ -26,12 +28,16 @@ export function scoreStream(
   const cached = isCachedOnActive(s, opts.activeDebrids);
   const directPlayable = !!s.url;
   const isEasynews = /easynews/i.test(s.addonName ?? "") || /easynews/i.test(s.parsedTitle ?? "");
+  const hasDebridConfigured = !!opts.activeDebrids && opts.activeDebrids.length > 0;
+
   if (cached || isEasynews) {
     score += 60;
     reasons.push({ signal: cached ? "cached" : "easynews-direct", delta: 60 });
   } else if (directPlayable) {
-    score += 25;
-    reasons.push({ signal: "direct url", delta: 25 });
+    // When user has no debrid, direct free HTTP web streams are the #1 best option
+    const delta = hasDebridConfigured ? 25 : 60;
+    score += delta;
+    reasons.push({ signal: hasDebridConfigured ? "direct url" : "direct-free-stream", delta });
   }
 
   const resBoost = resolutionPoints(s);
@@ -51,12 +57,16 @@ export function scoreStream(
     }
   }
 
-  if (s.codec === "HEVC") {
-    score += 1;
-    reasons.push({ signal: "HEVC", delta: 1 });
-  } else if (s.codec === "AV1") {
-    score += 1;
-    reasons.push({ signal: "AV1", delta: 1 });
+  const isBandwidthConstrained =
+    opts.bandwidthMbps != null && opts.bandwidthMbps > 0 && opts.bandwidthMbps <= 30;
+  if (s.codec === "AV1") {
+    const delta = isBandwidthConstrained ? 18 : 4;
+    score += delta;
+    reasons.push({ signal: "AV1-efficiency", delta });
+  } else if (s.codec === "HEVC") {
+    const delta = isBandwidthConstrained ? 12 : 3;
+    score += delta;
+    reasons.push({ signal: "HEVC-efficiency", delta });
   }
 
   const audioDelta = audioPoints(s);
@@ -76,13 +86,15 @@ export function scoreStream(
       score += seedDelta;
       reasons.push({ signal: `seeders=${s.seeders}`, delta: seedDelta });
     } else if (!s.url && s.infoHash && s.seeders === 0) {
-      score -= 20;
-      reasons.push({ signal: "zero-seeders-stale-meta", delta: -20 });
+      const deadPenalty = hasDebridConfigured ? -20 : -80;
+      score += deadPenalty;
+      reasons.push({ signal: "zero-seeders-stale-meta", delta: deadPenalty });
     }
   }
   if (s.infoHash && s.seeders === 0 && !cached) {
-    score -= 8;
-    reasons.push({ signal: "zero-seeders-soft", delta: -8 });
+    const deadPenalty = hasDebridConfigured ? -8 : -40;
+    score += deadPenalty;
+    reasons.push({ signal: "zero-seeders-soft", delta: deadPenalty });
   }
 
   const expectedYear = opts.releaseDate
@@ -139,9 +151,29 @@ export function scoreStream(
     }
   }
 
-  if (s.infoHash && opts.demotedHashes?.includes(s.infoHash.toLowerCase())) {
+  const targetKey = s.infoHash
+    ? s.infoHash.toLowerCase()
+    : s.url
+      ? (() => {
+          try {
+            const u = new URL(s.url);
+            return `u:${u.hostname}${u.pathname}`.toLowerCase();
+          } catch {
+            return `u:${s.url.toLowerCase()}`;
+          }
+        })()
+      : s.title || s.name
+        ? `t:${s.addonId ? `${s.addonId}:` : ""}${s.title || s.name}`.toLowerCase()
+        : null;
+
+  if (targetKey && opts.demotedHashes?.includes(targetKey)) {
     score -= 200;
     reasons.push({ signal: "dead-link", delta: -200 });
+  }
+
+  if (targetKey && opts.verifiedHashes?.includes(targetKey)) {
+    score += 150;
+    reasons.push({ signal: "verified-correct-link", delta: 150 });
   }
 
   if (
@@ -243,6 +275,24 @@ export function scoreStream(
     reasons.push({ signal: "webview2-unfriendly", delta: playabilityDelta });
   }
 
+  // Web Browser sandbox auto-profile:
+  // In the browser, native HTML5 cannot play MKV containers, DTS audio, or HEVC on many platforms.
+  // Heavily promote standard web-friendly MP4/HLS streams (+40) and demote difficult MKV/DTS (-50)
+  // so web users get an instant, flawless playback experience without VLC error cards.
+  if (opts.capabilities?.isWeb) {
+    const isWebNativeContainer =
+      s.container === "mp4" || s.container === "m4v" || s.container === "webm" || !!s.url?.includes(".m3u8");
+    const isWebNativeAudio =
+      s.audio.codec === "AAC" || s.audio.codec === "Opus" || s.audio.codec === "Other" || !s.audio.codec;
+    if (isWebNativeContainer && isWebNativeAudio) {
+      score += 40;
+      reasons.push({ signal: "web-friendly-stream", delta: 40 });
+    } else if (s.container === "mkv" || s.audio.codec === "DTS" || s.audio.codec === "TrueHD") {
+      score -= 50;
+      reasons.push({ signal: "web-incompatible-format", delta: -50 });
+    }
+  }
+
   const bitratePenalty = bitrateBudgetPenalty(s, opts, cached);
   if (bitratePenalty.delta < 0) {
     score += bitratePenalty.delta;
@@ -280,6 +330,41 @@ export function scoreStream(
   if (recency.delta !== 0) {
     score += recency.delta;
     reasons.push(recency);
+  }
+
+  // Same-Name & Same-Year Movie Disambiguation
+  if (opts.canonicalTitle || opts.director) {
+    const expectedYear = opts.releaseDate ? parseInt(opts.releaseDate.slice(0, 4), 10) : null;
+    const disambig = disambiguateRelease(s, {
+      canonicalTitle: opts.canonicalTitle,
+      expectedYear,
+      runtimeMinutes: opts.runtimeMinutes,
+      director: opts.director,
+    });
+    for (const p of disambig.penalties) {
+      score += p.delta;
+      reasons.push({ signal: p.reason, delta: p.delta });
+    }
+    for (const b of disambig.bonuses) {
+      score += b.delta;
+      reasons.push({ signal: b.reason, delta: b.delta });
+    }
+  }
+
+  // Community / Local Ratings & Report Flags (Upvotes / Downvotes / Wrong movie reports)
+  const ratingAdjust = calculateRatingScoreAdjustment(s);
+  if (ratingAdjust.delta !== 0) {
+    score += ratingAdjust.delta;
+    reasons.push({
+      signal: ratingAdjust.isVerifiedGood
+        ? "community-verified-pristine"
+        : ratingAdjust.isFlaggedWrong
+          ? "reported-wrong-movie"
+          : ratingAdjust.isFlaggedDead
+            ? "reported-bad-link"
+            : "community-feedback",
+      delta: ratingAdjust.delta,
+    });
   }
 
   return { ...s, score, reasons, tier: tierOf(s) };

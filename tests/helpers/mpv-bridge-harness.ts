@@ -117,6 +117,7 @@ export function mpvBridgeHarness(prefs = { volume: 0.35, muted: false }, options
     "@/lib/perf/playback-trace": { finishPlaybackTrace() {}, markPlaybackTrace() {} },
     "./prepared-subtitle-cleanups": cleanups,
     "./subtitle-selection": selection,
+    "./pause-trace": { traceFrameDrops: () => {}, tracePlayback: () => {} },
     "@/lib/subtitles/seed-batch": seeds,
     "@/lib/subtitles/provider-url": { isSafeProviderSubtitleUrl: () => true },
     "./bridge": {
@@ -171,6 +172,7 @@ export function mpvBridgeHarness(prefs = { volume: 0.35, muted: false }, options
   });
   return {
     bridge,
+    createBridge: (opts?: MpvOptions) => module.exports.createMpvBridge(opts),
     commands,
     errors,
     emitWindow(name: string) { windowEvents.dispatchEvent(new Event(name)); },

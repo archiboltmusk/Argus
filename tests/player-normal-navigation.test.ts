@@ -79,6 +79,8 @@ function harness() {
       exitAnyFullscreen: async () => calls.push("exit-fullscreen"),
       exitWindowFullscreenOnPlayerClose: async () => calls.push("fullscreen"),
     },
+    "@/lib/streams/dead-links": { recordPlayOutcome: () => {} },
+    "@/lib/settings/load": { loadStoredSettings: () => ({}) },
     "../player-utils": { MAX_AUTORETRY_ATTEMPTS: 3 },
   };
   const load = (path: string): any => {

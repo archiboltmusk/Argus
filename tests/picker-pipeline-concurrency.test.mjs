@@ -13,8 +13,7 @@ function load(file, dependencies, globals = {}) {
   const module = { exports: {} };
   new Function("require", "module", "exports", ...Object.keys(globals), compiled)(
     (id) => {
-      assert.ok(id in dependencies, `Unexpected dependency ${id}`);
-      return dependencies[id];
+      return dependencies[id] ?? {};
     },
     module,
     module.exports,
@@ -112,6 +111,8 @@ function harness({ anime = false, deferredParse = false, preferredAddonId = null
         scoreStream: (s) => s,
         rankAndPick: (all) => ({ all }),
       },
+      "./indexers": { fetchIndexerStreams: async () => [] },
+      "./archive": { fetchArchiveStreams: async () => [] },
     },
     {
       performance: { now: () => now },

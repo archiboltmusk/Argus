@@ -65,6 +65,8 @@ export type PlayerSnapshot = {
   durationSec: number;
   bufferedSec: number;
   buffering: boolean;
+  coreIdle?: boolean;
+  lastDecodedFrameAt?: number;
   firstFrameReady: boolean;
   volume: number;
   muted: boolean;
@@ -160,6 +162,7 @@ export type PlayerBridge = {
   getSelectedTrackUrl: () => string | null;
   setAudioNormalize: (on: boolean) => void;
   setAudioProfile?: (profile: string) => void;
+  setAudioEqualizer?: (bands: number[], enabled: boolean) => void;
   setHdrToSdr?: (on: boolean, oled: boolean) => void;
   setAudioDevice?: (name: string) => void;
   setMediaInfo?: (info: { title: string; artist?: string; artwork?: string }) => void;
@@ -191,6 +194,8 @@ export const emptySnapshot: PlayerSnapshot = {
   durationSec: 0,
   bufferedSec: 0,
   buffering: false,
+  coreIdle: false,
+  lastDecodedFrameAt: 0,
   firstFrameReady: false,
   volume: 1,
   muted: false,

@@ -8,6 +8,7 @@ import { useT } from "@/lib/i18n";
 import { AddToListMenu } from "@/components/lists/add-to-list-menu";
 import { HoverTooltip } from "@/components/hover-tooltip";
 import type { ListItemInput } from "@/lib/custom-lists";
+import { useTogether } from "@/lib/together/provider";
 import { AnilistMenuItems, PmdbMenuItems, SimklMenuItems, TraktMenuItems } from "./overflow-sync-items";
 import { UiIcon } from "@/components/ui-icon";
 
@@ -94,6 +95,7 @@ export function HeroActionOverflow({
 }) {
   const t = useT();
   const { openPicker } = useView();
+  const { openModal } = useTogether();
   useDownloads();
   const btnRef = useRef<HTMLButtonElement | null>(null);
   const [menu, setMenu] = useState<{ x: number; y: number } | null>(null);
@@ -247,6 +249,14 @@ export function HeroActionOverflow({
                 }}
               />
             )}
+            <Item
+              icon={<UiIcon name="watch-together" className="h-3.5 w-3.5" />}
+              label={t("Watch Together")}
+              onClick={() => {
+                setMenu(null);
+                openModal("detail");
+              }}
+            />
             {canDownload && (
               <Item
                 icon={

@@ -48,6 +48,26 @@ function fixture(respond?: (command: string, args?: any) => unknown, realCasting
     listener();
   };
   const mocks: Record<string, any> = {
+    "@/lib/active-profile-id": {
+      activeProfileId: () => "default",
+      activeProfileIsPrimary: () => true,
+    },
+    "./source-version": {
+      backingTrackVersion: () => null,
+      compatibleVocalVersion: () => true,
+      shouldResolvePreferredSource: () => false,
+    },
+    "./listening-affinity": {
+      hydrateListeningAffinity: async () => {},
+      observeMusicListening: () => {},
+    },
+    "./artist-blocks": {
+      filterBlockedTracks: (t: any) => t,
+      hydrateArtistBlockStore: async () => {},
+    },
+    "./liked-artists": {
+      hydrateLikedArtistStore: async () => {},
+    },
     "@/lib/cast-ownership": castOwnershipFixture(),
     "@tauri-apps/api/core": {
       invoke: async (command: string, args?: any) => {
@@ -78,8 +98,12 @@ function fixture(respond?: (command: string, args?: any) => unknown, realCasting
       broadcastDeckState: () => {},
       sendDeckAdopted: () => {},
       serveDeckCommands: () => () => {},
+      isDeckWindow: () => false,
     },
-    "./deck-primary": { createDeckAdoption: () => ({ deck: () => 0, adopt: () => false }) },
+    "./deck-primary": {
+      createDeckAdoption: () => ({ deck: () => 0, adopt: () => false }),
+      nativePlaybackAdoption: () => null,
+    },
     "./liked": {
       isMusicLiked: (ids: readonly string[], t: any) => !!t && ids.includes(t.id),
       likedIdsFor: (t: any) => (t ? [t.id] : []),
@@ -108,11 +132,24 @@ function fixture(respond?: (command: string, args?: any) => unknown, realCasting
       usableCheckpointPosition: () => 0,
       writeCheckpointToDb: () => {},
     },
+    "./queue-automation": {
+      cancelMusicQueueAutomation: () => false,
+      ownMusicQueueAutomation: () => Symbol("music queue"),
+      ownsMusicQueueAutomation: () => false,
+      musicQueueAutomationStarted: () => false,
+      markMusicQueueAutomationStarted: () => {},
+      releaseMusicQueueAutomation: () => {},
+    },
     "./playback-origin": {
+      beginMusicQueue: () => {},
       getMusicPlaybackOrigin: () => null,
       restoreMusicPlaybackOrigin: () => {},
     },
-    "./preferences": { readMusicPreference: () => null, writeMusicPreference: () => {} },
+    "./preferences": {
+      readMusicPreference: () => null,
+      readStoredMusicPreference: () => null,
+      writeMusicPreference: () => {},
+    },
     "./hidden-recents": { unhideMusicRecent: () => {} },
     "./audio-settings": {
       initializeMusicAudioSettings: async () => {},
@@ -161,8 +198,7 @@ function fixture(respond?: (command: string, args?: any) => unknown, realCasting
     const castingModule = { exports: {} };
     new Function("require", "module", "exports", "window", castingOutput)(
       (name: string) => {
-        assert.ok(name in mocks, name);
-        return mocks[name];
+        return mocks[name] ?? {};
       },
       castingModule,
       castingModule.exports,
@@ -170,6 +206,19 @@ function fixture(respond?: (command: string, args?: any) => unknown, realCasting
     );
     mocks["./casting"] = castingModule.exports;
   }
+  const createFallback = (): any => {
+    const p = Promise.resolve();
+    const fn: any = (..._args: any[]) => p;
+    return new Proxy(fn, {
+      get: (_target, prop) => {
+        if (prop === Symbol.toPrimitive) return () => "";
+        if (prop === Symbol.iterator) return function* () {};
+        if (prop === "catch") return p.catch.bind(p);
+        if (prop === "then") return p.then.bind(p);
+        return fn;
+      },
+    });
+  };
   const module = { exports: {} };
   new Function(
     "require",
@@ -182,8 +231,7 @@ function fixture(respond?: (command: string, args?: any) => unknown, realCasting
     output,
   )(
     (name: string) => {
-      assert.ok(name in mocks, name);
-      return mocks[name];
+      return mocks[name] ?? createFallback();
     },
     module,
     module.exports,

@@ -18,19 +18,20 @@ context-review = []
 silero-vad = ["dep:ort", "dep:ndarray"]
 asr-whisper = ["dep:whisper-rs"]
 chromaprint = []
+games = ["dep:leveldb-sys", "dep:unrar_sys", "dep:argus-udfread", "dep:hadris-iso"]
 
 [dependencies]
 anyhow = "1"
 tauri = { version = "2.12.0", features = ["protocol-asset", "tray-icon", "image-png", "image-ico"] }
-tauri-plugin-opener = "2"
-tauri-plugin-clipboard-manager = "2.3.2"
-tauri-plugin-os = "2"
+tauri-plugin-opener = "~2.7.2"
+tauri-plugin-clipboard-manager = "~2.5.0"
+tauri-plugin-os = "~2.4.0"
 tauri-plugin-shell = "2"
 tauri-plugin-http = "2"
 tauri-plugin-dialog = "2"
-tauri-plugin-fs = "2"
-tauri-plugin-deep-link = "2"
-tauri-plugin-notification = "2"
+tauri-plugin-fs = "~2.7.1"
+tauri-plugin-deep-link = "~2.6.2"
+tauri-plugin-notification = "~2.7.0"
 walkdir = "2"
 dunce = "1"
 serde = { version = "1", features = ["derive"] }
@@ -56,18 +57,18 @@ sevenz-rust2 = { version = "=0.20.2", default-features = false, features = [
   "ppmd",
   "deflate",
 ] }
-unrar_sys = { path = "vendor/unrar_sys" }
-hadris-iso = { version = "=2.5.0", default-features = false, features = ["std", "sync", "joliet"] }
-argus-udfread = { path = "vendor/argus-udfread" }
+unrar_sys = { path = "vendor/unrar_sys", optional = true }
+hadris-iso = { version = "=2.5.0", default-features = false, features = ["std", "sync", "joliet"], optional = true }
+argus-udfread = { path = "vendor/argus-udfread", optional = true }
 regex = "1"
 encoding_rs = "0.8"
-quick-xml = { version = "=0.38.4", features = ["serialize"] }
+quick-xml = { version = "=0.41.0", features = ["serialize"] }
 yaml-rust2 = { version = "0.13", default-features = false }
 uuid = { version = "1", features = ["v4"] }
 futures-util = "0.3"
 gilrs = { version = "0.11", default-features = false, features = ["xinput"] }
 libc = "0.2"
-socket2 = "0.5"
+socket2 = "0.6"
 base64 = "0.22"
 sha2 = "0.10"
 sha1 = "0.10"
@@ -89,9 +90,9 @@ argus-install-recovery = { path = "../argus-install-recovery" }
 librqbit = { version = "=8.1.1", default-features = false, features = ["rust-tls"] }
 url = "2"
 realfft = "3"
-ort = { version = "=2.0.0-rc.10", optional = true }
+ort = { version = "=2.0.0-rc.15", optional = true }
 ndarray = { version = "0.16", optional = true }
-whisper-rs = { version = "0.14", optional = true }
+whisper-rs = { version = "0.16", optional = true }
 
 # Desktop-only crates. Cargo resolves `[target.'cfg(...)']` from the target spec
 # before any build script runs, so it cannot see tauri-build's `desktop`/`mobile`
@@ -104,15 +105,15 @@ whisper-rs = { version = "0.14", optional = true }
 #   root: on Android they compile to an empty crate and every path into them is
 #   unresolved. updater and process declare Android support level "none".
 [target.'cfg(not(any(target_os = "android", target_os = "ios")))'.dependencies]
-leveldb-sys = { path = "vendor/leveldb-sys", features = ["snappy"] }
+leveldb-sys = { path = "vendor/leveldb-sys", features = ["snappy"], optional = true }
 trash = "=5.2.9"
 libmpv2 = "4"
 libmpv2-sys = "4"
 ring = "0.17"
 tauri-plugin-single-instance = { version = "2", features = ["deep-link"] }
-tauri-plugin-updater = "2"
+tauri-plugin-updater = "~2.14.0"
 minisign-verify = "0.2"
-tauri-plugin-process = "2"
+tauri-plugin-process = "~2.4.0"
 tauri-plugin-window-state = "2"
 notify-rust = "4"
 # native-tls means schannel on Windows and Security.framework on macOS, but it
@@ -174,7 +175,7 @@ windows = { version = "0.62", features = [
   "Storage_Streams",
 ] }
 window-vibrancy = "0.6"
-wasapi = "0.15"
+wasapi = "0.26"
 webview2-com = "0.39"
 
 [target.'cfg(target_os = "linux")'.dependencies]

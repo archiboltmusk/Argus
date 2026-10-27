@@ -21,7 +21,7 @@ pub async fn dj_deck_open(app: AppHandle) -> Result<(), String> {
             .min_inner_size(900.0, 600.0)
             .resizable(true)
             .decorations(false)
-            .skip_taskbar(false)
+            .skip_taskbar(true)
             .visible(true)
             .focused(true);
         let result = crate::browser_args::match_main(&app_for_main, builder).build();

@@ -1,4 +1,4 @@
-import type { MangaSummary, MangaChapter, MangaTag } from "../model";
+import { isAdultManga, isAdultTag, type MangaSummary, type MangaChapter, type MangaTag } from "../model";
 
 export type MangaPage = { url: string; headers?: Record<string, string> };
 
@@ -37,17 +37,23 @@ export function toSummary(v: unknown): MangaSummary | null {
   const id = clamp(str(o.id), 512);
   const title = clamp(str(o.title), 1024);
   if (!id || !title) return null;
+  const altTitle = clamp(str(o.altTitle), 1024);
+  const description = clamp(str(o.description), 8192);
+  const isNsfw = o.isNsfw === true || o.nsfw === true || o.adult === true;
+  const contentRating = isNsfw ? "18+" : clamp(str(o.contentRating), 64);
+  const genres = Array.isArray(o.genres) ? o.genres.map(String) : undefined;
+  if (isAdultManga({ title, altTitle, description, contentRating, genres, isNsfw })) return null;
   const cover = str(o.cover);
   const year = typeof o.year === "number" && isFinite(o.year) ? Math.trunc(o.year) : undefined;
   return {
     id,
     title,
-    altTitle: clamp(str(o.altTitle), 1024),
+    altTitle,
     cover: isSafeUrl(cover) ? cover.trim() : undefined,
     year,
     status: clamp(str(o.status), 64),
-    description: clamp(str(o.description), 8192),
-    contentRating: clamp(str(o.contentRating), 64),
+    description,
+    contentRating,
     lastChapter: clamp(str(o.lastChapter), 64),
     author: clamp(str(o.author), 256),
   };
@@ -197,6 +203,7 @@ export function toTags(v: unknown): MangaTag[] {
     const id = clamp(str(o.id), 128);
     const name = clamp(str(o.name), 128);
     if (!id || !name) continue;
+    if (isAdultTag({ id, name })) continue;
     out.push({ id, name, group: clamp(str(o.group), 128) || "" });
   }
   return out;

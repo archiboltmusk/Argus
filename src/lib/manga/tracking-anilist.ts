@@ -6,7 +6,7 @@ import type { MangaCandidate, MangaPushResult } from "./sync";
 
 const SEARCH = `query ($q: String) {
   Page(perPage: 10) {
-    media(search: $q, type: MANGA, sort: SEARCH_MATCH) {
+    media(search: $q, type: MANGA, isAdult: false, sort: SEARCH_MATCH) {
       id
       idMal
       title { romaji english }

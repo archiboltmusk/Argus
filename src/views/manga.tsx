@@ -23,7 +23,6 @@ import {
   resumeChapters,
   streamChapters,
   popularManga,
-  searchManga,
   type MangaChapter,
   type MangaSummary,
 } from "@/lib/manga/api";
@@ -47,6 +46,7 @@ import { MangaReader } from "./manga/manga-reader";
 import { MangaSourcesView } from "./manga/manga-sources-panel";
 import { MangaUniverses, UniversesCta } from "./manga/manga-universes";
 import { AnilistMangaRows } from "./manga/anilist-manga-rows";
+import { MalMangaRows } from "./manga/mal-manga-rows";
 import { MangaHiddenRows } from "./manga/manga-row-visibility";
 import { BecauseYouWatched } from "./manga/because-you-watched";
 import { useMangaFavorites } from "@/lib/manga-favorites";
@@ -110,26 +110,12 @@ export function MangaView() {
   const openMangaByTitle = (item: MangaSummary) => {
     const norm = (s: string) => s.toLowerCase().replace(/[^\p{L}\p{N}]+/gu, "");
     const key = norm(item.title);
-    const openId = (id: string) => setMode({ screen: "detail", mangaId: id });
-    const pick = (hits: MangaSummary[]) =>
-      hits.find((h) => norm(h.title) === key || (h.altTitle != null && norm(h.altTitle) === key)) ??
-      hits[0] ??
-      null;
-    void (async () => {
-      try {
-        const hit = pick(await searchManga(item.title, 0));
-        if (hit) return openId(hit.id);
-        const alt = item.title.replace(/[^\p{L}\p{N}]+/gu, " ").trim();
-        if (alt && alt !== item.title) {
-          const hit2 = pick(await searchManga(alt, 0));
-          if (hit2) return openId(hit2.id);
-        }
-      } catch {
-        /* fall through to reading progress */
-      }
-      const entry = listMangaProgress(activeId ?? "default").find((e) => norm(e.title) === key);
-      if (entry) openId(entry.id);
-    })();
+    const entry = listMangaProgress(activeId ?? "default").find((e) => norm(e.title) === key);
+    if (entry) {
+      setMode({ screen: "detail", mangaId: entry.id });
+      return;
+    }
+    setMode({ screen: "detail", mangaId: `title:${encodeURIComponent(item.title)}` });
   };
 
   useEffect(() => {
@@ -295,6 +281,9 @@ export function MangaView() {
         <MangaHiddenRows />
         <LazyMount minHeight={280}>
           <AnilistMangaRows onOpen={openMangaByTitle} />
+        </LazyMount>
+        <LazyMount minHeight={280}>
+          <MalMangaRows onOpen={openMangaByTitle} />
         </LazyMount>
         <LazyMount minHeight={280}>
           <BecauseYouWatched onOpen={openMangaItem} />

@@ -1,5 +1,8 @@
+import { anilistRequest } from "@/lib/anilist/client";
 import { searchMangaEverywhere, type MangaSummary } from "@/lib/manga/api";
+import { filterSafeManga, isAdultManga } from "@/lib/manga/model";
 import { activeMangaSourceId } from "@/lib/manga/sources";
+import { mangadexProvider } from "@/lib/manga/sources/mangadex";
 import { suwayomiSourcesRevision } from "@/lib/manga/sources/suwayomi/source-events";
 import { setItemWithRecovery } from "@/lib/storage-recovery";
 
@@ -225,7 +228,7 @@ export function collectionsForTitle(title?: string): MangaCollection[] {
 
 const resolveCache = new Map<string, MangaSummary[]>();
 
-const COLLECTION_CACHE_KEY = "argus.manga.collections.v1";
+const COLLECTION_CACHE_KEY = "argus.manga.collections.v2";
 const COLLECTION_TTL = 24 * 60 * 60 * 1000;
 const COLLECTION_CACHE_CAP = 12;
 
@@ -239,7 +242,7 @@ function readCollectionDisk(cacheKey: string, revision: number): MangaSummary[] 
     const entry = store[cacheKey];
     if (!entry || entry.revision !== revision || Date.now() - entry.at > COLLECTION_TTL)
       return null;
-    return entry.items;
+    return filterSafeManga(entry.items);
   } catch {
     return null;
   }
@@ -261,18 +264,108 @@ function writeCollectionDisk(cacheKey: string, revision: number, items: MangaSum
   }
 }
 
-async function poolEach<T>(
-  items: T[],
-  concurrency: number,
-  fn: (item: T) => Promise<void>,
-): Promise<void> {
-  let cursor = 0;
-  const run = async () => {
-    while (cursor < items.length) {
-      await fn(items[cursor++]);
-    }
-  };
-  await Promise.all(Array.from({ length: Math.min(concurrency, items.length) }, run));
+type AnilistMediaNode = {
+  id: number;
+  isAdult?: boolean | null;
+  title?: { english?: string | null; romaji?: string | null } | null;
+  coverImage?: { extraLarge?: string | null; large?: string | null } | null;
+  startDate?: { year?: number | null } | null;
+  status?: string | null;
+  description?: string | null;
+  chapters?: number | null;
+  genres?: string[] | null;
+};
+
+type BatchPageResp = Record<string, { media?: AnilistMediaNode[] | null } | null>;
+
+function cleanHtml(raw?: string | null): string | undefined {
+  if (!raw) return undefined;
+  return raw
+    .replace(/<br\s*\/?>/gi, "\n")
+    .replace(/<[^>]+>/g, "")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+}
+
+async function fetchAnilistCollectionBatch(titles: string[]): Promise<Map<string, MangaSummary>> {
+  const out = new Map<string, MangaSummary>();
+  if (!titles.length) return out;
+  const varDefs = titles.map((_, i) => `$s${i}: String`).join(", ");
+  const fields = titles
+    .map(
+      (_, i) => `
+    p${i}: Page(perPage: 1) {
+      media(search: $s${i}, type: MANGA, isAdult: false) {
+        id
+        isAdult
+        title { english romaji }
+        coverImage { extraLarge large }
+        startDate { year }
+        status
+        description(asHtml: false)
+        chapters
+        genres
+      }
+    }`,
+    )
+    .join("\n");
+  const query = `query (${varDefs}) {\n${fields}\n}`;
+  const vars: Record<string, string> = {};
+  titles.forEach((t, i) => {
+    vars[`s${i}`] = t;
+  });
+
+  try {
+    const data = await anilistRequest<BatchPageResp>(query, vars, undefined, true);
+    if (!data) return out;
+    titles.forEach((rawTitle, i) => {
+      const node = data[`p${i}`]?.media?.[0];
+      if (!node || node.isAdult) return;
+      const cover = node.coverImage?.extraLarge ?? node.coverImage?.large ?? undefined;
+      if (!cover) return;
+      const eng = node.title?.english?.trim();
+      const rom = node.title?.romaji?.trim();
+      const displayTitle = eng || rom || rawTitle;
+      const altTitle = eng && rom && eng.toLowerCase() !== rom.toLowerCase() ? rom : undefined;
+      const genres = (node.genres ?? []).filter((g): g is string => typeof g === "string");
+      if (isAdultManga({ title: displayTitle, altTitle, genres, isNsfw: Boolean(node.isAdult) })) {
+        return;
+      }
+      out.set(rawTitle, {
+        id: `title:${encodeURIComponent(rawTitle)}`,
+        title: rawTitle,
+        altTitle: altTitle ?? (displayTitle !== rawTitle ? displayTitle : undefined),
+        cover,
+        year: node.startDate?.year ?? undefined,
+        status: node.status ? node.status.toLowerCase() : undefined,
+        description: cleanHtml(node.description),
+        lastChapter: node.chapters != null ? String(node.chapters) : undefined,
+      });
+    });
+  } catch {
+    /* fall through to provider search */
+  }
+  return out;
+}
+
+async function resolveTitleFromProviders(title: string): Promise<MangaSummary | null> {
+  const key = normalize(title);
+  const pick = (hits: MangaSummary[]) =>
+    hits.find((h) => normalize(h.title) === key) ??
+    hits.find((h) => normalize(h.title).includes(key) || key.includes(normalize(h.title))) ??
+    hits[0] ??
+    null;
+
+  const everywhere = await searchMangaEverywhere(title).catch(() => []);
+  const hit1 = pick(everywhere);
+  if (hit1?.cover) return hit1;
+
+  const mdHits = await mangadexProvider.search(title, 0).catch(() => []);
+  const hit2 = pick(mdHits);
+  if (hit2?.cover) {
+    return { ...hit2, id: `mangadex::${hit2.id}` };
+  }
+  return hit1 ?? (hit2 ? { ...hit2, id: `mangadex::${hit2.id}` } : null);
 }
 
 export async function streamCollection(
@@ -282,42 +375,66 @@ export async function streamCollection(
   const revision = suwayomiSourcesRevision();
   const cacheKey = `${activeMangaSourceId()}::${collection.id}`;
   const cached = resolveCache.get(cacheKey);
-  if (cached) {
-    onChunk(cached);
+  if (cached && cached.length > 0) {
+    onChunk(filterSafeManga(cached));
     return;
   }
   const disk = readCollectionDisk(cacheKey, revision);
-  if (disk) {
+  if (disk && disk.length > 0) {
     resolveCache.set(cacheKey, disk);
     onChunk(disk);
     return;
   }
+
   const out: MangaSummary[] = [];
   const seen = new Set<string>();
-  const BATCH = 4;
-  let pending: MangaSummary[] = [];
-  const flush = () => {
-    if (pending.length) {
-      onChunk(pending);
-      pending = [];
+  const CHUNK_SIZE = 10;
+
+  for (let i = 0; i < collection.titles.length; i += CHUNK_SIZE) {
+    const slice = collection.titles.slice(i, i + CHUNK_SIZE);
+    const anilistMap = await fetchAnilistCollectionBatch(slice);
+    const chunkItems: MangaSummary[] = [];
+    const missing: string[] = [];
+
+    for (const title of slice) {
+      const hit = anilistMap.get(title);
+      if (hit && hit.cover) {
+        const normKey = normalize(hit.title);
+        if (!seen.has(normKey)) {
+          seen.add(normKey);
+          out.push(hit);
+          chunkItems.push(hit);
+        }
+      } else {
+        missing.push(title);
+      }
     }
-  };
-  await poolEach(collection.titles, 5, async (title) => {
-    const hits = await searchMangaEverywhere(title).catch(() => []);
-    const key = normalize(title);
-    const hit =
-      hits.find((h) => normalize(h.title) === key) ??
-      hits.find((h) => normalize(h.title).includes(key) || key.includes(normalize(h.title))) ??
-      hits[0];
-    if (hit && hit.cover && !seen.has(hit.id)) {
-      seen.add(hit.id);
-      out.push(hit);
-      pending.push(hit);
-      if (pending.length >= BATCH) flush();
+
+    if (chunkItems.length > 0) {
+      onChunk(chunkItems);
     }
-  });
-  flush();
-  if (out.length) {
+
+    if (missing.length > 0) {
+      const fallbackChunk: MangaSummary[] = [];
+      for (const title of missing) {
+        const resolved = await resolveTitleFromProviders(title);
+        if (resolved && resolved.cover) {
+          const normKey = normalize(resolved.title);
+          if (!seen.has(normKey) && !seen.has(resolved.id)) {
+            seen.add(normKey);
+            seen.add(resolved.id);
+            out.push(resolved);
+            fallbackChunk.push(resolved);
+          }
+        }
+      }
+      if (fallbackChunk.length > 0) {
+        onChunk(fallbackChunk);
+      }
+    }
+  }
+
+  if (out.length > 0) {
     resolveCache.set(cacheKey, out);
     writeCollectionDisk(cacheKey, revision, out);
   }

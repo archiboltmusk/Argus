@@ -1,4 +1,5 @@
 import { safeFetch as fetch } from "@/lib/safe-fetch";
+import { dlog, dwarn } from "@/lib/debug";
 import { matchEpisodeFileIndex, type EpisodeHint } from "@/lib/streams/episode-file";
 import {
   hashFromMagnet,
@@ -66,17 +67,65 @@ export function createRealDebrid(apiKey: string): DebridStore {
   }
 
   async function cacheCheckBatch(
-    _batch: string[],
-    _signal: AbortSignal,
+    batch: string[],
+    signal: AbortSignal,
   ): Promise<DebridResult<CacheMap>> {
-    return { ok: true, data: {} };
+    if (batch.length === 0) return { ok: true, data: {} };
+    const r = await get<Record<string, Record<string, unknown>>>(
+      `/torrents/instantAvailability/${batch.join("/")}`,
+      signal,
+    );
+    if (!r.ok) {
+      dwarn("[rd] cacheCheck batch failed", { code: r.code, status: r.status });
+      return { ok: true, data: {} };
+    }
+    const out: CacheMap = {};
+    const map = r.data;
+    if (map && typeof map === "object") {
+      for (const h of batch) {
+        const lh = h.toLowerCase();
+        const entry = map[lh] ?? map[h];
+        if (entry && typeof entry === "object") {
+          const hasFiles = Object.values(entry).some((variants) =>
+            Array.isArray(variants) ? variants.length > 0 : !!variants,
+          );
+          if (hasFiles) out[lh] = true;
+        }
+      }
+    }
+    return { ok: true, data: out };
   }
 
   async function cacheCheck(hashes: string[], signal: AbortSignal): Promise<DebridResult<CacheMap>> {
-    void hashes;
-    void signal;
-    void cacheCheckBatch;
-    return { ok: true, data: {} };
+    if (hashes.length === 0) return { ok: true, data: {} };
+    const isTauri =
+      typeof window !== "undefined" && ("__TAURI__" in window || "__TAURI_INTERNALS__" in window);
+    if (isTauri) {
+      try {
+        const { invoke } = await import("@tauri-apps/api/core");
+        const data = await invoke<CacheMap>("debrid_check_cached_batch", {
+          provider: "rd",
+          apiKey,
+          hashes,
+        });
+        return { ok: true, data };
+      } catch (e) {
+        dwarn("[rd] native cache check failed, using web fallback", e);
+      }
+    }
+    const lower = hashes.map((h) => h.toLowerCase());
+    const BATCH = 100;
+    const batches: string[][] = [];
+    for (let i = 0; i < lower.length; i += BATCH) {
+      batches.push(lower.slice(i, i + BATCH));
+    }
+    const results = await Promise.allSettled(batches.map((b) => cacheCheckBatch(b, signal)));
+    const merged: CacheMap = {};
+    for (const r of results) {
+      if (r.status === "fulfilled" && r.value.ok) Object.assign(merged, r.value.data);
+    }
+    dlog(`[rd] cacheCheck total ${hashes.length} hashes → ${Object.keys(merged).length} cached`);
+    return { ok: true, data: merged };
   }
 
   async function playableUrl(

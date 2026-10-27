@@ -178,9 +178,8 @@ function SeriesLink({
     if (busy) return;
     setBusy(true);
     try {
-      const found = (await searchManga(item.title, 0))[0];
-      if (found) onOpenManga(found.id);
-      else setMissing(true);
+      const found = (await searchManga(item.title, 0).catch(() => []))[0];
+      onOpenManga(found ? found.id : `title:${encodeURIComponent(item.title)}`);
     } catch {
       setMissing(true);
     } finally {

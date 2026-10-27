@@ -53,7 +53,7 @@ test("root branding uses the real mark, preserves custom assets, and adds no com
     await render();
     const footer = document.querySelector("[data-context-brand-footer]")!;
     assert.equal(footer.getAttribute("aria-hidden"), "true");
-    assert.equal(footer.querySelector("svg")?.getAttribute("viewBox"), "0 0 700 642.88");
+    assert.equal(footer.querySelector("svg")?.getAttribute("viewBox"), "0 0 64 64");
     assert.equal(footer.textContent, "");
     assert.equal(footer.querySelector("button,a,[tabindex],[role^='menuitem']"), null);
     logo = {

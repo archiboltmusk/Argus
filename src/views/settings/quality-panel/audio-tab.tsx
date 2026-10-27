@@ -80,12 +80,13 @@ export function AudioTab() {
             value={settings.audioProfile}
             options={[
               { value: "off", label: t("Flat") },
-              { value: "bass", label: t("Bass boost") },
-              { value: "voice", label: t("Vocal clarity") },
-              { value: "bass-reduce", label: t("Less bass") },
+              { value: "speech-clarity", label: t("Speech clarity") },
               { value: "night", label: t("Night mode") },
+              { value: "voice", label: t("Vocal clarity") },
+              { value: "bass", label: t("Bass boost") },
+              { value: "bass-reduce", label: t("Less bass") },
             ]}
-            onChange={(v) => update({ audioProfile: v })}
+            onChange={(v) => update({ audioProfile: v as any })}
           />
           <AudioProfilePreview profile={settings.audioProfile} />
         </div>

@@ -77,11 +77,13 @@ export async function load(url, context, nextLoad) {
     return { format: "module", source: `export default ${source};`, shortCircuit: true };
   }
   if (url.endsWith(".tsx") || url.endsWith(".ts")) {
-    const source = await readFile(fileURLToPath(url), "utf8");
-    if (!url.endsWith(".tsx") && !source.includes("import.meta.env")) return nextLoad(url, context);
+    const filePath = fileURLToPath(url);
+    const source = await readFile(filePath, "utf8");
+    const isJsx = url.endsWith(".tsx");
     const output = ts.transpileModule(source, {
+      fileName: filePath,
       compilerOptions: {
-        jsx: ts.JsxEmit.ReactJSX,
+        jsx: isJsx ? ts.JsxEmit.ReactJSX : ts.JsxEmit.None,
         module: ts.ModuleKind.ESNext,
         target: ts.ScriptTarget.ES2022,
       },

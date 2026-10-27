@@ -2,7 +2,8 @@ import { useCallback, useEffect, useRef, useState, type RefObject } from "react"
 import type { PlayerBridge, PlayerSnapshot } from "@/lib/player/bridge";
 import { getPlaybackPosition, usePlaybackFlag } from "@/lib/player/playback-clock";
 import { isLivePlaybackSrc } from "@/lib/player/live-src";
-import { pinPickerCache, unpinPickerCache } from "@/lib/picker-cache";
+import { peekPickerCache, pinPickerCache, unpinPickerCache } from "@/lib/picker-cache";
+import { prepareCachedDebridStreams } from "@/lib/debrid/playback-preparation";
 import { readResumeMs } from "@/lib/resume";
 import { SHORT_PLAYBACK_SEC } from "@/lib/dead-streams";
 import { savePlayback } from "@/lib/playback-history";
@@ -80,6 +81,21 @@ export function useStreamSwitcher(params: {
   const pickAnother = useCallback(() => {
     setSwitcherOpen(true);
   }, []);
+
+  // Pre-resolve switcher candidate streams when the switcher overlay is opened
+  // so any stream clicked by the user starts instantly (<500ms)
+  useEffect(() => {
+    if (!switcherOpen || debrids.length === 0) return;
+    const cacheEntry = peekPickerCache(src.meta, src.episode);
+    const streams = cacheEntry?.result?.picker?.all ?? [];
+    if (streams.length === 0) return;
+    const hint = src.episode
+      ? { season: src.episode.season ?? null, episode: src.episode.episode ?? null }
+      : undefined;
+    const ac = new AbortController();
+    void prepareCachedDebridStreams(streams, debrids, hint, ac.signal).catch(() => {});
+    return () => ac.abort();
+  }, [switcherOpen, src.meta, src.episode, debrids]);
 
   const onSwitchStream = useCallback(
     async (stream: ScoredStream) => {

@@ -72,6 +72,16 @@ export function SeekBar({
     [skipSegments, durationSec, dur],
   );
 
+  const hoverChapter = useMemo(() => {
+    if (hover == null || chapters.length === 0) return null;
+    let found: Chapter | null = null;
+    for (let i = 0; i < chapters.length; i++) {
+      if (chapters[i].startSec <= hover) found = chapters[i];
+      else break;
+    }
+    return found?.title?.trim() || null;
+  }, [hover, chapters]);
+
   const clearInteraction = () => {
     setScrub(null);
     setHover(null);
@@ -189,6 +199,7 @@ export function SeekBar({
           scrubbing={scrub != null}
           hovered={hover != null}
           segments={segmentSpans}
+          durationSec={durationSec}
         />
         {sharedMarks.map((mark, index) =>
           durationSec > 0 && mark.sec >= 0 && mark.sec <= durationSec ? (
@@ -224,10 +235,18 @@ export function SeekBar({
             />
           ) : (
             <div
-              className="pointer-events-none absolute -top-9 -translate-x-1/2 rounded-md border border-white/10 bg-black/90 px-2 py-1 font-mono text-[12px] font-semibold tabular-nums text-white shadow-lg backdrop-blur-md"
+              className="pointer-events-none absolute -top-9 -translate-x-1/2 flex items-center gap-1.5 whitespace-nowrap rounded-md border border-white/10 bg-black/90 px-2.5 py-1 text-[12px] font-semibold text-white shadow-lg backdrop-blur-md"
               style={{ left: `${(hover / dur) * 100}%` }}
             >
-              {fmtTime(hover)}
+              {hoverChapter && (
+                <>
+                  <span className="max-w-[140px] truncate text-white/80 font-medium">
+                    {hoverChapter}
+                  </span>
+                  <span className="text-white/40">·</span>
+                </>
+              )}
+              <span className="font-mono tabular-nums">{fmtTime(hover)}</span>
             </div>
           ))}
       </div>

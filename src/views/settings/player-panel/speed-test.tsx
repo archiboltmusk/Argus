@@ -1,9 +1,10 @@
 import { Loader2, RotateCw } from "../icons";
+import { Check } from "lucide-react";
 import { useEffect, useState } from "react";
 import cloudflareLogo from "@/assets/cloudflare.webp";
+import { useSettings } from "@/lib/settings";
 import { useT } from "@/lib/i18n";
 import { InfoTip, ROW_ACTION } from "../kit";
-import { isTauri } from "./internals";
 import { runSpeedTest, type SpeedTestResult } from "./speed-test-run";
 
 const SPEEDTEST_COOLDOWN_MS = 90_000;
@@ -36,19 +37,21 @@ function MethodTip() {
 }
 
 export function SpeedTestButton() {
-  const t = useT();
-  if (!isTauri) {
-    return (
-      <span className="inline-flex h-[22px] shrink-0 items-center rounded-[6px] bg-elevated px-2 text-[13px] font-bold uppercase leading-[17px] tracking-[0.72px] text-ink-subtle">
-        {t("Desktop only")}
-      </span>
-    );
-  }
   return <SpeedTestButtonInner />;
+}
+
+function recommendBandwidthCap(mbps: number): number {
+  if (mbps >= 150) return 100;
+  if (mbps >= 70) return 50;
+  if (mbps >= 35) return 25;
+  if (mbps >= 20) return 15;
+  if (mbps >= 10) return 8;
+  return 4;
 }
 
 function SpeedTestButtonInner() {
   const t = useT();
+  const { settings, update } = useSettings();
   const [state, setState] = useState<"idle" | "running" | "done" | "error">("idle");
   const [mbps, setMbps] = useState<number | null>(null);
   const [liveMbps, setLiveMbps] = useState<number | null>(null);
@@ -120,6 +123,28 @@ function SpeedTestButtonInner() {
             />
             {mbps != null ? formatMbps(mbps) : ""}
           </span>
+          {mbps != null && (() => {
+            const recommended = recommendBandwidthCap(mbps);
+            const isApplied = settings.bandwidthMbps === recommended;
+            return (
+              <button
+                type="button"
+                onClick={() => update({ bandwidthMbps: recommended })}
+                className={`flex h-11 shrink-0 items-center gap-2 rounded-[8px] border px-3 text-[13.5px] font-semibold transition-colors ${
+                  isApplied
+                    ? "border-emerald-500/40 bg-emerald-500/15 text-emerald-300"
+                    : "border-edge-soft bg-raised text-ink hover:border-accent hover:text-accent"
+                }`}
+              >
+                {isApplied ? <Check size={15} strokeWidth={2.4} /> : null}
+                <span>
+                  {isApplied
+                    ? t("Optimal cap ({mbps}M) active", { mbps: recommended })
+                    : t("Auto-apply {mbps}M cap", { mbps: recommended })}
+                </span>
+              </button>
+            );
+          })()}
           <MethodTip />
         </>
       )}

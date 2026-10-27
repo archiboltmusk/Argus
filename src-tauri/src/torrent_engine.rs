@@ -421,6 +421,8 @@ struct EngineConfig {
     max_gb: Option<u64>,
     /// Uploading beyond a trickle; off unless the user opts in.
     upload_enabled: Option<bool>,
+    torrent_profile: Option<String>,
+    transcode_profile: Option<String>,
 }
 
 /// Throttle applied while uploading is off. Not zero: a small trickle keeps peers
@@ -482,20 +484,34 @@ fn engine_dir(app: &AppHandle, cfg: &EngineConfig) -> Result<std::path::PathBuf,
 async fn init(app: AppHandle, cancellation: CancellationToken) -> Result<(), String> {
     let cancellation = cancellation.child_token();
     let guard = cancellation.clone().drop_guard();
+    let cfg = read_config(&app);
     #[cfg(not(target_os = "android"))]
-    std::env::set_var("DHT_QUERIES_PER_SECOND", "400");
+    {
+        let dht_qps = match cfg.torrent_profile.as_deref() {
+            Some("soft") => "150",
+            Some("fast") => "600",
+            Some("ultra-fast") => "1000",
+            _ => "400",
+        };
+        std::env::set_var("DHT_QUERIES_PER_SECOND", dht_qps);
+    }
     #[cfg(target_os = "android")]
     std::env::set_var(
         "DHT_QUERIES_PER_SECOND",
         crate::p2p_android::DHT_QUERIES_PER_SECOND,
     );
-    let cfg = read_config(&app);
     #[cfg(not(target_os = "android"))]
     UPLOAD_ENABLED.store(
         cfg.upload_enabled.unwrap_or(false),
         std::sync::atomic::Ordering::Relaxed,
     );
     let dir = engine_dir(&app, &cfg)?;
+    stream_route::sync_runtime_settings(
+        Some(dir.to_string_lossy().to_string()),
+        cfg.max_gb,
+        cfg.torrent_profile.as_deref(),
+        cfg.transcode_profile.clone(),
+    );
     std::fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
     match mark_persisted_torrents_paused(&dir) {
         Ok(0) => {}
@@ -1115,12 +1131,23 @@ pub async fn torrent_engine_set_options(
     restart: bool,
 ) -> Result<EngineStatusDto, String> {
     let _transition = lifecycle().lock().await;
+    let prev = read_config(&app);
     let cfg = EngineConfig {
         dir: dir.map(|s| s.trim().to_string()).filter(|s| !s.is_empty()),
         retention_hours: Some(retention_hours),
         max_gb: Some(max_gb),
-        upload_enabled: read_config(&app).upload_enabled,
+        upload_enabled: prev.upload_enabled,
+        torrent_profile: prev.torrent_profile,
+        transcode_profile: prev.transcode_profile,
     };
+    if let Ok(resolved_dir) = engine_dir(&app, &cfg) {
+        stream_route::sync_runtime_settings(
+            Some(resolved_dir.to_string_lossy().to_string()),
+            Some(max_gb),
+            cfg.torrent_profile.as_deref(),
+            cfg.transcode_profile.clone(),
+        );
+    }
     if let Some(p) = config_path(&app) {
         if let Some(parent) = p.parent() {
             let _ = std::fs::create_dir_all(parent);
@@ -1136,6 +1163,33 @@ pub async fn torrent_engine_set_options(
         }
     }
     Ok(torrent_engine_status())
+}
+
+#[tauri::command]
+pub async fn torrent_engine_set_profile(
+    app: AppHandle,
+    torrent_profile: String,
+    transcode_profile: Option<String>,
+) -> Result<(), String> {
+    let mut cfg = read_config(&app);
+    cfg.torrent_profile = Some(torrent_profile.trim().to_string());
+    if let Some(tp) = transcode_profile {
+        cfg.transcode_profile = Some(tp.trim().to_string()).filter(|s| !s.is_empty());
+    }
+    stream_route::sync_runtime_settings(
+        None,
+        None,
+        cfg.torrent_profile.as_deref(),
+        cfg.transcode_profile.clone(),
+    );
+    if let Some(p) = config_path(&app) {
+        if let Some(parent) = p.parent() {
+            let _ = std::fs::create_dir_all(parent);
+        }
+        std::fs::write(&p, serde_json::to_string(&cfg).map_err(|e| e.to_string())?)
+            .map_err(|e| e.to_string())?;
+    }
+    Ok(())
 }
 
 /// Saved for the next engine start; the session is built with the limit already applied.

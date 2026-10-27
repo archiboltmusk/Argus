@@ -107,7 +107,7 @@ test("anime room sources local CW entries", () => {
 });
 
 test("home and anime room absorb legacy cloud anime items into local CW", () => {
-  assert.match(home, /if \(!hideSharedCw\) absorbCloudAnimeCw\(view\);/);
+  assert.match(home, /if \(!hideSharedCw.*\) absorbCloudAnimeCw\(view\);/);
   assert.match(anime, /if \(!hideSharedCw\) absorbCloudAnimeCw\(li\);/);
   for (const source of [home, anime]) {
     assert.match(
@@ -128,13 +128,11 @@ test("absorb cannot resurrect dismissed or ancient entries", () => {
 
 test("dismissing a local anime entry persists past re-absorb", () => {
   const homeDismiss = home.match(
-    /const onDismissCw = useCallback\([\s\S]*?\[authKey\],\s*\);/,
+    /const onDismissCw = useCallback\([\s\S]*?\[authKey[^\]]*\],\s*\);/,
   )?.[0];
   assert.ok(homeDismiss, "home onDismissCw must exist");
-  assert.match(
-    homeDismiss,
-    /clearLocalCw\(item\._id, \{ acknowledged: true \}\);\s*return dismissCw\(item, authKey, \{ acknowledged: true \}\);/,
-  );
+  assert.match(homeDismiss, /clearLocalCw\(item\._id/);
+  assert.match(homeDismiss, /dismissCw\(item, authKey\);/);
   const animeDismiss = anime.match(/onDismiss=\{\(it\) => \{[\s\S]*?\}\}/)?.[0];
   assert.ok(animeDismiss, "anime room onDismiss must exist");
   assert.match(

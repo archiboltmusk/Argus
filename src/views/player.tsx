@@ -101,6 +101,8 @@ import { clearMediaControls, updateMediaControls } from "@/lib/media-session";
 import { usePlayerMedia } from "./player/hooks/use-player-media";
 import { useTrickplay } from "./player/hooks/use-trickplay";
 import { useStreamPill } from "./player/hooks/use-stream-pill";
+import { useStallFallback } from "./player/hooks/use-stall-fallback";
+import { useQualityUpgrade } from "./player/hooks/use-quality-upgrade";
 import { useStubDetection } from "./player/hooks/use-stub-detection";
 import { useBridgeLoad } from "./player/hooks/use-bridge-load";
 import { useSportsDockSurface } from "./player/hooks/use-sports-dock-surface";
@@ -116,9 +118,11 @@ import { WebErrorCard } from "./player/web-error-card";
 import { EndScreen } from "./player/end-screen";
 import { useEndScreen } from "./player/hooks/use-end-screen";
 import { LeaveConfirmModal } from "@/components/player/leave-confirm-modal";
+import { StudyNotesModal } from "./player/study-notes-modal";
+import { AmbientEdgeGlow } from "@/components/player/ambient-edge-glow";
 import { HdrStageBridge } from "./player/hdr-stage-bridge";
 import { setSkipSegmentsView } from "@/lib/skip-intro/segment-store";
-import { markStreamDead, STUB_TTL_MS } from "@/lib/dead-streams";
+import { markStreamDead, STUB_TTL_MS, SOFT_STALL_TTL_MS } from "@/lib/dead-streams";
 import type { VolumeIndicatorState } from "@/components/player/volume-indicator";
 import type { ToastInfo } from "@/views/addons/addons-types";
 import { SFX } from "@/lib/sfx";
@@ -435,7 +439,7 @@ function NativePlayerView({ src }: { src: PlayerSrc }) {
     continueWatching,
     stopWatching,
   } = useStillWatching({
-    enabled: settings.stillWatching,
+    enabled: settings.stillWatching && !settings.bingeMode,
     threshold: settings.stillWatchingAfter,
     onContinue: goToEpisode,
     onStop: () => closePlayerRef.current(),
@@ -451,7 +455,10 @@ function NativePlayerView({ src }: { src: PlayerSrc }) {
   useAutoNextEpisode({
     src,
     snap,
-    nextEp: settings.autoPlayNextEpisode && !queueOrSleepArmed ? airedNext : null,
+    nextEp:
+      (settings.autoPlayNextEpisode || settings.bingeMode) && !queueOrSleepArmed
+        ? airedNext
+        : null,
     canChangeEpisode,
     cancelled: autoNextCancelled,
     startedNearEndRef,
@@ -512,6 +519,7 @@ function NativePlayerView({ src }: { src: PlayerSrc }) {
   );
   const cast = usePlayerCast({ src: castSource, debrids, snapRef, bridgeRef, settings });
   const returnTargetRef = useRef(activeMediaSrc);
+  const [studyNotesOpen, setStudyNotesOpen] = useState(false);
   returnTargetRef.current = activeMediaSrc;
   const returnToPlayerRef = useRef<(options?: PlayerReturnOptions) => Promise<void>>(
     async () => {},
@@ -735,7 +743,7 @@ function NativePlayerView({ src }: { src: PlayerSrc }) {
       }
       const s = stallSrcRef.current;
       autoAdvancedRef.current = true;
-      if (s.streamRef) markStreamDead(s.streamRef, "load-failed", STUB_TTL_MS);
+      if (s.streamRef) markStreamDead(s.streamRef, "load-failed", SOFT_STALL_TTL_MS);
       exitPlayback();
       openPicker(s.meta, s.episode, {
         autoPlay: true,
@@ -1163,6 +1171,10 @@ function NativePlayerView({ src }: { src: PlayerSrc }) {
     onRestartServer: restartStreamServer,
     gif,
     clip,
+    onOpenStudyNotes: () => {
+      bridgeRef.current?.pause();
+      setStudyNotesOpen(true);
+    },
     videoFill,
     onVolumeFeedback: showVolumeFeedback,
   });
@@ -1323,6 +1335,32 @@ function NativePlayerView({ src }: { src: PlayerSrc }) {
     slowLoad,
     inRoom,
     streamCheckOpen,
+  });
+  const {
+    stallOffer,
+    acceptOffer: acceptStallFallback,
+    dismissOffer: dismissStallFallback,
+  } = useStallFallback({
+    src: activeMediaSrc,
+    snap,
+    debrids,
+    autoSwitchEnabled: settings.autoNextStreamOnStall,
+    onSwitchStream,
+    openSwitcher: () => setSwitcherOpen(true),
+    inRoom,
+    bridgeRef,
+  });
+  const {
+    upgradeOffer,
+    acceptUpgrade,
+    dismissUpgrade,
+  } = useQualityUpgrade({
+    src: activeMediaSrc,
+    snap,
+    debrids,
+    enabled: settings.suggestQualityUpgrade,
+    onSwitchStream,
+    inRoom,
   });
 
   const playStreamRef = liveStreamRef ?? src.streamRef;
@@ -1599,6 +1637,12 @@ function NativePlayerView({ src }: { src: PlayerSrc }) {
     foreignNotice,
     onDismissForeign: () => setForeignNotice(null),
     streamPillVariant,
+    stallOffer,
+    acceptStallFallback,
+    dismissStallFallback,
+    upgradeOffer,
+    acceptUpgrade,
+    dismissUpgrade,
     mpvEmbedWindowsActive,
     setStreamCheckOpen,
     dismissStreamPill,
@@ -1689,6 +1733,10 @@ function NativePlayerView({ src }: { src: PlayerSrc }) {
           durationSec={snap.durationSec}
         />
       )}
+      <AmbientEdgeGlow
+        active={settings.ambientGlow && playing && !docked && !pipMode && !src.pipDocked}
+        backdrop={src.meta.background ?? src.meta.poster}
+      />
       <div
         ref={videoMountRef}
         data-player-video-mount
@@ -1862,6 +1910,13 @@ function NativePlayerView({ src }: { src: PlayerSrc }) {
         />
       )}
       {!tenFoot && <LeaveConfirmModal />}
+      <StudyNotesModal
+        open={studyNotesOpen}
+        onClose={() => setStudyNotesOpen(false)}
+        title={src.title ?? src.meta.name}
+        sourceId={src.meta.id}
+        onResumePlayback={() => bridgeRef.current?.play()}
+      />
       <HdrStageBridge
         active={hdrStageRequested}
         payload={{

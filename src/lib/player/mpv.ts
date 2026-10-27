@@ -151,6 +151,7 @@ export type MpvOptions = {
   renderer?: "gpu-next" | "gpu";
   forceYuv420p?: boolean;
   extraOptions?: string;
+  cacheDir?: string;
   fullDownload?: boolean;
   separateDisplay?: MonitorInfo | null;
   separateCoverTaskbar?: boolean;
@@ -170,6 +171,7 @@ function mpvReuseConfigKey(options: MpvOptions | undefined, hdrToSdr: boolean): 
     renderer: options?.renderer ?? "gpu-next",
     forceYuv420p: options?.forceYuv420p === true,
     extraOptions: options?.extraOptions ?? "",
+    cacheDir: options?.cacheDir?.trim() || "",
     fullDownload: options?.fullDownload === true,
   });
 }
@@ -177,8 +179,12 @@ function mpvReuseConfigKey(options: MpvOptions | undefined, hdrToSdr: boolean): 
 const AUDIO_PROFILE_AF: Record<string, string> = {
   bass: "lavfi=[bass=g=7:f=110:w=0.6]",
   voice: "lavfi=[equalizer=f=300:t=q:w=1:g=-3,equalizer=f=2800:t=q:w=1:g=5]",
+  "speech-clarity": "lavfi=[speechnorm=e=6:r=0.0005:l=1,equalizer=f=3000:t=q:w=1.2:g=4.5]",
   "bass-reduce": "lavfi=[bass=g=-8:f=110:w=0.6]",
-  night: "lavfi=[acompressor=ratio=3:threshold=-20dB:attack=20:release=300:makeup=4dB]",
+  night: "lavfi=[highpass=f=95,equalizer=f=2400:t=q:w=1.2:g=4.5,acompressor=ratio=4:threshold=-21dB:attack=15:release=200:makeup=4dB]",
+  "spatial-3d": "lavfi=[surround=chl_out=stereo:level_in=1.2:level_out=1.0:lfe=1:angle=90,extrastereo=m=1.35]",
+  whisper: "lavfi=[highpass=f=120,lowpass=f=6500,equalizer=f=2800:t=q:w=1.0:g=7.5,equalizer=f=400:t=q:w=1.2:g=-6.0,acompressor=threshold=-24dB:ratio=5:attack=10:release=140:makeup=5dB]",
+  "dialogue-ducking": "lavfi=[highpass=f=90,equalizer=f=2500:t=q:w=1.2:g=4.0,acompressor=threshold=-18dB:ratio=3.5:attack=20:release=250:makeup=2dB,speechnorm=p=0.4:e=4.0:r=0.0001:l=1]",
 };
 
 const DEFAULT_UA = "VLC/3.0.20 LibVLC/3.0.20";
@@ -208,7 +214,7 @@ function defaultVodBufferProperties(
   }
   return [
     ["cache-secs", "300"],
-    ["cache-pause-wait", highBitrate ? "2" : "1"],
+    ["cache-pause-wait", highBitrate ? "5" : "4"],
     ["demuxer-max-bytes", highBitrate ? "768MiB" : "512MiB"],
     ["demuxer-max-back-bytes", "64MiB"],
     ["demuxer-readahead-secs", "300"],
@@ -274,15 +280,31 @@ function normalizeMediaPath(path: string): string {
   return path.replace(/\\/g, "/");
 }
 
+export const MPV_EQ_FREQUENCIES = [31.5, 63, 125, 250, 500, 1000, 2000, 4000, 8000, 16000] as const;
+
+function buildMpvEqualizerAf(bands: number[]): string {
+  if (!bands || bands.length === 0 || bands.every((g) => Math.abs(g) < 0.1)) return "";
+  const filters: string[] = [];
+  MPV_EQ_FREQUENCIES.forEach((freq, idx) => {
+    const gain = Math.max(-12, Math.min(12, bands[idx] ?? 0));
+    if (Math.abs(gain) >= 0.1) {
+      filters.push(`equalizer=f=${freq}:width_type=o:w=1.0:g=${gain.toFixed(1)}`);
+    }
+  });
+  return filters.length > 0 ? `lavfi=[${filters.join(",")}]` : "";
+}
+
 export function createMpvBridge(mpvOptions?: MpvOptions): PlayerBridge {
   let host: HTMLElement | null = null;
   let snap: PlayerSnapshot = initialPlayerSnapshot();
   let profileAf = "";
+  let equalizerAf = "";
   let hdrToSdr = mpvOptions?.hdrToSdr ?? true;
   const applyAudioFilters = () => {
     const parts: string[] = [];
     if (snap.audioNormalize) parts.push("dynaudnorm=f=500:g=31:p=0.9:m=4:b=1");
     if (profileAf) parts.push(profileAf);
+    if (equalizerAf) parts.push(equalizerAf);
     if (parts.length > 0) parts.push("lavfi=[alimiter=limit=0.97]");
     invoke("mpv_command", { cmd: ["af", "set", parts.join(",")] }).catch(() => {});
   };
@@ -835,7 +857,10 @@ export function createMpvBridge(mpvOptions?: MpvOptions): PlayerBridge {
     } else if (raw.event === "property-change") {
       const name = raw.name;
       const data = raw.data;
-      if (name === "time-pos" && typeof data === "number") snap.positionSec = data;
+      if (name === "time-pos" && typeof data === "number") {
+        snap.positionSec = data;
+        snap.lastDecodedFrameAt = Date.now();
+      }
       if (name === "path" && typeof data === "string") observedMediaPath = data;
       if (name === "duration" && typeof data === "number") snap.durationSec = data;
       if (name === "pause" && typeof data === "boolean") {
@@ -987,6 +1012,12 @@ export function createMpvBridge(mpvOptions?: MpvOptions): PlayerBridge {
       if (name === "height" && typeof data === "number") snap.videoSourceHeight = data;
       if (name === "video-params/gamma" && typeof data === "string" && data) snap.hdrGamma = data;
       if (name === "demuxer-cache-duration" && typeof data === "number") snap.bufferedSec = data;
+      if (name === "core-idle" && typeof data === "boolean") {
+        snap.coreIdle = data;
+        if (data && !observedPaused && snap.status === "playing") {
+          snap.buffering = true;
+        }
+      }
       if (name === "paused-for-cache" && typeof data === "boolean") snap.buffering = data;
       if (name === "af") {
         const repr = typeof data === "string" ? data : JSON.stringify(data ?? "");
@@ -1019,6 +1050,8 @@ export function createMpvBridge(mpvOptions?: MpvOptions): PlayerBridge {
     } else if (raw.event === "file-loaded") {
       markPlaybackTrace(activeTraceId, "file-loaded");
       snap.status = observedPaused === true ? "paused" : "playing";
+      snap.lastDecodedFrameAt = Date.now();
+      snap.coreIdle = false;
       snap.errorCode = null;
       snap.errorMessage = null;
       emit();
@@ -1032,6 +1065,8 @@ export function createMpvBridge(mpvOptions?: MpvOptions): PlayerBridge {
       }
       snap.status = observedPaused === true ? "paused" : "playing";
       snap.buffering = false; // Playback recovered, including when the user remains paused.
+      snap.lastDecodedFrameAt = Date.now();
+      snap.coreIdle = false;
       if (snap.status === "playing" && pendingAudioDeviceReload) scheduleAudioDeviceReload();
       snap.firstFrameReady = true;
       if (currentIsLive === false && currentStartupProfile && steadyBufferLoadId !== mediaLoadId) {
@@ -1264,6 +1299,7 @@ export function createMpvBridge(mpvOptions?: MpvOptions): PlayerBridge {
             renderer: opts.renderer ?? "gpu-next",
             forceYuv420p: opts.forceYuv420p === true,
             extraOptions: opts.extraOptions || undefined,
+            cacheDir: opts.cacheDir?.trim() || null,
             separateDisplay: opts.embed === true ? null : (opts.separateDisplay ?? null),
             separateCoverTaskbar: opts.separateCoverTaskbar ?? true,
           },
@@ -1503,6 +1539,10 @@ export function createMpvBridge(mpvOptions?: MpvOptions): PlayerBridge {
     },
     setAudioProfile(profile) {
       profileAf = AUDIO_PROFILE_AF[profile] ?? "";
+      applyAudioFilters();
+    },
+    setAudioEqualizer(bands, enabled) {
+      equalizerAf = enabled ? buildMpvEqualizerAf(bands) : "";
       applyAudioFilters();
     },
     setHdrToSdr(on, oled) {

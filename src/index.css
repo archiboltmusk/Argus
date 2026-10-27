@@ -25,6 +25,28 @@
   font-display: swap;
 }
 
+@keyframes floatUpFade {
+  0% {
+    opacity: 0;
+    transform: translateY(20px) scale(0.6);
+  }
+  15% {
+    opacity: 1;
+    transform: translateY(0) scale(1.15);
+  }
+  30% {
+    transform: translateY(-20px) scale(1);
+  }
+  80% {
+    opacity: 0.9;
+    transform: translateY(-120px) scale(0.95);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-160px) scale(0.8);
+  }
+}
+
 @theme {
   --color-canvas: oklch(0.18 0.004 260);
   --color-surface: oklch(0.22 0.004 260);

@@ -5142,6 +5142,27 @@ const SETTINGS_OPTIONS: SettingsOption[] = [
     keywords: ["web ui", "browser app", "serve web", "phone", "tv browser", "11471", "web version"],
   },
   {
+    label: "Streaming HTTPS endpoint",
+    section: "p2p",
+    tab: "server",
+    anchorTitle: "Streaming",
+    keywords: ["https endpoint", "remote url", "stremio.rocks", "lan https", "12470"],
+  },
+  {
+    label: "Torrent profile",
+    section: "p2p",
+    tab: "server",
+    anchorTitle: "Streaming",
+    keywords: ["torrent profile", "ultra fast", "soft", "fast", "btMaxConnections", "bittorrent"],
+  },
+  {
+    label: "Transcode profile",
+    section: "p2p",
+    tab: "server",
+    anchorTitle: "Streaming",
+    keywords: ["transcode profile", "videotoolbox", "nvenc", "vaapi", "qsv", "hardware transcode"],
+  },
+  {
     label: "Use exclusively (never fall back to local)",
     section: "p2p",
     tab: "server",

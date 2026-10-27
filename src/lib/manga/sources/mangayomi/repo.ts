@@ -35,6 +35,7 @@ function looksManga(o: Record<string, unknown>): boolean {
 }
 
 function isImportableEntry(o: Record<string, unknown>): boolean {
+  if (o.isNsfw === true) return false;
   if (typeof o.name !== "string" || !o.name) return false;
   if (typeof o.baseUrl !== "string" || !o.baseUrl) return false;
   const code = codeLocation(o);

@@ -8,6 +8,8 @@ export type WordEntry = {
 
 export const WORD_HOVER_LANGUAGES: ReadonlyArray<{ code: string; label: string }> = [
   { code: "en", label: "English" },
+  { code: "hi", label: "Hindi" },
+  { code: "bn", label: "Bengali" },
   { code: "es", label: "Spanish" },
   { code: "fr", label: "French" },
   { code: "de", label: "German" },

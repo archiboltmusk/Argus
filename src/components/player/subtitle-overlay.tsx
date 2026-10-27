@@ -8,6 +8,7 @@ type Props = {
   startSec: number;
   scale?: number;
   secondaryText?: string;
+  elevateForHud?: boolean;
 };
 
 export const SubtitleOverlay = memo(function SubtitleOverlay({
@@ -15,6 +16,7 @@ export const SubtitleOverlay = memo(function SubtitleOverlay({
   startSec,
   scale = 1,
   secondaryText = "",
+  elevateForHud = false,
 }: Props) {
   const { settings } = useSettings();
   const kid = useActiveKid();
@@ -146,8 +148,12 @@ export const SubtitleOverlay = memo(function SubtitleOverlay({
       <div
         key={startSec}
         ref={wrapRef}
-        className={`pointer-events-none absolute inset-x-0 z-10 flex flex-col gap-1.5 ${alignItems} px-[6%]`}
-        style={{ bottom: `${marginY}%`, opacity }}
+        className={`pointer-events-none absolute inset-x-0 z-10 flex flex-col gap-1.5 ${alignItems} px-[6%] transition-transform duration-200 ease-out`}
+        style={{
+          bottom: `${marginY}%`,
+          opacity,
+          transform: elevateForHud ? "translate3d(0, -5.5rem, 0)" : "translate3d(0, 0, 0)",
+        }}
       >
         {secondBlock && !secondTop && secondBlock}
         {text && (

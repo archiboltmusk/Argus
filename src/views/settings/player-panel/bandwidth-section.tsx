@@ -4,7 +4,7 @@ import { SettingRow } from "../kit";
 import { Anchored } from "./choice";
 import { SpeedTestButton } from "./speed-test";
 
-const BANDWIDTH_PRESETS = [0, 25, 50, 100, 300, 500, 1000] as const;
+const BANDWIDTH_PRESETS = [0, 4, 8, 15, 25, 50, 100, 300, 500, 1000] as const;
 
 export function BandwidthInput() {
   const { settings, update } = useSettings();

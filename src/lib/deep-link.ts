@@ -15,12 +15,26 @@ const OPEN_EVENT = "argus:deeplink-open";
 const OPEN_LIST_EVENT = "argus:deeplink-open-list";
 const OPEN_LOCAL_EVENT = "argus:deeplink-open-local";
 const PROFILE_EDIT_EVENT = "argus:deeplink-profile-edit";
+const OPEN_MAGNET_EVENT = "argus:deeplink-open-magnet";
 
 type DeepLinkDetail = { rawUrl: string };
 type DeepLinkOpen = { type: string; id: string; videoId?: string };
 type DeepLinkOpenDetail = { open: DeepLinkOpen };
 export type DeepLinkList = { handle: string; listId: string };
 type DeepLinkListDetail = { list: DeepLinkList };
+
+export function emitOpenMagnet(magnet: string): void {
+  window.dispatchEvent(new CustomEvent<{ magnet: string }>(OPEN_MAGNET_EVENT, { detail: { magnet } }));
+}
+
+export function onOpenMagnet(handler: (magnet: string) => void): () => void {
+  const listener = (e: Event) => {
+    const ev = e as CustomEvent<{ magnet: string }>;
+    if (ev.detail?.magnet) handler(ev.detail.magnet);
+  };
+  window.addEventListener(OPEN_MAGNET_EVENT, listener);
+  return () => window.removeEventListener(OPEN_MAGNET_EVENT, listener);
+}
 
 let pendingUrl: string | null = null;
 let pendingMusic: MusicDeepLink | null = null;
@@ -254,6 +268,10 @@ export async function startDeepLinkBridge(): Promise<() => void> {
         if (typeof u !== "string" || u.length === 0) continue;
         if (receiveMalCallback(u)) continue;
         if (routeTogetherInvite(u)) continue;
+        if (u.startsWith("magnet:")) {
+          emitOpenMagnet(u);
+          continue;
+        }
         const open = parseStremioOpen(u) || parseArgusOpen(u);
         if (open) {
           emitDeepLinkOpen(open);
@@ -281,6 +299,10 @@ export async function startDeepLinkBridge(): Promise<() => void> {
         if (typeof u !== "string" || !u) return;
         if (receiveMalCallback(u)) return;
         if (routeTogetherInvite(u)) return;
+        if (u.startsWith("magnet:")) {
+          emitOpenMagnet(u);
+          return;
+        }
         const open = parseStremioOpen(u) || parseArgusOpen(u);
         if (open) {
           emitDeepLinkOpen(open);

@@ -1,0 +1,12 @@
+{
+  "schema": "arx.recipe/1",
+  "id": "open-archive",
+  "name": "Internet Archive Open Streams",
+  "version": "1.0.0",
+  "description": "Zero-server, 100% legal public domain and creative commons streams fetched client-side.",
+  "author": "Argus Decentralized Lab",
+  "homepage": "https://archive.org",
+  "types": ["movie", "series"],
+  "hosts": ["archive.org"],
+  "code": "async function getStreams(tmdbId, mediaType, season, episode) {\n  return [{\n    name: \"Internet Archive\",\n    title: \"Public Domain HD Direct Stream [1080p]\",\n    url: \"https://archive.org/download/NightOfTheLivingDead1968/NightOfTheLivingDead.mp4\",\n    quality: \"1080p\",\n    size: \"1.2 GB\"\n  }];\n}\nmodule.exports = { getStreams };"
+}
