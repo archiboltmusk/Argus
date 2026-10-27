@@ -4,8 +4,8 @@
   "version": "1.0.0",
   "lastUpdated": "2026-10-28",
   "summary": {
-    "totalFeatures": 16,
-    "implemented": 10,
+    "totalFeatures": 17,
+    "implemented": 11,
     "partial": 3,
     "experimental": 2,
     "planned": 1
@@ -501,6 +501,39 @@
       ],
       "dependencies": [],
       "acceptanceCriterion": "Detects CI job failure, parses compiler log, applies validated patch, and opens automated fix pull request."
+    },
+    {
+      "id": "feat-addon-optimizer",
+      "name": "Unified Add-on Optimizer & Redundancy Engine",
+      "category": "extensions",
+      "description": "Interactive audit wizard analyzing installed add-on telemetry, response latency, stream overlap redundancy, and capability coverage with one-click optimization recommendations.",
+      "sourceFiles": [
+        "src/views/addons/optimizer-modal.tsx",
+        "src/lib/addon-health/health.ts",
+        "src/lib/addon-health/store.ts",
+        "src/views/addons/installed-pane.tsx"
+      ],
+      "entryPoints": [
+        "Addons > Installed > Optimize",
+        "AddonOptimizerModal"
+      ],
+      "status": "implemented",
+      "platformCompatibility": {
+        "macOS": "supported",
+        "windows": "supported",
+        "linux": "supported",
+        "android": "supported"
+      },
+      "testCoverage": [
+        "tests/host-health.test.ts"
+      ],
+      "knownLimitations": [
+        "Stream redundancy evaluation uses heuristic scraper overlap scoring."
+      ],
+      "dependencies": [
+        "feat-connection-health"
+      ],
+      "acceptanceCriterion": "Audits installed addons, highlights capability gaps (e.g. missing subtitle providers), detects redundant scrapers, and enables one-click non-destructive pausing of failing endpoints."
     }
   ]
 }
