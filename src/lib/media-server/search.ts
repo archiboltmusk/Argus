@@ -1,6 +1,6 @@
-import type { Meta } from "@/lib/cinemeta";
-import { groupMediaServerTitles } from "@/lib/media-server/selectors";
-import type { MediaServerConnection, MediaServerItem } from "@/lib/media-server/types";
+import type { Meta } from "../cinemeta";
+import { groupMediaServerTitles } from "./selectors";
+import type { MediaServerConnection, MediaServerItem } from "./types";
 
 function normalize(value: string): string {
   return value.toLowerCase().normalize("NFKD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, " ").trim();
