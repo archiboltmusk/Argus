@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import { Play, Twitch, Youtube } from "lucide-react";
+import { Play, Radio, Video as VideoIcon } from "lucide-react";
 import { useView } from "@/lib/view";
 import { officialBroadcastSource, type EsportsStream } from "@/lib/sports/esports-streams";
 
@@ -11,9 +11,9 @@ export function StreamPlatform({
   size?: number;
 }) {
   return platform === "twitch" ? (
-    <Twitch size={size} />
+    <Radio size={size} />
   ) : platform === "youtube" ? (
-    <Youtube size={size} />
+    <VideoIcon size={size} />
   ) : (
     <Play size={size} />
   );
