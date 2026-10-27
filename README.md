@@ -89,9 +89,10 @@ Traditional streaming hubs break when an addon fails, streams stall, or links mi
 
 ### Prerequisites
 - [Node.js](https://nodejs.org/) (v22+)
-- [pnpm](https://pnpm.io/) (v10+)
+- [pnpm](https://pnpm.io/) (the version pinned in `package.json`, currently 11.9.0)
 - [Rust](https://www.rust-lang.org/) (Stable toolchain)
 - *Linux only*: `libwebkit2gtk-4.1-dev`, `libgtk-3-dev`, `librsvg2-dev`
+- *macOS*: Xcode command-line tools and system libmpv (`brew install mpv pkg-config`).
 
 ### Development
 
@@ -104,22 +105,38 @@ cd Argus
 pnpm install
 
 # Run in desktop development mode (Tauri + Vite)
+pnpm tauri dev
+
+# Frontend only (without the native desktop shell)
 pnpm dev
 
 # Run unit and integration tests
 pnpm test
 
 # Run Rust core tests
-cargo test -p argus-core -- --ignored
+cargo test --manifest-path argus-core/Cargo.toml
 ```
 
 ### Packaging Builds
 
 ```sh
-pnpm build:mac      # Package macOS .dmg (Apple Silicon & Intel)
-pnpm build:windows  # Package Windows .msi / .exe
-pnpm build:linux    # Package Linux .AppImage / .deb
+# On Windows
+pnpm tauri build --bundles nsis,msi
+# On Linux with the system dependencies installed
+pnpm tauri:build:linux-system
 ```
+
+For macOS release builds, first stage libmpv and its dependent libraries with
+`scripts/macos-bundle-libmpv.py prepare`. Set `ARGUS_MACOS_LIB_DIR` to the reported
+link directory, set `ARGUS_MACOS_FRAMEWORKS_DIR` to the staged frameworks directory,
+and pass the generated configuration to `pnpm tauri build`. The complete prepare,
+build, and verification sequence is in `.github/workflows/ci.yml`. Build each
+architecture with its matching toolchain and libraries.
+
+`pnpm test` runs a pretest hook that fills missing translation fallback strings
+and can modify `src/lib/i18n/locales/ui-fallback.ts`. Review those changes before
+committing. To run a focused test without that hook, invoke the Node test runner
+with the environment and loader options from the `test` script in `package.json`.
 
 ---
 

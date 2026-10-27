@@ -165,9 +165,9 @@ export function evaluateStallStatus(params: {
     };
   }
 
-  if (status === "playing" && lastDecodedFrameAt != null) {
+  if (status === "playing" && lastDecodedFrameAt != null && lastDecodedFrameAt > 0) {
     const frameStallDuration = Math.max(0, now - lastDecodedFrameAt);
-    if (frameStallDuration >= stallTimeoutMs) {
+    if (frameStallDuration >= stallTimeoutMs && dur >= stallTimeoutMs) {
       return {
         isStalled: true,
         stalledDurationMs: frameStallDuration,

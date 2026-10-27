@@ -152,3 +152,27 @@ test("evaluateStallStatus triggers after 8s elapsed since last decoded frame", (
   assert.equal(frozen.isStalled, true);
   assert.equal(frozen.reason, "frozen-clock");
 });
+
+test("frame stall detection preserves healthy progress, startup and cached playback", () => {
+  const now = 100_000;
+  const base = {
+    status: "playing",
+    buffering: false,
+    lastDecodedFrameAt: now - 9_000,
+    lastProgressAt: now - 9_000,
+    now,
+  };
+  for (const overrides of [
+    { lastProgressAt: now - 100 },
+    { lastDecodedFrameAt: 0 },
+    { lastDecodedFrameAt: now + 100 },
+    { bufferedSec: 0.5 },
+    { status: "paused" },
+    { status: "ended" },
+    { status: "idle" },
+  ]) {
+    assert.equal(evaluateStallStatus({ ...base, ...overrides }).isStalled, false);
+  }
+  assert.equal(evaluateStallStatus({ ...base, lastDecodedFrameAt: now - 7_999 }).isStalled, false);
+  assert.equal(evaluateStallStatus({ ...base, lastDecodedFrameAt: now - 8_000 }).isStalled, true);
+});
