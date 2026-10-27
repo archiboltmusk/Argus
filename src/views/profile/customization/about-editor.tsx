@@ -12,7 +12,7 @@ import {
   Quote,
   Strikethrough,
   Underline,
-  Youtube,
+  Video as VideoIcon,
 } from "lucide-react";
 import { renderBbcode } from "@/lib/social/bbcode";
 import { EmbedPrompt, type EmbedKind } from "@/components/embed-prompt";
@@ -39,7 +39,7 @@ const TOOLS: Tool[] = [
   { icon: List, label: "List", open: "[list]\n[*] ", close: "\n[/list]", placeholder: "item" },
   { icon: Link2, label: "Link", open: "[url=https://]", close: "[/url]", placeholder: "link text" },
   { icon: ImageIcon, label: "Image", open: "[img]", close: "[/img]", embed: "img" },
-  { icon: Youtube, label: "YouTube", open: "[youtube]", close: "[/youtube]", embed: "youtube" },
+  { icon: VideoIcon, label: "YouTube", open: "[youtube]", close: "[/youtube]", embed: "youtube" },
   { icon: Music2, label: "Spotify", open: "[spotify]", close: "[/spotify]", embed: "spotify" },
 ];
 
