@@ -13,7 +13,7 @@ import type { MusicTrack } from "./types";
 export type MusicTrackIdentity = Pick<MusicTrack, "id" | "connectorId" | "title" | "artist">;
 
 const KEY = "argus.music.recent-contexts.v1";
-const CONTEXT_LIMIT = 200;
+const CONTEXT_LIMIT = 12;
 const LINK_LIMIT = 8000;
 const LINKS_PER_CONTEXT = 120;
 const ARTWORK_LIMIT = 4;

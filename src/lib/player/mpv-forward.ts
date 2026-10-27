@@ -151,6 +151,7 @@ export function createForwardingMpvBridge(): ForwardingBridge {
     },
     setAudioNormalize() {},
     setAudioProfile() {},
+    setAudioEqualizer() {},
     setAudioDevice(name) {
       void set("audio-device", name && name !== "auto" ? name : "auto");
     },

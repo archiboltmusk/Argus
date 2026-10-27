@@ -68,15 +68,37 @@ export function IndexersSection() {
         <Segmented
           value={kind}
           options={[
-            { value: "torznab", label: "Torznab (torrents)" },
+            { value: "torznab", label: "Torznab (Jackett / Prowlarr)" },
             { value: "newznab", label: "Newznab (Usenet)" },
           ]}
           onChange={setKind}
         />
+        <div className="flex gap-1.5 py-0.5">
+          <button
+            type="button"
+            onClick={() => {
+              setName("Prowlarr");
+              setUrl("http://localhost:9696/1/api?t=search");
+            }}
+            className="rounded bg-canvas/80 px-2 py-1 text-[11px] font-medium text-ink-subtle hover:text-ink border border-edge-soft"
+          >
+            {t("Preset: Prowlarr")}
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setName("Jackett");
+              setUrl("http://localhost:9117/api/v2.0/indexers/all/results/torznab/");
+            }}
+            className="rounded bg-canvas/80 px-2 py-1 text-[11px] font-medium text-ink-subtle hover:text-ink border border-edge-soft"
+          >
+            {t("Preset: Jackett")}
+          </button>
+        </div>
         <input className={FIELD} placeholder={t("Name")} value={name} onChange={(e) => setName(e.target.value)} />
         <input
           className={FIELD}
-          placeholder={t("Indexer URL, e.g. http://localhost:9117/api/v2.0/indexers/all/results/torznab/")}
+          placeholder={t("Indexer URL (e.g. Prowlarr or Jackett Torznab URL)")}
           value={url}
           onChange={(e) => setUrl(e.target.value)}
         />

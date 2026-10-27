@@ -1,4 +1,5 @@
 import type { ScoreCapabilities } from "@/lib/streams/scoring/scoring-capability";
+import { isWeb } from "@/lib/platform";
 
 /** Reads what the current display can show; recomputed per ranking so moving windows between screens works. */
 export function detectScoreCapabilities(engine: "mpv" | "html5"): ScoreCapabilities {
@@ -8,5 +9,5 @@ export function detectScoreCapabilities(engine: "mpv" | "html5"): ScoreCapabilit
   } catch {
     /* matchMedia unavailable: treat as SDR */
   }
-  return { hdrDisplay, engine };
+  return { hdrDisplay, engine, isWeb: isWeb() };
 }

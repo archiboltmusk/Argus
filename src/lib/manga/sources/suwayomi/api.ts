@@ -159,9 +159,11 @@ export async function sourceSearch(
 
 export async function listExtensions(config: ServerConfig): Promise<SuwayomiExtension[]> {
   const client = configClient(config);
-  return withTransportFallback(client, (transport) =>
+  const list = await withTransportFallback(client, (transport) =>
     transport === "rest" ? restExtensions(client) : gqlExtensions(client),
   );
+  const { shouldHideAdultManga } = await import("@/lib/manga/model");
+  return shouldHideAdultManga() ? list.filter((e) => !e.isNsfw) : list;
 }
 
 async function mutateExtension(

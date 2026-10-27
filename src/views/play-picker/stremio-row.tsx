@@ -1,5 +1,7 @@
-import { Check, Download } from "lucide-react";
+import { Check, Download, Skull, ThumbsUp } from "lucide-react";
+import { useEffect, useState } from "react";
 import { StreamSpeedButton } from "@/components/player/stream-speed-button";
+import { BandwidthConfidenceBadge } from "@/components/player/bandwidth-confidence-badge";
 import { Play } from "@/components/icons/play-filled";
 import { AddonLogo } from "@/components/addon-logo";
 import { CopyLinkButton, resolveStreamLink } from "@/components/player/copy-link-button";
@@ -10,6 +12,12 @@ import { StreamHostChip } from "@/components/stream-host-chip";
 import { useSettings } from "@/lib/settings";
 import { useT } from "@/lib/i18n";
 import { bidiLines } from "@/lib/bidi";
+import {
+  isStreamTargetVerified,
+  markStreamAsCorrect,
+  markStreamAsDead,
+  unmarkStreamCorrect,
+} from "@/lib/streams/dead-links";
 import type { ScoredStream } from "@/lib/streams/types";
 import { EditionChip } from "./edition-chip";
 
@@ -34,6 +42,30 @@ export function StremioRow({
 }) {
   const t = useT();
   const { settings } = useSettings();
+  const [isCorrect, setIsCorrect] = useState(false);
+  const [isDead, setIsDead] = useState(false);
+
+  useEffect(() => {
+    setIsCorrect(isStreamTargetVerified(stream));
+  }, [stream]);
+
+  const handleToggleCorrect = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (isCorrect) {
+      unmarkStreamCorrect(stream);
+      setIsCorrect(false);
+    } else {
+      markStreamAsCorrect(stream);
+      setIsCorrect(true);
+    }
+  };
+
+  const handleMarkDead = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    markStreamAsDead(stream);
+    setIsDead(true);
+  };
+
   const full = settings.fullStreamDescription;
   const addonName = stream.addonName ?? t("Source");
   const headline = stream.name?.trim() || addonName;
@@ -49,9 +81,11 @@ export function StremioRow({
     : queued
       ? t("Added to downloads")
       : t("Download");
+  if (isDead) return null;
+
   return (
     <div
-      className={`flex items-stretch gap-5 rounded-2xl bg-elevated/40 p-5 ring-1 transition-colors ${
+      className={`group flex items-stretch gap-5 rounded-2xl bg-elevated/40 p-5 ring-1 transition-colors ${
         failed ? "ring-danger/40 bg-danger/5" : "ring-edge-soft/50"
       }`}
     >
@@ -76,6 +110,7 @@ export function StremioRow({
           <div className="flex flex-wrap items-center gap-1.5">
             <HostMatchChip match={match} />
             <StreamHostChip url={stream.url} stream={stream} />
+            <BandwidthConfidenceBadge stream={stream} />
             {dubSub && <DubSubPill kind={dubSub} size="sm" />}
             {badges.map((k) => (
               <FormatBadge key={k} kind={k} size="sm" />
@@ -89,6 +124,30 @@ export function StremioRow({
         )}
       </div>
       <div className="flex shrink-0 items-center gap-2 self-center">
+        <div className="flex items-center gap-1">
+          <button
+            type="button"
+            onClick={handleToggleCorrect}
+            title={isCorrect ? t("Unmark correct link") : t("Mark as correct working link")}
+            aria-label={isCorrect ? t("Unmark correct link") : t("Mark as correct working link")}
+            className={`flex h-9 w-9 items-center justify-center rounded-full transition-all ring-1 ${
+              isCorrect
+                ? "bg-emerald-500/15 text-emerald-400 ring-emerald-500/40 opacity-100"
+                : "opacity-40 group-hover:opacity-100 bg-canvas/40 text-ink-subtle ring-edge-soft/60 hover:text-emerald-400 hover:ring-emerald-500/40"
+            }`}
+          >
+            <ThumbsUp size={15} strokeWidth={isCorrect ? 2.6 : 2} fill={isCorrect ? "currentColor" : "none"} />
+          </button>
+          <button
+            type="button"
+            onClick={handleMarkDead}
+            title={t("Mark link as dead/broken")}
+            aria-label={t("Mark link as dead/broken")}
+            className="opacity-40 group-hover:opacity-100 flex h-9 w-9 items-center justify-center rounded-full bg-canvas/40 text-ink-subtle ring-1 ring-edge-soft/60 hover:text-red-400 hover:ring-red-500/40 transition-all"
+          >
+            <Skull size={15} strokeWidth={2} />
+          </button>
+        </div>
         <StreamSpeedButton stream={stream} />
         {link && <CopyLinkButton url={link} size={16} className="h-9 w-9" />}
         <button

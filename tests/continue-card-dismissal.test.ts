@@ -49,10 +49,24 @@ function harness() {
         },
         persistCritical() {},
       };
+    if (file.startsWith("@") || file.includes("tauri"))
+      return { invoke: async () => null, isTauri: () => false };
+    if (file.includes("nuvio"))
+      return { isNuvioSignedIn: () => false, nuvioSession: () => null, deleteNuvioContinueItem: async () => {} };
     const mod = { exports: {} };
     cache.set(file, mod.exports);
+    let source = "";
+    try {
+      source = readFileSync(new URL(`../src/lib/${file}.ts`, import.meta.url), "utf8");
+    } catch {
+      try {
+        source = readFileSync(new URL(`../src/lib/${file}/index.ts`, import.meta.url), "utf8");
+      } catch {
+        return mod.exports;
+      }
+    }
     const output = ts.transpileModule(
-      readFileSync(new URL(`../src/lib/${file}.ts`, import.meta.url), "utf8"),
+      source,
       {
         compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 },
       },

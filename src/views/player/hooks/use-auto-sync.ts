@@ -161,10 +161,13 @@ export function useAutoSync(params: {
     snap.durationSec >= MIN_DURATION_SEC &&
     selected?.external === true &&
     !selectedSynced &&
+    selected.timingStatus !== "aligned" &&
+    selected.localTrusted !== true &&
     automaticAutoSyncMayStart({
       preflightSettled: subtitlePreflightSettled,
       tracks: snap.subtitleTracks,
       selectedLanguage: selected.lang,
+      selectedTrack: selected,
     });
   const runKey = selectedSynced
     ? doneKeyRef.current

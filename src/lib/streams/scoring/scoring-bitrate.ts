@@ -24,11 +24,15 @@ export function bitrateBudgetPenalty(
         delta: -12,
       };
     }
+    return { signal: "bitrate-ok", delta: 0 };
   }
   if (s.resolution === "4K" && budget < 25) {
     return { signal: "low-bandwidth-4k", delta: cached ? -30 : -60 };
   }
   if (s.resolution === "1080p" && budget < 8) {
+    if (s.codec === "AV1" || s.codec === "HEVC") {
+      return { signal: "efficient-1080p-ok", delta: 0 };
+    }
     return { signal: "low-bandwidth-1080p", delta: cached ? -20 : -45 };
   }
   return { signal: "bitrate-ok", delta: 0 };

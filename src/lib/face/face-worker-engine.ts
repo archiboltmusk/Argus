@@ -1,17 +1,10 @@
-import { FilesetResolver, FaceDetector } from "@mediapipe/tasks-vision";
-import * as ort from "onnxruntime-web/wasm";
+import type { FaceDetector as FaceDetectorType } from "@mediapipe/tasks-vision";
+import type * as OrtType from "onnxruntime-web/wasm";
 import ortWasmUrl from "./ort/ort-wasm-simd-threaded.wasm?url";
 import ortMjsUrl from "./ort/ort-wasm-simd-threaded.mjs?url";
 import { align112, faceToTensor, mpKeypointsTo4pt } from "./align";
 import { l2normalize, MIN_BOX_PX } from "./match";
 import type { WireFace } from "./match";
-
-ort.env.wasm.wasmPaths = { wasm: ortWasmUrl, mjs: ortMjsUrl };
-// X-Ray already runs in its own worker. Keeping ORT single-threaded prevents it
-// from spawning nested workers that require cross-origin isolation in WebView2.
-ort.env.wasm.numThreads = 1;
-ort.env.wasm.proxy = false;
-ort.env.wasm.simd = true;
 
 const MP_WASM = "/mp-wasm";
 const DETECTOR_MODEL = "/models/face/face_detection_full_range.tflite";
@@ -33,15 +26,28 @@ async function loadModel(url: string, what: string): Promise<Uint8Array> {
   return bytes;
 }
 
-let detector: FaceDetector | null = null;
-let session: ort.InferenceSession | null = null;
+let ortModule: typeof OrtType | null = null;
+let detector: FaceDetectorType | null = null;
+let session: OrtType.InferenceSession | null = null;
 let readyPromise: Promise<void> | null = null;
 
 async function boot(): Promise<void> {
-  const [detectorModel, recognizerModel] = await Promise.all([
+  const [detectorModel, recognizerModel, visionMod, ortMod] = await Promise.all([
     loadModel(DETECTOR_MODEL, "The face detection model"),
     loadModel(RECOGNIZER_MODEL, "The face recognition model"),
+    import("@mediapipe/tasks-vision"),
+    import("onnxruntime-web/wasm"),
   ]);
+
+  ortModule = ortMod;
+  ortMod.env.wasm.wasmPaths = { wasm: ortWasmUrl, mjs: ortMjsUrl };
+  // X-Ray already runs in its own worker. Keeping ORT single-threaded prevents it
+  // from spawning nested workers that require cross-origin isolation in WebView2.
+  ortMod.env.wasm.numThreads = 1;
+  ortMod.env.wasm.proxy = false;
+  ortMod.env.wasm.simd = true;
+
+  const { FilesetResolver, FaceDetector } = visionMod;
   let fileset: Awaited<ReturnType<typeof FilesetResolver.forVisionTasks>>;
   try {
     // This engine runs inside an ES module worker. The classic MediaPipe loader
@@ -58,7 +64,7 @@ async function boot(): Promise<void> {
     runningMode: "IMAGE",
     minDetectionConfidence: 0.5,
   });
-  session = await ort.InferenceSession.create(recognizerModel, {
+  session = await ortMod.InferenceSession.create(recognizerModel, {
     executionProviders: ["wasm"],
     graphOptimizationLevel: "all",
   });
@@ -70,6 +76,7 @@ export function ensureWorkerFaceEngine(): Promise<void> {
       readyPromise = null;
       detector = null;
       session = null;
+      ortModule = null;
       throw error;
     });
   }
@@ -77,12 +84,13 @@ export function ensureWorkerFaceEngine(): Promise<void> {
 }
 
 async function embedCanvas(canvas: OffscreenCanvas): Promise<Float32Array> {
-  const currentSession = session as ort.InferenceSession;
+  const ort = ortModule;
+  if (!ort || !session) throw new Error("Face engine session is not ready");
   const input = new ort.Tensor("float32", faceToTensor(canvas), [1, 3, 112, 112]);
   try {
-    const outputs = await currentSession.run({ [currentSession.inputNames[0]]: input });
+    const outputs = await session.run({ [session.inputNames[0]]: input });
     try {
-      const output = outputs[currentSession.outputNames[0]];
+      const output = outputs[session.outputNames[0]];
       const embedding = Float32Array.from(output.data as ArrayLike<number>);
       return l2normalize(embedding);
     } finally {

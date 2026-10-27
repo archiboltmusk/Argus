@@ -2,8 +2,8 @@ import { anilistRequest } from "@/lib/anilist/client";
 import { readArt, writeArt } from "./art-cache";
 
 const QUERY = `query ($s: String) {
-  m: Page(perPage: 1) { media(search: $s, type: MANGA) { bannerImage coverImage { extraLarge } } }
-  a: Page(perPage: 1) { media(search: $s, type: ANIME) { bannerImage coverImage { extraLarge } } }
+  m: Page(perPage: 1) { media(search: $s, type: MANGA, isAdult: false) { bannerImage coverImage { extraLarge } } }
+  a: Page(perPage: 1) { media(search: $s, type: ANIME, isAdult: false) { bannerImage coverImage { extraLarge } } }
 }`;
 
 type Media = { bannerImage: string | null; coverImage: { extraLarge: string | null } | null };

@@ -61,12 +61,31 @@ export function HoverWordLine({ line, lang }: { line: string; lang: string }) {
                 )}
                 {shown.entry && (
                   <>
-                    <span className="block font-semibold">
-                      {shown.entry.word}
-                      {shown.entry.phonetic && (
-                        <span className="ms-2 font-normal text-white/60">{shown.entry.phonetic}</span>
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="font-semibold text-white">
+                        {shown.entry.word}
+                        {shown.entry.phonetic && (
+                          <span className="ms-2 font-normal text-white/60">{shown.entry.phonetic}</span>
+                        )}
+                      </span>
+                      {typeof window !== "undefined" && "speechSynthesis" in window && (
+                        <button
+                          type="button"
+                          className="pointer-events-auto rounded p-0.5 text-white/60 hover:text-white hover:bg-white/10 transition-colors"
+                          title={t("Listen to pronunciation")}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            try {
+                              const utterance = new SpeechSynthesisUtterance(shown.entry!.word);
+                              utterance.lang = lang;
+                              window.speechSynthesis.speak(utterance);
+                            } catch {}
+                          }}
+                        >
+                          🔊
+                        </button>
                       )}
-                    </span>
+                    </div>
                     {shown.entry.meanings.map((m, k) => (
                       <span key={k} className="mt-1 block">
                         {m.partOfSpeech && <em className="me-1.5 text-white/55">{m.partOfSpeech}</em>}

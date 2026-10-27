@@ -9,6 +9,7 @@ import { useT } from "@/lib/i18n";
 import { QUICK_REACTIONS, timestampTag } from "@/lib/together/chat-extras";
 import { getPlaybackPosition } from "@/lib/player/playback-clock";
 import { ChatBody } from "./chat-body";
+import { FloatingReactions } from "./floating-reactions";
 
 const RECENT_WINDOW_MS = 7000;
 const COMPOSE_TIMEOUT_MS = 4500;
@@ -111,11 +112,13 @@ export function ChatOverlay({
 
   if (hidden) return null;
   return (
-    <div
-      className={`pointer-events-none fixed ${CORNER_POSITION[corner]} z-30 flex max-w-[420px] flex-col transition-opacity duration-500 ${
-        showStream ? "opacity-100" : "opacity-0"
-      }`}
-    >
+    <>
+      <FloatingReactions messages={messages} />
+      <div
+        className={`pointer-events-none fixed ${CORNER_POSITION[corner]} z-30 flex max-w-[420px] flex-col transition-opacity duration-500 ${
+          showStream ? "opacity-100" : "opacity-0"
+        }`}
+      >
       {grouped.map(({ message, isContinuation }) => {
         const isSelf = message.from === selfId;
         const ident = isSelf ? selfIdentity : participants.find((p) => p.id === message.from);
@@ -199,6 +202,7 @@ export function ChatOverlay({
         </button>
       )}
     </div>
+    </>
   );
 }
 

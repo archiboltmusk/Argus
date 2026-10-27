@@ -13,6 +13,7 @@ let suppressNextExit = false;
 let marathonReenter = false;
 let borderlessActive = false;
 let borderlessSaved: BorderlessSaved | null = null;
+let isTransitioning = false;
 const subs = new Set<() => void>();
 
 export function suppressFullscreenExitOnce(): void {
@@ -214,24 +215,30 @@ export async function reassertFullscreenMode(): Promise<void> {
 }
 
 export async function enterWindowFullscreen(): Promise<void> {
-  if (isTauri()) {
-    const mode = fullscreenMode();
-    if (mode === "borderless" && (await enterBorderless())) {
-      setWindowFullscreen(true);
-      return;
+  if (isTransitioning) return;
+  isTransitioning = true;
+  try {
+    if (isTauri()) {
+      const mode = fullscreenMode();
+      if (mode === "borderless" && (await enterBorderless())) {
+        setWindowFullscreen(true);
+        return;
+      }
+      if (mode === "maximized" && (await setMaximized(true))) return;
     }
-    if (mode === "maximized" && (await setMaximized(true))) return;
-  }
-  setWindowFullscreen(true);
-  if (isTauri()) {
-    try {
-      const { invoke } = await import("@tauri-apps/api/core");
-      await invoke("window_fullscreen_enter");
-    } catch {
-      /* ignore */
+    setWindowFullscreen(true);
+    if (isTauri()) {
+      try {
+        const { invoke } = await import("@tauri-apps/api/core");
+        await invoke("window_fullscreen_enter");
+      } catch {
+        /* ignore */
+      }
+    } else if (document.documentElement.requestFullscreen) {
+      void document.documentElement.requestFullscreen().catch(() => {});
     }
-  } else if (document.documentElement.requestFullscreen) {
-    void document.documentElement.requestFullscreen().catch(() => {});
+  } finally {
+    isTransitioning = false;
   }
 }
 
@@ -240,25 +247,31 @@ export async function exitWindowFullscreen(): Promise<void> {
     suppressNextExit = false;
     return;
   }
-  if (borderlessActive) {
-    setWindowFullscreen(false);
-    if (await exitBorderless()) return;
-  }
-  if (!windowFullscreen && isTauri() && fullscreenMode() === "maximized") {
-    if (await setMaximized(false)) return;
-  }
-  setWindowFullscreen(false);
-  if (isTauri()) {
-    try {
-      const { invoke } = await import("@tauri-apps/api/core");
-      await invoke("window_fullscreen_exit", {
-        restorePosition: loadStoredSettings().fullscreenRestorePosition !== false,
-      });
-    } catch {
-      /* ignore */
+  if (isTransitioning) return;
+  isTransitioning = true;
+  try {
+    if (borderlessActive) {
+      setWindowFullscreen(false);
+      if (await exitBorderless()) return;
     }
-  } else if (document.fullscreenElement) {
-    void document.exitFullscreen().catch(() => {});
+    if (!windowFullscreen && isTauri() && fullscreenMode() === "maximized") {
+      if (await setMaximized(false)) return;
+    }
+    setWindowFullscreen(false);
+    if (isTauri()) {
+      try {
+        const { invoke } = await import("@tauri-apps/api/core");
+        await invoke("window_fullscreen_exit", {
+          restorePosition: loadStoredSettings().fullscreenRestorePosition !== false,
+        });
+      } catch {
+        /* ignore */
+      }
+    } else if (document.fullscreenElement) {
+      void document.exitFullscreen().catch(() => {});
+    }
+  } finally {
+    isTransitioning = false;
   }
 }
 

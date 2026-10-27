@@ -258,10 +258,15 @@ export function usePickHandler({
       }
       if (!r.ok) {
         if (r.code === "web-page" && r.webUrl) {
-          openInAppBrowser(r.webUrl, stream.title ?? stream.name ?? meta.name);
-          opened = true;
-          setResolving(null);
-          return;
+          const isDebridStream = /comet|elfhosted|debrid|realdebrid|alldebrid|premiumize|torbox/i.test(
+            (stream.url ?? "") + " " + (stream.addonName ?? "") + " " + (stream.addonId ?? "")
+          );
+          if (!isDebridStream) {
+            openInAppBrowser(r.webUrl, stream.title ?? stream.name ?? meta.name);
+            opened = true;
+            setResolving(null);
+            return;
+          }
         }
         if (!RETRYABLE_ENGINE_FAILURES.has(r.code)) {
           setFailedStreams((prev) => new Set(prev).add(stream));

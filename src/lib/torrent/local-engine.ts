@@ -519,3 +519,14 @@ export async function torrentEngineSetOptions(
     console.warn("[engine] set options failed", e),
   );
 }
+
+export async function torrentEngineSetProfile(
+  torrentProfile: "default" | "soft" | "fast" | "ultra-fast",
+  transcodeProfile?: string | null,
+): Promise<void> {
+  if (!isTauri) return;
+  await invoke("torrent_engine_set_profile", {
+    torrentProfile,
+    transcodeProfile: transcodeProfile ?? null,
+  }).catch((e) => console.warn("[engine] set profile failed", e));
+}

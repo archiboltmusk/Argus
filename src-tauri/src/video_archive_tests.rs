@@ -230,6 +230,7 @@ fn rar_items() -> Vec<(&'static str, Vec<u8>)> {
 }
 
 #[test]
+#[cfg(feature = "games")]
 fn rar_yields_the_main_video() {
     let scratch = Scratch::new();
     let items = rar_items();
@@ -240,6 +241,7 @@ fn rar_yields_the_main_video() {
 }
 
 #[test]
+#[cfg(feature = "games")]
 fn rar_with_a_bad_checksum_leaves_no_file_behind() {
     let scratch = Scratch::new();
     let items = rar_items();

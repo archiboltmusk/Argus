@@ -55,12 +55,18 @@ const SCORE_TIMEOUT_MS = 6000;
 export function classifyTorrentSource(url: string, ref: TorrentRef): TorrentClass {
   const hasHash = typeof ref.infoHash === "string" && ref.infoHash.length > 0;
   const lower = url.toLowerCase();
+  const isLoopbackHost =
+    lower.includes("://127.0.0.1") ||
+    lower.includes("://localhost") ||
+    lower.includes("://[::1]");
   const loopbackStream =
-    (lower.includes("://127.0.0.1") ||
-      lower.includes("://localhost") ||
-      lower.includes("://[::1]")) &&
-    lower.includes("/stream/");
-  if (loopbackStream && hasHash) return "torrent";
+    isLoopbackHost &&
+    (lower.includes("/stream/") ||
+      lower.includes(":11470") ||
+      lower.includes("/torrents/") ||
+      lower.includes("/s/") ||
+      lower.includes("/p/"));
+  if ((loopbackStream || isLoopbackHost) && hasHash) return "torrent";
   if (hasHash && (lower.startsWith("http://") || lower.startsWith("https://"))) return "debrid";
   return "direct";
 }

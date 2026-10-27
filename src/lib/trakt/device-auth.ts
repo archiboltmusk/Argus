@@ -44,13 +44,32 @@ export type PollResult =
   | { kind: "error"; message: string };
 
 async function pollOnce(deviceCode: string): Promise<PollResult> {
-  const res = await fetch(TRAKT_DEVICE_TOKEN_PROXY, {
-    method: "POST",
-    headers: baseHeaders(),
-    body: JSON.stringify({
-      code: deviceCode,
-    }),
-  });
+  let res: Response;
+  try {
+    // 1. Try Trakt's direct device token endpoint first
+    res = await fetch(`${TRAKT_API_BASE}/oauth/device/token`, {
+      method: "POST",
+      headers: baseHeaders(),
+      body: JSON.stringify({
+        code: deviceCode,
+        client_id: TRAKT_CLIENT_ID,
+      }),
+    });
+  } catch {
+    // 2. If direct fetch fails (e.g. CORS in browser environment), fall back to proxy
+    try {
+      res = await fetch(TRAKT_DEVICE_TOKEN_PROXY, {
+        method: "POST",
+        headers: baseHeaders(),
+        body: JSON.stringify({
+          code: deviceCode,
+        }),
+      });
+    } catch (err: unknown) {
+      return { kind: "error", message: err instanceof Error ? err.message : String(err) };
+    }
+  }
+
   if (res.status === 200) {
     const data = (await res.json()) as {
       access_token: string;

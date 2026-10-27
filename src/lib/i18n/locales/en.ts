@@ -165,6 +165,7 @@ const en: Record<string, string> = {
   "nav.live": "Live TV",
   "nav.sports": "Sports",
   "nav.playlists": "Playlists",
+  "nav.education": "Education",
   "nav.calendar": "Calendar",
   "nav.library": "My Library",
   "nav.downloads": "Downloads",
@@ -204,6 +205,8 @@ const en: Record<string, string> = {
   "chrome.lockedShort": "{label} · locked",
   "chrome.argusHome": "Argus home",
   "chrome.sectionLibrary": "Library",
+  "chrome.safetyNetHeading": "Navigation",
+  "chrome.safetyNetLabel": "Menu",
 
   "profile.whoWatching": "Who's watching",
   "profile.editThis": "Edit this profile",

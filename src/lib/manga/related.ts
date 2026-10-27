@@ -50,7 +50,7 @@ type SimilarResp = {
 
 const ADAPTATION_QUERY = `query ($s: String) {
   Page(perPage: 1) {
-    media(search: $s, type: MANGA) {
+    media(search: $s, type: MANGA, isAdult: false) {
       relations {
         edges {
           relationType
@@ -75,10 +75,11 @@ const ADAPTATION_QUERY = `query ($s: String) {
 
 const SIMILAR_QUERY = `query ($s: String) {
   Page(perPage: 1) {
-    media(search: $s, type: MANGA) {
+    media(search: $s, type: MANGA, isAdult: false) {
       recommendations(sort: RATING_DESC, perPage: 14) {
         nodes {
           mediaRecommendation {
+            isAdult
             title { english romaji }
           }
         }

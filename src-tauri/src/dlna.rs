@@ -343,6 +343,14 @@ pub fn lan_ip() -> Option<String> {
         .map(|ip| ip.to_string())
 }
 
+#[tauri::command]
+pub fn lan_ips() -> Vec<String> {
+    local_ipv4_interfaces()
+        .into_iter()
+        .map(|ip| ip.to_string())
+        .collect()
+}
+
 fn local_ipv4_interfaces() -> Vec<Ipv4Addr> {
     let mut out: Vec<Ipv4Addr> = Vec::new();
     let probe_targets = ["1.1.1.1:80", "8.8.8.8:80", "192.168.1.1:80"];

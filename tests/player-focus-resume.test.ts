@@ -15,7 +15,7 @@ test("returning focus resumes playback that Argus auto-paused", () => {
 
   assert.ok(focusBranch, "auto-pause focus-return branch is missing");
   assert.match(focusBranch[0], /autoPausedRef\.current = false;/);
-  assert.match(focusBranch[0], /void bridge\.play\(\);/);
+  assert.match(focusBranch[0], /void bridge\.play\(/);
   assert.doesNotMatch(
     focusBranch[0],
     /snapRef\.current\.status/,

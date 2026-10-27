@@ -46,6 +46,57 @@ fn check_v4(ip: Ipv4Addr, is_stream: bool) -> Result<(), String> {
     Ok(())
 }
 
+fn is_media_stream_target(url: &str) -> bool {
+    let lower = url.to_ascii_lowercase();
+
+    if lower.contains("/admin") || lower.contains("/latest/meta-data") || lower.contains("/metrics") {
+        return false;
+    }
+
+    if lower.contains("/stream/")
+        || lower.contains("/stream")
+        || lower.contains("/s/")
+        || lower.contains("/p/")
+        || lower.contains("/torrents/")
+        || lower.contains("/hlsv2/")
+        || lower.contains("/hls/")
+        || lower.contains("/cast/")
+        || lower.contains("/trailer/")
+    {
+        return true;
+    }
+
+    if lower.contains(":11470/") || lower.contains(":11470") {
+        return true;
+    }
+
+    let path = lower.split(['?', '#']).next().unwrap_or(&lower);
+    for ext in [
+        ".mp4", ".mkv", ".avi", ".mov", ".webm", ".ts", ".m4v", ".m3u8", ".mpd", ".flv",
+        ".ogv", ".3gp", ".mp3", ".aac", ".flac", ".wav", ".m4a", ".opus",
+    ] {
+        if path.ends_with(ext) {
+            return true;
+        }
+    }
+
+    if let Some((_, rest)) = path.split_once("://") {
+        if let Some((_, url_path)) = rest.split_once('/') {
+            let segments: Vec<&str> = url_path.split('/').filter(|s| !s.is_empty()).collect();
+            if !segments.is_empty() {
+                let first = segments[0];
+                if (first.len() == 40 || first.len() == 64)
+                    && first.chars().all(|c| c.is_ascii_hexdigit())
+                {
+                    return true;
+                }
+            }
+        }
+    }
+
+    false
+}
+
 pub fn validate_media_url(url: &str, allow_local: bool) -> Result<(), String> {
     let trimmed = url.trim();
     let lower = trimmed.to_ascii_lowercase();
@@ -64,7 +115,7 @@ pub fn validate_media_url(url: &str, allow_local: bool) -> Result<(), String> {
     if host.is_empty() {
         return Err("no-host".into());
     }
-    let is_stream = trimmed.contains("/stream/");
+    let is_stream = is_media_stream_target(trimmed);
     if let Ok(v4) = host.parse::<Ipv4Addr>() {
         return check_v4(v4, is_stream);
     }
@@ -100,7 +151,13 @@ pub fn validate_media_url(url: &str, allow_local: bool) -> Result<(), String> {
         }
         return Ok(());
     }
-    if host == "localhost" || host.ends_with(".localhost") || host.ends_with(".local") {
+    if host == "localhost" || host.ends_with(".localhost") {
+        if allow_local && is_stream {
+            return Ok(());
+        }
+        return Err("loopback-blocked".into());
+    }
+    if host.ends_with(".local") {
         return Err("local-hostname-blocked".into());
     }
     Ok(())
@@ -161,6 +218,10 @@ mod tests {
         assert!(validate_media_url("https://cdn.example.com/a.mkv", true).is_ok());
         assert!(validate_media_url("http://127.0.0.1:5312/stream/abc/0", true).is_ok());
         assert!(validate_media_url("http://[::1]:5312/stream/abc/0", true).is_ok());
+        assert!(validate_media_url("http://127.0.0.1:11470/4e10b3a2c0d1e2f3a4b5c6d7e8f90123456789ab/0", true).is_ok());
+        assert!(validate_media_url("http://localhost:11470/4e10b3a2c0d1e2f3a4b5c6d7e8f90123456789ab/0", true).is_ok());
+        assert!(validate_media_url("http://127.0.0.1:34567/s/session-id", true).is_ok());
+        assert!(validate_media_url("http://127.0.0.1:34567/p/session-id/master.m3u8", true).is_ok());
         assert!(validate_media_url("file:///m/x.mkv", true).is_ok());
         assert!(validate_media_url("/m/x.mkv", true).is_ok());
         assert!(validate_media_url("file:///m/x.mkv", false).is_err());

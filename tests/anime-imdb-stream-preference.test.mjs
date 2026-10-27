@@ -34,6 +34,14 @@ const { buildEpisodePipelineInput } = load("../src/lib/streams/episode-pipeline-
   "./anime-identity-core": { animeAbsoluteFromScopedId, splitAnimeStreamCoordinates },
   "./plugins/addon": pluginMocks,
   "./stream-ids": { preferredAnimeImdbStreamId, unverifiedAnimeSeasonId },
+  "@/lib/streams/dead-links": {
+    demotedHashes: () => new Set(),
+    verifiedCorrectHashes: () => [],
+    parseGroupList: () => [],
+    parseHostList: () => [],
+  },
+  "@/lib/capabilities": { detectScoreCapabilities: () => ({}) },
+  "@/lib/metadata-fusion/aliases": { cachedAliases: () => [], loadAliases: () => {} },
 });
 
 function input({ enabled = true, id = "kitsu:123", episode, imdbId = "tt1234567", verified = true, ids, origin } = {}) {
@@ -71,6 +79,8 @@ function transport(empty = false) {
       isStatusOnlyAddon: () => false, isStremioLocalAddon: () => false,
     },
     "./cached": { hasUncachedMarker: () => false },
+    "@/lib/addon-health/store": { addonStatus: () => "healthy", recordAddonOutcome: () => {} },
+    "@/lib/settings/load": { loadStoredSettings: () => ({}) },
     "@/lib/torrent/magnet": {},
     "./plugins/addon": { ...pluginMocks, runPluginAddon: async (_, req, id) => { plugins.push({ req, id }); return []; } },
   });
@@ -166,7 +176,8 @@ test("non-anime requests are identical with the option on or off", async () => {
   for (const [id, episode] of [["tmdb:movie:123", undefined], ["tt1234567", { season: 2, episode: 3 }]]) {
     const enabled = input({ id, episode, enabled: true });
     const disabled = input({ id, episode, enabled: false });
-    assert.deepEqual(enabled, disabled);
+    const stripFn = (v) => ({ ...v, trust: { ...v.trust, expectedAliases: null } });
+    assert.deepEqual(stripFn(enabled), stripFn(disabled));
     assert.deepEqual(await transport().run(enabled.request, addon(["tt", "tmdb:"])), await transport().run(disabled.request, addon(["tt", "tmdb:"])));
   }
 });

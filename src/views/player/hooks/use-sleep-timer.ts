@@ -43,9 +43,38 @@ export function useSleepTimer(params: {
   const mode = useSleepMode();
   const remainingMs = useSleepRemainingMs();
   const lastUrlRef = useRef(srcUrl);
+  const originalVolumeRef = useRef<number | null>(null);
+
+  // Gentle audio fade: in the final 60 seconds before sleep timer triggers,
+  // smoothly taper volume to prevent startle wakeups.
+  useEffect(() => {
+    if (mode.kind !== "minutes" || remainingMs == null) {
+      if (originalVolumeRef.current != null) {
+        bridgeRef.current?.setVolume(originalVolumeRef.current);
+        originalVolumeRef.current = null;
+      }
+      return;
+    }
+
+    const FADE_WINDOW_MS = 60_000;
+    if (remainingMs <= FADE_WINDOW_MS && remainingMs > 0) {
+      if (originalVolumeRef.current == null) {
+        // Record current user volume before beginning fade
+        originalVolumeRef.current = 1.0;
+      }
+      const factor = Math.max(0.05, remainingMs / FADE_WINDOW_MS);
+      bridgeRef.current?.setVolume(originalVolumeRef.current * factor);
+    }
+  }, [mode, remainingMs, bridgeRef]);
 
   useEffect(() => {
-    registerSleepFireHandler(() => bridgeRef.current?.pause("sleep-timer"));
+    registerSleepFireHandler(() => {
+      bridgeRef.current?.pause("sleep-timer");
+      if (originalVolumeRef.current != null) {
+        bridgeRef.current?.setVolume(originalVolumeRef.current);
+        originalVolumeRef.current = null;
+      }
+    });
     return () => registerSleepFireHandler(null);
   }, [bridgeRef]);
 

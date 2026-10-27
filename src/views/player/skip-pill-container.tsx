@@ -72,6 +72,7 @@ export function SkipPillContainer({
   useEffect(() => {
     if (!allowAutoSkip || positionSec <= 0 || !realActiveSkip) return;
     const wantSkip =
+      (settings.bingeMode && (realActiveSkip.kind === "intro" || realActiveSkip.kind === "recap")) ||
       (realActiveSkip.kind === "intro" && settings.autoSkipIntro) ||
       (realActiveSkip.kind === "recap" && settings.autoSkipRecap) ||
       (realActiveSkip.kind === "outro" && settings.autoSkipOutro) ||
@@ -81,6 +82,7 @@ export function SkipPillContainer({
     autoSkippedRef.current = realActiveSkip;
     onSkip(realActiveSkip.endSec);
   }, [
+    settings.bingeMode,
     settings.autoSkipIntro,
     settings.autoSkipRecap,
     settings.autoSkipOutro,

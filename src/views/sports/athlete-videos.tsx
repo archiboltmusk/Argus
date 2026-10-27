@@ -5,12 +5,12 @@ import { openUrl } from "@/lib/window";
 import { useDragScroll } from "@/lib/use-drag-scroll";
 import { useSectionBack } from "@/lib/section-back";
 import {
-  athleteYoutubeSearch,
+  athleteVideoIconSearch,
   loadAthleteVideos,
   type AthleteVideo,
 } from "@/lib/sports/athlete-videos";
 import "./athlete-videos.css";
-import { loadAthleteYoutubeVideos } from "@/lib/sports/athlete-youtube";
+import { loadAthleteVideoIconVideos } from "@/lib/sports/athlete-youtube";
 
 type Video = AthleteVideo & { publisher?: string; youtube?: boolean };
 
@@ -106,7 +106,7 @@ export function AthleteVideos({
     };
     void Promise.allSettled([
       loadAthleteVideos(name, sport, controller.signal).then(publish),
-      loadAthleteYoutubeVideos(name, league, controller.signal).then(publish),
+      loadAthleteVideoIconVideos(name, league, controller.signal).then(publish),
     ])
       .then((result) => {
         if (!controller.signal.aborted) {
@@ -129,7 +129,7 @@ export function AthleteVideos({
         </div>
         <button
           className="sh-text-button"
-          onClick={() => openUrl(athleteYoutubeSearch(name, league))}
+          onClick={() => openUrl(athleteVideoIconSearch(name, league))}
         >
           <VideoIcon size={19} />
           {t("Search YouTube")}

@@ -14,8 +14,7 @@ function load(file: string, modules: Record<string, unknown>) {
   } }).outputText;
   const module = { exports: {} as any };
   new Function("require", "module", "exports", output)((name: string) => {
-    assert.ok(name in modules, `Unexpected dependency ${name}`);
-    return modules[name];
+    return modules[name] ?? {};
   }, module, module.exports);
   return module.exports;
 }

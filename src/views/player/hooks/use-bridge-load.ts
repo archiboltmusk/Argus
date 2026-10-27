@@ -51,6 +51,8 @@ export function useBridgeLoad(params: {
   resumePromptRef.current = settings.resumePrompt;
   const resumePlaybackRef = useRef(settings.resumePlayback);
   resumePlaybackRef.current = settings.resumePlayback;
+  const resumeMicroRewindRef = useRef(settings.resumeMicroRewind);
+  resumeMicroRewindRef.current = settings.resumeMicroRewind;
 
   const lastLoadedUrlRef = useRef<string | null>(null);
   const firstLoadRef = useRef(true);
@@ -125,7 +127,7 @@ export function useBridgeLoad(params: {
       // automatic resume preference. That preference only governs stored resume
       // progress when opening an item normally.
       const hasExplicitStart = src.startPositionMs != null;
-      const startSec =
+      let rawStartSec =
         isLive || src.startFromZero
           ? 0
           : (hasExplicitStart
@@ -133,6 +135,14 @@ export function useBridgeLoad(params: {
               : !resumePlaybackRef.current || finishedNearEnd
                 ? 0
                 : startMs) / 1000;
+
+      // Smart Resume Micro-Rewind: If resuming a previously played item (> 15 seconds)
+      // and not explicitly overridden with a manual timestamp, rewind 5 seconds
+      // to let the viewer immediately regain narrative context without disorientation.
+      const startSec =
+        !hasExplicitStart && resumeMicroRewindRef.current !== false && rawStartSec > 15
+          ? Math.max(0, rawStartSec - 5)
+          : rawStartSec;
       const guestInRoom = inRoomRef.current && !isHostRef.current;
       const eligibleForPrompt =
         isFirstLoad &&

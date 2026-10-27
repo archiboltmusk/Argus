@@ -11,6 +11,7 @@ type StreamLike = {
 const STORAGE_KEY = "argus.dead-streams.v1";
 const DEFAULT_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 export const STUB_TTL_MS = 4 * 60 * 60 * 1000;
+export const SOFT_STALL_TTL_MS = 90 * 1000; // 90 seconds soft cooldown for transient stalls
 export const SHORT_PLAYBACK_SEC = 180;
 const SHORT_RUNTIME_FLOOR_SEC = 90;
 

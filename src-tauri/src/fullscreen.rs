@@ -86,8 +86,27 @@ fn enter_fullscreen(
         // Preserve the original snapshot if the OS temporarily drops fullscreen
         // and the player reasserts it before the user has actually exited.
         saved.get_or_insert(SavedWindowState { maximized, geometry });
-        main.set_fullscreen(true)
-            .map_err(|e| format!("set_fullscreen(true): {}", e))?;
+        #[cfg(target_os = "macos")]
+        {
+            // On macOS, protect against AppKit NSException in setStyleMask:
+            // when entering fullscreen asynchronously or during transitions.
+            let res = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+                main.set_fullscreen(true)
+            }));
+            match res {
+                Ok(Ok(())) => {}
+                Ok(Err(e)) => return Err(format!("set_fullscreen(true): {}", e)),
+                Err(_) => {
+                    eprintln!("[fullscreen] AppKit exception caught during enter_fullscreen");
+                    return Ok(());
+                }
+            }
+        }
+        #[cfg(not(target_os = "macos"))]
+        {
+            main.set_fullscreen(true)
+                .map_err(|e| format!("set_fullscreen(true): {}", e))?;
+        }
         let _ = main.set_focus();
     }
     let _ = main.app_handle().emit_to("main", "fs://entered", ());
@@ -113,8 +132,24 @@ fn exit_fullscreen(
 ) -> Result<(), String> {
     let is_fs = main.is_fullscreen().unwrap_or(false);
     if is_fs {
-        main.set_fullscreen(false)
-            .map_err(|e| format!("set_fullscreen(false): {}", e))?;
+        #[cfg(target_os = "macos")]
+        {
+            let res = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+                main.set_fullscreen(false)
+            }));
+            match res {
+                Ok(Ok(())) => {}
+                Ok(Err(e)) => return Err(format!("set_fullscreen(false): {}", e)),
+                Err(_) => {
+                    eprintln!("[fullscreen] AppKit exception caught during exit_fullscreen");
+                }
+            }
+        }
+        #[cfg(not(target_os = "macos"))]
+        {
+            main.set_fullscreen(false)
+                .map_err(|e| format!("set_fullscreen(false): {}", e))?;
+        }
     }
 
     // Restore even when the window is already unfullscreen'd: frontend paths

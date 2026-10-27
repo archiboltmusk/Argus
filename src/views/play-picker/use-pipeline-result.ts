@@ -12,6 +12,8 @@ import { useSettings } from "@/lib/settings";
 import { clearAddonStreamCache, type AddonProgress } from "@/lib/streams/addons";
 import { pluginCacheTokens } from "@/lib/streams/plugins";
 import { runPipeline, type PipelineResult } from "@/lib/streams/pipeline";
+import { probeTopStreams, applySpeedProbeBonuses } from "@/lib/streams/top-stream-prober";
+import { prewarmCandidateStream, prewarmTopCandidates } from "@/lib/streams/prewarm-candidate";
 import { buildEpisodePipelineInput } from "@/lib/streams/episode-pipeline-input";
 import { hasAnimeStreamIds, preferredAnimeImdbStreamId } from "@/lib/streams/stream-ids";
 import type { PlayEpisode } from "@/lib/view";
@@ -155,14 +157,44 @@ export function usePipelineResult({
         setAddonQuorum(progress);
       },
     )
-      .then((r) => {
+      .then(async (r) => {
         if (ac.signal.aborted) return;
         stampAddonOrder(r.picker.all, r.raw.addon);
         setResult(r);
         setLoading(false);
         setPipelineDone(true);
-        setAutoSettleReady(true);
         setPickerCache(meta, episode, r, configHash, true, animePreference);
+
+        // Background CDN speed verification: probe top candidate streams (up to 6) and promote the fastest
+        try {
+          const probes = await probeTopStreams(r.picker.all, 6, ac.signal);
+          if (!ac.signal.aborted && probes.size > 0) {
+            const reRanked = applySpeedProbeBonuses(r.picker.all, probes);
+            setResult((prev) => {
+              if (!prev || ac.signal.aborted) return prev;
+              const next: PipelineResult = {
+                ...prev,
+                picker: {
+                  ...prev.picker,
+                  primary: reRanked[0] ?? prev.picker.primary,
+                  all: reRanked,
+                },
+              };
+              setPickerCache(meta, episode, next, configHash, true, animePreference);
+              return next;
+            });
+          }
+        } catch {}
+
+        if (!ac.signal.aborted) {
+          setAutoSettleReady(true);
+          // Prewarm candidate top stream + hot standby runner-up socket/buffer for instant click-to-play
+          if (r.picker.all && r.picker.all.length > 0) {
+            prewarmTopCandidates(r.picker.all, 2);
+          } else {
+            prewarmCandidateStream(r.picker.primary);
+          }
+        }
       })
       .catch((e) => {
         if (ac.signal.aborted) return;

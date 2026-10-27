@@ -8,6 +8,8 @@ const isTauri = typeof window !== "undefined" && "__TAURI_INTERNALS__" in window
 type MpvStats = {
   videoBitrate: number | null;
   audioBitrate: number | null;
+  cacheSpeed: number | null;
+  demuxerCacheDuration: number | null;
   frameDropDecoder: number | null;
   frameDropOutput: number | null;
   estimatedFps: number | null;
@@ -21,6 +23,8 @@ type MpvStats = {
 const EMPTY_STATS: MpvStats = {
   videoBitrate: null,
   audioBitrate: null,
+  cacheSpeed: null,
+  demuxerCacheDuration: null,
   frameDropDecoder: null,
   frameDropOutput: null,
   estimatedFps: null,
@@ -49,7 +53,7 @@ export function StatsOverlay({ snap, engine }: { snap: PlayerSnapshot; engine: "
     if (engine !== "mpv") return;
     let cancelled = false;
     const tick = async () => {
-      const [vb, ab, fdd, fdo, fps, vc, ac, hw, cfps, cb] = await Promise.all([
+      const [vb, ab, fdd, fdo, fps, vc, ac, hw, cfps, cb, cs, dcd] = await Promise.all([
         getProp<number>("video-bitrate"),
         getProp<number>("audio-bitrate"),
         getProp<number>("decoder-frame-drop-count"),
@@ -60,11 +64,15 @@ export function StatsOverlay({ snap, engine }: { snap: PlayerSnapshot; engine: "
         getProp<string>("hwdec-current"),
         getProp<number>("container-fps"),
         getProp<number>("cache-buffering-state"),
+        getProp<number>("cache-speed"),
+        getProp<number>("demuxer-cache-duration"),
       ]);
       if (cancelled) return;
       setStats({
         videoBitrate: vb,
         audioBitrate: ab,
+        cacheSpeed: cs,
+        demuxerCacheDuration: dcd,
         frameDropDecoder: fdd,
         frameDropOutput: fdo,
         estimatedFps: fps,
@@ -89,6 +97,16 @@ export function StatsOverlay({ snap, engine }: { snap: PlayerSnapshot; engine: "
 
   const rows: Array<[string, string]> = [];
   rows.push([tr("Engine"), engine === "mpv" ? "libmpv" : "HTML5"]);
+
+  const runway = stats.demuxerCacheDuration ?? snap.bufferedSec;
+  if (runway != null && Number.isFinite(runway) && runway > 0) {
+    const health = runway >= 30 ? "🟢" : runway >= 10 ? "🟡" : "🔴";
+    rows.push([tr("Buffer runway"), `${health} ${runway.toFixed(1)}s ahead`]);
+  }
+  if (stats.cacheSpeed != null && stats.cacheSpeed > 0) {
+    rows.push([tr("CDN download"), formatBitrate(stats.cacheSpeed * 8)]);
+  }
+
   rows.push([
     tr("Resolution"),
     snap.videoWidth && snap.videoHeight ? `${snap.videoWidth}×${snap.videoHeight}` : "—",
