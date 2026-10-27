@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { activeProfileId } from "@/lib/active-profile-id";
 import {
   mediaServerConnections,
   subscribeMediaServerConnections,
