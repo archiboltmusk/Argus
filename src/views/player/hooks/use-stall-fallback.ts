@@ -93,8 +93,8 @@ export function useStallFallback(params: {
       lastProgressAtRef.current = Date.now();
       setStallOffer(null);
     }
-    const progressAdvance = delta > 0.1 || snap.lastDecodedFrameAt;
-    const bufferHealthy = snap.bufferedSec >= 1.5;
+    const progressAdvance = delta > 0.05 || (snap.lastDecodedFrameAt && snap.lastDecodedFrameAt > lastProgressAtRef.current);
+    const bufferHealthy = snap.bufferedSec >= 0.5;
 
     if (progressAdvance) {
       lastPosRef.current = pos;
@@ -105,8 +105,8 @@ export function useStallFallback(params: {
       }
     }
 
-    // Elastic Recovery: If the video resumed decoding frames OR buffer is healthy again,
-    // immediately cancel any pending stall offer so momentary speed drops don't switch links!
+    // Elastic Recovery: If playback made progress OR buffer has cached packets,
+    // immediately cancel any pending stall offer so normal playback is never interrupted!
     if ((progressAdvance || bufferHealthy) && !switchingRef.current) {
       setStallOffer(null);
     }
@@ -165,13 +165,15 @@ export function useStallFallback(params: {
         const circuitBreakerTripped = autoSwapTimestampsRef.current.length >= 3;
 
         // If circuit breaker is tripped, offer manual switch without auto countdown so it doesn't loop
+        // Offer switch only if stalled, with a 5-second grace countdown so the viewer
+        // has ample time to hit "Stay on current" if desired, rather than abruptly aborting playback.
         const canAutoSwitch = autoSwitchEnabled && nextStream && !circuitBreakerTripped;
 
         setStallOffer((prev) => {
           if (prev) return prev;
           return {
             nextStream,
-            secondsLeft: canAutoSwitch ? 1 : null,
+            secondsLeft: canAutoSwitch ? 5 : null,
           };
         });
       }

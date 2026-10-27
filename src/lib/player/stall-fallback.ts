@@ -139,16 +139,17 @@ export function evaluateStallStatus(params: {
     return { isStalled: false, stalledDurationMs: 0 };
   }
 
-  // If the player demuxer still has >= 1.5 seconds of forward buffer cached,
-  // speed drops are transient and the pipeline is still receiving packets.
-  // Never declare a stall while buffer is healthy.
-  if (bufferedSec >= 1.5) {
+  // If the player demuxer still has >= 0.5s of forward buffer cached,
+  // packets are still queued in the pipeline and playback has not starved.
+  if (bufferedSec >= 0.5) {
     return { isStalled: false, stalledDurationMs: 0 };
   }
 
-  // 1. mpv paused-for-cache event active
+  // Only consider true playback starvation: when paused-for-cache is active
+  // or playback is genuinely halted with 0 buffer remaining.
+  const dur = Math.max(0, now - lastProgressAt);
+
   if (buffering) {
-    const dur = Math.max(0, now - lastProgressAt);
     return {
       isStalled: dur >= stallTimeoutMs,
       stalledDurationMs: dur,
@@ -156,27 +157,12 @@ export function evaluateStallStatus(params: {
     };
   }
 
-  // 2. mpv core-idle active while in playing state
-  if (coreIdle && status === "playing") {
-    const dur = Math.max(0, now - lastProgressAt);
+  if (coreIdle && status === "playing" && bufferedSec === 0) {
     return {
       isStalled: dur >= stallTimeoutMs,
       stalledDurationMs: dur,
       reason: "core-idle",
     };
-  }
-
-  // 3. Time elapsed since last decoded frame or position progress
-  const referenceTime = Math.max(lastProgressAt, lastDecodedFrameAt);
-  if (status === "playing" && referenceTime > 0) {
-    const dur = now - referenceTime;
-    if (dur >= stallTimeoutMs) {
-      return {
-        isStalled: true,
-        stalledDurationMs: dur,
-        reason: "frozen-clock",
-      };
-    }
   }
 
   return { isStalled: false, stalledDurationMs: 0 };
