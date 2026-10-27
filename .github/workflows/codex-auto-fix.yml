@@ -149,7 +149,7 @@ jobs:
           # Keep the model from modifying automation, dependencies, or release controls.
           while IFS= read -r path; do
             case "$path" in
-              src/*|tests/*|argus-core/src/*|argus-core/tests/*|src-tauri/src/*|src-tauri/tests/*|scripts/*) ;;
+              src/*|tests/*|argus-core/src/*|argus-core/tests/*) ;;
               *)
                 echo "::warning::Rejected candidate touching disallowed path: $path"
                 git reset --hard HEAD
