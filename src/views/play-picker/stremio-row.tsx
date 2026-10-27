@@ -16,6 +16,7 @@ import { bidiLines } from "@/lib/bidi";
 import { isStreamTargetVerified } from "@/lib/streams/dead-links";
 import type { ScoredStream } from "@/lib/streams/types";
 import { EditionChip } from "./edition-chip";
+import { StreamExplanation } from "./play-provenance";
 
 export function StremioRow({
   stream,
@@ -102,6 +103,7 @@ export function StremioRow({
             <EditionChip stream={stream} />
           </div>
         )}
+        <StreamExplanation stream={stream} />
         {failed && (
           <p className="text-[13px] font-medium text-danger">{t("Unavailable, try another.")}</p>
         )}

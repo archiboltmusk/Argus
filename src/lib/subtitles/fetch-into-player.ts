@@ -137,7 +137,7 @@ export function streamHintsOf(src: PlayerSrc, settings?: Settings): StreamHints 
     resolution: src.streamRef?.resolution ?? null,
     season: src.episode?.imdbSeason ?? src.episode?.season ?? null,
     episode: src.episode?.imdbEpisode ?? src.episode?.episode ?? null,
-    preferHearingImpaired: settings?.preferHearingImpaired === true,
+    preferHearingImpaired: settings?.preferHearingImpairedSubs === true,
   };
 }
 

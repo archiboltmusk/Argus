@@ -171,7 +171,7 @@ export function useTrackAutoload(params: {
     publishSubtitleSearch({
       status: refreshing || initialSearches > 0 ? "searching" : "idle",
       lastAdded,
-      hints: streamHintsOf(src),
+      hints: streamHintsOf(src, settings),
       generated,
       refresh: () => {
         if (!refetchRef.current || refreshing) return;
@@ -194,7 +194,7 @@ export function useTrackAutoload(params: {
       },
     });
     return () => publishSubtitleSearch(null);
-  }, [refreshReady, refreshing, initialSearches, lastAdded, generated, src]);
+  }, [refreshReady, refreshing, initialSearches, lastAdded, generated, src, settings.preferHearingImpairedSubs]);
 
   useEffect(() => {
     if (!resolutionSettled) return;

@@ -461,6 +461,7 @@ export type Settings = {
   communitySyncOptOut: boolean;
   subtitlesOffByDefault: boolean;
   preferEmbeddedSubs: boolean;
+  preferHearingImpairedSubs: boolean;
   subtitleAutoUpgrade: boolean;
   subtitlePreselect: boolean;
   betaUpdates: boolean;

@@ -41,14 +41,11 @@ export function groupMediaServerTitles(items: MediaServerItem[]): MediaServerTit
     const groupTitle = parent?.title ?? item.title;
     const groupYear = parent?.year ?? item.year;
     const identified = identityKey(groupIdentity, kind);
-    // Without an external ID, title-only matches are unsafe when the year is
-    // unknown: remakes and unrelated titles routinely share names. Only use the
-    // fallback identity when both a normalized title and a known year exist.
-    const normalizedTitle = groupTitle.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
-    const fallback =
-      normalizedTitle && groupYear != null
-        ? `${kind}:unmatched:${normalizedTitle}:${groupYear}`
-        : `${kind}:unmatched-item:${item.connectionId}:${item.id}`;
+    const normalizedTitle = groupTitle.trim().replace(/\s+/g, " ").toLowerCase();
+    const owner = parent ?? item;
+    const fallback = groupYear != null
+      ? `${kind}:unmatched:${normalizedTitle}:${groupYear}`
+      : `${kind}:unmatched:${owner.connectionId}:${owner.id}`;
     const key = identified ?? fallback;
     let group = groups.get(key);
     if (!group) {

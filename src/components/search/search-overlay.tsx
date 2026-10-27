@@ -27,6 +27,7 @@ import { matchPersonForQuery, PersonTopMatch } from "./person-top-match";
 import { PeopleRow } from "./people-row";
 import { collectionForTitle, useCollectionHits } from "./use-collection-hits";
 import { MetaList } from "./meta-list";
+import { SavedSearches } from "./saved-searches";
 import { SearchFilterBar, type SearchFilter, type SearchFilterKey } from "./search-filter-bar";
 import { requestMusicSearch } from "@/lib/music/navigation";
 import { AddonHits } from "./addon-hits";
@@ -502,6 +503,7 @@ export function SearchOverlay() {
               />
             ) : (
               <>
+                {!aiMode && <SavedSearches />}
                 {!trimmed && <EmptyState onClose={close} onOpenGuide={() => setGuideOpen(true)} />}
 
                 {magnetInput && (

@@ -48,7 +48,7 @@ export function streamMatchDetail(
     total += 200;
     out.unshift("exact file match");
   }
-  if (result.hearingImpaired && !hints.preferHearingImpaired) total -= 25;
+  if (result.hearingImpaired) total += hints.preferHearingImpaired ? 25 : -25;
   return {
     score: total,
     reasons: out,

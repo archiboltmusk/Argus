@@ -1,3 +1,4 @@
+import { redactDiagnosticsText } from "./redact";
 import { bridgeRows, formatBridgeSection } from "../fetch-bridge-stats";
 import { getInstrumentationSupport } from "../memory-profiler";
 
@@ -118,5 +119,5 @@ export function collectRuntime(): string {
     "===== APP CONSOLE =====",
     consoleRing.join("\n") || "(no console entries)",
   ];
-  return scrubClient(sections.join("\n"));
+  return scrubClient(redactDiagnosticsText(sections.join("\n")));
 }

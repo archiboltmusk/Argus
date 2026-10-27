@@ -26,6 +26,12 @@ export function SubtitlesLanguageTab() {
         subtitle={t("Which subtitle Argus lands on when more than one is available.")}
       >
         <ToggleRow
+          label={t("Prefer accessible subtitles (SDH)")}
+          sub={t("Prefer subtitles with speaker names and sound descriptions when equally suitable tracks are available.")}
+          value={settings.preferHearingImpairedSubs}
+          onChange={(v) => update({ preferHearingImpairedSubs: v })}
+        />
+        <ToggleRow
           label={t("Prefer embedded subtitles")}
           sub={t("Keep the subtitle track included in the video file instead of switching to a downloaded one.")}
           value={settings.preferEmbeddedSubs}

@@ -14,6 +14,8 @@ import { playbackStartupProfile } from "@/lib/player/startup-profile";
 import { resolvePlaybackRedirect } from "@/lib/streams/playback-redirect";
 import type { PlayerSrc } from "@/lib/view";
 import type { DebridStore } from "@/lib/debrid/types";
+import { t } from "@/lib/i18n";
+import { emitListToast } from "@/components/lists/list-toast";
 
 let checkShownThisSession = false;
 
@@ -104,133 +106,141 @@ export function useStreamSwitcher(params: {
       swapAcRef.current?.abort();
       const ac = new AbortController();
       swapAcRef.current = ac;
-      const hint = src.episode
-        ? { season: src.episode.season ?? null, episode: src.episode.episode ?? null }
-        : undefined;
-      const r = await resolveStream(stream, debrids, ac.signal, true, false, hint);
-      if (ac.signal.aborted) {
-        if (swapAcRef.current === ac) setSwapResolvingKey(null);
-        return;
-      }
-      if (!r.ok) {
-        console.warn(`[player] stream swap failed: ${r.code}`);
+      const reportFailure = () => {
+        if (ac.signal.aborted || swapAcRef.current !== ac) return;
         setSwapResolvingKey(null);
-        return;
-      }
-      let playUrl = r.data.url;
-      if (r.via === "direct") {
-        playUrl = await resolvePlaybackRedirect({
-          url: playUrl,
-          headers: r.data.headers,
-          signal: ac.signal,
-        });
+        emitListToast(t("Could not switch sources. Try another source."), "error");
+      };
+      let nextProxySessionId: string | null = null;
+      try {
+        const hint = src.episode
+          ? { season: src.episode.season ?? null, episode: src.episode.episode ?? null }
+          : undefined;
+        const r = await resolveStream(stream, debrids, ac.signal, true, false, hint);
         if (ac.signal.aborted) {
           if (swapAcRef.current === ac) setSwapResolvingKey(null);
           return;
         }
-      }
-      let nextProxySessionId: string | null = null;
-      const hasProxyHeaders = !!r.data.headers && Object.keys(r.data.headers).length > 0;
-      if (hasProxyHeaders) {
-        try {
-          const proxied = await registerStreamProxy(r.data.url, r.data.headers);
-          playUrl = proxied.url;
-          nextProxySessionId = proxied.sessionId;
-        } catch {
-          setSwapResolvingKey(null);
+        if (!r.ok) {
+          reportFailure();
           return;
         }
-      }
-      const b = bridgeRef.current;
-      if (!b) {
-        if (nextProxySessionId) void unregisterStreamProxy(nextProxySessionId).catch(() => {});
-        setSwapResolvingKey(null);
-        return;
-      }
-      try {
-        const current = getPlaybackPosition();
-        const savedSec =
-          readResumeMs(src.meta.id, src.episode?.season, src.episode?.episode) / 1000;
-        const curDur = snapRef.current.durationSec;
-        const currentIsStub = curDur > 0 && curDur < SHORT_PLAYBACK_SEC;
-        const resumeAt = !currentIsStub && current > 5 ? current : savedSec;
-        await b.load({
-          url: playUrl,
-          subtitles: r.data.subtitles,
-          notWebReady: r.data.notWebReady,
-          // The bridge no longer infers liveness from notWebReady, so the swap has
-          // to classify the stream it is about to load the same way the picker does.
-          isLive: isLivePlaybackSrc({ meta: src.meta, streamRef: { addonId: stream.addonId } }),
-          startAtSec: resumeAt > 5 ? resumeAt : undefined,
-          startupProfile: playbackStartupProfile(stream),
+        let playUrl = r.data.url;
+        if (r.via === "direct") {
+          playUrl = await resolvePlaybackRedirect({
+            url: playUrl,
+            headers: r.data.headers,
+            signal: ac.signal,
+          });
+          if (ac.signal.aborted) {
+            if (swapAcRef.current === ac) setSwapResolvingKey(null);
+            return;
+          }
+        }
+        const hasProxyHeaders = !!r.data.headers && Object.keys(r.data.headers).length > 0;
+        if (hasProxyHeaders) {
+          try {
+            const proxied = await registerStreamProxy(r.data.url, r.data.headers);
+            playUrl = proxied.url;
+            nextProxySessionId = proxied.sessionId;
+          } catch {
+            reportFailure();
+            return;
+          }
+        }
+        const b = bridgeRef.current;
+        if (!b) {
+          if (nextProxySessionId) void unregisterStreamProxy(nextProxySessionId).catch(() => {});
+          reportFailure();
+          return;
+        }
+        try {
+          const current = getPlaybackPosition();
+          const savedSec =
+            readResumeMs(src.meta.id, src.episode?.season, src.episode?.episode) / 1000;
+          const curDur = snapRef.current.durationSec;
+          const currentIsStub = curDur > 0 && curDur < SHORT_PLAYBACK_SEC;
+          const resumeAt = !currentIsStub && current > 5 ? current : savedSec;
+          await b.load({
+            url: playUrl,
+            subtitles: r.data.subtitles,
+            notWebReady: r.data.notWebReady,
+            // The bridge no longer infers liveness from notWebReady, so the swap has
+            // to classify the stream it is about to load the same way the picker does.
+            isLive: isLivePlaybackSrc({ meta: src.meta, streamRef: { addonId: stream.addonId } }),
+            startAtSec: resumeAt > 5 ? resumeAt : undefined,
+            startupProfile: playbackStartupProfile(stream),
+          });
+          await b.play({ reason: "stream-switch" }).catch(() => {});
+        } catch {
+          if (nextProxySessionId) void unregisterStreamProxy(nextProxySessionId).catch(() => {});
+          reportFailure();
+          return;
+        }
+        const previousProxySessionId = switchProxySessionRef.current;
+        switchProxySessionRef.current = nextProxySessionId;
+        if (previousProxySessionId) {
+          void unregisterStreamProxy(previousProxySessionId).catch(() => {});
+        }
+        setLiveUrl(playUrl);
+        setLiveHistoryUrl(r.data.url);
+        setLiveStreamRef({
+          resolvedFilename:
+            r.data.filename ??
+            stream.behaviorHints?.filename ??
+            stream.behaviorHints?.fileName ??
+            null,
+          infoHash: stream.infoHash ?? null,
+          fileIdx: r.data.fileIdx ?? stream.fileIdx ?? null,
+          addonId: stream.addonId ?? null,
+          name: stream.name ?? null,
+          addonName: stream.addonName ?? null,
+          title: stream.title ?? null,
+          parsedTitle: stream.parsedTitle ?? null,
+          resolution: stream.resolution ?? null,
+          releaseGroup: stream.releaseGroupNormalized ?? null,
+          source: stream.source ?? null,
+          audioLanguages: stream.audioLanguages ?? null,
+          size: stream.size ?? null,
+          bingeGroup: stream.behaviorHints?.bingeGroup ?? null,
+          cachedSlugs: Object.entries(stream.cached ?? {})
+            .filter(([, v]) => v === true)
+            .map(([k]) => k),
         });
-        await b.play({ reason: "stream-switch" }).catch(() => {});
-      } catch (e) {
-        if (nextProxySessionId) void unregisterStreamProxy(nextProxySessionId).catch(() => {});
-        console.warn("[player] stream swap failed", e);
+        if (src.meta.id && !src.meta.id.startsWith("iptv:")) {
+          savePlayback(
+            src.meta.id,
+            {
+              infoHash: stream.infoHash ?? null,
+              fileIdx: r.data.fileIdx ?? stream.fileIdx ?? null,
+              addonId: stream.addonId ?? null,
+              url: r.data.url,
+              title: src.meta.name,
+              parsedTitle: stream.parsedTitle ?? null,
+              resolution: stream.resolution ?? null,
+              releaseGroup: stream.releaseGroupNormalized ?? null,
+              source: stream.source ?? null,
+              audioLanguages: stream.audioLanguages ?? null,
+              size: stream.size ?? null,
+              bingeGroup: stream.behaviorHints?.bingeGroup ?? null,
+              cachedSlugs: Object.entries(stream.cached ?? {})
+                .filter(([, v]) => v === true)
+                .map(([k]) => k),
+            },
+            src.episode?.season,
+            src.episode?.episode,
+          );
+        }
         setSwapResolvingKey(null);
-        return;
+        setSwitcherOpen(false);
+        checkShownRef.current = false;
+        setStreamCheckOpen(false);
+      } catch {
+        if (nextProxySessionId) void unregisterStreamProxy(nextProxySessionId).catch(() => {});
+        reportFailure();
       }
-      const previousProxySessionId = switchProxySessionRef.current;
-      switchProxySessionRef.current = nextProxySessionId;
-      if (previousProxySessionId) {
-        void unregisterStreamProxy(previousProxySessionId).catch(() => {});
-      }
-      setLiveUrl(playUrl);
-      setLiveHistoryUrl(r.data.url);
-      setLiveStreamRef({
-        resolvedFilename:
-          r.data.filename ??
-          stream.behaviorHints?.filename ??
-          stream.behaviorHints?.fileName ??
-          null,
-        infoHash: stream.infoHash ?? null,
-        fileIdx: r.data.fileIdx ?? stream.fileIdx ?? null,
-        addonId: stream.addonId ?? null,
-        name: stream.name ?? null,
-        addonName: stream.addonName ?? null,
-        title: stream.title ?? null,
-        parsedTitle: stream.parsedTitle ?? null,
-        resolution: stream.resolution ?? null,
-        releaseGroup: stream.releaseGroupNormalized ?? null,
-        source: stream.source ?? null,
-        audioLanguages: stream.audioLanguages ?? null,
-        size: stream.size ?? null,
-        bingeGroup: stream.behaviorHints?.bingeGroup ?? null,
-        cachedSlugs: Object.entries(stream.cached ?? {})
-          .filter(([, v]) => v === true)
-          .map(([k]) => k),
-      });
-      if (src.meta.id && !src.meta.id.startsWith("iptv:")) {
-        savePlayback(
-          src.meta.id,
-          {
-            infoHash: stream.infoHash ?? null,
-            fileIdx: r.data.fileIdx ?? stream.fileIdx ?? null,
-            addonId: stream.addonId ?? null,
-            url: r.data.url,
-            title: src.meta.name,
-            parsedTitle: stream.parsedTitle ?? null,
-            resolution: stream.resolution ?? null,
-            releaseGroup: stream.releaseGroupNormalized ?? null,
-            source: stream.source ?? null,
-            audioLanguages: stream.audioLanguages ?? null,
-            size: stream.size ?? null,
-            bingeGroup: stream.behaviorHints?.bingeGroup ?? null,
-            cachedSlugs: Object.entries(stream.cached ?? {})
-              .filter(([, v]) => v === true)
-              .map(([k]) => k),
-          },
-          src.episode?.season,
-          src.episode?.episode,
-        );
-      }
-      setSwapResolvingKey(null);
-      setSwitcherOpen(false);
-      checkShownRef.current = false;
-      setStreamCheckOpen(false);
     },
-    [debrids],
+    [debrids, src, bridgeRef],
   );
 
   useEffect(

@@ -1,3 +1,4 @@
+import { redactDiagnosticsText } from "./diagnostics/redact";
 import { ARGUS_BUGS_BASE } from "@/lib/config/endpoints";
 
 declare const __APP_VERSION__: string;
@@ -68,7 +69,7 @@ function push(msg: string, src?: string) {
 }
 
 export function getRecentErrors() {
-  return ERR_BUFFER.slice();
+  return ERR_BUFFER.map((entry) => ({ ...entry, msg: redactDiagnosticsText(entry.msg), src: entry.src ? redactDiagnosticsText(entry.src) : undefined }));
 }
 
 export async function collectDiagnostics(opts: {
@@ -110,7 +111,7 @@ export async function collectDiagnostics(opts: {
     if (typeof window !== "undefined" && "__TAURI_INTERNALS__" in window) {
       const { probeMpv } = await import("@/lib/player/mpv");
       const probe = await probeMpv();
-      mpvProbe = { available: probe.available, version: probe.version, error: probe.error };
+      mpvProbe = { available: probe.available, version: probe.version, error: probe.error ? redactDiagnosticsText(probe.error) : probe.error };
     }
   } catch {}
 
@@ -147,13 +148,13 @@ export async function submitErrorReport(args: {
   } else if (/linux/i.test(ua)) {
     os = "Linux";
   }
-  const summary = `[${args.code}] ${args.title}: ${args.message}`.slice(0, 240);
+  const summary = redactDiagnosticsText(`[${args.code}] ${args.title}: ${args.message}`).slice(0, 240);
   const fd = new FormData();
   fd.set("summary", summary);
   fd.set("severity", "high");
   fd.set("steps", "");
   fd.set("expected", "");
-  fd.set("actual", args.message);
+  fd.set("actual", redactDiagnosticsText(args.message));
   fd.set("reporter_name", "");
   fd.set("reporter_github", "");
   fd.set("reporter_contact", "");
@@ -171,10 +172,10 @@ export async function submitErrorReport(args: {
     "diagnostics",
     JSON.stringify({
       source: "auto-error-report",
-      code: args.code,
-      title: args.title,
-      detail: args.detail || null,
-      path: typeof window !== "undefined" ? window.location.pathname + window.location.hash : "",
+      code: redactDiagnosticsText(args.code),
+      title: redactDiagnosticsText(args.title),
+      detail: args.detail ? redactDiagnosticsText(args.detail) : null,
+      path: typeof window !== "undefined" ? redactDiagnosticsText(window.location.pathname + window.location.hash) : "",
       recentErrors: getRecentErrors().slice(-20),
     }),
   );
@@ -210,8 +211,8 @@ export async function submitBugReport(
     "diagnostics",
     JSON.stringify({
       flags: diag.flags,
-      mpvProbe: diag.mpvProbe,
-      recentErrors: diag.recentErrors,
+      mpvProbe: diag.mpvProbe ? { ...diag.mpvProbe, error: diag.mpvProbe.error ? redactDiagnosticsText(diag.mpvProbe.error) : diag.mpvProbe.error } : null,
+      recentErrors: diag.recentErrors.map((entry) => ({ ...entry, msg: redactDiagnosticsText(entry.msg), src: entry.src ? redactDiagnosticsText(entry.src) : undefined })),
     }),
   );
   for (const f of input.files) fd.append("files", f, f.name);

@@ -26,6 +26,16 @@ const hints = {
   episode: 2,
 };
 
+test("accessible subtitle preference chooses SDH among matching tracks without overriding file accuracy", () => {
+  const standard = candidate("standard");
+  const accessible = candidate("accessible", { hearingImpaired: true });
+  assert.equal(rankSubtitleCandidates([standard, accessible], ["en"], hints)[0].id, "standard");
+  const preferred = { ...hints, preferHearingImpaired: true };
+  assert.equal(rankSubtitleCandidates([standard, accessible], ["en"], preferred)[0].id, "accessible");
+  const exact = candidate("exact", { hash: "moviehash" });
+  assert.equal(rankSubtitleCandidates([accessible, exact], ["en"], preferred)[0].id, "exact");
+});
+
 test("global auto-ranking keeps verified movie hash ahead of provider filename evidence", () => {
   const providerFilename = candidate("provider", {
     providerMatch: {
