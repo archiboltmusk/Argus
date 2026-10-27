@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import { Bold, Clapperboard, Eye, Image as ImageIcon, Link2, Loader2, Pencil, Send, Youtube } from "lucide-react";
+import { Bold, Clapperboard, Eye, Image as ImageIcon, Link2, Loader2, Pencil, Send, Video as VideoIcon } from "lucide-react";
 import { useT } from "@/lib/i18n";
 import { useAutosize } from "@/lib/use-autosize";
 import { createGroupPost, type GroupPost } from "@/lib/social/group-posts";
@@ -14,7 +14,7 @@ const TOOLS = [
   { icon: Bold, label: "Bold", wrap: ["[b]", "[/b]"] as const },
   { icon: Link2, label: "Link", wrap: ["[url=https://]", "[/url]"] as const },
   { icon: ImageIcon, label: "Image", embed: "img" as EmbedKind },
-  { icon: Youtube, label: "YouTube", embed: "youtube" as EmbedKind },
+  { icon: VideoIcon, label: "YouTube", embed: "youtube" as EmbedKind },
   { icon: Clapperboard, label: "Link a title", media: true },
 ];
 
