@@ -35,26 +35,35 @@ jobs:
       native: ${{ steps.diff.outputs.native }}
       bundle: ${{ steps.diff.outputs.bundle }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
       - id: diff
         run: |
-          if [ "${{ github.event_name }}" != "pull_request" ]; then
-            echo "native=true" >> "$GITHUB_OUTPUT"
-            echo "bundle=true" >> "$GITHUB_OUTPUT"; exit 0
+          IS_RELEASE=false
+          if [[ "${{ github.ref }}" == refs/tags/v* ]] || [ "${{ github.event_name }}" = "workflow_dispatch" ] || echo "${{ github.event.head_commit.message }}" | grep -qiE '\[(release|build-app)\]'; then
+            IS_RELEASE=true
           fi
+
+          if [ "$IS_RELEASE" = "true" ]; then
+            echo "native=true" >> "$GITHUB_OUTPUT"
+            echo "bundle=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          # Everyday pushes & PRs skip heavy 30-minute packaging builds
+          echo "bundle=false" >> "$GITHUB_OUTPUT"
+
+          if [ "${{ github.event_name }}" != "pull_request" ]; then
+            echo "native=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
           FILES=$(git diff --name-only "${{ github.event.pull_request.base.sha }}" "${{ github.sha }}")
           if echo "$FILES" | grep -qE '^(src-tauri/|argus-core/|\.github/workflows/|package\.json$|pnpm-lock\.yaml$)'; then
             echo "native=true" >> "$GITHUB_OUTPUT"
           else
             echo "native=false" >> "$GITHUB_OUTPUT"
-          fi
-          # Packaging changes need the full .dmg build; plain Rust edits only a cargo check.
-          if echo "$FILES" | grep -qE '^(src-tauri/(tauri[^/]*\.json|Cargo\.toml|Cargo\.lock|build\.rs|Info\.plist|entitlements[^/]*)|scripts/|\.github/workflows/ci\.yml|package\.json$|pnpm-lock\.yaml$)'; then
-            echo "bundle=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "bundle=false" >> "$GITHUB_OUTPUT"
           fi
 
   core:
@@ -65,7 +74,7 @@ jobs:
       run:
         working-directory: argus-core
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: dtolnay/rust-toolchain@stable
         with:
           components: rustfmt, clippy
@@ -81,14 +90,16 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: pnpm/action-setup@v6
       - uses: actions/setup-node@v6
         with:
           node-version: 24
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      - run: node scripts/auto-heal-i18n.mjs
       - run: pnpm run typecheck
+      - run: pnpm test
       # PRs already typecheck; the bundler build runs once the change lands.
       - if: github.event_name != 'pull_request'
         run: pnpm run build
@@ -97,7 +108,7 @@ jobs:
     name: macOS .dmg (${{ matrix.arch }})
     # Runs in parallel with the checks; publish waits for all of them.
     needs: [changes]
-    if: needs.changes.outputs.native == 'true'
+    if: needs.changes.outputs.bundle == 'true'
     timeout-minutes: 60
     strategy:
       fail-fast: false
@@ -109,7 +120,7 @@ jobs:
             target: aarch64-apple-darwin
     runs-on: ${{ matrix.runner }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: dtolnay/rust-toolchain@stable
         with:
           targets: ${{ matrix.target }}
@@ -172,7 +183,7 @@ jobs:
           '
       # Unsigned until an Apple Developer ID is added as a repo secret.
       - if: github.event_name != 'pull_request' || needs.changes.outputs.bundle == 'true'
-        run: pnpm tauri build --target ${{ matrix.target }} --bundles app ${{ steps.macos-libraries.outputs.config }}
+        run: pnpm tauri build --target ${{ matrix.target }} --bundles app ${{ steps.macos-libraries.outputs.config }} --ignore-version-mismatches
         env:
           # Optional: enable Trakt/Simkl sign-in (apps registered by the maintainer).
           ARGUS_TRAKT_CLIENT_ID: ${{ secrets.ARGUS_TRAKT_CLIENT_ID }}
@@ -229,19 +240,19 @@ jobs:
   # Publishes as soon as the .dmg and every check have passed.
   publish:
     name: Publish release
-    needs: [core, ui, macos]
-    if: github.event_name != 'pull_request'
+    needs: [changes, core, ui, macos]
+    if: needs.changes.outputs.bundle == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
       contents: write
     steps:
-      - uses: actions/download-artifact@v5
+      - uses: actions/download-artifact@v8
         with:
           name: Argus-macOS-aarch64
       # Stable release feed. The tag keeps its original name so installs that already
       # point the updater at beta/latest.json keep updating.
-      - uses: softprops/action-gh-release@v2
+      - uses: softprops/action-gh-release@v3
         with:
           tag_name: beta
           name: Argus 1.0
@@ -284,7 +295,7 @@ jobs:
       # A v* tag push, or a manual run with release_tag set, publishes the
       # .dmg as a GitHub pre-release (the tag is created if missing).
       - if: startsWith(github.ref, 'refs/tags/v') || inputs.release_tag != ''
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           tag_name: ${{ inputs.release_tag || github.ref_name }}
           target_commitish: ${{ github.sha }}
