@@ -6,6 +6,7 @@ import type {
   SearchAllOpts,
 } from "@/lib/manga/types";
 import { aggregateSubProviders } from "@/lib/manga/sources";
+import { mangadexProvider } from "./mangadex";
 
 const SEP = "::";
 const SOURCE_TIMEOUT = 10000;
@@ -48,7 +49,12 @@ function parseId(id: string): { source: string; orig: string } {
 
 function subById(sourceId: string): MangaProvider {
   const subs = aggregateSubProviders();
-  return subs.find((s) => s.id === sourceId) ?? subs[0] ?? EMPTY_PROVIDER;
+  return (
+    subs.find((s) => s.id === sourceId) ??
+    (sourceId === "mangadex" ? mangadexProvider : undefined) ??
+    subs[0] ??
+    EMPTY_PROVIDER
+  );
 }
 
 export function routeById(id: string): { provider: MangaProvider; orig: string } | null {
@@ -56,7 +62,9 @@ export function routeById(id: string): { provider: MangaProvider; orig: string }
   if (i === -1) return null;
   const source = id.slice(0, i);
   const orig = id.slice(i + SEP.length);
-  const provider = aggregateSubProviders().find((s) => s.id === source);
+  const provider =
+    aggregateSubProviders().find((s) => s.id === source) ??
+    (source === "mangadex" ? mangadexProvider : undefined);
   return provider ? { provider, orig } : null;
 }
 

@@ -69,6 +69,7 @@ export type SubRenderContext = {
   imageNativeActive: boolean;
   assScale?: number;
   sdhFilterAllowed?: boolean;
+  hudVisible?: boolean;
 };
 
 export async function applySubStyle(
@@ -80,7 +81,8 @@ export async function applySubStyle(
     typeof context.assScale === "number" && Number.isFinite(context.assScale) ? context.assScale : null;
   const effOverride = normScale != null ? "scale" : override;
   const assMargins = context.assNativeActive && override !== "no" ? "yes" : "no";
-  const marginY = clamp(Number(s.subMarginY) || 0, 0, 100);
+  const hudOffset = context.hudVisible ? 8 : 0;
+  const marginY = clamp((Number(s.subMarginY) || 0) + hudOffset, 0, 100);
   const opacity = clamp(Number(s.subOpacity ?? 1), 0.1, 1);
   const boxOpacity = clamp(Number(s.subBoxOpacity ?? 0.6), 0, 1);
   const isBox = s.subStyle === "box";

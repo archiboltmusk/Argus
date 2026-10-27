@@ -88,6 +88,7 @@ function harness(layout: "list" | "grid" | "strip", videos: NonNullable<Meta["vi
     "./episode-groups": groups,
     "@/lib/season-view-pref": seasonViewPref,
     "./episode-rating-badge": { EpisodeRatingBadge: "EpisodeRatingBadge" },
+    "@/components/episode-release-countdown": { EpisodeReleaseCountdown: () => null },
     "./use-episode-imdb-ratings": { useEpisodeImdbRatings: () => new Map() },
   };
   const exports: Record<string, any> = {};

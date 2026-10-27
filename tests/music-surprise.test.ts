@@ -326,13 +326,15 @@ function playerEntries() {
   const current = track("Current", 1), next = track("Next", 2);
   const state = { current, queue: [current, next], queueIndex: 0, volume: .5, recents: [], likedIds: [], likedTracks: [] };
   const sourceReady = deferred();
-  const declarations = `let explicitSource=null, playRequest=0, observedPause=null, resumeAt=null, recoverPlayback=null, audioReady=null, enginePrimed=false, pendingSpeakerDevice=null, returningToComputer=false, speakerTransfer=false; const autoSkipped=new Set();`;
+  const declarations = `let explicitSource=null, playRequest=0, observedPause=null, resumeAt=null, recoverPlayback=null, audioReady=null, enginePrimed=false, pendingSpeakerDevice=null, returningToComputer=false, speakerTransfer=false; const autoSkipped=new Set(); const musicPlayerWasClosed = () => false; const setMusicPlayerClosed = () => {};`;
   const code = ts.transpileModule(declarations + entryPoints.map(node => node.getText(tree)).join("\n"), { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS } }).outputText;
   const scope = { ...automation, state, initializeMusic: () => initialized.promise, queueTrackKey,
     filterBlockedTracks: (tracks: MusicTrack[]) => tracks, publish: (patch: unknown) => Object.assign(state, patch),
     invoke: async () => {}, insertIntoQueue, markManuallyQueued, queueInsertIndex,
     readMusicPreference: () => null, beginMusicQueue: () => {}, resetMusicOrder: () => {},
     shouldResolvePreferredSource: () => false, clampMusicVolume: (v: number) => v,
+    musicPlaybackSourceAllowed: () => true,
+    peekPinnedSource: () => null, pinSourceFor: () => {}, unpinSourceFor: () => {},
     sourcesFor: async (t: MusicTrack) => { await sourceReady.promise; return [{ connectorId: "local", track: { ...t, id: `resolved:${t.id}`, connectorId: "local" } }]; },
     rankByExplicitness: (v: unknown) => v, explicitnessOf: () => null, adoptRequestedIdentity,
     stopCastOwner: async () => {}, ensureNativeEvents: async () => {}, updateMediaSession: () => {},

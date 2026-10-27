@@ -225,7 +225,11 @@ export function makeSuwayomiProvider(baseUrl: string, basicAuth?: string): Manga
     if (tagId) return browse(tagId, "search", offset, q);
     if (offset > 0) return [];
     const lower = q.toLowerCase();
-    return (await library()).filter((m) => m.title.toLowerCase().includes(lower));
+    const libHits = await library()
+      .then((list) => list.filter((m) => m.title.toLowerCase().includes(lower)))
+      .catch(() => []);
+    if (libHits.length > 0) return libHits;
+    return searchAll(q);
   }
 
   async function searchAll(query: string, opts?: SearchAllOpts): Promise<MangaSummary[]> {

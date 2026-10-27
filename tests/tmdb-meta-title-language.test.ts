@@ -58,6 +58,7 @@ function detailMapper(language: string, translateTitles = true) {
       tmdbEnglishTranslation,
     },
     "@/lib/storage-recovery": { setItemWithRecovery: () => undefined },
+    "./movie-release-dates": { movieReleaseDates: () => [] },
     "@/lib/episode-text-language": { episodeTextLanguage: () => language },
     "@/lib/season-name": { isGenericSeasonName: () => false },
   };

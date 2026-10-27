@@ -5,7 +5,7 @@ import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 import pkg from "./package.json" with { type: "json" };
 
-declare const process: { env: Record<string, string | undefined> };
+import process from "node:process";
 
 function silenceMediapipeSourcemap() {
   return {
@@ -97,7 +97,7 @@ export default defineConfig(({ mode }) => {
               rollupOptions: {
                 input: {
                   main: "index.html",
-                  retro: "retro-player.html",
+                  ...(process.platform !== "darwin" ? { retro: "retro-player.html" } : {}),
                   tray: "tray.html",
                 } as Record<string, string>,
               },

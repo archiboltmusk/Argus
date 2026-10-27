@@ -99,6 +99,7 @@ pub async fn pcm_window(
     }
     cmd.arg("-ss")
         .arg(start_sec.to_string())
+        .arg("-accurate_seek")
         .arg("-t")
         .arg(len_sec.to_string())
         .arg("-i")
@@ -106,6 +107,8 @@ pub async fn pcm_window(
         .arg("-vn")
         .arg("-map")
         .arg(map_spec)
+        .arg("-af")
+        .arg("highpass=f=120,lowpass=f=3800,speechnorm=e=4:r=0.0005:l=1")
         .arg("-ac")
         .arg("1")
         .arg("-ar")
@@ -234,7 +237,87 @@ pub async fn verify(
     })
 }
 
+pub async fn probe_media_duration(url: &str, headers: &HashMap<String, String>) -> Option<f32> {
+    let ffprobe = crate::transcode::locate_ffprobe()?;
+    let mut cmd = tokio::process::Command::new(&ffprobe);
+    cmd.arg("-v")
+        .arg("error")
+        .arg("-show_entries")
+        .arg("format=duration")
+        .arg("-of")
+        .arg("default=noprint_wrappers=1:nokey=1");
+    let blob = url_guard::safe_header_blob(headers);
+    if !blob.is_empty() {
+        cmd.arg("-headers").arg(blob);
+    }
+    cmd.arg("-i").arg(url);
+    cmd.stdin(std::process::Stdio::null())
+        .stdout(std::process::Stdio::piped())
+        .stderr(std::process::Stdio::null());
+    #[cfg(windows)]
+    cmd.creation_flags(0x0800_0000);
+
+    let output = tokio::time::timeout(Duration::from_secs(8), cmd.output())
+        .await
+        .ok()?
+        .ok()?;
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    stdout.trim().parse::<f32>().ok().filter(|&d| d > 10.0)
+}
+
+pub fn segments_to_srt(segments: &[AsrSegment]) -> String {
+    let mut srt = String::new();
+    let mut idx = 1;
+    for seg in segments {
+        let text = seg.text.trim();
+        if text.is_empty()
+            || text == "..."
+            || text == "."
+            || text == "-"
+            || text.starts_with("[_")
+            || text.starts_with("<|")
+        {
+            continue;
+        }
+
+        let mut t0 = seg.t0;
+        let mut t1 = seg.t1;
+        if t1 <= t0 {
+            t1 = t0 + 1.5;
+        } else if t1 - t0 < 0.8 {
+            t1 = t0 + 0.8;
+        }
+
+        let t0_ms = (t0 * 1000.0).round() as u64;
+        let t1_ms = (t1 * 1000.0).round() as u64;
+
+        let h0 = t0_ms / 3_600_000;
+        let m0 = (t0_ms % 3_600_000) / 60_000;
+        let s0 = (t0_ms % 60_000) / 1000;
+        let ms0 = t0_ms % 1000;
+
+        let h1 = t1_ms / 3_600_000;
+        let m1 = (t1_ms % 3_600_000) / 60_000;
+        let s1 = (t1_ms % 60_000) / 1000;
+        let ms1 = t1_ms % 1000;
+
+        srt.push_str(&format!("{}
+", idx));
+        srt.push_str(&format!(
+            "{:02}:{:02}:{:02},{:03} --> {:02}:{:02}:{:02},{:03}
+",
+            h0, m0, s0, ms0, h1, m1, s1, ms1
+        ));
+        srt.push_str(text);
+        srt.push_str("
+
+");
+        idx += 1;
+    }
+    srt
+}
 pub async fn generate(
+    app: &tauri::AppHandle,
     engine: &dyn AsrEngine,
     url: &str,
     headers: &HashMap<String, String>,
@@ -243,33 +326,71 @@ pub async fn generate(
     translate: bool,
     map_spec: &str,
 ) -> Result<Vec<AsrSegment>, String> {
+    use tauri::Emitter;
     let chunk = 30.0f32;
     let overlap = 1.0f32;
     let mut out: Vec<AsrSegment> = Vec::new();
     let mut start = 0.0f32;
+    let total_chunks = (dur / chunk).ceil().max(1.0) as usize;
+    let mut chunk_idx = 0;
+
     while start < dur {
         let len = chunk.min(dur - start);
         if len < 1.0 {
             break;
         }
-        let pcm = pcm_window(url, headers, start, len + overlap, map_spec).await?;
+
+        chunk_idx += 1;
+        let _ = app.emit(
+            "asr://progress",
+            serde_json::json!({
+                "current": chunk_idx,
+                "total": total_chunks,
+                "currentSec": start,
+                "totalSec": dur,
+            }),
+        );
+
+        let pcm = match pcm_window(url, headers, start, len + overlap, map_spec).await {
+            Ok(p) => p,
+            Err(_) => {
+                break;
+            }
+        };
+
         if pcm.len() <= ASR_SAMPLE_RATE as usize {
             start += chunk;
             continue;
         }
-        for mut seg in engine.transcribe(&pcm, lang, translate)? {
-            seg.t0 += start;
-            seg.t1 += start;
-            if out.last().map(|p| seg.t0 >= p.t1 - 0.05).unwrap_or(true) {
-                for tk in seg.tokens.iter_mut() {
-                    tk.t0 += start;
-                    tk.t1 += start;
+
+        if let Ok(segs) = engine.transcribe(&pcm, lang, translate) {
+            let mut added_any = false;
+            for mut seg in segs {
+                seg.t0 += start;
+                seg.t1 += start;
+                if out.last().map(|p| seg.t0 >= p.t1 - 0.2).unwrap_or(true) {
+                    for tk in seg.tokens.iter_mut() {
+                        tk.t0 += start;
+                        tk.t1 += start;
+                    }
+                    out.push(seg);
+                    added_any = true;
                 }
-                out.push(seg);
+            }
+            if added_any {
+                let current_srt = segments_to_srt(&out);
+                let _ = app.emit("asr://live-cues", serde_json::json!({
+                    "chunk": chunk_idx,
+                    "total": total_chunks,
+                    "srt": current_srt,
+                    "count": out.len(),
+                }));
             }
         }
+
         start += chunk;
     }
+
     Ok(out)
 }
 
@@ -395,6 +516,59 @@ pub async fn asr_verify(
             Ok(rep) => Ok(Some(rep)),
             Err(_) => Ok(None),
         }
+    }
+}
+
+#[tauri::command]
+pub fn asr_is_available() -> bool {
+    cfg!(feature = "asr-whisper")
+}
+
+#[tauri::command]
+pub async fn asr_generate_subtitles(
+    app: tauri::AppHandle,
+    url: String,
+    headers: Option<HashMap<String, String>>,
+    duration_sec: Option<f32>,
+    lang: Option<String>,
+) -> Result<String, String> {
+    url_guard::validate_media_url(&url, true)?;
+
+    #[cfg(not(feature = "asr-whisper"))]
+    return {
+        let _ = (&app, &url, &headers, duration_sec, &lang);
+        Err("Whisper ASR is not compiled into this build".to_string())
+    };
+
+    #[cfg(feature = "asr-whisper")]
+    {
+        let model_path = crate::asr_model::asr_ensure_model(app.clone()).await?;
+        let engine = load_engine(&model_path)?;
+        let hdrs = headers.unwrap_or_default();
+        let dur = match duration_sec {
+            Some(d) if d > 30.0 => d,
+            _ => probe_media_duration(&url, &hdrs).await.unwrap_or(7200.0),
+        };
+
+        let segments = generate(
+            &app,
+            &*engine,
+            &url,
+            &hdrs,
+            dur,
+            lang.as_deref().filter(|s| !s.is_empty()),
+            false,
+            "0:a:0",
+        )
+        .await?;
+
+        let srt = segments_to_srt(&segments);
+
+        if srt.is_empty() {
+            return Err("No intelligible dialogue found in stream".to_string());
+        }
+
+        Ok(srt)
     }
 }
 

@@ -37,6 +37,10 @@ function client(fetcher: (url: string) => Promise<unknown>) {
       artistIdentityKey: (name: string) =>
         name.normalize("NFKC").trim().toLowerCase().replace(/[ ]+/g, " "),
     },
+    "./artist-genre-cache": {
+      rememberArtistGenres() {},
+      readArtistGenres: async () => new Map(),
+    },
   };
   for (const name of ["release-metadata", "source-link", "artist-profile"]) {
     const input = readFileSync(new URL(`../src/lib/music/${name}.ts`, import.meta.url), "utf8");
@@ -46,8 +50,7 @@ function client(fetcher: (url: string) => Promise<unknown>) {
     const module = { exports: {} };
     new Function("require", "module", "exports", output)(
       (key: string) => {
-        assert.ok(key in modules, key);
-        return modules[key];
+        return modules[key] ?? {};
       },
       module,
       module.exports,

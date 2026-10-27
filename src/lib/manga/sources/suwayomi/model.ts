@@ -1,4 +1,5 @@
 import { safeFetchLocal } from "@/lib/safe-fetch";
+import { isAdultManga } from "@/lib/manga/model";
 import { mangaThrottle, type MangaSummary } from "@/lib/manga/types";
 import { normalizeSuwayomiBase } from "./base-url";
 import { registerSuwayomiAuth, suwayomiAuthFor } from "./auth-registry";
@@ -195,14 +196,37 @@ export function decodeChapterId(
 
 export function mapManga(server: SuwayomiServer, sourceId: string, raw: any): MangaSummary | null {
   if (raw?.id == null) return null;
+  const title = String(raw.title ?? "Untitled");
+  const genres = Array.isArray(raw.genre)
+    ? raw.genre.map(String)
+    : Array.isArray(raw.genres)
+      ? raw.genres.map(String)
+      : undefined;
+  const isNsfw = raw?.isNsfw === true || raw?.adult === true;
+  if (
+    isAdultManga({
+      title,
+      description: typeof raw.description === "string" ? raw.description : undefined,
+      contentRating: typeof raw.contentRating === "string" ? raw.contentRating : undefined,
+      genres,
+      isNsfw,
+    })
+  ) {
+    return null;
+  }
   const mangaId = String(raw.id);
   return {
     id: encodeMangaId(sourceId, mangaId),
-    title: String(raw.title ?? "Untitled"),
+    title,
     cover: imageUrl(server, `/api/v1/manga/${mangaId}/thumbnail`),
     author: raw.author || raw.artist || undefined,
     status: typeof raw.status === "string" ? raw.status.toLowerCase() : undefined,
     description: typeof raw.description === "string" ? raw.description.trim() : undefined,
+    contentRating: isNsfw
+      ? "18+"
+      : typeof raw.contentRating === "string"
+        ? raw.contentRating
+        : undefined,
   };
 }
 

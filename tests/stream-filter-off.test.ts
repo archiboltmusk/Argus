@@ -28,6 +28,8 @@ function fixture(native = false, supplied = streams) {
     "./priority-partition": { applyStreamPriority },
     "./anitomy": { enhanceAnimeStreams: async () => {} },
     "./anime-identity-core": { partitionByExactAnimeEpisode },
+    "./archive": { fetchArchiveStreams: async () => [] },
+    "./indexers": { fetchIndexerStreams: async () => [] },
     "./library": { fetchLibraryStreams: async () => [] },
     "./parser": { parseStream },
     "./trust": { applyTrust },

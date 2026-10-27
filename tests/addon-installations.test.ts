@@ -24,6 +24,7 @@ async function catalog(local: Addon[], account: Addon[], adultsAllowed = false) 
       useEffect: (fn: () => unknown) => { if (!initialized) effects.push(fn); },
     },
     "@/lib/auth": { useAuth: () => ({ authKey: "fixture" }) },
+    "@/lib/settings/load": { loadStoredSettings: () => ({ hiddenProviders: ["Stremio"] }) },
     "@/lib/addons": { userAddons: async () => account },
     "@/lib/addon-store": { fetchInstalledAddons: async () => local },
     "@/lib/providers/stremio-addons": { listAddons: async () => ({ addons: [] }) },

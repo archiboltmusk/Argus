@@ -91,7 +91,21 @@ export function PictureBar() {
           );
         })}
 
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-1.5 border-s border-edge-soft ps-2">
+          <button
+            type="button"
+            onClick={() => update({ ambientGlow: !settings.ambientGlow })}
+            title={t("Ambient Edge Glow")}
+            aria-label={t("Ambient Edge Glow")}
+            className={`flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold transition-colors ${
+              settings.ambientGlow
+                ? "bg-accent/20 text-accent ring-1 ring-accent/30"
+                : "text-ink-subtle hover:bg-raised hover:text-ink"
+            }`}
+          >
+            <span>✨</span>
+            {t("Ambilight")}
+          </button>
           <button
             type="button"
             onClick={resetAll}

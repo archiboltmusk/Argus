@@ -1,10 +1,16 @@
-import { useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { StreamSpeedButton } from "@/components/player/stream-speed-button";
-import { ChevronDown, Loader2 } from "lucide-react";
+import { ChevronDown, Loader2, Skull, ThumbsUp } from "lucide-react";
 import { AddonLogo } from "@/components/addon-logo";
 import { CopyLinkButton, resolveStreamLink } from "@/components/player/copy-link-button";
 import { FlagStack } from "@/components/flag";
 import { FormatBadge, RuleBadges, streamBadges } from "@/components/format-badge";
+import {
+  isStreamTargetVerified,
+  markStreamAsCorrect,
+  markStreamAsDead,
+  unmarkStreamCorrect,
+} from "@/lib/streams/dead-links";
 import type { ScoredStream } from "@/lib/streams/types";
 import { useT } from "@/lib/i18n";
 
@@ -69,6 +75,30 @@ export function SwitcherRow({
   const [overflows, setOverflows] = useState(false);
   const descRef = useRef<HTMLParagraphElement>(null);
 
+  const [isCorrect, setIsCorrect] = useState(false);
+  const [isDead, setIsDead] = useState(false);
+
+  useEffect(() => {
+    setIsCorrect(isStreamTargetVerified(stream));
+  }, [stream]);
+
+  const handleToggleCorrect = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (isCorrect) {
+      unmarkStreamCorrect(stream);
+      setIsCorrect(false);
+    } else {
+      markStreamAsCorrect(stream);
+      setIsCorrect(true);
+    }
+  };
+
+  const handleMarkDead = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    markStreamAsDead(stream);
+    setIsDead(true);
+  };
+
   const addonId = isCurrent && currentAddon ? currentAddon.id : stream.addonId;
   const addonName =
     isCurrent && currentAddon ? currentAddon.name : (stream.addonName ?? t("Source"));
@@ -90,6 +120,8 @@ export function SwitcherRow({
     if (!el) return;
     setOverflows(el.scrollHeight > el.clientHeight + 1);
   }, [description, expanded]);
+
+  if (isDead) return null;
 
   return (
     <li>
@@ -184,6 +216,30 @@ export function SwitcherRow({
               {t("Now Playing")}
             </span>
           )}
+          <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+            <button
+              type="button"
+              onClick={handleToggleCorrect}
+              title={isCorrect ? t("Unmark correct link") : t("Mark as correct working link")}
+              aria-label={isCorrect ? t("Unmark correct link") : t("Mark as correct working link")}
+              className={`flex h-8 w-8 items-center justify-center rounded-full transition-all ring-1 ${
+                isCorrect
+                  ? "bg-emerald-500/15 text-emerald-400 ring-emerald-500/40 opacity-100"
+                  : "opacity-40 group-hover:opacity-100 bg-canvas/40 text-ink-subtle ring-edge-soft/60 hover:text-emerald-400 hover:ring-emerald-500/40"
+              }`}
+            >
+              <ThumbsUp size={13} strokeWidth={isCorrect ? 2.6 : 2} fill={isCorrect ? "currentColor" : "none"} />
+            </button>
+            <button
+              type="button"
+              onClick={handleMarkDead}
+              title={t("Mark link as dead/broken")}
+              aria-label={t("Mark link as dead/broken")}
+              className="opacity-40 group-hover:opacity-100 flex h-8 w-8 items-center justify-center rounded-full bg-canvas/40 text-ink-subtle ring-1 ring-edge-soft/60 hover:text-red-400 hover:ring-red-500/40 transition-all"
+            >
+              <Skull size={13} strokeWidth={2} />
+            </button>
+          </div>
           {!isCurrent && (
             <span onClick={(e) => e.stopPropagation()}>
               <StreamSpeedButton stream={stream} />

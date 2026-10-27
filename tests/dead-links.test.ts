@@ -1,6 +1,19 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { demotedHashes, parseGroupList, parseHostList, recordPlayOutcome, streamHost } from "../src/lib/streams/dead-links.ts";
+import {
+  demotedHashes,
+  isStreamTargetDead,
+  isStreamTargetVerified,
+  markStreamAsCorrect,
+  markStreamAsDead,
+  parseGroupList,
+  parseHostList,
+  recordPlayOutcome,
+  streamHost,
+  streamTargetKey,
+  unmarkStreamCorrect,
+  verifiedCorrectHashes,
+} from "../src/lib/streams/dead-links.ts";
 
 function fakeKv() {
   const m = new Map<string, string>();
@@ -28,12 +41,23 @@ test("group list is normalized", () => {
   assert.deepEqual(parseGroupList("flux, NTb\n qxr ,,"), ["FLUX", "NTB", "QXR"]);
 });
 
-test("host list is normalized and stream hosts are read", () => {
-  assert.deepEqual(parseHostList("https://www.PixelDrain.com/u/x, cdn.example.org:443\n"), [
-    "pixeldrain.com",
-    "cdn.example.org",
-  ]);
-  assert.equal(streamHost("https://pixeldrain.com/api/file/x"), "pixeldrain.com");
-  assert.equal(streamHost("magnet:?xt=urn:btih:abc"), null);
-  assert.equal(streamHost("not a url"), null);
+test("streamTargetKey and markStream functions support non-torrent HTTP streams", () => {
+  const kv = fakeKv();
+  const directStream = { url: "https://example.com/video.mp4?token=123", addonId: "cinemeta" };
+  const key = streamTargetKey(directStream);
+  assert.equal(key, "u:example.com/video.mp4");
+
+  assert.equal(isStreamTargetVerified(directStream, kv), false);
+  assert.equal(isStreamTargetDead(directStream, kv), false);
+
+  markStreamAsCorrect(directStream, kv, 1000);
+  assert.equal(isStreamTargetVerified(directStream, kv, 1000), true);
+  assert.equal(verifiedCorrectHashes(kv, 1000).includes(key!), true);
+
+  unmarkStreamCorrect(directStream, kv);
+  assert.equal(isStreamTargetVerified(directStream, kv, 1000), false);
+
+  markStreamAsDead(directStream, kv, 1000);
+  assert.equal(isStreamTargetDead(directStream, kv, 1000), true);
 });
+

@@ -90,8 +90,12 @@ mod dvr;
 mod external_player;
 #[cfg(desktop)]
 mod fullscreen;
-#[cfg(desktop)]
+#[cfg(all(desktop, feature = "games"))]
 mod games;
+#[cfg(all(desktop, not(feature = "games")))]
+mod games_stub;
+#[cfg(all(desktop, not(feature = "games")))]
+use games_stub as games;
 #[cfg(desktop)]
 mod open_access;
 #[cfg(desktop)]
@@ -939,12 +943,15 @@ pub fn run() {
     if music::try_run_connector_worker() {
         return;
     }
+    #[cfg(not(target_os = "macos"))]
     if games::try_run_achievement_worker() {
         return;
     }
+    #[cfg(not(target_os = "macos"))]
     if games::try_run_archive_worker() {
         return;
     }
+    #[cfg(not(target_os = "macos"))]
     if games::try_run_hydra_import_worker() {
         return;
     }
@@ -1090,6 +1097,7 @@ pub fn run() {
             if !cfg!(feature = "context-review") {
                 proc_guard::reap_orphans();
             }
+            #[cfg(not(target_os = "macos"))]
             games::initialize_download_preparation(app.handle());
             music::initialize(app.handle()).map_err(std::io::Error::other)?;
             #[cfg(windows)]
@@ -1563,6 +1571,8 @@ pub fn run() {
             subsync::fingerprint::compute_chromaprint,
             subsync::asr::asr_transcribe_windows,
             subsync::asr::asr_verify,
+            subsync::asr::asr_generate_subtitles,
+            subsync::asr::asr_is_available,
             sub_extract::subtitle_extract,
             sub_extract::subtitle_extract_ass,
             cast_server::stop_stremio_sidecar,
@@ -1576,6 +1586,8 @@ pub fn run() {
             anime4k::anime4k_dir,
             asr_model::asr_ensure_model,
             asr_model::asr_model_path,
+            asr_model::asr_list_models,
+            asr_model::asr_set_active_model,
             shaders::shader_download,
             shaders::shader_dir,
             svp::svp_status,
@@ -1835,6 +1847,7 @@ pub fn run() {
             argus_lan::argus_lan_stop_advertise,
             argus_lan::argus_lan_discover,
             dlna::lan_ip,
+            dlna::lan_ips,
             cast::cast_load,
             cast::cast_play,
             cast::cast_pause,
@@ -1857,11 +1870,15 @@ pub fn run() {
             torrent_engine::torrent_engine_restart,
             torrent_engine::torrent_engine_hard_reset,
             torrent_engine::torrent_engine_set_options,
+            torrent_engine::torrent_engine_set_profile,
             torrent_engine::torrent_engine_set_upload,
             transcode::cast_ffmpeg_present,
             streams::streams_run_pipeline,
+            streams::streams_next_fallback,
             streams::streams_parse,
             streams::streams_core_version,
+            streams::debrid_check_cached_batch,
+            streams::debrid_check_all_cached,
             local_lib::argus_scan_folder,
             course_share::course_share_set,
             course_share::course_share_remove,

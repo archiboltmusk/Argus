@@ -74,8 +74,12 @@ export async function withTransportFallback<T>(
   }
 }
 
+import { shouldHideAdultManga } from "@/lib/manga/model";
+
 export async function loadSources(client: SuwayomiClient, t: Transport): Promise<SuwayomiSource[]> {
-  const list = t === "rest" ? await restSources(client) : await gqlSources(client);
+  const raw = t === "rest" ? await restSources(client) : await gqlSources(client);
+  const hideAdult = shouldHideAdultManga();
+  const list = hideAdult ? raw.filter((s) => !s.isNsfw) : raw;
   if (list.length) {
     sourceCache.set(client.server.base, new Map(list.map((s) => [s.id, s])));
     for (const s of list) registerSuwayomiSourceBase(s.id, client.server.base);

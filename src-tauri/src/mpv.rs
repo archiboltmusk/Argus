@@ -305,6 +305,7 @@ const OBSERVED_PROPS: &[(&str, u64, PropertyKind)] = &[
     // so upscaler presets need these to know how much headroom the window has.
     ("width", 22, PropertyKind::Int64),
     ("height", 23, PropertyKind::Int64),
+    ("core-idle", 24, PropertyKind::Flag),
 ];
 
 #[derive(Clone, Copy)]
@@ -487,6 +488,9 @@ fn apply_pre_init(
         // Subsequent audio device changes invoke hotplug_cb on a freed ao, crashing in mp_msg_va.
         // Explicitly defaulting to avfoundation on macOS prevents the broken listener from being registered.
         set("ao", "avfoundation");
+        // Ensure mpv never creates a secondary application dock icon or steals activation policy on macOS.
+        // Setting macos-app-activation-policy=accessory keeps mpv auxiliary to Argus.
+        let _ = set("macos-app-activation-policy", "accessory");
     }
     let is_live = args.is_live.unwrap_or(false);
     set("ytdl", if is_live { "yes" } else { "no" });
@@ -549,6 +553,18 @@ fn apply_pre_init(
     set("cursor-autohide", "200");
     set("volume-max", "600");
     set("sub-codepage", "utf-8");
+
+    // Infuse-grade smooth scrubbing & streaming buffer:
+    // Expand network cache to 64MiB and backbuffer to 32MiB to allow instant rewinds without re-buffering.
+    set("demuxer-max-bytes", "67108864"); // 64 MiB forward buffer
+    set("demuxer-max-back-bytes", "33554432"); // 32 MiB rewind buffer
+    set("network-timeout", "15");
+    // Resume audio/video instantly on seek without muting
+    set("hr-seek", "default");
+    set("audio-pitch-correction", "yes");
+    set("audio-channels", "stereo");
+    set("audio-normalize-downmix", "yes");
+
     let _ = init.set_property("background-color", "#000000");
     let _ = init.set_property("background", "color");
     let _ = init.set_property("media-controls", "no");
@@ -1142,9 +1158,9 @@ pub async fn mpv_start(
             if full_dl {
                 "100000"
             } else if high_bitrate {
-                "45"
+                "90"
             } else {
-                "30"
+                "60"
             },
         );
         let _ = mpv.set_property("cache-pause", "yes");
@@ -1184,9 +1200,9 @@ pub async fn mpv_start(
             if full_dl {
                 "100000"
             } else if high_bitrate {
-                "45"
+                "90"
             } else {
-                "30"
+                "60"
             },
         );
         let _ = mpv.set_property("cache-on-disk", "yes");

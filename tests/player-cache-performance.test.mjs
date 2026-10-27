@@ -64,9 +64,9 @@ test("failed anime requests share an inflight request and back off", async () =>
 test("resume reads parse once while still observing restored data and removals", () => {
   let raw = JSON.stringify({ movie: { ms: 123, t: 1 } });
   const h = load("../src/lib/resume.ts", {
-    getItem: () => raw,
-    setItem: (_key, value) => {
-      raw = value;
+    getItem: (key) => (key === "argus.resume" ? raw : null),
+    setItem: (key, value) => {
+      if (key === "argus.resume") raw = value;
     },
   });
   for (let i = 0; i < 1000; i++) assert.equal(h.api.readResumeEntry("movie").ms, 123);

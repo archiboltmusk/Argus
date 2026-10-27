@@ -8,6 +8,9 @@ import { useSettings } from "@/lib/settings";
 import { fetchAddonStreams } from "@/lib/streams/addons";
 import { buildEpisodePipelineInput } from "@/lib/streams/episode-pipeline-input";
 import { isPluginAddon } from "@/lib/streams/plugins";
+import { probeTopStreams } from "@/lib/streams/top-stream-prober";
+import { prepareCachedDebridStreams } from "@/lib/debrid/playback-preparation";
+import { prewarmCandidateStream } from "@/lib/streams/prewarm-candidate";
 import type { PlayEpisode } from "@/lib/view";
 import { useAddons } from "@/views/play-picker/use-addons";
 import { useAnimeAltTitles } from "@/views/play-picker/use-anime-alt-titles";
@@ -93,7 +96,7 @@ export function NextEpisodePrefetch({
         });
         const addon = input.addons.find((a) => a.manifest.id === addonId);
         if (!addon) return;
-        await fetchAddonStreams(
+        const streams = await fetchAddonStreams(
           [addon],
           input.request,
           ac.signal,
@@ -103,7 +106,20 @@ export function NextEpisodePrefetch({
           input.addonRanks,
           input.forcedAddonBases,
           true,
-        ).catch(() => {});
+        ).catch(() => []);
+        if (streams && streams.length > 0 && !ac.signal.aborted) {
+          void probeTopStreams(streams as any, 2, ac.signal);
+          // Netflix Standard: Pre-resolve the top stream for the next episode in the background
+          const top = streams[0] as any;
+          if (top) {
+            if (top.url) {
+              prewarmCandidateStream(top);
+            } else if (debrids.length > 0) {
+              const hint = { season: nextEpisode.season ?? null, episode: nextEpisode.episode ?? null };
+              void prepareCachedDebridStreams([top], debrids, hint, ac.signal).catch(() => {});
+            }
+          }
+        }
       })()
         .catch(() => {})
         .finally(() => {

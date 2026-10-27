@@ -27,7 +27,7 @@ test("saved manga chapters read the server DB before any live source fetch", () 
   const mutation = fn.indexOf("fetchChapters(input:");
   assert.ok(query >= 0, "must query cached chapters");
   assert.ok(mutation > query, "fetchChapters is only the empty-DB prime fallback");
-  assert.match(fn, /cachedNodes\.length > 0\) return mapGqlChapters\(cachedNodes\);/);
+  assert.match(fn, /cachedNodes\.length > 0\)\s*return mapGqlChapters\(cachedNodes\);/);
 });
 
 test("graphql failures still fall through to REST", () => {

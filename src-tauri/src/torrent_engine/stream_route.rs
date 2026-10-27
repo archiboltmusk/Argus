@@ -18,7 +18,7 @@ pub fn router(session: Arc<Session>) -> Router {
     Router::new()
         .route("/stream/{hash}/{file_id}", get(h_stream).head(h_stream))
         .route("/health", get(health))
-        .route("/settings", get(h_settings))
+        .route("/settings", get(h_settings).post(h_post_settings))
         .route("/{hash}/create", post(h_create))
         .route(
             "/{hash}/{file_id}",
@@ -31,20 +31,216 @@ async fn health() -> &'static str {
     "ok"
 }
 
-async fn h_settings() -> Response {
-    let body = serde_json::json!({
-        "values": {
-            "serverVersion": "argus-engine",
-            "appPath": "",
-            "cacheRoot": "",
-            "cacheSize": serde_json::Value::Null,
-            "transcodeProfile": serde_json::Value::Null,
+#[derive(Clone)]
+pub struct RuntimeServerSettings {
+    pub cache_root: String,
+    pub cache_size: Option<u64>,
+    pub transcode_profile: Option<String>,
+    pub remote_https: String,
+    pub bt_max_connections: u32,
+    pub bt_handshake_timeout: u32,
+    pub bt_request_timeout: u32,
+    pub bt_download_speed_soft_limit: f64,
+    pub bt_download_speed_hard_limit: f64,
+    pub bt_min_peers_for_stable: u32,
+}
+
+impl Default for RuntimeServerSettings {
+    fn default() -> Self {
+        Self {
+            cache_root: String::new(),
+            cache_size: Some(10 * 1024 * 1024 * 1024),
+            transcode_profile: if cfg!(target_os = "macos") {
+                Some("videotoolbox".to_string())
+            } else {
+                None
+            },
+            remote_https: String::new(),
+            bt_max_connections: 55,
+            bt_handshake_timeout: 20000,
+            bt_request_timeout: 4000,
+            bt_download_speed_soft_limit: 2_621_440.0,
+            bt_download_speed_hard_limit: 3_670_016.0,
+            bt_min_peers_for_stable: 5,
         }
-    });
+    }
+}
+
+fn runtime_settings() -> &'static std::sync::Mutex<RuntimeServerSettings> {
+    static S: std::sync::OnceLock<std::sync::Mutex<RuntimeServerSettings>> =
+        std::sync::OnceLock::new();
+    S.get_or_init(|| std::sync::Mutex::new(RuntimeServerSettings::default()))
+}
+
+pub fn apply_profile_preset(st: &mut RuntimeServerSettings, profile: &str) {
+    match profile {
+        "soft" => {
+            st.bt_max_connections = 35;
+            st.bt_handshake_timeout = 20000;
+            st.bt_request_timeout = 4000;
+            st.bt_download_speed_soft_limit = 1_677_721.6;
+            st.bt_download_speed_hard_limit = 1_677_721.6;
+            st.bt_min_peers_for_stable = 5;
+        }
+        "fast" => {
+            st.bt_max_connections = 200;
+            st.bt_handshake_timeout = 20000;
+            st.bt_request_timeout = 4000;
+            st.bt_download_speed_soft_limit = 4_194_304.0;
+            st.bt_download_speed_hard_limit = 39_321_600.0;
+            st.bt_min_peers_for_stable = 5;
+        }
+        "ultra-fast" => {
+            st.bt_max_connections = 500;
+            st.bt_handshake_timeout = 25000;
+            st.bt_request_timeout = 6000;
+            st.bt_download_speed_soft_limit = 8_388_608.0;
+            st.bt_download_speed_hard_limit = 78_643_200.0;
+            st.bt_min_peers_for_stable = 10;
+        }
+        _ => {
+            st.bt_max_connections = 55;
+            st.bt_handshake_timeout = 20000;
+            st.bt_request_timeout = 4000;
+            st.bt_download_speed_soft_limit = 2_621_440.0;
+            st.bt_download_speed_hard_limit = 3_670_016.0;
+            st.bt_min_peers_for_stable = 5;
+        }
+    }
+}
+
+pub fn sync_runtime_settings(
+    cache_root: Option<String>,
+    max_gb: Option<u64>,
+    torrent_profile: Option<&str>,
+    transcode_profile: Option<String>,
+) {
+    let mut st = runtime_settings().lock().unwrap();
+    if let Some(root) = cache_root {
+        st.cache_root = root;
+    }
+    if let Some(gb) = max_gb {
+        st.cache_size = if gb == 0 {
+            None
+        } else {
+            Some(gb.saturating_mul(1024 * 1024 * 1024))
+        };
+    }
+    if let Some(profile) = torrent_profile {
+        apply_profile_preset(&mut st, profile);
+    }
+    if let Some(tp) = transcode_profile {
+        st.transcode_profile = if tp.trim().is_empty() || tp == "none" {
+            None
+        } else {
+            Some(tp)
+        };
+    }
+}
+
+fn build_settings_json() -> serde_json::Value {
+    let st = runtime_settings().lock().unwrap().clone();
+    let hw_selections = if cfg!(target_os = "macos") {
+        serde_json::json!([
+            { "name": "Disabled", "val": serde_json::Value::Null },
+            { "name": "videotoolbox", "val": "videotoolbox" },
+            { "name": "software", "val": "software" }
+        ])
+    } else if cfg!(target_os = "windows") {
+        serde_json::json!([
+            { "name": "Disabled", "val": serde_json::Value::Null },
+            { "name": "nvenc", "val": "nvenc" },
+            { "name": "qsv", "val": "qsv" },
+            { "name": "amf", "val": "amf" },
+            { "name": "software", "val": "software" }
+        ])
+    } else {
+        serde_json::json!([
+            { "name": "Disabled", "val": serde_json::Value::Null },
+            { "name": "vaapi", "val": "vaapi" },
+            { "name": "nvenc", "val": "nvenc" },
+            { "name": "qsv", "val": "qsv" },
+            { "name": "software", "val": "software" }
+        ])
+    };
+    serde_json::json!({
+        "options": [
+            {
+                "id": "transcodeProfile",
+                "label": "Transcode profile",
+                "type": "select",
+                "selections": hw_selections
+            }
+        ],
+        "values": {
+            "serverVersion": "4.22.4",
+            "appPath": st.cache_root,
+            "cacheRoot": st.cache_root,
+            "cacheSize": st.cache_size,
+            "btMaxConnections": st.bt_max_connections,
+            "btHandshakeTimeout": st.bt_handshake_timeout,
+            "btRequestTimeout": st.bt_request_timeout,
+            "btDownloadSpeedSoftLimit": st.bt_download_speed_soft_limit,
+            "btDownloadSpeedHardLimit": st.bt_download_speed_hard_limit,
+            "btMinPeersForStable": st.bt_min_peers_for_stable,
+            "transcodeProfile": st.transcode_profile,
+            "remoteHttps": st.remote_https,
+        }
+    })
+}
+
+async fn h_settings() -> Response {
+    let body = build_settings_json();
     (
         StatusCode::OK,
         [(header::CONTENT_TYPE, "application/json")],
         body.to_string(),
+    )
+        .into_response()
+}
+
+async fn h_post_settings(Json(payload): Json<serde_json::Value>) -> Response {
+    if let Some(obj) = payload.as_object() {
+        let mut st = runtime_settings().lock().unwrap();
+        if let Some(root) = obj.get("cacheRoot").and_then(|v| v.as_str()) {
+            st.cache_root = root.to_string();
+        }
+        if let Some(size_val) = obj.get("cacheSize") {
+            st.cache_size = size_val.as_u64();
+        }
+        if let Some(tp_val) = obj.get("transcodeProfile") {
+            st.transcode_profile = tp_val
+                .as_str()
+                .map(|s| s.trim().to_string())
+                .filter(|s| !s.is_empty() && s != "none");
+        }
+        if let Some(https_val) = obj.get("remoteHttps").or_else(|| obj.get("httpsEndpoint")) {
+            st.remote_https = https_val.as_str().unwrap_or("").to_string();
+        }
+        if let Some(v) = obj.get("btMaxConnections").and_then(|v| v.as_u64()) {
+            st.bt_max_connections = v as u32;
+        }
+        if let Some(v) = obj.get("btHandshakeTimeout").and_then(|v| v.as_u64()) {
+            st.bt_handshake_timeout = v as u32;
+        }
+        if let Some(v) = obj.get("btRequestTimeout").and_then(|v| v.as_u64()) {
+            st.bt_request_timeout = v as u32;
+        }
+        if let Some(v) = obj.get("btDownloadSpeedSoftLimit").and_then(|v| v.as_f64()) {
+            st.bt_download_speed_soft_limit = v;
+        }
+        if let Some(v) = obj.get("btDownloadSpeedHardLimit").and_then(|v| v.as_f64()) {
+            st.bt_download_speed_hard_limit = v;
+        }
+        if let Some(v) = obj.get("btMinPeersForStable").and_then(|v| v.as_u64()) {
+            st.bt_min_peers_for_stable = v as u32;
+        }
+    }
+    let out = serde_json::json!({ "success": true });
+    (
+        StatusCode::OK,
+        [(header::CONTENT_TYPE, "application/json")],
+        out.to_string(),
     )
         .into_response()
 }

@@ -23,6 +23,8 @@ function fixture(failImmediately = false) {
     recoverPlayback=null, audioReady=null, enginePrimed=false, pendingSpeakerDevice=null,
     returningToComputer=false, speakerTransfer=false; const autoSkipped=new Set();
     const SOURCE_ATTEMPT_CEILING=6, SOURCE_TTL_MS=120000;
+    const musicPlayerWasClosed = () => false;
+    const setMusicPlayerClosed = () => {};
     export const failLater=(message)=>recoverPlayback?.(message);`;
   const output = ts.transpileModule(declarations + functions.map(node => node.getText(tree)).join("\n"), {
     compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS },

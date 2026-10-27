@@ -8,7 +8,7 @@ import { publishSubtitleSearch } from "@/components/player/subtitle-menu/subtitl
 import { publishSubtitleContext } from "@/components/player/subtitle-menu/subtitle-context-store";
 import { readPlayerPrefs, writePlayerPrefs, type PerShowPrefs } from "@/lib/player-prefs";
 import { playbackSourceKey, readActualPlaybackFor } from "@/lib/playback-history";
-import { playbackAudioChoice, selectPlaybackAudio } from "@/lib/player/audio-choice";
+import { playbackAudioChoice, selectPlaybackAudio, pickBestAudioTrack } from "@/lib/player/audio-choice";
 import { tmdbImdbId } from "@/lib/providers/tmdb";
 import type { Addon } from "@/lib/addons";
 import type { GeneratedSubtitleGroup } from "@/lib/subtitles/types";
@@ -208,9 +208,12 @@ export function useTrackAutoload(params: {
       ),
       stremioId: src.meta.id ?? null,
       filename: subtitleStreamDescriptor(src.streamRef) ?? null,
+      mediaUrl: src.url ?? null,
+      headers: (src.streamRef as any)?.behaviorHints?.proxyHeaders?.request ?? null,
+      durationSec: snap.durationSec > 0 ? snap.durationSec : snapRef.current.durationSec,
     });
     return () => publishSubtitleContext(null);
-  }, [resolutionSettled, resolvedImdbId, resolvedImdbVerified, src]);
+  }, [resolutionSettled, resolvedImdbId, resolvedImdbVerified, src, snap.durationSec]);
 
   const autoSubLoadKeyRef = useRef<string | null>(null);
   const autoSubStagesRef = useRef(new Set<string>());
@@ -292,6 +295,9 @@ export function useTrackAutoload(params: {
         candidateIds,
         stremioId: src.meta.id ?? null,
         filename: subtitleStreamDescriptor(src.streamRef) ?? null,
+        mediaUrl: src.url ?? null,
+        headers: (src.streamRef as any)?.behaviorHints?.proxyHeaders?.request ?? null,
+        durationSec: snapRef.current.durationSec,
         searchSeason,
         searchEpisode,
       });
@@ -764,6 +770,20 @@ export function useTrackAutoload(params: {
     bridgeRef.current?.setAudioDevice?.(settings.audioDevice);
   }, [engine, settings.audioDevice, bridgeRef]);
   useEffect(() => {
+    if (engine !== "mpv") return;
+    bridgeRef.current?.setAudioNormalize(settings.audioNormalize);
+    bridgeRef.current?.setAudioProfile?.(settings.audioProfile);
+    bridgeRef.current?.setAudioEqualizer?.(settings.audioEqualizerBands, settings.audioEqualizerEnabled);
+    bridgeRef.current?.setAudioEqualizer?.(settings.audioEqualizerBands, settings.audioEqualizerEnabled);
+  }, [
+    engine,
+    settings.audioNormalize,
+    settings.audioProfile,
+    settings.audioEqualizerBands,
+    settings.audioEqualizerEnabled,
+    bridgeRef,
+  ]);
+  useEffect(() => {
     const subIdSig = subtitleAutoSelectionSignature(snap.subtitleTracks);
     const audioIdSig = JSON.stringify(
       snap.audioTracks.map((track) => [playbackAudioChoice(track), track.label, track.default]),
@@ -784,6 +804,7 @@ export function useTrackAutoload(params: {
     autoTrackKeyRef.current = key;
     bridgeRef.current?.setAudioNormalize(settings.audioNormalize);
     bridgeRef.current?.setAudioProfile?.(settings.audioProfile);
+    bridgeRef.current?.setAudioEqualizer?.(settings.audioEqualizerBands, settings.audioEqualizerEnabled);
 
     const prefs = readPlayerPrefs(src.meta.id);
     const isAnime =
@@ -827,7 +848,8 @@ export function useTrackAutoload(params: {
           // A known choice is explicit user intent, even if its title matches
           // an automatic-selection exclusion such as "commentary".
           selectPlaybackAudio(snap.audioTracks, rememberedAudio) ??
-          pickBestTrack(allow(snap.audioTracks), audioLangs);
+          pickBestTrack(allow(snap.audioTracks), audioLangs) ??
+          pickBestAudioTrack(allow(snap.audioTracks), audioLangs[0] ?? "eng");
         effAudio = want ?? cur;
         if (want) {
           if (!cur || cur.id !== want.id) bridgeRef.current?.setAudioTrack(want.id);

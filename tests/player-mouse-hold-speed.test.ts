@@ -11,7 +11,7 @@ test("holding the primary left mouse button temporarily uses at least 2x speed",
   assert.match(player, /e\.pointerType !== "mouse"/);
   assert.match(player, /!e\.isPrimary/);
   assert.match(player, /e\.button !== 0/);
-  assert.match(player, /setRate\(Math\.max\(2, hold\.baseRate\)\)/);
+  assert.match(player, /setRate\(Math\.max\(settings\.holdSpeedRate, hold\.baseRate\)\)/);
   assert.match(player, /}, 350\);/);
 });
 

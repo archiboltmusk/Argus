@@ -10,6 +10,7 @@ use std::fs::{self, File};
 use std::hash::{Hash, Hasher};
 use std::io::{self, Read, Write};
 use std::path::{Path, PathBuf};
+#[cfg(feature = "games")]
 use unrar_sys as rar;
 
 type Result<T> = std::result::Result<T, &'static str>;
@@ -55,6 +56,7 @@ fn kind_of(path: &Path) -> Option<Kind> {
     match name.rsplit_once('.')?.1 {
         "zip" => Some(Kind::Zip),
         "7z" => Some(Kind::SevenZip),
+        #[cfg(feature = "games")]
         "rar" => Some(Kind::Rar),
         "tar" => Some(Kind::Tar),
         _ => None,
@@ -282,6 +284,7 @@ fn write_tar(path: &Path, gzip: bool, picked: &Candidate, out: &mut impl Write) 
     Err("archive_format")
 }
 
+#[cfg(feature = "games")]
 fn wide(value: &[rar::WCHAR]) -> Result<String> {
     let end = value.iter().position(|v| *v == 0).ok_or("archive_path")?;
     // The legacy field truncates at 1023 characters; a cut-off name is not an identity.
@@ -298,12 +301,14 @@ fn wide(value: &[rar::WCHAR]) -> Result<String> {
     Ok(text.replace('\\', "/"))
 }
 
+#[cfg(feature = "games")]
 struct RarState<'a> {
     sink: Option<&'a mut dyn Write>,
     remaining: u64,
     failure: Option<&'static str>,
 }
 
+#[cfg(feature = "games")]
 extern "C" fn rar_callback(
     message: rar::UINT,
     user: rar::LPARAM,
@@ -360,9 +365,12 @@ extern "C" fn rar_callback(
 }
 
 /// UnRAR keeps global state, so two walks at once corrupt each other.
+#[cfg(feature = "games")]
 static RAR_LOCK: std::sync::Mutex<()> = std::sync::Mutex::new(());
 
+#[cfg(feature = "games")]
 struct RarHandle(*const rar::Handle);
+#[cfg(feature = "games")]
 impl Drop for RarHandle {
     fn drop(&mut self) {
         if !self.0.is_null() {
@@ -373,6 +381,7 @@ impl Drop for RarHandle {
     }
 }
 
+#[cfg(feature = "games")]
 fn rar_code(value: i32) -> &'static str {
     match value {
         rar::ERAR_MISSING_PASSWORD | rar::ERAR_BAD_PASSWORD => "archive_encrypted",
@@ -385,6 +394,7 @@ fn rar_code(value: i32) -> &'static str {
 }
 
 /// Walks a RAR set. With `picked` set, that entry's data goes to `sink`; every other entry is skipped.
+#[cfg(feature = "games")]
 fn walk_rar(
     path: &Path,
     picked: Option<&Candidate>,
@@ -488,6 +498,15 @@ fn walk_rar(
         index += 1;
     }
     Ok(out)
+}
+
+#[cfg(not(feature = "games"))]
+fn walk_rar(
+    _path: &Path,
+    _picked: Option<&Candidate>,
+    _sink: Option<&mut dyn Write>,
+) -> Result<Vec<Candidate>> {
+    Err("archive_compression")
 }
 
 fn list(path: &Path, kind: Kind) -> Result<Vec<Candidate>> {

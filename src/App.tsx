@@ -78,6 +78,7 @@ import { CustomCodeMount } from "@/components/custom-code-mount";
 import { MemoryHud } from "@/components/memory-hud";
 import { Profiled } from "@/components/profiled";
 import { OfflineBanner } from "@/chrome/offline-banner";
+import { CustomLayoutSafetyNet } from "@/chrome/custom-layout-safety-net";
 
 const MobileShell = lazy(() =>
   import("@/views/mobile/mobile-shell").then((m) => ({ default: m.MobileShell })),
@@ -308,6 +309,7 @@ const SportsView = lazy(() => importSports().then((m) => ({ default: m.SportsVie
 const DownloadsView = lazy(() => importDownloads().then((m) => ({ default: m.DownloadsView })));
 const MangaView = lazy(() => import("@/views/manga").then((m) => ({ default: m.MangaView })));
 const EBookView = lazy(() => import("@/views/ebook").then((m) => ({ default: m.EBookView })));
+const EducationView = lazy(() => import("@/views/education").then((m) => ({ default: m.EducationView })));
 const OnboardingModal = lazy(() =>
   importOnboarding().then((m) => ({ default: m.OnboardingModal })),
 );
@@ -935,7 +937,7 @@ function Shell({ onReady }: { onReady?: () => void }) {
     return () => window.clearTimeout(timer);
   }, [settings.addonHealthProbes, settings.addonConformanceChecks, safeMode]);
   const searchOpen = useSearchOpen();
-  const { setOpen: setSearchOpen } = useSearchActions();
+  const { setOpen: setSearchOpen, setQuery: setSearchQuery } = useSearchActions();
   const bigPicture = useBigPicture().active;
   const bigPictureBootChecked = useRef(false);
   const uiScaleRef = useRef(settings.uiScale);
@@ -1407,9 +1409,46 @@ function Shell({ onReady }: { onReady?: () => void }) {
         onOpenLocalFile,
         onDeepLinkOpenLocal,
         onOpenProfileEdit,
+        onOpenMagnet,
         isProfileEditUrl,
       }) => {
         void startDeepLinkBridge().then((stopBridge) => {
+          const handleMagnet = (magnet: string) => {
+            setSearchQuery(magnet);
+            setSearchOpen(true);
+          };
+          const stopMagnet = onOpenMagnet((magnet) => {
+            handleMagnet(magnet);
+          });
+          const onPaste = (e: ClipboardEvent) => {
+            const target = e.target as HTMLElement | null;
+            if (
+              target &&
+              (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable)
+            ) {
+              return;
+            }
+            const text = e.clipboardData?.getData("text")?.trim();
+            if (text && /^magnet:\?xt=urn:[a-z0-9]+/i.test(text)) {
+              e.preventDefault();
+              handleMagnet(text);
+            }
+          };
+          const onDrop = (e: DragEvent) => {
+            const text = e.dataTransfer?.getData("text")?.trim();
+            if (text && /^magnet:\?xt=urn:[a-z0-9]+/i.test(text)) {
+              e.preventDefault();
+              handleMagnet(text);
+            }
+          };
+          const onDragOver = (e: DragEvent) => {
+            if (e.dataTransfer?.types.includes("text/plain")) {
+              e.preventDefault();
+            }
+          };
+          window.addEventListener("paste", onPaste);
+          window.addEventListener("dragover", onDragOver);
+          window.addEventListener("drop", onDrop);
           const stopListener = onDeepLinkInstall((rawUrl) => {
             if (window.__argusInstallerOpen) return;
             if (isProfileEditUrl(rawUrl)) return;
@@ -1489,6 +1528,10 @@ function Shell({ onReady }: { onReady?: () => void }) {
             stopOpenMusic();
             stopEdit();
             stopFile();
+            stopMagnet();
+            window.removeEventListener("paste", onPaste);
+            window.removeEventListener("dragover", onDragOver);
+            window.removeEventListener("drop", onDrop);
           };
         });
       },
@@ -1496,7 +1539,7 @@ function Shell({ onReady }: { onReady?: () => void }) {
     return () => {
       dispose?.();
     };
-  }, [setView, openMeta, openPlayer, openList, openPerson, openManga, openEBook]);
+  }, [setView, openMeta, openPlayer, openList, openPerson, openManga, openEBook, setSearchOpen, setSearchQuery]);
 
   useEffect(() => {
     if (topKind === "anime" && settings.hideContent.anime) setView("home");
@@ -1604,6 +1647,7 @@ function Shell({ onReady }: { onReady?: () => void }) {
   const matchDetailTop = topKind === "match-detail";
   const vodTop = topKind === "vod";
   const downloadsTop = topKind === "downloads";
+  const educationTop = topKind === "education";
   const mangaTop = topKind === "manga" && installFeatures.manga;
   const ebookTop = topKind === "ebook" && installFeatures.ebook;
   const peopleTop = topKind === "people";
@@ -1711,6 +1755,7 @@ function Shell({ onReady }: { onReady?: () => void }) {
   const liveAlive = useIdleEvict(liveTop);
   const vodAlive = useIdleEvict(vodTop);
   const downloadsAlive = useIdleEvict(downloadsTop);
+  const educationAlive = useIdleEvict(educationTop);
   const mangaAlive = useIdleEvict(mangaTop);
   const ebookAlive = useIdleEvict(ebookTop);
   const peopleAlive = useIdleEvict(peopleTop);
@@ -2019,6 +2064,13 @@ function Shell({ onReady }: { onReady?: () => void }) {
                 </Suspense>
               </div>
             )}
+            {educationAlive && (
+              <div {...layerProps(educationTop)}>
+                <Suspense fallback={null}>
+                  <EducationView />
+                </Suspense>
+              </div>
+            )}
             {mangaAlive && (
               <div {...layerProps(mangaTop)}>
                 <Suspense fallback={null}>
@@ -2293,6 +2345,9 @@ function Shell({ onReady }: { onReady?: () => void }) {
               <div aria-hidden className="argus-chrome-proxy fixed end-3 top-3 z-[40]">
                 <TogetherButton />
               </div>
+            )}
+            {!settingsTop && !playerActive && !pickerTop && layout === "custom" && (
+              <CustomLayoutSafetyNet />
             )}
             {!immersive && !playerActive && !pickerTop && !bigPicture && layout === "custom" && (
               <div className="argus-bp-proxy">

@@ -1,4 +1,5 @@
 #![cfg(target_os = "macos")]
+#![allow(deprecated)]
 
 use std::ffi::{c_char, c_void, CString};
 use std::ptr::NonNull;
@@ -34,9 +35,6 @@ extern "C" {
 
 const NS_VIEW_AUTORESIZE_WIDTH: usize = 2;
 const NS_VIEW_AUTORESIZE_HEIGHT: usize = 16;
-const NS_WINDOW_STYLE_BORDERLESS: usize = 0;
-const NS_BACKING_STORE_BUFFERED: usize = 2;
-const NS_WINDOW_BELOW: isize = -1;
 const WINDOW_CORNER_RADIUS: f64 = 14.0;
 
 const NSOPENGL_CONTEXT_PARAM_SURFACE_OPACITY: i32 = 236;
@@ -48,48 +46,11 @@ extern "C" {
 }
 const RTLD_DEFAULT: *mut c_void = -2isize as *mut c_void;
 
-unsafe fn content_rect_to_screen(
-    parent: &NSWindow,
-    rect: objc2_foundation::NSRect,
-) -> objc2_foundation::NSRect {
-    let Some(content_view) = parent.contentView() else {
-        return rect;
-    };
-    let nil_view: *const AnyObject = std::ptr::null();
-    let in_window: objc2_foundation::NSRect =
-        msg_send![&*content_view, convertRect: rect, toView: nil_view];
-    msg_send![parent, convertRectToScreen: in_window]
-}
-
 fn same_rect(a: objc2_foundation::NSRect, b: objc2_foundation::NSRect) -> bool {
     (a.origin.x - b.origin.x).abs() < 0.5
         && (a.origin.y - b.origin.y).abs() < 0.5
         && (a.size.width - b.size.width).abs() < 0.5
         && (a.size.height - b.size.height).abs() < 0.5
-}
-
-unsafe fn make_video_window(
-    mtm: MainThreadMarker,
-    parent: &NSWindow,
-    content_rect: objc2_foundation::NSRect,
-) -> Result<Retained<NSWindow>, String> {
-    let screen_rect = content_rect_to_screen(parent, content_rect);
-    let alloc = NSWindow::alloc(mtm);
-    let window: Option<Retained<NSWindow>> = msg_send![
-        alloc,
-        initWithContentRect: screen_rect,
-        styleMask: NS_WINDOW_STYLE_BORDERLESS,
-        backing: NS_BACKING_STORE_BUFFERED,
-        defer: false,
-    ];
-    let window = window.ok_or_else(|| "video NSWindow init failed".to_string())?;
-    let clear: *mut AnyObject = msg_send![objc2::class!(NSColor), clearColor];
-    let _: () = msg_send![&*window, setOpaque: false];
-    let _: () = msg_send![&*window, setBackgroundColor: clear];
-    let _: () = msg_send![&*window, setHasShadow: false];
-    let _: () = msg_send![&*window, setIgnoresMouseEvents: true];
-    let _: () = msg_send![&*window, setReleasedWhenClosed: false];
-    Ok(window)
 }
 
 fn main_queue() -> *mut c_void {
@@ -101,7 +62,6 @@ pub struct Embed {
     web_view: Option<Retained<NSView>>,
     web_view_was_opaque: bool,
     ns_window: Retained<NSWindow>,
-    video_window: Option<Retained<NSWindow>>,
     css: Option<MpvGeometry>,
     render: Mutex<RenderContext>,
 }
@@ -210,27 +170,27 @@ pub fn install(mpv_ctx: NonNull<mpv_handle>, ns_window_ptr: i64, edr: bool) -> R
 
         let subviews = content_view.subviews();
         let first_subview: Option<Retained<NSView>> = subviews.firstObject();
-        let video_window = if edr {
-            let window = make_video_window(mtm, ns_window, bounds)?;
-            let _: () = msg_send![&*window, setContentView: view_as_view];
-            let _: () = msg_send![
-                ns_window,
-                addChildWindow: &*window,
-                ordered: NS_WINDOW_BELOW,
-            ];
-            Some(window)
+
+        // Following Nuvio: Render directly as a child NSView inside the main NSWindow's contentView.
+        // Never spawn a secondary NSWindow (addChildWindow), which creates duplicate macOS Dock items,
+        // ghost windows, and window cycling issues.
+        if let Some(reference) = first_subview.as_deref() {
+            content_view.addSubview_positioned_relativeTo(
+                view_as_view,
+                NSWindowOrderingMode::Below,
+                Some(reference),
+            );
         } else {
-            if let Some(reference) = first_subview.as_deref() {
-                content_view.addSubview_positioned_relativeTo(
-                    view_as_view,
-                    NSWindowOrderingMode::Below,
-                    Some(reference),
-                );
-            } else {
-                content_view.addSubview(view_as_view);
-            }
-            None
-        };
+            content_view.addSubview(view_as_view);
+        }
+
+        if edr {
+            // Enable Extended Dynamic Range on the window, its content view, and the view layer.
+            let _: () = msg_send![ns_window, setWantsExtendedDynamicRangeContent: true];
+            let _: () = msg_send![&*content_view, setWantsExtendedDynamicRangeContent: true];
+            let _: () = msg_send![view_as_view, setWantsExtendedDynamicRangeContent: true];
+        }
+
         let mask = NS_VIEW_AUTORESIZE_WIDTH | NS_VIEW_AUTORESIZE_HEIGHT;
         let _: () = msg_send![view_as_view, setAutoresizingMask: mask];
 
@@ -240,9 +200,8 @@ pub fn install(mpv_ctx: NonNull<mpv_handle>, ns_window_ptr: i64, edr: bool) -> R
             let cg_black: *mut AnyObject = msg_send![&*black, CGColor];
             let _: () = msg_send![&*layer, setBackgroundColor: cg_black];
             let _: () = msg_send![&*layer, setOpaque: true];
-            if video_window.is_some() {
-                let _: () = msg_send![&*layer, setCornerRadius: WINDOW_CORNER_RADIUS];
-                let _: () = msg_send![&*layer, setMasksToBounds: true];
+            if edr {
+                let _: () = msg_send![&*layer, setWantsExtendedDynamicRangeContent: true];
             }
         }
 
@@ -292,7 +251,6 @@ pub fn install(mpv_ctx: NonNull<mpv_handle>, ns_window_ptr: i64, edr: bool) -> R
             web_view: first_subview,
             web_view_was_opaque,
             ns_window: ns_window.retain(),
-            video_window,
             css: None,
             render: Mutex::new(render),
         });
@@ -314,30 +272,37 @@ pub fn set_hdr_active(active: bool, bt2020: bool) {
     let Some(embed) = guard.as_ref() else {
         return;
     };
-    let Some(video_window) = embed.video_window.as_deref() else {
-        return;
-    };
     unsafe {
         let view_as_view: &NSView = embed.view.as_super();
         let _: () = msg_send![view_as_view, setWantsExtendedDynamicRangeOpenGLSurface: active];
-        if active {
-            let space_name = if bt2020 {
-                kCGColorSpaceITUR_2100_PQ
-            } else {
-                kCGColorSpaceDisplayP3_PQ
-            };
-            let cg = CGColorSpaceCreateWithName(space_name);
-            if !cg.is_null() {
-                let nscs_alloc: *mut AnyObject = msg_send![objc2::class!(NSColorSpace), alloc];
-                let nscs: *mut AnyObject = msg_send![nscs_alloc, initWithCGColorSpace: cg];
-                if !nscs.is_null() {
-                    let _: () = msg_send![video_window, setColorSpace: nscs];
+        let _: () = msg_send![view_as_view, setWantsExtendedDynamicRangeContent: active];
+        let _: () = msg_send![&*embed.ns_window, setWantsExtendedDynamicRangeContent: active];
+        if let Some(content_view) = embed.ns_window.contentView() {
+            let _: () = msg_send![&*content_view, setWantsExtendedDynamicRangeContent: active];
+        }
+        if let Some(layer) = view_as_view.layer() {
+            let _: () = msg_send![&*layer, setWantsExtendedDynamicRangeContent: active];
+            if active {
+                let space_name = if bt2020 {
+                    kCGColorSpaceITUR_2100_PQ
+                } else {
+                    kCGColorSpaceDisplayP3_PQ
+                };
+                let cg = CGColorSpaceCreateWithName(space_name);
+                if !cg.is_null() {
+                    let _: () = msg_send![&*layer, setColorSpace: cg];
+                    let nscs_alloc: *mut AnyObject = msg_send![objc2::class!(NSColorSpace), alloc];
+                    let nscs: *mut AnyObject = msg_send![nscs_alloc, initWithCGColorSpace: cg];
+                    if !nscs.is_null() {
+                        let _: () = msg_send![&*embed.ns_window, setColorSpace: nscs];
+                    }
+                    CGColorSpaceRelease(cg);
                 }
-                CGColorSpaceRelease(cg);
+            } else {
+                let nil: *mut AnyObject = std::ptr::null_mut();
+                let _: () = msg_send![&*layer, setColorSpace: nil];
+                let _: () = msg_send![&*embed.ns_window, setColorSpace: nil];
             }
-        } else {
-            let nil: *mut AnyObject = std::ptr::null_mut();
-            let _: () = msg_send![video_window, setColorSpace: nil];
         }
     }
     schedule_redraw();
@@ -415,23 +380,11 @@ unsafe fn sync_frame(embed: &Embed) -> bool {
             height: native.height,
         },
     };
-    match embed.video_window.as_deref() {
-        Some(video_window) => {
-            let screen_rect = content_rect_to_screen(&embed.ns_window, next);
-            let current: objc2_foundation::NSRect = msg_send![video_window, frame];
-            if same_rect(current, screen_rect) {
-                return false;
-            }
-            let _: () = msg_send![video_window, setFrame: screen_rect, display: true];
-        }
-        None => {
-            let view_as_view: &NSView = embed.view.as_super();
-            if same_rect(view_as_view.frame(), next) {
-                return false;
-            }
-            view_as_view.setFrame(next);
-        }
+    let view_as_view: &NSView = embed.view.as_super();
+    if same_rect(view_as_view.frame(), next) {
+        return false;
     }
+    view_as_view.setFrame(next);
     true
 }
 
@@ -528,12 +481,6 @@ fn teardown_embed(embed: Embed) {
     unsafe {
         let view_as_view: &NSView = embed.view.as_super();
         view_as_view.removeFromSuperview();
-        if let Some(video_window) = embed.video_window.as_deref() {
-            let nil: *mut AnyObject = std::ptr::null_mut();
-            let _: () = msg_send![video_window, setColorSpace: nil];
-            let _: () = msg_send![&*embed.ns_window, removeChildWindow: video_window];
-            let _: () = msg_send![video_window, orderOut: std::ptr::null::<AnyObject>()];
-        }
         if let Some(wv) = embed.web_view.as_deref() {
             let restored = embed.web_view_was_opaque;
             let restored_num = NSNumber::new_bool(restored);

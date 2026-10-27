@@ -254,6 +254,11 @@ export type Settings = {
   screensaverDelayMin: number;
   resumePrompt: boolean;
   resumePlayback: boolean;
+  /**
+   * When resuming an in-progress video (>15s), rewind 5 seconds to provide
+   * instantaneous context retrieval without disorientation (Netflix/Apple TV+ parity).
+   */
+  resumeMicroRewind: boolean;
   keepFullscreenOnExit: boolean;
   fullscreenRestorePosition: boolean;
   contentAdvisoryToast: boolean;
@@ -262,6 +267,8 @@ export type Settings = {
   preferredReleaseGroups: string;
   preferredHosts: string;
   deadLinkDemotion: boolean;
+  /** Automatically hide uncached P2P streams that report 0 seeders. */
+  hideZeroSeederStreams: boolean;
   contentAdvisoryTheme: "colored" | "monochrome";
   contentAdvisoryShowIgnore: boolean;
   playerVolumeHud: boolean;
@@ -348,6 +355,7 @@ export type Settings = {
   instantPlaybackPreparation: boolean;
   autoNextStreamOnStall: boolean;
   autoNextStreamOnStallSec: number;
+  suggestQualityUpgrade: boolean;
   fullscreenMode: "fullscreen" | "borderless" | "maximized";
   seasonSourceLock: boolean;
   rememberLastStream: boolean;
@@ -384,6 +392,11 @@ export type Settings = {
   playbackCacheDir: string;
   remoteStreamServerUrl: string;
   remoteStreamServerStrict: boolean;
+  streamServerUrls: string[];
+  selectedStreamServerUrl: string;
+  streamingHttpsEndpoint: string;
+  torrentProfile: "default" | "soft" | "fast" | "ultra-fast";
+  transcodeProfile: string;
   castAlwaysTranscode: boolean;
   playerAnime4kShaders: string[];
   playerAnime4kMode: string;
@@ -608,7 +621,12 @@ export type Settings = {
   audioDelayRemember: boolean;
   /** Extra audio delay in ms for slow outputs such as Bluetooth headphones. */
   audioOutputLatencyMs: number;
-  audioProfile: "off" | "bass" | "voice" | "bass-reduce" | "night";
+  audioProfile: "off" | "bass" | "voice" | "speech-clarity" | "bass-reduce" | "night" | "spatial-3d" | "whisper" | "dialogue-ducking";
+  /** 10-band equalizer gains in dB (-12 to +12) for [31.5Hz, 63Hz, 125Hz, 250Hz, 500Hz, 1kHz, 2kHz, 4kHz, 8kHz, 16kHz] */
+  audioEqualizerBands: number[];
+  audioEqualizerEnabled: boolean;
+  ambientGlow: boolean;
+  bingeMode: boolean;
   audioDevice: string;
   bandwidthMbps: number;
   nextEpisodeLeadSec: number;
@@ -773,6 +791,7 @@ export type Settings = {
   seekBarImage: string;
   seekBarFill: boolean;
   seekBarChapters: boolean;
+  seekBarHeatmap: boolean;
   seekBarFillOpacity: number;
   seekDotShape: "circle" | "square" | "image" | "hidden";
   seekDotHover: boolean;

@@ -63,21 +63,14 @@ export function SplashStep({ onAdvance }: { onAdvance: () => void }) {
         <CustomArtwork role="launch" className="h-44 w-64" fallback={<h1 className="animate-splash-title flex items-center gap-3 font-display text-[88px] font-medium leading-none tracking-tight text-ink">
           <ArgusMark className="h-[1em] w-[1em] shrink-0" />
           <span style={{ transform: "translateY(0.04em)" }}>
-            Harb
-            <span
-              className="inline-block"
-              style={{ transform: "rotate(7deg)", transformOrigin: "50% 65%" }}
-            >
-              o
-            </span>
-            r
+            Argus
           </span>
         </h1>} />
         <p
           className="animate-splash-title text-[14px] uppercase tracking-[0.42em] text-ink-muted"
           style={{ animationDelay: "260ms" }}
         >
-          {t("Built for Adventure!")}
+          {t("One view of every stream")}
         </p>
       </div>
     </div>

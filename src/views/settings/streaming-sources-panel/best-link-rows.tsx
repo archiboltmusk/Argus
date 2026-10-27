@@ -93,6 +93,14 @@ export function BestLinkRows() {
         value={settings.deadLinkDemotion}
         onChange={(v) => update({ deadLinkDemotion: v })}
       />
+      <ToggleRow
+        label={t("Hide dead torrents (0 seeders)")}
+        sub={t(
+          "Automatically filters out uncached peer-to-peer torrents that report 0 seeders so you only see active, working streams.",
+        )}
+        value={settings.hideZeroSeederStreams}
+        onChange={(v) => update({ hideZeroSeederStreams: v })}
+      />
     </Section>
   );
 }

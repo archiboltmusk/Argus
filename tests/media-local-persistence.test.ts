@@ -19,6 +19,10 @@ function storageHarness() {
     const mocks = {
       react: { createContext: () => ({}) },
       "./profiles": {},
+      "@/lib/active-profile-id": { isNuvioProviderActive: () => false },
+      "./active-profile-id": { isNuvioProviderActive: () => false },
+      "@/lib/nuvio/nuvio-sync": { isNuvioProviderActive: () => false },
+      "./nuvio-sync": { isNuvioProviderActive: () => false },
       "@/lib/render-cause": { noteNotify: (label: string) => notifications.push(label) },
       "./cinemeta": { persistableAddonOrigin: () => undefined, persistableVideos: () => undefined },
       "./membership-operations": {

@@ -9,7 +9,7 @@ function harness() {
     pauses = 0,
     resolves = 0;
   let resolve = async () => ({ ms: 600000, finished: false });
-  const settings = { resumePrompt: false, resumePlayback: true };
+  const settings = { resumePrompt: false, resumePlayback: true, resumeMicroRewind: false };
   const bridge = {
     load: async (src: any) => {
       loads.push(src);
@@ -181,4 +181,14 @@ test("unmount before resume resolution prevents any playback side effects", asyn
   await flushPromises();
   assert.equal(h.loads.length, 0);
   assert.equal(h.plays, 0);
+});
+
+test("smart resume rewinds 5 seconds when resumeMicroRewind is enabled", async () => {
+  const h = harness();
+  h.settings.resumeMicroRewind = true;
+  h.render();
+  await flushPromises();
+  assert.equal(h.loads[0].startAtSec, 595);
+  const state = h.render();
+  assert.equal(state.pendingSeekSec, 595);
 });

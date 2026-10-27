@@ -61,8 +61,8 @@ export function PlayerEnginePanel() {
   ];
 
   return (
-    <DesktopOnlyBlock>
-      <div className="flex flex-col gap-5">
+    <div className="flex flex-col gap-5">
+      <DesktopOnlyBlock>
         <SettingGroup label={t("Engine")}>
           {choices.map((c) => (
             <ChoiceBlock
@@ -96,11 +96,15 @@ export function PlayerEnginePanel() {
             </div>
           )}
         </SettingGroup>
+      </DesktopOnlyBlock>
 
+      <DesktopOnlyBlock>
         <ExternalPlayerSection />
+      </DesktopOnlyBlock>
 
-        {/* These only change Argus's built-in mpv, so they are hidden when the user's own mpv is on. */}
-        {!settings.playerExternalMpv && (
+      {/* These only change Argus's built-in mpv, so they are hidden when the user's own mpv is on. */}
+      {!settings.playerExternalMpv && (
+        <DesktopOnlyBlock>
           <SettingGroup label={t("mpv window")}>
             <ToggleRow
               label={t("Embed mpv inside Argus window")}
@@ -140,11 +144,15 @@ export function PlayerEnginePanel() {
               </>
             )}
           </SettingGroup>
-        )}
+        </DesktopOnlyBlock>
+      )}
 
-        {isWindowsDesktop() ? (
+      {isWindowsDesktop() ? (
+        <DesktopOnlyBlock>
           <HdrModePicker />
-        ) : (
+        </DesktopOnlyBlock>
+      ) : (
+        <DesktopOnlyBlock>
           <SettingGroup label={t("HDR")}>
             <ToggleRow
               label={t("HDR-to-SDR tonemapping")}
@@ -163,8 +171,10 @@ export function PlayerEnginePanel() {
             )}
             <DisplayPanelSelector />
           </SettingGroup>
-        )}
+        </DesktopOnlyBlock>
+      )}
 
+      {isTauri && (
         <SettingGroup label={t("Casting")}>
           <SettingRow
             label={t("Device compatibility")}
@@ -175,24 +185,24 @@ export function PlayerEnginePanel() {
             <span className="text-[15px] text-ink-muted">{t("Automatic")}</span>
           </SettingRow>
         </SettingGroup>
+      )}
 
-        <SettingGroup label={t("Connection")}>
-          <BandwidthInput />
+      <SettingGroup label={t("Connection")}>
+        <BandwidthInput />
+      </SettingGroup>
+
+      {isWindowsDesktop() && (
+        <SettingGroup label={t("Picture")}>
+          <ToggleRow
+            label={t("Line-free video mode")}
+            sub={t(
+              "Forces a compatibility present mode that removes a thin bright line some monitors show at the screen edge. Side effects: 4K playback can drop to a slideshow and HDR content looks dimmer, because this mode bypasses the HDR display path. Leave off unless you see that line. Restart playback to apply.",
+            )}
+            value={settings.playerD3d11Flip}
+            onChange={(v) => update({ playerD3d11Flip: v })}
+          />
         </SettingGroup>
-
-        {isWindowsDesktop() && (
-          <SettingGroup label={t("Picture")}>
-            <ToggleRow
-              label={t("Line-free video mode")}
-              sub={t(
-                "Forces a compatibility present mode that removes a thin bright line some monitors show at the screen edge. Side effects: 4K playback can drop to a slideshow and HDR content looks dimmer, because this mode bypasses the HDR display path. Leave off unless you see that line. Restart playback to apply.",
-              )}
-              value={settings.playerD3d11Flip}
-              onChange={(v) => update({ playerD3d11Flip: v })}
-            />
-          </SettingGroup>
-        )}
-      </div>
-    </DesktopOnlyBlock>
+      )}
+    </div>
   );
 }

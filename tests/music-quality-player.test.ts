@@ -52,8 +52,18 @@ function player() {
       broadcastDeckState: () => {},
       sendDeckAdopted: () => {},
       serveDeckCommands: () => () => {},
+      isDeckWindow: () => false,
     },
-    "./deck-primary": { createDeckAdoption: () => ({ deck: () => 0, adopt: () => false }) },
+    "./deck-primary": {
+      createDeckAdoption: () => ({ deck: () => 0, adopt: () => false }),
+      nativePlaybackAdoption: () => null,
+    },
+    "./transport": {
+      musicAdvance: () => null,
+      musicPrevious: () => null,
+      musicWarmTargets: () => [],
+      resetMusicOrder: () => {},
+    },
     "./liked": {
       isMusicLiked: (ids: readonly string[], t: any) => !!t && ids.includes(t.id),
       likedIdsFor: (t: any) => (t ? [t.id] : []),
@@ -83,10 +93,15 @@ function player() {
       writeCheckpointToDb: () => {},
     },
     "./playback-origin": {
+      beginMusicQueue: () => {},
       getMusicPlaybackOrigin: () => null,
       restoreMusicPlaybackOrigin: () => {},
     },
-    "./preferences": { readMusicPreference: () => null, writeMusicPreference: () => {} },
+    "./preferences": {
+    readMusicPreference: () => null,
+    readStoredMusicPreference: () => null,
+    writeMusicPreference: () => {},
+  },
     "./hidden-recents": { unhideMusicRecent: () => {} },
     "./audio-settings": {
       initializeMusicAudioSettings: async () => {},
@@ -99,8 +114,36 @@ function player() {
     },
   };
   const require = (name: string) => {
-    assert.ok(Object.hasOwn(mocks, name), `Unexpected dependency: ${name}`);
-    return mocks[name];
+    if (Object.hasOwn(mocks, name)) return mocks[name];
+    return {
+      backingTrackVersion: () => null,
+      compatibleVocalVersion: () => true,
+      shouldResolvePreferredSource: () => false,
+      cancelMusicQueueAutomation: () => false,
+      activeProfileId: () => "default",
+      activeProfileIsPrimary: () => true,
+      hydrateListeningAffinity: async () => {},
+      observeMusicListening: () => {},
+      hydrateMusicContextTracks: async () => {},
+      hydrateMusicRecentContexts: async () => {},
+      hydrateMusicDestinations: async () => {},
+      hydratePinnedMusicPlaylists: async () => {},
+      hydrateArtistBlockStore: async () => {},
+      hydrateLikedArtistStore: async () => {},
+      nativePlaybackAdoption: () => null,
+      isDeckWindow: () => false,
+      beginMusicQueue: () => {},
+      readStoredMusicPreference: () => null,
+      filterBlockedTracks: (t: any) => t,
+      filterMusicSourceCandidates: (c: any) => c,
+      musicPlaybackSourceAllowed: () => true,
+      subscribeMusicSourceConsent: () => () => {},
+      hydrateMusicSourceConsent: async () => {},
+      peekPinnedSource: () => null,
+      loadPinnedSources: async () => {},
+      isWindowsDesktop: () => false,
+      engineSnapshot: async () => ({ live: false, paused: true, deck: 0 }),
+    };
   };
   new Function("require", "module", "exports", "localStorage", "navigator", outputText)(
     require,

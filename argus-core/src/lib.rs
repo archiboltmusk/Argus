@@ -4,6 +4,8 @@
 //! logic can run in the WebView via wasm-bindgen and in native shells via direct rlib
 //! linkage.
 
+pub mod debrid;
+pub mod fallback;
 pub mod merge;
 pub mod node;
 pub mod parser;
@@ -140,6 +142,29 @@ pub fn run_pipeline_pure_js(
         rejected: trust_result.rejected,
     };
     serde_wasm_bindgen::to_value(&out).map_err(to_js_err)
+}
+
+/// Find the next best-ranked cached Debrid / HTTP stream to fall back to upon stall.
+#[wasm_bindgen(js_name = findFallbackStream)]
+pub fn find_fallback_stream_js(
+    candidates: JsValue,
+    current_url: Option<String>,
+    current_info_hash: Option<String>,
+    active_debrids: JsValue,
+) -> Result<JsValue, JsValue> {
+    let list: Vec<ScoredStream> = serde_wasm_bindgen::from_value(candidates).map_err(to_js_err)?;
+    let debrids: Vec<String> = if active_debrids.is_undefined() || active_debrids.is_null() {
+        Vec::new()
+    } else {
+        serde_wasm_bindgen::from_value(active_debrids).map_err(to_js_err)?
+    };
+    let idx = fallback::next_fallback_stream(
+        &list,
+        current_url.as_deref(),
+        current_info_hash.as_deref(),
+        &debrids,
+    );
+    serde_wasm_bindgen::to_value(&idx).map_err(to_js_err)
 }
 
 #[derive(serde::Serialize, serde::Deserialize)]

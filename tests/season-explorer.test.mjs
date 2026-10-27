@@ -1543,6 +1543,7 @@ test("TMDB English season names survive both default and TVDB-fallback picker pa
       "@/lib/storage-recovery": {},
       "@/lib/episode-text-language": episodeTextLanguage,
       "@/lib/season-name": seasonNames,
+      "./movie-release-dates": { movieReleaseDates: () => [] },
     });
     const detail = await tmdbDetails("test-key", { id: "tmdb:tv:42", type: "series" });
     return {

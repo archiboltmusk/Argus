@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { activeProfileId } from "@/lib/active-profile-id";
 import {
   mediaServerConnections,
   subscribeMediaServerConnections,
@@ -12,9 +13,11 @@ function titleIdentity(
   imdbId: string | null | undefined,
 ): MediaIdentity {
   const tmdb = metaId?.match(/^tmdb:(?:movie|tv|series):(\d+)$/);
+  const tvdb = metaId?.match(/^tvdb:(?:movie|series|tv):(\d+)$/);
   return {
     tmdbId: tmdb ? Number(tmdb[1]) : undefined,
     imdbId: imdbId ?? (metaId?.startsWith("tt") ? metaId : undefined),
+    tvdbId: tvdb ? Number(tvdb[1]) : undefined,
   };
 }
 
@@ -55,4 +58,54 @@ export function useTitleMediaServers(
   }, [metaId, imdbId]);
 
   return matches;
+}
+
+
+/**
+ * Resolve home-server availability for a whole search rail in one index read,
+ * rather than issuing one IndexedDB query per poster row.
+ */
+export function useMediaServerAvailability(
+  metas: Array<{ id: string }>,
+): Map<string, string[]> {
+  const [availability, setAvailability] = useState<Map<string, string[]>>(() => new Map());
+  const idsKey = JSON.stringify([activeProfileId(), ...metas.map((meta) => meta.id)]);
+
+  useEffect(() => {
+    let alive = true;
+    const load = async () => {
+      const connections = mediaServerConnections().filter((connection) => connection.enabled);
+      const enabled = new Map(connections.map((connection) => [connection.id, connection]));
+      if (enabled.size === 0) {
+        if (alive) setAvailability(new Map());
+        return;
+      }
+      const items = await mediaServerItems();
+      const titles = groupMediaServerTitles(items.filter((item) => enabled.has(item.connectionId)));
+      const next = new Map<string, string[]>();
+      for (const metaId of (JSON.parse(idsKey) as string[]).slice(1)) {
+        const identity = titleIdentity(metaId, undefined);
+        if (identity.tmdbId == null && !identity.imdbId && identity.tvdbId == null) continue;
+        const matches = titles.filter((title) => identityMatches(title.identity, identity));
+        const names = [...new Set(matches.flatMap((title) =>
+          title.connectionIds.flatMap((id) => {
+            const connection = enabled.get(id);
+            return connection ? [connection.name] : [];
+          }),
+        ))];
+        if (names.length) next.set(metaId, names);
+      }
+      if (alive) setAvailability(next);
+    };
+    void load().catch(() => {
+      if (alive) setAvailability(new Map());
+    });
+    const unsubscribe = subscribeMediaServerConnections(() => void load());
+    return () => {
+      alive = false;
+      unsubscribe();
+    };
+  }, [idsKey]);
+
+  return availability;
 }

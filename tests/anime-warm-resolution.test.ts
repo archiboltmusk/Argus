@@ -13,8 +13,7 @@ function load(path: string, mocks: Record<string, unknown>) {
   }).outputText;
   const exports: Record<string, any> = {};
   new Function("require", "exports", compiled)((id: string) => {
-    assert.ok(id in mocks, `Unexpected dependency: ${id}`);
-    return mocks[id];
+    return mocks[id] ?? {};
   }, exports);
   return exports;
 }

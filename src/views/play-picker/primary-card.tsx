@@ -1,14 +1,22 @@
-import { Check, Download, ExternalLink, Loader2, Zap } from "lucide-react";
+import { Check, Download, ExternalLink, Loader2, Skull, ThumbsUp, Zap } from "lucide-react";
+import { useEffect, useState } from "react";
 import { Play } from "@/components/icons/play-filled";
 import { Flag } from "@/components/flag";
 import { DubSubPill, streamDubSub } from "@/components/dub-sub-pill";
 import { CopyLinkButton, resolveStreamLink } from "@/components/player/copy-link-button";
 import { FormatBadge, RuleBadges, streamBadges } from "@/components/format-badge";
+import { BandwidthConfidenceBadge } from "@/components/player/bandwidth-confidence-badge";
 import { HostMatchChip } from "@/components/host-match-chip";
 import type { Meta } from "@/lib/cinemeta";
 import { useT } from "@/lib/i18n";
 import { useDebridClients } from "@/lib/debrid/registry";
 import { useSettings } from "@/lib/settings";
+import {
+  isStreamTargetVerified,
+  markStreamAsCorrect,
+  markStreamAsDead,
+  unmarkStreamCorrect,
+} from "@/lib/streams/dead-links";
 import type { ScoredStream } from "@/lib/streams/types";
 import { directStreamAvailable } from "@/lib/torrent/stremio-stream";
 import type { PlayEpisode } from "@/lib/view";
@@ -54,6 +62,30 @@ export function PrimaryCard({
 }) {
   const t = useT();
   const { settings } = useSettings();
+  const [isCorrect, setIsCorrect] = useState(false);
+  const [isDead, setIsDead] = useState(false);
+
+  useEffect(() => {
+    setIsCorrect(isStreamTargetVerified(stream));
+  }, [stream]);
+
+  const handleToggleCorrect = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (isCorrect) {
+      unmarkStreamCorrect(stream);
+      setIsCorrect(false);
+    } else {
+      markStreamAsCorrect(stream);
+      setIsCorrect(true);
+    }
+  };
+
+  const handleMarkDead = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    markStreamAsDead(stream);
+    setIsDead(true);
+  };
+
   const cachedDebrids = debrids.filter((d) => stream.cached[d.slug]);
   const libraryDebrids = debrids.filter((d) => stream.inLibrary[d.slug]);
   const cachedDebrid = cachedDebrids[0] ?? null;
@@ -250,6 +282,7 @@ export function PrimaryCard({
                   </span>
                 )}
                 <EditionChip stream={stream} />
+                <BandwidthConfidenceBadge stream={stream} />
               </div>
             )}
           </div>
@@ -339,6 +372,34 @@ export function PrimaryCard({
             {link && (
               <CopyLinkButton url={link} size={15} className="h-9 w-9 ring-1 ring-edge-soft/60" />
             )}
+            <div className="flex items-center gap-1">
+              <button
+                type="button"
+                onClick={handleToggleCorrect}
+                title={isCorrect ? t("Unmark correct link") : t("Mark as correct working link")}
+                aria-label={isCorrect ? t("Unmark correct link") : t("Mark as correct working link")}
+                className={`flex h-9 w-9 items-center justify-center rounded-full transition-all ring-1 ${
+                  isCorrect
+                    ? "bg-emerald-500/15 text-emerald-400 ring-emerald-500/40"
+                    : "bg-canvas/60 text-ink-subtle ring-edge-soft/60 hover:text-emerald-400 hover:ring-emerald-500/40"
+                }`}
+              >
+                <ThumbsUp size={15} strokeWidth={isCorrect ? 2.6 : 2} fill={isCorrect ? "currentColor" : "none"} />
+              </button>
+              <button
+                type="button"
+                onClick={handleMarkDead}
+                title={t("Mark link as dead/broken")}
+                aria-label={t("Mark link as dead/broken")}
+                className={`flex h-9 w-9 items-center justify-center rounded-full transition-all ring-1 ${
+                  isDead
+                    ? "bg-red-500/15 text-red-400 ring-red-500/40"
+                    : "bg-canvas/60 text-ink-subtle ring-edge-soft/60 hover:text-red-400 hover:ring-red-500/40"
+                }`}
+              >
+                <Skull size={15} strokeWidth={2} />
+              </button>
+            </div>
           </div>
         </div>
       </div>

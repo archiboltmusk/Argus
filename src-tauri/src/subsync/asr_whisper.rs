@@ -23,15 +23,15 @@ impl WhisperEngine {
         let mut p = FullParams::new(SamplingStrategy::Greedy { best_of: 1 });
         p.set_n_threads(self.n_threads);
         p.set_translate(translate);
-        p.set_no_context(true);
+        p.set_no_context(false);
         p.set_single_segment(false);
         p.set_token_timestamps(true);
-        p.set_max_len(1);
-        p.set_split_on_word(true);
+        p.set_max_len(0);
+        p.set_split_on_word(false);
         p.set_temperature(0.0);
         p.set_suppress_blank(true);
         p.set_suppress_nst(true);
-        p.set_no_speech_thold(0.6);
+        p.set_no_speech_thold(0.5);
         p.set_print_special(false);
         p.set_print_progress(false);
         p.set_print_realtime(false);
@@ -67,10 +67,10 @@ impl AsrEngine for WhisperEngine {
         let mut out = Vec::with_capacity(n as usize);
         for i in 0..n {
             let text = state.full_get_segment_text(i).unwrap_or_default();
-            let t0 = state.full_get_segment_t0(i).unwrap_or(0) as f32 / 100.0;
-            let t1 = state.full_get_segment_t1(i).unwrap_or(0) as f32 / 100.0;
+            let raw_t0 = state.full_get_segment_t0(i).unwrap_or(0) as f32 / 100.0;
+            let raw_t1 = state.full_get_segment_t1(i).unwrap_or(0) as f32 / 100.0;
             let mut tokens = Vec::new();
-            let no_speech = state.full_get_segment_no_speech_prob(i).unwrap_or(0.0);
+            let no_speech = 0.0;
             if let Ok(nt) = state.full_n_tokens(i) {
                 for j in 0..nt {
                     let td = match state.full_get_token_data(i, j) {
@@ -89,6 +89,9 @@ impl AsrEngine for WhisperEngine {
                     });
                 }
             }
+            // Snap to exact token speech onset and offset to eliminate forward/backward timing drift
+            let t0 = tokens.first().map(|tk| tk.t0).unwrap_or(raw_t0);
+            let t1 = tokens.last().map(|tk| tk.t1).unwrap_or(raw_t1);
             out.push(AsrSegment {
                 text,
                 t0,

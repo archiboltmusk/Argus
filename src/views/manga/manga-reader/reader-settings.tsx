@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Check, Maximize, Minus, Plus, RotateCcw } from "lucide-react";
 import type { ReactNode } from "react";
 import { useT } from "@/lib/i18n";
-import type { ReaderNavPos, ReaderPrefs } from "./reader-types";
+import type { ReaderColorFilter, ReaderNavPos, ReaderPrefs } from "./reader-types";
 import { ReaderSettingsFrame } from "./reader-settings-frame";
 
 const ICON = "/reader-icons";
@@ -50,6 +50,15 @@ const BGS: Array<{ v: ReaderPrefs["bg"]; label: string; color: string }> = [
   { v: "light", label: "Light", color: "#f5f5f5" },
 ];
 
+const COLOR_FILTERS: Array<{ v: ReaderColorFilter; label: string }> = [
+  { v: "none", label: "Standard" },
+  { v: "sepia", label: "Sepia" },
+  { v: "eink", label: "E-Ink" },
+  { v: "warm-night", label: "Warm Night" },
+  { v: "contrast", label: "Contrast+" },
+  { v: "invert", label: "Invert" },
+];
+
 export function ReaderSettings({
   prefs,
   onChange,
@@ -85,6 +94,34 @@ export function ReaderSettings({
           </CardRow>
           {prefs.mode === "double" && (
             <GapRow value={prefs.doubleGap} onChange={(g) => onChange({ doubleGap: g })} />
+          )}
+          {(prefs.mode === "long" || prefs.mode === "long-h") && (
+            <div className="flex flex-col gap-2 border-t border-edge-soft/60 pt-3">
+              <div className="flex items-center justify-between">
+                <span className="text-[13px] font-semibold text-ink">
+                  {t("Hands-free auto-scroll")}
+                </span>
+                <span className="text-[12px] font-semibold tabular-nums text-ink-muted">
+                  {prefs.autoScrollSpeed > 0 ? `${prefs.autoScrollSpeed}x` : t("Off")}
+                </span>
+              </div>
+              <div className="grid grid-cols-6 gap-1.5">
+                {[0, 1, 2, 3, 4, 5].map((spd) => (
+                  <button
+                    key={spd}
+                    type="button"
+                    onClick={() => onChange({ autoScrollSpeed: spd })}
+                    className={`rounded-xl py-1.5 text-[12px] font-semibold tabular-nums transition duration-150 active:scale-95 ${
+                      (prefs.autoScrollSpeed ?? 0) === spd
+                        ? "bg-accent/15 text-accent ring-1 ring-accent/40"
+                        : "bg-elevated/50 text-ink-muted ring-1 ring-edge-soft hover:bg-elevated hover:text-ink"
+                    }`}
+                  >
+                    {spd === 0 ? t("Off") : `${spd}x`}
+                  </button>
+                ))}
+              </div>
+            </div>
           )}
         </div>
       )}
@@ -163,30 +200,51 @@ export function ReaderSettings({
         </div>
       )}
       {cat === "background" && (
-        <div className="flex items-center gap-3">
-          {BGS.map((b) => (
-            <button
-              key={b.v}
-              type="button"
-              onClick={() => onChange({ bg: b.v })}
-              aria-label={t(b.label)}
-              className={`flex w-24 flex-col items-center gap-2 rounded-2xl border p-3 transition duration-150 active:scale-[0.96] ${prefs.bg === b.v ? "border-accent bg-accent/10" : "border-edge-soft bg-elevated/40 hover:border-edge hover:bg-elevated"}`}
-            >
-              <span
-                className="grid h-12 w-12 place-items-center rounded-full ring-1 ring-black/20"
-                style={{ background: b.color }}
+        <div className="flex flex-col gap-4">
+          <div className="flex items-center gap-3">
+            {BGS.map((b) => (
+              <button
+                key={b.v}
+                type="button"
+                onClick={() => onChange({ bg: b.v })}
+                aria-label={t(b.label)}
+                className={`flex w-24 flex-col items-center gap-2 rounded-2xl border p-3 transition duration-150 active:scale-[0.96] ${prefs.bg === b.v ? "border-accent bg-accent/10" : "border-edge-soft bg-elevated/40 hover:border-edge hover:bg-elevated"}`}
               >
-                {prefs.bg === b.v && (
-                  <Check
-                    size={18}
-                    strokeWidth={3}
-                    style={{ color: b.v === "light" ? "#0b0b0d" : "#fff" }}
-                  />
-                )}
-              </span>
-              <span className="text-[12px] font-medium text-ink">{t(b.label)}</span>
-            </button>
-          ))}
+                <span
+                  className="grid h-12 w-12 place-items-center rounded-full ring-1 ring-black/20"
+                  style={{ background: b.color }}
+                >
+                  {prefs.bg === b.v && (
+                    <Check
+                      size={18}
+                      strokeWidth={3}
+                      style={{ color: b.v === "light" ? "#0b0b0d" : "#fff" }}
+                    />
+                  )}
+                </span>
+                <span className="text-[12px] font-medium text-ink">{t(b.label)}</span>
+              </button>
+            ))}
+          </div>
+          <div className="flex flex-col gap-2 border-t border-edge-soft/60 pt-3">
+            <span className="text-[13px] font-semibold text-ink">{t("Page tone & contrast")}</span>
+            <div className="grid grid-cols-3 gap-2">
+              {COLOR_FILTERS.map((cf) => (
+                <button
+                  key={cf.v}
+                  type="button"
+                  onClick={() => onChange({ colorFilter: cf.v })}
+                  className={`rounded-xl px-3 py-2 text-[12px] font-semibold transition duration-150 active:scale-95 ${
+                    (prefs.colorFilter ?? "none") === cf.v
+                      ? "bg-accent/15 text-accent ring-1 ring-accent/40"
+                      : "bg-elevated/50 text-ink-muted ring-1 ring-edge-soft hover:bg-elevated hover:text-ink"
+                  }`}
+                >
+                  {t(cf.label)}
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
       )}
       {cat === "zoom" && (
