@@ -4229,7 +4229,7 @@ snapshots:
   vite-plugin-static-copy@4.1.1(vite@7.3.2(@types/node@26.1.1)(jiti@2.7.0)(lightningcss@1.32.0)):
     dependencies:
       chokidar: 3.6.0
-      p-map: 7.1.1
+      p-map: 7.0.5
       picocolors: 1.1.1
       tinyglobby: 0.2.17
       vite: 7.3.2(@types/node@26.1.1)(jiti@2.7.0)(lightningcss@1.32.0)
