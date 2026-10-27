@@ -130,13 +130,14 @@ export type SubtitleFetchDependencies = {
   preflightProbe?: CandidatePreflightProbe;
 };
 
-export function streamHintsOf(src: PlayerSrc): StreamHints {
+export function streamHintsOf(src: PlayerSrc, settings?: Settings): StreamHints {
   return {
     release: src.streamRef?.title ?? src.streamRef?.parsedTitle ?? null,
     source: src.streamRef?.source ?? null,
     resolution: src.streamRef?.resolution ?? null,
     season: src.episode?.imdbSeason ?? src.episode?.season ?? null,
     episode: src.episode?.imdbEpisode ?? src.episode?.episode ?? null,
+    preferHearingImpaired: settings?.preferHearingImpaired === true,
   };
 }
 
@@ -227,7 +228,7 @@ export async function fetchSubtitlesIntoPlayer(
 ): Promise<SubFetchResult> {
   const deep = p.deep === true;
   const enabled = p.settings.subProvidersEnabled ?? {};
-  const hints = streamHintsOf(p.src);
+  const hints = streamHintsOf(p.src, p.settings);
   const consumed = new Set<SubResult>();
   const attemptedUrls = new Set(p.skipUrls ?? []);
   let selected: SubResult | null = null;

@@ -362,6 +362,7 @@ export const DEFAULT: Settings = {
   subOffsetIndicatorSize: "medium",
   subShowInPip: true,
   subHideSdh: false,
+  preferHearingImpaired: false,
   secondarySubLang: "",
   subSecondaryPlacement: "top",
   subSecondaryScale: 0.85,

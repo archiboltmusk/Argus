@@ -35,7 +35,7 @@ patchConsole();
 
 function collectRedactionValues(): string[] {
   const out = new Set<string>();
-  const redactKeyRe = /token|authkey|apikey|api_key|secret|password|bearer|email/i;
+  const redactKeyRe = /token|authkey|apikey|api_key|secret|password|bearer|email|credential|access_token|refresh_token|private/i;
   try {
     for (let i = 0; i < localStorage.length; i++) {
       const k = localStorage.key(i);
@@ -46,7 +46,7 @@ function collectRedactionValues(): string[] {
         const parsed = JSON.parse(raw) as unknown;
         walkForRedaction(parsed, redactKeyRe, out);
       } catch {
-        if (redactKeyRe.test(k) && raw.length >= 12) out.add(raw);
+        if (redactKeyRe.test(k) && raw.length >= 8) out.add(raw);
       }
     }
   } catch {}
@@ -61,8 +61,14 @@ function walkForRedaction(node: unknown, redactKeyRe: RegExp, out: Set<string>):
   }
 }
 
+function scrubPrivateUrlsAndPaths(text: string): string {
+  let scrubbed = text.replace(/([?&](?:token|api_key|apikey|key|secret|pass|password|auth)=)[^&\s"')]+/gi, "$1[REDACTED]");
+  scrubbed = scrubbed.replace(/(?:\/Users|\/home|[A-Za-z]:\\Users)\/[^\/\s:"']+/g, "[USER_HOME]");
+  return scrubbed;
+}
+
 function scrubClient(text: string): string {
-  let out = text;
+  let out = scrubPrivateUrlsAndPaths(text);
   for (const secret of collectRedactionValues()) {
     out = out.split(secret).join("[REDACTED]");
   }

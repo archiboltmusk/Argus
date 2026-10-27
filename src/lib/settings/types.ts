@@ -447,6 +447,7 @@ export type Settings = {
   subOffsetIndicatorSize: SubtitleOffsetSize;
   subShowInPip: boolean;
   subHideSdh: boolean;
+  preferHearingImpaired: boolean;
   secondarySubLang: string;
   subSecondaryPlacement: "top" | "bottom";
   subSecondaryScale: number;

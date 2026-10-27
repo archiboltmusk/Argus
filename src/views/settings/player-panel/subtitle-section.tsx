@@ -400,7 +400,15 @@ export function SubtitleStylePanel() {
 
       <SubtitleAdvancedGroups />
 
-      <SettingGroup label={t("Sound descriptions")}>
+      <SettingGroup label={t("Sound descriptions & Accessibility")}>
+        <ToggleRow
+          label={t("Prefer accessible subtitles (SDH)")}
+          sub={t(
+            "Prioritizes subtitles for the deaf or hard of hearing (SDH) with speaker tags and environmental sound descriptions when auto-selecting subtitles.",
+          )}
+          value={settings.preferHearingImpaired}
+          onChange={(v) => update({ preferHearingImpaired: v })}
+        />
         <ToggleRow
           label={t("Hide sound effects and speaker names")}
           sub={t(
