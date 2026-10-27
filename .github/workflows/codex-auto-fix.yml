@@ -36,9 +36,9 @@ jobs:
           RUN_ID: ${{ github.event.workflow_run.id }}
           REPOSITORY: ${{ github.repository }}
         run: |
-          gh run view "$RUN_ID" --repo "$REPOSITORY" --log-failed > ci-failure.log || true
-          if [ ! -s ci-failure.log ]; then
-            echo "GitHub did not provide failed-step logs for this run." > ci-failure.log
+          gh run view "$RUN_ID" --repo "$REPOSITORY" --log-failed > .codex-ci-failure.log || true
+          if [ ! -s .codex-ci-failure.log ]; then
+            echo "GitHub did not provide failed-step logs for this run." > .codex-ci-failure.log
           fi
 
       - uses: pnpm/action-setup@v5
@@ -59,7 +59,7 @@ jobs:
           safety-strategy: drop-sudo
           prompt: |
             You are diagnosing a failed CI run in the Argus repository.
-            First read ci-failure.log and inspect the relevant workflow and source files.
+            First read .codex-ci-failure.log and inspect the relevant workflow and source files.
             Reproduce the failure where practical. Make the smallest defensible code or
             test/configuration change that addresses the underlying cause. Do not weaken,
             delete, skip, or loosen tests/checks to make CI green. Do not make unrelated
@@ -70,7 +70,8 @@ jobs:
       - name: Export patch only if Codex changed files
         id: diff
         run: |
-          git diff --binary > codex.patch
+          git add -N -- . ':!.codex-ci-failure.log' ':!codex.patch'
+          git diff --binary -- . ':!.codex-ci-failure.log' ':!codex.patch' > codex.patch
           if [ -s codex.patch ]; then
             echo "has_patch=true" >> "$GITHUB_OUTPUT"
           else
@@ -183,4 +184,9 @@ jobs:
           FAILED_URL: ${{ github.event.workflow_run.html_url }}
           REPOSITORY: ${{ github.repository }}
         run: |
-          gh pr create             --repo "$REPOSITORY"             --base main             --head "codex/ci-autofix-$RUN_ID"             --title "fix(ci): propose verified automatic fix"             --body "Codex generated a minimal patch after CI failed at commit `$FAILED_SHA`. The UI typecheck, UI tests, production build, and Rust core checks passed on the patch. Review before merging. Failed run: $FAILED_URL"
+          gh pr create \
+            --repo "$REPOSITORY" \
+            --base main \
+            --head "codex/ci-autofix-$RUN_ID" \
+            --title "fix(ci): propose verified automatic fix" \
+            --body "Codex generated a minimal patch after CI failed at commit `$FAILED_SHA`. The UI typecheck, UI tests, production build, and Rust core checks passed on the patch. Review before merging. Failed run: $FAILED_URL"
