@@ -325,3 +325,21 @@ test("home-server policy auto-selects only one unambiguous copy", () => {
     { kind: "chooser", reason: "ambiguous" },
   );
 });
+
+
+test("ID-less titles with unknown years stay separate to avoid false matches", () => {
+  const titles = groupMediaServerTitles([
+    item({ id: "unknown-a", title: "The Return", year: undefined, identity: {} }),
+    item({ id: "unknown-b", connectionId: "b", title: "The Return", year: undefined, identity: {} }),
+  ]);
+  assert.equal(titles.length, 2);
+});
+
+test("ID-less titles with known years normalize title whitespace and case", () => {
+  const titles = groupMediaServerTitles([
+    item({ id: "known-a", title: "The   Return", year: 2020, identity: {} }),
+    item({ id: "known-b", connectionId: "b", title: "the return", year: 2020, identity: {} }),
+  ]);
+  assert.equal(titles.length, 1);
+  assert.equal(titles[0].connectionIds.length, 2);
+});
