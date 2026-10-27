@@ -267,7 +267,7 @@ function AddonHealthRow({
 }) {
   const t = useT();
   const id = addon.manifest?.id ?? addon.curated?.id ?? "";
-  const name = addon.manifest?.name ?? addon.curated?.name ?? id;
+  const name = addon.manifest?.name ?? id;
   const status = useAddonStatus(id);
   const score = useAddonScore(id);
 
