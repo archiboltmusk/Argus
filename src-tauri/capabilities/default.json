@@ -53,7 +53,14 @@
     "shell:allow-open",
     {
       "identifier": "http:default",
-      "allow": [{ "url": "https://*:*/**" }, { "url": "http://*:*/**" }]
+      "allow": [
+        {
+          "url": "https://*:*/**"
+        },
+        {
+          "url": "http://*:*/**"
+        }
+      ]
     },
     "clipboard-manager:allow-read-text",
     "clipboard-manager:allow-write-text",
@@ -70,7 +77,25 @@
       "identifier": "fs:allow-write-file",
       "allow": [
         {
-          "path": "**"
+          "path": "$APPDATA/**"
+        },
+        {
+          "path": "$APPLOCALDATA/**"
+        },
+        {
+          "path": "$APPCONFIG/**"
+        },
+        {
+          "path": "$APPLOG/**"
+        },
+        {
+          "path": "$CACHE/**"
+        },
+        {
+          "path": "$TEMP/**"
+        },
+        {
+          "path": "$DOWNLOAD/**"
         }
       ]
     },
@@ -78,7 +103,25 @@
       "identifier": "fs:allow-write-text-file",
       "allow": [
         {
-          "path": "**"
+          "path": "$APPDATA/**"
+        },
+        {
+          "path": "$APPLOCALDATA/**"
+        },
+        {
+          "path": "$APPCONFIG/**"
+        },
+        {
+          "path": "$APPLOG/**"
+        },
+        {
+          "path": "$CACHE/**"
+        },
+        {
+          "path": "$TEMP/**"
+        },
+        {
+          "path": "$DOWNLOAD/**"
         }
       ]
     },
@@ -86,7 +129,25 @@
       "identifier": "fs:allow-create",
       "allow": [
         {
-          "path": "**"
+          "path": "$APPDATA/**"
+        },
+        {
+          "path": "$APPLOCALDATA/**"
+        },
+        {
+          "path": "$APPCONFIG/**"
+        },
+        {
+          "path": "$APPLOG/**"
+        },
+        {
+          "path": "$CACHE/**"
+        },
+        {
+          "path": "$TEMP/**"
+        },
+        {
+          "path": "$DOWNLOAD/**"
         }
       ]
     },
@@ -94,7 +155,25 @@
       "identifier": "fs:allow-remove",
       "allow": [
         {
-          "path": "**"
+          "path": "$APPDATA/**"
+        },
+        {
+          "path": "$APPLOCALDATA/**"
+        },
+        {
+          "path": "$APPCONFIG/**"
+        },
+        {
+          "path": "$APPLOG/**"
+        },
+        {
+          "path": "$CACHE/**"
+        },
+        {
+          "path": "$TEMP/**"
+        },
+        {
+          "path": "$DOWNLOAD/**"
         }
       ]
     },
@@ -102,7 +181,37 @@
       "identifier": "fs:allow-exists",
       "allow": [
         {
-          "path": "**"
+          "path": "$APPDATA/**"
+        },
+        {
+          "path": "$APPLOCALDATA/**"
+        },
+        {
+          "path": "$APPCONFIG/**"
+        },
+        {
+          "path": "$APPLOG/**"
+        },
+        {
+          "path": "$CACHE/**"
+        },
+        {
+          "path": "$TEMP/**"
+        },
+        {
+          "path": "$DOWNLOAD/**"
+        },
+        {
+          "path": "$DOCUMENT/**"
+        },
+        {
+          "path": "$VIDEO/**"
+        },
+        {
+          "path": "$AUDIO/**"
+        },
+        {
+          "path": "$PICTURE/**"
         }
       ]
     },
@@ -110,7 +219,25 @@
       "identifier": "fs:allow-mkdir",
       "allow": [
         {
-          "path": "**"
+          "path": "$APPDATA/**"
+        },
+        {
+          "path": "$APPLOCALDATA/**"
+        },
+        {
+          "path": "$APPCONFIG/**"
+        },
+        {
+          "path": "$APPLOG/**"
+        },
+        {
+          "path": "$CACHE/**"
+        },
+        {
+          "path": "$TEMP/**"
+        },
+        {
+          "path": "$DOWNLOAD/**"
         }
       ]
     },
@@ -118,7 +245,37 @@
       "identifier": "fs:allow-read-dir",
       "allow": [
         {
-          "path": "**"
+          "path": "$APPDATA/**"
+        },
+        {
+          "path": "$APPLOCALDATA/**"
+        },
+        {
+          "path": "$APPCONFIG/**"
+        },
+        {
+          "path": "$APPLOG/**"
+        },
+        {
+          "path": "$CACHE/**"
+        },
+        {
+          "path": "$TEMP/**"
+        },
+        {
+          "path": "$DOWNLOAD/**"
+        },
+        {
+          "path": "$DOCUMENT/**"
+        },
+        {
+          "path": "$VIDEO/**"
+        },
+        {
+          "path": "$AUDIO/**"
+        },
+        {
+          "path": "$PICTURE/**"
         }
       ]
     },
@@ -126,7 +283,37 @@
       "identifier": "fs:allow-read-file",
       "allow": [
         {
-          "path": "**"
+          "path": "$APPDATA/**"
+        },
+        {
+          "path": "$APPLOCALDATA/**"
+        },
+        {
+          "path": "$APPCONFIG/**"
+        },
+        {
+          "path": "$APPLOG/**"
+        },
+        {
+          "path": "$CACHE/**"
+        },
+        {
+          "path": "$TEMP/**"
+        },
+        {
+          "path": "$DOWNLOAD/**"
+        },
+        {
+          "path": "$DOCUMENT/**"
+        },
+        {
+          "path": "$VIDEO/**"
+        },
+        {
+          "path": "$AUDIO/**"
+        },
+        {
+          "path": "$PICTURE/**"
         }
       ]
     },
@@ -134,7 +321,37 @@
       "identifier": "fs:allow-read-text-file",
       "allow": [
         {
-          "path": "**"
+          "path": "$APPDATA/**"
+        },
+        {
+          "path": "$APPLOCALDATA/**"
+        },
+        {
+          "path": "$APPCONFIG/**"
+        },
+        {
+          "path": "$APPLOG/**"
+        },
+        {
+          "path": "$CACHE/**"
+        },
+        {
+          "path": "$TEMP/**"
+        },
+        {
+          "path": "$DOWNLOAD/**"
+        },
+        {
+          "path": "$DOCUMENT/**"
+        },
+        {
+          "path": "$VIDEO/**"
+        },
+        {
+          "path": "$AUDIO/**"
+        },
+        {
+          "path": "$PICTURE/**"
         }
       ]
     },
@@ -142,7 +359,37 @@
       "identifier": "fs:allow-stat",
       "allow": [
         {
-          "path": "**"
+          "path": "$APPDATA/**"
+        },
+        {
+          "path": "$APPLOCALDATA/**"
+        },
+        {
+          "path": "$APPCONFIG/**"
+        },
+        {
+          "path": "$APPLOG/**"
+        },
+        {
+          "path": "$CACHE/**"
+        },
+        {
+          "path": "$TEMP/**"
+        },
+        {
+          "path": "$DOWNLOAD/**"
+        },
+        {
+          "path": "$DOCUMENT/**"
+        },
+        {
+          "path": "$VIDEO/**"
+        },
+        {
+          "path": "$AUDIO/**"
+        },
+        {
+          "path": "$PICTURE/**"
         }
       ]
     },
@@ -150,7 +397,34 @@
       "identifier": "opener:allow-reveal-item-in-dir",
       "allow": [
         {
-          "path": "**"
+          "path": "$APPDATA/**"
+        },
+        {
+          "path": "$APPLOCALDATA/**"
+        },
+        {
+          "path": "$APPLOG/**"
+        },
+        {
+          "path": "$CACHE/**"
+        },
+        {
+          "path": "$TEMP/**"
+        },
+        {
+          "path": "$DOWNLOAD/**"
+        },
+        {
+          "path": "$DOCUMENT/**"
+        },
+        {
+          "path": "$VIDEO/**"
+        },
+        {
+          "path": "$AUDIO/**"
+        },
+        {
+          "path": "$PICTURE/**"
         }
       ]
     }
