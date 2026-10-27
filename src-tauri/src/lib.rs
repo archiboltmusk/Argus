@@ -1586,6 +1586,8 @@ pub fn run() {
             anime4k::anime4k_dir,
             asr_model::asr_ensure_model,
             asr_model::asr_model_path,
+            asr_model::asr_list_models,
+            asr_model::asr_set_active_model,
             shaders::shader_download,
             shaders::shader_dir,
             svp::svp_status,

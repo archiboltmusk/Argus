@@ -100,6 +100,7 @@ export function AutoSyncPanel() {
                 value={settings.subtitleAutoSyncAsr}
                 onChange={(v) => update({ subtitleAutoSyncAsr: v })}
               />
+              {settings.subtitleAutoSyncAsr && <WhisperModelPicker />}
               <ToggleRow
                 label={t("Match subtitles across languages (experimental)")}
                 sub={t(
@@ -192,6 +193,109 @@ export function AutoSyncPanel() {
           </div>
         </SettingsModal>
       </Section>
+    </div>
+  );
+}
+
+function WhisperModelPicker() {
+  const t = useT();
+  const [models, setModels] = useState<Array<{
+    id: string;
+    name: string;
+    description: string;
+    size_mb: number;
+    downloaded: boolean;
+    active: boolean;
+  }>>([]);
+  const [downloading, setDownloading] = useState<string | null>(null);
+  const [progress, setProgress] = useState<{ current: number; total: number } | null>(null);
+
+  const load = () => {
+    import("@tauri-apps/api/core").then(({ invoke }) => {
+      invoke<any[]>("asr_list_models")
+        .then((list) => {
+          if (Array.isArray(list)) setModels(list);
+        })
+        .catch(() => {});
+    });
+  };
+
+  useEffect(() => {
+    load();
+    let unlisten: (() => void) | null = null;
+    import("@tauri-apps/api/event").then(({ listen }) => {
+      listen<[number, number]>("asr-model://progress", (event) => {
+        setProgress({ current: event.payload[0], total: event.payload[1] });
+      }).then((u) => {
+        unlisten = u;
+      });
+    });
+    return () => {
+      unlisten?.();
+    };
+  }, []);
+
+  const selectModel = async (id: string) => {
+    const { invoke } = await import("@tauri-apps/api/core");
+    await invoke("asr_set_active_model", { modelId: id });
+    setDownloading(id);
+    setProgress(null);
+    try {
+      await invoke("asr_ensure_model");
+    } finally {
+      setDownloading(null);
+      setProgress(null);
+      load();
+    }
+  };
+
+  if (models.length === 0) return null;
+
+  return (
+    <div className="mt-2 flex flex-col gap-2 rounded-xl bg-canvas/30 p-3 ring-1 ring-edge-soft">
+      <div className="text-[12px] font-semibold text-ink-muted">
+        {t("Whisper Speech Model (Mac Metal)")}
+      </div>
+      <div className="flex flex-col gap-1.5">
+        {models.map((m) => {
+          const isDownloadingThis = downloading === m.id;
+          return (
+            <button
+              key={m.id}
+              type="button"
+              disabled={downloading != null}
+              onClick={() => void selectModel(m.id)}
+              className={`flex items-start justify-between gap-3 rounded-lg p-2.5 text-start transition-colors ${
+                m.active
+                  ? "bg-accent/15 ring-1 ring-accent text-ink"
+                  : "bg-elevated/40 hover:bg-elevated text-ink-muted hover:text-ink"
+              }`}
+            >
+              <div className="flex flex-col gap-0.5">
+                <span className="text-[13px] font-medium flex items-center gap-1.5">
+                  {m.name}
+                  {m.active && (
+                    <span className="rounded-full bg-accent/20 px-1.5 py-0.5 text-[10px] font-semibold text-accent">
+                      {t("Active")}
+                    </span>
+                  )}
+                  {m.downloaded && !m.active && (
+                    <span className="rounded-full bg-elevated px-1.5 py-0.5 text-[10px] text-ink-subtle">
+                      {t("Ready")}
+                    </span>
+                  )}
+                </span>
+                <span className="text-[11.5px] text-ink-subtle leading-tight">{m.description}</span>
+                {isDownloadingThis && progress && progress.total > 0 && (
+                  <span className="mt-1 text-[11px] font-medium text-accent">
+                    {t("Downloading…")} {Math.round((progress.current / progress.total) * 100)}%
+                  </span>
+                )}
+              </div>
+            </button>
+          );
+        })}
+      </div>
     </div>
   );
 }
