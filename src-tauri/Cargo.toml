@@ -175,7 +175,7 @@ windows = { version = "0.62", features = [
   "Storage_Streams",
 ] }
 window-vibrancy = "0.6"
-wasapi = "0.15"
+wasapi = "0.26"
 webview2-com = "0.39"
 
 [target.'cfg(target_os = "linux")'.dependencies]
