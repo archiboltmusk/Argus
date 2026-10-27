@@ -106,6 +106,8 @@ pub async fn pcm_window(
         .arg("-vn")
         .arg("-map")
         .arg(map_spec)
+        .arg("-af")
+        .arg("highpass=f=120,lowpass=f=3800,speechnorm=e=4:r=0.0005:l=1")
         .arg("-ac")
         .arg("1")
         .arg("-ar")
