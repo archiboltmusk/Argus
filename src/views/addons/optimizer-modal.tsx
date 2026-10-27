@@ -1,20 +1,12 @@
 import { createPortal } from "react-dom";
 import {
   AlertTriangle,
-  ArrowRight,
-  Check,
   CheckCircle2,
-  Clock,
   Layers,
   Loader2,
-  Pause,
-  Play,
-  RotateCcw,
-  ShieldAlert,
   Sparkles,
   Wand2,
   X,
-  XCircle,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { AddonLogo, resolveAddonLogo } from "@/components/addon-logo";
