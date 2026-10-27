@@ -252,7 +252,7 @@ jobs:
           name: Argus-macOS-aarch64
       # Stable release feed. The tag keeps its original name so installs that already
       # point the updater at beta/latest.json keep updating.
-      - uses: softprops/action-gh-release@v2
+      - uses: softprops/action-gh-release@v3
         with:
           tag_name: beta
           name: Argus 1.0
@@ -295,7 +295,7 @@ jobs:
       # A v* tag push, or a manual run with release_tag set, publishes the
       # .dmg as a GitHub pre-release (the tag is created if missing).
       - if: startsWith(github.ref, 'refs/tags/v') || inputs.release_tag != ''
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           tag_name: ${{ inputs.release_tag || github.ref_name }}
           target_commitish: ${{ github.sha }}
