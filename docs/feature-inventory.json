@@ -4,8 +4,8 @@
   "version": "1.0.0",
   "lastUpdated": "2026-10-28",
   "summary": {
-    "totalFeatures": 17,
-    "implemented": 11,
+    "totalFeatures": 18,
+    "implemented": 12,
     "partial": 3,
     "experimental": 2,
     "planned": 1
@@ -115,6 +115,43 @@
         "feat-stream-scoring-ranking"
       ],
       "acceptanceCriterion": "User can click thumbs-up to instantly verify and rank up a working link or open a report drawer with 5 categorized failure reasons."
+    },
+    {
+      "id": "feat-playback-doctor",
+      "name": "Playback Doctor: Intelligent Failure Diagnosis & Self-Healing",
+      "category": "playback",
+      "description": "Diagnostic engine that evaluates playback failures, distinguishes provider timeouts, codec incompatibilities, subtitle transcoding issues, and insufficient network throughput, and presents explainable one-click recovery options.",
+      "sourceFiles": [
+        "src/views/player/source-error-card.tsx",
+        "src/views/player/web-error-card.tsx",
+        "src/lib/player/stall-fallback.ts",
+        "src/views/player/hooks/use-stall-fallback.ts",
+        "src/views/player/hooks/use-auto-retry.ts"
+      ],
+      "entryPoints": [
+        "SourceErrorCard",
+        "useAutoRetry()",
+        "useStallFallback()"
+      ],
+      "status": "implemented",
+      "platformCompatibility": {
+        "macOS": "supported",
+        "windows": "supported",
+        "linux": "supported",
+        "android": "supported"
+      },
+      "testCoverage": [
+        "tests/stall-fallback.test.ts",
+        "tests/auto-retry.test.ts"
+      ],
+      "knownLimitations": [
+        "Underlying hardware decoder capability queries depend on libmpv/avcodec surface on desktop."
+      ],
+      "dependencies": [
+        "feat-stall-fallback-recovery",
+        "feat-smart-stream-selection"
+      ],
+      "acceptanceCriterion": "Distinguishes between provider timeouts (HTTP 5xx/408), codec decode errors, and network stalls with confirmed vs. probable confidence levels and offers seamless one-click fallback."
     },
     {
       "id": "feat-stall-fallback-recovery",
