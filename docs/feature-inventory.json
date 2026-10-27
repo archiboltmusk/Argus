@@ -5,10 +5,10 @@
   "lastUpdated": "2026-10-28",
   "summary": {
     "totalFeatures": 18,
-    "implemented": 12,
+    "implemented": 13,
     "partial": 3,
     "experimental": 2,
-    "planned": 1
+    "planned": 0
   },
   "features": [
     {
