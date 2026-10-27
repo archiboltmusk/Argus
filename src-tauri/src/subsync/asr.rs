@@ -99,6 +99,7 @@ pub async fn pcm_window(
     }
     cmd.arg("-ss")
         .arg(start_sec.to_string())
+        .arg("-accurate_seek")
         .arg("-t")
         .arg(len_sec.to_string())
         .arg("-i")
