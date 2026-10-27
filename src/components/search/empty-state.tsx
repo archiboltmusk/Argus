@@ -1,4 +1,4 @@
-import { ArrowLeft, Loader2, Shuffle, X } from "lucide-react";
+import { ArrowLeft, Bookmark, BookmarkCheck, Loader2, Shuffle, X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AddonsIcon } from "@/components/icons/addons-icon";
 import { AnimeIcon } from "@/components/icons/anime-icon";
@@ -66,7 +66,7 @@ type FilterTab = "all" | "movies" | "shows" | StreamingService;
 const MAX_PAGES = 25;
 
 export function EmptyState({ onClose, onOpenGuide }: { onClose: () => void; onOpenGuide: () => void }) {
-  const { recent, removeRecent, clearRecent, setQuery } = useSearch();
+  const { recent, removeRecent, clearRecent, setQuery, saved, saveQuery, removeSaved } = useSearch();
   const { setView, openMeta } = useView();
   const { hiddenTabs } = useParental();
   const { settings } = useSettings();
@@ -352,6 +352,39 @@ export function EmptyState({ onClose, onOpenGuide }: { onClose: () => void; onOp
 
   return (
     <div className="argus-search-cascade flex flex-col gap-10 pt-1">
+      {saved.length > 0 && (
+        <section>
+          <div className="mb-3.5 flex items-center justify-between gap-3">
+            <h3 className="text-[12px] font-semibold uppercase tracking-[0.2em] text-ink-subtle">
+              {t("Saved searches")}
+            </h3>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {saved.map((q) => (
+              <span
+                key={q}
+                className="group inline-flex items-center gap-1 rounded-full border border-accent/40 bg-accent/10 ps-3.5 pe-1.5 text-[13.5px] text-ink transition-colors hover:border-accent"
+              >
+                <button onClick={() => setQuery(q)} className="h-10 py-2 pe-1 font-medium">
+                  {q}
+                </button>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    removeSaved(q);
+                  }}
+                  aria-label={t("Remove {name}", { name: q })}
+                  className="ms-0.5 flex h-7 w-7 items-center justify-center rounded-full text-ink-subtle transition-colors hover:bg-canvas/60 hover:text-ink"
+                >
+                  <X size={12} strokeWidth={2.4} />
+                </button>
+              </span>
+            ))}
+          </div>
+        </section>
+      )}
+
       {recent.length > 0 && (
         <section>
           <div className="mb-3.5 flex items-center justify-between gap-3">
@@ -376,6 +409,28 @@ export function EmptyState({ onClose, onOpenGuide }: { onClose: () => void; onOp
                   {q}
                 </button>
                 <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (saved.includes(q)) removeSaved(q);
+                    else saveQuery(q);
+                  }}
+                  aria-label={saved.includes(q) ? t("Remove from saved searches") : t("Save search")}
+                  title={saved.includes(q) ? t("Remove from saved searches") : t("Save search")}
+                  className={`ms-0.5 flex h-7 w-7 items-center justify-center rounded-full transition-colors ${
+                    saved.includes(q)
+                      ? "text-accent hover:bg-canvas/60"
+                      : "text-ink-subtle hover:bg-canvas/60 hover:text-ink"
+                  }`}
+                >
+                  {saved.includes(q) ? (
+                    <BookmarkCheck size={12} strokeWidth={2.4} />
+                  ) : (
+                    <Bookmark size={12} strokeWidth={2} />
+                  )}
+                </button>
+                <button
+                  type="button"
                   onClick={(e) => {
                     e.stopPropagation();
                     removeRecent(q);

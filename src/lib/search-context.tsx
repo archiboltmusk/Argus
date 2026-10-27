@@ -146,6 +146,9 @@ function normShow(s: string): string {
     .trim();
 }
 
+const SAVED_KEY = "argus.search.saved";
+const MAX_SAVED = 12;
+
 function loadRecent(): string[] {
   try {
     const raw = localStorage.getItem(RECENT_KEY);
@@ -175,6 +178,26 @@ function saveRecent(items: string[]): void {
   }
 }
 
+function loadSaved(): string[] {
+  try {
+    const raw = localStorage.getItem(SAVED_KEY);
+    if (!raw) return [];
+    const arr = JSON.parse(raw);
+    if (!Array.isArray(arr)) return [];
+    return arr.filter((x): x is string => typeof x === "string").slice(0, MAX_SAVED);
+  } catch {
+    return [];
+  }
+}
+
+function persistSaved(items: string[]): void {
+  try {
+    localStorage.setItem(SAVED_KEY, JSON.stringify(items.slice(0, MAX_SAVED)));
+  } catch {
+    /* noop */
+  }
+}
+
 export function SearchProvider({ children }: { children: ReactNode }) {
   const { settings } = useSettings();
   const playlists = usePlaylists();
@@ -188,6 +211,7 @@ export function SearchProvider({ children }: { children: ReactNode }) {
   const [aiHold, setAiHold] = useState(false);
   const [retryNonce, setRetryNonce] = useState(0);
   const [recent, setRecent] = useState<string[]>(() => loadRecent());
+  const [saved, setSaved] = useState<string[]>(() => loadSaved());
   const debounceRef = useRef<number | null>(null);
   const requestGuardRef = useRef(createSearchRequestGuard());
   const tmdbCacheRef = useRef<SearchCache<SearchResults | null>>(new Map());
@@ -539,6 +563,25 @@ export function SearchProvider({ children }: { children: ReactNode }) {
     saveRecent([]);
   }, []);
 
+  const saveQuery = useCallback((q: string) => {
+    const trimmed = q.trim();
+    if (!trimmed) return;
+    setSaved((prev) => {
+      if (prev.includes(trimmed)) return prev;
+      const next = [trimmed, ...prev].slice(0, MAX_SAVED);
+      persistSaved(next);
+      return next;
+    });
+  }, []);
+
+  const removeSaved = useCallback((q: string) => {
+    setSaved((prev) => {
+      const next = prev.filter((p) => p !== q);
+      persistSaved(next);
+      return next;
+    });
+  }, []);
+
   const { navDepth, rootFrame } = useView();
   const restoreDepth = useRef<number | null>(null);
   const restoreRoot = useRef<Frame | null>(null);
@@ -582,15 +625,17 @@ export function SearchProvider({ children }: { children: ReactNode }) {
       recordRecent,
       removeRecent,
       clearRecent,
+      saveQuery,
+      removeSaved,
       setAiHold,
       retry,
     }),
-    [setQuery, clear, closeForNavigation, recordRecent, removeRecent, clearRecent, retry],
+    [setQuery, clear, closeForNavigation, recordRecent, removeRecent, clearRecent, saveQuery, removeSaved, retry],
   );
 
   const data = useMemo<SearchData>(
-    () => ({ query, results, addonQueries, status, recent }),
-    [query, results, addonQueries, status, recent],
+    () => ({ query, results, addonQueries, status, recent, saved }),
+    [query, results, addonQueries, status, recent, saved],
   );
 
   return (

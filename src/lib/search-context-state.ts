@@ -10,6 +10,7 @@ export type SearchState = {
   addonQueries: AddonQuery[];
   status: "idle" | "typing" | "loading" | "done";
   recent: string[];
+  saved: string[];
 };
 
 export type SearchActions = {
@@ -20,6 +21,8 @@ export type SearchActions = {
   recordRecent: (q: string) => void;
   removeRecent: (q: string) => void;
   clearRecent: () => void;
+  saveQuery: (q: string) => void;
+  removeSaved: (q: string) => void;
   setAiHold: (hold: boolean) => void;
   retry: () => void;
 };
