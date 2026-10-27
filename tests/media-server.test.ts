@@ -325,3 +325,33 @@ test("home-server policy auto-selects only one unambiguous copy", () => {
     { kind: "chooser", reason: "ambiguous" },
   );
 });
+
+test("title grouping keeps same-name works from different years separate", () => {
+  const titles = groupMediaServerTitles([
+    item({ id: "old", title: "The Example", year: 1998, identity: {} }),
+    item({ id: "new", title: "The Example", year: 2024, identity: {} }),
+  ]);
+  assert.equal(titles.length, 2);
+  assert.deepEqual(
+    titles.map((title) => title.year).sort(),
+    [1998, 2024],
+  );
+});
+
+test("title grouping normalizes case and surrounding whitespace for ID-less copies", () => {
+  const titles = groupMediaServerTitles([
+    item({ id: "one", title: "  Example  ", year: 2020, identity: {} }),
+    item({ id: "two", connectionId: "b", title: "example", year: 2020, identity: {} }),
+  ]);
+  assert.equal(titles.length, 1);
+  assert.equal(titles[0].connectionIds.length, 2);
+});
+
+test("title grouping does not merge an ID-less movie and series with the same title", () => {
+  const titles = groupMediaServerTitles([
+    item({ id: "movie", title: "Example", year: 2020, identity: {} }),
+    item({ id: "series", kind: "series", title: "Example", year: 2020, identity: {}, versions: [] }),
+  ]);
+  assert.equal(titles.length, 2);
+  assert.deepEqual(new Set(titles.map((title) => title.kind)), new Set(["movie", "series"]));
+});
