@@ -13,7 +13,7 @@ function titleIdentity(
   imdbId: string | null | undefined,
 ): MediaIdentity {
   const tmdb = metaId?.match(/^tmdb:(?:movie|tv|series):(\d+)$/);
-  const tvdb = metaId?.match(/^tvdb:(?:movie|series|tv):(\\d+)$/);
+  const tvdb = metaId?.match(/^tvdb:(?:movie|series|tv):(\d+)$/);
   return {
     tmdbId: tmdb ? Number(tmdb[1]) : undefined,
     imdbId: imdbId ?? (metaId?.startsWith("tt") ? metaId : undefined),
