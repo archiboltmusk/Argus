@@ -13,9 +13,11 @@ function titleIdentity(
   imdbId: string | null | undefined,
 ): MediaIdentity {
   const tmdb = metaId?.match(/^tmdb:(?:movie|tv|series):(\d+)$/);
+  const tvdb = metaId?.match(/^tvdb:(?:movie|series|tv):(\\d+)$/);
   return {
     tmdbId: tmdb ? Number(tmdb[1]) : undefined,
     imdbId: imdbId ?? (metaId?.startsWith("tt") ? metaId : undefined),
+    tvdbId: tvdb ? Number(tvdb[1]) : undefined,
   };
 }
 
@@ -83,7 +85,7 @@ export function useMediaServerAvailability(
       const next = new Map<string, string[]>();
       for (const metaId of (JSON.parse(idsKey) as string[]).slice(1)) {
         const identity = titleIdentity(metaId, undefined);
-        if (identity.tmdbId == null && !identity.imdbId) continue;
+        if (identity.tmdbId == null && !identity.imdbId && identity.tvdbId == null) continue;
         const matches = titles.filter((title) => identityMatches(title.identity, identity));
         const names = [...new Set(matches.flatMap((title) =>
           title.connectionIds.flatMap((id) => {
