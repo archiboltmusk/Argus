@@ -4231,7 +4231,7 @@ snapshots:
       chokidar: 3.6.0
       p-map: 7.0.5
       picocolors: 1.1.1
-      tinyglobby: 0.2.17
+      tinyglobby: 0.2.16
       vite: 7.3.2(@types/node@26.1.1)(jiti@2.7.0)(lightningcss@1.32.0)
 
   vite@7.3.2(@types/node@26.1.1)(jiti@2.7.0)(lightningcss@1.32.0):
