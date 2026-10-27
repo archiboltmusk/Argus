@@ -1,17 +1,12 @@
 import {
-  Activity,
   AlertTriangle,
-  CheckCircle2,
   ChevronRight,
-  HardDrive,
   Layers,
   RefreshCw,
   Server,
   ShieldCheck,
-  Wifi,
-  XCircle,
 } from "lucide-react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useT } from "@/lib/i18n";
 import { Section } from "../shared";
 import { fetchInstalledAddons } from "@/lib/addon-store";
@@ -53,12 +48,13 @@ export function ConnectionHealthSection() {
       const seen = new Set<string>();
       const list: ResolvedAddon[] = [];
       for (const a of combined) {
-        if (!a?.manifest?.id || seen.has(a.manifest.id)) continue;
-        seen.add(a.manifest.id);
+        const id = a?.manifest?.id;
+        if (!id || seen.has(id)) continue;
+        seen.add(id);
         list.push({
           manifest: a.manifest,
           transportUrl: a.transportUrl,
-          source: "user",
+          source: "stremio-user",
           installed: true,
         });
       }
