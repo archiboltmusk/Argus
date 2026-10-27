@@ -1572,6 +1572,7 @@ pub fn run() {
             subsync::asr::asr_transcribe_windows,
             subsync::asr::asr_verify,
             subsync::asr::asr_generate_subtitles,
+            subsync::asr::asr_is_available,
             sub_extract::subtitle_extract,
             sub_extract::subtitle_extract_ass,
             cast_server::stop_stremio_sidecar,

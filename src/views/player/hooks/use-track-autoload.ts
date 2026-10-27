@@ -210,6 +210,7 @@ export function useTrackAutoload(params: {
       filename: subtitleStreamDescriptor(src.streamRef) ?? null,
       mediaUrl: src.url ?? null,
       headers: (src.streamRef as any)?.behaviorHints?.proxyHeaders?.request ?? null,
+      durationSec: snapRef.current.durationSec,
     });
     return () => publishSubtitleContext(null);
   }, [resolutionSettled, resolvedImdbId, resolvedImdbVerified, src]);
@@ -296,6 +297,7 @@ export function useTrackAutoload(params: {
         filename: subtitleStreamDescriptor(src.streamRef) ?? null,
         mediaUrl: src.url ?? null,
         headers: (src.streamRef as any)?.behaviorHints?.proxyHeaders?.request ?? null,
+        durationSec: snapRef.current.durationSec,
         searchSeason,
         searchEpisode,
       });

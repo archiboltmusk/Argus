@@ -179,7 +179,7 @@ function mpvReuseConfigKey(options: MpvOptions | undefined, hdrToSdr: boolean): 
 const AUDIO_PROFILE_AF: Record<string, string> = {
   bass: "lavfi=[bass=g=7:f=110:w=0.6]",
   voice: "lavfi=[equalizer=f=300:t=q:w=1:g=-3,equalizer=f=2800:t=q:w=1:g=5]",
-  "speech-clarity": "lavfi=[highpass=f=85,equalizer=f=250:t=q:w=1:g=-4,equalizer=f=2600:t=q:w=1.2:g=5.5,equalizer=f=3600:t=q:w=1.2:g=3.5,acompressor=ratio=3:threshold=-19dB:makeup=3dB]",
+  "speech-clarity": "lavfi=[speechnorm=e=6:r=0.0005:l=1,equalizer=f=3000:t=q:w=1.2:g=4.5]",
   "bass-reduce": "lavfi=[bass=g=-8:f=110:w=0.6]",
   night: "lavfi=[highpass=f=95,equalizer=f=2400:t=q:w=1.2:g=4.5,acompressor=ratio=4:threshold=-21dB:attack=15:release=200:makeup=4dB]",
   "spatial-3d": "lavfi=[surround=chl_out=stereo:level_in=1.2:level_out=1.0:lfe=1:angle=90,extrastereo=m=1.35]",

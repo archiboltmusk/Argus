@@ -399,25 +399,42 @@ pub async fn asr_verify(
 }
 
 #[tauri::command]
+pub fn asr_is_available() -> bool {
+    cfg!(feature = "asr-whisper")
+}
+
+#[tauri::command]
 pub async fn asr_generate_subtitles(
     app: tauri::AppHandle,
     url: String,
     headers: Option<HashMap<String, String>>,
+    duration_sec: Option<f32>,
     lang: Option<String>,
 ) -> Result<String, String> {
     url_guard::validate_media_url(&url, true)?;
 
     #[cfg(not(feature = "asr-whisper"))]
-    return Err("Whisper ASR is not compiled into this build".to_string());
+    return {
+        let _ = (&app, &url, &headers, duration_sec, &lang);
+        Err("Whisper ASR is not compiled into this build".to_string())
+    };
 
     #[cfg(feature = "asr-whisper")]
     {
         let model_path = crate::asr_model::asr_ensure_model(app).await?;
         let engine = load_engine(&model_path)?;
         let hdrs = headers.unwrap_or_default();
-
-        let pcm = extract_pcm(&url, &hdrs, 0.0, None, None).await?;
-        let segments = engine.transcribe(&pcm, lang.as_deref().filter(|s| !s.is_empty()), false)?;
+        let dur = duration_sec.unwrap_or(7200.0).max(10.0);
+        let segments = generate(
+            &*engine,
+            &url,
+            &hdrs,
+            dur,
+            lang.as_deref().filter(|s| !s.is_empty()),
+            false,
+            "0:a:0",
+        )
+        .await?;
 
         let mut srt = String::new();
         for (i, seg) in segments.iter().enumerate() {

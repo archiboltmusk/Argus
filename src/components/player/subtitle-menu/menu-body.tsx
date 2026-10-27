@@ -134,6 +134,14 @@ export function MenuBody(props: SubtitleMenuProps & { onClose: () => void }) {
   const subContext = useSubtitleContext();
   const [generatingWhisper, setGeneratingWhisper] = useState(false);
   const [whisperStatus, setWhisperStatus] = useState<string | null>(null);
+  const [whisperAvailable, setWhisperAvailable] = useState<boolean>(false);
+
+  useEffect(() => {
+    if (!isTauri) return;
+    invoke<boolean>("asr_is_available")
+      .then((ok) => setWhisperAvailable(!!ok))
+      .catch(() => setWhisperAvailable(false));
+  }, [isTauri]);
 
   const generateWithWhisper = async () => {
     if (!subContext?.mediaUrl) {
@@ -148,6 +156,7 @@ export function MenuBody(props: SubtitleMenuProps & { onClose: () => void }) {
       const srt = await invoke<string>("asr_generate_subtitles", {
         url: subContext.mediaUrl,
         headers: subContext.headers ?? null,
+        durationSec: subContext.durationSec ?? null,
         lang: null,
       });
 
@@ -523,8 +532,16 @@ export function MenuBody(props: SubtitleMenuProps & { onClose: () => void }) {
           )}
 
           {localError && (
-            <div className="shrink-0 border-t border-edge-soft bg-danger/10 px-3 py-1.5 text-[11.5px] text-danger">
-              {localError}
+            <div className="flex shrink-0 items-center justify-between gap-2 border-t border-edge-soft bg-danger/10 px-3 py-1.5 text-[11.5px] text-danger">
+              <span className="flex-1">{localError}</span>
+              <button
+                type="button"
+                onClick={() => setLocalError(null)}
+                aria-label={tr("Dismiss")}
+                className="flex h-4 w-4 shrink-0 items-center justify-center rounded text-danger/80 hover:text-danger"
+              >
+                <X size={11} strokeWidth={2.6} />
+              </button>
             </div>
           )}
 
@@ -541,20 +558,22 @@ export function MenuBody(props: SubtitleMenuProps & { onClose: () => void }) {
             </button>
             {isTauri && (
               <>
-                <HoverTooltip label={tr("Generate subtitles offline with local Whisper ASR on Mac Metal")} align="end">
-                  <button
-                    disabled={generatingWhisper}
-                    onClick={() => void generateWithWhisper()}
-                    className="flex h-full shrink-0 items-center gap-1.5 border-s border-edge-soft px-3 py-2 text-[12px] font-semibold text-accent transition-colors hover:bg-accent-soft/20 disabled:opacity-50"
-                  >
-                    {generatingWhisper ? (
-                      <Loader2 size={12} className="animate-spin" />
-                    ) : (
-                      <Sparkles size={12} strokeWidth={2.2} />
-                    )}
-                    {tr("Generate")}
-                  </button>
-                </HoverTooltip>
+                {whisperAvailable && (
+                  <HoverTooltip label={tr("Generate subtitles offline with local Whisper ASR on Mac Metal")} align="end">
+                    <button
+                      disabled={generatingWhisper}
+                      onClick={() => void generateWithWhisper()}
+                      className="flex h-full shrink-0 items-center gap-1.5 border-s border-edge-soft px-3 py-2 text-[12px] font-semibold text-accent transition-colors hover:bg-accent-soft/20 disabled:opacity-50"
+                    >
+                      {generatingWhisper ? (
+                        <Loader2 size={12} className="animate-spin" />
+                      ) : (
+                        <Sparkles size={12} strokeWidth={2.2} />
+                      )}
+                      {tr("Generate")}
+                    </button>
+                  </HoverTooltip>
+                )}
                 <HoverTooltip label={tr("Load a .srt or .ass from your computer")} align="end">
                   <button
                     onClick={() => void loadLocal()}

@@ -562,6 +562,8 @@ fn apply_pre_init(
     // Resume audio/video instantly on seek without muting
     set("hr-seek", "default");
     set("audio-pitch-correction", "yes");
+    set("audio-channels", "stereo");
+    set("audio-normalize-downmix", "yes");
 
     let _ = init.set_property("background-color", "#000000");
     let _ = init.set_property("background", "color");

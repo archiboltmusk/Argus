@@ -6,6 +6,7 @@ export type SubtitleContentContext = {
   filename: string | null;
   mediaUrl?: string | null;
   headers?: Record<string, string> | null;
+  durationSec?: number | null;
   /**
    * Anime-aware search coordinates for the playing episode: seasonal anime
    * carry season + within-season episode, long-running anime only the
