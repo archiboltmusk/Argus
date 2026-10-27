@@ -40,6 +40,10 @@ import { useSettings } from "@/lib/settings";
 import { usePlaylists } from "@/lib/iptv/playlists-store";
 import { isMagnetInput, isDirectVideoUrl } from "@/lib/torrent/magnet";
 import { useView, type Frame } from "@/lib/view";
+import { mediaServerConnections } from "@/lib/media-server/connections";
+import { mediaServerItems } from "@/lib/media-server/index-store";
+import { searchMediaServerMetas } from "@/lib/media-server/search";
+import { activeProfileId } from "@/lib/active-profile-id";
 
 import {
   ActionsCtx,
@@ -200,6 +204,7 @@ function persistSaved(items: string[]): void {
 
 export function SearchProvider({ children }: { children: ReactNode }) {
   const { settings } = useSettings();
+  const profileId = activeProfileId();
   const playlists = usePlaylists();
   const { authKey } = useAuth();
   const { hiddenTabs } = useParental();
@@ -342,6 +347,12 @@ export function SearchProvider({ children }: { children: ReactNode }) {
         ),
         [],
       );
+      const mediaServerPromise = guard(
+        Promise.resolve().then(async () =>
+          searchMediaServerMetas(trimmed, await mediaServerItems(), mediaServerConnections()),
+        ),
+        { movies: [], series: [] },
+      );
       const cinemetaPromise = guard(
         cachedSearch(cinemetaCacheRef.current, normalizedQuery, SECONDARY_CACHE_TTL_MS, () =>
           searchCinemeta(trimmed),
@@ -358,6 +369,7 @@ export function SearchProvider({ children }: { children: ReactNode }) {
         characters: [] as CharacterHit[],
         addon: { movies: [], series: [] } as Awaited<typeof addonPromise>,
         cine: { movies: [], series: [] } as Awaited<typeof cinemetaPromise>,
+        mediaServer: { movies: [], series: [] } as Awaited<typeof mediaServerPromise>,
         groups: [] as Awaited<typeof addonGroupsPromise>,
       };
       const publish = () => {
@@ -386,12 +398,12 @@ export function SearchProvider({ children }: { children: ReactNode }) {
           settings.hideContent.anime ? list.filter((m) => !metaLooksAnime(m)) : list;
         const mergedMovies = dropAnime(
           dedupeByTitle(
-            mergeMetas(mergeMetas(base.movies, acc.addon.movies), acc.cine.movies),
+            mergeMetas(mergeMetas(mergeMetas(base.movies, acc.addon.movies), acc.cine.movies), acc.mediaServer.movies),
           ).filter(notAnimeDupe),
         );
         const mergedSeries = dropAnime(
           dedupeByTitle(
-            mergeMetas(mergeMetas(base.series, acc.addon.series), acc.cine.series),
+            mergeMetas(mergeMetas(mergeMetas(base.series, acc.addon.series), acc.cine.series), acc.mediaServer.series),
           ).filter(notAnimeDupe),
         );
         const shown = new Set<string>([...mergedMovies, ...mergedSeries].map((m) => m.id));
@@ -502,6 +514,7 @@ export function SearchProvider({ children }: { children: ReactNode }) {
     hiddenTabs.liveTv,
     settings.mangaEnabled,
     authKey,
+    profileId,
   ]);
 
   useEffect(() => {

@@ -127,7 +127,7 @@ export function evaluateStallStatus(params: {
     status,
     buffering,
     coreIdle = false,
-    lastDecodedFrameAt = 0,
+    lastDecodedFrameAt,
     lastProgressAt,
     now,
     stallTimeoutMs = STALL_TIMEOUT_MS,
@@ -165,14 +165,12 @@ export function evaluateStallStatus(params: {
     };
   }
 
-  // Time elapsed since last decoded frame or position progress
-  if (status === "playing" && lastDecodedFrameAt > 0) {
-    const referenceTime = Math.max(lastProgressAt, lastDecodedFrameAt);
-    const frameDur = Math.max(0, now - referenceTime);
-    if (frameDur >= stallTimeoutMs) {
+  if (status === "playing" && lastDecodedFrameAt != null) {
+    const frameStallDuration = Math.max(0, now - lastDecodedFrameAt);
+    if (frameStallDuration >= stallTimeoutMs) {
       return {
         isStalled: true,
-        stalledDurationMs: frameDur,
+        stalledDurationMs: frameStallDuration,
         reason: "frozen-clock",
       };
     }
