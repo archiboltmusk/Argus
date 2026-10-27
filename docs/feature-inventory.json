@@ -4,8 +4,8 @@
   "version": "1.0.0",
   "lastUpdated": "2026-10-28",
   "summary": {
-    "totalFeatures": 19,
-    "implemented": 14,
+    "totalFeatures": 21,
+    "implemented": 16,
     "partial": 3,
     "experimental": 2,
     "planned": 0
@@ -606,6 +606,71 @@
         "feat-connection-health"
       ],
       "acceptanceCriterion": "Audits installed addons, highlights capability gaps (e.g. missing subtitle providers), detects redundant scrapers, and enables one-click non-destructive pausing of failing endpoints."
+    },
+    {
+      "id": "feat-trust-center",
+      "name": "Argus Trust Center & Permission Sandboxes",
+      "category": "diagnostics",
+      "description": "Centralized privacy and transparency hub exposing local storage inventory, integration network permissions, explainable stream decision logs, and dependency independence scores.",
+      "sourceFiles": [
+        "src/views/settings/advanced-panel/privacy-tab.tsx",
+        "src/lib/diagnostics/redact.ts",
+        "LEGAL.md"
+      ],
+      "entryPoints": [
+        "Settings > Advanced > Privacy",
+        "Settings > Advanced > Repair"
+      ],
+      "status": "implemented",
+      "platformCompatibility": {
+        "macOS": "supported",
+        "windows": "supported",
+        "linux": "supported",
+        "android": "supported"
+      },
+      "testCoverage": [
+        "tests/diagnostics-redact.test.ts"
+      ],
+      "knownLimitations": [
+        "Endpoint traffic inspection relies on client-side fetch wrappers rather than OS packet filter."
+      ],
+      "dependencies": [
+        "feat-privacy-redacted-diagnostics"
+      ],
+      "acceptanceCriterion": "Exposes local storage data inventory, active integration permissions, and allows one-click export of redacted diagnostics with zero leaked credentials."
+    },
+    {
+      "id": "feat-conformance-lab",
+      "name": "Integration Conformance Lab & Protocol Validator",
+      "category": "extensions",
+      "description": "Automated validator running protocol conformance checks across manifests, catalogs, metadata, streams, and subtitle responses to detect protocol violations early.",
+      "sourceFiles": [
+        "src/lib/addon-health/conformance.ts",
+        "src/lib/addon-health/test-addon.ts",
+        "src/lib/addon-health/test-all.ts"
+      ],
+      "entryPoints": [
+        "checkConformance()",
+        "testAddon()",
+        "Addons > Installed > Test all"
+      ],
+      "status": "implemented",
+      "platformCompatibility": {
+        "macOS": "supported",
+        "windows": "supported",
+        "linux": "supported",
+        "android": "supported"
+      },
+      "testCoverage": [
+        "tests/host-health.test.ts"
+      ],
+      "knownLimitations": [
+        "Tests are non-destructive and query public-domain sample film (Night of the Living Dead) to protect user privacy."
+      ],
+      "dependencies": [
+        "feat-addon-optimizer"
+      ],
+      "acceptanceCriterion": "Validates add-on responses against Stremio protocol specifications, detecting missing fields, invalid stream URLs, and empty catalogs without failing on non-matching test titles."
     }
   ]
 }
