@@ -4,8 +4,8 @@
   "version": "1.0.0",
   "lastUpdated": "2026-10-28",
   "summary": {
-    "totalFeatures": 18,
-    "implemented": 13,
+    "totalFeatures": 19,
+    "implemented": 14,
     "partial": 3,
     "experimental": 2,
     "planned": 0
@@ -42,6 +42,41 @@
       ],
       "dependencies": [],
       "acceptanceCriterion": "Top stream correctly prioritizes verified working links (+150), sticky series release groups (+25), and demotes reported dead hashes (-500)."
+    },
+    {
+      "id": "feat-argus-flow",
+      "name": "Argus Flow: Adaptive Automation & Effortless UX Modes",
+      "category": "playback",
+      "description": "Signature three-mode UX engine (Effortless, Balanced, Control Room) unifying automated stream selection, background stall recovery, contextual audio/subtitle preferences, and decision explanations.",
+      "sourceFiles": [
+        "src/lib/settings/types.ts",
+        "src/lib/settings/defaults.ts",
+        "src/lib/streams/scoring/scoring-rank.ts",
+        "src/views/player/hooks/use-stall-fallback.ts"
+      ],
+      "entryPoints": [
+        "Settings > Streaming Sources > Argus Flow",
+        "PlayPickerView"
+      ],
+      "status": "implemented",
+      "platformCompatibility": {
+        "macOS": "supported",
+        "windows": "supported",
+        "linux": "supported",
+        "android": "supported"
+      },
+      "testCoverage": [
+        "tests/scoring.test.ts",
+        "tests/stall-fallback.test.ts"
+      ],
+      "knownLimitations": [
+        "Control Room mode exposes raw candidate rankings and latency metrics intended for advanced users."
+      ],
+      "dependencies": [
+        "feat-smart-stream-selection",
+        "feat-stall-fallback-recovery"
+      ],
+      "acceptanceCriterion": "Effortless mode initiates playback of top-scored verified stream with zero confirmation clicks; Balanced prompts before major switches; Control Room exposes full candidate diagnostics."
     },
     {
       "id": "feat-smart-stream-selection",

@@ -778,6 +778,7 @@ export type Settings = {
   profileAudio: ProfileAudioMode;
   syncIndicator: boolean;
   syncIndicatorPosition: SyncIndicatorPosition;
+  argusFlowMode: "effortless" | "balanced" | "control-room";
   pickerLayout: "condensed" | "stremio";
   streamSort: "argus" | "addon";
   streamPriority: StreamPriorityEntry[];

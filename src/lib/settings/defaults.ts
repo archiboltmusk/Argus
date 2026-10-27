@@ -623,6 +623,7 @@ export const DEFAULT: Settings = {
   profileAudio: "auto",
   syncIndicator: true,
   syncIndicatorPosition: "top-right",
+  argusFlowMode: "effortless",
   pickerLayout: "stremio",
   streamSort: "addon",
   streamPriority: [],
