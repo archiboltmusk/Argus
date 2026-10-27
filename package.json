@@ -43,7 +43,7 @@
     "test": "node --import ./scripts/node-test-environment.mjs --experimental-loader ./scripts/node-test-loader.mjs --test tests/*.test.ts tests/*.test.tsx tests/*.test.mjs"
   },
   "dependencies": {
-    "@mediapipe/tasks-vision": "1.1.1",
+    "@mediapipe/tasks-vision": "^1.1.1",
     "@noble/hashes": "1.8.0",
     "@rive-app/canvas": "^2.45.0",
     "@tanstack/react-virtual": "^3.14.21",
