@@ -30,7 +30,7 @@ import type { MediaServerConnection } from "@/lib/media-server/types";
 import {
   fetchAioStatusHealth,
   type AioStatusSnapshot,
-  type ServiceHealth,
+  type AioService,
 } from "@/lib/streams/aiostatus";
 import { useView } from "@/lib/view";
 
@@ -198,14 +198,17 @@ export function ConnectionHealthSection() {
             </div>
           ) : (
             <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
-              {addons.map((a) => (
-                <AddonHealthRow
-                  key={a.manifest.id}
-                  addon={a}
-                  testState={addonTests.states[a.manifest.id]}
-                  onTest={() => addonTests.testOne(a)}
-                />
-              ))}
+              {addons.map((a) => {
+                const key = a.manifest?.id ?? a.curated?.id ?? a.transportUrl;
+                return (
+                  <AddonHealthRow
+                    key={key}
+                    addon={a}
+                    testState={addonTests.states[key]}
+                    onTest={() => addonTests.testOne(a)}
+                  />
+                );
+              })}
             </div>
           )}
         </div>
@@ -267,7 +270,8 @@ function AddonHealthRow({
   onTest: () => void;
 }) {
   const t = useT();
-  const id = addon.manifest.id;
+  const id = addon.manifest?.id ?? addon.curated?.id ?? "";
+  const name = addon.manifest?.name ?? addon.curated?.name ?? id;
   const status = useAddonStatus(id);
   const score = useAddonScore(id);
 
@@ -288,7 +292,7 @@ function AddonHealthRow({
         />
         <div className="min-w-0">
           <p className="truncate text-[13.5px] font-semibold text-ink">
-            {addon.manifest.name}
+            {name}
           </p>
           <p className="truncate text-[11.5px] text-ink-subtle">
             {isFailing
@@ -315,7 +319,7 @@ function AddonHealthRow({
   );
 }
 
-function DebridHealthRow({ service }: { service: ServiceHealth }) {
+function DebridHealthRow({ service }: { service: AioService }) {
   const t = useT();
   const isExpired = service.status === "expired";
   const isExpiring = service.status === "expiring";
