@@ -4,13 +4,47 @@
   "version": "1.0.0",
   "lastUpdated": "2026-10-28",
   "summary": {
-    "totalFeatures": 21,
-    "implemented": 16,
+    "totalFeatures": 23,
+    "implemented": 18,
     "partial": 3,
     "experimental": 2,
     "planned": 0
   },
   "features": [
+    {
+      "id": "feat-argus-observatory",
+      "name": "Argus Observatory: Local-First Decision Lab & Signals",
+      "category": "playback",
+      "description": "Interactive control center and simulation lab comparing five playback strategies (Balanced, Fast Start, Quality, Reliable, Data Saver) with deterministic ranking traces and local capability signals.",
+      "sourceFiles": [
+        "src/views/argus-lab.tsx",
+        "src/lib/experience-engine.ts",
+        "docs/argus-observatory-architecture.md"
+      ],
+      "entryPoints": [
+        "Chrome Navigation > Argus Lab",
+        "ArgusLabView",
+        "rankExperienceCandidates()"
+      ],
+      "status": "implemented",
+      "platformCompatibility": {
+        "macOS": "supported",
+        "windows": "supported",
+        "linux": "supported",
+        "android": "supported"
+      },
+      "testCoverage": [
+        "tests/experience-engine.test.ts"
+      ],
+      "knownLimitations": [
+        "Decision Lab currently runs deterministic simulations against synthetic candidate fixtures."
+      ],
+      "dependencies": [
+        "feat-argus-flow",
+        "feat-experience-contract"
+      ],
+      "acceptanceCriterion": "Exposes Decision Lab traces with human-readable explanations, observes browser capabilities, and allows switching playback trade-off profiles."
+    },
     {
       "id": "feat-stream-scoring-ranking",
       "name": "Intelligent Stream Scoring & Ranking",
@@ -671,6 +705,37 @@
         "feat-addon-optimizer"
       ],
       "acceptanceCriterion": "Validates add-on responses against Stremio protocol specifications, detecting missing fields, invalid stream URLs, and empty catalogs without failing on non-matching test titles."
+    },
+    {
+      "id": "feat-experience-contract",
+      "name": "Experience Contract & Policy Authorizer",
+      "category": "diagnostics",
+      "description": "Fail-closed local policy engine gating automatic source switching, external AI services, telemetry, and unattended integration installation with explicit user authorization.",
+      "sourceFiles": [
+        "src/lib/experience-engine.ts",
+        "src/views/argus-lab.tsx",
+        "docs/argus-observatory-architecture.md"
+      ],
+      "entryPoints": [
+        "isExperienceActionAllowed()",
+        "DEFAULT_EXPERIENCE_CONTRACT",
+        "ArgusLabView > Experience Contract tab"
+      ],
+      "status": "implemented",
+      "platformCompatibility": {
+        "macOS": "supported",
+        "windows": "supported",
+        "linux": "supported",
+        "android": "supported"
+      },
+      "testCoverage": [
+        "tests/experience-engine.test.ts"
+      ],
+      "knownLimitations": [
+        "Enforcement currently active at experience engine boundary; full subsystem gating is expanding across background daemons."
+      ],
+      "dependencies": [],
+      "acceptanceCriterion": "Enforces fail-closed authorization: denies external AI, telemetry, and auto-installation unless explicitly enabled by user."
     }
   ]
 }
