@@ -263,6 +263,7 @@ const NAME_TO_CODE: Record<string, string> = (() => {
     ["한국어", "ko"],
     ["中文", "zh"],
     ["हिन्दी", "hi"],
+    ["বাংলা", "bn"],
     ["bahasa", "id"],
     ["tiếng việt", "vi"],
     ["עברית", "he"],
