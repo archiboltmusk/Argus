@@ -210,10 +210,10 @@ export function useTrackAutoload(params: {
       filename: subtitleStreamDescriptor(src.streamRef) ?? null,
       mediaUrl: src.url ?? null,
       headers: (src.streamRef as any)?.behaviorHints?.proxyHeaders?.request ?? null,
-      durationSec: snapRef.current.durationSec,
+      durationSec: snap.durationSec > 0 ? snap.durationSec : snapRef.current.durationSec,
     });
     return () => publishSubtitleContext(null);
-  }, [resolutionSettled, resolvedImdbId, resolvedImdbVerified, src]);
+  }, [resolutionSettled, resolvedImdbId, resolvedImdbVerified, src, snap.durationSec]);
 
   const autoSubLoadKeyRef = useRef<string | null>(null);
   const autoSubStagesRef = useRef(new Set<string>());

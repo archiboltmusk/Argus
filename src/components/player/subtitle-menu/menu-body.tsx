@@ -152,7 +152,23 @@ export function MenuBody(props: SubtitleMenuProps & { onClose: () => void }) {
     setGeneratingWhisper(true);
     setWhisperStatus(tr("Transcribing audio with local Whisper…"));
 
+    let unlistenProgress: (() => void) | null = null;
     try {
+      if (isTauri) {
+        const { listen } = await import("@tauri-apps/api/event");
+        unlistenProgress = await listen<{
+          current: number;
+          total: number;
+          currentSec: number;
+          totalSec: number;
+        }>("asr://progress", (event) => {
+          const pct = Math.round((event.payload.current / event.payload.total) * 100);
+          const mins = Math.floor(event.payload.currentSec / 60);
+          const totalMins = Math.floor(event.payload.totalSec / 60);
+          setWhisperStatus(`Transcribing with Whisper (${pct}% · ${mins}m / ${totalMins}m)…`);
+        });
+      }
+
       const srt = await invoke<string>("asr_generate_subtitles", {
         url: subContext.mediaUrl,
         headers: subContext.headers ?? null,
@@ -192,6 +208,7 @@ export function MenuBody(props: SubtitleMenuProps & { onClose: () => void }) {
       console.error("[whisper] failed to generate subtitles:", e);
       setLocalError(typeof e === "string" ? e : (e?.message ?? tr("Whisper transcription failed.")));
     } finally {
+      unlistenProgress?.();
       setGeneratingWhisper(false);
       setWhisperStatus(null);
     }
