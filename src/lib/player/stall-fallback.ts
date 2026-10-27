@@ -127,7 +127,6 @@ export function evaluateStallStatus(params: {
     status,
     buffering,
     coreIdle = false,
-    lastDecodedFrameAt = 0,
     lastProgressAt,
     now,
     stallTimeoutMs = STALL_TIMEOUT_MS,
