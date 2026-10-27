@@ -4,8 +4,9 @@ import { useLocalizedOverview } from "@/lib/use-localized-overview";
 import { ResultPoster } from "./result-poster";
 import { useView } from "@/lib/view";
 import { useContextMenu } from "@/lib/context-menu";
+import { useMediaServerAvailability } from "@/hooks/use-title-media-servers";
 
-function MetaRow({ m, onClose, index }: { m: Meta; onClose: () => void; index?: number }) {
+function MetaRow({ m, onClose, index, serverNames }: { m: Meta; onClose: () => void; index?: number; serverNames: string[] }) {
   const { openMeta } = useView();
   const { open } = useContextMenu();
   const description = useLocalizedOverview(m);
@@ -39,6 +40,15 @@ function MetaRow({ m, onClose, index }: { m: Meta; onClose: () => void; index?: 
             </span>
           )}
         </div>
+        {serverNames.length > 0 && (
+          <span className="flex flex-wrap gap-1" aria-label={`Available on ${serverNames.join(", ")}`}>
+            {serverNames.map((name) => (
+              <span key={name} className="rounded-md border border-edge-soft bg-elevated/60 px-1.5 py-0.5 text-[10px] font-medium text-ink-muted">
+                Available on {name}
+              </span>
+            ))}
+          </span>
+        )}
         {description && (
           <span className="line-clamp-2 text-[12.5px] leading-snug text-ink-subtle">
             {description}
@@ -60,6 +70,7 @@ export function MetaList({
   onClose: () => void;
   stagger?: boolean;
 }) {
+  const availability = useMediaServerAvailability(items);
   if (items.length === 0) return null;
   return (
     <section className="min-w-0">
@@ -70,7 +81,7 @@ export function MetaList({
       )}
       <div className="grid min-w-0 gap-1">
         {items.map((m, i) => (
-          <MetaRow key={m.id} m={m} onClose={onClose} index={stagger ? i : undefined} />
+          <MetaRow key={m.id} m={m} onClose={onClose} index={stagger ? i : undefined} serverNames={availability.get(m.id) ?? []} />
         ))}
       </div>
     </section>
