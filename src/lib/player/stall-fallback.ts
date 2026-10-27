@@ -127,6 +127,7 @@ export function evaluateStallStatus(params: {
     status,
     buffering,
     coreIdle = false,
+    lastDecodedFrameAt,
     lastProgressAt,
     now,
     stallTimeoutMs = STALL_TIMEOUT_MS,
@@ -162,6 +163,17 @@ export function evaluateStallStatus(params: {
       stalledDurationMs: dur,
       reason: "core-idle",
     };
+  }
+
+  if (status === "playing" && lastDecodedFrameAt != null) {
+    const frameStallDuration = Math.max(0, now - lastDecodedFrameAt);
+    if (frameStallDuration >= stallTimeoutMs) {
+      return {
+        isStalled: true,
+        stalledDurationMs: frameStallDuration,
+        reason: "frozen-clock",
+      };
+    }
   }
 
   return { isStalled: false, stalledDurationMs: 0 };
