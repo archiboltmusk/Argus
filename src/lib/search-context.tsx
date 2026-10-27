@@ -490,6 +490,7 @@ export function SearchProvider({ children }: { children: ReactNode }) {
     hiddenTabs.liveTv,
     settings.mangaEnabled,
     authKey,
+    profileId,
   ]);
 
   useEffect(() => {
