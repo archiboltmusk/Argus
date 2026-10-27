@@ -1,0 +1,467 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Argus Feature Inventory",
+  "version": "1.0.0",
+  "lastUpdated": "2026-10-28",
+  "summary": {
+    "totalFeatures": 15,
+    "implemented": 9,
+    "partial": 3,
+    "experimental": 2,
+    "planned": 1
+  },
+  "features": [
+    {
+      "id": "feat-stream-scoring-ranking",
+      "name": "Intelligent Stream Scoring & Ranking",
+      "category": "playback",
+      "description": "Multi-signal stream ranking incorporating debrid cache status, resolution, audio formats, seeders, sticky release group continuity, and dead/verified hash adjustments.",
+      "sourceFiles": [
+        "src/lib/streams/scoring/scoring-stream.ts",
+        "src/lib/streams/scoring/scoring-rank.ts",
+        "argus-core/src/scoring.rs"
+      ],
+      "entryPoints": [
+        "src/views/play-picker.tsx",
+        "scoreStream()",
+        "rankStreams()"
+      ],
+      "status": "implemented",
+      "platformCompatibility": {
+        "macOS": "supported",
+        "windows": "supported",
+        "linux": "supported",
+        "android": "supported"
+      },
+      "testCoverage": [
+        "tests/scoring.test.ts",
+        "tests/scoring-rust.test.ts"
+      ],
+      "knownLimitations": [
+        "Release group normalization depends on torrent filename regex heuristics."
+      ],
+      "dependencies": [],
+      "acceptanceCriterion": "Top stream correctly prioritizes verified working links (+150), sticky series release groups (+25), and demotes reported dead hashes (-500)."
+    },
+    {
+      "id": "feat-stream-feedback-reporting",
+      "name": "Interactive Stream Feedback & Verified Working Links",
+      "category": "playback",
+      "description": "User stream upvoting (+150 ranking boost), verified badges, dead link marking (-500 demotion), and structured 5-factor issue reporting popover.",
+      "sourceFiles": [
+        "src/components/player/stream-feedback-buttons.tsx",
+        "src/lib/streams/dead-links.ts",
+        "src/lib/streams/stream-ratings.ts",
+        "src/views/play-picker/stremio-row.tsx",
+        "src/views/play-picker/primary-card.tsx"
+      ],
+      "entryPoints": [
+        "StreamFeedbackButtons in primary card",
+        "StreamFeedbackButtons in StremioRow"
+      ],
+      "status": "implemented",
+      "platformCompatibility": {
+        "macOS": "supported",
+        "windows": "supported",
+        "linux": "supported",
+        "android": "supported"
+      },
+      "testCoverage": [
+        "tests/dead-links.test.ts"
+      ],
+      "knownLimitations": [
+        "Ratings stored in local profile storage; sync to remote indexer not yet enabled."
+      ],
+      "dependencies": [
+        "feat-stream-scoring-ranking"
+      ],
+      "acceptanceCriterion": "User can click thumbs-up to instantly verify and rank up a working link or open a report drawer with 5 categorized failure reasons."
+    },
+    {
+      "id": "feat-stall-fallback-recovery",
+      "name": "Self-Healing Playback & Frozen-Clock Recovery",
+      "category": "playback",
+      "description": "Automatic stall detector that monitors playback progress, identifies frozen frame clocks (>8s without decoded frame progress), and automatically switches to the best standby stream while preserving position.",
+      "sourceFiles": [
+        "src/lib/player/stall-fallback.ts",
+        "src/views/player/hooks/use-stall-fallback.ts",
+        "argus-core/src/fallback.rs"
+      ],
+      "entryPoints": [
+        "useStallFallback hook in PlayerView",
+        "evaluateStallStatus()"
+      ],
+      "status": "implemented",
+      "platformCompatibility": {
+        "macOS": "supported",
+        "windows": "supported",
+        "linux": "supported",
+        "android": "supported"
+      },
+      "testCoverage": [
+        "tests/stall-fallback.test.ts"
+      ],
+      "knownLimitations": [
+        "Fallback candidates must be pre-resolved or resolvable within 3 seconds; maximum 3 sequential retries before user prompt."
+      ],
+      "dependencies": [
+        "feat-stream-scoring-ranking"
+      ],
+      "acceptanceCriterion": "Triggers failover switch within 8 seconds of decoded frame clock freezing without losing resume position."
+    },
+    {
+      "id": "feat-connection-health",
+      "name": "Unified Connection Health & Diagnostics Dashboard",
+      "category": "diagnostics",
+      "description": "Centralized real-time health inspection panel aggregating Stremio addons, Debrid providers, and self-hosted media servers with latency probes, error rates, and connection status.",
+      "sourceFiles": [
+        "src/views/settings/advanced-panel/connection-health-section.tsx",
+        "src/views/settings/advanced-panel/repair-tab.tsx",
+        "src/lib/streams/host-health.ts"
+      ],
+      "entryPoints": [
+        "Settings > Advanced > Repair & Diagnostics > Connection Health",
+        "runConnectionHealthProbe()"
+      ],
+      "status": "implemented",
+      "platformCompatibility": {
+        "macOS": "supported",
+        "windows": "supported",
+        "linux": "supported",
+        "android": "supported"
+      },
+      "testCoverage": [
+        "tests/host-health.test.ts"
+      ],
+      "knownLimitations": [
+        "Latency measurement is based on HTTP round-trip time; bandwidth throughput is probed separately."
+      ],
+      "dependencies": [],
+      "acceptanceCriterion": "Runs parallel health probes across all active addons, debrid accounts, and media servers, displaying color-coded status and millisecond latency."
+    },
+    {
+      "id": "feat-speech-recognition",
+      "name": "Local Whisper ASR Speech Recognition & Subtitle Generation",
+      "category": "accessibility",
+      "description": "On-device speech-to-text generation using local Whisper GGUF models with Apple Metal acceleration, bandpass pre-filtering, and live cue streaming.",
+      "sourceFiles": [
+        "src-tauri/src/asr_model.rs",
+        "src-tauri/src/subsync/asr.rs",
+        "src-tauri/src/subsync/asr_whisper.rs",
+        "src/lib/player/subtitles.ts"
+      ],
+      "entryPoints": [
+        "Tauri command `subsync_live_asr`",
+        "Player subtitle selector > Live ASR",
+        "asr://live-cues event"
+      ],
+      "status": "experimental",
+      "platformCompatibility": {
+        "macOS": "supported",
+        "windows": "supported",
+        "linux": "supported",
+        "android": "unsupported"
+      },
+      "testCoverage": [
+        "tests/subsync.test.ts"
+      ],
+      "knownLimitations": [
+        "Requires local model download (tiny ~140MB up to small ~1.5GB); high CPU/RAM usage on non-Apple-Silicon platforms without GPU acceleration."
+      ],
+      "dependencies": [],
+      "acceptanceCriterion": "Transcribes audio PCM frames and renders synced live subtitles within 1.5 seconds of speech utterance."
+    },
+    {
+      "id": "feat-sdh-subtitles",
+      "name": "SDH Subtitle Preferences, Ranking & Synchronization",
+      "category": "accessibility",
+      "description": "User preference toggle for Subtitles for the Deaf and Hard of Hearing (SDH), prioritizing SDH caption tracks and auto-aligning sync with audio voice activity.",
+      "sourceFiles": [
+        "src/lib/player/subtitles.ts",
+        "src/lib/settings.ts",
+        "src/views/settings/player-panel.tsx"
+      ],
+      "entryPoints": [
+        "Settings > Player > Subtitle Preferences > Prefer SDH",
+        "rankSubtitles()"
+      ],
+      "status": "implemented",
+      "platformCompatibility": {
+        "macOS": "supported",
+        "windows": "supported",
+        "linux": "supported",
+        "android": "supported"
+      },
+      "testCoverage": [
+        "tests/subtitles.test.ts"
+      ],
+      "knownLimitations": [
+        "Relies on standard SDH/hearing_impaired flags in subtitle stream metadata or track naming conventions."
+      ],
+      "dependencies": [],
+      "acceptanceCriterion": "When Prefer SDH is enabled, subtitles with hearing-impaired flags rank above standard dialog tracks."
+    },
+    {
+      "id": "feat-airplay",
+      "name": "Native AirPlay Streaming & Device Handoff",
+      "category": "playback",
+      "description": "Bonjour/AVFoundation AirPlay device discovery and media handoff to Apple TV and AirPlay-compatible receivers.",
+      "sourceFiles": [
+        "src-tauri/src/airplay.rs",
+        "src/components/player/airplay-button.tsx"
+      ],
+      "entryPoints": [
+        "Tauri command `airplay_discover`",
+        "Tauri command `airplay_connect`",
+        "AirPlay button in player controls"
+      ],
+      "status": "partial",
+      "platformCompatibility": {
+        "macOS": "supported",
+        "windows": "unsupported",
+        "linux": "unsupported",
+        "android": "unsupported"
+      },
+      "testCoverage": [],
+      "knownLimitations": [
+        "AVFoundation AirPlay bridge only functional on macOS; Windows and Linux return unsupported platform error."
+      ],
+      "dependencies": [],
+      "acceptanceCriterion": "Lists local AirPlay receivers on macOS and successfully transfers active stream URL to destination."
+    },
+    {
+      "id": "feat-watch-together",
+      "name": "Watch Together / SyncPlay Real-time Collaboration",
+      "category": "social",
+      "description": "Peer-to-peer room playback synchronization over WebSocket/WebRTC relays with synchronized clock, shared play/pause, seek events, and canvas drawing.",
+      "sourceFiles": [
+        "src/lib/together/peer.ts",
+        "src/lib/together/types.ts",
+        "src/components/together/together-modal.tsx"
+      ],
+      "entryPoints": [
+        "Top bar Watch Together icon",
+        "Route `/together`",
+        "Player sync engine"
+      ],
+      "status": "implemented",
+      "platformCompatibility": {
+        "macOS": "supported",
+        "windows": "supported",
+        "linux": "supported",
+        "android": "supported"
+      },
+      "testCoverage": [
+        "tests/together.test.ts"
+      ],
+      "knownLimitations": [
+        "Both participants must have access to the same stream URL or debrid provider account."
+      ],
+      "dependencies": [],
+      "acceptanceCriterion": "Synchronizes play, pause, and seek events across peers with clock drift maintained under 250ms."
+    },
+    {
+      "id": "feat-trickplay-scrubbing",
+      "name": "Trickplay Seek Thumbnail Previews",
+      "category": "playback",
+      "description": "Hover thumbnail preview scrub bar utilizing BIF archives, sprite sheets, or eager background frame extraction.",
+      "sourceFiles": [
+        "src-tauri/src/thumbs.rs",
+        "src/lib/trickplay.ts",
+        "src/components/player/thumb-preview.tsx"
+      ],
+      "entryPoints": [
+        "Player timeline hover state",
+        "Settings > Player > Seek Previews"
+      ],
+      "status": "implemented",
+      "platformCompatibility": {
+        "macOS": "supported",
+        "windows": "supported",
+        "linux": "supported",
+        "android": "supported"
+      },
+      "testCoverage": [
+        "tests/trickplay.test.ts"
+      ],
+      "knownLimitations": [
+        "High bandwidth usage if extracting live frames from uncached torrents; throttled on battery power."
+      ],
+      "dependencies": [],
+      "acceptanceCriterion": "Timeline hover displays preview thumbnail for target second within 150ms."
+    },
+    {
+      "id": "feat-privacy-redacted-diagnostics",
+      "name": "Privacy-First Redacted Diagnostics Export",
+      "category": "diagnostics",
+      "description": "Zero-leak diagnostic report generator scrubbing user tokens, API keys, local home directories, IP addresses, and session credentials.",
+      "sourceFiles": [
+        "src/lib/diagnostics/redact.ts",
+        "src/views/settings/advanced-panel/repair-tab.tsx"
+      ],
+      "entryPoints": [
+        "Settings > Advanced > Repair & Diagnostics > Export Diagnostics",
+        "exportRedactedDiagnostics()"
+      ],
+      "status": "implemented",
+      "platformCompatibility": {
+        "macOS": "supported",
+        "windows": "supported",
+        "linux": "supported",
+        "android": "supported"
+      },
+      "testCoverage": [
+        "tests/diagnostics-redact.test.ts"
+      ],
+      "knownLimitations": [
+        "Export is purely local JSON text file."
+      ],
+      "dependencies": [],
+      "acceptanceCriterion": "Exported diagnostic JSON contains zero sensitive API keys or full username directory paths."
+    },
+    {
+      "id": "feat-profile-saved-searches",
+      "name": "Profile-Isolated Saved Searches & Bookmarks",
+      "category": "search",
+      "description": "Per-profile search query history with pin/bookmark toggles and empty-state quick navigation chips.",
+      "sourceFiles": [
+        "src/lib/search/saved-searches.ts",
+        "src/views/search/saved-searches-row.tsx"
+      ],
+      "entryPoints": [
+        "Search bar empty state",
+        "Profile switch handler"
+      ],
+      "status": "implemented",
+      "platformCompatibility": {
+        "macOS": "supported",
+        "windows": "supported",
+        "linux": "supported",
+        "android": "supported"
+      },
+      "testCoverage": [
+        "tests/saved-searches.test.ts"
+      ],
+      "knownLimitations": [
+        "Synced locally per profile in IndexedDB."
+      ],
+      "dependencies": [],
+      "acceptanceCriterion": "Switching active profiles cleanly isolates saved searches with zero cross-profile bleed."
+    },
+    {
+      "id": "feat-adaptive-bandwidth-probe",
+      "name": "Adaptive Bandwidth & Low-Overhead Head Probing",
+      "category": "networking",
+      "description": "Lightweight concurrent HTTP range probing on top candidate streams to estimate connection throughput and display confidence badges.",
+      "sourceFiles": [
+        "src/components/player/bandwidth-confidence-badge.tsx",
+        "src/lib/streams/speed-probe.ts"
+      ],
+      "entryPoints": [
+        "Play picker stream cards",
+        "usePipelineResult hook"
+      ],
+      "status": "implemented",
+      "platformCompatibility": {
+        "macOS": "supported",
+        "windows": "supported",
+        "linux": "supported",
+        "android": "supported"
+      },
+      "testCoverage": [
+        "tests/speed-probe.test.ts"
+      ],
+      "knownLimitations": [
+        "Restricted to top 5 candidates to prevent rate-limiting and wasteful bandwidth consumption."
+      ],
+      "dependencies": [
+        "feat-stream-scoring-ranking"
+      ],
+      "acceptanceCriterion": "Calculates EWMA stream throughput within 400ms and annotates stream card with bandwidth confidence."
+    },
+    {
+      "id": "feat-media-identity-resolution",
+      "name": "Universal Media Identity & Canonical Disambiguation",
+      "category": "library",
+      "description": "Multi-indexer media entity reconciliation handling alternate titles, release years, season/episode numbering, anime cours, and director cuts.",
+      "sourceFiles": [
+        "src/lib/cinemeta.ts",
+        "src/lib/streams/matching.ts",
+        "argus-core/src/identity.rs"
+      ],
+      "entryPoints": [
+        "Play picker title confirmation banner",
+        "Search result deduplication"
+      ],
+      "status": "partial",
+      "platformCompatibility": {
+        "macOS": "supported",
+        "windows": "supported",
+        "linux": "supported",
+        "android": "supported"
+      },
+      "testCoverage": [
+        "tests/media-matching.test.ts"
+      ],
+      "knownLimitations": [
+        "Special episodes, OVAs, and complex anime cour split numbering occasionally require manual search fallback."
+      ],
+      "dependencies": [],
+      "acceptanceCriterion": "Accurately confirms matching media identity across Stremio, Cinemeta, and Debrid release titles."
+    },
+    {
+      "id": "feat-lan-discovery",
+      "name": "Local Network Media Server & Peer Discovery",
+      "category": "networking",
+      "description": "mDNS / Bonjour network probing for automatic detection of local Plex, Jellyfin, and Argus instances on the subnet.",
+      "sourceFiles": [
+        "src-tauri/src/lan.rs",
+        "src/lib/network/lan-discovery.ts"
+      ],
+      "entryPoints": [
+        "Settings > Media Servers > Scan Local Network",
+        "Tauri command `lan_scan`"
+      ],
+      "status": "partial",
+      "platformCompatibility": {
+        "macOS": "supported",
+        "windows": "supported",
+        "linux": "supported",
+        "android": "unsupported"
+      },
+      "testCoverage": [],
+      "knownLimitations": [
+        "Requires local Wi-Fi multicast and firewall pass-through; some routers block mDNS across VLANs."
+      ],
+      "dependencies": [],
+      "acceptanceCriterion": "Discovers active local media servers within 3 seconds of initiating scan on same subnet."
+    },
+    {
+      "id": "feat-ai-ci-repair",
+      "name": "Local-Model AI CI Repair System",
+      "category": "devops",
+      "description": "Automated CI failure diagnosis and bounded patch generation pipeline using local LLMs with reproducible test verification and pull request generation.",
+      "sourceFiles": [
+        ".github/workflows/codex-auto-fix.yml",
+        "scripts/ci-repair.sh"
+      ],
+      "entryPoints": [
+        "GitHub Actions CI workflow failure trigger",
+        "PR #122"
+      ],
+      "status": "experimental",
+      "platformCompatibility": {
+        "macOS": "supported",
+        "windows": "unsupported",
+        "linux": "supported",
+        "android": "unsupported"
+      },
+      "testCoverage": [],
+      "knownLimitations": [
+        "Bounded to 3 repair retries; strictly enforces no arbitrary shell commands and requires passing typecheck."
+      ],
+      "dependencies": [],
+      "acceptanceCriterion": "Detects CI job failure, parses compiler log, applies validated patch, and opens automated fix pull request."
+    }
+  ]
+}
