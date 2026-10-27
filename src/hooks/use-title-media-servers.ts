@@ -67,7 +67,7 @@ export function useMediaServerAvailability(
   metas: Array<{ id: string }>,
 ): Map<string, string[]> {
   const [availability, setAvailability] = useState<Map<string, string[]>>(() => new Map());
-  const idsKey = metas.map((meta) => meta.id).join("\\0");
+  const idsKey = JSON.stringify([activeProfileId(), ...metas.map((meta) => meta.id)]);
 
   useEffect(() => {
     let alive = true;
@@ -81,7 +81,7 @@ export function useMediaServerAvailability(
       const items = await mediaServerItems();
       const titles = groupMediaServerTitles(items.filter((item) => enabled.has(item.connectionId)));
       const next = new Map<string, string[]>();
-      for (const metaId of idsKey.split("\\0").filter(Boolean)) {
+      for (const metaId of (JSON.parse(idsKey) as string[]).slice(1)) {
         const identity = titleIdentity(metaId, undefined);
         if (identity.tmdbId == null && !identity.imdbId) continue;
         const matches = titles.filter((title) => identityMatches(title.identity, identity));
