@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { ArrowUpRight, LoaderCircle, Play, X, Youtube } from "lucide-react";
+import { ArrowUpRight, LoaderCircle, Play, Video as VideoIcon, X } from "lucide-react";
 import { useT } from "@/lib/i18n";
 import { openUrl } from "@/lib/window";
 import { useDragScroll } from "@/lib/use-drag-scroll";
@@ -131,7 +131,7 @@ export function AthleteVideos({
           className="sh-text-button"
           onClick={() => openUrl(athleteYoutubeSearch(name, league))}
         >
-          <Youtube size={19} />
+          <VideoIcon size={19} />
           {t("Search YouTube")}
           <ArrowUpRight size={14} />
         </button>
@@ -186,7 +186,7 @@ export function AthleteVideos({
               <VideoThumbnail video={video} />
               <strong>{video.title}</strong>
               <span className="sh-athlete-video-publisher">
-                {video.youtube && <Youtube size={14} />} {video.publisher || "ESPN"} · {t("Video")}
+                {video.youtube && <VideoIcon size={14} />} {video.publisher || "ESPN"} · {t("Video")}
               </span>
             </button>
           ))}
