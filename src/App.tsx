@@ -245,6 +245,7 @@ const importMatchDetail = () => import("@/views/live/match-detail-view");
 const importVod = () => import("@/views/playlist-vod");
 const importDownloads = () => import("@/views/downloads");
 const importOnboarding = () => import("@/components/onboarding");
+const importArgusLab = () => import("@/views/argus-lab");
 
 const AnimeView = lazy(() => importAnime().then((m) => ({ default: m.AnimeView })));
 const CalendarView = lazy(() => importCalendar().then((m) => ({ default: m.CalendarView })));
@@ -310,6 +311,7 @@ const DownloadsView = lazy(() => importDownloads().then((m) => ({ default: m.Dow
 const MangaView = lazy(() => import("@/views/manga").then((m) => ({ default: m.MangaView })));
 const EBookView = lazy(() => import("@/views/ebook").then((m) => ({ default: m.EBookView })));
 const EducationView = lazy(() => import("@/views/education").then((m) => ({ default: m.EducationView })));
+const ArgusLabView = lazy(() => importArgusLab().then((m) => ({ default: m.ArgusLabView })));
 const OnboardingModal = lazy(() =>
   importOnboarding().then((m) => ({ default: m.OnboardingModal })),
 );
@@ -1648,6 +1650,7 @@ function Shell({ onReady }: { onReady?: () => void }) {
   const vodTop = topKind === "vod";
   const downloadsTop = topKind === "downloads";
   const educationTop = topKind === "education";
+  const argusLabTop = topKind === "argus-lab";
   const mangaTop = topKind === "manga" && installFeatures.manga;
   const ebookTop = topKind === "ebook" && installFeatures.ebook;
   const peopleTop = topKind === "people";
@@ -1756,6 +1759,7 @@ function Shell({ onReady }: { onReady?: () => void }) {
   const vodAlive = useIdleEvict(vodTop);
   const downloadsAlive = useIdleEvict(downloadsTop);
   const educationAlive = useIdleEvict(educationTop);
+  const argusLabAlive = useIdleEvict(argusLabTop);
   const mangaAlive = useIdleEvict(mangaTop);
   const ebookAlive = useIdleEvict(ebookTop);
   const peopleAlive = useIdleEvict(peopleTop);
@@ -2068,6 +2072,13 @@ function Shell({ onReady }: { onReady?: () => void }) {
               <div {...layerProps(educationTop)}>
                 <Suspense fallback={null}>
                   <EducationView />
+                </Suspense>
+              </div>
+            )}
+            {argusLabAlive && (
+              <div {...layerProps(argusLabTop)}>
+                <Suspense fallback={null}>
+                  <ArgusLabView active={argusLabTop} />
                 </Suspense>
               </div>
             )}

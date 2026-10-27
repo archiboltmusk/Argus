@@ -3,7 +3,7 @@ import { useSportsEnabled } from "@/lib/sports/enabled";
 import { usePluginCataloguesAvailable } from "@/lib/streams/plugins/available";
 import { useInstallFeatures } from "@/lib/features/install";
 import { SportsNavIcon } from "@/components/icons/sports-nav-icon";
-import { GraduationCap, Popcorn, Puzzle } from "lucide-react";
+import { Compass, GraduationCap, Popcorn, Puzzle } from "lucide-react";
 import { NavGlyph } from "@/components/icons/nav-glyph";
 import { NavLottie } from "@/components/icons/nav-lottie";
 import lotHome from "@/assets/lottie/nav/home.json";
@@ -72,6 +72,7 @@ export type NavItemId =
   | "sports"
   | "vod"
   | "education"
+  | "argus-lab"
   | "calendar"
   | "library"
   | "collections"
@@ -250,6 +251,12 @@ const NAV_ITEMS_ALL: NavItem[] = [
       </div>
     ),
     view: "education",
+  },
+  {
+    id: "argus-lab",
+    label: "Argus Lab",
+    render: (active) => <Compass size={25} strokeWidth={active ? 2.4 : 2} className={active ? "text-accent" : "opacity-75"} />,
+    view: "argus-lab",
   },
   {
     id: "calendar",

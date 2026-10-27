@@ -58,6 +58,7 @@ export type View =
   | "manga"
   | "ebook"
   | "education"
+  | "argus-lab"
   | "people";
 
 export type PlayEpisode = {
@@ -214,6 +215,7 @@ export type Frame =
   | { kind: "vod" }
   | { kind: "downloads" }
   | { kind: "education" }
+  | { kind: "argus-lab" }
   | { kind: "manga"; mangaId?: string }
   | { kind: "ebook"; ebookId?: string }
   | { kind: "people"; source?: RankSource; dept?: PeopleDept; focusSource?: boolean; nonce: number }
@@ -487,6 +489,8 @@ function frameKey(f: Frame): string {
       return "downloads";
     case "education":
       return "education";
+    case "argus-lab":
+      return "argus-lab";
     case "manga":
       return f.mangaId ? `manga:${f.mangaId}` : "manga";
     case "ebook":
@@ -643,6 +647,7 @@ export function ViewProvider({ children }: { children: ReactNode }) {
       if (f.kind === "vod") return "vod";
       if (f.kind === "downloads") return "downloads";
       if (f.kind === "education") return "education";
+      if (f.kind === "argus-lab") return "argus-lab";
       if (f.kind === "manga") return "manga";
       if (f.kind === "ebook") return "ebook";
       if (f.kind === "people") return "people";
@@ -902,6 +907,11 @@ export function ViewProvider({ children }: { children: ReactNode }) {
           scrollMem.current.clear();
           rowScrollMem.current.clear();
           return [{ kind: "education" }];
+        }
+        if (v === "argus-lab") {
+          scrollMem.current.clear();
+          rowScrollMem.current.clear();
+          return [{ kind: "argus-lab" }];
         }
         if (v === "movies") {
           scrollMem.current.clear();
