@@ -56,3 +56,53 @@ export function useTitleMediaServers(
 
   return matches;
 }
+
+
+/**
+ * Resolve home-server availability for a whole search rail in one index read,
+ * rather than issuing one IndexedDB query per poster row.
+ */
+export function useMediaServerAvailability(
+  metas: Array<{ id: string }>,
+): Map<string, string[]> {
+  const [availability, setAvailability] = useState<Map<string, string[]>>(() => new Map());
+  const idsKey = metas.map((meta) => meta.id).join("\\0");
+
+  useEffect(() => {
+    let alive = true;
+    const load = async () => {
+      const connections = mediaServerConnections().filter((connection) => connection.enabled);
+      const enabled = new Map(connections.map((connection) => [connection.id, connection]));
+      if (enabled.size === 0) {
+        if (alive) setAvailability(new Map());
+        return;
+      }
+      const items = await mediaServerItems();
+      const titles = groupMediaServerTitles(items.filter((item) => enabled.has(item.connectionId)));
+      const next = new Map<string, string[]>();
+      for (const metaId of idsKey.split("\\0").filter(Boolean)) {
+        const identity = titleIdentity(metaId, undefined);
+        if (identity.tmdbId == null && !identity.imdbId) continue;
+        const matches = titles.filter((title) => identityMatches(title.identity, identity));
+        const names = [...new Set(matches.flatMap((title) =>
+          title.connectionIds.flatMap((id) => {
+            const connection = enabled.get(id);
+            return connection ? [connection.name] : [];
+          }),
+        ))];
+        if (names.length) next.set(metaId, names);
+      }
+      if (alive) setAvailability(next);
+    };
+    void load().catch(() => {
+      if (alive) setAvailability(new Map());
+    });
+    const unsubscribe = subscribeMediaServerConnections(() => void load());
+    return () => {
+      alive = false;
+      unsubscribe();
+    };
+  }, [idsKey]);
+
+  return availability;
+}
