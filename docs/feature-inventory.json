@@ -4,8 +4,8 @@
   "version": "1.0.0",
   "lastUpdated": "2026-10-28",
   "summary": {
-    "totalFeatures": 15,
-    "implemented": 9,
+    "totalFeatures": 16,
+    "implemented": 10,
     "partial": 3,
     "experimental": 2,
     "planned": 1
@@ -42,6 +42,45 @@
       ],
       "dependencies": [],
       "acceptanceCriterion": "Top stream correctly prioritizes verified working links (+150), sticky series release groups (+25), and demotes reported dead hashes (-500)."
+    },
+    {
+      "id": "feat-smart-stream-selection",
+      "name": "Argus Smart Stream: Quality-Aware Adaptive Selection",
+      "category": "playback",
+      "description": "Two-stage candidate selection combining Stage A elimination of unplayable/mismatched links with Stage B multi-signal weighted scoring across Best Quality, Fastest Reliable, and Balanced modes.",
+      "sourceFiles": [
+        "src/lib/streams/scoring/scoring-rank.ts",
+        "src/lib/streams/scoring/scoring-stream.ts",
+        "src/lib/streams/speed-probe.ts",
+        "src/lib/player/stall-fallback.ts",
+        "argus-core/src/scoring.rs"
+      ],
+      "entryPoints": [
+        "rankAndPick()",
+        "usePipelineResult()",
+        "PlayPickerView"
+      ],
+      "status": "implemented",
+      "platformCompatibility": {
+        "macOS": "supported",
+        "windows": "supported",
+        "linux": "supported",
+        "android": "supported"
+      },
+      "testCoverage": [
+        "tests/scoring.test.ts",
+        "tests/stall-fallback.test.ts",
+        "tests/speed-probe.test.ts"
+      ],
+      "knownLimitations": [
+        "Bitrate throughput safety margin (1.5x) uses EWMA range estimation; live IPTV streams use dedicated buffer limits."
+      ],
+      "dependencies": [
+        "feat-stream-scoring-ranking",
+        "feat-adaptive-bandwidth-probe",
+        "feat-stall-fallback-recovery"
+      ],
+      "acceptanceCriterion": "Selects the highest verified playable release matching user target resolution without downgrading to 1080p merely for latency; preserves resume position on fallback."
     },
     {
       "id": "feat-stream-feedback-reporting",
