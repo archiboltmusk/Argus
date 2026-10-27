@@ -200,7 +200,7 @@ jobs:
 
       - uses: actions/download-artifact@v8
         with:
-          name: codex-candidate-patch
+          name: local-model-candidate-patch
 
       - name: Apply candidate patch
         run: git apply --index codex.patch
