@@ -12,9 +12,15 @@ import {
   type ExperienceMode,
   type StreamCandidate,
 } from "@/lib/experience-engine";
-
-const CONTRACT_KEY = "argus.experience-contract.v1";
-const MODE_KEY = "argus.experience-mode.v1";
+import {
+  createExperiment,
+  exportLabState,
+  importLabState,
+  loadLabState,
+  resetLabState,
+  saveLabState,
+  type LabExperiment,
+} from "@/lib/argus-lab";
 
 const DEMO_CANDIDATES: StreamCandidate[] = [
   { id: "a", label: "Balanced 1080p", startupMs: 1450, quality: 1080, stability: 0.94, estimatedMbps: 7.5, compatible: true, recentFailures: 0, observations: 18 },
@@ -23,27 +29,7 @@ const DEMO_CANDIDATES: StreamCandidate[] = [
   { id: "d", label: "Incompatible HDR profile", startupMs: 700, quality: 2160, stability: 0.99, estimatedMbps: 18, compatible: false, recentFailures: 0, observations: 30 },
 ];
 
-type Tab = "decision" | "contract" | "signals";
-
-function readContract(): ExperienceContract {
-  try {
-    const parsed = JSON.parse(localStorage.getItem(CONTRACT_KEY) ?? "null") as Partial<ExperienceContract> | null;
-    return { ...DEFAULT_EXPERIENCE_CONTRACT, ...(parsed ?? {}) };
-  } catch {
-    return { ...DEFAULT_EXPERIENCE_CONTRACT };
-  }
-}
-
-function readMode(): ExperienceMode {
-  try {
-    const value = localStorage.getItem(MODE_KEY);
-    return value === "fast-start" || value === "quality" || value === "reliable" || value === "data-saver"
-      ? value
-      : "balanced";
-  } catch {
-    return "balanced";
-  }
-}
+type Tab = "decision" | "contract" | "signals" | "operations";
 
 const MODES: Array<{ id: ExperienceMode; title: string; description: string }> = [
   { id: "balanced", title: "Balanced", description: "A measured compromise between stability, speed, quality, and data." },
@@ -66,8 +52,12 @@ function Panel({ children, className = "" }: { children: React.ReactNode; classN
 
 export function ArgusLabView({ active = true }: { active?: boolean }) {
   const [tab, setTab] = useState<Tab>("decision");
-  const [mode, setMode] = useState<ExperienceMode>(readMode);
-  const [contract, setContract] = useState<ExperienceContract>(readContract);
+  const [initial] = useState(loadLabState);
+  const [mode, setMode] = useState<ExperienceMode>(initial.mode);
+  const [contract, setContract] = useState<ExperienceContract>(initial.contract);
+  const [experiments, setExperiments] = useState<LabExperiment[]>(initial.experiments);
+  const [experimentName, setExperimentName] = useState("");
+  const [notice, setNotice] = useState("");
   const [online, setOnline] = useState(() => typeof navigator === "undefined" ? true : navigator.onLine);
   const [storageAvailable, setStorageAvailable] = useState<boolean | null>(null);
   const [reducedMotion, setReducedMotion] = useState(false);
@@ -98,12 +88,8 @@ export function ArgusLabView({ active = true }: { active?: boolean }) {
   }, [active]);
 
   useEffect(() => {
-    try { localStorage.setItem(MODE_KEY, mode); } catch {}
-  }, [mode]);
-
-  useEffect(() => {
-    try { localStorage.setItem(CONTRACT_KEY, JSON.stringify(contract)); } catch {}
-  }, [contract]);
+    saveLabState({ contract, mode, experiments });
+  }, [contract, mode, experiments]);
 
   const setRule = (id: ExperienceAction, allowed: boolean) =>
     setContract((current) => ({ ...current, [id]: allowed }));
@@ -145,6 +131,7 @@ export function ArgusLabView({ active = true }: { active?: boolean }) {
             ["decision", "Decision Lab"],
             ["contract", "Experience Contract"],
             ["signals", "Local Signals"],
+            ["operations", "Lab Controls"],
           ] as Array<[Tab, string]>).map(([id, label]) => (
             <button key={id} role="tab" aria-selected={tab === id} onClick={() => setTab(id)}
               className={`rounded-full px-4 py-2 text-sm font-medium transition-colors ${tab === id ? "bg-accent text-white" : "border border-edge-soft bg-surface text-ink-subtle hover:text-ink"}`}>
@@ -232,6 +219,40 @@ export function ArgusLabView({ active = true }: { active?: boolean }) {
                 <li><strong className="text-ink">6. Recover</strong> — use bounded retries and provide an undo path.</li>
               </ol>
               <p className="mt-4 rounded-xl border border-edge-soft p-3 text-xs leading-5 text-ink-subtle">The page is an initial architecture slice, not a claim that all six stages are wired into playback yet.</p>
+            </Panel>
+          </div>
+        )}
+
+        {tab === "operations" && (
+          <div className="grid gap-5 lg:grid-cols-2">
+            <Panel>
+              <div className="mb-4 flex items-center gap-2"><Zap size={18} className="text-accent" /><h2 className="text-lg font-semibold">Local experiments</h2></div>
+              <p className="mb-4 text-sm leading-6 text-ink-subtle">Experiments are local feature notes and never change playback until a future feature explicitly honors them.</p>
+              <form className="flex gap-2" onSubmit={(event) => {
+                event.preventDefault();
+                const created = createExperiment(experimentName);
+                if (!created || experiments.length >= 20) { setNotice("Enter a short experiment name; Lab stores up to 20."); return; }
+                setExperiments((current) => [created, ...current]);
+                setExperimentName("");
+                setNotice("Experiment created locally.");
+              }}>
+                <input value={experimentName} onChange={(event) => setExperimentName(event.target.value)} maxLength={80} placeholder="e.g. Safer source recovery" className="min-w-0 flex-1 rounded-lg border border-edge-soft bg-canvas px-3 py-2 text-sm" />
+                <button className="rounded-lg bg-accent px-3 py-2 text-sm font-medium text-white">Add</button>
+              </form>
+              <div className="mt-4 space-y-2">
+                {experiments.map((experiment) => <div key={experiment.id} className="flex items-center justify-between gap-3 rounded-xl bg-surface p-3"><span className="text-sm font-medium">{experiment.name}</span><div className="flex gap-2"><button type="button" onClick={() => setExperiments((items) => items.map((item) => item.id === experiment.id ? { ...item, enabled: !item.enabled } : item))} className="rounded-md border border-edge-soft px-2 py-1 text-xs">{experiment.enabled ? "Enabled" : "Disabled"}</button><button type="button" onClick={() => setExperiments((items) => items.filter((item) => item.id !== experiment.id))} className="rounded-md px-2 py-1 text-xs text-ink-subtle">Remove</button></div></div>)}
+                {experiments.length === 0 && <p className="rounded-xl bg-surface p-3 text-sm text-ink-subtle">No local experiments yet.</p>}
+              </div>
+            </Panel>
+            <Panel>
+              <div className="mb-4 flex items-center gap-2"><Database size={18} className="text-accent" /><h2 className="text-lg font-semibold">Backup and rollback</h2></div>
+              <p className="text-sm leading-6 text-ink-subtle">Export contains only Lab mode, policy switches, and local experiment names. It contains no media history, credentials, URLs, or diagnostics.</p>
+              <div className="mt-5 flex flex-wrap gap-2">
+                <button type="button" onClick={() => { navigator.clipboard?.writeText(exportLabState({ contract, mode, experiments })); setNotice("Lab settings copied to the clipboard."); }} className="rounded-lg border border-edge-soft px-3 py-2 text-sm hover:bg-surface-hover">Copy backup</button>
+                <label className="cursor-pointer rounded-lg border border-edge-soft px-3 py-2 text-sm hover:bg-surface-hover">Import backup<input className="sr-only" type="file" accept="application/json" onChange={(event) => { const file = event.target.files?.[0]; if (!file) return; file.text().then((text) => { const imported = importLabState(text); if (!imported) { setNotice("That backup is not a valid Argus Lab file."); return; } setContract(imported.contract); setMode(imported.mode); setExperiments(imported.experiments); setNotice("Lab backup imported locally."); }); }} /></label>
+                <button type="button" onClick={() => { const reset = resetLabState(); setContract(reset.contract); setMode(reset.mode); setExperiments(reset.experiments); setNotice("Lab settings restored to defaults."); }} className="rounded-lg border border-edge-soft px-3 py-2 text-sm hover:bg-surface-hover">Reset all</button>
+              </div>
+              {notice && <p className="mt-4 rounded-xl bg-surface p-3 text-sm text-ink-subtle" role="status">{notice}</p>}
             </Panel>
           </div>
         )}
