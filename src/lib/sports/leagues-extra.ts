@@ -1041,10 +1041,30 @@ export const EXTRA_LEAGUES: LeagueDef[] = [
     logo: `${TL}/pll.png`,
     group: "lacrosse",
   },
+  {
+    key: "PKL",
+    label: "دوري كابادي للمحترفين",
+    labelEn: "Pro Kabaddi League",
+    tag: "PKL",
+    path: "kabaddi/pkl",
+    logo: "https://www.prokabaddi.com/static-assets/waf-images/73/45/f0/16-9/388-218/1648.png",
+    group: "kabaddi",
+  },
+  {
+    key: "BWF",
+    label: "جولة الريشة الطائرة العالمية",
+    labelEn: "BWF World Tour",
+    tag: "BWF",
+    path: "badminton/bwf",
+    logo: "https://bwfworldtour.bwfbadminton.com/wp-content/themes/bwf-world-tour/assets/images/logo.png",
+    group: "badminton",
+  },
 ];
 
 export const EXTRA_LEAGUE_GROUPS: LeagueGroupDef[] = [
   { key: "cricket", label: "الكريكيت", labelEn: "Cricket", labelRu: "Крикет", icon: "🏏" },
+  { key: "kabaddi", label: "الكابادي", labelEn: "Kabaddi", labelRu: "Кабадди", icon: "🤼" },
+  { key: "badminton", label: "كرة الريشة", labelEn: "Badminton", labelRu: "Бадминтон", icon: "🏸" },
   {
     key: "aussie",
     label: "الكرة الأسترالية",

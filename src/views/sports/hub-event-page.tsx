@@ -10,6 +10,8 @@ import type { SportsGame } from "@/lib/sports/espn";
 import { hubLeague } from "@/lib/sports/hub-data";
 import { SPORTS_BROADCASTS } from "@/lib/sports/broadcasts";
 import { WatchSources } from "./watch-sources";
+import { CricketScorecard } from "./cricket-scorecard";
+import { MatchHighlights } from "./match-highlights";
 import { useEventDate } from "./hub-cards";
 import { HubCompetition } from "./hub-competition";
 import { BroadcastPlayer } from "./hub-broadcasts";
@@ -75,6 +77,8 @@ function StandardHubEventPage({
         <SportsReminderButton game={game} />
       </div>
       <div className="sh-event-page-body">
+        <CricketScorecard game={game} />
+        {game.state === "post" && <MatchHighlights game={game} />}
         {hubLeague(game.league)?.group === "esports" && <EsportsMap game={game} />}
         <VenuePreview game={game} detail={null} sport={hubLeague(game.league)?.group ?? ""} />
         <WhereToWatch game={game} />

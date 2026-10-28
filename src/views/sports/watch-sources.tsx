@@ -1,6 +1,6 @@
 import { hubLeague } from "@/lib/sports/hub-data";
 import { legacyEsportsMatch } from "@/lib/sports/legacy-esports-match";
-import { Check, Link2, X, Play, ChevronDown, Settings2 } from "lucide-react";
+import { Check, Link2, X, Play, ChevronDown, Settings2, Tv } from "lucide-react";
 import { useEffect, useMemo, useRef, useState, type RefObject } from "react";
 import { Search } from "@/components/icons/search-icon";
 import { useT } from "@/lib/i18n";
@@ -27,6 +27,7 @@ import { AddStreamDialog, useStreamPlayer } from "./add-stream-dialog";
 import { setAttachedStream, toggleAttachedChannel, useAttachments } from "./source-store";
 import { fixtureLabelOf, useChannelPlayer } from "./watch-flow";
 import { SportsAddonSources } from "./addon-source-panel";
+import { SportsDualWatch } from "./sports-dual-watch";
 
 let flatKey = "";
 let flatChannels: IptvChannel[] = [];
@@ -156,6 +157,7 @@ function ActiveWatchSources({ game, index, broadcastNames }: WatchSourcesProps) 
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [picking, setPicking] = useState(false);
   const [webStream, setWebStream] = useState(false);
+  const [dualWatch, setDualWatch] = useState(false);
   const anchor = useRef<HTMLDivElement>(null);
   const addonAnchor = useRef<HTMLDivElement>(null);
   const [hasAddonSources, setHasAddonSources] = useState(false);
@@ -279,6 +281,10 @@ function ActiveWatchSources({ game, index, broadcastNames }: WatchSourcesProps) 
           <Link2 size={16} />
           {t("Paste a stream")}
         </button>
+        <button className="sh-button" onClick={() => setDualWatch(true)}>
+          <Tv size={16} />
+          {t("Multi-View")}
+        </button>
       </div>
       {expanded && (
         <div className="sh-watch-channels">
@@ -337,6 +343,16 @@ function ActiveWatchSources({ game, index, broadcastNames }: WatchSourcesProps) 
           fixtureLabel={fixtureLabel}
           onAttach={(next) => setAttachedStream(game.id, next)}
           onClose={() => setWebStream(false)}
+        />
+      )}
+      {dualWatch && (
+        <SportsDualWatch
+          primaryStream={{
+            title: fixtureLabel,
+            url: stream ? stream.page : selected ? selected.channel.url : "https://www.youtube-nocookie.com/embed?autoplay=1",
+            channelName: selected?.channel.name,
+          }}
+          onClose={() => setDualWatch(false)}
         />
       )}
     </section>

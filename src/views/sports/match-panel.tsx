@@ -20,6 +20,8 @@ import { StandingsPanel } from "./standings-panel";
 import { PlayerMatchStats } from "./player-match-stats";
 import { BarChart3, Clock3, History } from "lucide-react";
 import { MatchDisclosure } from "./match-disclosure";
+import { CricketScorecard } from "./cricket-scorecard";
+import { MatchHighlights } from "./match-highlights";
 
 function toNumber(value: string): number {
   const parsed = parseFloat((value || "").replace(/[^0-9.-]/g, ""));
@@ -378,6 +380,8 @@ export function MatchPanel({
 
   return (
     <div className="sh-match-sections" key={`${loaded.league}:${loaded.id}`}>
+      <CricketScorecard game={loaded} />
+      {loaded.state === "post" && <MatchHighlights game={loaded} />}
       {!hideScoreboard && <Scoreboard detail={loaded} />}
 
       {!hidePitch && (
