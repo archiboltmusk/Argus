@@ -76,6 +76,7 @@ import { DetailLoading } from "./game-detail-loading";
 import { DetailDisclosure, DetailExpansion } from "./game-detail-disclosure";
 import { GameKeyPrices } from "./game-key-prices";
 import { GameLinks } from "./game-library-links";
+import { GameCloudPlay } from "./game-cloud-play";
 
 import { DEADLOCK_STEAM_ID } from "@/lib/games/deadlock-data";
 import { canLaunchGame, findLauncherInstall, isRetailWow, LAUNCHER_NAMES } from "@/lib/games/launchers";
@@ -236,6 +237,7 @@ export function GameDetailPage({ openMods, onGuides, game, saved, onSave, onBack
           {installOwned && <button className="games-button games-button-primary" disabled={account.installing !== null} onClick={() => void account.install(owned.appId)}><Download size={24}/>{t(account.installing === owned.appId ? "games.library.opening" : "games.account.install")}</button>}
           {romHack ? <><GamePatchLauncher game={{...portableGame,projectUrl:atlas?.projectUrl,parent:atlas?.parent}}/>{hackProjectUrl && <a className="games-button" href={hackProjectUrl} onClick={event=>{event.preventDefault();openUrl(hackProjectUrl);}}>{t("games.hub.project")}<ArrowUpRight size={17}/></a>}</> : !customCopy && !installOwned && installed?.state !== "installed" && !launcherInstall && (officialDownload ? <a className="games-button games-button-primary" href={officialDownload.href} target="_blank" rel="noreferrer" onClick={event => { event.preventDefault(); void openUrl(officialDownload.href); }}><Download size={22}/>{t("games.official.get", { launcher: officialDownload.launcher })}<ArrowUpRight size={16}/></a> : <button className="games-button games-button-primary" onClick={() => { sourceSection.current?.scrollIntoView({ behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "instant" : "smooth", block: "start" }); sourceSection.current?.focus({ preventScroll: true }); }}><Download size={19} />{t("games.details.findSources")}</button>)}
           {steamLinkId && <a className="games-detail-steam-action" href={`https://store.steampowered.com/app/${steamLinkId}/`} target="_blank" rel="noreferrer" onClick={event => { event.preventDefault(); openUrl(`https://store.steampowered.com/app/${steamLinkId}/`); }}><SteamMark />{t("games.steam")}</a>}
+          <GameCloudPlay game={portableGame} steamId={steamId} igdbId={atlas?.igdbId ?? target.igdbId} />
           </div>
           <div className="games-detail-secondary-actions">
             {!romHack && <GameSourceAlert game={portableGame} profile={profile} hasSources={sources.sources.some(source => source.enabled)} compact/>}

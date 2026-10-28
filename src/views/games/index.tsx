@@ -64,6 +64,7 @@ import { GameSavedWatchlist } from "./game-saved-watchlist";
 import { GameAtlasPage, GamePlatforms } from "./game-atlas";
 import { GameHighlights } from "./game-highlights";
 import { GameFreeRadar } from "./game-free-radar";
+import { GameCloudHub } from "./game-cloud-hub";
 import { DEFAULT_FAVORITE_REVIEWS, type FavoriteReviewFilters, type GameFavoriteFilter } from "@/lib/games/favorites-data";
 import { GameStoryFeature } from "./game-story-feature";
 import { GameSeasonal } from "./game-seasonal";
@@ -367,6 +368,7 @@ function GamesViewContent({ argusNavigationOpen = false, onArgusNavigationChange
         <GamePageRows page="games-explore" active={homeActive} inset intro={hidden => <GameExploreShortcuts scrollRef={scroll} hiddenRows={hidden}/>} >
           <GamePageRow id="picker" title={t("games.pick.title")}>{homeActive&&<GameDiscoveryPicker key={"discovery-picker:" + profileId} profile={profileId} saved={saved} installed={library.scan?.games??[]} emulation={emulation.data} libraryContext={{steam:steamAccount.status.connected?steamAccount.status.snapshot:null,custom:customLibrary.data.games,launchers:access.launchers.scan}} active={homeActive} open={open}/>}</GamePageRow>
           <GamePageRow id="free-radar" title={t("games.freeRadar.title")}><GameFreeRadar open={open}/></GamePageRow>
+          <GamePageRow id="cloud-gaming" title="Cloud Gaming & Remote Streaming"><GameCloudHub /></GamePageRow>
           <GamePageRow id="recent" title={t("games.recent.title")}><GameRecentSources key={"recent-sources:" + profileId} sources={sources} downloads={downloads} active={homeActive} manage={()=>setSourcesOpen(true)} open={open} browse={browseRecent}/></GamePageRow>
           <GamePageRow id="favorites" title={t("games.editorial.favorites")}><GameHighlights visit={exploreVisit.id} active={homeActive} open={open} browse={browse} filter={favoritesFilter} setFilter={setFavoritesFilter} reviews={favoriteReviews} setReviews={setFavoriteReviews}/></GamePageRow>
           <GamePageRow id="greats" title={t("games.collectionsLive.greats")}><GameDiscoveryCollection visit={exploreVisit.id} kind="greats" active={homeActive} open={open} browse={(route,filters)=>browseAtlas(route,undefined,filters)}/></GamePageRow>

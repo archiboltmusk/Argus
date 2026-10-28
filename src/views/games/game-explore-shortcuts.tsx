@@ -3,6 +3,7 @@ import { useT } from "@/lib/i18n";
 
 const destinations = [
   ["games.freeRadar.shortcut", "[data-page-row=\"free-radar\"]", "free-radar"],
+  ["Cloud Gaming", "[data-page-row=\"cloud-gaming\"]", "cloud-gaming"],
   ["games.discovery.worldsTitle", ".games-franchise-worlds", "worlds"],
   ["games.studios.title", ".games-studios", "studios"],
   ["games.romShowcase.title", ".games-rom-showcase", "rom-hacks"],
