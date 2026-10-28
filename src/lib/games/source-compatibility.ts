@@ -2,11 +2,7 @@ import { sourcePlatformId } from './source-platform';
 import type { SourceFile, SourceRelease } from './sources';
 
 export type DesktopTarget = 'windows' | 'linux' | 'macos';
-export type SourceCompatibility = {
-  target?: DesktopTarget;
-  status: 'native' | 'compatibility' | 'other' | 'unknown' | 'browse';
-  simulatorHint?: string;
-};
+export type SourceCompatibility = { target?: DesktopTarget; status: 'native' | 'compatibility' | 'other' | 'unknown' | 'browse' };
 const targets: Record<number, DesktopTarget> = { 6: 'windows', 3: 'linux', 14: 'macos' };
 
 /** Judge the selected package, never the catalog game's list of available ports. */
@@ -23,12 +19,5 @@ export function sourceCompatibility(release: Pick<SourceRelease, 'platform'>, fi
   const target = hints.size === 1 ? [...hints][0] : hints.size > 1 ? undefined : targets[sourcePlatformId(release.platform) ?? -1];
   if (!target) return { status: 'unknown' };
   if (!['windows', 'macos', 'linux'].includes(host)) return { target, status: 'browse' };
-  if (target === host) return { target, status: 'native' };
-  if (host === 'macos' && target === 'windows') {
-    return { target, status: 'compatibility', simulatorHint: 'Whisky / CrossOver / GPTK' };
-  }
-  if (host === 'linux' && target === 'windows') {
-    return { target, status: 'compatibility', simulatorHint: 'Proton / Wine' };
-  }
-  return { target, status: 'other' };
+  return { target, status: target === host ? 'native' : target === 'windows' && host === 'linux' ? 'compatibility' : 'other' };
 }

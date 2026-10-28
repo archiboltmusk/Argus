@@ -27,5 +27,4 @@ export const curatedListLogos: Readonly<Record<string, string>> = {
   "san-sebastian-golden-shell": sanSebastian,
   "cannes-camera-dor": cannes,
   "tiff-peoples-choice": tiff,
-  "nfai-restored-classics": libraryOfCongress,
 };

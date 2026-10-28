@@ -63,25 +63,7 @@ const POLL_SEEDS: readonly CuratedListSeed[] = [
   },
 ];
 
-const NFAI_HERITAGE_SEEDS: readonly CuratedListSeed[] = [
-  {
-    id: "nfai-restored-classics",
-    title: "National Film Archive of India: 4K Restorations",
-    curator: "NFDC-NFAI & Film Heritage Foundation",
-    blurb:
-      "Landmark 4K and 2K restorations preserved by the National Film Archive of India under the National Film Heritage Mission, returning India's endangered cinematic treasures to pristine glory.",
-    ordering: "awarded",
-    kind: "movie",
-    source: { kind: "bundled" },
-    expectedCount: 30,
-    rowCount: 30,
-    discoverRow: true,
-    badge: "NFDC-NFAI Restored",
-  },
-];
-
 export const LIST_SEEDS: readonly CuratedListSeed[] = [
-  ...NFAI_HERITAGE_SEEDS,
   ...POLL_SEEDS,
   ...REGISTRY_SEEDS,
   ...WIKIDATA_SEEDS,
