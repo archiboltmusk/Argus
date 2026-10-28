@@ -1,4 +1,4 @@
-import { Activity, Cpu, Gauge, RefreshCw, Zap, Monitor, CheckCircle2, XCircle } from "lucide-react";
+import { Activity, Cpu, Gauge, RefreshCw, CheckCircle2, XCircle } from "lucide-react";
 import { useEffect, useState } from "react";
 import { probeHardwareProfile, type HardwareProfile } from "@/lib/hardware-profiler";
 

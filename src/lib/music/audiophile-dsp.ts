@@ -20,10 +20,10 @@ export const POPULAR_HEADPHONE_PROFILES: HeadphoneProfile[] = [
     soundSignature: "Reference Neutral with Natural Timbre",
     harmanTargetCompliance: 94,
     filters: [
-      { id: "hd600-sub", type: "lowShelf", frequency: 50, gain: 4.5, q: 0.7, enabled: true },
-      { id: "hd600-bass", type: "peak", frequency: 120, gain: -1.2, q: 1.2, enabled: true },
-      { id: "hd600-presence", type: "peak", frequency: 3200, gain: -1.8, q: 2.1, enabled: true },
-      { id: "hd600-air", type: "highShelf", frequency: 10000, gain: 2.0, q: 0.7, enabled: true },
+      { type: "lowShelf", frequency: 50, gain: 4.5, q: 0.7, enabled: true },
+      { type: "peak", frequency: 120, gain: -1.2, q: 1.2, enabled: true },
+      { type: "peak", frequency: 3200, gain: -1.8, q: 2.1, enabled: true },
+      { type: "highShelf", frequency: 10000, gain: 2.0, q: 0.7, enabled: true },
     ],
   },
   {
@@ -34,9 +34,9 @@ export const POPULAR_HEADPHONE_PROFILES: HeadphoneProfile[] = [
     soundSignature: "Warm Intimate Vocals with Smooth Treble",
     harmanTargetCompliance: 93,
     filters: [
-      { id: "hd650-sub", type: "lowShelf", frequency: 60, gain: 5.0, q: 0.7, enabled: true },
-      { id: "hd650-midbass", type: "peak", frequency: 200, gain: -2.0, q: 1.0, enabled: true },
-      { id: "hd650-treble", type: "highShelf", frequency: 8000, gain: 2.5, q: 0.8, enabled: true },
+      { type: "lowShelf", frequency: 60, gain: 5.0, q: 0.7, enabled: true },
+      { type: "peak", frequency: 200, gain: -2.0, q: 1.0, enabled: true },
+      { type: "highShelf", frequency: 8000, gain: 2.5, q: 0.8, enabled: true },
     ],
   },
   {
@@ -47,11 +47,11 @@ export const POPULAR_HEADPHONE_PROFILES: HeadphoneProfile[] = [
     soundSignature: "Punchy Bass with Clear Midrange Separation",
     harmanTargetCompliance: 91,
     filters: [
-      { id: "xm5-bass-tame", type: "lowShelf", frequency: 120, gain: -3.5, q: 0.7, enabled: true },
-      { id: "xm5-mud-cut", type: "peak", frequency: 250, gain: -2.5, q: 1.4, enabled: true },
-      { id: "xm5-vocal-lift", type: "peak", frequency: 1400, gain: 2.2, q: 1.1, enabled: true },
-      { id: "xm5-presence", type: "peak", frequency: 5000, gain: 3.0, q: 1.8, enabled: true },
-      { id: "xm5-air", type: "highShelf", frequency: 11000, gain: 2.5, q: 0.7, enabled: true },
+      { type: "lowShelf", frequency: 120, gain: -3.5, q: 0.7, enabled: true },
+      { type: "peak", frequency: 250, gain: -2.5, q: 1.4, enabled: true },
+      { type: "peak", frequency: 1400, gain: 2.2, q: 1.1, enabled: true },
+      { type: "peak", frequency: 5000, gain: 3.0, q: 1.8, enabled: true },
+      { type: "highShelf", frequency: 11000, gain: 2.5, q: 0.7, enabled: true },
     ],
   },
   {
@@ -62,9 +62,9 @@ export const POPULAR_HEADPHONE_PROFILES: HeadphoneProfile[] = [
     soundSignature: "Extended Soundstage with Linear Sub-Bass",
     harmanTargetCompliance: 96,
     filters: [
-      { id: "apmax-sub", type: "peak", frequency: 80, gain: 1.2, q: 1.0, enabled: true },
-      { id: "apmax-mid", type: "peak", frequency: 1800, gain: 1.8, q: 1.5, enabled: true },
-      { id: "apmax-air", type: "highShelf", frequency: 9500, gain: 1.5, q: 0.7, enabled: true },
+      { type: "peak", frequency: 80, gain: 1.2, q: 1.0, enabled: true },
+      { type: "peak", frequency: 1800, gain: 1.8, q: 1.5, enabled: true },
+      { type: "highShelf", frequency: 9500, gain: 1.5, q: 0.7, enabled: true },
     ],
   },
   {
@@ -75,10 +75,10 @@ export const POPULAR_HEADPHONE_PROFILES: HeadphoneProfile[] = [
     soundSignature: "Studio Bass Impact with Sibilance Tamed",
     harmanTargetCompliance: 89,
     filters: [
-      { id: "dt770-bass", type: "peak", frequency: 100, gain: -1.5, q: 1.1, enabled: true },
-      { id: "dt770-vocal", type: "peak", frequency: 2200, gain: 2.0, q: 1.2, enabled: true },
-      { id: "dt770-sibilance", type: "peak", frequency: 5800, gain: -4.5, q: 3.5, enabled: true },
-      { id: "dt770-peak", type: "peak", frequency: 8400, gain: -5.0, q: 4.0, enabled: true },
+      { type: "peak", frequency: 100, gain: -1.5, q: 1.1, enabled: true },
+      { type: "peak", frequency: 2200, gain: 2.0, q: 1.2, enabled: true },
+      { type: "peak", frequency: 5800, gain: -4.5, q: 3.5, enabled: true },
+      { type: "peak", frequency: 8400, gain: -5.0, q: 4.0, enabled: true },
     ],
   },
   {
@@ -89,9 +89,9 @@ export const POPULAR_HEADPHONE_PROFILES: HeadphoneProfile[] = [
     soundSignature: "Monitoring Clarity with Controlled Lower Midrange",
     harmanTargetCompliance: 88,
     filters: [
-      { id: "m50x-sub", type: "lowShelf", frequency: 80, gain: 1.5, q: 0.7, enabled: true },
-      { id: "m50x-mud", type: "peak", frequency: 280, gain: -3.0, q: 1.3, enabled: true },
-      { id: "m50x-treble", type: "peak", frequency: 9000, gain: -2.5, q: 2.0, enabled: true },
+      { type: "lowShelf", frequency: 80, gain: 1.5, q: 0.7, enabled: true },
+      { type: "peak", frequency: 280, gain: -3.0, q: 1.3, enabled: true },
+      { type: "peak", frequency: 9000, gain: -2.5, q: 2.0, enabled: true },
     ],
   },
   {
@@ -102,9 +102,9 @@ export const POPULAR_HEADPHONE_PROFILES: HeadphoneProfile[] = [
     soundSignature: "Planar Magnetic Fast Transients & Holographic Air",
     harmanTargetCompliance: 95,
     filters: [
-      { id: "sundara-sub", type: "lowShelf", frequency: 65, gain: 4.0, q: 0.7, enabled: true },
-      { id: "sundara-presence", type: "peak", frequency: 2000, gain: 1.5, q: 1.4, enabled: true },
-      { id: "sundara-air", type: "highShelf", frequency: 12000, gain: 1.0, q: 0.7, enabled: true },
+      { type: "lowShelf", frequency: 65, gain: 4.0, q: 0.7, enabled: true },
+      { type: "peak", frequency: 2000, gain: 1.5, q: 1.4, enabled: true },
+      { type: "highShelf", frequency: 12000, gain: 1.0, q: 0.7, enabled: true },
     ],
   },
 ];

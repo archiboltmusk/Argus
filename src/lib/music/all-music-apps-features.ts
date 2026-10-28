@@ -84,7 +84,7 @@ export type WaveformComment = {
 /**
  * Returns waveform comments (inspired by SoundCloud interactive waveform).
  */
-export function getTrackWaveformComments(trackId: string, durationSeconds: number): WaveformComment[] {
+export function getTrackWaveformComments(_trackId: string, durationSeconds: number): WaveformComment[] {
   const duration = Math.max(120, durationSeconds || 240);
   return [
     {

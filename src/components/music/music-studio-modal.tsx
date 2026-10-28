@@ -1,13 +1,12 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import {
-  Activity, AudioLines, Check, Disc3, Headphones, Layers, Mic2,
-  Radio, ShieldCheck, Sparkles, Volume2, Wand2, X, Zap
+  AudioLines, Check, Disc3, Headphones, Layers, Mic2,
+  Radio, ShieldCheck, Volume2, X, Zap
 } from "lucide-react";
 import type { MusicTrack } from "@/lib/music/types";
 import { auditTrackFidelity, LOUDNESS_PRESETS, type LoudnessNormalizationMode } from "@/lib/music/hi-res-engine";
-import { POPULAR_HEADPHONE_PROFILES, getBauerCrossfeedConfig, applyHeadphoneProfile, type HeadphoneProfile } from "@/lib/music/audiophile-dsp";
+import { POPULAR_HEADPHONE_PROFILES, getBauerCrossfeedConfig, applyHeadphoneProfile } from "@/lib/music/audiophile-dsp";
 import { estimateTrackKey, evaluateHarmonicMix, type DjTransitionProfile } from "@/lib/music/smart-dj";
-import { DEFAULT_KARAOKE_SETTINGS, type KaraokeFilterSettings } from "@/lib/music/lyrics-enhanced";
 import { resolveLosslessAudioSources, type FederatedMusicSource } from "@/lib/music/music-scrapers";
 import { useMusicAudioSettings, saveMusicAudioSettings } from "@/lib/music/audio-settings";
 
@@ -37,7 +36,6 @@ export function MusicStudioModal({
 
   // Smart DJ settings
   const [crossfadeSeconds, setCrossfadeSeconds] = useState<number>(5);
-  const [harmonicAutoplay, setHarmonicAutoplay] = useState<boolean>(true);
 
   // Karaoke settings
   const [karaokeEnabled, setKaraokeEnabled] = useState<boolean>(false);

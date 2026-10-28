@@ -1,4 +1,4 @@
-import { CheckCircle2, Copy, Download, HardDrive, RefreshCw, ShieldAlert, ShieldCheck, Trash2 } from "lucide-react";
+import { CheckCircle2, Copy, HardDrive, RefreshCw, ShieldCheck, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { clearTransientStorage, runStorageAudit, type StorageAuditResult } from "@/lib/storage-audit";
 import { exportRedactedDiagnostics } from "@/lib/diagnostics/redact";

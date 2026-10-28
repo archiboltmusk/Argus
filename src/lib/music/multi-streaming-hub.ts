@@ -1,4 +1,4 @@
-import type { MusicTrack, MusicAudioQuality } from "./types";
+import type { MusicTrack } from "./types";
 
 export type StreamingServiceId =
   | "youtube"

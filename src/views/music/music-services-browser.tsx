@@ -1,15 +1,11 @@
-import React, { useState } from "react";
-import {
-  Compass, Disc, Globe, Headphones, Layers, Mic2, Palette, Play,
-  Radio, Server, ShieldCheck, Sparkles, Users, Volume2, Waves, Zap
-} from "lucide-react";
+import { useState } from "react";
+import { Globe, Palette, Play, Sparkles, Users, Zap } from "lucide-react";
 import {
   MULTI_STREAMING_SERVICES,
   getServiceCuratedTracks,
-  type StreamingServiceDescriptor,
   type StreamingServiceId,
 } from "@/lib/music/multi-streaming-hub";
-import { HARBOR_MUSIC_THEMES, createHarborMusicRoom, type HarborMusicTheme } from "@/lib/music/harbor-music-engine";
+import { HARBOR_MUSIC_THEMES, createHarborMusicRoom } from "@/lib/music/harbor-music-engine";
 import { getCurrentDaylistVibe } from "@/lib/music/all-music-apps-features";
 import { playMusic } from "@/lib/music/player";
 import type { MusicTrack } from "@/lib/music/types";

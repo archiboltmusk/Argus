@@ -16,7 +16,7 @@ export type DjTransitionProfile = {
 };
 
 // Map standard musical keys to Camelot Wheel positions
-const KEY_TO_CAMELOT: Record<string, CamelotKey> = {
+export const KEY_TO_CAMELOT: Record<string, CamelotKey> = {
   "ab minor": "1A", "b major": "1B",
   "eb minor": "2A", "f# major": "2B", "gb major": "2B",
   "bb minor": "3A", "db major": "3B",

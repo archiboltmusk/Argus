@@ -73,7 +73,6 @@ import { MusicSignalDetails, MusicLevelMeter } from "./music-signal-details";
 import { useMusicAudioMeter } from "@/lib/music/audio-meter";
 import { getMusicSpeakerState } from "@/lib/music/casting";
 import { musicTrackQuality } from "@/lib/music/quality";
-import { MusicStudioModal } from "./music-studio-modal";
 import "./music-now-playing.css";
 
 const NOW_LIKE_SPOKES = [0, 45, 90, 135, 180, 225, 270, 315];
@@ -109,7 +108,6 @@ export function MusicNowPlaying({
   const audio = useMusicAudioSettings();
   const closeRef = useRef<HTMLButtonElement>(null);
   const [panel, setPanel] = useState<"queue" | "signal" | "about" | "lyrics">("queue");
-  const [studioOpen, setStudioOpen] = useState(false);
   const [searching, setSearching] = useState(false);
   const [searchExit, setSearchExit] = useState(false);
   const [burst, setBurst] = useState(0);

@@ -1,19 +1,17 @@
-import { Download, ExternalLink, Filter, Layers, Shield, Sparkles, Trash2, Zap } from "lucide-react";
+import { Download, Layers, Shield, Sparkles, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { CURATED_COMMUNITY_DIRECTORY, type CommunityAddonEntry } from "@/lib/community-addons-directory";
-import { installAddon, uninstallAddon } from "@/lib/addon-store";
-import { useAddons } from "@/views/play-picker/use-addons";
+import { installAddon, loadInstalled, uninstallAddon } from "@/lib/addon-store";
 
 export function AddonDirectoryTab() {
-  const { addons, refetch } = useAddons();
+  const [installed, setInstalled] = useState(() => loadInstalled());
   const [filter, setFilter] = useState<string>("all");
   const [workingId, setWorkingId] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
 
   const installedMap = new Map<string, string>();
-  for (const a of addons ?? []) {
-    const id = a.manifest?.id;
-    if (id) installedMap.set(id, a.transportUrl);
+  for (const a of installed) {
+    if (a.id) installedMap.set(a.id, a.transportUrl);
   }
 
   const handleInstall = async (addon: CommunityAddonEntry) => {
@@ -21,7 +19,7 @@ export function AddonDirectoryTab() {
     setNotice(null);
     try {
       await installAddon(addon.id, addon.manifestUrl);
-      refetch?.();
+      setInstalled(loadInstalled());
       setNotice(`Installed ${addon.name} successfully.`);
     } catch (e) {
       setNotice(`Failed to install ${addon.name}: ${String(e)}`);
@@ -36,7 +34,7 @@ export function AddonDirectoryTab() {
     try {
       const url = installedMap.get(addon.id) || addon.manifestUrl;
       await uninstallAddon(addon.id, url);
-      refetch?.();
+      setInstalled(loadInstalled());
       setNotice(`Uninstalled ${addon.name}.`);
     } catch (e) {
       setNotice(`Failed to uninstall ${addon.name}: ${String(e)}`);
