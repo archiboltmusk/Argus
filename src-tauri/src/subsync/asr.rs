@@ -280,7 +280,7 @@ pub fn segments_to_srt(segments: &[AsrSegment]) -> String {
             continue;
         }
 
-        let mut t0 = seg.t0;
+        let t0 = seg.t0;
         let mut t1 = seg.t1;
         if t1 <= t0 {
             t1 = t0 + 1.5;
