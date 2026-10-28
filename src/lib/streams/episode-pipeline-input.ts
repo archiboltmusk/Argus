@@ -230,7 +230,16 @@ export function buildEpisodePipelineInput(params: {
       mediaKind: meta.type === "series" || episode ? "series" : "movie",
       runtimeMinutes: runtimeMinutes(meta.runtime),
       inTheaters: meta.inTheaters === true,
-      bandwidthMbps: settings.bandwidthMbps > 0 ? settings.bandwidthMbps : undefined,
+      bandwidthMbps:
+        settings.dataSaverMode === "budget"
+          ? 2.0
+          : settings.dataSaverMode === "balanced"
+            ? 8.0
+            : settings.dataSaverMode === "high"
+              ? 25.0
+              : settings.bandwidthMbps > 0
+                ? settings.bandwidthMbps
+                : undefined,
       preferSingleAudioTrack:
         !("__TAURI_INTERNALS__" in window) || settings.playerEngine === "html5",
       preferAddonId: meta.addonOrigin?.id,

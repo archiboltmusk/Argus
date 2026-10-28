@@ -844,10 +844,15 @@ export function useTrackAutoload(params: {
       if (userPicked) {
         effAudio = cur;
       } else {
+        const originalTrack =
+          settings.originalAudioAutopilot !== false
+            ? pickOriginalAudioTrack(allow(snap.audioTracks), src.meta, isAnime)
+            : null;
         const want =
           // A known choice is explicit user intent, even if its title matches
           // an automatic-selection exclusion such as "commentary".
           selectPlaybackAudio(snap.audioTracks, rememberedAudio) ??
+          originalTrack ??
           pickBestTrack(allow(snap.audioTracks), audioLangs) ??
           pickBestAudioTrack(allow(snap.audioTracks), audioLangs[0] ?? "eng");
         effAudio = want ?? cur;
@@ -992,6 +997,44 @@ function resolveLangPreference(
 function isJapanese(lang: string): boolean {
   const l = lang.trim().toLowerCase();
   return l === "ja" || l === "jpn" || l === "jp" || l === "japanese";
+}
+
+function pickOriginalAudioTrack<T extends { lang?: string; title?: string; label?: string }>(
+  tracks: T[],
+  meta: { country?: string; language?: string; genres?: string[]; id?: string },
+  isAnime: boolean,
+): T | null {
+  if (tracks.length === 0) return null;
+  if (isAnime) {
+    const ja = tracks.find((t) => normalizeLang(t.lang) === "ja" || /japanese/i.test(t.title ?? "") || /japanese/i.test(t.label ?? ""));
+    if (ja) return ja;
+  }
+  const norm = normalizeLang(meta.language);
+  if (norm && norm !== "en") {
+    const orig = tracks.find((t) => normalizeLang(t.lang) === norm);
+    if (orig) return orig;
+  }
+  const country = meta.country?.toUpperCase();
+  const countryToLang: Record<string, string> = {
+    KR: "ko",
+    FR: "fr",
+    DE: "de",
+    ES: "es",
+    IT: "it",
+    RU: "ru",
+    CN: "zh",
+    JP: "ja",
+    IN: "hi",
+    DK: "da",
+    SE: "sv",
+    NO: "no",
+  };
+  if (country && countryToLang[country]) {
+    const lang = countryToLang[country];
+    const match = tracks.find((t) => normalizeLang(t.lang) === lang);
+    if (match) return match;
+  }
+  return null;
 }
 
 function isLoopback(url: string): boolean {

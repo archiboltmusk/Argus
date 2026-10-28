@@ -504,6 +504,8 @@ export const DEFAULT: Settings = {
   bingeMode: false,
   audioDevice: "",
   bandwidthMbps: 0,
+  dataSaverMode: "off",
+  originalAudioAutopilot: true,
   nextEpisodeLeadSec: -1,
   endScreenLeadSec: -1,
   endScreenCountdownSec: 15,

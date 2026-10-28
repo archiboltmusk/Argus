@@ -20,6 +20,7 @@ import { readActiveProfileIdentity, readAllProfilesIdentity } from "@/lib/profil
 import { isBigPictureActive, pushBigPicture } from "@/lib/big-picture";
 import { requestBpPlay } from "@/views/big-picture/bp-play-request";
 import { detectExtendedPlatform } from "@/lib/platform";
+import { renderCompanionRemoteHtml } from "./companion-remote-html";
 
 declare const __APP_VERSION__: string | undefined;
 export const appVersion = typeof __APP_VERSION__ === "string" ? __APP_VERSION__ : "1.0.339";
@@ -336,6 +337,109 @@ export async function handleAutomationApiRequest(req: {
         })),
       },
     };
+  }
+
+  // 7. GET /remote or /remote.html (Mobile Virtual Remote UI)
+  if (method === "GET" && (urlPath === "/remote" || urlPath === "/remote.html")) {
+    return {
+      status: 200,
+      body: {
+        contentType: "text/html",
+        html: renderCompanionRemoteHtml(appVersion),
+      },
+    };
+  }
+
+  // 8. POST /api/v1/remote/key (Remote D-Pad & media keys)
+  if (method === "POST" && (urlPath === "/api/v1/remote/key" || urlPath === "/api/remote/key")) {
+    const data = (req.body ?? {}) as { key?: string; value?: number };
+    const key = data.key || "Enter";
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(
+        new KeyboardEvent("keydown", {
+          key,
+          code: key,
+          bubbles: true,
+          cancelable: true,
+        }),
+      );
+      window.dispatchEvent(
+        new KeyboardEvent("keyup", {
+          key,
+          code: key,
+          bubbles: true,
+          cancelable: true,
+        }),
+      );
+    }
+    return { status: 200, body: { ok: true, key } };
+  }
+
+  // 9. POST /api/v1/remote/text (Remote search & magnet link paste)
+  if (method === "POST" && (urlPath === "/api/v1/remote/text" || urlPath === "/api/remote/text")) {
+    const data = (req.body ?? {}) as { text?: string };
+    const text = data.text?.trim() || "";
+    if (text && typeof window !== "undefined") {
+      if (/^(?:magnet:\?|https?:\/\/.*(?:\.torrent|\.mkv|\.mp4))/i.test(text)) {
+        window.dispatchEvent(
+          new CustomEvent("argus:remote-open-stream", {
+            detail: { url: text },
+          }),
+        );
+      } else {
+        window.dispatchEvent(
+          new CustomEvent("argus:remote-search", {
+            detail: { query: text },
+          }),
+        );
+      }
+    }
+    return { status: 200, body: { ok: true, text } };
+  }
+
+  // 10. GET /api/v1/sync (Export device session for Zero-Config QR Pairing)
+  if (method === "GET" && (urlPath === "/api/v1/sync" || urlPath === "/api/sync")) {
+    let settingsPayload: unknown = null;
+    let profilesPayload: unknown = null;
+    let addonsPayload: unknown = null;
+    if (typeof localStorage !== "undefined") {
+      try {
+        settingsPayload = JSON.parse(localStorage.getItem("argus.settings") ?? "{}");
+        profilesPayload = JSON.parse(localStorage.getItem("argus.profiles.v1") ?? "{}");
+        addonsPayload = JSON.parse(localStorage.getItem("argus.installed-addons.v1") ?? "[]");
+      } catch {}
+    }
+    return {
+      status: 200,
+      body: {
+        ok: true,
+        app: "Argus",
+        timestamp: Date.now(),
+        sync: {
+          settings: settingsPayload,
+          profiles: profilesPayload,
+          addons: addonsPayload,
+        },
+      },
+    };
+  }
+
+  // 11. POST /api/v1/sync (Import device session from paired screen)
+  if (method === "POST" && (urlPath === "/api/v1/sync" || urlPath === "/api/sync")) {
+    const data = (req.body ?? {}) as { sync?: { settings?: unknown; profiles?: unknown; addons?: unknown } };
+    if (data.sync && typeof window !== "undefined" && typeof localStorage !== "undefined") {
+      try {
+        if (data.sync.settings) localStorage.setItem("argus.settings", JSON.stringify(data.sync.settings));
+        if (data.sync.profiles) localStorage.setItem("argus.profiles.v1", JSON.stringify(data.sync.profiles));
+        if (data.sync.addons) localStorage.setItem("argus.installed-addons.v1", JSON.stringify(data.sync.addons));
+        window.dispatchEvent(new CustomEvent("argus:settings-updated"));
+        window.dispatchEvent(new CustomEvent("argus:profiles-updated"));
+        return { status: 200, body: { ok: true, synced: true } };
+      } catch {
+        return { status: 500, body: { ok: false, error: "Failed to persist synced device state." } };
+      }
+    }
+    return { status: 400, body: { ok: false, error: "Missing sync payload." } };
   }
 
   return {
