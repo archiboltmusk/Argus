@@ -23,6 +23,7 @@ const AWARD_TITLE: Record<AwardType, string> = {
   blue_dragon: "Blue Dragon Awards",
   baeksang: "Baeksang Arts Awards",
   bifa: "British Independent Film",
+  iffi: "International Film Festival of India",
   other: "Other Awards",
 };
 

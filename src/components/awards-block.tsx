@@ -31,7 +31,8 @@ const TYPE_ORDER: Record<AwardType, number> = {
   spirit: 15,
   annie: 16,
   saturn: 17,
-  other: 18,
+  iffi: 18,
+  other: 19,
 };
 
 const TYPE_TITLE: Record<AwardType, string> = {
@@ -53,6 +54,7 @@ const TYPE_TITLE: Record<AwardType, string> = {
   spirit: "Independent Spirit Awards",
   annie: "Annie Awards",
   saturn: "Saturn Awards",
+  iffi: "International Film Festival of India",
   other: "Other Awards",
 };
 

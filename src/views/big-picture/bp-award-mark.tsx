@@ -25,6 +25,7 @@ const MARKS: Record<AwardType, string> = {
   blue_dragon: "/awards/blue_dragon.png",
   baeksang: "/awards/baeksang.png",
   bifa: "/awards/bifa.png",
+  iffi: "/awards/trophy.png",
   other: "/awards/trophy.png",
 };
 
@@ -52,6 +53,7 @@ const NOUN: Record<AwardType, string> = {
   blue_dragon: "Blue Dragon",
   baeksang: "Baeksang",
   bifa: "BIFA",
+  iffi: "IFFI",
   other: "Award",
 };
 

@@ -1,4 +1,6 @@
 export default {
+  "games.catalog.decentralizedNote": "Decentralized Meta-Catalog: Argus hosts zero games or binaries. Media and links are indexed across public open databases. Users add their own authorized or community sources at their own discretion.",
+  "games.freeRadar.title": "Free Games, Giveaways & Open Web Catalogs",
   "games.stores.official": "Official store",
   "games.stores.view": "View on {store}",
   "games.stores.check": "Check price on {store}",
