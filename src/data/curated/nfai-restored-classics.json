@@ -1,0 +1,281 @@
+{
+  "id": "nfai-restored-classics",
+  "count": 30,
+  "snapshotDate": "2026-10-28",
+  "source": {
+    "kind": "bundled",
+    "url": "https://www.pib.gov.in/PressReleasePage.aspx?PRID=2268264"
+  },
+  "items": [
+    {
+      "rank": 1,
+      "imdb": "tt0074854",
+      "title": "Manthan",
+      "year": 1976,
+      "awardYear": 2024,
+      "tmdb": 84177,
+      "note": "4K restoration by Film Heritage Foundation and Amul; Cannes Classics 2024"
+    },
+    {
+      "rank": 2,
+      "imdb": "tt0054073",
+      "title": "Meghe Dhaka Tara (The Cloud-Capped Star)",
+      "year": 1960,
+      "awardYear": 2026,
+      "tmdb": 43888,
+      "note": "4K restoration under National Film Heritage Mission (NFHM) by NFDC-NFAI"
+    },
+    {
+      "rank": 3,
+      "imdb": "tt0078377",
+      "title": "Thamp̄ (The Circus Tent)",
+      "year": 1978,
+      "awardYear": 2022,
+      "tmdb": 101662,
+      "note": "4K restoration by Film Heritage Foundation, The Film Foundation & Cineteca di Bologna; Cannes Classics 2022"
+    },
+    {
+      "rank": 4,
+      "imdb": "tt0079424",
+      "title": "Kummatty (The Bogeyman)",
+      "year": 1979,
+      "awardYear": 2021,
+      "tmdb": 102148,
+      "note": "4K restoration by Film Heritage Foundation and The Film Foundation (Martin Scorsese)"
+    },
+    {
+      "rank": 5,
+      "imdb": "tt0102131",
+      "title": "Ishanou (The Chosen One)",
+      "year": 1990,
+      "awardYear": 2023,
+      "tmdb": 199732,
+      "note": "4K restoration by Film Heritage Foundation and NFDC-NFAI; Cannes Classics 2023"
+    },
+    {
+      "rank": 6,
+      "imdb": "tt0048473",
+      "title": "Pather Panchali (Song of the Little Road)",
+      "year": 1955,
+      "awardYear": 2015,
+      "tmdb": 5801,
+      "note": "Rebuilt in 4K from burned negative fragments by Criterion Collection and L'Immagine Ritrovata"
+    },
+    {
+      "rank": 7,
+      "imdb": "tt0048956",
+      "title": "Aparajito (The Unvanquished)",
+      "year": 1956,
+      "awardYear": 2015,
+      "tmdb": 5903,
+      "note": "Venice Golden Lion winner; reconstructed in 4K from surviving NFAI reels"
+    },
+    {
+      "rank": 8,
+      "imdb": "tt0052572",
+      "title": "Apur Sansar (The World of Apu)",
+      "year": 1959,
+      "awardYear": 2015,
+      "tmdb": 5904,
+      "note": "National Film Award winner; reconstructed in 4K by Criterion and Academy Film Archive"
+    },
+    {
+      "rank": 9,
+      "imdb": "tt0076077",
+      "title": "Ghatashraddha (The Ritual)",
+      "year": 1977,
+      "awardYear": 2024,
+      "tmdb": 134267,
+      "note": "Kannada landmark restored in 4K by Film Heritage Foundation; Venice Classics 2024"
+    },
+    {
+      "rank": 10,
+      "imdb": "tt0045693",
+      "title": "Do Bigha Zamin (Two Acres of Land)",
+      "year": 1953,
+      "awardYear": 2023,
+      "tmdb": 42861,
+      "note": "Cannes Prix International winner; restored in 4K under NFHM"
+    },
+    {
+      "rank": 11,
+      "imdb": "tt0073707",
+      "title": "Sholay (Original Director's Cut)",
+      "year": 1975,
+      "awardYear": 2025,
+      "tmdb": 10756,
+      "note": "Restored in 4K with original uncensored director's cut ending by Film Heritage Foundation"
+    },
+    {
+      "rank": 12,
+      "imdb": "tt0038772",
+      "title": "Neecha Nagar (Lowly City)",
+      "year": 1946,
+      "awardYear": 2022,
+      "tmdb": 109675,
+      "note": "Only Indian film to win the Cannes Grand Prix / Palme d'Or precursor; restored by NFDC-NFAI"
+    },
+    {
+      "rank": 13,
+      "imdb": "tt0051343",
+      "title": "Ajantrik (The Pathetic Fallacy)",
+      "year": 1958,
+      "awardYear": 2026,
+      "tmdb": 81533,
+      "note": "4K restoration under National Film Heritage Mission; BFI Ritwik Ghatak Centenary"
+    },
+    {
+      "rank": 14,
+      "imdb": "tt0056538",
+      "title": "Subarnarekha (The Golden Thread)",
+      "year": 1965,
+      "awardYear": 2026,
+      "tmdb": 81535,
+      "note": "Partition masterpiece restored in 4K by NFDC-NFAI and West Bengal State Film Archive"
+    },
+    {
+      "rank": 15,
+      "imdb": "tt0055054",
+      "title": "Komal Gandhar (E-Flat)",
+      "year": 1961,
+      "awardYear": 2026,
+      "tmdb": 81534,
+      "note": "4K restoration under NFHM supervised by cinematographer Avik Mukhopadhyay"
+    },
+    {
+      "rank": 16,
+      "imdb": "tt0070803",
+      "title": "Titas Ekti Nadir Naam (A River Called Titas)",
+      "year": 1973,
+      "awardYear": 2026,
+      "tmdb": 81536,
+      "note": "World Cinema Project and NFDC-NFAI 4K restoration; World Cinema classic"
+    },
+    {
+      "rank": 17,
+      "imdb": "tt0071705",
+      "title": "Jukti Takko Aar Gappo (Reason, Debate and a Story)",
+      "year": 1974,
+      "awardYear": 2026,
+      "tmdb": 81537,
+      "note": "Ghatak's autobiographical final testament restored in 4K under NFHM"
+    },
+    {
+      "rank": 18,
+      "imdb": "tt0044951",
+      "title": "Nagarik (The Citizen)",
+      "year": 1952,
+      "awardYear": 2026,
+      "tmdb": 81532,
+      "note": "Pioneering Indian parallel cinema film; restored in 4K by NFDC-NFAI"
+    },
+    {
+      "rank": 19,
+      "imdb": "tt0087702",
+      "title": "Maya Miriga (The Mirage)",
+      "year": 1984,
+      "awardYear": 2024,
+      "tmdb": 251649,
+      "note": "Odia parallel cinema milestone restored in 4K under NFHM; Cannes Critics' Week honor"
+    },
+    {
+      "rank": 20,
+      "imdb": "tt0067546",
+      "title": "Pakeezah",
+      "year": 1972,
+      "awardYear": 2024,
+      "tmdb": 42646,
+      "note": "4K restoration by Film Heritage Foundation from camera negative; BFI London 2024"
+    },
+    {
+      "rank": 21,
+      "imdb": "tt0057935",
+      "title": "Charulata (The Lonely Wife)",
+      "year": 1964,
+      "awardYear": 2013,
+      "tmdb": 43887,
+      "note": "Berlin Silver Bear for Best Director; 4K restoration by Criterion Collection and R.D. Bansal"
+    },
+    {
+      "rank": 22,
+      "imdb": "tt0051792",
+      "title": "Jalsaghar (The Music Room)",
+      "year": 1958,
+      "awardYear": 2011,
+      "tmdb": 43886,
+      "note": "Satyajit Ray masterpiece restored in 2K/4K by Criterion from original NFAI negative"
+    },
+    {
+      "rank": 23,
+      "imdb": "tt0082324",
+      "title": "Elippathayam (The Rat Trap)",
+      "year": 1982,
+      "awardYear": 2023,
+      "tmdb": 96669,
+      "note": "BFI Sutherland Trophy winner; restored in 4K by NFDC-NFAI under NFHM"
+    },
+    {
+      "rank": 24,
+      "imdb": "tt0095869",
+      "title": "Piravi (The Birth)",
+      "year": 1989,
+      "awardYear": 2024,
+      "tmdb": 123164,
+      "note": "Cannes Caméra d'Or Mention d'honneur; restored in 4K under NFHM"
+    },
+    {
+      "rank": 25,
+      "imdb": "tt0064089",
+      "title": "Bhuvan Shome",
+      "year": 1969,
+      "awardYear": 2023,
+      "tmdb": 81678,
+      "note": "Mrinal Sen's pioneer of Indian New Wave; National Award Best Film; restored under NFHM"
+    },
+    {
+      "rank": 26,
+      "imdb": "tt0087550",
+      "title": "Khandhar (The Ruins)",
+      "year": 1984,
+      "awardYear": 2024,
+      "tmdb": 125197,
+      "note": "Cannes Un Certain Regard; restored in 4K by NFDC-NFAI under NFHM"
+    },
+    {
+      "rank": 27,
+      "imdb": "tt0080333",
+      "title": "Aakrosh (Cry of the Wounded)",
+      "year": 1980,
+      "awardYear": 2024,
+      "tmdb": 78749,
+      "note": "IFFI Golden Peacock Best Film winner; restored under NFHM"
+    },
+    {
+      "rank": 28,
+      "imdb": "tt3717068",
+      "title": "Court",
+      "year": 2014,
+      "awardYear": 2014,
+      "tmdb": 287663,
+      "note": "Venice Lion of the Future and IFFI Indian Panorama selection; dir. Chaitanya Tamhane"
+    },
+    {
+      "rank": 29,
+      "imdb": "tt22874136",
+      "title": "Aattam (The Play)",
+      "year": 2023,
+      "awardYear": 2023,
+      "tmdb": 1073809,
+      "note": "IFFI 2023 Indian Panorama Opening Feature Film; National Film Award for Best Feature"
+    },
+    {
+      "rank": 30,
+      "imdb": "tt28279810",
+      "title": "All We Imagine as Light",
+      "year": 2024,
+      "awardYear": 2024,
+      "tmdb": 1114972,
+      "note": "Cannes Film Festival Grand Prix winner and IFFI Gala Premiere; dir. Payal Kapadia"
+    }
+  ]
+}

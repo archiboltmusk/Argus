@@ -31,14 +31,91 @@ export function GameInstalledStatus({ library, installed }: { library: SteamLibr
   </div>;
 }
 
-export function DetailCompatibility({ platforms, controller, deck, appId }: { platforms: string[]; controller?: string; deck?: GameDetailExtras["deck"]; appId?: number }) {
+export function DetailCompatibility({ platforms, controller, deck, appId, gameName }: { platforms: string[]; controller?: string; deck?: GameDetailExtras["deck"]; appId?: number; gameName?: string }) {
   const t = useT();
+  const host = osClass();
+  const [guideOpen, setGuideOpen] = useState(false);
   const platformArt: Record<string, string> = { Windows: "win", macOS: "mac" };
-  return <DetailDisclosure title={t("games.details.support")} icon={<Gamepad2 size={22}/>} prominent className="games-detail-compatibility-disclosure"><section className="games-detail-compatibility">
-    {platforms.length > 0 && <><h3>{t("games.details.playOn")}</h3><div className="games-detail-platforms">{platforms.map(platform => <span key={platform}>{platform === "Linux" ? <span className="games-platform-linux" aria-hidden="true"/> : platformArt[platform] ? <img width={17} height={17} src={`https://store.akamai.steamstatic.com/public/images/v6/icon_platform_${platformArt[platform]}.png`} alt="" /> : <Monitor size={15} />}{platform}</span>)}</div></>}
-    <div className="games-detail-controller" data-support={controller || "unknown"}><div className="games-controller-art"><svg viewBox={XBOX_ART.box.join(" ")} aria-hidden="true">{XBOX_ART.parts.map((part, index) => <path key={index} d={part.d} fill={part.f} />)}</svg>{!controller && <span className="games-controller-unknown" aria-hidden="true">?</span>}</div><div><h3>{t("games.details.controllerPartial")}</h3><strong className="games-controller-state">{t(`games.details.controllerState.${controller === "full" || controller === "partial" || controller === "none" ? controller : "unknown"}`)}</strong><p>{t(controller === "full" ? "games.details.controllerFullNote" : controller === "partial" ? "games.details.controllerPartialNote" : controller === "none" ? "games.details.controllerNoneNote" : "games.details.controllerUnknown")}</p></div></div>
-    {deck && appId && <HoverTooltip label={t("games.details.deckMore")}><button className="games-detail-deck" data-status={deck} onClick={() => openUrl(`https://store.steampowered.com/app/${appId}/`) }><Gamepad2 size={17} /><span>{t("games.details.deck")}</span><strong>{deck === "verified" && <Check size={13} />}{t(`games.details.deck.${deck}`)}</strong></button></HoverTooltip>}
-  </section></DetailDisclosure>;
+  const isMac = host === "macos";
+  const hasMac = platforms.includes("macOS");
+  const isWindowsOnly = platforms.includes("Windows") && !hasMac;
+
+  return (
+    <>
+      <DetailDisclosure title={t("games.details.support")} icon={<Gamepad2 size={22}/>} prominent className="games-detail-compatibility-disclosure">
+        <section className="games-detail-compatibility">
+          {platforms.length > 0 && (
+            <>
+              <h3>{t("games.details.playOn")}</h3>
+              <div className="games-detail-platforms">
+                {platforms.map(platform => (
+                  <span key={platform}>
+                    {platform === "Linux" ? <span className="games-platform-linux" aria-hidden="true"/> : platformArt[platform] ? <img width={17} height={17} src={`https://store.akamai.steamstatic.com/public/images/v6/icon_platform_${platformArt[platform]}.png`} alt="" /> : <Monitor size={15} />}
+                    {platform}
+                  </span>
+                ))}
+              </div>
+            </>
+          )}
+
+          {isMac && (
+            <div className="p-3 my-2 rounded-xl bg-surface/80 border border-edge/60 flex flex-col gap-2">
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-xs uppercase font-bold tracking-wider text-accent flex items-center gap-1.5">
+                  <Sparkles size={14} />
+                  {hasMac ? "macOS Native" : isWindowsOnly ? "Windows · Mac Playable via Translation" : "Mac Compatibility"}
+                </span>
+                {isWindowsOnly && (
+                  <button
+                    type="button"
+                    onClick={() => setGuideOpen(true)}
+                    className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-accent/20 hover:bg-accent/30 text-accent transition-colors"
+                  >
+                    Mac Trial Guide
+                  </button>
+                )}
+              </div>
+              <p className="text-xs text-ink-muted leading-relaxed">
+                {hasMac
+                  ? "This title includes an official macOS release built for Apple Silicon & Intel Macs."
+                  : isWindowsOnly
+                  ? "Windows DirectX title. On Apple Silicon, test gameplay via free GeForce NOW cloud session or Whisky / Apple D3DMetal translation layer."
+                  : "Check compatibility requirements before installing."}
+              </p>
+            </div>
+          )}
+
+          <div className="games-detail-controller" data-support={controller || "unknown"}>
+            <div className="games-controller-art">
+              <svg viewBox={XBOX_ART.box.join(" ")} aria-hidden="true">{XBOX_ART.parts.map((part, index) => <path key={index} d={part.d} fill={part.f} />)}</svg>
+              {!controller && <span className="games-controller-unknown" aria-hidden="true">?</span>}
+            </div>
+            <div>
+              <h3>{t("games.details.controllerPartial")}</h3>
+              <strong className="games-controller-state">{t(`games.details.controllerState.${controller === "full" || controller === "partial" || controller === "none" ? controller : "unknown"}`)}</strong>
+              <p>{t(controller === "full" ? "games.details.controllerFullNote" : controller === "partial" ? "games.details.controllerPartialNote" : controller === "none" ? "games.details.controllerNoneNote" : "games.details.controllerUnknown")}</p>
+            </div>
+          </div>
+          {deck && appId && (
+            <HoverTooltip label={t("games.details.deckMore")}>
+              <button className="games-detail-deck" data-status={deck} onClick={() => openUrl(`https://store.steampowered.com/app/${appId}/`) }>
+                <Gamepad2 size={17} />
+                <span>{t("games.details.deck")}</span>
+                <strong>{deck === "verified" && <Check size={13} />}{t(`games.details.deck.${deck}`)}</strong>
+              </button>
+            </HoverTooltip>
+          )}
+        </section>
+      </DetailDisclosure>
+      {guideOpen && (
+        <MacSimulatorGuideModal
+          gameName={gameName || "Windows Game"}
+          steamId={appId}
+          onClose={() => setGuideOpen(false)}
+        />
+      )}
+    </>
+  );
 }
 
 export function DetailPlayerActivity({ appId, active }: { appId: number; active: boolean }) {

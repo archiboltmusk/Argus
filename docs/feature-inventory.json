@@ -4,8 +4,8 @@
   "version": "1.0.0",
   "lastUpdated": "2026-10-28",
   "summary": {
-    "totalFeatures": 26,
-    "implemented": 21,
+    "totalFeatures": 27,
+    "implemented": 22,
     "partial": 3,
     "experimental": 2,
     "planned": 0
@@ -825,6 +825,38 @@
       ],
       "dependencies": [],
       "acceptanceCriterion": "Scores candidate audio streams with fake-upsample demotion, provides 5 Harbor music player theme presets, and creates shareable 6-character room codes for synchronized listening."
+    },
+    {
+      "id": "feat-indian-cinema-preservation-studio",
+      "name": "Indian Cinema Archival & Neural Film Restoration Studio",
+      "category": "playback",
+      "description": "On-device neural film restoration studio and archival ingest pipeline bringing endangered Indian cinema online in 4K. Features motion-compensated temporal scratch inpainting, Eastmancolor chemical dye-fading reversal, gate-weave deshake, 50Hz optical soundtrack hum notch filters, multi-script Indian OCR (Bengali, Devanagari, Tamil, Telugu, Malayalam), and curated 4K NFAI restored classics.",
+      "sourceFiles": [
+        "src/lib/heritage/neural-restoration.ts",
+        "src/lib/heritage/film-ingest-pipeline.ts",
+        "src/views/heritage/film-restoration-studio.tsx",
+        "src/data/curated/nfai-restored-classics.json",
+        "src/lib/curated/catalog.ts"
+      ],
+      "entryPoints": [
+        "FilmRestorationStudio",
+        "buildRestorationFilterGraph()",
+        "createPreservationIngestJob()",
+        "nfai-restored-classics"
+      ],
+      "status": "implemented",
+      "platformCompatibility": {
+        "macOS": "supported",
+        "windows": "supported",
+        "linux": "supported",
+        "android": "supported"
+      },
+      "testCoverage": [],
+      "knownLimitations": [
+        "Real-time 4K temporal scratch inpainting benefits from dedicated GPU shader hardware."
+      ],
+      "dependencies": [],
+      "acceptanceCriterion": "Applies real-time temporal scratch inpainting, deflicker, and optical audio hum suppression with split-screen before/after comparison and provides curated NFAI 4K restored Indian films."
     }
   ]
 }

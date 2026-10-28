@@ -22,6 +22,7 @@ export type AwardType =
   | "blue_dragon"
   | "baeksang"
   | "bifa"
+  | "iffi"
   | "other";
 
 export type AwardEntry = {
@@ -184,6 +185,7 @@ function classify(name: string): AwardType {
   if (n.includes("palme") || n.includes("cannes")) return "cannes";
   if (n.includes("golden lion") || n.includes("venice")) return "venice";
   if (n.includes("golden bear") || n.includes("berlin")) return "berlin";
+  if (n.includes("iffi") || n.includes("international film festival of india") || n.includes("golden peacock") || n.includes("silver peacock")) return "iffi";
   return "other";
 }
 
@@ -453,6 +455,8 @@ export function awardTypeLabel(type: AwardType, n: number): string {
       return `Venice Award${plural}`;
     case "berlin":
       return `Berlin Award${plural}`;
+    case "iffi":
+      return `IFFI Award${plural}`;
     default:
       return `Award${plural}`;
   }

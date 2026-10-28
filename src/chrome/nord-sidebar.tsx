@@ -22,6 +22,8 @@ const PRIMARY_IDS = new Set([
   "discover",
   "movies",
   "shows",
+  "music",
+  "games",
   "kids",
   "anime",
   "live",

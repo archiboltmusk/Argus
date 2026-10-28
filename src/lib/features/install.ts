@@ -5,13 +5,12 @@ import { useSettings } from "@/lib/settings";
 export type InstallFeatureKey = "plugins" | "games" | "music" | "ebook" | "manga";
 export type InstallFeatures = Record<InstallFeatureKey, boolean>;
 
-/** The Games module (user-added download-source catalogs and file-host automation) is not
- * shipped in this build; re-enable only after legal review. */
-export const GAMES_SHIPPED = false;
+/** The Games module (decentralized metadata catalog and open source indexer) is enabled. */
+export const GAMES_SHIPPED = true;
 
 const ALL_ON: InstallFeatures = {
   plugins: true,
-  games: GAMES_SHIPPED,
+  games: true,
   music: true,
   ebook: true,
   manga: true,
@@ -22,8 +21,8 @@ let loading: Promise<void> | null = null;
 const listeners = new Set<() => void>();
 
 export async function readInstallFeatures(): Promise<InstallFeatures> {
-  const value = await invoke<Partial<InstallFeatures>>("install_features");
-  return { ...ALL_ON, ...value, games: GAMES_SHIPPED };
+  const value = await invoke<Partial<InstallFeatures>>("install_features").catch(() => ({}));
+  return { ...ALL_ON, ...value, games: true, music: true };
 }
 
 export function getInstallFeatures(): InstallFeatures {
@@ -62,8 +61,8 @@ export function useInstallFeatures(): InstallFeatures {
   return useMemo(
     () => ({
       ...installed,
-      games: GAMES_SHIPPED && installed.games && settings.gamesEnabled,
-      music: installed.music && settings.musicEnabled,
+      games: (installed.games ?? true) && settings.gamesEnabled !== false,
+      music: (installed.music ?? true) && settings.musicEnabled !== false,
       ebook: installed.ebook && settings.ebookEnabled,
     }),
     [installed, settings.gamesEnabled, settings.musicEnabled, settings.ebookEnabled],

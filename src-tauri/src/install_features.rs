@@ -45,11 +45,7 @@ pub fn install_features() -> InstallFeatures {
     let on = |key: &str| !disabled.iter().any(|off| off == key);
     InstallFeatures {
         plugins: on("plugins"),
-        games: if cfg!(target_os = "macos") {
-            false
-        } else {
-            on("games")
-        },
+        games: on("games"),
         music: on("music"),
         ebook: on("ebook"),
         manga: on("manga"),

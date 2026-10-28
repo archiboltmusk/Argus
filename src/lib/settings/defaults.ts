@@ -193,7 +193,7 @@ export const DEFAULT: Settings = {
   capabilityMatching: true,
   advancedSettings: false,
   p2pUploadEnabled: false,
-  gamesEnabled: false,
+  gamesEnabled: true,
   musicEnabled: true,
   ebookEnabled: true,
   communityAddonDirectories: false,

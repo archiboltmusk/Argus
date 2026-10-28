@@ -282,6 +282,25 @@ export const AWARD_CATALOG: Record<AwardType, AwardMeta> = {
       { key: "best_film", name: "Best British Independent Film" },
     ],
   },
+  iffi: {
+    type: "iffi",
+    title: "International Film Festival of India",
+    shorthand: "IFFI",
+    tagline: "IFFI Goa · since 1952 · FIAPF Accredited",
+    description:
+      "One of Asia's oldest and most prestigious competitive film festivals, presenting the Golden Peacock for Best Film, the Silver Peacock, and the Satyajit Ray Lifetime Achievement Award.",
+    founded: 1952,
+    categories: [
+      { key: "golden_peacock", name: "Golden Peacock · Best Film" },
+      { key: "silver_peacock_director", name: "Silver Peacock · Best Director" },
+      { key: "silver_peacock_actor", name: "Silver Peacock · Best Actor" },
+      { key: "silver_peacock_actress", name: "Silver Peacock · Best Actress" },
+      { key: "satyajit_ray_lifetime", name: "Satyajit Ray Lifetime Achievement" },
+      { key: "icft_unesco_gandhi", name: "ICFT UNESCO Gandhi Medal" },
+      { key: "best_debut_director", name: "Best Debut Feature Film" },
+      { key: "best_web_series", name: "Best Web Series (OTT)" },
+    ],
+  },
   other: {
     type: "other",
     title: "Other Awards",

@@ -27,6 +27,8 @@ export const PRIMARY_NAV_IDS = new Set([
   "catalogs",
   "movies",
   "shows",
+  "music",
+  "games",
   "kids",
   "anime",
   "live",

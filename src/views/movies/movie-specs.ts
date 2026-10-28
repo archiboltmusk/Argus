@@ -226,6 +226,18 @@ export function movieSpecs(key: string, region: string): RowSpec[] {
         }),
     },
     {
+      key: "lang-in-heritage",
+      title: "Indian Cinema: Restored Classics & Auteurs",
+      fetcher: (p) =>
+        tmdbDiscover(key, "movie", {
+          with_origin_country: "IN",
+          "vote_average.gte": "7.5",
+          "vote_count.gte": "100",
+          sort_by: "vote_average.desc",
+          page: String(p),
+        }),
+    },
+    {
       key: "doc",
       title: "Documentary Spotlight",
       fetcher: (p) =>

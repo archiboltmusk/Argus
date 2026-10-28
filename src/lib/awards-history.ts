@@ -126,6 +126,7 @@ const BUNDLED_AWARD_NAME: Partial<Record<AwardType, string>> = {
   blue_dragon: "Blue Dragon Film Award",
   baeksang: "Baeksang Arts Award",
   bifa: "British Independent Film Award",
+  iffi: "International Film Festival of India",
 };
 
 function normTitle(s: string): string {
