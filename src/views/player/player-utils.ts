@@ -1,9 +1,10 @@
 import { createHtml5Bridge } from "@/lib/player/html5";
 import { createMpvBridge, probeMpv, type MpvRect } from "@/lib/player/mpv";
 import { createExternalMpvBridge, type ExternalMpvOptions } from "@/lib/player/external-mpv";
-import type { PlayerBridge } from "@/lib/player/bridge";
+import type { PlayerBridge, PlayerEngine } from "@/lib/player/bridge";
 import type { MonitorInfo } from "@/lib/monitors";
 import { isLinuxDesktop, isMacDesktop, isWindowsDesktop } from "@/lib/platform";
+import { resolveAdaptivePlayerBridge } from "@/lib/player/engines/router";
 
 export const SYNC_DRIFT_TOLERANCE_S = 0.6;
 export const SYNC_SUPPRESS_MS = 1400;
@@ -30,7 +31,7 @@ export function round2(v: number): number {
 }
 
 export function embedFlags(
-  engine: "html5" | "mpv",
+  engine: PlayerEngine,
   mpvEmbed: boolean,
   videoWidth: number,
   videoHeight: number,
@@ -54,7 +55,7 @@ export function formatNames(names: string[]): string {
 }
 
 export async function pickBridge(
-  want: "auto" | "html5" | "mpv",
+  want: "auto" | PlayerEngine,
   notWebReady: boolean,
   mpvOpts: {
     anime4k: boolean;
@@ -76,29 +77,6 @@ export async function pickBridge(
     /** Set when playback runs in the user's own external mpv instead of the one inside Argus. */
     external?: ExternalMpvOptions | null;
   },
-): Promise<{ bridge: PlayerBridge; engine: "html5" | "mpv" }> {
-  // Set html5 so Argus does not use any of the embedded-mpv window handling.
-  if (mpvOpts.external)
-    return { bridge: createExternalMpvBridge(mpvOpts.external), engine: "html5" };
-  if (want === "html5") return { bridge: createHtml5Bridge(), engine: "html5" };
-  if (want === "mpv") {
-    const probe = await probeMpv();
-    if (probe.available) return { bridge: createMpvBridge(mpvOpts), engine: "mpv" };
-    console.warn(
-      "[argus] mpv requested but libmpv probe failed; falling back to in-webview html5 decode (high memory). Reason:",
-      probe.error,
-    );
-    return { bridge: createHtml5Bridge(), engine: "html5" };
-  }
-  const isDesktop = typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
-  if (isDesktop || notWebReady) {
-    const probe = await probeMpv();
-    if (probe.available) return { bridge: createMpvBridge(mpvOpts), engine: "mpv" };
-    if (isDesktop)
-      console.warn(
-        "[argus] desktop libmpv probe failed; falling back to in-webview html5 decode (high memory). Reason:",
-        probe.error,
-      );
-  }
-  return { bridge: createHtml5Bridge(), engine: "html5" };
+): Promise<{ bridge: PlayerBridge; engine: PlayerEngine }> {
+  return resolveAdaptivePlayerBridge(want, notWebReady, mpvOpts);
 }

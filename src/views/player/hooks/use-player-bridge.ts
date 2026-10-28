@@ -3,6 +3,7 @@ import {
   emptySnapshot,
   initialPlayerSnapshot,
   type PlayerBridge,
+  type PlayerEngine,
   type PlayerSnapshot,
 } from "@/lib/player/bridge";
 import { probeMpv } from "@/lib/player/mpv";
@@ -60,7 +61,7 @@ export function usePlayerBridge(params: {
 
   const [snap, setSnap] = useState<PlayerSnapshot>(initialPlayerSnapshot);
   const prevSnapRef = useRef<PlayerSnapshot>(emptySnapshot);
-  const [engine, setEngine] = useState<"html5" | "mpv">("html5");
+  const [engine, setEngine] = useState<PlayerEngine>("html5");
   const [autoFallbackTried, setAutoFallbackTried] = useState(false);
 
   const hdrOpaqueWindow = isWindowsDesktop() && settings.playerHdrOpaqueWindow;

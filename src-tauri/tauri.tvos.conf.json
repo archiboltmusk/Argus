@@ -1,0 +1,36 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "Argus TV",
+  "version": "1.0.0",
+  "identifier": "app.argus.tv.apple",
+  "build": {
+    "beforeDevCommand": "pnpm dev --mode tv",
+    "beforeBuildCommand": "pnpm build:tv",
+    "devUrl": "http://localhost:1420",
+    "frontendDist": "../dist"
+  },
+  "app": {
+    "windows": [
+      {
+        "label": "main",
+        "title": "Argus TV",
+        "url": "index-tv.html",
+        "fullscreen": true,
+        "backgroundColor": [8, 9, 10, 255]
+      }
+    ],
+    "security": {
+      "csp": "default-src 'self' tauri: 'unsafe-inline' 'unsafe-eval' https: http: data: blob:;"
+    }
+  },
+  "bundle": {
+    "category": "Entertainment",
+    "tvOS": {
+      "minimumSystemVersion": "17.0",
+      "frameworks": ["AVKit.framework", "AVFoundation.framework", "TVMLKit.framework"],
+      "topShelf": {
+        "enabled": true
+      }
+    }
+  }
+}

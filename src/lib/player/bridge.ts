@@ -177,8 +177,16 @@ export type PlayerBridge = {
   destroy: () => void;
 };
 
+export type PlayerEngine =
+  | "html5"
+  | "mpv"
+  | "exoplayer"
+  | "avplayer"
+  | "tizen-avplay"
+  | "webos-media";
+
 export type PlayerCapabilities = {
-  engine: "html5" | "mpv";
+  engine: PlayerEngine;
   /** Playback runs in the user's own external player window, outside Argus. */
   external?: boolean;
   pictureInPicture: boolean;
@@ -186,6 +194,9 @@ export type PlayerCapabilities = {
   chromecast: boolean;
   hdrPassthrough: boolean;
   hardwareDecode: boolean;
+  tunneling?: boolean;
+  spatialAudio?: boolean;
+  dolbyVision?: boolean;
 };
 
 export const emptySnapshot: PlayerSnapshot = {

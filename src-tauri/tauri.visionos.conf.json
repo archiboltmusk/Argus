@@ -1,0 +1,35 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "Argus Vision",
+  "version": "1.0.0",
+  "identifier": "app.argus.spatial.vision",
+  "build": {
+    "beforeDevCommand": "pnpm dev --mode spatial",
+    "beforeBuildCommand": "pnpm build:desktop",
+    "devUrl": "http://localhost:1420",
+    "frontendDist": "../dist"
+  },
+  "app": {
+    "windows": [
+      {
+        "label": "main",
+        "title": "Argus Spatial Cinema",
+        "width": 1920,
+        "height": 1080,
+        "transparent": true,
+        "backgroundColor": [0, 0, 0, 0]
+      }
+    ],
+    "security": {
+      "csp": "default-src 'self' tauri: 'unsafe-inline' 'unsafe-eval' https: http: data: blob:;"
+    }
+  },
+  "bundle": {
+    "category": "Entertainment",
+    "visionOS": {
+      "minimumSystemVersion": "1.0",
+      "frameworks": ["RealityKit.framework", "AVKit.framework", "Spatial.framework"],
+      "immersionStyle": "mixed"
+    }
+  }
+}

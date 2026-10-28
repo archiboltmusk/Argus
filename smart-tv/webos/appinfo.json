@@ -1,0 +1,24 @@
+{
+  "id": "app.argus.webos",
+  "version": "1.0.0",
+  "vendor": "Argus",
+  "type": "web",
+  "main": "index-tv.html",
+  "title": "Argus",
+  "icon": "icon.png",
+  "largeIcon": "largeIcon.png",
+  "bgImage": "splash.png",
+  "splashBackground": "#08090a",
+  "resolution": "1920x1080",
+  "uiRevision": "2",
+  "requiredVersion": "5.0.0",
+  "supportGpu": true,
+  "supportTouch": false,
+  "supportMagicRemote": true,
+  "supportMultiChannelAudio": true,
+  "trustLevel": "trusted",
+  "handlesRelaunch": true,
+  "accessibility": {
+    "supportsAudioGuidance": true
+  }
+}

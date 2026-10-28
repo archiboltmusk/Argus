@@ -1,0 +1,35 @@
+{
+  "name": "Argus Entertainment",
+  "short_name": "Argus",
+  "description": "Cross-Platform Decentralized Entertainment Hub",
+  "start_url": "/index-tv.html",
+  "display": "fullscreen",
+  "orientation": "landscape",
+  "background_color": "#08090a",
+  "theme_color": "#08090a",
+  "categories": ["entertainment", "video", "multimedia"],
+  "icons": [
+    {
+      "src": "/favicon.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/favicon.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "TV Mode",
+      "url": "/index-tv.html",
+      "description": "10-foot Big Picture couch and projector experience"
+    },
+    {
+      "name": "Movies & Shows",
+      "url": "/index.html",
+      "description": "Browse your media catalog"
+    }
+  ]
+}

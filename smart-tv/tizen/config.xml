@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<widget xmlns="http://www.w3.org/ns/widgets" xmlns:tizen="http://tizen.org/ns/widgets" id="http://argus.app/ArgusTizen" version="1.0.0" viewmodes="fullscreen">
+    <tizen:application id="app.argus.tizen" exec="index-tv.html" screen-orientation="landscape" required_version="5.5"/>
+    <name>Argus</name>
+    <description>Cross-Platform Decentralized Entertainment Hub for Smart TVs</description>
+    <icon src="icon.png"/>
+    <author href="https://github.com/archiboltmusk/Argus" email="support@argus.app">Argus Community</author>
+    <content src="index-tv.html"/>
+    <feature name="http://tizen.org/feature/screen.size.all"/>
+    <feature name="http://tizen.org/feature/network.internet"/>
+    <tizen:privilege name="http://tizen.org/privilege/internet"/>
+    <tizen:privilege name="http://tizen.org/privilege/tv.inputdevice"/>
+    <tizen:privilege name="http://tizen.org/privilege/tv.audio"/>
+    <tizen:privilege name="http://tizen.org/privilege/application.launch"/>
+    <tizen:privilege name="http://developer.samsung.com/privilege/network.public"/>
+    <tizen:privilege name="http://developer.samsung.com/privilege/avplay"/>
+    <tizen:setting screen-orientation="landscape" context-menu="enable" background-support="enable" encryption="disable" install-location="auto"/>
+</widget>
