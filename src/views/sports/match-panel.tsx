@@ -4,6 +4,7 @@ import { TeamProfileLink, teamIdentity } from "./team-profile-link";
 import { useEffect, useMemo, useState, type CSSProperties, type ReactNode } from "react";
 import { PlayEventIcon } from "./play-event-icon";
 import { useT, useUiLanguage } from "@/lib/i18n";
+import { useSettings } from "@/lib/settings";
 import type {
   MatchEvent,
   MatchTeamStatRow,
@@ -107,6 +108,8 @@ function ScoreSide({
 
 function Scoreboard({ detail }: { detail: SportsMatchDetail }) {
   const t = useT();
+  const { settings } = useSettings();
+  const hideScores = settings.sportsHideScores;
   const live = detail.state === "in";
   const scored = detail.state !== "pre";
   const sport = sportsLeagueByTag(detail.league)?.group || "";
@@ -114,7 +117,7 @@ function Scoreboard({ detail }: { detail: SportsMatchDetail }) {
     <div className="flex flex-col gap-3 rounded-lg bg-elevated p-4 ring-1 ring-edge-soft">
       <div className="flex items-center gap-4">
         <ScoreSide detail={detail} side={detail.home} align="start" />
-        <div className="flex shrink-0 items-center gap-2 text-[30px] font-bold tabular-nums text-ink">
+        <div className={`flex shrink-0 items-center gap-2 text-[30px] font-bold tabular-nums text-ink ${hideScores ? "sh-spoiler-score" : ""}`}>
           {scored ? (
             <>
               <span>{detail.home.score || "�"}</span>

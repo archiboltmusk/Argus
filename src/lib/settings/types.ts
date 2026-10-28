@@ -674,6 +674,8 @@ export type Settings = {
   sportsShowOdds: boolean;
   /** Scores and schedules need no provider; streams do. Off until asked for. */
   sportsWithoutProvider: boolean;
+  /** Anti-spoiler mode: hides live and final match scores to protect replays. */
+  sportsHideScores: boolean;
   hideSpoilers: boolean;
   spoilerHideThumbnails: boolean;
   spoilerHideTitles: boolean;

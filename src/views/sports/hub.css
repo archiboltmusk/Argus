@@ -3440,3 +3440,120 @@
     transition: none;
   }
 }
+
+/* Anti-Spoiler protection: hides scores, stats, and timelines until hovered/clicked */
+.sh-spoiler-score,
+.sh-spoiler-masked {
+  filter: blur(10px) !important;
+  user-select: none !important;
+  transition: filter 0.2s ease-in-out !important;
+  cursor: pointer;
+}
+.sh-spoiler-score:hover,
+.sh-spoiler-score:focus,
+.sh-spoiler-masked:hover,
+.sh-spoiler-masked:focus {
+  filter: blur(0px) !important;
+}
+
+.sh-spoiler-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: 9999px;
+  font-size: 12px;
+  font-weight: 600;
+  background: var(--color-elevated);
+  color: var(--color-ink-muted);
+  border: 1px solid var(--color-edge-soft);
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+.sh-spoiler-pill:hover {
+  background: var(--color-raised);
+  color: var(--color-ink);
+}
+.sh-spoiler-pill[data-active="true"] {
+  background: color-mix(in srgb, var(--color-accent) 15%, var(--color-elevated));
+  color: var(--color-accent);
+  border-color: color-mix(in srgb, var(--color-accent) 40%, transparent);
+}
+
+/* Dedicated Cricket Fixture Row styles: prevents multi-innings wrapping collisions */
+.sh-fixture-cricket {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  flex: 1;
+  min-width: 0;
+  padding: 0 8px;
+}
+
+.sh-cricket-side {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+  min-width: 0;
+}
+
+.sh-cricket-side.away {
+  justify-content: flex-end;
+  text-align: end;
+}
+
+.sh-cricket-side.home {
+  justify-content: flex-start;
+  text-align: start;
+}
+
+.sh-cricket-score-pill {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--color-ink);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  background: var(--color-elevated);
+  padding: 6px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--color-edge-soft);
+  flex-shrink: 0;
+  line-height: 1.25;
+}
+
+.sh-cricket-center {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  min-width: 54px;
+}
+
+.sh-cricket-target-badge {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 3px 8px;
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--color-accent) 14%, var(--color-elevated));
+  color: var(--color-accent);
+  border: 1px solid color-mix(in srgb, var(--color-accent) 25%, transparent);
+  white-space: nowrap;
+}
+
+@container (max-width: 800px) {
+  .sh-fixture-cricket {
+    gap: 10px;
+    padding: 0;
+  }
+  .sh-cricket-score-pill {
+    font-size: 12px;
+    padding: 4px 8px;
+  }
+}
+

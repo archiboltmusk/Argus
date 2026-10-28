@@ -533,6 +533,7 @@ export const DEFAULT: Settings = {
   sportsLeagues: [],
   sportsShowOdds: false,
   sportsWithoutProvider: false,
+  sportsHideScores: false,
   hideSpoilers: false,
   spoilerHideThumbnails: true,
   spoilerHideTitles: true,

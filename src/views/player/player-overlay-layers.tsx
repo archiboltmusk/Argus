@@ -1,4 +1,6 @@
-import { memo, type ComponentProps, type RefObject } from "react";
+import { memo, useState, type ComponentProps, type RefObject } from "react";
+import { Activity } from "lucide-react";
+import { SportsSidebar } from "@/components/player/sports-sidebar";
 import { useT } from "@/lib/i18n";
 import { DrawCanvas, StrokesLayer, type Stroke } from "@/components/player/draw-canvas";
 import { cropTransform } from "./hooks/use-video-fill";
@@ -209,6 +211,7 @@ export type PlayerOverlayLayersProps = {
 };
 
 export const PlayerOverlayLayers = memo(function PlayerOverlayLayers(p: PlayerOverlayLayersProps) {
+  const [sportsSidebarOpen, setSportsSidebarOpen] = useState(false);
   const t = useT();
   const roomAvatarTopLeft =
     p.inRoom && !p.avatarsHidden && p.participants.length > 0 && p.avatarsCorner === "top-left";
@@ -598,6 +601,30 @@ export const PlayerOverlayLayers = memo(function PlayerOverlayLayers(p: PlayerOv
         onUseMpv={p.onUseMpv}
         onDismissNoAudio={p.onDismissNoAudio}
         onPickAnother={p.pickAnotherOrGuide}
+      />
+      {!p.tenFoot && !p.pipMode && (
+        <button
+          type="button"
+          onClick={() => setSportsSidebarOpen((v) => !v)}
+          aria-label={t("Sports scores & telemetry")}
+          className={`pointer-events-auto group absolute bottom-24 right-0 z-20 flex h-16 items-center justify-center gap-1.5 rounded-l-xl border-y border-l border-edge-soft bg-elevated/65 pl-2.5 pr-2 text-ink shadow-lg backdrop-blur-md transition-all duration-300 hover:bg-elevated hover:pl-3 ${
+            p.showChrome ? "opacity-90 hover:opacity-100" : "opacity-0 pointer-events-none"
+          }`}
+          title={t("Live sports scores & cricket telemetry")}
+        >
+          <Activity size={16} className="text-accent" />
+          <span
+            className="text-[10px] font-bold uppercase tracking-wider text-ink-muted group-hover:text-ink"
+            style={{ writingMode: "vertical-rl", transform: "rotate(180deg)" }}
+          >
+            {t("Scores")}
+          </span>
+        </button>
+      )}
+
+      <SportsSidebar
+        open={sportsSidebarOpen}
+        onClose={() => setSportsSidebarOpen(false)}
       />
     </>
   );

@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 
 import { useT, useUiLanguage } from "@/lib/i18n";
+import { useSettings } from "@/lib/settings";
 
 import { getLeagueLabel, type SportsGame, type SportsSide } from "@/lib/sports/espn";
 
@@ -156,6 +157,8 @@ export function HubCard({
   const date = useEventDate();
 
   const locale = useUiLanguage();
+  const { settings } = useSettings();
+  const hideScores = settings.sportsHideScores;
 
   const league = hubLeague(game.league);
 
@@ -330,7 +333,9 @@ export function HubCard({
                 </span>
               </TeamProfileLink>
 
-              {game.state !== "pre" && <b>{side.score}</b>}
+              {game.state !== "pre" && (
+                <b className={hideScores ? "sh-spoiler-score" : undefined}>{side.score}</b>
+              )}
             </span>
           ))}
         </span>
@@ -485,6 +490,8 @@ export function HubHero({
   const t = useT();
 
   const date = useEventDate();
+  const { settings } = useSettings();
+  const hideScores = settings.sportsHideScores;
 
   const league = game ? hubLeague(game.league) : undefined;
 
@@ -689,7 +696,7 @@ export function HubHero({
             )}
 
             {!race && game.state !== "pre" && (
-              <span className="sh-hero-score">
+              <span className={`sh-hero-score ${hideScores ? "sh-spoiler-score" : ""}`}>
                 {game.away.score}
 
                 <span>—</span>

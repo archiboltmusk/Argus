@@ -17,6 +17,8 @@ import { FightCard } from "./fight-card";
 import { PillRail } from "./pill-rail";
 import { EsportsImage } from "./esports-image";
 import { fetchEsportsTeamLogos } from "@/lib/sports/esports-profiles";
+import { useSettings } from "@/lib/settings";
+import { formatCricketScore } from "@/lib/sports/cricket-format";
 
 function searchableNames(game: SportsGame): string {
   const sides = [game.home, game.away, ...(game.field ?? [])];
@@ -49,6 +51,8 @@ export function HubSchedule({
 }) {
   const t = useT();
   const locale = useUiLanguage();
+  const { settings } = useSettings();
+  const hideScores = settings.sportsHideScores;
   const [filter, setFilter] = useState("all");
   const [search, setSearch] = useState("");
   const [collapsed, setCollapsed] = useState<string[]>([]);
@@ -240,6 +244,10 @@ export function HubSchedule({
                     <FightCard key={game.context?.id || game.id} games={bouts} onOpen={onOpen} />
                   );
                 const stale = game.savedAt !== undefined;
+                const isCricket = league?.group === "cricket";
+                const awayCricket = isCricket ? formatCricketScore(game.away.score) : null;
+                const homeCricket = isCricket ? formatCricketScore(game.home.score) : null;
+                const targetCricket = awayCricket?.target || homeCricket?.target;
                 const event =
                   ["combat", "boxing", "motorsport", "golf", "esports"].includes(
                     league?.group || "",
@@ -301,6 +309,46 @@ export function HubSchedule({
                           <small>{game.context?.venue || game.detail}</small>
                         </span>
                       </span>
+                    ) : isCricket ? (
+                      <span className="sh-fixture-cricket">
+                        <div className="sh-cricket-side away">
+                          <TeamProfileLink
+                            team={teamIdentity(game, "away")}
+                            className="sh-fixture-team-link"
+                          >
+                            <strong>{game.away.name}</strong>
+                            <EventLogo side={game.away} />
+                          </TeamProfileLink>
+                          {game.state !== "pre" && awayCricket?.main ? (
+                            <span className={`sh-cricket-score-pill ${hideScores ? "sh-spoiler-score" : ""}`}>
+                              {awayCricket.main}
+                            </span>
+                          ) : null}
+                        </div>
+                        <div className="sh-cricket-center">
+                          {targetCricket ? (
+                            <span className={`sh-cricket-target-badge ${hideScores ? "sh-spoiler-masked" : ""}`}>
+                              Target {targetCricket}
+                            </span>
+                          ) : (
+                            <span className="sh-fixture-vs">{t("vs")}</span>
+                          )}
+                        </div>
+                        <div className="sh-cricket-side home">
+                          {game.state !== "pre" && homeCricket?.main ? (
+                            <span className={`sh-cricket-score-pill ${hideScores ? "sh-spoiler-score" : ""}`}>
+                              {homeCricket.main}
+                            </span>
+                          ) : null}
+                          <TeamProfileLink
+                            team={teamIdentity(game, "home")}
+                            className="sh-fixture-team-link"
+                          >
+                            <EventLogo side={game.home} />
+                            <strong>{game.home.name}</strong>
+                          </TeamProfileLink>
+                        </div>
+                      </span>
                     ) : (
                       <span className="sh-fixture-match">
                         <span>
@@ -312,7 +360,7 @@ export function HubSchedule({
                             <EventLogo side={game.away} />
                           </TeamProfileLink>
                         </span>
-                        <b>
+                        <b className={hideScores ? "sh-spoiler-score" : undefined}>
                           {game.state === "pre" ? (
                             <span className="sh-fixture-vs">{t("vs")}</span>
                           ) : (

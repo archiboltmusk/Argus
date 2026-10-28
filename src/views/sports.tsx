@@ -2,7 +2,7 @@ import { SportsSelect } from "./sports/sports-select";
 import { SportsHotEventsSkeleton, SportsRailSkeleton } from "./sports/sports-skeletons";
 import { LeagueLogo } from "./sports/league-logo";
 import { lazy, Suspense, useMemo, useRef, useState, useEffect } from "react";
-import { ArrowUp, ArrowRight, CalendarDays, Star } from "lucide-react";
+import { ArrowUp, ArrowRight, CalendarDays, Eye, EyeOff, Star } from "lucide-react";
 import { SportsRefreshButton } from "./sports/refresh-button";
 import { useT, useUiLanguage } from "@/lib/i18n";
 import { useSettings } from "@/lib/settings";
@@ -20,6 +20,7 @@ import { HubRow } from "./sports/hub-cards";
 import { HubCarousel } from "./sports/hub-carousel";
 import { HubPitchSpotlight } from "./sports/hub-pitch-spotlight";
 import { HubSchedule } from "./sports/hub-schedule";
+import { SportsHighlightReel } from "./sports/sports-highlight-reel";
 import { SportsDateBar, buildDays } from "./sports/date-bar";
 import { useSportsHub } from "./sports/use-hub";
 import "./sports/hub.css";
@@ -69,7 +70,7 @@ function LinkedEsportsEvent({ match, active }: { match: EsportsMatch; active: bo
 function SportsHubView({ active = false }: { active?: boolean }) {
   const t = useT();
   const locale = useUiLanguage();
-  const { settings } = useSettings();
+  const { settings, update } = useSettings();
   const fav = useFavourites();
   const { openMatchDetail } = useView();
   const scrollRef = useRef<HTMLElement>(null);
@@ -283,10 +284,23 @@ function SportsHubView({ active = false }: { active?: boolean }) {
           <span className="sh-eyebrow">ARGUS SPORTS</span>
           <h1>{t("Every game. Your game.")}</h1>
         </div>
-        <SportsPersonalizeHint
-          active={active && !setup}
-          onPersonalize={() => setSetup(true)}
-        />
+        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+          <button
+            type="button"
+            className="sh-spoiler-pill"
+            data-active={settings.sportsHideScores}
+            onClick={() => update({ sportsHideScores: !settings.sportsHideScores })}
+            title={settings.sportsHideScores ? t("Anti-spoiler active (scores hidden). Click to show.") : t("Anti-spoiler off (scores visible). Click to hide.")}
+            aria-pressed={settings.sportsHideScores}
+          >
+            {settings.sportsHideScores ? <EyeOff size={15} /> : <Eye size={15} />}
+            <span>{settings.sportsHideScores ? t("Scores Hidden") : t("Anti-Spoiler")}</span>
+          </button>
+          <SportsPersonalizeHint
+            active={active && !setup}
+            onPersonalize={() => setSetup(true)}
+          />
+        </div>
       </header>
       <nav className="sh-view-tabs" aria-label={t("Sports navigation")}>
         {[
@@ -508,6 +522,7 @@ function SportsHubView({ active = false }: { active?: boolean }) {
               onOpen={open}
               stale={board.stale || upcoming.stale}
             />
+            <SportsHighlightReel games={all} onOpen={open} />
             {day !== today && (
               <HubSchedule
                 title={dateTitle}

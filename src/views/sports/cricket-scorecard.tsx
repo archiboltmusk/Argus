@@ -2,6 +2,8 @@ import { useMemo, useState } from "react";
 import { Compass, Target } from "lucide-react";
 import type { SportsGame, SportsSide } from "@/lib/sports/espn";
 import { hubLeague } from "@/lib/sports/hub-data";
+import { useSettings } from "@/lib/settings";
+import { parseCricketScoreDetails } from "@/lib/sports/cricket-format";
 
 export type CricketScoreInfo = {
   runs: number;
@@ -9,23 +11,20 @@ export type CricketScoreInfo = {
   overs: number;
   balls: number;
   displayScore: string;
+  target?: number;
 };
 
 export function parseCricketScore(raw: string): CricketScoreInfo | null {
   if (!raw) return null;
-  const m = raw.match(/(\d+)(?:[/](\d+)|[-](\d+))?(?:\s*\((\d+)(?:\.(\d+))?\s*(?:ov|overs)?\))?/i);
-  if (!m) return null;
-  const runs = parseInt(m[1], 10);
-  const wickets = m[2] ? parseInt(m[2], 10) : m[3] ? parseInt(m[3], 10) : 10;
-  const overs = m[4] ? parseInt(m[4], 10) : 0;
-  const balls = m[5] ? parseInt(m[5], 10) : 0;
-
+  const parsed = parseCricketScoreDetails(raw);
+  if (!parsed || !parsed.activeInnings) return null;
   return {
-    runs,
-    wickets,
-    overs,
-    balls,
-    displayScore: raw,
+    runs: parsed.activeInnings.runs,
+    wickets: parsed.activeInnings.wickets,
+    overs: parsed.activeInnings.overs,
+    balls: parsed.activeInnings.balls,
+    displayScore: parsed.displayScore,
+    target: parsed.target,
   };
 }
 
@@ -51,6 +50,8 @@ export function CricketScorecard({
 }: {
   game: SportsGame;
 }) {
+  const { settings } = useSettings();
+  const hideScores = settings.sportsHideScores;
   const [activeAnalysis, setActiveAnalysis] = useState<"none" | "wagon" | "pitch">("none");
   const league = hubLeague(game.league);
   const isCricket = league?.group === "cricket";
@@ -79,11 +80,15 @@ export function CricketScorecard({
         <div className="grid grid-cols-2 gap-3 pt-1">
           <div className="flex items-center justify-between rounded-xl bg-canvas/60 p-2.5">
             <span className="font-semibold text-ink">{game.home.name}</span>
-            <span className="text-base font-bold tabular-nums text-amber-400">{game.home.score || "0"}</span>
+            <span className={`text-base font-bold tabular-nums text-amber-400 ${hideScores ? "sh-spoiler-score" : ""}`}>
+              {game.home.score || "0"}
+            </span>
           </div>
           <div className="flex items-center justify-between rounded-xl bg-canvas/60 p-2.5">
             <span className="font-semibold text-ink">{game.away.name}</span>
-            <span className="text-base font-bold tabular-nums text-amber-400">{game.away.score || "0"}</span>
+            <span className={`text-base font-bold tabular-nums text-amber-400 ${hideScores ? "sh-spoiler-score" : ""}`}>
+              {game.away.score || "0"}
+            </span>
           </div>
         </div>
         <div className="flex items-center justify-between pt-1 text-[11px] text-ink-subtle">
@@ -103,13 +108,16 @@ export function CricketScorecard({
   const crr = currentOversDecimal > 0 && currentTeamScore ? (currentTeamScore.runs / currentOversDecimal).toFixed(2) : null;
 
   // Calculate Target & Required Run Rate (RRR)
-  let target: number | null = null;
+  let target: number | null = awayScore?.target ?? homeScore?.target ?? null;
   let rrr: string | null = null;
   let runsNeeded: number | null = null;
   let ballsRemaining: number | null = null;
 
-  if (homeScore && homeScore.runs > 0 && awayScore) {
+  if (target === null && homeScore && homeScore.runs > 0 && awayScore) {
     target = homeScore.runs + 1;
+  }
+
+  if (target !== null && awayScore) {
     runsNeeded = target - awayScore.runs;
     const maxOvers = 20; // Default T20 / IPL standard
     const ballsBowled = awayScore.overs * 6 + awayScore.balls;
@@ -135,11 +143,11 @@ export function CricketScorecard({
         </div>
       </div>
       <div className="text-end">
-        <span className="text-base font-bold tabular-nums text-ink">
+        <span className={`text-base font-bold tabular-nums text-ink ${hideScores ? "sh-spoiler-score" : ""}`}>
           {side.score || "Yet to bat"}
         </span>
         {parsed && parsed.overs > 0 && (
-          <span className="block text-[10.5px] tabular-nums text-ink-subtle">
+          <span className={`block text-[10.5px] tabular-nums text-ink-subtle ${hideScores ? "sh-spoiler-masked" : ""}`}>
             ({parsed.overs}.{parsed.balls} ov)
           </span>
         )}
@@ -197,7 +205,7 @@ export function CricketScorecard({
 
       {/* Live Equation / Target / Run Rates */}
       {(target !== null || crr !== null || rrr !== null) && (
-        <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl bg-elevated/60 px-3.5 py-2 text-xs">
+        <div className={`flex flex-wrap items-center justify-between gap-2 rounded-xl bg-elevated/60 px-3.5 py-2 text-xs ${hideScores ? "sh-spoiler-masked" : ""}`}>
           {target !== null && (
             <span className="font-semibold text-accent">
               Target: <span className="tabular-nums font-bold">{target}</span>

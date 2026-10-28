@@ -52,6 +52,14 @@ export function SportsAccessRow() {
         )}
         onChange={(value) => update({ sportsWithoutProvider: value })}
       />
+      <ToggleRow
+        label={t("Anti-Spoiler Mode (Hide match results)")}
+        value={settings.sportsHideScores === true}
+        sub={t(
+          "Blurs live and final scores, winner badges, and timelines across the sports hub so you can enjoy replays spoiler-free.",
+        )}
+        onChange={(value) => update({ sportsHideScores: value })}
+      />
       <div className="flex flex-wrap items-center justify-between gap-4 py-3">
         <p className={`max-w-[65ch] ${ROW_DESC}`}>
           {t(
