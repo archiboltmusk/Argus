@@ -100,4 +100,15 @@ export const CURATED_COMMUNITY_DIRECTORY: CommunityAddonEntry[] = [
     sandboxMode: "safe",
     recommended: true,
   },
+  {
+    id: "community.song-scene",
+    name: "Song Scene (Soundtracks & Music)",
+    version: "1.1.0",
+    description: "Highlights the soundtrack songs, artists, composers, and music supervisors behind any movie or series episode.",
+    manifestUrl: "https://addons.zrk.app/song-scene/manifest.json",
+    category: "metadata",
+    author: "ZRK",
+    sandboxMode: "safe",
+    recommended: true,
+  },
 ];
