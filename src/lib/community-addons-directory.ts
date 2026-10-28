@@ -4,46 +4,48 @@ export type CommunityAddonEntry = {
   version: string;
   description: string;
   manifestUrl: string;
-  category: "streams" | "subtitles" | "anime" | "metadata" | "catalogs";
+  category: "subtitles" | "anime" | "metadata" | "catalogs";
   iconUrl?: string;
   author: string;
   sandboxMode: "safe" | "direct-stream-only" | "full-network";
   recommended?: boolean;
 };
 
+/**
+ * Curated Open Ecosystem Directory
+ *
+ * LEGAL & COMPLIANCE POLICY:
+ * Argus strictly operates as an agnostic open-source media player (like VLC and Kodi).
+ * Under DMCA safe harbor and app store policies (Apple App Store Guideline 5.2.3,
+ * Google Play Developer Policies), Argus does NOT ship, curate, index, or link to
+ * any scraping, torrent indexer, or infringing stream addons.
+ *
+ * Only benign, verified public metadata, soundtrack, catalog, and subtitle providers
+ * are listed below. Users may independently connect their own private manifests or
+ * external indexers via personal settings.
+ */
 export const CURATED_COMMUNITY_DIRECTORY: CommunityAddonEntry[] = [
   {
-    id: "community.torrentio",
-    name: "Torrentio",
-    version: "1.0.14",
-    description: "Scrapes torrent streams from multiple providers with Debrid caching and resolution filters.",
-    manifestUrl: "https://torrentio.strem.fun/manifest.json",
-    category: "streams",
-    author: "TheCommunity",
-    sandboxMode: "direct-stream-only",
+    id: "community.song-scene",
+    name: "Song Scene (Soundtracks & Music)",
+    version: "1.1.0",
+    description: "Highlights soundtrack songs, artists, composers, and music supervisors behind movies and series episodes.",
+    manifestUrl: "https://addons.zrk.app/song-scene/manifest.json",
+    category: "metadata",
+    author: "ZRK",
+    sandboxMode: "safe",
     recommended: true,
   },
   {
-    id: "community.comet",
-    name: "Comet",
-    version: "2.1.0",
-    description: "Fast, lightweight debrid and torrent stream scraper with real-time health checks.",
-    manifestUrl: "https://comet.elfhosted.com/manifest.json",
-    category: "streams",
-    author: "Gabe",
-    sandboxMode: "direct-stream-only",
+    id: "community.tmdb-addon",
+    name: "The Movie Database (TMDB)",
+    version: "2.0.4",
+    description: "Rich metadata, posters, cast lists, and backdrop art sourced from TMDB.",
+    manifestUrl: "https://tmdb.strem.fun/manifest.json",
+    category: "metadata",
+    author: "mrcanelas",
+    sandboxMode: "safe",
     recommended: true,
-  },
-  {
-    id: "community.mediafusion",
-    name: "MediaFusion",
-    version: "3.4.1",
-    description: "Multi-source scraper supporting live TV, sports replays, and debrid streams.",
-    manifestUrl: "https://mediafusion.elfhosted.com/manifest.json",
-    category: "streams",
-    author: "Mhancoc",
-    sandboxMode: "direct-stream-only",
-    recommended: false,
   },
   {
     id: "community.opensubtitles-v3",
@@ -88,27 +90,5 @@ export const CURATED_COMMUNITY_DIRECTORY: CommunityAddonEntry[] = [
     author: "SubDL Team",
     sandboxMode: "safe",
     recommended: false,
-  },
-  {
-    id: "community.tmdb-addon",
-    name: "The Movie Database (TMDB)",
-    version: "2.0.4",
-    description: "Rich metadata, posters, cast lists, and backdrop art sourced from TMDB.",
-    manifestUrl: "https://tmdb.strem.fun/manifest.json",
-    category: "metadata",
-    author: "mrcanelas",
-    sandboxMode: "safe",
-    recommended: true,
-  },
-  {
-    id: "community.song-scene",
-    name: "Song Scene (Soundtracks & Music)",
-    version: "1.1.0",
-    description: "Highlights the soundtrack songs, artists, composers, and music supervisors behind any movie or series episode.",
-    manifestUrl: "https://addons.zrk.app/song-scene/manifest.json",
-    category: "metadata",
-    author: "ZRK",
-    sandboxMode: "safe",
-    recommended: true,
   },
 ];

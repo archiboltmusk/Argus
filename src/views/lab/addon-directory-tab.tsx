@@ -55,14 +55,14 @@ export function AddonDirectoryTab() {
           <div>
             <div className="flex items-center gap-2">
               <Layers size={18} className="text-accent" />
-              <h2 className="text-lg font-semibold">Decentralized Community Add-on Hub</h2>
+              <h2 className="text-lg font-semibold">Decentralized Open Metadata & Utility Hub</h2>
             </div>
             <p className="mt-1 text-xs leading-relaxed text-ink-subtle">
-              Curated, peer-reviewed open Stremio protocol integrations. Installed directly from developer manifests with granular local sandbox policies.
+              Curated, peer-reviewed open metadata, soundtrack, and subtitle providers. Argus strictly ships zero scraping streams and operates as an agnostic player.
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-1.5 rounded-xl border border-edge-soft bg-canvas p-1 text-xs">
-            {["all", "streams", "subtitles", "catalogs", "anime", "metadata"].map((cat) => (
+            {["all", "metadata", "subtitles", "catalogs", "anime"].map((cat) => (
               <button
                 key={cat}
                 type="button"
