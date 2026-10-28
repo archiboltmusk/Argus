@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { ArrowUpRight, Cpu, Monitor, Play, ShieldAlert, Sparkles, X } from "lucide-react";
-import { ModalShell } from "@/components/modal-shell";
+import { ModalShell, useModalExit } from "@/components/modal-shell";
 import { openUrl } from "@/lib/window";
-import { getMacSimulatorGuide, type MacGameGuide } from "@/lib/games/mac-simulator-bridge";
+import { getMacSimulatorGuide } from "@/lib/games/mac-simulator-bridge";
 
 export function MacSimulatorGuideModal({
   gameName,
@@ -15,12 +15,13 @@ export function MacSimulatorGuideModal({
 }) {
   const guide = getMacSimulatorGuide(gameName, steamId);
   const [selectedRunnerIdx, setSelectedRunnerIdx] = useState(0);
+  const { closing, close } = useModalExit(onClose);
 
   if (!guide) return null;
   const runner = guide.recommendedRunners[selectedRunnerIdx] ?? guide.recommendedRunners[0];
 
   return (
-    <ModalShell width={740} onClose={onClose} labelledBy="mac-sim-title">
+    <ModalShell width={740} closing={closing} onDismiss={close} labelledBy="mac-sim-title">
       <div className="p-6 flex flex-col gap-5 text-ink bg-canvas/95 rounded-2xl border border-edge">
         {/* Header */}
         <div className="flex items-start justify-between gap-4 border-b border-edge/60 pb-4">
@@ -41,7 +42,7 @@ export function MacSimulatorGuideModal({
             </p>
           </div>
           <button
-            onClick={onClose}
+            onClick={close}
             className="p-1.5 rounded-full text-ink-muted hover:text-ink hover:bg-elevated transition-colors"
             aria-label="Close"
           >

@@ -1,5 +1,7 @@
 import { useEffect, useId, useState } from "react";
-import { Check, ChevronDown, ChevronUp, Cpu, Gamepad2, HardDrive, MemoryStick, Monitor, RefreshCw, Trophy, LockKeyhole, Languages, Star, ShieldCheck, Captions, Volume2 } from "lucide-react";
+import { Check, ChevronDown, ChevronUp, Cpu, Gamepad2, HardDrive, MemoryStick, Monitor, RefreshCw, Trophy, LockKeyhole, Languages, Star, ShieldCheck, Captions, Volume2, Sparkles } from "lucide-react";
+import { osClass } from "@/lib/platform";
+import { MacSimulatorGuideModal } from "./mac-simulator-guide-modal";
 import { HoverTooltip } from "@/components/hover-tooltip";
 import { useT } from "@/lib/i18n";
 import { openUrl } from "@/lib/window";
