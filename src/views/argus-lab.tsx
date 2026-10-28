@@ -21,6 +21,10 @@ import {
   saveLabState,
   type LabExperiment,
 } from "@/lib/argus-lab";
+import { TelemetryTab } from "./lab/telemetry-tab";
+import { AddonDirectoryTab } from "./lab/addon-directory-tab";
+import { EcosystemTab } from "./lab/ecosystem-tab";
+import { TrustCenterTab } from "./lab/trust-center-tab";
 
 const DEMO_CANDIDATES: StreamCandidate[] = [
   { id: "a", label: "Balanced 1080p", startupMs: 1450, quality: 1080, stability: 0.94, estimatedMbps: 7.5, compatible: true, recentFailures: 0, observations: 18 },
@@ -29,7 +33,15 @@ const DEMO_CANDIDATES: StreamCandidate[] = [
   { id: "d", label: "Incompatible HDR profile", startupMs: 700, quality: 2160, stability: 0.99, estimatedMbps: 18, compatible: false, recentFailures: 0, observations: 30 },
 ];
 
-type Tab = "decision" | "contract" | "signals" | "operations";
+type Tab =
+  | "decision"
+  | "telemetry"
+  | "directory"
+  | "ecosystem"
+  | "trust"
+  | "contract"
+  | "signals"
+  | "operations";
 
 const MODES: Array<{ id: ExperienceMode; title: string; description: string }> = [
   { id: "balanced", title: "Balanced", description: "A measured compromise between stability, speed, quality, and data." },
@@ -129,6 +141,10 @@ export function ArgusLabView({ active = true }: { active?: boolean }) {
         <div className="mb-6 flex flex-wrap gap-2" role="tablist" aria-label="Argus Observatory sections">
           {([
             ["decision", "Decision Lab"],
+            ["telemetry", "Live Telemetry"],
+            ["directory", "Community Add-ons"],
+            ["ecosystem", "Ecosystem & LAN"],
+            ["trust", "Trust Center"],
             ["contract", "Experience Contract"],
             ["signals", "Local Signals"],
             ["operations", "Lab Controls"],
@@ -177,6 +193,11 @@ export function ArgusLabView({ active = true }: { active?: boolean }) {
             </Panel>
           </div>
         )}
+
+        {tab === "telemetry" && <TelemetryTab />}
+        {tab === "directory" && <AddonDirectoryTab />}
+        {tab === "ecosystem" && <EcosystemTab />}
+        {tab === "trust" && <TrustCenterTab />}
 
         {tab === "contract" && (
           <Panel>
