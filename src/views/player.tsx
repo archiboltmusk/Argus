@@ -11,6 +11,8 @@ import { useActiveKid } from "@/lib/profiles";
 import { type PlayerBridge } from "@/lib/player/bridge";
 import { useDebridClients } from "@/lib/debrid/registry";
 import { useSettings } from "@/lib/settings";
+import { loadLabState } from "@/lib/argus-lab";
+import { isExperienceActionAllowed } from "@/lib/experience-engine";
 import { writePlayerVolume } from "@/lib/player-volume";
 import { nameColor } from "@/lib/together/colors";
 import { useTogether } from "@/lib/together/provider";
@@ -1344,7 +1346,9 @@ function NativePlayerView({ src }: { src: PlayerSrc }) {
     src: activeMediaSrc,
     snap,
     debrids,
-    autoSwitchEnabled: settings.autoNextStreamOnStall,
+    autoSwitchEnabled:
+      settings.autoNextStreamOnStall &&
+      isExperienceActionAllowed(loadLabState().contract, "auto-switch"),
     onSwitchStream,
     openSwitcher: () => setSwitcherOpen(true),
     inRoom,
