@@ -1039,7 +1039,7 @@ export async function playMusic(
         failedAttempts.add(`${track.connectorId}:${track.id}`);
         const errorKey =
           error && typeof error === "object" && "key" in error ? String(error.key) : String(error);
-        if (chosenByHand || /STOP_UNCONFIRMED|stopUnconfirmed/i.test(errorKey)) throw error;
+        if (/STOP_UNCONFIRMED|stopUnconfirmed/i.test(errorKey)) throw error;
         if (!searchedAlternatives && track.mediaKind !== "video") {
           searchedAlternatives = true;
           const failedTrack = track;

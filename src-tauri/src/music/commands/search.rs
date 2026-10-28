@@ -119,22 +119,65 @@ pub(super) async fn resolve_track(
         });
     }
     let connector_id = track.connector_id.as_deref().unwrap_or("youtube");
-    cached_or_resolved(
-        &state.db,
-        &track.id,
-        |cached| async move {
-            let health = probe_stream(&cached).await;
-            (cached, health)
-        },
-        move || async move {
-            let connector = state
-                .registry
-                .get(connector_id)
-                .ok_or_else(|| format!("Unknown music connector: {connector_id}"))?;
-            connector.resolve(app, track).await
-        },
-    )
-    .await
+
+    // 1. Primary connector resolution
+    if let Some(connector) = state.registry.get(connector_id) {
+        let result = cached_or_resolved(
+            &state.db,
+            &track.id,
+            |cached| async move {
+                let health = probe_stream(&cached).await;
+                (cached, health)
+            },
+            move || async move { connector.resolve(app, track).await },
+        )
+        .await;
+
+        if let Ok(stream) = result {
+            return Ok(stream);
+        }
+    }
+
+    // 2. Universal cross-engine audio fallback for all federated, indie, or unauthenticated sources
+    // (Spotify without premium, Bandcamp, Audius, Jamendo, ReverbNation, Tidal, Qobuz, etc.)
+    let query = if !track.artist.trim().is_empty() && !track.title.trim().is_empty() {
+        format!("{} {}", track.artist.trim(), track.title.trim())
+    } else if !track.title.trim().is_empty() {
+        track.title.trim().to_string()
+    } else {
+        track.artist.trim().to_string()
+    };
+
+    if !query.is_empty() {
+        // First try YouTube Music
+        if let Some(yt) = state.registry.get("youtube") {
+            if let Ok(results) = yt.search(app, &query, 5).await {
+                for candidate in results {
+                    if let Ok(stream) = yt.resolve(app, &candidate).await {
+                        let _ = state.db.cache_stream(&track.id, &stream);
+                        return Ok(stream);
+                    }
+                }
+            }
+        }
+
+        // Next try SoundCloud
+        if let Some(sc) = state.registry.get("soundcloud") {
+            if let Ok(results) = sc.search(app, &query, 5).await {
+                for candidate in results {
+                    if let Ok(stream) = sc.resolve(app, &candidate).await {
+                        let _ = state.db.cache_stream(&track.id, &stream);
+                        return Ok(stream);
+                    }
+                }
+            }
+        }
+    }
+
+    Err(format!(
+        "No playable audio stream available for '{}' by '{}'",
+        track.title, track.artist
+    ))
 }
 
 #[tauri::command]

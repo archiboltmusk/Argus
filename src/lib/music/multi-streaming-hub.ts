@@ -257,6 +257,84 @@ export function getServiceCuratedTracks(serviceId: StreamingServiceId): MusicTra
           quality: { codec: "flac", bitrateKbps: 9216, lossless: true, sampleRateHz: 192000, bitDepth: 24 },
         },
       ];
+    case "audius":
+      return [
+        {
+          id: "audius-1",
+          title: "Resonance",
+          artist: "HOME",
+          album: "Odyssey",
+          artwork: "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=500&auto=format&fit=crop&q=80",
+          durationSeconds: 212,
+          durationLabel: "3:32",
+          connectorId: "audius",
+          quality: { codec: "aac", bitrateKbps: 320, lossless: false, sampleRateHz: 44100 },
+        },
+        {
+          id: "audius-2",
+          title: "Memory Reboot",
+          artist: "VOJ & Narvent",
+          album: "Memory Reboot",
+          artwork: "https://images.unsplash.com/photo-1509198397868-475647b2a1e5?w=500&auto=format&fit=crop&q=80",
+          durationSeconds: 195,
+          durationLabel: "3:15",
+          connectorId: "audius",
+          quality: { codec: "aac", bitrateKbps: 320, lossless: false, sampleRateHz: 44100 },
+        },
+      ];
+    case "jamendo":
+      return [
+        {
+          id: "jamendo-1",
+          title: "Approaching Spring",
+          artist: "Maya Belsitzman",
+          album: "Acoustic Seasons",
+          artwork: "https://images.unsplash.com/photo-1447752875215-b2761acb3c5d?w=500&auto=format&fit=crop&q=80",
+          durationSeconds: 245,
+          durationLabel: "4:05",
+          connectorId: "jamendo",
+          quality: { codec: "mp3", bitrateKbps: 320, lossless: false, sampleRateHz: 44100 },
+        },
+      ];
+    case "spotify":
+      return [
+        {
+          id: "spotify-1",
+          title: "Starboy",
+          artist: "The Weeknd, Daft Punk",
+          album: "Starboy",
+          artwork: "https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?w=500&auto=format&fit=crop&q=80",
+          durationSeconds: 230,
+          durationLabel: "3:50",
+          connectorId: "spotify",
+          quality: { codec: "ogg", bitrateKbps: 320, lossless: false, sampleRateHz: 44100 },
+        },
+        {
+          id: "spotify-2",
+          title: "Blinding Lights",
+          artist: "The Weeknd",
+          album: "After Hours",
+          artwork: "https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=500&auto=format&fit=crop&q=80",
+          durationSeconds: 200,
+          durationLabel: "3:20",
+          connectorId: "spotify",
+          quality: { codec: "ogg", bitrateKbps: 320, lossless: false, sampleRateHz: 44100 },
+        },
+      ];
+    case "qobuz":
+      return [
+        {
+          id: "qobuz-1",
+          title: "Time",
+          artist: "Pink Floyd",
+          album: "The Dark Side of the Moon",
+          artwork: "https://images.unsplash.com/photo-1511192336575-5a79af67a629?w=500&auto=format&fit=crop&q=80",
+          durationSeconds: 413,
+          durationLabel: "6:53",
+          connectorId: "qobuz",
+          quality: { codec: "flac", bitrateKbps: 9216, lossless: true, sampleRateHz: 192000, bitDepth: 24 },
+        },
+      ];
     default:
       return [];
   }

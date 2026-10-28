@@ -22,9 +22,15 @@ pub async fn music_play_track(
         if !state.is_current_play_request(request) {
             return Ok(());
         }
-        state.spotify.play(track, volume).await?;
-        state.set_active_engine(ACTIVE_SPOTIFY);
-        return Ok(());
+        match state.spotify.play(track.clone(), volume).await {
+            Ok(()) => {
+                state.set_active_engine(ACTIVE_SPOTIFY);
+                return Ok(());
+            }
+            Err(e) => {
+                eprintln!("[music::spotify] Native Spotify playback unavailable ({e}), falling back to stream resolver");
+            }
+        }
     }
     let stream = resolve_track(&app, state.inner(), &track).await;
     if !state.is_current_play_request(request) {
