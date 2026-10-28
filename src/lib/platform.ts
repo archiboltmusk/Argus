@@ -291,10 +291,10 @@ export function platformFamily(): PlatformFamily {
   }
 }
 
-import type { PlayerEngine } from "@/lib/player/bridge";
+import type { PlayerPlatformEngine } from "@/lib/player/bridge";
 
 /** Optimal video playback engine tailored to each platform's hardware capabilities. */
-export function getRecommendedPlayerEngine(platform = detectExtendedPlatform()): PlayerEngine {
+export function getRecommendedPlayerEngine(platform = detectExtendedPlatform()): PlayerPlatformEngine {
   switch (platform) {
     case "tvos":
     case "visionos":

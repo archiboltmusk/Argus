@@ -24,7 +24,8 @@ export function createWebosMediaBridge(): PlayerBridge {
   };
 
   const capabilities: PlayerCapabilities = {
-    engine: "webos-media",
+    engine: "html5",
+    platformEngine: "webos-media",
     pictureInPicture: false,
     airplay: true,
     chromecast: false,

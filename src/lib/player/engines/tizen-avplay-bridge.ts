@@ -24,7 +24,8 @@ export function createTizenAvplayBridge(): PlayerBridge {
   };
 
   const capabilities: PlayerCapabilities = {
-    engine: "tizen-avplay",
+    engine: "html5",
+    platformEngine: "tizen-avplay",
     pictureInPicture: false,
     airplay: false,
     chromecast: false,

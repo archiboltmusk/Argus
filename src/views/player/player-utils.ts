@@ -1,7 +1,6 @@
-import { createHtml5Bridge } from "@/lib/player/html5";
-import { createMpvBridge, probeMpv, type MpvRect } from "@/lib/player/mpv";
-import { createExternalMpvBridge, type ExternalMpvOptions } from "@/lib/player/external-mpv";
-import type { PlayerBridge, PlayerEngine } from "@/lib/player/bridge";
+import type { MpvRect } from "@/lib/player/mpv";
+import type { ExternalMpvOptions } from "@/lib/player/external-mpv";
+import type { PlayerBridge, PlayerEngine, PlayerPlatformEngine } from "@/lib/player/bridge";
 import type { MonitorInfo } from "@/lib/monitors";
 import { isLinuxDesktop, isMacDesktop, isWindowsDesktop } from "@/lib/platform";
 import { resolveAdaptivePlayerBridge } from "@/lib/player/engines/router";
@@ -55,7 +54,7 @@ export function formatNames(names: string[]): string {
 }
 
 export async function pickBridge(
-  want: "auto" | PlayerEngine,
+  want: "auto" | PlayerPlatformEngine,
   notWebReady: boolean,
   mpvOpts: {
     anime4k: boolean;

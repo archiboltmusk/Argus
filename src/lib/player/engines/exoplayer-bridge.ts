@@ -25,7 +25,8 @@ export function createExoPlayerBridge(options?: { isProjector?: boolean; isTv?: 
   };
 
   const capabilities: PlayerCapabilities = {
-    engine: "exoplayer",
+    engine: "html5",
+    platformEngine: "exoplayer",
     pictureInPicture: true,
     airplay: false,
     chromecast: true,

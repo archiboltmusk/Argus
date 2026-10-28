@@ -4,7 +4,7 @@ import {
   isAndroidProjector,
   isAndroidTv,
 } from "@/lib/platform";
-import type { PlayerBridge, PlayerEngine } from "../bridge";
+import type { PlayerBridge, PlayerEngine, PlayerPlatformEngine } from "../bridge";
 import { createHtml5Bridge } from "../html5";
 import { createMpvBridge, probeMpv, type MpvRect } from "../mpv";
 import { createExternalMpvBridge, type ExternalMpvOptions } from "../external-mpv";
@@ -47,7 +47,7 @@ export interface PlayerEngineSelectionOptions {
  * - ChromeOS & Web: HTML5 + Hls.js + mpegts.js
  */
 export async function resolveAdaptivePlayerBridge(
-  want: "auto" | PlayerEngine,
+  want: "auto" | PlayerPlatformEngine,
   notWebReady: boolean,
   mpvOpts: PlayerEngineSelectionOptions,
 ): Promise<{ bridge: PlayerBridge; engine: PlayerEngine }> {
@@ -57,11 +57,21 @@ export async function resolveAdaptivePlayerBridge(
   }
 
   const platform = detectExtendedPlatform();
-  const targetEngine: PlayerEngine = want === "auto" ? getRecommendedPlayerEngine(platform) : want;
+  const targetEngine: PlayerPlatformEngine =
+    want === "auto" ? getRecommendedPlayerEngine(platform) : want;
+
+  // Non-web-ready video formats (e.g. VC-1, DTS-HD, TrueHD, high-bitrate raw MKV)
+  // route to libmpv when available on desktop platforms
+  if (notWebReady && (platform === "macos" || platform === "windows" || platform === "linux")) {
+    const probe = await probeMpv();
+    if (probe.available) {
+      return { bridge: createMpvBridge(mpvOpts), engine: "mpv" };
+    }
+  }
 
   switch (targetEngine) {
     case "avplayer":
-      return { bridge: createAvPlayerBridge(), engine: "avplayer" };
+      return { bridge: createAvPlayerBridge(), engine: "html5" };
 
     case "exoplayer":
       return {
@@ -69,14 +79,14 @@ export async function resolveAdaptivePlayerBridge(
           isProjector: isAndroidProjector(),
           isTv: isAndroidTv(),
         }),
-        engine: "exoplayer",
+        engine: "html5",
       };
 
     case "tizen-avplay":
-      return { bridge: createTizenAvplayBridge(), engine: "tizen-avplay" };
+      return { bridge: createTizenAvplayBridge(), engine: "html5" };
 
     case "webos-media":
-      return { bridge: createWebosMediaBridge(), engine: "webos-media" };
+      return { bridge: createWebosMediaBridge(), engine: "html5" };
 
     case "mpv": {
       const probe = await probeMpv();

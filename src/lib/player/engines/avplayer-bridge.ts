@@ -1,7 +1,6 @@
 import type {
   PlayerBridge,
   PlayerCapabilities,
-  PlayerEmbedRect,
   PlayerSeekPrecision,
   PlayerSnapshot,
   PlayerSource,
@@ -24,7 +23,8 @@ export function createAvPlayerBridge(): PlayerBridge {
   };
 
   const capabilities: PlayerCapabilities = {
-    engine: "avplayer",
+    engine: "html5",
+    platformEngine: "avplayer",
     pictureInPicture: true,
     airplay: true,
     chromecast: false,

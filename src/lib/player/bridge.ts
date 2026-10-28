@@ -177,7 +177,7 @@ export type PlayerBridge = {
   destroy: () => void;
 };
 
-export type PlayerEngine =
+export type PlayerPlatformEngine =
   | "html5"
   | "mpv"
   | "exoplayer"
@@ -185,8 +185,11 @@ export type PlayerEngine =
   | "tizen-avplay"
   | "webos-media";
 
+export type PlayerEngine = "html5" | "mpv";
+
 export type PlayerCapabilities = {
   engine: PlayerEngine;
+  platformEngine?: PlayerPlatformEngine;
   /** Playback runs in the user's own external player window, outside Argus. */
   external?: boolean;
   pictureInPicture: boolean;
