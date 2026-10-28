@@ -8,13 +8,14 @@ import {
 } from "react";
 import { useT, useUiLanguage } from "@/lib/i18n";
 
-export type MusicTabId = "forYou" | "explore" | "library";
+export type MusicTabId = "forYou" | "explore" | "services" | "library";
 
-export const MUSIC_TABS: readonly MusicTabId[] = ["forYou", "explore", "library"];
+export const MUSIC_TABS: readonly MusicTabId[] = ["forYou", "explore", "services", "library"];
 
 const TAB_LABEL_KEY: Record<MusicTabId, string> = {
   forYou: "music.tab.forYou",
   explore: "music.tab.explore",
+  services: "Streaming Hub",
   library: "music.tab.library",
 };
 

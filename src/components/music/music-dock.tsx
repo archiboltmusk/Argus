@@ -57,6 +57,7 @@ import { requestMusicExplore, requestMusicPanel } from "@/lib/music/navigation";
 import { musicSourceName } from "@/lib/music/recovery";
 import { musicVolumeCeiling, useMusicAudioSettings } from "@/lib/music/audio-settings";
 import { getMusicSpeakerState, subscribeMusicSpeakerState } from "@/lib/music/casting";
+import { MusicStudioModal } from "./music-studio-modal";
 import "./music-dock.css";
 
 const DOCK_HEIGHT = 76;
@@ -160,6 +161,7 @@ export function MusicDock() {
   const [expanded, setExpanded] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
   const [sourceOpen, setSourceOpen] = useState(false);
+  const [studioOpen, setStudioOpen] = useState(false);
   const [closing, setClosing] = useState(false);
   const closeSource = useCallback(() => setSourceOpen(false), []);
   useEffect(() => {
@@ -275,6 +277,12 @@ export function MusicDock() {
         icon: <MusicGlyph name="audio-settings" size={17} />,
         run: openAudio,
       });
+    out.push({
+      id: "studio",
+      label: "Audiophile Studio",
+      icon: <MusicGlyph name="audio-settings" size={17} />,
+      run: () => setStudioOpen(true),
+    });
     return out;
   };
 
@@ -826,9 +834,16 @@ export function MusicDock() {
         <div className="flex items-center justify-end gap-1">
         <div className="hidden items-center justify-end gap-1 @[700px]:flex">
           {dockParts.quality && !isMusicVideoActive() && (
-            <span className="hidden shrink-0 @[1320px]:inline-flex">
-              <MusicQualityBadge track={current} />
-            </span>
+            <button
+              type="button"
+              onClick={() => setStudioOpen(true)}
+              className="cursor-pointer transition-transform hover:scale-105"
+              title="Open Audiophile Studio"
+            >
+              <span className="hidden shrink-0 @[1320px]:inline-flex">
+                <MusicQualityBadge track={current} />
+              </span>
+            </button>
           )}
           {dockParts.source && (
             <button
@@ -1087,6 +1102,12 @@ export function MusicDock() {
           }}
         />
       )}
+      <MusicStudioModal
+        track={current}
+        nextTrack={player.queue[player.queueIndex + 1]}
+        isOpen={studioOpen}
+        onClose={() => setStudioOpen(false)}
+      />
     </aside>
   );
 }

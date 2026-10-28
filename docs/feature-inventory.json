@@ -4,8 +4,8 @@
   "version": "1.0.0",
   "lastUpdated": "2026-10-28",
   "summary": {
-    "totalFeatures": 23,
-    "implemented": 18,
+    "totalFeatures": 26,
+    "implemented": 21,
     "partial": 3,
     "experimental": 2,
     "planned": 0
@@ -736,6 +736,95 @@
       ],
       "dependencies": [],
       "acceptanceCriterion": "Enforces fail-closed authorization: denies external AI, telemetry, and auto-installation unless explicitly enabled by user."
+    },
+    {
+      "id": "feat-music-multi-streaming-hub",
+      "name": "Multi-Service Streaming Federation & Grassroots Discovery",
+      "category": "music",
+      "description": "Federated multi-source streaming hub integrating YouTube Music, SoundCloud, ReverbNation grassroots discovery, Bandcamp studio FLAC masters, Audius decentralized audio, Tidal/Qobuz Hi-Res tiers, and self-hosted Subsonic/Jellyfin/Plex servers.",
+      "sourceFiles": [
+        "src/lib/music/multi-streaming-hub.ts",
+        "src/views/music/music-services-browser.tsx",
+        "src/lib/music/sources.ts"
+      ],
+      "entryPoints": [
+        "MusicView > Streaming Hub tab",
+        "MULTI_STREAMING_SERVICES",
+        "MusicServicesBrowser"
+      ],
+      "status": "implemented",
+      "platformCompatibility": {
+        "macOS": "supported",
+        "windows": "supported",
+        "linux": "supported",
+        "android": "supported"
+      },
+      "testCoverage": [],
+      "knownLimitations": [
+        "Direct play from self-hosted servers requires LAN connectivity or public reverse-proxy."
+      ],
+      "dependencies": [],
+      "acceptanceCriterion": "Enables 1-click playback and catalog exploration across 10 federated music streaming services with real-time fidelity indicators."
+    },
+    {
+      "id": "feat-music-audiophile-studio-autoeq",
+      "name": "Audiophile Sound Engine, AutoEQ & Smart DJ",
+      "category": "music",
+      "description": "Comprehensive audiophile sound processing hub featuring true bit-perfect hardware output, EBU R128 loudness normalization, 15+ AutoEQ headphone compensation profiles, Bauer stereophonic-to-binaural crossfeed, Camelot wheel harmonic DJ transitions, and center-channel karaoke vocal isolation.",
+      "sourceFiles": [
+        "src/lib/music/hi-res-engine.ts",
+        "src/lib/music/audiophile-dsp.ts",
+        "src/lib/music/smart-dj.ts",
+        "src/lib/music/lyrics-enhanced.ts",
+        "src/components/music/music-studio-modal.tsx"
+      ],
+      "entryPoints": [
+        "MusicDock > Quality Badge > Studio",
+        "MusicNowPlaying > Studio button",
+        "MusicStudioModal"
+      ],
+      "status": "implemented",
+      "platformCompatibility": {
+        "macOS": "supported",
+        "windows": "supported",
+        "linux": "supported",
+        "android": "supported"
+      },
+      "testCoverage": [],
+      "knownLimitations": [
+        "Exclusive bit-perfect mode requires dedicated hardware DAC support on the host system."
+      ],
+      "dependencies": [],
+      "acceptanceCriterion": "Applies parametric AutoEQ biquad filters to matched headphone models, calculates harmonic Camelot DJ transitions, and provides real-time karaoke center-channel vocal reduction."
+    },
+    {
+      "id": "feat-harbor-community-music-engine",
+      "name": "Harbor Community Music Engine, Themes & SyncPlay",
+      "category": "music",
+      "description": "Adopts core architecture from harborcommunity/harbor: a 4-stage audio stream ranking engine (parse, trust, score, rank) filtering out fake upsamples, 5 Harbor music theme presets with customizable seekbar styles, and decentralized Music Together listen-along rooms with synchronized lyrics.",
+      "sourceFiles": [
+        "src/lib/music/harbor-music-engine.ts",
+        "src/views/music/music-services-browser.tsx",
+        "src/lib/music/all-music-apps-features.ts"
+      ],
+      "entryPoints": [
+        "MusicServicesBrowser > Harbor Community Architecture",
+        "HARBOR_MUSIC_THEMES",
+        "createHarborMusicRoom()"
+      ],
+      "status": "implemented",
+      "platformCompatibility": {
+        "macOS": "supported",
+        "windows": "supported",
+        "linux": "supported",
+        "android": "supported"
+      },
+      "testCoverage": [],
+      "knownLimitations": [
+        "Music Together rooms utilize decentralized relay codes."
+      ],
+      "dependencies": [],
+      "acceptanceCriterion": "Scores candidate audio streams with fake-upsample demotion, provides 5 Harbor music player theme presets, and creates shareable 6-character room codes for synchronized listening."
     }
   ]
 }
