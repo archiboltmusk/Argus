@@ -23,13 +23,11 @@ export function StreamFeedbackButtons({
 }) {
   const t = useT();
   const rating = useStreamRating(stream);
-  const [isCorrect, setIsCorrect] = useState(false);
   const [reportOpen, setReportOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    setIsCorrect(isStreamTargetVerified(stream) || rating.userVote === "upvote");
-  }, [stream, rating.userVote]);
+  const isVerified = isStreamTargetVerified(stream);
+  const isCorrect = isVerified || rating.userVote === "upvote";
 
   useEffect(() => {
     if (!reportOpen) return;
@@ -46,12 +44,14 @@ export function StreamFeedbackButtons({
     e.stopPropagation();
     if (isCorrect) {
       unmarkStreamCorrect(stream);
-      rateStream(stream, "upvote"); // toggles off
-      setIsCorrect(false);
+      if (rating.userVote === "upvote") {
+        rateStream(stream, "upvote"); // toggles off
+      }
     } else {
       markStreamAsCorrect(stream);
-      rateStream(stream, "upvote");
-      setIsCorrect(true);
+      if (rating.userVote !== "upvote") {
+        rateStream(stream, "upvote");
+      }
     }
   };
 

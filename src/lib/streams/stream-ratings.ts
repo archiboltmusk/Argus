@@ -23,6 +23,20 @@ const STORAGE_KEY = "argus:stream-ratings:v1";
 
 type RatingsStore = Record<string, StreamRatingRecord>;
 
+export const DEFAULT_RATING_RECORD: StreamRatingRecord = Object.freeze({
+  upvotes: 0,
+  downvotes: 0,
+  reasons: {
+    "wrong-movie": 0,
+    "bad-audio-sync": 0,
+    "hardcoded-ads-or-subs": 0,
+    "cam-rip-fake": 0,
+    "dead-or-buffering": 0,
+    "low-quality": 0,
+  },
+  lastUpdated: 0,
+});
+
 let cache: RatingsStore | null = null;
 const listeners = new Set<() => void>();
 
@@ -76,21 +90,7 @@ export function subscribeRatings(listener: () => void): () => void {
 export function getStreamRating(stream: { infoHash?: string; url?: string; title?: string }): StreamRatingRecord {
   const store = readStore();
   const key = getStreamKey(stream);
-  return (
-    store[key] ?? {
-      upvotes: 0,
-      downvotes: 0,
-      reasons: {
-        "wrong-movie": 0,
-        "bad-audio-sync": 0,
-        "hardcoded-ads-or-subs": 0,
-        "cam-rip-fake": 0,
-        "dead-or-buffering": 0,
-        "low-quality": 0,
-      },
-      lastUpdated: 0,
-    }
-  );
+  return store[key] ?? DEFAULT_RATING_RECORD;
 }
 
 export function rateStream(
@@ -157,10 +157,14 @@ export function rateStream(
 }
 
 export function useStreamRating(stream: { infoHash?: string; url?: string; title?: string }): StreamRatingRecord {
+  const key = getStreamKey(stream);
   return useSyncExternalStore(
     subscribeRatings,
-    () => getStreamRating(stream),
-    () => getStreamRating(stream),
+    () => {
+      const store = readStore();
+      return store[key] ?? DEFAULT_RATING_RECORD;
+    },
+    () => DEFAULT_RATING_RECORD,
   );
 }
 
