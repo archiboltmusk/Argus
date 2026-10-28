@@ -385,6 +385,27 @@ function parseStoredSettings(raw: string | null): { settings: Settings; cacheabl
         delete parsed.iptvPlaylists;
       }
     }
+    if (!parsed._gamesShippedV1) {
+      parsed.gamesEnabled = true;
+      parsed.musicEnabled = true;
+      if (parsed.navCustomization) {
+        if (Array.isArray(parsed.navCustomization.hidden)) {
+          parsed.navCustomization.hidden = parsed.navCustomization.hidden.filter(
+            (id) => id !== "games",
+          );
+        }
+        if (
+          Array.isArray(parsed.navCustomization.order) &&
+          parsed.navCustomization.order.length > 0
+        ) {
+          if (!parsed.navCustomization.order.includes("games")) {
+            const showsIdx = parsed.navCustomization.order.indexOf("shows");
+            parsed.navCustomization.order.splice(showsIdx >= 0 ? showsIdx + 1 : 0, 0, "games");
+          }
+        }
+      }
+      parsed._gamesShippedV1 = true;
+    }
     if (!parsed._navThemeRepairV1) {
       parsed._navThemeRepairV1 = true;
     }
@@ -406,31 +427,6 @@ function parseStoredSettings(raw: string | null): { settings: Settings; cacheabl
       delete legacy.manga;
       delete legacy.liveTv;
       parsed._navHideMigrateV1 = true;
-    }
-    if (!parsed._gamesShippedV1) {
-      parsed.gamesEnabled = true;
-      parsed.musicEnabled = true;
-      if (parsed.navCustomization) {
-        if (Array.isArray(parsed.navCustomization.hidden)) {
-          parsed.navCustomization.hidden = parsed.navCustomization.hidden.filter(
-            (id) => id !== "games" && id !== "music",
-          );
-        }
-        if (
-          Array.isArray(parsed.navCustomization.order) &&
-          parsed.navCustomization.order.length > 0
-        ) {
-          if (!parsed.navCustomization.order.includes("games")) {
-            const showsIdx = parsed.navCustomization.order.indexOf("shows");
-            parsed.navCustomization.order.splice(showsIdx >= 0 ? showsIdx + 1 : 0, 0, "games");
-          }
-          if (!parsed.navCustomization.order.includes("music")) {
-            const gamesIdx = parsed.navCustomization.order.indexOf("games");
-            parsed.navCustomization.order.splice(gamesIdx >= 0 ? gamesIdx + 1 : 0, 0, "music");
-          }
-        }
-      }
-      parsed._gamesShippedV1 = true;
     }
     if (parsed.cwSources == null) {
       const ext = parsed.externalContinueWatching === true;
