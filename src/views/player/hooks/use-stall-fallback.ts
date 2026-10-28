@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { allowsAutomaticRecovery } from "@/lib/argus-lab";
 import type { PlayerSnapshot, PlayerBridge } from "@/lib/player/bridge";
 import type { PlayerSrc } from "@/lib/view";
 import type { DebridStore } from "@/lib/debrid/types";
@@ -55,6 +56,7 @@ export function useStallFallback(params: {
 
   // Reset tracking on source change & pre-resolve hot standby fallback stream
   useEffect(() => {
+    const ac = new AbortController();
     lastProgressAtRef.current = Date.now();
     lastPosRef.current = snap.positionSec;
     setStallOffer(null);
@@ -63,7 +65,7 @@ export function useStallFallback(params: {
 
     // Hot Standby Stream: As soon as a stream starts playing, quietly pre-resolve
     // the #1 next best fallback stream into cache so any future failover is instant (0ms delay)
-    if (!src.isLive && !inRoom) {
+    if (autoSwitchEnabled && allowsAutomaticRecovery() && !src.isLive && !inRoom && !isLocalUrl(src.url)) {
       const cacheEntry = peekPickerCache(src.meta, src.episode);
       const candidates = cacheEntry?.result?.picker?.all ?? [];
       const currentHash = src.streamRef?.infoHash;
@@ -76,12 +78,12 @@ export function useStallFallback(params: {
           const hint = src.episode
             ? { season: src.episode.season ?? null, episode: src.episode.episode ?? null }
             : undefined;
-          const ac = new AbortController();
           void prepareCachedDebridStreams([standby], debrids, hint, ac.signal).catch(() => {});
         }
       }
     }
-  }, [src.url, src.meta, src.episode, src.isLive, inRoom, src.streamRef?.infoHash, debrids]);
+    return () => ac.abort();
+  }, [src.url, src.meta, src.episode, src.isLive, inRoom, src.streamRef?.infoHash, debrids, autoSwitchEnabled]);
 
   // Track decoded frame / position advancement and buffer recovery
   useEffect(() => {
@@ -167,7 +169,7 @@ export function useStallFallback(params: {
         // If circuit breaker is tripped, offer manual switch without auto countdown so it doesn't loop
         // Offer switch only if stalled, with a 5-second grace countdown so the viewer
         // has ample time to hit "Stay on current" if desired, rather than abruptly aborting playback.
-        const canAutoSwitch = autoSwitchEnabled && nextStream && !circuitBreakerTripped;
+        const canAutoSwitch = autoSwitchEnabled && allowsAutomaticRecovery() && nextStream && !circuitBreakerTripped;
 
         setStallOffer((prev) => {
           if (prev) return prev;
@@ -200,6 +202,11 @@ export function useStallFallback(params: {
   useEffect(() => {
     if (!stallOffer || stallOffer.secondsLeft == null) return;
 
+    if (!autoSwitchEnabled || !allowsAutomaticRecovery() || snap.status === "paused" || snap.status === "ended" || inRoom || Date.now() < seekGraceUntilRef.current) {
+      setStallOffer((offer) => offer ? { ...offer, secondsLeft: null } : null);
+      return;
+    }
+
     if (stallOffer.secondsLeft <= 0) {
       if (stallOffer.nextStream && !switchingRef.current) {
         switchingRef.current = true;
@@ -216,7 +223,10 @@ export function useStallFallback(params: {
         } else if (src.url) {
           markStreamDead({ url: src.url }, "playback-stalled", SOFT_STALL_TTL_MS);
         }
-        void onSwitchStream(stallOffer.nextStream).finally(() => {
+        void onSwitchStream(stallOffer.nextStream).catch(() => {
+          dismissedUntilRef.current = Date.now() + 30_000;
+          openSwitcher();
+        }).finally(() => {
           switchingRef.current = false;
         });
       }
@@ -231,7 +241,7 @@ export function useStallFallback(params: {
     }, 1000);
 
     return () => window.clearTimeout(timer);
-  }, [stallOffer, onSwitchStream]);
+  }, [stallOffer, onSwitchStream, autoSwitchEnabled, snap.status, inRoom, openSwitcher]);
 
   const dismissOffer = useCallback(() => {
     setStallOffer(null);
@@ -256,7 +266,10 @@ export function useStallFallback(params: {
     } else if (src.url) {
       markStreamDead({ url: src.url }, "playback-stalled", SOFT_STALL_TTL_MS);
     }
-    void onSwitchStream(target).finally(() => {
+    void onSwitchStream(target).catch(() => {
+      dismissedUntilRef.current = Date.now() + 30_000;
+      openSwitcher();
+    }).finally(() => {
       switchingRef.current = false;
     });
   }, [stallOffer, onSwitchStream, openSwitcher, src.streamRef, src.url]);

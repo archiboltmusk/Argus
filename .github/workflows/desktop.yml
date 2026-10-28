@@ -36,9 +36,13 @@ jobs:
       - id: v
         env:
           GH_TOKEN: ${{ github.token }}
+          EXPECTED_SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
         run: |
           if [ "${{ github.event_name }}" = "pull_request" ]; then exit 0; fi
           gh release download beta --repo "$GITHUB_REPOSITORY" -p latest.json -O latest.json
+          if [ "$(jq -r .commit latest.json)" != "$EXPECTED_SHA" ]; then
+            echo "::error::Mac update belongs to another commit; refusing mixed release"; exit 1
+          fi
           echo "version=$(jq -r .version latest.json)" >> "$GITHUB_OUTPUT"
 
   windows:
@@ -210,12 +214,13 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           REPO: ${{ github.repository }}
+          EXPECTED_SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
         run: |
           set -euo pipefail
           BASE="https://github.com/$REPO/releases/download/beta"
           gh release download beta --repo "$REPO" -p latest.json -O latest.json
           # A newer Mac build replaced the feed while this one was building: skip, its own run adds these.
-          if [ "$(jq -r .version latest.json)" != "${{ needs.version.outputs.version }}" ]; then
+          if [ "$(jq -r .version latest.json)" != "${{ needs.version.outputs.version }}" ] || [ "$(jq -r .commit latest.json)" != "$EXPECTED_SHA" ]; then
             echo "::notice::Feed moved on; skipping Windows/Linux for ${{ needs.version.outputs.version }}"; exit 0
           fi
           FILES=()

@@ -23,7 +23,7 @@ function patchConsole(): void {
     const orig = console[m].bind(console);
     console[m] = (...args: unknown[]) => {
       try {
-        consoleRing.push(`${new Date().toISOString()} [${m}] ${args.map(stringifyArg).join(" ")}`);
+        consoleRing.push(`${new Date().toISOString()} [${m}] ${args.map((arg) => stringifyArg(arg).slice(0, 4096)).join(" ").slice(0, 8192)}`);
         if (consoleRing.length > CONSOLE_RING_MAX) consoleRing.shift();
       } catch {}
       orig(...args);
@@ -61,9 +61,15 @@ function walkForRedaction(node: unknown, redactKeyRe: RegExp, out: Set<string>):
   }
 }
 
-function scrubPrivateUrlsAndPaths(text: string): string {
+export function scrubPrivateUrlsAndPaths(text: string): string {
   let scrubbed = text.replace(/([?&](?:token|api_key|apikey|key|secret|pass|password|auth)=)[^&\s"')]+/gi, "$1[REDACTED]");
   scrubbed = scrubbed.replace(/(?:\/Users|\/home|[A-Za-z]:\\Users)\/[^\/\s:"']+/g, "[USER_HOME]");
+  scrubbed = scrubbed.replace(/[A-Za-z]:\\Users\\[^\\\s:"']+/gi, "[USER_HOME]");
+  scrubbed = scrubbed.replace(/\bBearer\s+[^\s"',;]+/gi, "Bearer [REDACTED]");
+  // Configured add-on URLs and signed stream paths can contain credentials anywhere.
+  scrubbed = scrubbed.replace(/https?:\/\/[^\s<>"']+/gi, (value) => {
+    try { return `${new URL(value).origin}/[REDACTED]`; } catch { return "[REDACTED_URL]"; }
+  });
   return scrubbed;
 }
 

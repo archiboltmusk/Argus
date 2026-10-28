@@ -43,8 +43,7 @@ fn flow(side: Side) -> Direction {
 
 fn collection(side: Side) -> Option<(DeviceCollection, u32)> {
     let _ = wasapi::initialize_mta().ok();
-    let enumerator = wasapi::DeviceEnumerator::new().ok()?;
-    let devices = enumerator.get_device_collection(&flow(side)).ok()?;
+    let devices = DeviceCollection::new(&flow(side)).ok()?;
     let count = devices.get_nbr_devices().ok()?;
     Some((devices, count))
 }

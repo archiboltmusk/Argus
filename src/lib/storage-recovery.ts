@@ -38,11 +38,9 @@ const PRUNABLE_EXACT = new Set<string>([
   "argus.shows.hero.pool.v2",
   "argus.mdblist.cards",
   "argus.build.rating.v1",
-  "argus.parental",
   "argus.lastseason.v1",
   "argus.surprise.recent.v1",
   "argus.stremio-addons.velocity.v1",
-  "argus.playback-history.v1",
   "argus.streamBadges.v1",
   "argus.manga.popular.v1",
   "argus.ebook.metadata.v1",
@@ -57,7 +55,6 @@ const PRUNABLE_PREFIXES = [
   "argus.manga.art.",
   "argus.ebook.openlibrary.v1.",
   "argus.tvdbo.",
-  "argus.playback-history.v1.",
 ];
 
 function isPrunable(key: string): boolean {

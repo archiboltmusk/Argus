@@ -231,13 +231,19 @@ function addonAcceptLanguage(): string | null {
   }
 }
 
-async function fetchWithTimeout(url: string, timeoutMs = 8000): Promise<Response | null> {
+async function fetchWithTimeout(url: string, timeoutMs = 8000): Promise<{ meta?: Meta; metas?: Meta[] } | null> {
   const ac = new AbortController();
   const t = setTimeout(() => ac.abort(), timeoutMs);
   try {
     const al = addonAcceptLanguage();
     allowDirectHost(url);
-    return await fetch(url, { signal: ac.signal, headers: al ? { "Accept-Language": al } : undefined });
+    const response = await fetch(url, { signal: ac.signal, headers: al ? { "Accept-Language": al } : undefined });
+    if (!response.ok) return null;
+    // Keep the deadline active until the body has arrived and parsed.
+    const json = await response.json();
+    if (!json || typeof json !== "object" || Array.isArray(json)) return null;
+    if (json.metas !== undefined && !Array.isArray(json.metas)) return null;
+    return json;
   } catch {
     return null;
   } finally {
@@ -378,9 +384,9 @@ async function loadCatalogRow(
   const url = catalogRequestUrl(base, cat);
   if (!url) return { value: null, ok: true };
   const res = await fetchWithTimeout(url);
-  if (!res || !res.ok) return { value: null, ok: false };
+  if (!res) return { value: null, ok: false };
   try {
-    const json = await res.json();
+    const json = res;
     const raw: Meta[] = json.metas ?? [];
     if (raw.length === 0) return { value: null, ok: true };
     const origin = {
@@ -451,9 +457,9 @@ export async function loadAddonRows(
 
 export async function fetchAddonMeta(base: string, type: string, id: string): Promise<Meta | null> {
   const res = await fetchWithTimeout(`${base}/meta/${type}/${encodeURIComponent(id)}.json`);
-  if (!res || !res.ok) return null;
+  if (!res) return null;
   try {
-    const json = await res.json();
+    const json = res;
     return (json.meta ?? null) as Meta | null;
   } catch {
     return null;
@@ -472,9 +478,9 @@ export async function fetchAddonCatalogPage(
   if (skip > 0) parts.push(`skip=${skip}`);
   const seg = parts.length ? `/${parts.join("&")}` : "";
   const res = await fetchWithTimeout(`${base}/catalog/${type}/${id}${seg}.json`);
-  if (!res || !res.ok) return [];
+  if (!res) return [];
   try {
-    const json = await res.json();
+    const json = res;
     return (json.metas ?? []) as Meta[];
   } catch {
     return [];

@@ -19,6 +19,7 @@ import {
   loadLabState,
   resetLabState,
   saveLabState,
+  MAX_LAB_BACKUP_BYTES,
   type LabExperiment,
 } from "@/lib/argus-lab";
 import { TelemetryTab } from "./lab/telemetry-tab";
@@ -70,6 +71,7 @@ export function ArgusLabView({ active = true }: { active?: boolean }) {
   const [experiments, setExperiments] = useState<LabExperiment[]>(initial.experiments);
   const [experimentName, setExperimentName] = useState("");
   const [notice, setNotice] = useState("");
+  const [saveFailed, setSaveFailed] = useState(false);
   const [online, setOnline] = useState(() => typeof navigator === "undefined" ? true : navigator.onLine);
   const [storageAvailable, setStorageAvailable] = useState<boolean | null>(null);
   const [reducedMotion, setReducedMotion] = useState(false);
@@ -100,7 +102,7 @@ export function ArgusLabView({ active = true }: { active?: boolean }) {
   }, [active]);
 
   useEffect(() => {
-    saveLabState({ contract, mode, experiments });
+    setSaveFailed(!saveLabState({ contract, mode, experiments }));
   }, [contract, mode, experiments]);
 
   const setRule = (id: ExperienceAction, allowed: boolean) =>
@@ -124,6 +126,7 @@ export function ArgusLabView({ active = true }: { active?: boolean }) {
             <div><p className="text-sm font-medium">{online ? "Device reports online" : "Device reports offline"}</p><p className="text-xs text-ink-subtle">Browser connectivity signal only</p></div>
           </div>
         </header>
+        {saveFailed && <p role="alert" className="mb-4 rounded-xl border border-amber-400 p-3">Lab changes could not be saved. Playback continues using the last saved rules. Export a backup before closing.</p>}
 
         <div className="mb-6 grid grid-cols-1 gap-3 sm:grid-cols-3">
           {[
@@ -149,7 +152,16 @@ export function ArgusLabView({ active = true }: { active?: boolean }) {
             ["signals", "Local Signals"],
             ["operations", "Lab Controls"],
           ] as Array<[Tab, string]>).map(([id, label]) => (
-            <button key={id} role="tab" aria-selected={tab === id} onClick={() => setTab(id)}
+            <button key={id} id={`lab-tab-${id}`} role="tab" aria-selected={tab === id} tabIndex={tab === id ? 0 : -1} onClick={() => setTab(id)}
+              onKeyDown={(event) => {
+                const tabs: Tab[] = ["decision", "contract", "signals", "operations"];
+                const offset = event.key === "ArrowRight" ? 1 : event.key === "ArrowLeft" ? -1 : 0;
+                if (!offset && event.key !== "Home" && event.key !== "End") return;
+                event.preventDefault();
+                const next = event.key === "Home" ? tabs[0] : event.key === "End" ? tabs[3] : tabs[(tabs.indexOf(id) + offset + tabs.length) % tabs.length];
+                setTab(next);
+                document.getElementById(`lab-tab-${next}`)?.focus();
+              }}
               className={`rounded-full px-4 py-2 text-sm font-medium transition-colors ${tab === id ? "bg-accent text-white" : "border border-edge-soft bg-surface text-ink-subtle hover:text-ink"}`}>
               {label}
             </button>
@@ -201,7 +213,7 @@ export function ArgusLabView({ active = true }: { active?: boolean }) {
 
         {tab === "contract" && (
           <Panel>
-            <div className="mb-5 flex items-start gap-3"><LockKeyhole size={22} className="mt-1 text-accent" /><div><h2 className="text-xl font-semibold">Your Experience Contract</h2><p className="mt-1 text-sm leading-6 text-ink-subtle">These are local policy preferences for future Argus features. This first version stores them and exposes a policy-checking algorithm; it does not yet gate every existing subsystem.</p></div></div>
+            <div className="mb-5 flex items-start gap-3"><LockKeyhole size={22} className="mt-1 text-accent" /><div><h2 className="text-xl font-semibold">Your Experience Contract</h2><p className="mt-1 text-sm leading-6 text-ink-subtle">Automatic source switching gates stall recovery and standby preparation. The other switches are preview preferences for future integrations; they do not override existing subsystem settings.</p></div></div>
             <div className="divide-y divide-edge-soft">
               {CONTRACT_RULES.map((rule) => {
                 const allowed = isExperienceActionAllowed(contract, rule.id);
@@ -257,7 +269,7 @@ export function ArgusLabView({ active = true }: { active?: boolean }) {
                 setExperimentName("");
                 setNotice("Experiment created locally.");
               }}>
-                <input value={experimentName} onChange={(event) => setExperimentName(event.target.value)} maxLength={80} placeholder="e.g. Safer source recovery" className="min-w-0 flex-1 rounded-lg border border-edge-soft bg-canvas px-3 py-2 text-sm" />
+                <input aria-label="Experiment name" value={experimentName} onChange={(event) => setExperimentName(event.target.value)} maxLength={80} placeholder="e.g. Safer source recovery" className="min-w-0 flex-1 rounded-lg border border-edge-soft bg-canvas px-3 py-2 text-sm" />
                 <button className="rounded-lg bg-accent px-3 py-2 text-sm font-medium text-white">Add</button>
               </form>
               <div className="mt-4 space-y-2">
@@ -269,9 +281,9 @@ export function ArgusLabView({ active = true }: { active?: boolean }) {
               <div className="mb-4 flex items-center gap-2"><Database size={18} className="text-accent" /><h2 className="text-lg font-semibold">Backup and rollback</h2></div>
               <p className="text-sm leading-6 text-ink-subtle">Export contains only Lab mode, policy switches, and local experiment names. It contains no media history, credentials, URLs, or diagnostics.</p>
               <div className="mt-5 flex flex-wrap gap-2">
-                <button type="button" onClick={() => { navigator.clipboard?.writeText(exportLabState({ contract, mode, experiments })); setNotice("Lab settings copied to the clipboard."); }} className="rounded-lg border border-edge-soft px-3 py-2 text-sm hover:bg-surface-hover">Copy backup</button>
-                <label className="cursor-pointer rounded-lg border border-edge-soft px-3 py-2 text-sm hover:bg-surface-hover">Import backup<input className="sr-only" type="file" accept="application/json" onChange={(event) => { const file = event.target.files?.[0]; if (!file) return; file.text().then((text) => { const imported = importLabState(text); if (!imported) { setNotice("That backup is not a valid Argus Lab file."); return; } setContract(imported.contract); setMode(imported.mode); setExperiments(imported.experiments); setNotice("Lab backup imported locally."); }); }} /></label>
-                <button type="button" onClick={() => { const reset = resetLabState(); setContract(reset.contract); setMode(reset.mode); setExperiments(reset.experiments); setNotice("Lab settings restored to defaults."); }} className="rounded-lg border border-edge-soft px-3 py-2 text-sm hover:bg-surface-hover">Reset all</button>
+                <button type="button" onClick={async () => { try { if (!navigator.clipboard) throw new Error("Clipboard unavailable"); await navigator.clipboard.writeText(exportLabState({ contract, mode, experiments })); setNotice("Lab settings copied to the clipboard."); } catch { setNotice("Could not copy the backup. Clipboard access is unavailable."); } }} className="rounded-lg border border-edge-soft px-3 py-2 text-sm hover:bg-surface-hover">Copy backup</button>
+                <label className="cursor-pointer rounded-lg border border-edge-soft px-3 py-2 text-sm hover:bg-surface-hover">Import backup<input className="sr-only" type="file" accept="application/json" onChange={(event) => { const file = event.target.files?.[0]; event.target.value = ""; if (!file) return; if (file.size > MAX_LAB_BACKUP_BYTES) { setNotice("Backup is too large (maximum 64 KB)."); return; } file.text().then((text) => { const imported = importLabState(text); if (!imported) { setNotice("That backup is not a valid Argus Lab file."); return; } if (!saveLabState(imported)) { setNotice("Import could not be saved. Existing settings were preserved."); return; } setContract(imported.contract); setMode(imported.mode); setExperiments(imported.experiments); setNotice("Lab backup imported locally."); }).catch(() => setNotice("Could not read the backup file.")); }} /></label>
+                <button type="button" onClick={() => { const reset = resetLabState(); if (!reset) { setNotice("Reset could not be saved. Existing settings were preserved."); return; } setContract(reset.contract); setMode(reset.mode); setExperiments(reset.experiments); setNotice("Lab settings restored to defaults."); }} className="rounded-lg border border-edge-soft px-3 py-2 text-sm hover:bg-surface-hover">Reset all</button>
               </div>
               {notice && <p className="mt-4 rounded-xl bg-surface p-3 text-sm text-ink-subtle" role="status">{notice}</p>}
             </Panel>

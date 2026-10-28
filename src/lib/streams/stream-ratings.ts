@@ -58,7 +58,22 @@ function readStore(): RatingsStore {
   try {
     if (typeof localStorage !== "undefined") {
       const raw = localStorage.getItem(STORAGE_KEY);
-      cache = raw ? (JSON.parse(raw) as RatingsStore) : {};
+      const parsed: unknown = raw ? JSON.parse(raw) : {};
+      cache = Object.create(null) as RatingsStore;
+      if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+        for (const [key, value] of Object.entries(parsed)) {
+          if (!value || typeof value !== "object") continue;
+          const record = value as StreamRatingRecord;
+          const count = (n: unknown) => typeof n === "number" && Number.isFinite(n) && n >= 0 ? n : 0;
+          cache[key] = {
+            upvotes: count(record.upvotes), downvotes: count(record.downvotes),
+            reasons: Object.fromEntries(Object.keys(DEFAULT_RATING_RECORD.reasons).map((reason) => [reason, count(record.reasons?.[reason as DownvoteReason])])) as Record<DownvoteReason, number>,
+            userVote: record.userVote === "upvote" || record.userVote === "downvote" ? record.userVote : undefined,
+            userReason: Object.hasOwn(DEFAULT_RATING_RECORD.reasons, record.userReason ?? "") ? record.userReason : undefined,
+            lastUpdated: count(record.lastUpdated),
+          };
+        }
+      }
     } else {
       cache = {};
     }
@@ -100,7 +115,8 @@ export function rateStream(
 ): void {
   const store = { ...readStore() };
   const key = getStreamKey(stream);
-  const current = store[key] ?? {
+  const previous = Object.hasOwn(store, key) ? store[key] : undefined;
+  const current = previous ? { ...previous, reasons: { ...previous.reasons } } : {
     upvotes: 0,
     downvotes: 0,
     reasons: {
@@ -152,7 +168,7 @@ export function rateStream(
   }
 
   current.lastUpdated = Date.now();
-  store[key] = current;
+  Object.defineProperty(store, key, { value: current, enumerable: true, writable: true, configurable: true });
   commitStore(store);
 }
 

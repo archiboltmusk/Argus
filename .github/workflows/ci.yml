@@ -220,6 +220,7 @@ jobs:
             const [version, sig, url, sha] = process.argv.slice(1);
             const out = {
               version,
+              commit: sha,
               notes: `Argus ${version} (${sha.slice(0, 7)})`,
               pub_date: new Date().toISOString(),
               platforms: { "darwin-aarch64": { signature: sig, url } },
