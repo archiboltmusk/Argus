@@ -8,18 +8,21 @@
  * - Local REST / HTTP & WebSocket tools (curl, Python, Node.js)
  */
 
-import { watchlistHas, toggleWatchlist, readWatchlist } from "@/lib/watchlist";
+import { watchlistHas, toggleWatchlist, readLocalEntries, type LocalEntry } from "@/lib/watchlist";
 import {
   addNuvioLibraryItem,
   removeNuvioLibraryItem,
   readCachedNuvioLibrary,
   type NuvioLibraryItem,
 } from "@/lib/nuvio/nuvio-library";
-import { readProfiles, readActiveProfileIdentity } from "@/lib/profiles";
+import { resolveNuvioProfileIndex } from "@/lib/nuvio/nuvio-sync";
+import { readActiveProfileIdentity, readAllProfilesIdentity } from "@/lib/profiles";
 import { isBigPictureActive, pushBigPicture } from "@/lib/big-picture";
 import { requestBpPlay } from "@/views/big-picture/bp-play-request";
-import { appVersion } from "@/lib/version";
 import { detectExtendedPlatform } from "@/lib/platform";
+
+declare const __APP_VERSION__: string | undefined;
+export const appVersion = typeof __APP_VERSION__ === "string" ? __APP_VERSION__ : "1.0.339";
 
 export interface AutomationPlaybackState {
   status: "playing" | "paused" | "buffering" | "idle";
@@ -90,7 +93,7 @@ export function hasLibraryItem(id: string, type = "movie", slot?: number): boole
   if (!id) return false;
   const cleanId = id.trim();
   if (watchlistHas(cleanId)) return true;
-  const targetSlot = slot ?? (readActiveProfileIdentity()?.slot || 0);
+  const targetSlot = slot ?? resolveNuvioProfileIndex();
   const nuvioItems = readCachedNuvioLibrary(targetSlot);
   return nuvioItems.some(
     (item) => item.content_id === cleanId && (item.content_type === type || !type),
@@ -107,7 +110,7 @@ export function addLibraryItem(item: AutomationLibraryItemRequest): { ok: boolea
   }
   const cleanId = item.id.trim();
   const type = item.type || (cleanId.startsWith("tt") ? "movie" : "movie");
-  const targetSlot = item.slot ?? (readActiveProfileIdentity()?.slot || 0);
+  const targetSlot = item.slot ?? resolveNuvioProfileIndex();
 
   // 1. Add to local Watchlist
   if (!watchlistHas(cleanId)) {
@@ -147,7 +150,7 @@ export function addLibraryItem(item: AutomationLibraryItemRequest): { ok: boolea
 export function removeLibraryItem(id: string, type = "movie", slot?: number): { ok: boolean; removed: boolean; id: string } {
   if (!id) throw new Error("Missing required 'id' parameter.");
   const cleanId = id.trim();
-  const targetSlot = slot ?? (readActiveProfileIdentity()?.slot || 0);
+  const targetSlot = slot ?? resolveNuvioProfileIndex();
 
   // 1. Remove from Watchlist if present
   if (watchlistHas(cleanId)) {
@@ -164,13 +167,13 @@ export function removeLibraryItem(id: string, type = "movie", slot?: number): { 
  * Lists all library entries for the active or specified profile slot.
  */
 export function listLibraryItems(slot?: number): NuvioLibraryItem[] {
-  const targetSlot = slot ?? (readActiveProfileIdentity()?.slot || 0);
+  const targetSlot = slot ?? resolveNuvioProfileIndex();
   const nuvio = readCachedNuvioLibrary(targetSlot);
   if (nuvio.length > 0) return nuvio;
 
   // Fallback to local watchlist items converted to standard schema
-  const local = readWatchlist();
-  return local.map((w) => ({
+  const local = readLocalEntries();
+  return local.map((w: LocalEntry) => ({
     content_id: w.id,
     content_type: w.type || "movie",
     name: w.name || w.id,
@@ -245,9 +248,14 @@ export async function handleAutomationApiRequest(req: {
   const urlPath = req.path.split("?")[0].replace(/\/+$/, "") || "/";
   const authHeader = req.headers["authorization"] || req.headers["x-argus-key"] || null;
 
+  if (!verifyAutomationKey(authHeader)) {
+    return { status: 401, body: { ok: false, error: "Unauthorized: Invalid or missing API key." } };
+  }
+
   // 1. GET /api/v1/status
   if (method === "GET" && (urlPath === "/api/v1/status" || urlPath === "/api/status")) {
     const activeProfile = readActiveProfileIdentity();
+    const currentSlot = resolveNuvioProfileIndex();
     return {
       status: 200,
       body: {
@@ -259,7 +267,7 @@ export async function handleAutomationApiRequest(req: {
         profile: {
           id: activeProfile?.id || "default",
           name: activeProfile?.name || "Default Profile",
-          slot: activeProfile?.slot || 0,
+          slot: currentSlot,
         },
       },
     };
@@ -313,17 +321,17 @@ export async function handleAutomationApiRequest(req: {
 
   // 6. GET /api/v1/profiles
   if (method === "GET" && (urlPath === "/api/v1/profiles" || urlPath === "/api/profiles")) {
-    const profiles = readProfiles();
+    const profiles = readAllProfilesIdentity();
     const active = readActiveProfileIdentity();
     return {
       status: 200,
       body: {
         ok: true,
         activeProfileId: active?.id,
-        profiles: profiles.map((p) => ({
+        profiles: profiles.map((p, idx) => ({
           id: p.id,
           name: p.name,
-          slot: p.slot,
+          slot: idx + 1,
           color: p.color,
         })),
       },
