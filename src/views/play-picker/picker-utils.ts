@@ -514,6 +514,7 @@ export type PlayErrorCode =
   | "direct-torrent-disabled"
   | "web-needs-desktop"
   | "web-insecure-source"
+  | "web-page"
   | "no-source"
   | "addon-not-configured"
   | "external-url-only"
@@ -552,6 +553,7 @@ const KNOWN_PLAY_ERROR_CODES: Record<string, true> = {
   "direct-torrent-disabled": true,
   "web-needs-desktop": true,
   "web-insecure-source": true,
+  "web-page": true,
   "no-source": true,
   "addon-not-configured": true,
   "external-url-only": true,
@@ -651,6 +653,10 @@ export function translatePickerError(t: Translate, error: PickerError): string {
     case "web-insecure-source":
       return t(
         "This source is served over plain http, which a browser blocks on an https page. Pick an https source or use the desktop app.",
+      );
+    case "web-page":
+      return t(
+        "This source links to a webpage rather than a direct video stream. Pick another source.",
       );
     case "no-source":
       return t("This stream has no playable source.");

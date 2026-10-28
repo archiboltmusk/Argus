@@ -262,6 +262,11 @@ export function usePickHandler({
             (stream.url ?? "") + " " + (stream.addonName ?? "") + " " + (stream.addonId ?? "")
           );
           if (!isDebridStream) {
+            if (autoActive || autoPickRef.current) {
+              setFailedStreams((prev) => new Set(prev).add(stream));
+              advanceAuto();
+              return;
+            }
             openInAppBrowser(r.webUrl, stream.title ?? stream.name ?? meta.name);
             opened = true;
             setResolving(null);
@@ -519,10 +524,20 @@ export function usePickHandler({
     }
     autoPickRef.current = auto;
     if (!stream.url && stream.externalUrl) {
+      if (autoActive || auto) {
+        setFailedStreams((prev) => new Set(prev).add(stream));
+        advanceAuto();
+        return;
+      }
       openUrl(stream.externalUrl);
       return;
     }
     if (!stream.url && stream.ytId) {
+      if (autoActive || auto) {
+        setFailedStreams((prev) => new Set(prev).add(stream));
+        advanceAuto();
+        return;
+      }
       openUrl(`https://www.youtube.com/watch?v=${stream.ytId}`);
       return;
     }

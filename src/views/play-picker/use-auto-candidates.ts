@@ -170,6 +170,7 @@ export function useAutoCandidates(args: {
       s.nameAbsent = !nameKnown(s);
       if (isStreamDead(s)) return;
       if (isWatchHub(s)) return;
+      if (s.externalUrl || s.ytId || s.url === "#") return;
       if (episodeConflict(s)) return;
       if (!isCached(s) && !s.url && !engineP2pEligible(s)) return;
       const k = key(s);
