@@ -18,7 +18,14 @@ const PROFILE_EDIT_EVENT = "argus:deeplink-profile-edit";
 const OPEN_MAGNET_EVENT = "argus:deeplink-open-magnet";
 
 type DeepLinkDetail = { rawUrl: string };
-type DeepLinkOpen = { type: string; id: string; videoId?: string };
+export type DeepLinkOpen = {
+  type: string;
+  id: string;
+  videoId?: string;
+  autoplay?: boolean;
+  season?: number;
+  episode?: number;
+};
 type DeepLinkOpenDetail = { open: DeepLinkOpen };
 export type DeepLinkList = { handle: string; listId: string };
 type DeepLinkListDetail = { list: DeepLinkList };
@@ -152,25 +159,101 @@ export function onOpenLocalFile(handler: (path: string) => void): () => void {
   return () => window.removeEventListener(OPEN_FILE_EVENT, listener);
 }
 
-function parseDetailPath(path: string): DeepLinkOpen | null {
-  const parts = path.split("/").filter((p) => p.length > 0);
-  if (parts[0] !== "detail" || parts.length < 3) return null;
-  const type = decodeURIComponent(parts[1]);
-  const id = decodeURIComponent(parts[2]);
-  if (!type || !id) return null;
-  const videoId = parts[3] ? decodeURIComponent(parts[3]) : undefined;
-  return { type, id, videoId };
+export function parseMediaDeepLink(url: string): DeepLinkOpen | null {
+  let rest = "";
+  if (url.startsWith("argus://")) {
+    rest = url.slice("argus://".length);
+  } else if (url.startsWith("nuvio://")) {
+    rest = url.slice("nuvio://".length);
+  } else if (url.startsWith("stremio://")) {
+    rest = url.slice("stremio://".length);
+  } else if (/^https?:\/\/(?:www\.)?argus\.app\//i.test(url)) {
+    try {
+      const u = new URL(url);
+      rest = u.pathname.replace(/^\/+/, "");
+      if (u.search) rest += u.search;
+    } catch {
+      return null;
+    }
+  } else if (url.includes("stremio.com")) {
+    const hash = url.indexOf("#");
+    if (hash !== -1) {
+      let frag = url.slice(hash + 1);
+      if (frag.startsWith("/")) frag = frag.slice(1);
+      rest = frag;
+    }
+  }
+  if (!rest) return null;
+
+  const [pathPart, queryPart] = rest.split("?");
+  const searchParams = new URLSearchParams(queryPart || "");
+  const autoplay =
+    searchParams.get("autoplay") === "1" ||
+    searchParams.get("autoplay") === "true" ||
+    searchParams.get("action") === "play";
+
+  const parts = pathPart.split("/").filter((p) => p.length > 0);
+  if (parts.length === 0) return null;
+
+  // 1. Standard detail path: detail/movie/tt1375666 or detail/series/tt0944947/1:1
+  if (parts[0] === "detail" && parts.length >= 3) {
+    const type = decodeURIComponent(parts[1]);
+    const id = decodeURIComponent(parts[2]);
+    const videoId = parts[3] ? decodeURIComponent(parts[3]) : undefined;
+    return { type, id, videoId, autoplay };
+  }
+
+  // 2. Direct movie path: movie/tt1375666 or movie/tmdb:27205
+  if (parts[0] === "movie" && parts.length >= 2) {
+    const id = decodeURIComponent(parts[1]);
+    return { type: "movie", id, autoplay };
+  }
+
+  // 3. Series path: series/tt0944947 or series/tt0944947/1/1
+  if (parts[0] === "series" && parts.length >= 2) {
+    const id = decodeURIComponent(parts[1]);
+    const season = parts[2] ? Number(parts[2]) : undefined;
+    const episode = parts[3] ? Number(parts[3]) : undefined;
+    const videoId =
+      season != null && episode != null ? `${id}:${season}:${episode}` : undefined;
+    return {
+      type: "series",
+      id,
+      videoId,
+      season: Number.isFinite(season) ? season : undefined,
+      episode: Number.isFinite(episode) ? episode : undefined,
+      autoplay,
+    };
+  }
+
+  // 4. Direct play path: play/tt1375666 or play/movie/tt1375666 or play/series/tt.../1/1
+  if (parts[0] === "play") {
+    if (parts.length >= 3) {
+      const type = decodeURIComponent(parts[1]);
+      const id = decodeURIComponent(parts[2]);
+      const season = parts[3] ? Number(parts[3]) : undefined;
+      const episode = parts[4] ? Number(parts[4]) : undefined;
+      const videoId =
+        season != null && episode != null ? `${id}:${season}:${episode}` : undefined;
+      return {
+        type,
+        id,
+        videoId,
+        season: Number.isFinite(season) ? season : undefined,
+        episode: Number.isFinite(episode) ? episode : undefined,
+        autoplay: true,
+      };
+    } else if (parts.length === 2) {
+      const id = decodeURIComponent(parts[1]);
+      return { type: "movie", id, autoplay: true };
+    }
+  }
+
+  return null;
 }
 
 export function parseStremioOpen(url: string): DeepLinkOpen | null {
-  if (url.startsWith("stremio://")) return parseDetailPath(url.slice("stremio://".length));
-  const hash = url.indexOf("#");
-  if (hash !== -1 && url.includes("stremio.com")) {
-    let frag = url.slice(hash + 1);
-    if (frag.startsWith("/")) frag = frag.slice(1);
-    return parseDetailPath(frag);
-  }
-  return null;
+  return parseMediaDeepLink(url);
 }
 
 export function emitDeepLinkOpenLocal(link: DeepLinkLocal): void {
@@ -198,8 +281,7 @@ export function shareDeepLink(type: string, id: string): string {
 }
 
 export function parseArgusOpen(url: string): DeepLinkOpen | null {
-  if (!url.startsWith("argus://")) return null;
-  return parseDetailPath(url.slice("argus://".length));
+  return parseMediaDeepLink(url);
 }
 
 export function parseArgusList(url: string): DeepLinkList | null {
@@ -220,6 +302,7 @@ function shouldForward(url: string): boolean {
   if (isMusicDeepLink(url)) return false;
   if (url.startsWith("argus://together")) return false;
   if (url.startsWith("argus://")) return true;
+  if (url.startsWith("nuvio://")) return true;
   if (url.startsWith("stremio://")) {
     if (window.__argusInstallerOpen) return true;
     return !!window.__argusStremioDeeplink;

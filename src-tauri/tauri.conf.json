@@ -106,9 +106,9 @@
   },
   "plugins": {
     "deep-link": {
-      "mobile": [],
+      "mobile": [{ "schemes": ["argus", "nuvio", "stremio"] }],
       "desktop": {
-        "schemes": ["argus", "stremio"]
+        "schemes": ["argus", "nuvio", "stremio"]
       }
     },
     "updater": {

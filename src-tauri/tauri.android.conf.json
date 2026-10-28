@@ -26,6 +26,9 @@
     }
   },
   "plugins": {
-    "updater": null
+    "updater": null,
+    "deep-link": {
+      "mobile": [{ "schemes": ["argus", "nuvio", "stremio"] }]
+    }
   }
 }

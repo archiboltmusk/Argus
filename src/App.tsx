@@ -1456,7 +1456,7 @@ function Shell({ onReady }: { onReady?: () => void }) {
             if (isProfileEditUrl(rawUrl)) return;
             setView("addons");
           });
-          const stopOpen = onDeepLinkOpen(({ type, id, videoId }) => {
+          const stopOpen = onDeepLinkOpen(({ type, id, videoId, autoplay, season, episode }) => {
             if (type === "person") {
               const personId = Number(id);
               if (Number.isInteger(personId) && personId > 0) openPerson(personId);
@@ -1471,6 +1471,21 @@ function Shell({ onReady }: { onReady?: () => void }) {
               return;
             }
             const hint = parseDeepLinkEpisode(videoId);
+            if (autoplay) {
+              window.dispatchEvent(
+                new CustomEvent("argus:remote-open", {
+                  detail: {
+                    action: "playMeta",
+                    metaId: id,
+                    metaType: type,
+                    season: season ?? hint?.season,
+                    episode: episode ?? hint?.episode,
+                    resume: true,
+                  },
+                }),
+              );
+              return;
+            }
             openMeta(
               { id, type: type as MetaType, name: "" },
               hint ? { episodeHint: hint } : undefined,
