@@ -1,5 +1,5 @@
 import { Check, Download, ThumbsUp } from "lucide-react";
-import { useEffect, useState } from "react";
+
 import { StreamFeedbackButtons } from "@/components/player/stream-feedback-buttons";
 import { StreamSpeedButton } from "@/components/player/stream-speed-button";
 import { BandwidthConfidenceBadge } from "@/components/player/bandwidth-confidence-badge";
@@ -38,11 +38,7 @@ export function StremioRow({
 }) {
   const t = useT();
   const { settings } = useSettings();
-  const [isCorrect, setIsCorrect] = useState(false);
-
-  useEffect(() => {
-    setIsCorrect(isStreamTargetVerified(stream));
-  }, [stream]);
+  const isCorrect = isStreamTargetVerified(stream);
 
   const full = settings.fullStreamDescription;
   const addonName = stream.addonName ?? t("Source");

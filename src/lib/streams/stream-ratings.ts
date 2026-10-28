@@ -1,4 +1,4 @@
-import { useSyncExternalStore } from "react";
+import { useCallback, useSyncExternalStore } from "react";
 
 export type StreamFeedbackType = "upvote" | "downvote";
 
@@ -158,12 +158,13 @@ export function rateStream(
 
 export function useStreamRating(stream: { infoHash?: string; url?: string; title?: string }): StreamRatingRecord {
   const key = getStreamKey(stream);
+  const getSnapshot = useCallback(() => {
+    const store = readStore();
+    return store[key] ?? DEFAULT_RATING_RECORD;
+  }, [key]);
   return useSyncExternalStore(
     subscribeRatings,
-    () => {
-      const store = readStore();
-      return store[key] ?? DEFAULT_RATING_RECORD;
-    },
+    getSnapshot,
     () => DEFAULT_RATING_RECORD,
   );
 }
