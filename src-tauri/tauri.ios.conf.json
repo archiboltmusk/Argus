@@ -33,7 +33,7 @@
   },
   "plugins": {
     "deep-link": {
-      "mobile": [{ "schemes": ["argus", "stremio"] }]
+      "mobile": []
     }
   }
 }

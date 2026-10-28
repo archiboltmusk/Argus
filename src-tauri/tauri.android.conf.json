@@ -28,7 +28,7 @@
   "plugins": {
     "updater": null,
     "deep-link": {
-      "mobile": [{ "schemes": ["argus", "nuvio", "stremio"] }]
+      "mobile": []
     }
   }
 }

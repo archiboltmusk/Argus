@@ -3,6 +3,7 @@
 //   - network security config: cleartext HTTP to the on-device torrent engine
 //     (see docs/android/network_security_config.xml for why release needs it)
 //   - Android TV: leanback launcher entry and non-required touchscreen/leanback features
+//   - Deep linking: native intent-filters for argus://, nuvio://, and stremio://
 // Fails loudly when the template changes shape so a release never ships unpatched.
 import { copyFileSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
@@ -44,6 +45,22 @@ if (!xml.includes("android.software.leanback")) {
     '    <uses-feature android:name="android.hardware.touchscreen" android:required="false" />\n';
   must(/<application\b/.test(xml), "no <application> tag in AndroidManifest.xml");
   xml = xml.replace(/(\s*)<application\b/, (m) => `\n${features}${m.replace(/^\n/, "")}`);
+}
+
+if (!xml.includes('android:scheme="argus"')) {
+  const deepLinkFilter =
+    '      <intent-filter>\n' +
+    '        <action android:name="android.intent.action.VIEW" />\n' +
+    '        <category android:name="android.intent.category.DEFAULT" />\n' +
+    '        <category android:name="android.intent.category.BROWSABLE" />\n' +
+    '        <data android:scheme="argus" />\n' +
+    '        <data android:scheme="nuvio" />\n' +
+    '        <data android:scheme="stremio" />\n' +
+    '      </intent-filter>\n';
+  const activityClose = /<\/activity>/;
+  if (activityClose.test(xml)) {
+    xml = xml.replace(activityClose, `${deepLinkFilter}    </activity>`);
+  }
 }
 
 writeFileSync(manifestPath, xml);

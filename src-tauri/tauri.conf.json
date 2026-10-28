@@ -106,7 +106,7 @@
   },
   "plugins": {
     "deep-link": {
-      "mobile": [{ "schemes": ["argus", "nuvio", "stremio"] }],
+      "mobile": [],
       "desktop": {
         "schemes": ["argus", "nuvio", "stremio"]
       }
