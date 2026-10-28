@@ -148,6 +148,24 @@ const NAV_ITEMS_ALL: NavItem[] = [
     parentalKey: "shows",
   },
   {
+    id: "games",
+    label: "nav.games",
+    render: (_active, hovered) => <GamesNavIcon hovered={hovered} />,
+    view: "games",
+  },
+  {
+    id: "music",
+    label: "nav.music",
+    render: (_active, hovered) => (
+      <NavLottie
+        data={lotMusic}
+        hovered={hovered}
+        fallback={<NavGlyph name="music" className="h-[26px] w-[26px] p-[2px]" />}
+      />
+    ),
+    view: "music",
+  },
+  {
     id: "kids",
     label: "nav.kids",
     render: (active) => (
@@ -189,24 +207,6 @@ const NAV_ITEMS_ALL: NavItem[] = [
     ),
     view: "ebook",
     parentalKey: "anime",
-  },
-  {
-    id: "music",
-    label: "nav.music",
-    render: (_active, hovered) => (
-      <NavLottie
-        data={lotMusic}
-        hovered={hovered}
-        fallback={<NavGlyph name="music" className="h-[26px] w-[26px] p-[2px]" />}
-      />
-    ),
-    view: "music",
-  },
-  {
-    id: "games",
-    label: "nav.games",
-    render: (_active, hovered) => <GamesNavIcon hovered={hovered} />,
-    view: "games",
   },
   {
     id: "live",

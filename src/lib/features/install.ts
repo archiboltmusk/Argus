@@ -61,8 +61,8 @@ export function useInstallFeatures(): InstallFeatures {
   return useMemo(
     () => ({
       ...installed,
-      games: (installed.games ?? true) && settings.gamesEnabled !== false,
-      music: (installed.music ?? true) && settings.musicEnabled !== false,
+      games: settings.gamesEnabled !== false,
+      music: settings.musicEnabled !== false,
       ebook: installed.ebook && settings.ebookEnabled,
     }),
     [installed, settings.gamesEnabled, settings.musicEnabled, settings.ebookEnabled],
