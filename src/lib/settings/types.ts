@@ -632,6 +632,7 @@ export type Settings = {
   bandwidthMbps: number;
   dataSaverMode: "off" | "budget" | "balanced" | "high";
   originalAudioAutopilot: boolean;
+  musicCrossfadeSec: number;
   nextEpisodeLeadSec: number;
   /**
    * When the "More like this" end screen appears. 0 turns it off, -1 shows it

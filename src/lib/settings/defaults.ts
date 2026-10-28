@@ -506,6 +506,7 @@ export const DEFAULT: Settings = {
   bandwidthMbps: 0,
   dataSaverMode: "off",
   originalAudioAutopilot: true,
+  musicCrossfadeSec: 0,
   nextEpisodeLeadSec: -1,
   endScreenLeadSec: -1,
   endScreenCountdownSec: 15,
