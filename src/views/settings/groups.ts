@@ -42,7 +42,7 @@ export const TOP_GROUPS: TopGroup[] = [
     section: "CONTENT",
     label: "Sources & library",
     sub: "Where streams come from, how they are filtered, and the metadata behind them.",
-    children: ["streaming", "streamFilters", "p2p", "library"],
+    children: ["streaming", "streamFilters", "p2p", "library", "india"],
   },
   {
     id: "plugins",

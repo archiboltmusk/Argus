@@ -1,7 +1,10 @@
-import { memo, useState, type ComponentProps, type RefObject } from "react";
+import { memo, useState, useEffect, useRef, type ComponentProps, type RefObject } from "react";
 import { Activity } from "lucide-react";
 import { SportsSidebar } from "@/components/player/sports-sidebar";
 import { useT } from "@/lib/i18n";
+import { useSettings } from "@/lib/settings";
+import { findMatchingRegionalAudioTrack } from "@/lib/player/regional-audio-dub";
+import { HotspotOdometerChip } from "@/components/player/hotspot-odometer-chip";
 import { DrawCanvas, StrokesLayer, type Stroke } from "@/components/player/draw-canvas";
 import { cropTransform } from "./hooks/use-video-fill";
 import { StreamSwitcher } from "@/components/player/stream-switcher";
@@ -214,6 +217,33 @@ export const PlayerOverlayLayers = memo(function PlayerOverlayLayers(p: PlayerOv
   const [sportsSidebarOpen, setSportsSidebarOpen] = useState(false);
   const rawT = useT();
   const t = typeof rawT === "function" ? rawT : ((k: string) => k);
+  const settingsHook = useSettings();
+  const settings = settingsHook?.settings;
+  const regionalAudioAttempted = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (!settings?.autoSelectRegionalDub || !settings?.preferredRegionalAudio) return;
+    const tracks = p.snap.audioTracks;
+    if (!tracks || tracks.length <= 1) return;
+
+    const currentSelected = tracks.find((track) => track.selected);
+    const match = findMatchingRegionalAudioTrack(tracks, settings.preferredRegionalAudio);
+
+    if (
+      match &&
+      match.id !== currentSelected?.id &&
+      regionalAudioAttempted.current !== p.metaId + match.id
+    ) {
+      regionalAudioAttempted.current = p.metaId + match.id;
+      p.bridgeRef.current?.setAudioTrack(match.id);
+    }
+  }, [
+    settings?.autoSelectRegionalDub,
+    settings?.preferredRegionalAudio,
+    p.snap.audioTracks,
+    p.metaId,
+    p.bridgeRef,
+  ]);
   const roomAvatarTopLeft =
     p.inRoom && !p.avatarsHidden && p.participants.length > 0 && p.avatarsCorner === "top-left";
   const roomAvatarTopRight =
@@ -550,6 +580,16 @@ export const PlayerOverlayLayers = memo(function PlayerOverlayLayers(p: PlayerOv
         stats={p.engineStats}
         visible={p.isP2pEngine && p.showChrome && !p.pipMode && !p.drawMode}
       />
+
+      {settings?.hotspotDataSaver && !p.tenFoot && !p.pipMode && (
+        <HotspotOdometerChip
+          visible={p.showChrome}
+          currentTimeSec={p.snap.positionSec}
+          durationSec={p.snap.durationSec}
+          sizeBytes={p.src.streamRef?.size}
+          dailyBudgetMb={settings?.hotspotDailyBudgetMb || 1500}
+        />
+      )}
 
       <LiveLayer
         liveOverlay={p.liveOverlay}

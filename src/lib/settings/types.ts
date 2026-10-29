@@ -909,4 +909,11 @@ export type Settings = {
   auddApiKey: string;
   secondaryPrivileges: SecondaryProfilePrivileges;
   nuvioSecondaryPrivileges: SecondaryProfilePrivileges;
+  hotspotDataSaver: boolean;
+  hotspotDailyBudgetMb: number;
+  preferredRegionalAudio: string;
+  autoSelectRegionalDub: boolean;
+  cricketRadioSyncDelaySec: number;
+  nightOwlDownloads: boolean;
+  showIndiaOttBadges: boolean;
 };

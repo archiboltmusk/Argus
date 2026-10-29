@@ -20,6 +20,7 @@ import {
 
 import { useT, useUiLanguage } from "@/lib/i18n";
 import { useSettings } from "@/lib/settings";
+import { getIndiaSportsBroadcastRights } from "@/lib/sports/india-ott";
 
 import { getLeagueLabel, type SportsGame, type SportsSide } from "@/lib/sports/espn";
 
@@ -197,6 +198,8 @@ export function HubCard({
     (url): url is string => !!url && !broken.includes(url),
   );
 
+  const indiaOtt = settings.showIndiaOttBadges ? getIndiaSportsBroadcastRights(game.league) : null;
+
   return (
     <article
       ref={root}
@@ -210,7 +213,18 @@ export function HubCard({
       />
 
       <span className="sh-card-meta">
-        <span>{league ? getLeagueLabel(league) : game.league}</span>
+        <span className="flex items-center gap-1.5">
+          <span>{league ? getLeagueLabel(league) : game.league}</span>
+          {indiaOtt && (
+            <span
+              className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold tracking-tight shadow-sm"
+              style={{ backgroundColor: indiaOtt.color, color: indiaOtt.textColor }}
+              title={`Watch in India on ${indiaOtt.name}`}
+            >
+              {indiaOtt.badge}
+            </span>
+          )}
+        </span>
 
         <span className={game.state === "in" && !stale ? "sh-live" : ""}>
           {stale

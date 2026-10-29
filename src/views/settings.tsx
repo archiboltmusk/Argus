@@ -119,6 +119,9 @@ const UpdatesPanel = lazy(() =>
 const AdvancedPanel = lazy(() =>
   import("./settings/advanced-panel").then((m) => ({ default: m.AdvancedPanel })),
 );
+const SettingsIndia = lazy(() =>
+  import("./settings/settings-india").then((m) => ({ default: m.SettingsIndia })),
+);
 
 const SECTION_PRELOAD: Partial<Record<SectionId, () => Promise<unknown>>> = {
   basics: () => import("./settings/basics-panel"),
@@ -153,6 +156,7 @@ const SECTION_PRELOAD: Partial<Record<SectionId, () => Promise<unknown>>> = {
   trackers: () => import("./settings/trackers-panel"),
   updates: () => import("./settings/updates-panel"),
   advanced: () => import("./settings/advanced-panel"),
+  india: () => import("./settings/settings-india"),
 };
 
 const preloaded = new Set<SectionId>();
@@ -312,6 +316,10 @@ const SECTION_META: Record<SectionId, { label: string; sub: string }> = {
   advanced: {
     label: "Advanced",
     sub: "Diagnostics, manual overrides, things most users never need.",
+  },
+  india: {
+    label: "India & Cricket",
+    sub: "Hotspot data saver, regional Indian audio dubs, live cricket commentary sync, and night-owl scheduler.",
   },
 };
 
@@ -749,6 +757,8 @@ export function Settings({ visible = true }: { visible?: boolean }) {
                       {active === "updates" && <UpdatesPanel />}
 
                       {active === "advanced" && <AdvancedPanel />}
+
+                      {active === "india" && <SettingsIndia />}
 
                       {active === "licenses" && <LicensesPanel />}
                       {active === "icons" && <IconsPanel />}

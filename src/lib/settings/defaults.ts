@@ -736,6 +736,13 @@ export const DEFAULT: Settings = {
   auddApiKey: "",
   secondaryPrivileges: { ...DEFAULT_SECONDARY_PRIVILEGES },
   nuvioSecondaryPrivileges: { ...DEFAULT_SECONDARY_PRIVILEGES },
+  hotspotDataSaver: false,
+  hotspotDailyBudgetMb: 1500,
+  preferredRegionalAudio: "",
+  autoSelectRegionalDub: true,
+  cricketRadioSyncDelaySec: 0,
+  nightOwlDownloads: false,
+  showIndiaOttBadges: true,
 };
 
 export function getSecondaryPrivileges(

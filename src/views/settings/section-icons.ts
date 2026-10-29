@@ -38,4 +38,5 @@ export const SECTION_ICONS: Record<SectionId, string> = {
   trackers: "Activity",
   updates: "ArrowUpCircle",
   advanced: "SlidersHorizontal",
+  india: "Radio",
 };

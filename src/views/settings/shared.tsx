@@ -54,6 +54,7 @@ export type SectionId =
   | "storage"
   | "trackers"
   | "updates"
+  | "india"
   | "advanced";
 
 export const SettingsActiveContext = createContext<{

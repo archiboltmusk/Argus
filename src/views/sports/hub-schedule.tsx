@@ -19,6 +19,7 @@ import { EsportsImage } from "./esports-image";
 import { fetchEsportsTeamLogos } from "@/lib/sports/esports-profiles";
 import { useSettings } from "@/lib/settings";
 import { formatCricketScore } from "@/lib/sports/cricket-format";
+import { getIndiaSportsBroadcastRights } from "@/lib/sports/india-ott";
 
 function searchableNames(game: SportsGame): string {
   const sides = [game.home, game.away, ...(game.field ?? [])];
@@ -210,6 +211,7 @@ export function HubSchedule({
         const matches = filtered.filter((g) => g.league === tag);
         const closed = collapsed.includes(tag);
         const live = matches.filter((g) => g.state === "in" && g.savedAt === undefined).length;
+        const indiaOtt = settings.showIndiaOttBadges ? getIndiaSportsBroadcastRights(tag) : null;
         return (
           <ScheduleLeague
             key={tag}
@@ -228,6 +230,15 @@ export function HubSchedule({
                 >
                   <LeagueLogo league={league ?? { logo: "", group: "trophy" }} size={24} />
                   <strong>{league ? getLeagueLabel(league) : tag}</strong>
+                  {indiaOtt && (
+                    <span
+                      className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold tracking-tight shadow-sm"
+                      style={{ backgroundColor: indiaOtt.color, color: indiaOtt.textColor }}
+                      title={`Watch in India on ${indiaOtt.name}`}
+                    >
+                      {indiaOtt.badge}
+                    </span>
+                  )}
                   {live > 0 && <span className="sh-live">{t("{n} LIVE", { n: live })}</span>}
                   <span>{scheduleEvents(matches).length}</span>
                   <ChevronDown size={16} className={closed ? "" : "is-open"} />
