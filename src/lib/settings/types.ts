@@ -940,4 +940,11 @@ export type Settings = {
   bluetoothHeadphoneModel: string;
   torrentTimePolicyEnabled: boolean;
   whisperSubtitlesEnabled: boolean;
+  vintageCinemaShaders: boolean;
+  vintageCinemaPresetId: string;
+  multiCommentarySwitcher: boolean;
+  preferredCommentaryLanguage: "broadcast_original" | "bengali" | "hindi" | "english";
+  turboStreamer4k: boolean;
+  nightCinemaMode: boolean;
+  nightCinemaAutoWindow: boolean;
 };

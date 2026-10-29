@@ -767,6 +767,13 @@ export const DEFAULT: Settings = {
   bluetoothHeadphoneModel: "",
   torrentTimePolicyEnabled: true,
   whisperSubtitlesEnabled: false,
+  vintageCinemaShaders: true,
+  vintageCinemaPresetId: "ray-35mm-bw",
+  multiCommentarySwitcher: true,
+  preferredCommentaryLanguage: "bengali",
+  turboStreamer4k: true,
+  nightCinemaMode: true,
+  nightCinemaAutoWindow: true,
 };
 
 export function getSecondaryPrivileges(

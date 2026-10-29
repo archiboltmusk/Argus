@@ -258,6 +258,41 @@ export const SHADER_CATALOG: ShaderCatalogEntry[] = [
     verify: true,
     demo: demoFor("hdr-toys", "natural-harmonia-gropius"),
   },
+  {
+    id: "vintage-cinema-ray",
+    name: "Satyajit Ray 35mm Master",
+    category: "Vintage restoration",
+    content: "all",
+    tier: "quality",
+    description:
+      "Tuned for 1950s–1980s Indian & Bengali cinema (Ray, Ghatak, Uttam–Suchitra). Reconstructs 35mm silver gelatin B&W contrast, debands vintage DVD transfers, and sharpens micro-contours without plastic digital smoothing.",
+    stage: "restore",
+    source: {
+      label: "Argus Indian Cinema Archive",
+      url: "https://github.com/archiboltmusk/Argus",
+    },
+    files: ["vintage-cinema.glsl"],
+    variants: [
+      {
+        id: "ray-bw",
+        label: "Ray 35mm B&W",
+        sub: "Subrata Mitra bounce-lighting & deep monochrome black levels.",
+        files: ["vintage-cinema.glsl"],
+      },
+      {
+        id: "eastmancolor",
+        label: "70s Eastmancolor",
+        sub: "Vibrant desert sands and warm vintage saturation (Feluda / Sholay).",
+        files: ["vintage-cinema.glsl"],
+      },
+    ],
+    companionProps: {
+      deband: "yes",
+      "deband-iterations": "3",
+      "deband-threshold": "48",
+      "deband-range": "18",
+    },
+  },
 ];
 
 export function shaderEntry(id: string): ShaderCatalogEntry | undefined {

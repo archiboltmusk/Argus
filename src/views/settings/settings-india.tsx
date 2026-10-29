@@ -4,6 +4,8 @@ import { useT } from "@/lib/i18n";
 import { Section, ToggleRow, Segmented, RowTitle, RowDesc } from "./shared";
 import { INDIAN_REGIONAL_LANGUAGES } from "@/lib/player/regional-audio-dub";
 import { getNightOwlWindowStatus } from "@/lib/downloads/night-owl";
+import { VINTAGE_CINEMA_PRESETS } from "@/lib/player/vintage-cinema-shaders";
+import { COMMENTARY_CHOICES } from "@/lib/sports/multi-commentary-switcher";
 import {
   Smartphone,
   Radio,
@@ -81,6 +83,16 @@ export function SettingsIndia() {
         )}
 
         <ToggleRow
+          label={t("Multi-Chunk Turbo Streamer (Zero-Wait 4K Seeking)")}
+          sub={t(
+            "Leverages unlimited broadband with a 4GB demuxer cache and 3600s forward readahead for instant (<200ms) seeks in massive 40GB–80GB Remux releases.",
+          )}
+          value={settings.turboStreamer4k}
+          onChange={(v) => update({ turboStreamer4k: v })}
+          leading={<Zap size={18} className="text-accent" />}
+        />
+
+        <ToggleRow
           label={t("Jio / Airtel Hotspot Data Saver (Metered Tethering)")}
           sub={t(
             "Engages only when tethering on a mobile hotspot: prioritizes HEVC/AV1 micro-encodes and displays a live quota odometer in the player.",
@@ -124,35 +136,7 @@ export function SettingsIndia() {
         />
       </Section>
 
-      {/* 2. Power Outage & Load Shedding Resilience */}
-      <Section
-        title={t("Power Outage & Load-Shedding Resilience")}
-        subtitle={t(
-          "Protects playback progress and download queues against sudden power blackouts and voltage fluctuations.",
-        )}
-      >
-        <ToggleRow
-          label={t("Power-Cut & Sudden Blackout Snapshot Vault")}
-          sub={t(
-            "Atomically journals stream URL, millisecond timestamp, audio track, and playlist queue every 5 seconds. Offers instant 1-click restore after unexpected power cuts.",
-          )}
-          value={settings.powerCutVaultEnabled}
-          onChange={(v) => update({ powerCutVaultEnabled: v })}
-          leading={<Save size={18} />}
-        />
-
-        <ToggleRow
-          label={t("Multi-CDN Stream Stitcher & Mirror Failover")}
-          sub={t(
-            "Seamlessly switches to alternate Debrid / CDN edge mirrors without resetting player position if local ISP routing experiences packet loss or gateway timeouts.",
-          )}
-          value={settings.streamMirrorFailover}
-          onChange={(v) => update({ streamMirrorFailover: v })}
-          leading={<Network size={18} />}
-        />
-      </Section>
-
-      {/* 3. Indian Regional Audio & Dub Auto-Selector */}
+      {/* 2. Regional Audio & Dual-Language Dubs */}
       <Section
         title={t("Regional Audio & Dual-Language Dubs")}
         subtitle={t(
@@ -194,13 +178,42 @@ export function SettingsIndia() {
         />
       </Section>
 
-      {/* 4. Bengal Cinema & Tollywood Detective Universe */}
+      {/* 3. Vintage Cinema AI Shader Suite & Bengal Ecosystem */}
       <Section
-        title={t("Bengal & Regional Media Ecosystem")}
+        title={t("Bengal & Vintage Cinema Restoration Suite")}
         subtitle={t(
-          "Curation and phonetic intelligence tailored for Purulia, West Bengal, and Indian cinema fans.",
+          "Neural restoration shaders and curation tailored for Purulia, West Bengal, and classic Indian cinema.",
         )}
       >
+        <ToggleRow
+          label={t("Vintage Cinema AI Shader Suite (Satyajit Ray & Golden Era Tollywood)")}
+          sub={t(
+            "Reconstructs 35mm silver-gelatin contrast, debands vintage DVD transfers, and sharpens micro-contours without plastic digital smoothing.",
+          )}
+          value={settings.vintageCinemaShaders}
+          onChange={(v) => update({ vintageCinemaShaders: v })}
+          leading={<Film size={18} className="text-amber-400" />}
+        />
+
+        {settings.vintageCinemaShaders && (
+          <div className="p-4 rounded-xl bg-elevated/40 border border-edge-soft/60 flex flex-col gap-3">
+            <span className="text-xs font-bold uppercase tracking-wider text-amber-400">
+              {t("Film Restoration Profile")}
+            </span>
+            <select
+              className="h-10 rounded-lg border border-edge-soft bg-surface px-3 text-sm text-ink outline-none"
+              value={settings.vintageCinemaPresetId}
+              onChange={(e) => update({ vintageCinemaPresetId: e.target.value })}
+            >
+              {VINTAGE_CINEMA_PRESETS.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.name} · {p.directorOrEra}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+
         <ToggleRow
           label={t("Tollywood & Bengali Detective Universe Rails")}
           sub={t(
@@ -252,13 +265,49 @@ export function SettingsIndia() {
         />
       </Section>
 
-      {/* 5. Live Cricket Audio Commentary Sync & Highlights */}
+      {/* 3. Live Cricket Audio Commentary & Multi-Commentary Switcher */}
       <Section
-        title={t("Cricket Commentary & Smart Highlights")}
+        title={t("Cricket Commentary & Multi-Language Switcher")}
         subtitle={t(
-          "All India Radio (AIR) commentary sync, automated highlight markers, and live match telemetry.",
+          "Seamlessly toggle between Bangla, Hindi, and English commentary feeds on the same live broadcast.",
         )}
       >
+        <ToggleRow
+          label={t("Multi-Commentary Instant Audio Switcher (Bangla / Hindi / English)")}
+          sub={t(
+            "Enables 1-click toggling between Akashvani Kolkata (বাংলা), Sports Flashes (हिंदी), and official broadcast TV audio with auto-delay lipsync.",
+          )}
+          value={settings.multiCommentarySwitcher}
+          onChange={(v) => update({ multiCommentarySwitcher: v })}
+          leading={<Radio size={18} className="text-accent" />}
+        />
+
+        {settings.multiCommentarySwitcher && (
+          <div className="p-4 rounded-xl bg-elevated/40 border border-edge-soft/60 flex flex-col gap-3">
+            <span className="text-xs font-bold uppercase tracking-wider text-accent">
+              {t("Default Commentary Language")}
+            </span>
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+              {COMMENTARY_CHOICES.map((c) => (
+                <button
+                  key={c.id}
+                  type="button"
+                  className={`flex flex-col items-center justify-center rounded-xl p-3 border transition-all ${
+                    settings.preferredCommentaryLanguage === c.id
+                      ? "border-accent bg-accent/15 text-ink font-bold shadow-sm"
+                      : "border-edge-soft bg-surface text-ink-muted hover:bg-elevated hover:text-ink"
+                  }`}
+                  onClick={() => update({ preferredCommentaryLanguage: c.id })}
+                >
+                  <span className="text-sm">{c.label}</span>
+                  <span className="text-xs text-accent">{c.nativeLabel}</span>
+                  <span className="text-[10px] text-ink-subtle mt-0.5">{c.badge}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
         <div className="p-4 rounded-xl bg-elevated/40 border border-edge-soft/60 flex flex-col gap-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
@@ -323,31 +372,59 @@ export function SettingsIndia() {
         />
       </Section>
 
-      {/* 6. Hardware, Earbuds & Device Handoff */}
+      {/* 4. Night-Owl Cinema & Subtitle Glare Dimmer */}
       <Section
-        title={t("Hardware, Earbuds & Device Handoff")}
+        title={t("Night-Owl Cinema & Audio Tamer")}
         subtitle={t(
-          "Bluetooth audio latency compensation, local QR streaming handoff, and battery optimization.",
+          "Late-night quiet watching: suppresses explosive commercial/gunshot spikes and dims subtitles.",
         )}
       >
         <ToggleRow
-          label={t("Bluetooth Earbuds Lipsync Auto-Profiler")}
+          label={t("Night-Owl Cinema Mode (Dynamic Explosion & Ad Ducking)")}
           sub={t(
-            "Applies calibrated negative audio delay offset (-160ms to -240ms) for boAt Airdopes, Noise Buds, Boult Audio, and Realme earphones to eliminate dialogue lag.",
+            "Applies dynamic range compression (DRC) to clamp loud movie explosions and blasted TV commercials while boosting dialogue whispers (+5 dB @ 2.5 kHz).",
           )}
-          value={settings.bluetoothLatencyProfiler}
-          onChange={(v) => update({ bluetoothLatencyProfiler: v })}
-          leading={<Headphones size={18} />}
+          value={settings.nightCinemaMode}
+          onChange={(v) => update({ nightCinemaMode: v })}
+          leading={<Moon size={18} className="text-indigo-400" />}
         />
 
         <ToggleRow
-          label={t("Zero-Install QR Couch Handoff")}
+          label={t("Auto-Engage Night Mode During Late Hours (00:00 - 05:00 IST)")}
           sub={t(
-            "Displays a local LAN QR code inside the player: scan with your phone camera to take over stream playback at the exact second without installing any mobile app.",
+            "Automatically activates ad-ducking and tints subtitles to a soft warm amber (#FFD7A0 at 75% opacity) during midnight hours to prevent eye strain in dark rooms.",
           )}
-          value={settings.qrCouchHandoffEnabled}
-          onChange={(v) => update({ qrCouchHandoffEnabled: v })}
-          leading={<QrCode size={18} />}
+          value={settings.nightCinemaAutoWindow}
+          onChange={(v) => update({ nightCinemaAutoWindow: v })}
+          leading={<Moon size={18} />}
+        />
+      </Section>
+
+      {/* 5. Infrastructure, Power Outage & Mirror Failover */}
+      <Section
+        title={t("Infrastructure & Outage Resilience")}
+        subtitle={t(
+          "Protects playback progress and download queues against sudden power blackouts and voltage fluctuations.",
+        )}
+      >
+        <ToggleRow
+          label={t("Power-Cut & Sudden Blackout Snapshot Vault")}
+          sub={t(
+            "Atomically journals stream URL, millisecond timestamp, audio track, and playlist queue every 5 seconds. Offers instant 1-click restore after unexpected power cuts.",
+          )}
+          value={settings.powerCutVaultEnabled}
+          onChange={(v) => update({ powerCutVaultEnabled: v })}
+          leading={<Save size={18} />}
+        />
+
+        <ToggleRow
+          label={t("Multi-CDN Stream Stitcher & Mirror Failover")}
+          sub={t(
+            "Seamlessly switches to alternate Debrid / CDN edge mirrors without resetting player position if local ISP routing experiences packet loss or gateway timeouts.",
+          )}
+          value={settings.streamMirrorFailover}
+          onChange={(v) => update({ streamMirrorFailover: v })}
+          leading={<Network size={18} />}
         />
 
         <ToggleRow
@@ -378,6 +455,34 @@ export function SettingsIndia() {
           value={settings.telegramRemoteEnabled}
           onChange={(v) => update({ telegramRemoteEnabled: v })}
           leading={<Send size={18} />}
+        />
+      </Section>
+
+      {/* 6. Hardware, Earbuds & Device Handoff */}
+      <Section
+        title={t("Hardware, Earbuds & Device Handoff")}
+        subtitle={t(
+          "Bluetooth audio latency compensation, local QR streaming handoff, and battery optimization.",
+        )}
+      >
+        <ToggleRow
+          label={t("Bluetooth Earbuds Lipsync Auto-Profiler")}
+          sub={t(
+            "Applies calibrated negative audio delay offset (-160ms to -240ms) for boAt Airdopes, Noise Buds, Boult Audio, and Realme earphones to eliminate dialogue lag.",
+          )}
+          value={settings.bluetoothLatencyProfiler}
+          onChange={(v) => update({ bluetoothLatencyProfiler: v })}
+          leading={<Headphones size={18} />}
+        />
+
+        <ToggleRow
+          label={t("Zero-Install QR Couch Handoff")}
+          sub={t(
+            "Displays a local LAN QR code inside the player: scan with your phone camera to take over stream playback at the exact second without installing any mobile app.",
+          )}
+          value={settings.qrCouchHandoffEnabled}
+          onChange={(v) => update({ qrCouchHandoffEnabled: v })}
+          leading={<QrCode size={18} />}
         />
 
         <ToggleRow
