@@ -212,7 +212,8 @@ export type PlayerOverlayLayersProps = {
 
 export const PlayerOverlayLayers = memo(function PlayerOverlayLayers(p: PlayerOverlayLayersProps) {
   const [sportsSidebarOpen, setSportsSidebarOpen] = useState(false);
-  const t = useT();
+  const rawT = useT();
+  const t = typeof rawT === "function" ? rawT : ((k: string) => k);
   const roomAvatarTopLeft =
     p.inRoom && !p.avatarsHidden && p.participants.length > 0 && p.avatarsCorner === "top-left";
   const roomAvatarTopRight =
