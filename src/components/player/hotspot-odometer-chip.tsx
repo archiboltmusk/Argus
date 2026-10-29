@@ -1,4 +1,4 @@
-import { Smartphone } from "lucide-react";
+import { Smartphone, Wifi } from "lucide-react";
 import { formatDataOdometer } from "@/lib/streams/hotspot-frugal-filter";
 
 export function HotspotOdometerChip({
@@ -7,12 +7,14 @@ export function HotspotOdometerChip({
   durationSec,
   sizeBytes,
   dailyBudgetMb,
+  isUnlimited = false,
 }: {
   visible: boolean;
   currentTimeSec: number;
   durationSec: number;
   sizeBytes?: number | null;
   dailyBudgetMb: number;
+  isUnlimited?: boolean;
 }) {
   if (!visible) return null;
 
@@ -30,6 +32,7 @@ export function HotspotOdometerChip({
   const { consumedStr, remainingStr, percentUsed } = formatDataOdometer(
     consumedMb,
     dailyBudgetMb,
+    isUnlimited,
   );
 
   return (
@@ -37,14 +40,14 @@ export function HotspotOdometerChip({
       className="pointer-events-none absolute top-32 end-24 z-30 flex items-center gap-2 rounded-full border border-white/12 bg-black/80 py-1.5 ps-2.5 pe-3.5 shadow-[0_12px_32px_-14px_rgba(0,0,0,0.8),inset_0_1px_0_rgba(255,255,255,0.05)] backdrop-blur-2xl animate-in fade-in duration-300"
       role="status"
     >
-      <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-accent/20 text-accent">
-        <Smartphone size={11} strokeWidth={2.4} />
+      <span className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full ${isUnlimited ? "bg-emerald-500/20 text-emerald-400" : "bg-accent/20 text-accent"}`}>
+        {isUnlimited ? <Wifi size={11} strokeWidth={2.4} /> : <Smartphone size={11} strokeWidth={2.4} />}
       </span>
       <div className="flex items-center gap-2 text-[11.5px] font-semibold leading-none tabular-nums text-white/90">
-        <span>{consumedStr} used</span>
+        <span>{consumedStr} streamed</span>
         <span className="text-white/25">|</span>
-        <span className={percentUsed > 80 ? "text-amber-400 font-bold" : "text-white/70"}>
-          {remainingStr} left
+        <span className={isUnlimited ? "text-emerald-400 font-bold" : percentUsed > 80 ? "text-amber-400 font-bold" : "text-white/70"}>
+          {remainingStr}
         </span>
       </div>
     </div>

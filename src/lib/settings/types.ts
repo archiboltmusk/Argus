@@ -928,4 +928,16 @@ export type Settings = {
   cricketDugoutMixer: boolean;
   retroEmulatorEnabled: boolean;
   batteryPowerSaveMode: boolean;
+  wifiBroadbandUnlimited: boolean;
+  networkProfileMode: "auto" | "unlimited-broadband" | "metered-hotspot";
+  powerCutVaultEnabled: boolean;
+  audioOnlyStreamMode: boolean;
+  streamMirrorFailover: boolean;
+  cricketHighlightReel: boolean;
+  serialFillerSkipper: boolean;
+  qrCouchHandoffEnabled: boolean;
+  bluetoothLatencyProfiler: boolean;
+  bluetoothHeadphoneModel: string;
+  torrentTimePolicyEnabled: boolean;
+  whisperSubtitlesEnabled: boolean;
 };

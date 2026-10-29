@@ -5,6 +5,7 @@ import { useT } from "@/lib/i18n";
 import { useSettings } from "@/lib/settings";
 import { findMatchingRegionalAudioTrack } from "@/lib/player/regional-audio-dub";
 import { HotspotOdometerChip } from "@/components/player/hotspot-odometer-chip";
+import { powerCutVault } from "@/lib/system/power-cut-vault";
 import { DrawCanvas, StrokesLayer, type Stroke } from "@/components/player/draw-canvas";
 import { cropTransform } from "./hooks/use-video-fill";
 import { StreamSwitcher } from "@/components/player/stream-switcher";
@@ -243,6 +244,28 @@ export const PlayerOverlayLayers = memo(function PlayerOverlayLayers(p: PlayerOv
     p.snap.audioTracks,
     p.metaId,
     p.bridgeRef,
+  ]);
+
+  useEffect(() => {
+    if (!settings?.powerCutVaultEnabled || !p.metaId || p.snap.positionSec <= 0) return;
+    powerCutVault.updateSnapshot({
+      metaId: p.metaId,
+      title: p.src.title,
+      streamUrl: p.src.url,
+      positionSec: p.snap.positionSec,
+      durationSec: p.snap.durationSec,
+      season: p.src.episode?.season,
+      episode: p.src.episode?.episode,
+    });
+  }, [
+    settings?.powerCutVaultEnabled,
+    p.metaId,
+    p.src.title,
+    p.src.url,
+    p.src.episode?.season,
+    p.src.episode?.episode,
+    p.snap.positionSec,
+    p.snap.durationSec,
   ]);
   const roomAvatarTopLeft =
     p.inRoom && !p.avatarsHidden && p.participants.length > 0 && p.avatarsCorner === "top-left";
@@ -588,6 +611,7 @@ export const PlayerOverlayLayers = memo(function PlayerOverlayLayers(p: PlayerOv
           durationSec={p.snap.durationSec}
           sizeBytes={p.src.streamRef?.size}
           dailyBudgetMb={settings?.hotspotDailyBudgetMb || 1500}
+          isUnlimited={settings?.wifiBroadbandUnlimited ?? true}
         />
       )}
 

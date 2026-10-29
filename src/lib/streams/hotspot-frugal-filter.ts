@@ -12,11 +12,13 @@ const MICRO_ENCODE_GROUPS = ["psa", "pahe", "galaxyrg", "qxr", "yify", "yts", "m
 /**
  * Assesses whether a stream fits comfortably within typical Indian daily mobile hotspot limits
  * (1.5 GB - 2.5 GB / day) and rewards modern high-efficiency compression (HEVC/x265/AV1).
+ * When Wi-Fi broadband is unlimited (isUnlimited = true), budget limits are completely bypassed.
  */
 export function evaluateHotspotStream(
   title: string | undefined | null,
   sizeBytes: number | undefined | null,
   dailyBudgetMb = 1500,
+  isUnlimited = false,
 ): FrugalStreamRating {
   const text = (title || "").toLowerCase();
   const sizeMb = typeof sizeBytes === "number" && sizeBytes > 0 ? sizeBytes / (1024 * 1024) : null;
@@ -32,11 +34,13 @@ export function evaluateHotspotStream(
   const isFrugalRecommended =
     (hasEfficientCodec || isMicroGroup) && (sizeMb === null || sizeMb <= 1400);
 
-  // Exceeds budget if single stream takes more than 75% of daily quota
-  const exceedsDailyBudget = sizeMb !== null && sizeMb > dailyBudgetMb * 0.75;
+  // If Wi-Fi broadband is unlimited, never flag as exceeding budget
+  const exceedsDailyBudget = !isUnlimited && sizeMb !== null && sizeMb > dailyBudgetMb * 0.75;
 
   let badgeLabel = "Standard";
-  if (isFrugalRecommended) {
+  if (isUnlimited) {
+    badgeLabel = isFrugalRecommended ? "⚡ Frugal 1080p" : "⚡ Unlimited Wi-Fi";
+  } else if (isFrugalRecommended) {
     badgeLabel = "⚡ Frugal 1080p";
   } else if (exceedsDailyBudget) {
     badgeLabel = "⚠️ Heavy Data";
@@ -53,21 +57,33 @@ export function evaluateHotspotStream(
 
 /**
  * Formats a clean odometer string for live player data tracking.
+ * When on uncapped Wi-Fi broadband, displays unlimited indicator.
  */
 export function formatDataOdometer(
   consumedMb: number,
   dailyBudgetMb: number,
+  isUnlimited = false,
 ): {
   consumedStr: string;
   remainingStr: string;
   percentUsed: number;
 } {
   const safeConsumed = Math.max(0, consumedMb);
+  const consumedStr = safeConsumed >= 1000 ? `${(safeConsumed / 1024).toFixed(2)} GB` : `${Math.round(safeConsumed)} MB`;
+
+  if (isUnlimited) {
+    return {
+      consumedStr,
+      remainingStr: "∞ Unlimited",
+      percentUsed: 0,
+    };
+  }
+
   const remaining = Math.max(0, dailyBudgetMb - safeConsumed);
   const pct = Math.min(100, Math.round((safeConsumed / Math.max(1, dailyBudgetMb)) * 100));
 
   return {
-    consumedStr: safeConsumed >= 1000 ? `${(safeConsumed / 1024).toFixed(2)} GB` : `${Math.round(safeConsumed)} MB`,
+    consumedStr,
     remainingStr: remaining >= 1000 ? `${(remaining / 1024).toFixed(2)} GB` : `${Math.round(remaining)} MB`,
     percentUsed: pct,
   };

@@ -755,6 +755,18 @@ export const DEFAULT: Settings = {
   cricketDugoutMixer: true,
   retroEmulatorEnabled: true,
   batteryPowerSaveMode: true,
+  wifiBroadbandUnlimited: true,
+  networkProfileMode: "unlimited-broadband",
+  powerCutVaultEnabled: true,
+  audioOnlyStreamMode: false,
+  streamMirrorFailover: true,
+  cricketHighlightReel: true,
+  serialFillerSkipper: true,
+  qrCouchHandoffEnabled: true,
+  bluetoothLatencyProfiler: true,
+  bluetoothHeadphoneModel: "",
+  torrentTimePolicyEnabled: true,
+  whisperSubtitlesEnabled: false,
 };
 
 export function getSecondaryPrivileges(
