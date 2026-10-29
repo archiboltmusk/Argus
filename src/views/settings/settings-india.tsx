@@ -6,6 +6,7 @@ import { INDIAN_REGIONAL_LANGUAGES } from "@/lib/player/regional-audio-dub";
 import { getNightOwlWindowStatus } from "@/lib/downloads/night-owl";
 import { VINTAGE_CINEMA_PRESETS } from "@/lib/player/vintage-cinema-shaders";
 import { COMMENTARY_CHOICES } from "@/lib/sports/multi-commentary-switcher";
+import { VOICE_CLARIFIER_PROFILES, type VoiceClarifierProfileId } from "@/lib/player/neural-voice-clarifier";
 import {
   Smartphone,
   Radio,
@@ -28,6 +29,9 @@ import {
   Sparkles,
   Network,
   Volume2,
+  Eye,
+  Bookmark,
+  Share2,
 } from "lucide-react";
 
 export function SettingsIndia() {
@@ -550,6 +554,110 @@ export function SettingsIndia() {
           onChange={(v) => update({ showIndiaOttBadges: v })}
           leading={<ShieldCheck size={18} />}
         />
+      </Section>
+
+      {/* 9. Next-Gen Playback, AI Voice & P2P Swarm Suite */}
+      <Section
+        title={t("Next-Gen Playback, AI Voice & P2P Swarm Suite")}
+        subtitle={t(
+          "Neural voice clarification, local subnet P2P streaming cache, face/letterbox subtitle dodging, and automatic chaptering.",
+        )}
+      >
+        <ToggleRow
+          label={t("Neural Voice Clarifier (AI Dialogue Lift)")}
+          sub={t(
+            "Isolates center-channel speech frequencies (+6dB @ 2.5kHz–3.5kHz) and cuts optical audio hiss for classic Ray cinema, 90s Tollywood, and compact single-speaker projectors (Portronics Beem 470).",
+          )}
+          value={settings.neuralVoiceClarifier}
+          onChange={(v) => update({ neuralVoiceClarifier: v })}
+          leading={<Volume2 size={18} className="text-amber-400" />}
+        />
+
+        {settings.neuralVoiceClarifier && (
+          <div className="p-4 rounded-xl bg-elevated/40 border border-edge-soft/60 flex flex-col gap-3">
+            <span className="text-xs font-bold uppercase tracking-wider text-amber-400">
+              {t("Acoustic Clarifier Profile")}
+            </span>
+            <select
+              className="h-10 rounded-lg border border-edge-soft bg-surface px-3 text-sm text-ink outline-none"
+              value={settings.voiceClarifierProfileId}
+              onChange={(e) => update({ voiceClarifierProfileId: e.target.value as VoiceClarifierProfileId })}
+            >
+              {Object.values(VOICE_CLARIFIER_PROFILES).map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.name} (+{p.presenceGainDb}dB)
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+
+        <ToggleRow
+          label={t("Local LAN P2P Swarm Cache (Multi-Screen Bandwidth Saver)")}
+          sub={t(
+            "Shares buffered 4K video pieces across Smart TVs, laptops, and mobiles on the home Wi-Fi at 800+ Mbps LAN speeds, preventing redundant Debrid/WAN downloads.",
+          )}
+          value={settings.lanSwarmCache}
+          onChange={(v) => update({ lanSwarmCache: v })}
+          leading={<Share2 size={18} className="text-emerald-400" />}
+        />
+
+        <ToggleRow
+          label={t("Face & Letterbox-Aware Subtitle Dodging")}
+          sub={t(
+            "Places subtitles in lower letterbox bars with warm amber (#FFD180) to eliminate projector light bleed; dynamically dodges actor faces on full-bleed 16:9 streams.",
+          )}
+          value={settings.letterboxSubtitleDodging}
+          onChange={(v) => update({ letterboxSubtitleDodging: v })}
+          leading={<Eye size={18} className="text-sky-400" />}
+        />
+
+        <ToggleRow
+          label={t("Automatic Scene & Song Chapter Synthesizer")}
+          sub={t(
+            "Synthesizes instant seekbar jump markers for Indian cinema and catalog titles lacking MKV chapters: Prologue, Title Song, Intermission, Climax, and End Credits.",
+          )}
+          value={settings.syntheticChapters}
+          onChange={(v) => update({ syntheticChapters: v })}
+          leading={<Bookmark size={18} className="text-indigo-400" />}
+        />
+
+        <ToggleRow
+          label={t("Hybrid Debrid + Official Free Legal Streaming Fallback")}
+          sub={t(
+            "Checks verified studio YouTube channels (SVF Cinema, Angel Digital, Zee Bangla) when torrent seeders are dead or poor quality, routing pristine 1080p feeds seamlessly.",
+          )}
+          value={settings.hybridLegalFallback}
+          onChange={(v) => update({ hybridLegalFallback: v })}
+          leading={<Film size={18} className="text-rose-400" />}
+        />
+
+        <ToggleRow
+          label={t("Edge Zero-Shot Indic Dubbing Overlay")}
+          sub={t(
+            "Generates real-time neural speech dubbing for world cinema and foreign festival films with automated 15% soundtrack ducking.",
+          )}
+          value={settings.indicDubbingOverlay}
+          onChange={(v) => update({ indicDubbingOverlay: v })}
+          leading={<Languages size={18} className="text-violet-400" />}
+        />
+
+        {settings.indicDubbingOverlay && (
+          <div className="p-4 rounded-xl bg-elevated/40 border border-edge-soft/60 flex flex-col gap-3">
+            <span className="text-xs font-bold uppercase tracking-wider text-violet-400">
+              {t("Dubbing Target Language")}
+            </span>
+            <Segmented
+              value={settings.indicDubbingLanguage}
+              options={[
+                { value: "bengali", label: "বাংলা (Bengali)" },
+                { value: "hindi", label: "हिंदी (Hindi)" },
+                { value: "english", label: "English" },
+              ]}
+              onChange={(val) => update({ indicDubbingLanguage: val as "bengali" | "hindi" | "english" })}
+            />
+          </div>
+        )}
       </Section>
     </div>
   );

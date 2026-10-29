@@ -947,4 +947,12 @@ export type Settings = {
   turboStreamer4k: boolean;
   nightCinemaMode: boolean;
   nightCinemaAutoWindow: boolean;
+  neuralVoiceClarifier: boolean;
+  voiceClarifierProfileId: "ray-vintage" | "tollywood-classic" | "night-dialogue" | "projector-beem" | "balanced-speech";
+  lanSwarmCache: boolean;
+  letterboxSubtitleDodging: boolean;
+  syntheticChapters: boolean;
+  hybridLegalFallback: boolean;
+  indicDubbingOverlay: boolean;
+  indicDubbingLanguage: "bengali" | "hindi" | "english";
 };

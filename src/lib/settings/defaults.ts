@@ -774,6 +774,14 @@ export const DEFAULT: Settings = {
   turboStreamer4k: true,
   nightCinemaMode: true,
   nightCinemaAutoWindow: true,
+  neuralVoiceClarifier: true,
+  voiceClarifierProfileId: "ray-vintage",
+  lanSwarmCache: true,
+  letterboxSubtitleDodging: true,
+  syntheticChapters: true,
+  hybridLegalFallback: true,
+  indicDubbingOverlay: false,
+  indicDubbingLanguage: "bengali",
 };
 
 export function getSecondaryPrivileges(
