@@ -160,7 +160,7 @@ export type ExtendedPlatform =
 
 export type PlatformFamily = "apple" | "android" | "windows" | "smarttv" | "linux" | "web";
 
-const PROJECTOR_UA = /\b(xgimi|nebula|dangbei|formovie|jmgo|projector|alpd)\b/i;
+const PROJECTOR_UA = /\b(xgimi|nebula|dangbei|formovie|jmgo|projector|alpd|portronics|beem|wanbo|egate|zebronics)\b/i;
 const TIZEN_UA = /\b(tizen|smart-tv.*samsung|samsung.*smart-tv)\b/i;
 const WEBOS_UA = /\b(webos|web0s|netcast|smarttv.*lg|lg.*smarttv)\b/i;
 const CHROMEOS_UA = /\b(cros|chromebook)\b/i;

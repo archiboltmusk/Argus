@@ -1,0 +1,78 @@
+{
+  "notes": {
+    "2.0.0": {
+      "title": "Argus 2.0.0 — The Ultimate Entertainment & Regional Powerhouse",
+      "intro": "Argus 2.0 is our biggest milestone release yet, bringing unprecedented streaming performance, deep regional Indian cinema intelligence, zero-wait 4K seeking, live sports multi-commentary, and robust offline resilience.",
+      "sections": [
+        {
+          "heading": "Highlights",
+          "items": [
+            "Unlimited Wi-Fi Broadband Engine removes all bitrate caps, budget warnings, and throttling 24/7 on Wi-Fi.",
+            "Multi-Chunk Turbo Streamer allocates a 4GB demuxer cache and 3600s readahead for <200ms seek latency on 40GB–80GB 4K Remux / Dolby Vision files.",
+            "Vintage Cinema AI Shader Suite custom-tuned for Satyajit Ray, Uttam–Suchitra, and classic 35mm Tollywood / Indian cinema.",
+            "Multi-Commentary Instant Audio Switcher hot-swaps between Bangla (Akashvani Kolkata), Hindi (Sports Flashes), and English broadcast audio in 1 click.",
+            "Night-Owl Cinema Mode dynamically clamps loud explosions and commercial ad spikes while dimming subtitles to a soft warm amber.",
+            "Power-Cut & Load-Shedding Snapshot Vault journals session progress every 5 seconds for instant 1-click recovery after power cuts.",
+            "Embedded WebAssembly Retro Gaming Engine delivers 1-click emulation for GBA, SNES, PS1, and PSP classics directly inside Argus.",
+            "Hydra Addon Protocol & High-Speed Debrid Resolver supports Real-Debrid, Torbox, and AllDebrid for game repacks and cyberlockers.",
+            "Auto-Dub & Regional Audio Selector prioritizes 8 Indian regional dialects without manual track switching.",
+            "Tollywood & Bengali Detective Universe Rails surface Feluda, Byomkesh Bakshi, Ray classics, and modern thrillers.",
+            "Phonetic Transliteration Search resolves colloquial Romanized queries into native Bengali and Hindi titles.",
+            "Bluetooth Earbud Lipsync Profiler compensates for audio lag on boAt, Noise, Boult, and Realme TWS earphones.",
+            "Zero-Install QR Couch Handoff lets you transfer playback to any phone or tablet browser in 1 click."
+          ]
+        },
+        {
+          "heading": "Broadband, Network & Resilience",
+          "items": [
+            "Automatic network connection profiling distinguishes uncapped broadband from metered mobile hotspots.",
+            "Smart daytime-leech & midnight-seed policy allows 24/7 uncapped seeding on Wi-Fi while throttling daytime mobile upload to 1 KB/s.",
+            "Night-Owl download scheduler queues heavy media for the 00:00 - 06:00 IST unmetered telco window.",
+            "Local LAN Peer-Share enables 1 Gbps file transfers across campus/home subnets with zero external data consumption.",
+            "Multi-CDN Stream Stitcher automatically switches to healthy edge mirrors if local ISP routing experiences packet loss.",
+            "Adaptive peak-hour buffer prefetching counters evening cell tower congestion (19:00 - 23:00 IST)."
+          ]
+        },
+        {
+          "heading": "Visuals, Restoration & Shaders",
+          "items": [
+            "Satyajit Ray 35mm Master shader recovers Subrata Mitra bounce-lighting and silver-gelatin monochrome contrast.",
+            "Golden Era Tollywood preset restores romantic classics and removes macroblocking from vintage DVD transfers.",
+            "Ghatak Realism preset delivers high-contrast expressionist shadows and crisp wide-angle grain resolution.",
+            "70s Eastmancolor Restoration recovers vibrant warm tones in classic desert and adventure titles.",
+            "Night-Owl dimmed subtitles eliminate dark-room glare with soft amber (#FFD7A0) 75% opacity styling."
+          ]
+        },
+        {
+          "heading": "Cricket & Sports Intelligence",
+          "items": [
+            "Live audio commentary delay calibration syncs Akashvani Kolkata and Sports Flashes with broadcast video.",
+            "Smart Highlight Reel Synthesizer generates chapter markers for wickets, boundaries, and milestone celebrations.",
+            "Dugout Channel Mixer blends stadium crowd ambiance with regional radio commentary.",
+            "Ball-by-Ball Live Desktop Alerts notify you of key match moments even when minimized.",
+            "Indian OTT Streaming Rights badges display broadcast home (JioHotstar, SonyLIV, FanCode, Hoichoi, ZEE5)."
+          ]
+        },
+        {
+          "heading": "Gaming & Hydra Addon Protocol",
+          "items": [
+            "Debrid game downloader resolves repack magnets and direct download cyberlockers at maximum line speeds.",
+            "Automated Wine/Proton/GPTK prefix runner for macOS and Linux runs Windows games seamlessly.",
+            "Cross-platform game save path discovery and cloud synchronization.",
+            "Night-Owl large game download scheduler preserves daytime hotspot quotas."
+          ]
+        },
+        {
+          "heading": "Audio, Speech & Subtitles",
+          "items": [
+            "On-device Whisper neural speech recognition provides real-time offline live subtitle transcription.",
+            "4-tier AutoSync pipeline aligns subtitles via community hash consensus, acoustic VAD, and affine drift regression.",
+            "Indian Serial Recap & Dramatic Filler Skipper bypasses 4-minute recaps and slow-motion staring sequences in daily soaps.",
+            "Audio-Only Frugal Mode (--vid=no) drops bandwidth to ~25 MB/hr for commentary and concerts.",
+            "10-band Dialogue Clarity EQ lifts center-channel speech while taming explosive bass and loud song interludes."
+          ]
+        }
+      ]
+    }
+  }
+}

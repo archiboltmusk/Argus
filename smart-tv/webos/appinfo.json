@@ -1,6 +1,6 @@
 {
   "id": "app.argus.webos",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "vendor": "Argus",
   "type": "web",
   "main": "index-tv.html",

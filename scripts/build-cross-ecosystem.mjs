@@ -63,11 +63,19 @@ export const ECOSYSTEM_MATRIX = [
   },
   {
     id: "android-tv",
-    name: "Android TV, Google TV & Android Projectors (XGIMI, Nebula, Dangbei)",
+    name: "Android TV, Google TV & Smart Projectors (Portronics Beem 470, Egate, Wanbo, XGIMI)",
     family: "android",
-    targetEngine: "exoplayer (MediaCodec Tunneling + Atmos Bitstreaming + Leanback)",
+    targetEngine: "exoplayer (MediaCodec Tunneling + Atmos Bitstreaming + Leanback + Projector Mode)",
     buildCmd: "pnpm tauri android build --apk --config src-tauri/tauri.android.conf.json",
     outputExt: "-tv-universal.apk",
+  },
+  {
+    id: "linux",
+    name: "Linux Desktop (Ubuntu/Debian, Fedora, Arch, Steam Deck)",
+    family: "linux",
+    targetEngine: "mpv (VAAPI / VDPAU / NVDEC HW Acceleration + PipeWire audio)",
+    buildCmd: "pnpm tauri:build:linux-system",
+    outputExt: ".deb / .rpm / .AppImage",
   },
   {
     id: "chromeos",

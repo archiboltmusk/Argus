@@ -98,6 +98,7 @@ docs/TV-OPEN-BACKLOG.md
 audit-rest.txt
 *.md
 !README.md
+!CHANGELOG.md
 !LEGAL.md
 !docs/*.md
 !docs/**/*.md

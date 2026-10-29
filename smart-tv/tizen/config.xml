@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<widget xmlns="http://www.w3.org/ns/widgets" xmlns:tizen="http://tizen.org/ns/widgets" id="http://argus.app/ArgusTizen" version="1.0.0" viewmodes="fullscreen">
+<widget xmlns="http://www.w3.org/ns/widgets" xmlns:tizen="http://tizen.org/ns/widgets" id="http://argus.app/ArgusTizen" version="2.0.0" viewmodes="fullscreen">
     <tizen:application id="app.argus.tizen" exec="index-tv.html" screen-orientation="landscape" required_version="5.5"/>
     <name>Argus</name>
     <description>Cross-Platform Decentralized Entertainment Hub for Smart TVs</description>
