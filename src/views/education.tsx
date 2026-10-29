@@ -13,13 +13,16 @@ import {
   Trash2,
   Copy,
   Sparkles,
-  Download,
   Upload,
   AlertCircle,
   Zap,
   Database,
   Layers,
   Activity,
+  Flame,
+  Stethoscope,
+  BrainCircuit,
+  SlidersHorizontal,
 } from "lucide-react";
 import { useT } from "@/lib/i18n";
 import { useView } from "@/lib/view";
@@ -46,6 +49,7 @@ import { PatientCaseSimulator } from "./education/patient-case-simulator";
 import { getAllQuestions, getInicetHighYieldQuestions } from "@/lib/education/qbank-store";
 import { CLINICAL_QBANK_STARTER } from "@/lib/education/qbank-data";
 import { Row } from "@/components/row";
+import "./education/education-hub.css";
 
 export function EducationView() {
   const t = useT();
@@ -54,6 +58,7 @@ export function EducationView() {
   const localEntries = useLocalLibrary();
   const notes = useStudyNotes();
 
+  const [tab, setTab] = useState<"courses" | "qbank" | "simulator" | "notes">("courses");
   const [activeCategory, setActiveCategory] = useState<CourseCategory>("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [showNotesDrawer, setShowNotesDrawer] = useState(false);
@@ -65,6 +70,7 @@ export function EducationView() {
   const [sharedTokens, setSharedTokens] = useState<Record<string, string>>({});
   const [copiedShareFolder, setCopiedShareFolder] = useState<string | null>(null);
   const [importNotice, setImportNotice] = useState<{ success: boolean; message: string } | null>(null);
+  const [showToolsMenu, setShowToolsMenu] = useState(false);
   const globalFileInputRef = useRef<HTMLInputElement>(null);
 
   const handleGlobalFileUpload = async (e: ChangeEvent<HTMLInputElement>) => {
@@ -87,10 +93,10 @@ export function EducationView() {
           message: res.error || "Failed to parse educational JSON / GZ file.",
         });
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       setImportNotice({
         success: false,
-        message: err?.message || "Error reading file.",
+        message: err instanceof Error ? err.message : "Error reading file.",
       });
     }
 
@@ -149,7 +155,6 @@ export function EducationView() {
   const handleToggleShare = useCallback(
     async (folder: string, title: string) => {
       if (sharedTokens[folder]) {
-        // Already shared: copy manifest
         const manifestUrl = sharedTokens[folder];
         void navigator.clipboard.writeText(manifestUrl);
         setCopiedShareFolder(folder);
@@ -192,78 +197,48 @@ export function EducationView() {
     [settings.videoFeeds, update, openSettings],
   );
 
+  const startQBankDrill = useCallback((highYieldOnly = false) => {
+    if (highYieldOnly) {
+      const highYield = getInicetHighYieldQuestions();
+      setActiveDrillQuestions(highYield.length > 0 ? highYield : CLINICAL_QBANK_STARTER);
+    } else {
+      const allImported = getAllQuestions();
+      setActiveDrillQuestions(allImported.length > 0 ? allImported : CLINICAL_QBANK_STARTER);
+    }
+    setShowQBank(true);
+  }, []);
+
   return (
-    <div className="flex h-full w-full flex-col overflow-y-auto bg-canvas px-12 pt-28 pb-16 text-ink select-none">
-      {/* Top Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 border-b border-edge/60 pb-8">
-        <div className="flex items-center gap-4">
-          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-accent/15 text-accent shadow-inner border border-accent/20">
-            <GraduationCap size={32} strokeWidth={2.2} />
+    <main className="edu-hub" aria-label={t("Education Hub")}>
+      {/* 1. Masthead matching Argus Sports Standard */}
+      <header className="edu-masthead">
+        <div>
+          <div className="edu-eyebrow">
+            <GraduationCap size={15} />
+            <span>ARGUS EDUCATION</span>
+            <span className="edu-eyebrow-badge">Open Masterclasses</span>
           </div>
-          <div>
-            <div className="flex items-center gap-3">
-              <h1 className="text-3xl font-bold tracking-tight text-ink">
-                {t("Education Hub")}
-              </h1>
-              <span className="rounded-full bg-accent/10 px-2.5 py-0.5 text-[11px] font-semibold text-accent border border-accent/20">
-                {t("Free & Open")}
-              </span>
-            </div>
-            <p className="text-[13.5px] text-ink-muted mt-1 max-w-2xl leading-relaxed">
-              {t("Democratizing education with high-yield medical, engineering, and competitive exam masterclasses.")}
-            </p>
-          </div>
+          <h1>{t("Knowledge without gates. Your curriculum.")}</h1>
+          <p>
+            {t(
+              "Democratizing education with clinical vignette simulations, high-yield university lecture series, and active recall spaced repetition.",
+            )}
+          </p>
         </div>
 
-        {/* Header Action Pills */}
-        <div className="flex items-center gap-2 flex-wrap">
-          <button
-            type="button"
-            onClick={() => setShowSimulator(true)}
-            className="flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-[13px] font-semibold text-white shadow-sm hover:bg-emerald-500 active:scale-[0.98] transition border border-emerald-500/30"
-            title="Open Interactive Clinical Case & Resident Emergency Simulator"
-          >
-            <Activity size={15} className="text-white" />
-            <span>{t("Clinical Case Simulator")}</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => {
-              // Priority 1: High-yield INICET vignettes if available across installed packs
-              const highYield = getInicetHighYieldQuestions();
-              if (highYield.length > 0) {
-                setActiveDrillQuestions(highYield);
-              } else {
-                // Priority 2: All imported questions
-                const allImported = getAllQuestions();
-                if (allImported.length > 0) {
-                  setActiveDrillQuestions(allImported);
-                } else {
-                  // Fallback: Starter pack
-                  setActiveDrillQuestions(CLINICAL_QBANK_STARTER);
-                }
-              }
-              setShowQBank(true);
-            }}
-            className="flex items-center gap-2 rounded-xl bg-accent px-4 py-2.5 text-[13px] font-semibold text-white shadow-sm hover:opacity-95 active:scale-[0.98] transition"
-            title="Open Clinical Vignette QBank Drill & Grand Test Simulation"
-          >
-            <Zap size={15} className="fill-white" />
-            <span>{t("Clinical QBank Drill")}</span>
-          </button>
-
+        {/* Action Dock */}
+        <div className="edu-actions-dock">
           <button
             type="button"
             onClick={() => setShowWateringDeck(true)}
             disabled={dueNotes.length === 0}
-            className="flex items-center gap-2 rounded-xl border border-edge bg-surface px-3.5 py-2.5 text-[12.5px] font-medium text-ink hover:bg-raised active:scale-[0.98] transition shadow-sm disabled:opacity-40"
-            title="Daily Active Recall Spaced Repetition Session"
+            className="edu-pill-button"
+            title={t("Daily Active Recall Spaced Repetition Session")}
           >
-            <Sparkles size={15} className="text-sky-400" />
+            <Sparkles size={15} className="text-accent" />
             <span>{t("Water the Tree")}</span>
             {dueNotes.length > 0 && (
-              <span className="flex h-4 min-w-4 items-center justify-center rounded-full bg-accent text-white px-1 text-[10px] font-black">
+              <span className="flex h-4 min-w-4 items-center justify-center rounded-full bg-accent text-canvas px-1.5 text-[10px] font-black">
                 {dueNotes.length}
               </span>
             )}
@@ -271,37 +246,79 @@ export function EducationView() {
 
           <button
             type="button"
-            onClick={() => setShowNotesDrawer(true)}
-            className="flex items-center gap-2 rounded-xl border border-edge bg-surface px-3.5 py-2.5 text-[12.5px] font-medium text-ink hover:bg-raised transition shadow-sm"
+            onClick={() => startQBankDrill(true)}
+            className="edu-pill-button primary"
+            title={t("Launch High-Yield Clinical Vignette QBank Drill")}
           >
-            <FileText size={15} className="text-ink-muted" />
-            <span>{t("My Study Notes")}</span>
-            {notes.length > 0 && (
-              <span className="flex h-4 min-w-4 items-center justify-center rounded-full bg-raised px-1 text-[10px] font-bold text-ink-muted">
-                {notes.length}
-              </span>
+            <Zap size={15} className="fill-canvas text-canvas" />
+            <span>{t("Clinical QBank Drill")}</span>
+          </button>
+
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() => setShowToolsMenu((v) => !v)}
+              className="edu-pill-button"
+              title={t("More Educational Tools")}
+              aria-expanded={showToolsMenu}
+            >
+              <SlidersHorizontal size={15} />
+              <span>{t("Tools")}</span>
+            </button>
+
+            {showToolsMenu && (
+              <div
+                className="absolute end-0 top-full mt-2 w-56 rounded-xl border border-edge bg-elevated/95 p-1.5 shadow-xl backdrop-blur-xl z-50 flex flex-col gap-0.5 animate-in fade-in slide-in-from-top-1 duration-150"
+                onMouseLeave={() => setShowToolsMenu(false)}
+              >
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowToolsMenu(false);
+                    setShowQBankManager(true);
+                  }}
+                  className="flex items-center gap-2.5 rounded-lg px-3 py-2 text-xs font-semibold text-ink hover:bg-raised transition text-start"
+                >
+                  <Database size={14} className="text-accent" />
+                  <span>{t("Manage QBank Packs")}</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowToolsMenu(false);
+                    globalFileInputRef.current?.click();
+                  }}
+                  className="flex items-center gap-2.5 rounded-lg px-3 py-2 text-xs font-semibold text-ink hover:bg-raised transition text-start"
+                >
+                  <Upload size={14} className="text-accent" />
+                  <span>{t("Import .json / .json.gz")}</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowToolsMenu(false);
+                    openSettings("library");
+                  }}
+                  className="flex items-center gap-2.5 rounded-lg px-3 py-2 text-xs font-semibold text-ink hover:bg-raised transition text-start"
+                >
+                  <FolderPlus size={14} className="text-ink-muted" />
+                  <span>{t("Scan Local Course")}</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowToolsMenu(false);
+                    openSettings("streaming");
+                  }}
+                  className="flex items-center gap-2.5 rounded-lg px-3 py-2 text-xs font-semibold text-ink hover:bg-raised transition text-start"
+                >
+                  <Rss size={14} className="text-ink-muted" />
+                  <span>{t("Configure Feeds")}</span>
+                </button>
+              </div>
             )}
-          </button>
+          </div>
 
-          <button
-            type="button"
-            onClick={() => setShowQBankManager(true)}
-            className="flex items-center gap-1.5 rounded-xl border border-edge bg-surface px-3 py-2.5 text-[12.5px] font-medium text-ink hover:bg-raised transition shadow-sm"
-            title="Manage packs, catalog downloads, and question authoring"
-          >
-            <Database size={15} className="text-ink-muted" />
-            <span>{t("QBank Packs")}</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => globalFileInputRef.current?.click()}
-            className="flex items-center gap-1.5 rounded-xl border border-edge bg-surface px-3 py-2.5 text-[12.5px] font-medium text-ink hover:bg-raised transition shadow-sm"
-            title="Import Educational JSON, JSONL, or .json.gz file directly into Argus"
-          >
-            <Upload size={15} className="text-emerald-500" />
-            <span>{t("Import .json / .json.gz")}</span>
-          </button>
           <input
             type="file"
             ref={globalFileInputRef}
@@ -309,352 +326,475 @@ export function EducationView() {
             onChange={handleGlobalFileUpload}
             className="hidden"
           />
+        </div>
+      </header>
 
+      {/* 2. Sleek Segmented Sub-Nav Tabs */}
+      <nav className="edu-view-tabs" aria-label={t("Education sub-navigation")}>
+        {[
+          ["courses", "Courses & Catalogs"],
+          ["qbank", "Clinical QBank & Vault"],
+          ["simulator", "Emergency Simulator"],
+          ["notes", "Study Deck & Notes"],
+        ].map(([key, label]) => (
           <button
-            type="button"
-            onClick={() => openSettings("library")}
-            className="flex items-center gap-1.5 rounded-xl border border-edge bg-surface px-3 py-2.5 text-[12.5px] font-medium text-ink hover:bg-raised transition shadow-sm"
+            key={key}
+            aria-pressed={tab === key}
+            onClick={() => setTab(key as typeof tab)}
           >
-            <FolderPlus size={15} className="text-ink-muted" />
-            <span>{t("Scan Local Course")}</span>
+            {t(label)}
           </button>
+        ))}
+      </nav>
 
+      {/* Import Notification Banner */}
+      {importNotice && (
+        <div className="mx-10 mb-6 flex items-center justify-between gap-3 rounded-2xl p-4 text-xs font-medium border shadow-lg bg-surface/90 border-edge backdrop-blur-md">
+          <div className="flex items-center gap-2.5">
+            {importNotice.success ? (
+              <Check size={16} className="text-accent" />
+            ) : (
+              <AlertCircle size={16} className="text-danger" />
+            )}
+            <span className="text-[13px] text-ink">{importNotice.message}</span>
+          </div>
           <button
             type="button"
-            onClick={() => openSettings("streaming")}
-            className="flex items-center gap-1.5 rounded-xl border border-edge bg-surface px-3 py-2.5 text-[12.5px] font-medium text-ink hover:bg-raised transition shadow-sm"
+            onClick={() => setImportNotice(null)}
+            className="rounded-lg p-1 text-ink-subtle hover:text-ink transition"
           >
-            <Rss size={15} className="text-ink-muted" />
-            <span>{t("Feeds")}</span>
+            ✕
           </button>
         </div>
-      </div>
+      )}
 
-      {/* Main Body */}
-      <div className="mt-8 flex flex-col gap-10">
-        {importNotice && (
-          <div
-            className={`flex items-center justify-between gap-3 rounded-2xl p-4 text-xs font-medium border shadow-lg animate-in fade-in slide-in-from-top-2 duration-200 ${
-              importNotice.success
-                ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
-                : "bg-rose-500/10 text-rose-400 border-rose-500/30"
-            }`}
-          >
-            <div className="flex items-center gap-2.5">
-              {importNotice.success ? <Check size={16} /> : <AlertCircle size={16} />}
-              <span className="text-[13px]">{importNotice.message}</span>
-            </div>
-            <button
-              type="button"
-              onClick={() => setImportNotice(null)}
-              className="rounded-lg p-1 text-ink-subtle hover:text-ink transition"
-            >
-              ✕
-            </button>
-          </div>
-        )}
-
-        {/* QBank Pack Manager Modal */}
-        {showQBankManager && (
-          <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/75 backdrop-blur-md p-4">
-            <QBankManager
-              onStartPackDrill={(pack, filterLevel) => {
-                let qs = pack.questions;
-                if (filterLevel === "high-yield") {
-                  qs = pack.questions.filter(
-                    (q) => q.depthLevel === "L3_MultiStepClinical" || q.depthLevel === "L4_InicetTrap",
-                  );
-                  if (qs.length === 0) qs = pack.questions;
-                }
-                setActiveDrillQuestions(qs);
-                setShowQBankManager(false);
-                setShowQBank(true);
-              }}
-              onClose={() => setShowQBankManager(false)}
-            />
-          </div>
-        )}
-
-        {/* Clinical QBank Drill Modal / Overlay */}
-        {showQBank && (
-          <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/75 backdrop-blur-md p-4">
-            <QBankRunner
-              questions={activeDrillQuestions}
-              onClose={() => {
-                setShowQBank(false);
-                setActiveDrillQuestions(undefined);
-              }}
-            />
-          </div>
-        )}
-
-        {/* INICET 7-Day Sprint War Room Banner */}
-        <InicetWarRoomBanner />
-
-        {/* Daily Watering Flashcard Deck (Modal or Expanded View) */}
-        {showWateringDeck && (
-          <DailyWateringDeck
-            notes={notes}
-            onClose={() => setShowWateringDeck(false)}
-          />
-        )}
-        {/* Section 1: Local Course Folders */}
-        {localCourseFolders.length > 0 && (
-          <section className="flex flex-col gap-4">
-            <div>
-              <h2 className="text-xl font-bold tracking-tight text-ink flex items-center gap-2.5">
-                <BookOpen size={20} className="text-accent" />
-                <span>{t("My Local Courses")}</span>
-              </h2>
-              <p className="text-[12.5px] text-ink-muted mt-0.5">
-                {t("Sequential video lecture libraries scanned from your local drives.")}
-              </p>
-            </div>
-
-            <div className="-mx-2">
-              <Row min={260} shape="landscape" alwaysActive scrollKey="education:local">
-                {localCourseFolders.map((course) => {
-                  const firstLesson = course.lessons[0];
-                  const isShared = !!sharedTokens[course.folder];
-                  const isCopied = copiedShareFolder === course.folder;
-
-                  return (
-                    <div
-                      key={course.folder}
-                      className="group/card relative aspect-[16/9] w-full cursor-pointer overflow-hidden rounded-2xl border border-edge-soft bg-surface/70 p-5 shadow-sm transition-[border-color,transform] duration-300 hover:-translate-y-1 hover:border-edge flex flex-col justify-between"
-                    >
-                      <div>
-                        <div className="flex items-start justify-between gap-2">
-                          <h3 className="text-[15px] font-bold text-ink line-clamp-1">{course.title}</h3>
-                          <span className="rounded-full bg-accent/15 px-2 py-0.5 text-[10px] font-semibold text-accent shrink-0">
-                            {course.lessons.length} {t("lessons")}
-                          </span>
-                        </div>
-                        <p className="text-[11.5px] font-mono text-ink-subtle truncate mt-1">
-                          {course.folder}
-                        </p>
-                      </div>
-
-                      <div className="flex items-center justify-between pt-3 border-t border-edge-soft/60">
-                        <button
-                          type="button"
-                          onClick={() => firstLesson && openPlayer(localPlayerSrc(firstLesson))}
-                          className="flex items-center gap-1.5 rounded-xl bg-accent px-3 py-1.5 text-[12px] font-semibold text-white shadow-sm hover:opacity-90 transition"
-                        >
-                          <Play size={13} fill="currentColor" />
-                          <span>{t("Resume Course")}</span>
-                        </button>
-
-                        <button
-                          type="button"
-                          onClick={() => handleToggleShare(course.folder, course.title)}
-                          className={`flex items-center gap-1.5 rounded-xl px-2.5 py-1.5 text-[11.5px] font-medium transition ${
-                            isCopied
-                              ? "bg-emerald-500/15 text-emerald-500"
-                              : isShared
-                              ? "bg-surface border border-edge text-ink"
-                              : "text-ink-muted hover:bg-surface hover:text-ink"
-                          }`}
-                          title={t("Stream over LAN to Stremio or TV")}
-                        >
-                          {isCopied ? <Check size={13} /> : <Share2 size={13} />}
-                          <span>{isCopied ? t("Copied!") : isShared ? t("Copy Feed") : t("Share LAN")}</span>
-                        </button>
-                      </div>
-                    </div>
-                  );
-                })}
-              </Row>
-            </div>
-          </section>
-        )}
-
-        {/* Section 2: Subscribed Feeds */}
-        {subscribedFeeds.length > 0 && (
-          <section className="flex flex-col gap-4">
-            <div>
-              <h2 className="text-xl font-bold tracking-tight text-ink flex items-center gap-2.5">
-                <Rss size={20} className="text-amber-500" />
-                <span>{t("Subscribed Channels & Playlists")}</span>
-              </h2>
-              <p className="text-[12.5px] text-ink-muted mt-0.5">
-                {t("RSS feeds and YouTube playlist feeds synced into your player.")}
-              </p>
-            </div>
-
-            <div className="-mx-2">
-              <Row min={240} shape="landscape" alwaysActive scrollKey="education:feeds">
-                {subscribedFeeds.map((feed) => (
-                  <div
-                    key={feed.id}
-                    onClick={() => openSettings("streaming")}
-                    className="group/card relative aspect-[16/9] w-full cursor-pointer overflow-hidden rounded-2xl border border-edge-soft bg-surface/70 p-5 shadow-sm transition-[border-color,transform] duration-300 hover:-translate-y-1 hover:border-edge flex flex-col justify-between"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-500/15 text-amber-500 border border-amber-500/20">
-                        <Rss size={18} />
-                      </div>
-                      <div className="min-w-0">
-                        <h4 className="text-[14px] font-bold text-ink truncate">{feed.name}</h4>
-                        <p className="text-[11px] font-mono text-ink-subtle truncate max-w-[180px]">{feed.url}</p>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center justify-between pt-3 border-t border-edge-soft/60 text-xs text-ink-muted group-hover/card:text-ink">
-                      <span>{t("Configure in Streaming Settings")}</span>
-                      <ExternalLink size={14} className="text-ink-subtle shrink-0" />
-                    </div>
+      {/* Main Tab Content */}
+      <div className="edu-body">
+        {/* TAB 1: COURSES & CATALOGS */}
+        {tab === "courses" && (
+          <>
+            {/* Section 1: Local Scanned Courses */}
+            {localCourseFolders.length > 0 && (
+              <section className="flex flex-col gap-3">
+                <div className="edu-section-head">
+                  <div>
+                    <h2>
+                      <BookOpen size={20} className="text-accent" />
+                      <span>{t("My Local Courses")}</span>
+                    </h2>
+                    <p>{t("Sequential video lecture libraries indexed from your local drives.")}</p>
                   </div>
-                ))}
-              </Row>
-            </div>
-          </section>
-        )}
+                </div>
 
-        {/* Section 3: Curated Open Courses Catalog */}
-        <section className="flex flex-col gap-5 pb-16">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <div>
-              <h2 className="text-xl font-bold text-ink tracking-tight flex items-center gap-2.5">
-                <GraduationCap size={22} className="text-accent" />
-                <span>{t("Curated Coaching-Alternative Catalogs")}</span>
-              </h2>
-              <p className="text-[12.5px] text-ink-muted mt-0.5">
-                {t("Comprehensive courses from world-class universities and open medical faculties.")}
-              </p>
-            </div>
+                <div className="-mx-2">
+                  <Row min={270} shape="landscape" alwaysActive scrollKey="education:local">
+                    {localCourseFolders.map((course) => {
+                      const firstLesson = course.lessons[0];
+                      const isShared = !!sharedTokens[course.folder];
+                      const isCopied = copiedShareFolder === course.folder;
 
-            {/* Filter Pills & Search */}
-            <div className="flex items-center gap-3 flex-wrap">
-              <div className="relative">
-                <Search size={14} className="absolute start-3 top-2.5 text-ink-subtle" />
-                <input
-                  type="text"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder={t("Filter by subject or topic…")}
-                  className="rounded-xl border border-edge-soft bg-surface/80 ps-8 pe-3 py-1.5 text-[12.5px] text-ink placeholder:text-ink-subtle outline-none focus:border-accent"
-                />
-              </div>
+                      return (
+                        <div
+                          key={course.folder}
+                          className="edu-course-card group/card flex flex-col justify-between p-5"
+                        >
+                          <div>
+                            <div className="flex items-start justify-between gap-2">
+                              <h3 className="text-[15px] font-bold text-ink line-clamp-1">{course.title}</h3>
+                              <span className="rounded-full bg-accent-soft px-2.5 py-0.5 text-[10.5px] font-bold text-accent shrink-0">
+                                {course.lessons.length} {t("lessons")}
+                              </span>
+                            </div>
+                            <p className="text-[11.5px] font-mono text-ink-subtle truncate mt-1">
+                              {course.folder}
+                            </p>
+                          </div>
 
-              <div className="flex items-center rounded-xl border border-edge-soft bg-surface/60 p-1 gap-1">
-                {(
-                  [
-                    { id: "all", label: t("All") },
-                    { id: "medical", label: t("Medical (NEET-PG/MBBS)") },
-                    { id: "engineering", label: t("Engineering & CS") },
-                    { id: "science", label: t("Sciences") },
-                    { id: "humanities", label: t("Civil Services") },
-                  ] as const
-                ).map((cat) => (
-                  <button
-                    key={cat.id}
-                    type="button"
-                    onClick={() => setActiveCategory(cat.id)}
-                    className={`rounded-lg px-2.5 py-1 text-[11.5px] font-medium transition ${
-                      activeCategory === cat.id
-                        ? "bg-accent text-white shadow-sm"
-                        : "text-ink-muted hover:text-ink hover:bg-raised"
-                    }`}
-                  >
-                    {cat.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          {/* Native Row Horizontal Carousel for Curated Courses */}
-          <div className="-mx-2">
-            <Row
-              min={280}
-              shape="landscape"
-              alwaysActive
-              scrollKey={`education:courses:${activeCategory}`}
-            >
-              {filteredCurated.map((course) => {
-                const isSubscribed = (settings.videoFeeds || []).some((f) => f.url === course.feedUrl);
-
-                return (
-                  <div
-                    key={course.id}
-                    className="group/card relative aspect-[16/9] w-full cursor-pointer overflow-hidden rounded-2xl border border-edge-soft text-start shadow-[0_4px_18px_-10px_rgba(0,0,0,0.5)] ring-1 ring-inset ring-white/0 transition-[border-color,transform] duration-300 hover:-translate-y-1 hover:border-edge hover:ring-white/15"
-                  >
-                    <img
-                      src={course.thumbnail}
-                      alt={course.title}
-                      loading="lazy"
-                      draggable={false}
-                      className="absolute inset-0 h-full w-full object-cover transition duration-500 group-hover/card:scale-105"
-                    />
-                    <div
-                      aria-hidden
-                      className="absolute inset-0 bg-black/30 transition-colors duration-300 group-hover/card:bg-black/10"
-                    />
-                    <div
-                      aria-hidden
-                      className="absolute inset-0 bg-gradient-to-t from-black/92 via-black/45 to-transparent"
-                    />
-
-                    {/* Top Badges */}
-                    <span className="absolute start-3.5 top-3 inline-flex items-center gap-1.5 rounded-full bg-black/50 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.14em] text-white/90 backdrop-blur-md">
-                      <Layers size={11} strokeWidth={2.4} />
-                      <span>{course.provider}</span>
-                    </span>
-
-                    {course.totalLessons && (
-                      <span className="absolute end-3.5 top-3 inline-flex items-center gap-1 rounded-full bg-accent/90 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-white backdrop-blur-md">
-                        {course.totalLessons} {t("Lectures")}
-                      </span>
-                    )}
-
-                    {/* Bottom Metadata & Subscribe Button */}
-                    <div className="absolute inset-x-0 bottom-0 p-4 flex flex-col gap-1.5">
-                      <h3 className="text-[14.5px] font-bold text-white line-clamp-1 leading-snug drop-shadow-md">
-                        {course.title}
-                      </h3>
-                      <p className="text-[12px] text-white/70 line-clamp-2 leading-relaxed drop-shadow">
-                        {course.description}
-                      </p>
-
-                      <div className="mt-2 flex items-center justify-between pt-2 border-t border-white/10">
-                        <div className="flex items-center gap-1.5">
-                          {course.tags.slice(0, 2).map((tag) => (
-                            <span
-                              key={tag}
-                              className="rounded-md bg-white/10 px-2 py-0.5 text-[10px] font-medium text-white/80 backdrop-blur-sm"
+                          <div className="flex items-center justify-between pt-3 border-t border-edge-soft">
+                            <button
+                              type="button"
+                              onClick={() => firstLesson && openPlayer(localPlayerSrc(firstLesson))}
+                              className="flex items-center gap-1.5 rounded-xl bg-accent px-3 py-1.5 text-[12px] font-semibold text-canvas hover:brightness-110 transition shadow-sm"
                             >
-                              #{tag}
-                            </span>
-                          ))}
+                              <Play size={13} fill="currentColor" />
+                              <span>{t("Resume Course")}</span>
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => handleToggleShare(course.folder, course.title)}
+                              className={`flex items-center gap-1.5 rounded-xl px-2.5 py-1.5 text-[11.5px] font-medium transition ${
+                                isCopied
+                                  ? "bg-accent-soft text-accent font-semibold"
+                                  : isShared
+                                  ? "bg-surface border border-edge text-ink"
+                                  : "text-ink-muted hover:bg-surface hover:text-ink"
+                              }`}
+                              title={t("Stream over LAN to Stremio or TV")}
+                            >
+                              {isCopied ? <Check size={13} /> : <Share2 size={13} />}
+                              <span>{isCopied ? t("Copied!") : isShared ? t("Copy Feed") : t("Share LAN")}</span>
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </Row>
+                </div>
+              </section>
+            )}
+
+            {/* Section 2: Subscribed Feeds */}
+            {subscribedFeeds.length > 0 && (
+              <section className="flex flex-col gap-3">
+                <div className="edu-section-head">
+                  <div>
+                    <h2>
+                      <Rss size={20} className="text-accent" />
+                      <span>{t("Subscribed Channels & Playlists")}</span>
+                    </h2>
+                    <p>{t("RSS feeds and YouTube playlist feeds synced into your player.")}</p>
+                  </div>
+                </div>
+
+                <div className="-mx-2">
+                  <Row min={250} shape="landscape" alwaysActive scrollKey="education:feeds">
+                    {subscribedFeeds.map((feed) => (
+                      <div
+                        key={feed.id}
+                        onClick={() => openSettings("streaming")}
+                        className="edu-course-card group/card flex flex-col justify-between p-5"
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-accent-soft text-accent border border-accent/20 shrink-0">
+                            <Rss size={18} />
+                          </div>
+                          <div className="min-w-0">
+                            <h4 className="text-[14px] font-bold text-ink truncate">{feed.name}</h4>
+                            <p className="text-[11px] font-mono text-ink-subtle truncate max-w-[180px]">{feed.url}</p>
+                          </div>
                         </div>
 
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleSubscribeFeed(course);
-                          }}
-                          className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-[11px] font-semibold transition ${
-                            isSubscribed
-                              ? "bg-white/20 text-white backdrop-blur-md"
-                              : "bg-accent hover:opacity-90 text-white shadow-sm"
-                          }`}
-                        >
-                          <Rss size={12} />
-                          <span>{isSubscribed ? t("Subscribed") : t("Add to Library")}</span>
-                        </button>
+                        <div className="flex items-center justify-between pt-3 border-t border-edge-soft text-xs text-ink-muted group-hover/card:text-ink">
+                          <span>{t("Configure in Streaming Settings")}</span>
+                          <ExternalLink size={14} className="text-ink-subtle shrink-0" />
+                        </div>
                       </div>
-                    </div>
+                    ))}
+                  </Row>
+                </div>
+              </section>
+            )}
+
+            {/* Section 3: Curated Open Courses Catalog */}
+            <section className="flex flex-col gap-4">
+              <div className="edu-section-head flex-col md:flex-row md:items-center">
+                <div>
+                  <h2>
+                    <GraduationCap size={22} className="text-accent" />
+                    <span>{t("Curated University & Faculty Series")}</span>
+                  </h2>
+                  <p>{t("Comprehensive masterclasses from open universities and medical faculties.")}</p>
+                </div>
+
+                {/* Filter Pills & Search */}
+                <div className="flex items-center gap-3 flex-wrap">
+                  <div className="relative">
+                    <Search size={14} className="absolute start-3 top-2.5 text-ink-subtle" />
+                    <input
+                      type="text"
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      placeholder={t("Filter by topic or university…")}
+                      className="rounded-xl border border-edge bg-surface/80 ps-8 pe-3 py-1.5 text-[12.5px] text-ink placeholder:text-ink-subtle outline-none focus:border-accent"
+                    />
                   </div>
-                );
-              })}
-            </Row>
+
+                  <div className="flex items-center rounded-xl border border-edge-soft bg-surface/60 p-1 gap-1">
+                    {(
+                      [
+                        { id: "all", label: t("All") },
+                        { id: "medical", label: t("Medical (NEET-PG/MBBS)") },
+                        { id: "engineering", label: t("Engineering & CS") },
+                        { id: "science", label: t("Sciences") },
+                        { id: "humanities", label: t("Civil Services") },
+                      ] as const
+                    ).map((cat) => (
+                      <button
+                        key={cat.id}
+                        type="button"
+                        onClick={() => setActiveCategory(cat.id)}
+                        className={`rounded-lg px-2.5 py-1 text-[11.5px] font-semibold transition ${
+                          activeCategory === cat.id
+                            ? "bg-accent text-canvas shadow-sm"
+                            : "text-ink-muted hover:text-ink hover:bg-raised"
+                        }`}
+                      >
+                        {cat.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* Course Cards Carousel */}
+              <div className="-mx-2">
+                <Row
+                  min={290}
+                  shape="landscape"
+                  alwaysActive
+                  scrollKey={`education:courses:${activeCategory}`}
+                >
+                  {filteredCurated.map((course) => {
+                    const isSubscribed = (settings.videoFeeds || []).some((f) => f.url === course.feedUrl);
+
+                    return (
+                      <div
+                        key={course.id}
+                        className="edu-course-card group/card"
+                      >
+                        <img
+                          src={course.thumbnail}
+                          alt={course.title}
+                          loading="lazy"
+                          draggable={false}
+                          className="absolute inset-0 h-full w-full object-cover transition duration-500 group-hover/card:scale-105"
+                        />
+                        <div className="edu-card-overlay">
+                          {/* Top Badges */}
+                          <div className="absolute start-3.5 top-3.5 flex items-center gap-1.5">
+                            <span className="edu-card-badge">
+                              <Layers size={11} strokeWidth={2.4} />
+                              <span>{course.provider}</span>
+                            </span>
+                            {course.totalLessons && (
+                              <span className="edu-card-badge text-accent border-accent/25">
+                                {course.totalLessons} {t("Lectures")}
+                              </span>
+                            )}
+                          </div>
+
+                          <h3 className="text-[14.5px] font-bold text-white line-clamp-1 leading-snug drop-shadow-md">
+                            {course.title}
+                          </h3>
+                          <p className="text-[12px] text-white/70 line-clamp-2 leading-relaxed drop-shadow">
+                            {course.description}
+                          </p>
+
+                          <div className="mt-2 flex items-center justify-between pt-2 border-t border-white/10">
+                            <div className="flex items-center gap-1.5">
+                              {course.tags.slice(0, 2).map((tag) => (
+                                <span
+                                  key={tag}
+                                  className="rounded-md bg-white/10 px-2 py-0.5 text-[10px] font-medium text-white/80 backdrop-blur-sm"
+                                >
+                                  #{tag}
+                                </span>
+                              ))}
+                            </div>
+
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleSubscribeFeed(course);
+                              }}
+                              className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-[11px] font-semibold transition ${
+                                isSubscribed
+                                  ? "bg-white/20 text-white backdrop-blur-md"
+                                  : "bg-accent hover:brightness-110 text-canvas shadow-sm"
+                              }`}
+                            >
+                              <Rss size={12} />
+                              <span>{isSubscribed ? t("Subscribed") : t("Add to Library")}</span>
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </Row>
+              </div>
+            </section>
+          </>
+        )}
+
+        {/* TAB 2: CLINICAL QBANK & VAULT */}
+        {tab === "qbank" && (
+          <div className="flex flex-col gap-6">
+            <InicetWarRoomBanner />
+
+            {/* QBank Launch Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+              <div className="p-6 rounded-2xl bg-surface/70 border border-edge-soft flex flex-col justify-between gap-4">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-accent-soft text-accent border border-accent/25 shrink-0">
+                    <Flame size={20} />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-bold text-ink">INICET High-Yield Drill</h3>
+                    <p className="text-xs text-ink-muted">Examiner trap questions & multi-step clinical vignettes</p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => startQBankDrill(true)}
+                  className="edu-pill-button primary w-full justify-center"
+                >
+                  <Zap size={14} className="fill-canvas text-canvas" />
+                  <span>Start High-Yield Sprint</span>
+                </button>
+              </div>
+
+              <div className="p-6 rounded-2xl bg-surface/70 border border-edge-soft flex flex-col justify-between gap-4">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-accent-soft text-accent border border-accent/25 shrink-0">
+                    <Database size={20} />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-bold text-ink">Complete Question Bank</h3>
+                    <p className="text-xs text-ink-muted">All installed packs across Medicine, Surgery, OBG & Pedia</p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => startQBankDrill(false)}
+                  className="edu-pill-button w-full justify-center"
+                >
+                  <Play size={14} />
+                  <span>Drill All Questions</span>
+                </button>
+              </div>
+
+              <div className="p-6 rounded-2xl bg-surface/70 border border-edge-soft flex flex-col justify-between gap-4">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-accent-soft text-accent border border-accent/25 shrink-0">
+                    <SlidersHorizontal size={20} />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-bold text-ink">Manage QBank Packs</h3>
+                    <p className="text-xs text-ink-muted">Import, export, and review installed specialty packs</p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowQBankManager(true)}
+                  className="edu-pill-button w-full justify-center"
+                >
+                  <Database size={14} />
+                  <span>Open Pack Manager</span>
+                </button>
+              </div>
+            </div>
           </div>
-        </section>
+        )}
+
+        {/* TAB 3: CLINICAL EMERGENCY SIMULATOR */}
+        {tab === "simulator" && (
+          <div className="edu-hero-spotlight">
+            <div className="flex flex-col gap-3 max-w-xl">
+              <div className="inline-flex items-center gap-2 rounded-full bg-accent-soft px-3 py-1 text-xs font-bold text-accent border border-accent/20 w-max">
+                <Stethoscope size={14} />
+                <span>Resident Emergency Department</span>
+              </div>
+              <h2 className="text-2xl font-bold text-ink tracking-tight">
+                Interactive Patient Case & ER Resident Simulator
+              </h2>
+              <p className="text-sm text-ink-muted leading-relaxed">
+                Step into the shoes of an on-call emergency physician. Manage acute coronary syndromes, anaphylactic shock, septicemia, and traumatic head injuries under real-time hemodynamic monitoring and diagnostic investigations.
+              </p>
+              <div className="pt-2">
+                <button
+                  type="button"
+                  onClick={() => setShowSimulator(true)}
+                  className="edu-pill-button primary"
+                >
+                  <Activity size={16} />
+                  <span>Launch Emergency Case Simulator</span>
+                </button>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-center p-6 rounded-2xl bg-elevated/60 border border-edge shrink-0">
+              <BrainCircuit size={64} className="text-accent opacity-80" />
+            </div>
+          </div>
+        )}
+
+        {/* TAB 4: STUDY DECK & NOTES */}
+        {tab === "notes" && (
+          <div className="flex flex-col gap-6">
+            <div className="edu-hero-spotlight">
+              <div className="flex flex-col gap-2">
+                <h3 className="text-xl font-bold text-ink">Spaced Repetition Flashcard Engine</h3>
+                <p className="text-xs text-ink-muted max-w-lg">
+                  Every note captured while watching lectures (press &apos;N&apos; during playback) enters your daily spaced repetition watering queue.
+                </p>
+              </div>
+              <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => setShowWateringDeck(true)}
+                  disabled={dueNotes.length === 0}
+                  className="edu-pill-button primary"
+                >
+                  <Sparkles size={14} />
+                  <span>Water Daily Cards ({dueNotes.length} Due)</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowNotesDrawer(true)}
+                  className="edu-pill-button"
+                >
+                  <FileText size={14} />
+                  <span>Browse All Notes ({notes.length})</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
-      {/* Study Notes Slide-over Drawer */}
+      {/* Modals & Overlays */}
+      {showQBankManager && (
+        <div className="fixed inset-0 z-[120] flex items-center justify-center bg-canvas/80 backdrop-blur-md p-4">
+          <QBankManager
+            onStartPackDrill={(pack, filterLevel) => {
+              let qs = pack.questions;
+              if (filterLevel === "high-yield") {
+                qs = pack.questions.filter(
+                  (q) => q.depthLevel === "L3_MultiStepClinical" || q.depthLevel === "L4_InicetTrap",
+                );
+                if (qs.length === 0) qs = pack.questions;
+              }
+              setActiveDrillQuestions(qs);
+              setShowQBankManager(false);
+              setShowQBank(true);
+            }}
+            onClose={() => setShowQBankManager(false)}
+          />
+        </div>
+      )}
+
+      {showQBank && (
+        <div className="fixed inset-0 z-[120] flex items-center justify-center bg-canvas/80 backdrop-blur-md p-4">
+          <QBankRunner
+            questions={activeDrillQuestions}
+            onClose={() => {
+              setShowQBank(false);
+              setActiveDrillQuestions(undefined);
+            }}
+          />
+        </div>
+      )}
+
+      {showWateringDeck && (
+        <DailyWateringDeck
+          notes={notes}
+          onClose={() => setShowWateringDeck(false)}
+        />
+      )}
+
       {showNotesDrawer && (
         <NotesDrawer
           notes={notes}
@@ -662,11 +802,10 @@ export function EducationView() {
         />
       )}
 
-      {/* Patient Case / Resident Doctor Simulator Overlay */}
       {showSimulator && (
         <PatientCaseSimulator onClose={() => setShowSimulator(false)} />
       )}
-    </div>
+    </main>
   );
 }
 
@@ -721,10 +860,10 @@ function NotesDrawer({
           message: res.error || "Failed to import JSON file.",
         });
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       setDrawerNotice({
         success: false,
-        message: err?.message || "File processing error.",
+        message: err instanceof Error ? err.message : "File processing error.",
       });
     }
 
@@ -746,43 +885,39 @@ function NotesDrawer({
   };
 
   return (
-    <div className="fixed inset-0 z-[110] flex justify-end bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="relative flex h-full w-full max-w-[480px] flex-col bg-surface shadow-2xl border-s border-edge">
+    <div className="fixed inset-0 z-[100] flex justify-end bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+      <div className="relative flex h-full w-full max-w-md flex-col bg-surface border-s border-edge shadow-2xl animate-in slide-in-from-end duration-300">
         {/* Drawer Header */}
-        <div className="flex items-center justify-between border-b border-edge/60 px-6 py-4">
-          <div className="flex items-center gap-2.5">
-            <GraduationCap size={20} className="text-accent" />
-            <h2 className="text-[16px] font-semibold text-ink">{t("Study Notes & Revisions")}</h2>
-          </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className="rounded-lg p-1.5 text-ink-subtle hover:bg-raised hover:text-ink transition"
-          >
-            ✕
-          </button>
-        </div>
-
-        {/* Drawer Actions */}
-        <div className="flex flex-col gap-2 bg-canvas/40 px-6 py-3 border-b border-edge/40">
+        <div className="flex flex-col gap-3 p-6 border-b border-edge">
           <div className="flex items-center justify-between">
-            <span className="text-[12px] text-ink-muted">
-              {notes.length} {t("saved note timestamps")}
-            </span>
             <div className="flex items-center gap-2">
+              <FileText size={18} className="text-accent" />
+              <h3 className="text-base font-bold text-ink">{t("Captured Study Notes")}</h3>
+            </div>
+            <button
+              type="button"
+              onClick={onClose}
+              className="rounded-lg p-1 text-ink-subtle hover:text-ink hover:bg-raised transition"
+            >
+              ✕
+            </button>
+          </div>
+
+          <div className="flex items-center justify-between pt-1">
+            <div className="flex items-center gap-1.5">
               <button
                 type="button"
                 onClick={() => drawerFileInputRef.current?.click()}
-                className="flex items-center gap-1 text-[11.5px] font-medium text-emerald-400 hover:underline"
-                title="Import Notes or Cards from JSON, JSONL, or .json.gz"
+                className="flex items-center gap-1 text-[11.5px] font-medium text-ink-muted hover:text-ink px-2 py-1 rounded bg-elevated border border-edge-soft"
+                title="Import notes or questions from JSON"
               >
                 <Upload size={12} />
-                <span>{t("Import JSON")}</span>
+                <span>{t("Import")}</span>
               </button>
               <input
                 type="file"
                 ref={drawerFileInputRef}
-                accept=".json,.jsonl,.gz,.txt"
+                accept=".json,.jsonl,.gz"
                 onChange={handleDrawerFileUpload}
                 className="hidden"
               />
@@ -791,21 +926,22 @@ function NotesDrawer({
                 type="button"
                 onClick={handleExportJson}
                 disabled={notes.length === 0}
-                className="flex items-center gap-1 text-[11.5px] font-medium text-sky-400 hover:underline disabled:opacity-40"
-                title="Export Notes as JSON"
+                className="flex items-center gap-1 text-[11.5px] font-medium text-ink-muted hover:text-ink px-2 py-1 rounded bg-elevated border border-edge-soft disabled:opacity-40"
               >
-                <Download size={12} />
-                <span>{downloadedJson ? t("Saved JSON!") : t("JSON")}</span>
+                {downloadedJson ? <Check size={12} /> : <FileText size={12} />}
+                <span>{downloadedJson ? t("Saved!") : t("JSON")}</span>
               </button>
+            </div>
+
+            <div className="flex items-center gap-3">
               <button
                 type="button"
                 onClick={handleExportAnki}
                 disabled={notes.length === 0}
-                className="flex items-center gap-1 text-[11.5px] font-medium text-amber-400 hover:underline disabled:opacity-40"
-                title="Export as native Anki-importable deck with Image Occlusion"
+                className="flex items-center gap-1 text-[11.5px] font-medium text-accent hover:underline disabled:opacity-40"
               >
-                {downloadedAnki ? <Check size={12} /> : <Download size={12} />}
-                <span>{downloadedAnki ? t("Saved Anki!") : t("Anki")}</span>
+                {downloadedAnki ? <Check size={12} /> : <FileText size={12} />}
+                <span>{downloadedAnki ? t("Downloaded Anki!") : t("Anki .tsv")}</span>
               </button>
               <button
                 type="button"
@@ -823,8 +959,8 @@ function NotesDrawer({
             <div
               className={`flex items-center gap-2 p-2 rounded-lg text-[11.5px] font-medium border ${
                 drawerNotice.success
-                  ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
-                  : "bg-rose-500/10 text-rose-400 border-rose-500/30"
+                  ? "bg-accent-soft text-accent border-accent/20"
+                  : "bg-danger/10 text-danger border-danger/20"
               }`}
             >
               {drawerNotice.success ? <Check size={13} /> : <AlertCircle size={13} />}
@@ -869,7 +1005,7 @@ function NotesDrawer({
                 </div>
 
                 {note.snapshotDataUrl && (
-                  <div className="overflow-hidden rounded-lg border border-edge/60 max-h-[120px] bg-black/40">
+                  <div className="overflow-hidden rounded-lg border border-edge/60 max-h-[120px] bg-canvas">
                     <img
                       src={note.snapshotDataUrl}
                       alt="Lecture snapshot"

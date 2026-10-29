@@ -1,0 +1,303 @@
+/* ==========================================================================
+   Education Hub - Argus Premier Design System
+   Matches the Sports & Movies gold standard: glassmorphism, semantic tokens,
+   refined typography, and responsive container layout.
+   ========================================================================== */
+
+.edu-hub {
+  flex: 1;
+  min-width: 0;
+  overflow: auto;
+  overflow-x: hidden;
+  background: var(--color-canvas);
+  color: var(--color-ink);
+  container-type: inline-size;
+  scroll-padding-top: 100px;
+  padding-bottom: var(--argus-dock-gap, 36px);
+  scroll-padding-bottom: var(--argus-dock-gap, 36px);
+}
+
+/* Masthead */
+.edu-masthead {
+  padding: 104px 40px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+}
+
+.edu-eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  color: var(--color-accent);
+  text-transform: uppercase;
+}
+
+.edu-eyebrow-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: var(--color-accent-soft);
+  color: var(--color-accent);
+  border: 1px solid color-mix(in srgb, var(--color-accent) 25%, transparent);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.edu-masthead h1 {
+  font-family: var(--font-display, "Inter", system-ui, sans-serif);
+  font-size: 30px;
+  line-height: 1.2;
+  font-weight: 650;
+  letter-spacing: -0.035em;
+  margin: 7px 0 0;
+  color: var(--color-ink);
+}
+
+.edu-masthead p {
+  font-size: 13.5px;
+  line-height: 1.6;
+  color: var(--color-ink-muted);
+  max-width: 620px;
+  margin-top: 5px;
+}
+
+.edu-actions-dock {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+/* Primary and secondary button pills */
+.edu-pill-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 40px;
+  padding: 0 16px;
+  border-radius: 12px;
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+  background: var(--color-elevated);
+  color: var(--color-ink);
+  border: 1px solid var(--color-edge-soft);
+  cursor: pointer;
+  transition: background 0.18s ease, transform 0.18s ease, border-color 0.18s ease;
+}
+
+.edu-pill-button:hover {
+  background: var(--color-raised);
+  border-color: var(--color-edge);
+}
+
+.edu-pill-button:active {
+  transform: scale(0.97);
+}
+
+.edu-pill-button.primary {
+  background: var(--color-accent);
+  color: var(--color-canvas);
+  border: 1px solid color-mix(in srgb, var(--color-accent) 30%, transparent);
+}
+
+.edu-pill-button.primary:hover {
+  filter: brightness(1.08);
+}
+
+/* Nav View Tabs */
+.edu-view-tabs {
+  display: flex;
+  align-items: center;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+  gap: 26px;
+  margin: 0 40px 24px;
+  border-bottom: 1px solid var(--color-edge-soft);
+}
+
+.edu-view-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.edu-view-tabs > button {
+  position: relative;
+  flex-shrink: 0;
+  padding: 14px 0 18px;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--color-ink-muted);
+  white-space: nowrap;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  transition: color 0.15s ease;
+}
+
+.edu-view-tabs > button:hover {
+  color: var(--color-ink);
+}
+
+.edu-view-tabs > button[aria-pressed="true"] {
+  color: var(--color-ink);
+}
+
+.edu-view-tabs > button[aria-pressed="true"]:after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: var(--color-accent);
+  border-radius: 3px;
+}
+
+.edu-body {
+  padding: 0 40px 36px;
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+
+/* Hero Spotlight Banner */
+.edu-hero-spotlight {
+  position: relative;
+  overflow: hidden;
+  border-radius: 18px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-edge-soft);
+  padding: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 28px;
+  box-shadow: 0 8px 24px -12px rgba(0, 0, 0, 0.4);
+}
+
+.edu-hero-spotlight:before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    ellipse at 90% 50%,
+    color-mix(in srgb, var(--color-accent) 12%, transparent),
+    transparent 65%
+  );
+  pointer-events: none;
+}
+
+/* Section Header */
+.edu-section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  margin-bottom: 16px;
+}
+
+.edu-section-head h2 {
+  font-family: var(--font-display, "Inter", system-ui, sans-serif);
+  font-size: 22px;
+  font-weight: 650;
+  letter-spacing: -0.025em;
+  color: var(--color-ink);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.edu-section-head p {
+  font-size: 13px;
+  color: var(--color-ink-muted);
+  margin-top: 4px;
+}
+
+/* Course Card (Standardized with Argus Video/Game Cards) */
+.edu-course-card {
+  position: relative;
+  aspect-ratio: 16 / 9;
+  width: 100%;
+  overflow: hidden;
+  border-radius: var(--poster-radius, 14px);
+  border: 1px solid var(--color-edge-soft);
+  background: var(--color-surface);
+  text-align: start;
+  cursor: pointer;
+  transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.edu-course-card:hover {
+  transform: translateY(-3px) scale(1.01);
+  border-color: var(--color-edge);
+  box-shadow: 0 12px 28px -10px rgba(0, 0, 0, 0.5);
+}
+
+.edu-card-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0.1) 0%, rgba(0, 0, 0, 0.6) 50%, rgba(0, 0, 0, 0.95) 100%);
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  padding: 16px;
+  gap: 6px;
+}
+
+.edu-card-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #fff;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+/* Responsive Container Adjustments */
+@container (max-width: 1000px) {
+  .edu-masthead {
+    padding-inline: 24px;
+  }
+  .edu-view-tabs {
+    margin-inline: 24px;
+  }
+  .edu-body {
+    padding-inline: 24px;
+  }
+}
+
+@container (max-width: 700px) {
+  .edu-masthead {
+    padding: 94px 20px 20px;
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .edu-view-tabs {
+    margin-inline: 20px;
+    gap: 18px;
+  }
+  .edu-body {
+    padding-inline: 20px;
+  }
+  .edu-hero-spotlight {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 22px;
+  }
+}
