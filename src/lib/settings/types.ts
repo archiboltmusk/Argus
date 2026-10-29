@@ -916,4 +916,16 @@ export type Settings = {
   cricketRadioSyncDelaySec: number;
   nightOwlDownloads: boolean;
   showIndiaOttBadges: boolean;
+  bengaliCinemaRails: boolean;
+  phoneticSearchEnabled: boolean;
+  regionalDialogueEq: boolean;
+  lanPeerShareEnabled: boolean;
+  adaptiveBufferPrefetch: boolean;
+  telegramRemoteEnabled: boolean;
+  telegramBotToken: string;
+  telegramChatId: string;
+  cricketLiveAlerts: boolean;
+  cricketDugoutMixer: boolean;
+  retroEmulatorEnabled: boolean;
+  batteryPowerSaveMode: boolean;
 };

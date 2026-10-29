@@ -4,7 +4,21 @@ import { useT } from "@/lib/i18n";
 import { Section, ToggleRow, Segmented, RowTitle, RowDesc } from "./shared";
 import { INDIAN_REGIONAL_LANGUAGES } from "@/lib/player/regional-audio-dub";
 import { getNightOwlWindowStatus } from "@/lib/downloads/night-owl";
-import { Smartphone, Radio, Moon, ShieldCheck, Languages } from "lucide-react";
+import {
+  Smartphone,
+  Radio,
+  Moon,
+  ShieldCheck,
+  Languages,
+  Film,
+  Search,
+  Wifi,
+  Bell,
+  BatteryCharging,
+  Gamepad2,
+  Sliders,
+  Send,
+} from "lucide-react";
 
 export function SettingsIndia() {
   const t = useT();
@@ -102,7 +116,45 @@ export function SettingsIndia() {
         />
       </Section>
 
-      {/* 3. Live Cricket Audio Commentary Sync */}
+      {/* 3. Bengal Cinema & Tollywood Detective Universe */}
+      <Section
+        title={t("Bengal & Regional Media Ecosystem")}
+        subtitle={t(
+          "Curation and phonetic intelligence tailored for Purulia, West Bengal, and Indian cinema fans.",
+        )}
+      >
+        <ToggleRow
+          label={t("Tollywood & Bengali Detective Universe Rails")}
+          sub={t(
+            "Surfaces curated Feluda, Byomkesh Bakshi, Satyajit Ray classics, and modern Hoichoi/SVF thrillers directly on Home and Movies views.",
+          )}
+          value={settings.bengaliCinemaRails}
+          onChange={(v) => update({ bengaliCinemaRails: v })}
+          leading={<Film size={18} />}
+        />
+
+        <ToggleRow
+          label={t("Bengali & Hindi Phonetic Transliteration Search")}
+          sub={t(
+            "Enables intelligent transliteration: searching Romanized titles ('Sonar Kella', 'Bhooter Bhabishyat') automatically resolves to native Bengali & Hindi titles.",
+          )}
+          value={settings.phoneticSearchEnabled}
+          onChange={(v) => update({ phoneticSearchEnabled: v })}
+          leading={<Search size={18} />}
+        />
+
+        <ToggleRow
+          label={t("Indian Cinema Dialogue Clarity EQ")}
+          sub={t(
+            "Custom 10-band DSP profile that amplifies center-channel speech frequencies while taming explosive bass rumbles and loud song interludes.",
+          )}
+          value={settings.regionalDialogueEq}
+          onChange={(v) => update({ regionalDialogueEq: v })}
+          leading={<Sliders size={18} />}
+        />
+      </Section>
+
+      {/* 4. Live Cricket Audio Commentary Sync & Dugout Mixer */}
       <Section
         title={t("Cricket Commentary & Radio Sync")}
         subtitle={t(
@@ -141,9 +193,67 @@ export function SettingsIndia() {
             ))}
           </div>
         </div>
+
+        <ToggleRow
+          label={t("Ball-by-Ball Live Desktop Alerts")}
+          sub={t(
+            "Dispatches lightweight native desktop toasts for wickets, sixes, fours, and centuries when Argus is minimized in the background.",
+          )}
+          value={settings.cricketLiveAlerts}
+          onChange={(v) => update({ cricketLiveAlerts: v })}
+          leading={<Bell size={18} />}
+        />
+
+        <ToggleRow
+          label={t("Dugout Dual-Audio Channel Mixer")}
+          sub={t(
+            "Preserves ambient stadium crowd noise while overlaying regional radio commentary with custom audio balance.",
+          )}
+          value={settings.cricketDugoutMixer}
+          onChange={(v) => update({ cricketDugoutMixer: v })}
+          leading={<Radio size={18} />}
+        />
       </Section>
 
-      {/* 4. Night-Owl 12 AM - 6 AM Free Unlimited Data Scheduler */}
+      {/* 5. Network Resilience & Campus Mesh */}
+      <Section
+        title={t("Network Resilience & LAN Peer Mesh")}
+        subtitle={t(
+          "Zero-data local network transfers and adaptive buffering for cell tower fluctuations.",
+        )}
+      >
+        <ToggleRow
+          label={t("Local LAN Peer-Share (Hostel / Campus Mesh)")}
+          sub={t(
+            "Streams or transfers downloaded game archives and 4K media across local Wi-Fi at 1 Gbps LAN speeds without consuming external ISP data.",
+          )}
+          value={settings.lanPeerShareEnabled}
+          onChange={(v) => update({ lanPeerShareEnabled: v })}
+          leading={<Wifi size={18} />}
+        />
+
+        <ToggleRow
+          label={t("Peak-Hour Cellular Traffic Prefetching")}
+          sub={t(
+            "Aggressively pre-buffers 3 to 5 minutes of stream data ahead during clean bursts between 7:00 PM and 11:00 PM IST to counter cell tower congestion.",
+          )}
+          value={settings.adaptiveBufferPrefetch}
+          onChange={(v) => update({ adaptiveBufferPrefetch: v })}
+          leading={<Smartphone size={18} />}
+        />
+
+        <ToggleRow
+          label={t("Telegram Remote Download Dispatcher")}
+          sub={t(
+            "Allows queueing downloads remotely by sending magnet or media links to your personal Telegram bot.",
+          )}
+          value={settings.telegramRemoteEnabled}
+          onChange={(v) => update({ telegramRemoteEnabled: v })}
+          leading={<Send size={18} />}
+        />
+      </Section>
+
+      {/* 6. Night-Owl 12 AM - 6 AM Free Unlimited Data Scheduler */}
       <Section
         title={t("Night-Owl Unlimited Data Scheduler")}
         subtitle={t(
@@ -171,7 +281,35 @@ export function SettingsIndia() {
         )}
       </Section>
 
-      {/* 5. Indian OTT Availability Badges */}
+      {/* 7. Gaming & Hardware Optimization */}
+      <Section
+        title={t("Gaming & Power Optimization")}
+        subtitle={t(
+          "Embedded retro emulation and battery management for MacBooks and handheld PCs.",
+        )}
+      >
+        <ToggleRow
+          label={t("Embedded WebAssembly Retro Gaming Engine")}
+          sub={t(
+            "Enables 1-click playable emulation for GBA, SNES, PS1, and PSP classics directly inside Argus with zero external emulator configuration.",
+          )}
+          value={settings.retroEmulatorEnabled}
+          onChange={(v) => update({ retroEmulatorEnabled: v })}
+          leading={<Gamepad2 size={18} />}
+        />
+
+        <ToggleRow
+          label={t("Battery & Thermal Power-Saver Optimizer")}
+          sub={t(
+            "Automatically switches to high-efficiency hardware decoding profiles and throttles heavy shaders when running on laptop battery power.",
+          )}
+          value={settings.batteryPowerSaveMode}
+          onChange={(v) => update({ batteryPowerSaveMode: v })}
+          leading={<BatteryCharging size={18} />}
+        />
+      </Section>
+
+      {/* 8. Indian OTT Availability Badges */}
       <Section
         title={t("Indian OTT Availability Badges")}
         subtitle={t(

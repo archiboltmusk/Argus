@@ -743,6 +743,18 @@ export const DEFAULT: Settings = {
   cricketRadioSyncDelaySec: 0,
   nightOwlDownloads: false,
   showIndiaOttBadges: true,
+  bengaliCinemaRails: true,
+  phoneticSearchEnabled: true,
+  regionalDialogueEq: false,
+  lanPeerShareEnabled: true,
+  adaptiveBufferPrefetch: true,
+  telegramRemoteEnabled: false,
+  telegramBotToken: "",
+  telegramChatId: "",
+  cricketLiveAlerts: true,
+  cricketDugoutMixer: true,
+  retroEmulatorEnabled: true,
+  batteryPowerSaveMode: true,
 };
 
 export function getSecondaryPrivileges(
