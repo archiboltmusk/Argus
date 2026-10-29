@@ -235,6 +235,18 @@ function checkOne(
     return `cinema-year-mismatch:${s.year}-vs-${opts.expectedYear}`;
   }
 
+  // Catalog Year Guard: Enforce strict year boundaries for all catalog movies.
+  // Eliminates wild scraper cross-matches like 2026 "O Romeo" or 1996 "Romeo + Juliet" when watching a 2011 film.
+  if (
+    strict &&
+    opts.kind === "movie" &&
+    opts.expectedYear != null &&
+    s.year != null &&
+    Math.abs(s.year - opts.expectedYear) > yearToleranceFor(opts.expectedYear)
+  ) {
+    return `catalog-year-mismatch:${s.year}-vs-${opts.expectedYear}`;
+  }
+
   if (strict && opts.kind === "movie" && opts.expectedTitle) {
     const expectedSeq = sequelMarker(opts.expectedTitle);
     if (expectedSeq != null && expectedSeq >= 2) {
@@ -364,6 +376,52 @@ const TITLE_STOPWORDS = new Set([
   "film",
 ]);
 
+const BENIGN_EXTRA_TOKENS = new Set([
+  "bengali",
+  "bangla",
+  "hindi",
+  "tamil",
+  "telugu",
+  "malayalam",
+  "kannada",
+  "marathi",
+  "punjabi",
+  "english",
+  "movie",
+  "film",
+  "cinema",
+  "theatrical",
+  "extended",
+  "unrated",
+  "remastered",
+  "original",
+  "proper",
+  "repack",
+  "bluray",
+  "webrip",
+  "webdl",
+  "dvdrip",
+  "vcdrip",
+  "hdrip",
+  "scamrip",
+  "hd",
+  "fhd",
+  "uhd",
+  "edition",
+  "cut",
+  "audio",
+  "dub",
+  "dubbed",
+  "full",
+  "part",
+  "hevc",
+  "x264",
+  "x265",
+  "aac",
+  "mp4",
+  "mkv",
+]);
+
 const NUM_TO_ROMAN: Record<number, string> = {
   2: "ii",
   3: "iii",
@@ -483,6 +541,19 @@ export function titleMatches(
   const reverseOverlap = countOverlap(parsedTokens, expectedSet);
   const expectedRatio = overlap / expectedTokens.length;
   const parsedRatio = reverseOverlap / parsedTokens.length;
+  // Single-word title strict guard (e.g. "Romeo", "Hero", "Ghost", "Boss", "Challenge"):
+  // When the expected title is a single word, any extra parsed tokens must strictly be
+  // format/language/release descriptors (e.g. "Bangla Movie", "Original DVD Rip", "WEB-DL").
+  // Unrelated titles like "Private Romeo", "Romeo and Juliet", "Romeo Akbar Walter" have foreign
+  // title nouns and MUST be rejected immediately.
+  if (expectedTokens.length === 1) {
+    const nonMatchingTokens = parsedTokens.filter((t) => !expectedSet.has(t));
+    const hasForeignTitleWords = nonMatchingTokens.some((t) => !BENIGN_EXTRA_TOKENS.has(t));
+    if (hasForeignTitleWords) {
+      return false;
+    }
+  }
+
   // Short-title guard: when the expected title is 1-2 tokens (e.g. "Obsession"),
   // a parsed file like "DBM OBSESSION - Viva Las Vegas" technically overlaps on
   // "obsession" but has 4+ extra tokens that don't belong. Reject those before

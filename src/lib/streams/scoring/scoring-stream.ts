@@ -332,6 +332,14 @@ export function scoreStream(
     reasons.push(recency);
   }
 
+  // Regional Bengali / Indian Language Fidelity Boost:
+  // When a stream title explicitly carries authentic regional tokens ("Bangla", "Bengali"):
+  const streamHaystack = `${s.parsedTitle ?? ""} ${s.title ?? ""} ${s.name ?? ""}`.toLowerCase();
+  if (/\b(?:bangla|bengali)\b/i.test(streamHaystack)) {
+    score += 180;
+    reasons.push({ signal: "bengali-audio-match", delta: 180 });
+  }
+
   // Same-Name & Same-Year Movie Disambiguation
   if (opts.canonicalTitle || opts.director) {
     const expectedYear = opts.releaseDate ? parseInt(opts.releaseDate.slice(0, 4), 10) : null;
