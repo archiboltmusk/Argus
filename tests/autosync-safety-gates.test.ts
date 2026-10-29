@@ -558,3 +558,14 @@ test("ASR language and ASS application paths are wired conservatively", () => {
   assert.doesNotMatch(driftPorts, /asr_confirm_window/);
   assert.doesNotMatch(hook, /enableAsr:/);
 });
+
+test("when input is already good, never-worse yields to already-good without false error", () => {
+  const result = decide({
+    inputAlreadyGood: true,
+    qualityBefore: quality(0.9),
+    qualityAfter: quality(0.91),
+  });
+  assert.equal(result.decision, "refuse");
+  assert.equal(result.bindingRule, "already-good");
+  assert.match(result.reason, /input already well aligned/);
+});

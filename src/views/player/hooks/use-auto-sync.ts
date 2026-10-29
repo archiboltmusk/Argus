@@ -291,6 +291,15 @@ export function useAutoSync(params: {
         `[auto-sync] decision=${dec} reason="${o.decision.reason}" tiers=[${o.tiersRun.join(",")}] bestEffort=${o.bestEffort ?? false}`,
       );
       if (dec === "refuse") {
+        if (
+          o.decision.bindingRule === "already-good" ||
+          o.decision.reason.includes("already well aligned")
+        ) {
+          setStatus("synced");
+          const b = bridgeRef.current;
+          if (b) startDrift(b, cues);
+          return;
+        }
         if (!appliedRef.current.transform) setStatus("declined");
         return;
       }

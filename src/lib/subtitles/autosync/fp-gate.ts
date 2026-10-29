@@ -365,6 +365,9 @@ function neverWorseVeto(inp: GateInputs): Rule {
       reason: `post-sync ncc ${after.toFixed(2)} below absolute floor`,
     };
   }
+  if (inp.inputAlreadyGood) {
+    return { name: "never-worse", ceiling: "apply", reason: "input already well aligned" };
+  }
   const lenient = inp.exactIdentity && !inp.requireImprovement;
   const need = lenient ? -THRESHOLDS.exactSlack : THRESHOLDS.minImprovement;
   const delta = after - before;
