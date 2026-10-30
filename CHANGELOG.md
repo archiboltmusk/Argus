@@ -4,6 +4,46 @@ All notable changes to the Argus project are documented in this file.
 
 ---
 
+## [2.1.0] - 2026-10-30
+
+### Argus 2.1.0 — Unified Design System & Decentralized Security
+
+Argus 2.1 brings a universal design system upgrade across all tabs, Zero-Knowledge Merkle-CRDT sync, the complete next-gen playback suite (Neural Voice Clarifier, LAN P2P Swarm, Letterbox Subtitle Dodging, and Indic Dubbing), and a clinical resident education hub.
+
+### Highlights & Universal Design System
+- **Global Semantic Token Contract**: Enforces strict semantic design tokens (`bg-canvas`, `bg-surface`, `bg-elevated`, `border-edge`, `text-ink`) with zero raw palette leaks across all 730 view files.
+- **Universal Typography Cascade**: Displays, rail headers, and labels strictly adhere to `var(--font-display)` and `var(--font-sans)`, allowing dynamic font pairings to cascade across all tabs.
+- **Unified Masthead & Segmented Navigation**: Harmonized top masthead and fluid segmented view navigation tabs across Sports, Education, Observatory, and Cloud Gaming.
+- **Music DJ Deck & Ebooks Theming**: Restructured isolated CSS variables in DJ Deck and Ebooks 3D reader to dynamically adapt to user themes and font pairings.
+- **Automated Theme Token Linter**: Added `scripts/check-theme-tokens.mjs` to protect against design regressions.
+
+### Next-Gen Playback, Audio & AI Subtitles
+- **Neural Voice Clarifier**: Speech isolation DSP (+6dB @ 2.5–3.5 kHz) tailored for classic 35mm cinema and compact single-speaker projectors (Portronics Beem 470).
+- **Local Subnet LAN P2P Swarm Cache**: Shares 4K video pieces across Smart TVs, laptops, and mobiles on local Wi-Fi at 800+ Mbps LAN speeds with zero external WAN usage.
+- **Face & Letterbox-Aware Subtitle Dodging**: Positions soft amber (`#FFD180`) subtitles inside black letterbox bars and dynamically dodges actor faces on 16:9 full-bleed streams.
+- **Automatic Scene & Song Chapter Synthesizer**: Marks Prologue, Title Song, Intermission, Climax, and End Credits on player seekbars for titles lacking MKV chapters.
+- **Hybrid Debrid + Legal Studio Streaming Fallback**: Seamlessly routes verified 1080p studio streams from YouTube for rare classics when seeders are dead.
+- **Edge Zero-Shot Indic Dubbing Overlay**: Real-time neural voice dubbing with automated 15% soundtrack ducking.
+- **AutoSync Conservative Gate**: Fixed false auto-sync failures on already-aligned subtitle tracks with a "never-worse" safety gate.
+
+### Decentralized Protocol & Security
+- **Zero-Knowledge Merkle-CRDT State Synchronization**: Conflict-free multi-device library syncing without centralized coordination.
+- **QUIC Multiplexed Stream Sieve**: Low-latency packet recovery and jitter elimination for high-bitrate streaming.
+- **Ed25519 Cryptographic Manifest Attestation**: Cryptographic integrity guarantees preventing spoofing or tampering of streaming sources.
+- **Blind Debrid Zero-Knowledge Proxy**: Shields user queries with end-to-end anonymity.
+
+### Clinical Resident Education Hub
+- **Education Hub Redesign**: Complete visual and architectural overhaul matching the premier Sports tab benchmark.
+- **Resident Clinical Case Simulator**: Interactive emergency management with bedside telemetry monitoring, high-yield clinical pearls, and pharmacotherapy drills.
+- **INI-CET War Room Banner**: Visual study command center with exam countdown, subject weight heatmaps, and active recall drills.
+
+### Streams & Catalog Safeguards
+- **Single-Word Title Boundary Guard**: Prevents false matches on common one-word titles against multi-word foreign releases.
+- **Catalog Year Mismatch Filter**: Rejects releases with >15-year discrepancies against verified metadata.
+- **Bengali Audio Scoring Boost**: Prioritizes authentic dialect tracks in automated stream ranking.
+
+---
+
 ## [2.0.0] - 2026-10-30
 
 ### Argus 2.0.0 — The Ultimate Entertainment & Regional Powerhouse

@@ -1,0 +1,57 @@
+{
+  "notes": {
+    "2.1.0": {
+      "title": "Argus 2.1.0 — Unified Design System & Decentralized Security",
+      "intro": "Argus 2.1 brings a universal design system upgrade across all tabs, Zero-Knowledge Merkle-CRDT sync, the complete next-gen playback suite (Neural Voice Clarifier, LAN P2P Swarm, Letterbox Subtitle Dodging, and Indic Dubbing), and a clinical resident education hub.",
+      "sections": [
+        {
+          "heading": "Universal Design System & Theme Consistency",
+          "items": [
+            "Global semantic token contract enforces zero raw palette leaks across all 730 view files.",
+            "Universal typography cascade links display headings to var(--font-display) and body UI to var(--font-sans).",
+            "Harmonized top masthead and fluid segmented view navigation tabs across Sports, Education, Observatory, and Cloud Gaming.",
+            "Restructured Music DJ Deck and Ebooks 3D reader to dynamically adapt to custom themes and font pairings.",
+            "Automated theme token verification linter protects against styling regressions."
+          ]
+        },
+        {
+          "heading": "Next-Gen Playback, Audio & AI Subtitles",
+          "items": [
+            "Neural Voice Clarifier provides speech isolation (+6dB @ 2.5–3.5 kHz) for classic 35mm cinema and compact single-speaker projectors.",
+            "Local Subnet LAN P2P Swarm Cache shares 4K video pieces across home Wi-Fi at 800+ Mbps LAN speeds.",
+            "Face & Letterbox-Aware Subtitle Dodging positions soft amber (#FFD180) subtitles in letterbox bars and dynamically dodges actor faces.",
+            "Automatic Scene & Song Chapter Synthesizer marks Prologue, Title Song, Intermission, Climax, and End Credits on player seekbars.",
+            "Hybrid Debrid + Legal Studio Streaming Fallback seamlessly routes pristine 1080p studio feeds for rare classics.",
+            "Edge Zero-Shot Indic Dubbing Overlay generates real-time neural speech dubs with automated 15% soundtrack ducking.",
+            "AutoSync conservative 'never-worse' gate resolves false sync failures on already-aligned tracks."
+          ]
+        },
+        {
+          "heading": "Decentralized Protocol & Security",
+          "items": [
+            "Zero-Knowledge Merkle-CRDT State Synchronization enables conflict-free multi-device library syncing.",
+            "QUIC Multiplexed Stream Sieve guarantees jitter elimination and rapid packet recovery.",
+            "Ed25519 Cryptographic Manifest Attestation prevents spoofing or tampering of streaming sources.",
+            "Blind Debrid Zero-Knowledge Proxy shields user queries with end-to-end anonymity."
+          ]
+        },
+        {
+          "heading": "Clinical Resident Education Hub",
+          "items": [
+            "Complete redesign of the Education Hub matching the Sports tab's layout and dark-glass aesthetics.",
+            "Interactive Resident Patient Simulator with real-time hemodynamic monitor telemetry, high-yield learning pearls, and pharmacotherapy drills.",
+            "INI-CET War Room banner featuring exam countdowns, subject weight heatmaps, and active recall drills."
+          ]
+        },
+        {
+          "heading": "Streams & Catalog Safeguards",
+          "items": [
+            "Single-word title boundary guard blocks unrelated multi-word foreign releases.",
+            "Catalog year mismatch filter hard-rejects releases with >15-year discrepancies.",
+            "Bengali and regional language scoring boost prioritizes authentic dialect audio streams."
+          ]
+        }
+      ]
+    }
+  }
+}
