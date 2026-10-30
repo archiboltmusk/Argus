@@ -41,7 +41,7 @@ export interface LNReaderChapter {
 }
 
 const LNREADER_INDEX_URLS = [
-  "https://raw.githubusercontent.com/LNReader/lnreader-plugins/plugins/v2.0.0/.dist/plugins.min.json",
+  "https://raw.githubusercontent.com/LNReader/lnreader-plugins/plugins/v3.0.0/.dist/plugins.min.json",
   "https://raw.githubusercontent.com/LNReader/lnreader-plugins/plugins/.dist/plugins.min.json",
   "https://raw.githubusercontent.com/LNReader/lnreader-plugins/issue-index/issue-index.min.json",
 ];
@@ -56,7 +56,7 @@ export const POPULAR_LNREADER_PRESETS: LNReaderPlugin[] = [
     site: "https://www.royalroad.com",
     lang: "English",
     version: "2.1.0",
-    url: "https://raw.githubusercontent.com/LNReader/lnreader-plugins/plugins/v2.0.0/.dist/en/royalroad.js",
+    url: "https://raw.githubusercontent.com/LNReader/lnreader-plugins/plugins/v3.0.0/.dist/en/royalroad.js",
     iconUrl: "https://www.royalroad.com/icons/favicon-32x32.png",
     description: "Original fantasy, litRPG, progression fantasy, and progression sci-fi.",
   },
@@ -66,7 +66,7 @@ export const POPULAR_LNREADER_PRESETS: LNReaderPlugin[] = [
     site: "https://www.novelupdates.com",
     lang: "English",
     version: "2.0.4",
-    url: "https://raw.githubusercontent.com/LNReader/lnreader-plugins/plugins/v2.0.0/.dist/en/novelupdates.js",
+    url: "https://raw.githubusercontent.com/LNReader/lnreader-plugins/plugins/v3.0.0/.dist/en/novelupdates.js",
     iconUrl: "https://www.novelupdates.com/favicon.ico",
     description: "Largest English directory and tracker for Asian translated light novels.",
   },
@@ -76,7 +76,7 @@ export const POPULAR_LNREADER_PRESETS: LNReaderPlugin[] = [
     site: "https://www.scribblehub.com",
     lang: "English",
     version: "2.0.2",
-    url: "https://raw.githubusercontent.com/LNReader/lnreader-plugins/plugins/v2.0.0/.dist/en/scribblehub.js",
+    url: "https://raw.githubusercontent.com/LNReader/lnreader-plugins/plugins/v3.0.0/.dist/en/scribblehub.js",
     iconUrl: "https://www.scribblehub.com/favicon.ico",
     description: "Original web novels and serial fiction created by independent authors.",
   },
@@ -86,7 +86,7 @@ export const POPULAR_LNREADER_PRESETS: LNReaderPlugin[] = [
     site: "https://novelfull.com",
     lang: "English",
     version: "2.0.0",
-    url: "https://raw.githubusercontent.com/LNReader/lnreader-plugins/plugins/v2.0.0/.dist/en/novelfull.js",
+    url: "https://raw.githubusercontent.com/LNReader/lnreader-plugins/plugins/v3.0.0/.dist/en/novelfull.js",
     description: "Comprehensive light novel, wuxia, xianxia, and web fiction archive.",
   },
   {
@@ -95,7 +95,7 @@ export const POPULAR_LNREADER_PRESETS: LNReaderPlugin[] = [
     site: "https://freewebnovel.com",
     lang: "English",
     version: "2.0.1",
-    url: "https://raw.githubusercontent.com/LNReader/lnreader-plugins/plugins/v2.0.0/.dist/en/freewebnovel.js",
+    url: "https://raw.githubusercontent.com/LNReader/lnreader-plugins/plugins/v3.0.0/.dist/en/freewebnovel.js",
     description: "Ad-free public web novel catalog with full chapter text extraction.",
   },
   {
@@ -104,7 +104,7 @@ export const POPULAR_LNREADER_PRESETS: LNReaderPlugin[] = [
     site: "https://ranobes.top",
     lang: "English",
     version: "2.0.3",
-    url: "https://raw.githubusercontent.com/LNReader/lnreader-plugins/plugins/v2.0.0/.dist/en/ranobes.js",
+    url: "https://raw.githubusercontent.com/LNReader/lnreader-plugins/plugins/v3.0.0/.dist/en/ranobes.js",
     description: "Global light novel and web novel repository with reader reviews.",
   },
 ];

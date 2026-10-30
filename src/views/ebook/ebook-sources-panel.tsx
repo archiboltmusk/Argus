@@ -991,8 +991,12 @@ function Extensions() {
     try {
       await addEBookRepo(url.trim());
       setUrl("");
-    } catch {
-      setError(t("Could not load that eBook extension repository"));
+    } catch (err: unknown) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : t("Could not load that eBook extension repository"),
+      );
     } finally {
       setBusy(false);
     }

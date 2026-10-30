@@ -144,8 +144,11 @@ export function normalizeEBookRepoUrl(url: string): string {
   if (u.includes("github.com/")) {
     u = u.replace("github.com/", "raw.githubusercontent.com/").replace(/\/raw\//, "/").replace(/\/blob\//, "/");
   }
-  if (u.includes("lnreader-sources/plugins/index.json") || u.includes("lnreader-sources")) {
-    u = "https://raw.githubusercontent.com/LNReader/lnreader-plugins/plugins/v2.0.0/.dist/plugins.min.json";
+  if (u.includes("v2.0.0")) {
+    u = u.replace("v2.0.0", "v3.0.0");
+  }
+  if (u.includes("lnreader-sources") || u.includes("lnreader-plugins")) {
+    u = "https://raw.githubusercontent.com/LNReader/lnreader-plugins/plugins/v3.0.0/.dist/plugins.min.json";
   }
   return u;
 }
@@ -215,7 +218,14 @@ export function subscribeEBookExtensions(listener: () => void): () => void {
 }
 
 export async function addEBookRepo(url: string): Promise<void> {
-  const repo = await browseEBookRepo(url);
+  const u = url.trim();
+  if (u.includes("standardebooks.org") || u.includes("/opds")) {
+    const { addStandardEbooks, addEBookOpds } = await import("./sources");
+    if (u.includes("standardebooks.org")) addStandardEbooks();
+    else addEBookOpds("OPDS Catalog", u);
+    return;
+  }
+  const repo = await browseEBookRepo(u);
   await put(REPOS, { url: repo.url });
   repos = [...new Set([...repos, repo.url])];
   notify();
