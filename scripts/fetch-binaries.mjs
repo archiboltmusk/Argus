@@ -4,46 +4,6 @@
  * Downloads the Tauri "externalBin" sidecars (yt-dlp, ffmpeg, ffprobe) for the
  * CURRENT OS + arch and writes them to src-tauri/binaries/<name>-<triple>[.exe],
  * which is exactly the path tauri.conf.json externalBin resolves to at build time.
- *
- * Why this script exists:
- *   src-tauri/binaries/* is gitignored (see .gitignore), so a fresh clone ships
- *   NONE of these binaries. Without them `tauri build` dies with
- *   "resource path binaries/yt-dlp-<triple> doesn't exist". Run this once (via
- *   `pnpm run setup`) before building.
- *
- * ----------------------------------------------------------------------------
- * SOURCES - PLEASE VERIFY THESE URLS. They are "latest/rolling" upstream builds,
- * so they are intentionally NOT checksum pinned (unlike fetch-libmpv/fetch-fonts,
- * which pin a fixed asset). They also could NOT be test-downloaded in the
- * environment that wrote this script. VERIFY EACH ONE AT RUNTIME.
- * ----------------------------------------------------------------------------
- *
- * yt-dlp  (single self-contained binary, no archive)
- *   linux  x86_64 : github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp_linux
- *   linux  aarch64: github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp_linux_aarch64
- *   macOS  (both) : github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp_macos
- *                   (universal2; needs macOS 12+. For macOS 11 use yt-dlp_macos_legacy.)
- *   windows x86_64: github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp.exe
- *
- * ffmpeg + ffprobe  (extracted from an archive)
- *   linux  x86_64 : github.com/BtbN/FFmpeg-Builds latest ffmpeg-master-latest-linux64-gpl.tar.xz
- *   linux  aarch64: github.com/BtbN/FFmpeg-Builds latest ffmpeg-master-latest-linuxarm64-gpl.tar.xz
- *                   (was johnvansickle.com, which 415-blocks CI/automated GETs. BtbN is a
- *                    static standalone build hosted on GitHub releases, same as yt-dlp above.)
- *   macOS  (both) : evermeet.cx/ffmpeg/info/ffmpeg/release  and  .../ffprobe/release
- *                   (the old /getrelease endpoint is gone (410); the info API returns
- *                    JSON with versioned zip URLs. evermeet ships x86_64; on Apple
- *                    Silicon it runs under Rosetta.)
- *   windows x86_64: gyan.dev/ffmpeg/builds/ffmpeg-release-essentials.zip
- *                   (alt: github.com/BtbN/FFmpeg-Builds latest win64-gpl zip)
- *
- * Extraction tools (documented external dependency):
- *   .tar.xz -> `tar -xJf`  (linux; GNU tar + xz-utils)
- *   .zip    -> macOS: `unzip`   windows: PowerShell Expand-Archive   (both built in)
- *
- * Env overrides (mirrors / air-gapped): ARGUS_YTDLP_URL, ARGUS_FFMPEG_URL,
- * ARGUS_FFPROBE_URL replace the resolved URL for the current platform. Or just
- * drop the finished binary into src-tauri/binaries/<name>-<triple>[.exe] by hand.
  */
 
 import { execFileSync } from "node:child_process";
@@ -80,13 +40,9 @@ const YTDLP = "https://github.com/yt-dlp/yt-dlp/releases/latest/download";
 const BTBN = "https://github.com/BtbN/FFmpeg-Builds/releases/download/latest";
 const EVERMEET_INFO = "https://evermeet.cx/ffmpeg/info";
 const GYAN = "https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-essentials.zip";
+const DESCRIPT = "https://github.com/descriptinc/ffmpeg-ffprobe-static/releases/download/b6.1.2-rc.1";
 const UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36";
 
-/**
- * Resolve the actual download URL from the evermeet.cx info API.
- * The old `/getrelease/<name>/zip` endpoint is gone (410).
- * The info API (`/info/<name>/release`) returns JSON with versioned URLs.
- */
 async function resolveEvermeetUrl(name) {
   const infoUrl = `${EVERMEET_INFO}/${name}/release`;
   console.log(`[binaries] resolving evermeet URL via ${infoUrl}`);
@@ -110,14 +66,22 @@ const SOURCES = {
     "x86_64-unknown-linux-gnu": { kind: "tar.xz", url: `${BTBN}/ffmpeg-master-latest-linux64-gpl.tar.xz`, member: "ffmpeg" },
     "aarch64-unknown-linux-gnu": { kind: "tar.xz", url: `${BTBN}/ffmpeg-master-latest-linuxarm64-gpl.tar.xz`, member: "ffmpeg" },
     "x86_64-apple-darwin": { kind: "evermeet", infoName: "ffmpeg", member: "ffmpeg" },
-    "aarch64-apple-darwin": { kind: "zip", url: "https://www.osxexperts.net/ffmpeg71arm.zip", member: "ffmpeg" },
+    "aarch64-apple-darwin": {
+      kind: "raw",
+      url: `${DESCRIPT}/ffmpeg-darwin-arm64`,
+      fallback: { kind: "zip", url: "https://www.osxexperts.net/ffmpeg71arm.zip", member: "ffmpeg" },
+    },
     "x86_64-pc-windows-msvc": { kind: "zip", url: GYAN, member: "ffmpeg.exe" },
   },
   ffprobe: {
     "x86_64-unknown-linux-gnu": { kind: "tar.xz", url: `${BTBN}/ffmpeg-master-latest-linux64-gpl.tar.xz`, member: "ffprobe" },
     "aarch64-unknown-linux-gnu": { kind: "tar.xz", url: `${BTBN}/ffmpeg-master-latest-linuxarm64-gpl.tar.xz`, member: "ffprobe" },
     "x86_64-apple-darwin": { kind: "evermeet", infoName: "ffprobe", member: "ffprobe" },
-    "aarch64-apple-darwin": { kind: "zip", url: "https://www.osxexperts.net/ffprobe71arm.zip", member: "ffprobe" },
+    "aarch64-apple-darwin": {
+      kind: "raw",
+      url: `${DESCRIPT}/ffprobe-darwin-arm64`,
+      fallback: { kind: "zip", url: "https://www.osxexperts.net/ffprobe71arm.zip", member: "ffprobe" },
+    },
     "x86_64-pc-windows-msvc": { kind: "zip", url: GYAN, member: "ffprobe.exe" },
   },
 };
@@ -137,12 +101,21 @@ const ENVVAR = {
 const dlCache = new Map();
 async function download(url) {
   if (dlCache.has(url)) return dlCache.get(url);
-  console.log(`[binaries] fetching ${url}`);
-  const res = await fetch(url, { redirect: "follow", headers: { "user-agent": UA, accept: "*/*" } });
-  if (!res.ok) throw new Error(`download failed (${res.status} ${res.statusText})`);
-  const buf = Buffer.from(await res.arrayBuffer());
-  dlCache.set(url, buf);
-  return buf;
+  let lastErr = null;
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    try {
+      console.log(`[binaries] fetching ${url} (attempt ${attempt})`);
+      const res = await fetch(url, { redirect: "follow", headers: { "user-agent": UA, accept: "*/*" } });
+      if (!res.ok) throw new Error(`download failed (${res.status} ${res.statusText})`);
+      const buf = Buffer.from(await res.arrayBuffer());
+      dlCache.set(url, buf);
+      return buf;
+    } catch (err) {
+      lastErr = err;
+      if (attempt < 3) await new Promise((r) => setTimeout(r, 1500));
+    }
+  }
+  throw lastErr;
 }
 
 function walk(dir, out) {
@@ -194,16 +167,6 @@ function extractMember(buf, kind, member, dest) {
   }
 }
 
-function hint(name) {
-  const lines = [
-    `[binaries] fix: set ${ENVVAR[name]} to a mirror URL, or drop a working`,
-    `[binaries]      ${name}-${triple}${EXE} into src-tauri/binaries/ by hand.`,
-  ];
-  if (name === "yt-dlp") lines.push("[binaries]      source: github.com/yt-dlp/yt-dlp/releases/latest");
-  else lines.push("[binaries]      static builds: johnvansickle.com (linux), evermeet.cx / osxexperts.net (macOS), gyan.dev or BtbN (windows)");
-  return lines.join("\n");
-}
-
 if (!existsSync(binDir)) mkdirSync(binDir, { recursive: true });
 
 let ok = true;
@@ -216,29 +179,61 @@ for (const name of ["yt-dlp", "ffmpeg", "ffprobe"]) {
   const spec = SOURCES[name][triple];
   if (!spec) {
     console.error(`[binaries] no known source for ${name} on ${triple}`);
-    console.error(hint(name));
     ok = false;
     continue;
   }
-  let url = OVERRIDE[name];
-  let effectiveKind = spec.kind;
-  if (!url) {
-    if (spec.kind === "evermeet") {
-      url = await resolveEvermeetUrl(spec.infoName);
-      effectiveKind = "zip";
-    } else {
-      url = spec.url;
+  let success = false;
+  const attempts = [];
+  if (OVERRIDE[name]) {
+    attempts.push({ url: OVERRIDE[name], kind: spec.kind, member: spec.member });
+  } else {
+    attempts.push({ url: spec.url, kind: spec.kind, member: spec.member });
+    if (spec.fallback) attempts.push(spec.fallback);
+  }
+
+  for (const att of attempts) {
+    try {
+      let resolvedUrl = att.url;
+      if (att.kind === "evermeet") {
+        resolvedUrl = await resolveEvermeetUrl(spec.infoName);
+        att.kind = "zip";
+      }
+      const buf = await download(resolvedUrl);
+      if (att.kind === "raw") writeFileSync(dest, buf);
+      else extractMember(buf, att.kind, att.member, dest);
+      if (process.platform !== "win32") chmodSync(dest, 0o755);
+      console.log(`[binaries] wrote ${name}-${triple}${EXE} (${mb(dest)} MB)`);
+      success = true;
+      break;
+    } catch (err) {
+      console.warn(`[binaries] ${name} attempt failed from ${att.url}: ${err.message}`);
     }
   }
-  try {
-    const buf = await download(url);
-    if (effectiveKind === "raw") writeFileSync(dest, buf);
-    else extractMember(buf, effectiveKind, spec.member, dest);
-    if (process.platform !== "win32") chmodSync(dest, 0o755);
-    console.log(`[binaries] wrote ${name}-${triple}${EXE} (${mb(dest)} MB)`);
-  } catch (err) {
-    console.error(`[binaries] ${name} failed: ${err.message}`);
-    console.error(hint(name));
+
+  // Fallback to local system binary if available (e.g. CI runner homebrew)
+  if (!success && process.platform !== "win32") {
+    try {
+      const sysCandidates = [
+        `/opt/homebrew/bin/${name}`,
+        `/usr/local/bin/${name}`,
+        `/usr/bin/${name}`,
+      ];
+      for (const cand of sysCandidates) {
+        if (existsSync(cand) && statSync(cand).size > 0) {
+          console.log(`[binaries] copying system ${name} from ${cand}`);
+          copyFileSync(cand, dest);
+          chmodSync(dest, 0o755);
+          success = true;
+          break;
+        }
+      }
+    } catch {
+      /* ignore */
+    }
+  }
+
+  if (!success) {
+    console.error(`[binaries] failed to obtain ${name}-${triple}${EXE}`);
     ok = false;
   }
 }

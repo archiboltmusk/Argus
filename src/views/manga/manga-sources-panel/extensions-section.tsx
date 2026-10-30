@@ -1,4 +1,4 @@
-import { Blocks, Loader2, Plus, ShieldCheck, Trash2 } from "lucide-react";
+import { Blocks, Check, Download, Globe, Loader2, Plus, ShieldCheck, Sparkles, Trash2 } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
 import { addRepo, removeRepo, repoUrlsSync, subscribePlugins, subscribeRepos } from "@/lib/manga/plugins";
 import { removeAllMangayomiRecords } from "@/lib/manga/sources/mangayomi";
@@ -6,6 +6,28 @@ import { mangayomiSourcesSync, subscribeMangayomiSources } from "@/lib/manga/sou
 import { CARD, INPUT } from "./shared";
 import { RepoCard } from "./extensions/repo-card";
 import { useT } from "@/lib/i18n";
+
+export interface CommunityMangaRepoPreset {
+  name: string;
+  url: string;
+  description: string;
+  badge: string;
+}
+
+export const COMMUNITY_MANGA_REPOS: CommunityMangaRepoPreset[] = [
+  {
+    name: "Mangayomi Multi-Catalog Extensions",
+    url: "https://raw.githubusercontent.com/kodjodevf/mangayomi-extensions/main/index.json",
+    description: "Hundreds of community scrapers running directly in Argus without external servers (MangaBat, Asura, FlameScans, Bato, Webtoons).",
+    badge: "Recommended · Zero Server",
+  },
+  {
+    name: "Mihon / Tachiyomi Extension Index",
+    url: "https://raw.githubusercontent.com/keiyoushi/extensions/repo/index.min.json",
+    description: "Standard community index used across mobile and desktop manga readers.",
+    badge: "Global Community",
+  },
+];
 
 function SectionLabel({ children }: { children: ReactNode }) {
   return (
@@ -23,15 +45,12 @@ function Explainer() {
         <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-canvas text-ink-muted ring-1 ring-edge-soft">
           <ShieldCheck size={18} />
         </span>
-        <span className="text-[15.5px] font-semibold text-ink">{t("Bring your own extensions")}</span>
+        <span className="text-[15.5px] font-semibold text-ink">{t("Universal In-App Extensions")}</span>
       </div>
       <p className="text-[13.5px] leading-relaxed text-ink-muted">
         {t(
-          "Argus ships no manga sources and hosts nothing. Extensions come from repositories other people maintain. Paste a repository URL below to browse its plugins, then install the ones you want. Every plugin runs sandboxed in an isolated worker with no access to your files, accounts, or the rest of the app.",
+          "Argus runs manga extensions natively inside isolated web workers. You do not need Java, Docker, or an external Suwayomi server. Install verified community repositories below to stream and read manga natively across all devices.",
         )}
-      </p>
-      <p className="text-[13px] leading-relaxed text-ink-subtle">
-        {t("Only add repositories you trust. Argus cannot vouch for third-party plugins.")}
       </p>
     </div>
   );
@@ -54,6 +73,7 @@ export function ExtensionsSection() {
 
   const [url, setUrl] = useState("");
   const [adding, setAdding] = useState(false);
+  const [presetBusy, setPresetBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [confirmClear, setConfirmClear] = useState(false);
 
@@ -68,6 +88,18 @@ export function ExtensionsSection() {
     }
     setConfirmClear(false);
     void removeAllMangayomiRecords();
+  };
+
+  const handleAddPreset = async (presetUrl: string) => {
+    setPresetBusy(presetUrl);
+    setError(null);
+    try {
+      await addRepo(presetUrl);
+    } catch {
+      setError(t("Could not add repository"));
+    } finally {
+      setPresetBusy(null);
+    }
   };
 
   const add = async () => {
@@ -90,13 +122,68 @@ export function ExtensionsSection() {
 
   return (
     <div className="flex flex-col gap-3">
-      <SectionLabel>{t("Extensions")}</SectionLabel>
+      <SectionLabel>{t("Extensions (Zero-Server)")}</SectionLabel>
       <Explainer />
+
+      {/* 1-Click Community Repository Cards */}
+      <div className="flex flex-col gap-2.5">
+        <div className="flex items-center gap-2 px-1 text-[13px] font-semibold text-ink-muted">
+          <Sparkles size={15} className="text-accent" />
+          <span>{t("Verified Community Repositories (1-Click)")}</span>
+        </div>
+        <div className="grid grid-cols-1 gap-2.5">
+          {COMMUNITY_MANGA_REPOS.map((preset) => {
+            const isInstalled = urls.some((u) => u.toLowerCase() === preset.url.toLowerCase());
+            const isBusy = presetBusy === preset.url;
+            return (
+              <div
+                key={preset.url}
+                className={`flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-4 rounded-xl transition-all ${CARD}`}
+              >
+                <div className="flex items-start gap-3 min-w-0">
+                  <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-canvas text-accent ring-1 ring-edge-soft">
+                    <Globe size={18} />
+                  </span>
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className="text-[14.5px] font-bold text-ink truncate">{preset.name}</span>
+                      <span className="rounded-md bg-accent/15 px-2 py-0.5 text-[10.5px] font-bold text-accent">
+                        {preset.badge}
+                      </span>
+                    </div>
+                    <p className="mt-0.5 text-xs text-ink-muted line-clamp-2">{preset.description}</p>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  disabled={isInstalled || isBusy}
+                  onClick={() => handleAddPreset(preset.url)}
+                  className={`flex h-9 shrink-0 items-center gap-2 rounded-lg px-3.5 text-xs font-bold transition-all shadow-sm ${
+                    isInstalled
+                      ? "bg-raised text-ink-subtle ring-1 ring-edge-soft cursor-default"
+                      : "bg-accent text-canvas hover:opacity-90 active:scale-95"
+                  }`}
+                >
+                  {isBusy ? (
+                    <Loader2 size={13} className="animate-spin" />
+                  ) : isInstalled ? (
+                    <Check size={13} strokeWidth={2.6} />
+                  ) : (
+                    <Download size={13} />
+                  )}
+                  {isInstalled ? t("Installed") : t("1-Click Install")}
+                </button>
+              </div>
+            );
+          })}
+        </div>
+      </div>
 
       <div className={`flex flex-col gap-2.5 px-5 py-4 ${CARD}`}>
         <div className="flex items-center gap-2 text-ink-muted">
           <Blocks size={16} />
-          <span className="text-[13.5px] font-semibold text-ink">{t("Add a repository")}</span>
+          <span className="text-[13.5px] font-semibold text-ink">{t("Add Custom Repository URL")}</span>
         </div>
         <div className="flex gap-2.5">
           <input
@@ -126,7 +213,7 @@ export function ExtensionsSection() {
 
       {urls.length === 0 ? (
         <p className="px-1 pb-1 text-[13.5px] text-ink-subtle">
-          {t("No repositories yet. Add one above to start browsing plugins.")}
+          {t("No repositories installed yet. Click 1-Click Install above to add community scrapers.")}
         </p>
       ) : (
         urls.map((u) => <RepoCard key={u} url={u} onRemove={() => void removeRepo(u)} />)

@@ -1,4 +1,4 @@
-import { Check, Loader2, Pencil, Play, Plus, Power, RefreshCw, Server, Trash2, Zap } from "lucide-react";
+import { Check, Loader2, Pencil, Play, Plus, Power, RefreshCw, Server, Sparkles, Trash2, Zap } from "lucide-react";
 import { useState } from "react";
 import { useT } from "@/lib/i18n";
 import { CARD } from "../shared";
@@ -124,7 +124,7 @@ function LocalDaemonSupervisorCard() {
                   </span>
                 ) : (
                   <span className="inline-flex items-center gap-1.5 rounded-full bg-raised px-2.5 py-0.5 text-[11px] font-bold text-ink-subtle border border-edge-soft">
-                    {t("Offline")}
+                    {t("Optional Local Server")}
                   </span>
                 )}
               </div>
@@ -169,6 +169,15 @@ function LocalDaemonSupervisorCard() {
           <p className="rounded-lg bg-danger/10 border border-danger/20 p-2.5 text-xs text-danger font-medium">
             {status.lastError}
           </p>
+        )}
+
+        {status.state !== "online" && (
+          <div className="flex items-center justify-between rounded-lg bg-raised/70 px-3.5 py-2.5 text-xs text-ink-muted ring-1 ring-edge-soft">
+            <span className="flex items-center gap-1.5">
+              <Sparkles size={13} className="text-accent" />
+              {t("No server required! Use Universal In-App Extensions below for zero-server reading.")}
+            </span>
+          </div>
         )}
 
         <div className="flex items-center justify-between border-t border-edge-soft pt-3">
