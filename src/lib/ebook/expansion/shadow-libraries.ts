@@ -47,7 +47,8 @@ export async function searchAnnasArchive(query: string, lang = "all"): Promise<R
   if (!clean) return [];
 
   const base = ANNAS_ARCHIVE_MIRRORS[0];
-  const url = `${base}/search?q=${clean}&ext=epub&sort=`;
+  const langParam = lang && lang !== "all" ? `&lang=${encodeURIComponent(lang)}` : "";
+  const url = `${base}/search?q=${clean}&ext=epub${langParam}&sort=`;
 
   try {
     const res = await fetch(url, { headers: { "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)" } });
@@ -101,7 +102,7 @@ export async function searchLibGen(query: string): Promise<RemoteBookResult[]> {
       const md5 = m[3];
       const title = m[4].replace(/<[^>]+>/g, "").trim();
       const year = parseInt(m[5].trim(), 10) || undefined;
-      const sizeStr = m[6].trim();
+      const sizeMb = parseFloat(m[6].replace(/[^0-9.]/g, "")) || undefined;
       const ext = m[7].toLowerCase().trim();
 
       items.push({
@@ -109,6 +110,7 @@ export async function searchLibGen(query: string): Promise<RemoteBookResult[]> {
         title,
         author,
         year,
+        sizeMb,
         extension: ext.includes("epub") ? "epub" : ext.includes("pdf") ? "pdf" : "epub",
         source: "libgen",
         downloadUrl: `http://library.lol/main/${md5}`,

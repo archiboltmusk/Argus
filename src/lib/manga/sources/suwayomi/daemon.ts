@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { addServer, listServers, setActiveServer } from "./servers-store";
+import { addServer, listServers, setActiveServer } from "@/views/manga/manga-sources-panel/suwayomi/servers-store";
+import type { SuwayomiServer } from "@/views/manga/manga-sources-panel/suwayomi/types";
 import { testConnection } from "./api";
 
 const AUTOSTART_KEY = "argus.manga.suwayomi.autostart.v1";
@@ -67,7 +68,7 @@ export async function probeLocalSuwayomi(): Promise<boolean> {
       currentStatus.state = "online";
       currentStatus.isInstalled = true;
       // Auto-register and activate in servers-store if missing
-      const existing = listServers().find((s) => s.baseUrl.includes("127.0.0.1:4567") || s.baseUrl.includes("localhost:4567"));
+      const existing = listServers().find((s: SuwayomiServer) => s.baseUrl.includes("127.0.0.1:4567") || s.baseUrl.includes("localhost:4567"));
       if (!existing) {
         addServer("Local Suwayomi", DEFAULT_URL);
       } else {
