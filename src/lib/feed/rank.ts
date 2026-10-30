@@ -3,6 +3,8 @@ import type { FeedItem } from "@/lib/feed";
 import { getStore } from "@/lib/discover/store";
 import { loadStoredSettings } from "@/lib/settings/load";
 import { localeWeights } from "./locale";
+import { cloudTaste } from "@/lib/discover/taste-sync";
+import { mergeTaste, tasteFromAffinity } from "@/lib/discover/taste-profile";
 
 type Affinity = ReturnType<typeof getStore>["affinity"];
 type Locale = ReturnType<typeof localeWeights>;
@@ -82,11 +84,20 @@ export function explainAffinity(meta: Meta, affinity: Affinity): RecommendationE
 
 export function rankByAffinity(items: FeedItem[]): FeedItem[] {
   const { affinity } = getStore();
+  const cloud = mergeTaste(cloudTaste(), tasteFromAffinity(affinity));
+  const hasCloudTaste = Object.keys(cloud.genres).length + Object.keys(cloud.decades).length + Object.keys(cloud.languages).length > 0;
+  const mergedAffinity: Affinity = {
+    ...affinity,
+    genres: cloud.genres,
+    decades: cloud.decades,
+    languages: cloud.languages,
+    totalEvents: Math.max(affinity.totalEvents, hasCloudTaste ? 1 : 0),
+  };
   const locale = localeWeights(loadStoredSettings());
-  if (affinity.totalEvents < 1 && locale.penalty === 0) return items;
+  if (mergedAffinity.totalEvents < 1 && locale.penalty === 0) return items;
   const scored = items.map((item, idx) => ({
     item,
-    score: scoreItem(item, affinity, locale),
+    score: scoreItem(item, mergedAffinity, locale),
     idx,
   }));
   scored.sort((a, b) => {

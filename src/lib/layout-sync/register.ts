@@ -1,4 +1,5 @@
 import { registerRosterSection } from "@/lib/profile-sync/roster-section";
+import "@/lib/discover/taste-sync";
 import { registerLayoutSections } from "./sections";
 
 // Imported for side effect by ProfileSyncRunner. A section whose adapter never

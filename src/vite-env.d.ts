@@ -13,6 +13,8 @@ interface ImportMetaEnv {
   readonly VITE_ARGUS_TRAKT_BASE?: string;
   readonly VITE_ARGUS_MAL_BASE?: string;
   readonly VITE_ARGUS_TVDB_BASE?: string;
+  readonly VITE_SUPABASE_URL?: string;
+  readonly VITE_SUPABASE_PUBLISHABLE_KEY?: string;
 }
 
 interface Window {

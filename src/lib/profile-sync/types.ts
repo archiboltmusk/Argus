@@ -18,7 +18,7 @@ export const PROFILE_SECTIONS = [
   "playerlayout",
 ] as const;
 
-export const ACCOUNT_SECTIONS = ["profiles", "watchedby"] as const;
+export const ACCOUNT_SECTIONS = ["profiles", "watchedby", "taste"] as const;
 
 export type ProfileSectionKey = (typeof PROFILE_SECTIONS)[number];
 export type AccountSectionKey = (typeof ACCOUNT_SECTIONS)[number];
