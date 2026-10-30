@@ -113,7 +113,7 @@ pub fn is_suwayomi_process_running() -> bool {
     false
 }
 
-/// Inspects a specific directory or app bundle to create a headless launch specification.
+/// Inspects a specific directory, app bundle, or binary to create a headless launch specification.
 fn inspect_suwayomi_dir(folder: &Path) -> Option<SuwayomiLaunchSpec> {
     if !folder.exists() {
         return None;
@@ -121,31 +121,100 @@ fn inspect_suwayomi_dir(folder: &Path) -> Option<SuwayomiLaunchSpec> {
 
     #[cfg(target_os = "macos")]
     {
+        // 0. Check if folder is a direct executable file or script
+        if folder.is_file() {
+            let fname = folder.file_name().unwrap_or_default().to_string_lossy().to_lowercase();
+            if fname.ends_with(".jar") {
+                let java = folder.parent()
+                    .map(|p| p.join("jre").join("bin").join("java"))
+                    .filter(|p| p.is_file())
+                    .unwrap_or_else(|| PathBuf::from("java"));
+                return Some(SuwayomiLaunchSpec {
+                    display_path: folder.to_path_buf(),
+                    executable: java,
+                    args: vec![
+                        "-Djava.awt.headless=true".to_string(),
+                        "-Dsuwayomi.tachidesk.config.server.initialOpenInBrowserEnabled=false".to_string(),
+                        "-Dsuwayomi.tachidesk.config.server.systemTrayEnabled=false".to_string(),
+                        "-jar".to_string(),
+                        folder.to_string_lossy().to_string(),
+                    ],
+                    working_dir: folder.parent().map(|p| p.to_path_buf()),
+                    is_app_bundle: false,
+                });
+            } else {
+                return Some(SuwayomiLaunchSpec {
+                    display_path: folder.to_path_buf(),
+                    executable: folder.to_path_buf(),
+                    args: vec![
+                        "-Djava.awt.headless=true".to_string(),
+                        "-Dsuwayomi.tachidesk.config.server.initialOpenInBrowserEnabled=false".to_string(),
+                        "-Dsuwayomi.tachidesk.config.server.systemTrayEnabled=false".to_string(),
+                    ],
+                    working_dir: folder.parent().map(|p| p.to_path_buf()),
+                    is_app_bundle: false,
+                });
+            }
+        }
+
         // 1. Check if folder is a macOS .app bundle
         if folder.to_string_lossy().ends_with(".app") {
             let macos_dir = folder.join("Contents").join("MacOS");
             if macos_dir.is_dir() {
-                let candidates = ["Suwayomi-Server", "Tachidesk", "app"];
-                for c in candidates {
-                    let exe = macos_dir.join(c);
-                    if exe.is_file() {
-                        return Some(SuwayomiLaunchSpec {
-                            display_path: folder.to_path_buf(),
-                            executable: exe,
-                            args: vec![
-                                "-Djava.awt.headless=true".to_string(),
-                                "-Dsuwayomi.tachidesk.config.server.initialOpenInBrowserEnabled=false".to_string(),
-                                "-Dsuwayomi.tachidesk.config.server.systemTrayEnabled=false".to_string(),
-                            ],
-                            working_dir: Some(folder.to_path_buf()),
-                            is_app_bundle: false, // Run binary directly to suppress GUI launcher window
-                        });
+                if let Ok(entries) = std::fs::read_dir(&macos_dir) {
+                    for entry in entries.flatten() {
+                        let exe = entry.path();
+                        if exe.is_file() {
+                            return Some(SuwayomiLaunchSpec {
+                                display_path: folder.to_path_buf(),
+                                executable: exe,
+                                args: vec![
+                                    "-Djava.awt.headless=true".to_string(),
+                                    "-Dsuwayomi.tachidesk.config.server.initialOpenInBrowserEnabled=false".to_string(),
+                                    "-Dsuwayomi.tachidesk.config.server.systemTrayEnabled=false".to_string(),
+                                ],
+                                working_dir: Some(folder.to_path_buf()),
+                                is_app_bundle: false, // Run binary directly to suppress GUI launcher window
+                            });
+                        }
                     }
                 }
             }
         }
 
-        // 2. Check for bundled bin/Suwayomi-Server script (Preferred headless CLI launch)
+        // 2. Check for nested .app inside the directory (e.g. Suwayomi-Server Launcher.app)
+        if folder.is_dir() {
+            if let Ok(entries) = std::fs::read_dir(folder) {
+                for entry in entries.flatten() {
+                    let child = entry.path();
+                    if child.is_dir() && child.to_string_lossy().ends_with(".app") {
+                        let macos_dir = child.join("Contents").join("MacOS");
+                        if macos_dir.is_dir() {
+                            if let Ok(sub_entries) = std::fs::read_dir(&macos_dir) {
+                                for sub in sub_entries.flatten() {
+                                    let exe = sub.path();
+                                    if exe.is_file() {
+                                        return Some(SuwayomiLaunchSpec {
+                                            display_path: folder.to_path_buf(),
+                                            executable: exe,
+                                            args: vec![
+                                                "-Djava.awt.headless=true".to_string(),
+                                                "-Dsuwayomi.tachidesk.config.server.initialOpenInBrowserEnabled=false".to_string(),
+                                                "-Dsuwayomi.tachidesk.config.server.systemTrayEnabled=false".to_string(),
+                                            ],
+                                            working_dir: Some(child.clone()),
+                                            is_app_bundle: false,
+                                        });
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // 3. Check for bundled bin/Suwayomi-Server script (Preferred headless CLI launch)
         let bin = folder.join("bin").join("Suwayomi-Server");
         if bin.is_file() {
             return Some(SuwayomiLaunchSpec {
@@ -157,7 +226,21 @@ fn inspect_suwayomi_dir(folder: &Path) -> Option<SuwayomiLaunchSpec> {
             });
         }
 
-        // 3. Check for bundled JRE + Launcher JAR (Run with headless flags to suppress GUI window)
+        // 4. Check for direct executable script in folder root
+        for script_name in ["Suwayomi-Server", "Suwayomi-Server.command", "Suwayomi-Server Launcher.command"] {
+            let script = folder.join(script_name);
+            if script.is_file() {
+                return Some(SuwayomiLaunchSpec {
+                    display_path: folder.to_path_buf(),
+                    executable: script,
+                    args: Vec::new(),
+                    working_dir: Some(folder.to_path_buf()),
+                    is_app_bundle: false,
+                });
+            }
+        }
+
+        // 5. Check for bundled JRE + Launcher JAR (Run with headless flags to suppress GUI window)
         let jre_java = folder.join("jre").join("bin").join("java");
         let jar = folder.join("Suwayomi-Launcher.jar");
         if jre_java.is_file() && jar.is_file() {
@@ -176,7 +259,7 @@ fn inspect_suwayomi_dir(folder: &Path) -> Option<SuwayomiLaunchSpec> {
             });
         }
 
-        // 4. Check for server.jar directly
+        // 6. Check for server.jar directly
         let server_jar = folder.join("Suwayomi-Server.jar");
         if jre_java.is_file() && server_jar.is_file() {
             return Some(SuwayomiLaunchSpec {

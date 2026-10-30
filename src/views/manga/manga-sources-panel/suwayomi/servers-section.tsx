@@ -87,6 +87,8 @@ function LocalDaemonSupervisorCard() {
   const t = useT();
   const { status, start, stop, setAutoStart, probe } = useSuwayomiDaemon();
   const [busy, setBusy] = useState(false);
+  const [showInput, setShowInput] = useState(false);
+  const [customPath, setCustomPath] = useState(status.installedPath || "");
 
   const handleToggleStart = async () => {
     setBusy(true);
@@ -104,16 +106,35 @@ function LocalDaemonSupervisorCard() {
   const handleLocateFolder = async () => {
     try {
       const { open } = await import("@tauri-apps/plugin-dialog");
-      const selected = await open({
+      let selected = await open({
         directory: true,
         multiple: false,
-        title: t("Select Suwayomi Folder"),
+        title: t("Select Suwayomi Folder or App"),
       });
+      if (!selected) {
+        selected = await open({
+          directory: false,
+          multiple: false,
+          title: t("Select Suwayomi App Bundle or Binary"),
+        });
+      }
       if (typeof selected === "string") {
         const { invoke } = await import("@tauri-apps/api/core");
         await invoke("suwayomi_set_custom_path", { path: selected });
         await start();
       }
+    } catch {
+      setShowInput(true);
+    }
+  };
+
+  const handleSaveCustomPath = async () => {
+    if (!customPath.trim()) return;
+    try {
+      const { invoke } = await import("@tauri-apps/api/core");
+      await invoke("suwayomi_set_custom_path", { path: customPath.trim() });
+      setShowInput(false);
+      await start();
     } catch {
       /* ignore */
     }
@@ -155,6 +176,16 @@ function LocalDaemonSupervisorCard() {
           <div className="flex items-center gap-2 shrink-0">
             <button
               type="button"
+              onClick={() => setShowInput((v) => !v)}
+              title={t("Type path manually")}
+              className={`grid h-9 w-9 place-items-center rounded-lg ring-1 ring-edge-soft transition-all ${
+                showInput ? "bg-accent/15 text-accent" : "bg-raised text-ink-subtle hover:text-ink"
+              }`}
+            >
+              <Pencil size={14} />
+            </button>
+            <button
+              type="button"
               onClick={handleLocateFolder}
               title={t("Locate Suwayomi folder manually")}
               className="flex h-9 items-center gap-1.5 rounded-lg bg-raised px-2.5 text-xs font-semibold text-ink-subtle hover:text-ink ring-1 ring-edge-soft transition-all"
@@ -191,6 +222,25 @@ function LocalDaemonSupervisorCard() {
             </button>
           </div>
         </div>
+
+        {showInput && (
+          <div className="flex items-center gap-2 pt-1">
+            <input
+              type="text"
+              value={customPath}
+              onChange={(e) => setCustomPath(e.target.value)}
+              placeholder="/Applications/Suwayomi-Server..."
+              className="flex-1 h-9 rounded-lg border border-edge-soft bg-canvas px-3 text-xs text-ink placeholder:text-ink-subtle focus:border-accent focus:outline-none"
+            />
+            <button
+              type="button"
+              onClick={handleSaveCustomPath}
+              className="h-9 rounded-lg bg-accent px-3.5 text-xs font-bold text-canvas hover:opacity-90 active:scale-95"
+            >
+              {t("Save & Start")}
+            </button>
+          </div>
+        )}
 
         {status.lastError && (
           <p className="rounded-lg bg-danger/10 border border-danger/20 p-2.5 text-xs text-danger font-medium">
