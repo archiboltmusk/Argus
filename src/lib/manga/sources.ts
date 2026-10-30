@@ -5,6 +5,8 @@ import { makeSuwayomiProvider } from "./sources/suwayomi/provider";
 import { makeLocalProvider } from "./sources/local";
 import { makeHtmlProvider, type HtmlSourceConfig } from "./sources/html";
 import { mangadexProvider } from "./sources/mangadex";
+import { comickProvider } from "./sources/comick";
+import { archiveComicsProvider } from "./sources/archive-comics";
 import {
   communityCatalog,
   refreshCommunityCatalog,
@@ -46,6 +48,8 @@ export type MangaSource = {
 
 const BUILTIN_PROVIDERS: Record<string, MangaProvider> = {
   mangadex: mangadexProvider,
+  comick: comickProvider,
+  archive_comics: archiveComicsProvider,
 };
 
 const CONFIGURED_KEY = "argus.manga.configured.v1";

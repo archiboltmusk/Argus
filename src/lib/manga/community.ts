@@ -28,6 +28,28 @@ const SEED: CommunitySource[] = [
     lang: "en",
     order: 1,
   },
+  {
+    id: "comick",
+    name: "ComicK",
+    kind: "builtin",
+    provider: "comick",
+    baseUrl: "https://comick.io",
+    iconUrl: "https://comick.io/favicon.ico",
+    note: "Built-in Western comics, DC, Marvel & manga reader",
+    lang: "en",
+    order: 2,
+  },
+  {
+    id: "archive_comics",
+    name: "Archive Comic Vault",
+    kind: "builtin",
+    provider: "archive_comics",
+    baseUrl: "https://archive.org/details/comic_books",
+    iconUrl: "https://archive.org/favicon.ico",
+    note: "Amar Chitra Katha, Raj Comics, Tinkle & Golden Age classics",
+    lang: "all",
+    order: 3,
+  },
 ];
 
 function withSeed(list: CommunitySource[]): CommunitySource[] {
