@@ -1,4 +1,4 @@
-import { Check, Loader2, Pencil, Play, Plus, Power, RefreshCw, Server, Sparkles, Trash2, Zap } from "lucide-react";
+import { Check, FolderOpen, Loader2, Pencil, Play, Plus, Power, RefreshCw, Server, Sparkles, Trash2, Zap } from "lucide-react";
 import { useState } from "react";
 import { useT } from "@/lib/i18n";
 import { CARD } from "../shared";
@@ -101,6 +101,24 @@ function LocalDaemonSupervisorCard() {
     }
   };
 
+  const handleLocateFolder = async () => {
+    try {
+      const { open } = await import("@tauri-apps/plugin-dialog");
+      const selected = await open({
+        directory: true,
+        multiple: false,
+        title: t("Select Suwayomi Folder"),
+      });
+      if (typeof selected === "string") {
+        const { invoke } = await import("@tauri-apps/api/core");
+        await invoke("suwayomi_set_custom_path", { path: selected });
+        void probe();
+      }
+    } catch {
+      /* ignore */
+    }
+  };
+
   return (
     <div className={`overflow-hidden p-5 transition-all ${CARD}`}>
       <div className="flex flex-col gap-4">
@@ -135,6 +153,15 @@ function LocalDaemonSupervisorCard() {
           </div>
 
           <div className="flex items-center gap-2 shrink-0">
+            <button
+              type="button"
+              onClick={handleLocateFolder}
+              title={t("Locate Suwayomi folder manually")}
+              className="flex h-9 items-center gap-1.5 rounded-lg bg-raised px-2.5 text-xs font-semibold text-ink-subtle hover:text-ink ring-1 ring-edge-soft transition-all"
+            >
+              <FolderOpen size={14} />
+              <span className="hidden sm:inline">{t("Locate Folder")}</span>
+            </button>
             <button
               type="button"
               onClick={() => probe()}

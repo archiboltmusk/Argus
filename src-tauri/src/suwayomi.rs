@@ -297,6 +297,12 @@ pub fn find_suwayomi_launch_spec() -> Option<SuwayomiLaunchSpec> {
             }
         }
 
+        // Scan all child directories of /Applications (matches Suwayomi-Server-v2.4.2366-macOS-arm64, etc.)
+        if let Some(spec) = scan_parent_folder(Path::new("/Applications")) {
+            write_cached_path(&spec.display_path);
+            return Some(spec);
+        }
+
         // 3. User Applications folder (No privacy prompt)
         if let Ok(home) = std::env::var("HOME") {
             let home_path = PathBuf::from(home);
@@ -314,6 +320,11 @@ pub fn find_suwayomi_launch_spec() -> Option<SuwayomiLaunchSpec> {
                     write_cached_path(&user_app_dir);
                     return Some(spec);
                 }
+            }
+
+            if let Some(spec) = scan_parent_folder(&home_path.join("Applications")) {
+                write_cached_path(&spec.display_path);
+                return Some(spec);
             }
 
             // 4. .local/share / .suwayomi
