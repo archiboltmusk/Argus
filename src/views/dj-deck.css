@@ -1,20 +1,20 @@
 .dj {
-  --dj-bg: #08090b;
-  --dj-case: #101217;
-  --dj-panel: #15181e;
-  --dj-raise: #1d2028;
-  --dj-edge: #2b2f39;
-  --dj-hair: rgb(255 255 255 / 0.07);
-  --dj-ink: #eceff5;
-  --dj-dim: #7b8291;
-  --dj-amber: #ffb02e;
-  --dj-red: #ff4b3e;
+  --dj-bg: var(--color-canvas, #08090b);
+  --dj-case: var(--color-surface, #101217);
+  --dj-panel: var(--color-elevated, #15181e);
+  --dj-raise: var(--color-raised, #1d2028);
+  --dj-edge: var(--color-edge, #2b2f39);
+  --dj-hair: var(--color-edge-soft, rgb(255 255 255 / 0.07));
+  --dj-ink: var(--color-ink, #eceff5);
+  --dj-dim: var(--color-ink-muted, #7b8291);
+  --dj-amber: var(--color-accent, #ffb02e);
+  --dj-red: var(--color-danger, #ff4b3e);
   --dj-green: #36d16b;
   --dj-cyan: #3ab8ff;
   --dj-accent: var(--color-accent, #ffb02e);
-  --dj-accent-ink: #10120f;
+  --dj-accent-ink: var(--color-canvas, #10120f);
   --dj-lcd-cool: #25e0a0;
-  --dj-lcd-hot: #ff4b3e;
+  --dj-lcd-hot: var(--color-danger, #ff4b3e);
   --dj-platter: 218px;
   display: grid;
   grid-template-rows: auto minmax(0, 1fr) auto;
@@ -22,10 +22,10 @@
   height: 100vh;
   padding: 10px 16px 14px;
   background:
-    radial-gradient(130% 80% at 50% -30%, #1b1f27 0%, #0a0b0e 58%),
+    radial-gradient(130% 80% at 50% -30%, color-mix(in srgb, var(--color-surface) 65%, transparent) 0%, var(--dj-bg) 58%),
     var(--dj-bg);
   color: var(--dj-ink);
-  font-family: "Plus Jakarta Sans", "Inter", system-ui, sans-serif;
+  font-family: var(--font-sans, "Inter", system-ui, sans-serif);
   user-select: none;
   overflow-x: hidden;
   overflow-y: auto;

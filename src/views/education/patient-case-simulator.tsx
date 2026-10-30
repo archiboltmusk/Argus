@@ -71,24 +71,24 @@ export function PatientCaseSimulator({ onClose }: { onClose: () => void }) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col bg-slate-950 text-slate-100 backdrop-blur-md overflow-hidden select-none">
+    <div className="fixed inset-0 z-50 flex flex-col bg-canvas text-ink backdrop-blur-md overflow-hidden select-none">
       {/* Top Navigation & Case Selector */}
-      <header className="flex items-center justify-between border-b border-slate-800 bg-slate-900/90 px-6 py-3">
+      <header className="flex items-center justify-between border-b border-edge bg-surface/90 px-6 py-3">
         <div className="flex items-center gap-3">
           <button
             onClick={onClose}
-            className="flex h-9 w-9 items-center justify-center rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition-colors"
+            className="flex h-9 w-9 items-center justify-center rounded-lg bg-elevated hover:bg-raised text-ink-muted hover:text-ink transition-colors"
           >
             <ArrowLeft size={18} />
           </button>
           <div>
             <div className="flex items-center gap-2">
-              <span className="flex items-center gap-1.5 rounded bg-emerald-500/10 px-2 py-0.5 text-[11px] font-semibold text-emerald-400 border border-emerald-500/20">
+              <span className="flex items-center gap-1.5 rounded bg-accent-soft px-2 py-0.5 text-[11px] font-semibold text-accent border border-accent/20">
                 <Activity size={12} /> CLINICAL RESIDENT SIMULATOR
               </span>
-              <span className="text-xs text-slate-400">• {activeCase.department}</span>
+              <span className="text-xs text-ink-subtle">• {activeCase.department}</span>
             </div>
-            <h1 className="text-base font-bold text-slate-100">{activeCase.title}</h1>
+            <h1 className="text-base font-bold text-ink">{activeCase.title}</h1>
           </div>
         </div>
 
@@ -100,8 +100,8 @@ export function PatientCaseSimulator({ onClose }: { onClose: () => void }) {
               onClick={() => resetCase(idx)}
               className={`rounded-md px-3 py-1.5 text-xs font-semibold transition-all ${
                 selectedCaseIndex === idx
-                  ? "bg-indigo-600 text-white shadow-lg shadow-indigo-600/30"
-                  : "bg-slate-800/80 text-slate-400 hover:bg-slate-800 hover:text-slate-200"
+                  ? "bg-accent text-canvas shadow-lg"
+                  : "bg-elevated text-ink-muted hover:bg-raised hover:text-ink border border-edge-soft"
               }`}
             >
               Case {idx + 1}
@@ -109,7 +109,7 @@ export function PatientCaseSimulator({ onClose }: { onClose: () => void }) {
           ))}
           <button
             onClick={() => resetCase(selectedCaseIndex)}
-            className="flex items-center gap-1 rounded-md border border-slate-700 bg-slate-800/60 px-3 py-1.5 text-xs text-slate-300 hover:bg-slate-700"
+            className="flex items-center gap-1 rounded-md border border-edge bg-elevated px-3 py-1.5 text-xs text-ink-muted hover:bg-raised hover:text-ink"
           >
             <RotateCcw size={12} /> Reset Case
           </button>
@@ -119,31 +119,31 @@ export function PatientCaseSimulator({ onClose }: { onClose: () => void }) {
       {/* Main Clinical Stage */}
       <div className="flex flex-1 overflow-hidden">
         {/* Left Side: Real-Time Patient Monitor & Demographics */}
-        <div className="w-[380px] shrink-0 border-r border-slate-800/80 bg-slate-900/50 p-5 flex flex-col gap-4 overflow-y-auto">
+        <div className="w-[380px] shrink-0 border-r border-edge bg-surface/50 p-5 flex flex-col gap-4 overflow-y-auto">
           {/* Patient Header */}
-          <div className="rounded-xl border border-slate-800 bg-slate-900/80 p-4">
-            <div className="flex items-center justify-between text-xs text-slate-400 mb-1">
+          <div className="rounded-xl border border-edge-soft bg-surface/80 p-4">
+            <div className="flex items-center justify-between text-xs text-ink-subtle mb-1">
               <span>Age: {activeCase.patientDemographics.age}y</span>
               <span>Gender: {activeCase.patientDemographics.gender}</span>
-              <span className="font-semibold text-indigo-400">{activeCase.difficulty} Level</span>
+              <span className="font-semibold text-accent">{activeCase.difficulty} Level</span>
             </div>
-            <p className="text-sm font-medium text-slate-200 mt-2">
-              <span className="font-bold text-slate-400">Chief Complaint:</span> "{activeCase.patientDemographics.chiefComplaint}"
+            <p className="text-sm font-medium text-ink mt-2">
+              <span className="font-bold text-ink-muted">Chief Complaint:</span> "{activeCase.patientDemographics.chiefComplaint}"
             </p>
           </div>
 
           {/* ICU / ED Vital Signs Telemetry Monitor */}
-          <div className="rounded-xl border border-slate-800 bg-black/70 p-4 font-mono shadow-inner">
-            <div className="flex items-center justify-between border-b border-slate-800 pb-2 mb-3">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
-                <Activity size={14} className="text-emerald-400" /> BEDSIDE TELEMETRY
+          <div className="rounded-xl border border-edge-soft bg-canvas p-4 font-mono shadow-inner">
+            <div className="flex items-center justify-between border-b border-edge-soft pb-2 mb-3">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-ink-subtle flex items-center gap-1.5">
+                <Activity size={14} className="text-accent" /> BEDSIDE TELEMETRY
               </span>
-              <span className="text-[10px] text-emerald-400 animate-pulse">● LIVE</span>
+              <span className="text-[10px] text-accent animate-pulse">● LIVE</span>
             </div>
 
             <div className="grid grid-cols-2 gap-3 text-sm">
-              <div className="rounded-lg bg-slate-950/80 p-2.5 border border-slate-800/60">
-                <div className="flex items-center gap-1.5 text-xs text-slate-400">
+              <div className="rounded-lg bg-surface/80 p-2.5 border border-edge-soft">
+                <div className="flex items-center gap-1.5 text-xs text-ink-subtle">
                   <Heart size={14} className="text-red-400" /> HR (BPM)
                 </div>
                 <div className={`text-2xl mt-1 ${vitalStatusColor(currentVitals.heartRateBpm, 60, 100)}`}>
@@ -151,17 +151,17 @@ export function PatientCaseSimulator({ onClose }: { onClose: () => void }) {
                 </div>
               </div>
 
-              <div className="rounded-lg bg-slate-950/80 p-2.5 border border-slate-800/60">
-                <div className="flex items-center gap-1.5 text-xs text-slate-400">
-                  <Activity size={14} className="text-indigo-400" /> BP (mmHg)
+              <div className="rounded-lg bg-surface/80 p-2.5 border border-edge-soft">
+                <div className="flex items-center gap-1.5 text-xs text-ink-subtle">
+                  <Activity size={14} className="text-accent" /> BP (mmHg)
                 </div>
                 <div className={`text-2xl mt-1 ${vitalStatusColor(currentVitals.bloodPressureSystolic, 90, 130)}`}>
                   {currentVitals.bloodPressureSystolic}/{currentVitals.bloodPressureDiastolic}
                 </div>
               </div>
 
-              <div className="rounded-lg bg-slate-950/80 p-2.5 border border-slate-800/60">
-                <div className="flex items-center gap-1.5 text-xs text-slate-400">
+              <div className="rounded-lg bg-surface/80 p-2.5 border border-edge-soft">
+                <div className="flex items-center gap-1.5 text-xs text-ink-subtle">
                   <Wind size={14} className="text-sky-400" /> SpO2 (%)
                 </div>
                 <div className={`text-2xl mt-1 ${vitalStatusColor(currentVitals.spO2Percent, 94, 100)}`}>
@@ -169,8 +169,8 @@ export function PatientCaseSimulator({ onClose }: { onClose: () => void }) {
                 </div>
               </div>
 
-              <div className="rounded-lg bg-slate-950/80 p-2.5 border border-slate-800/60">
-                <div className="flex items-center gap-1.5 text-xs text-slate-400">
+              <div className="rounded-lg bg-surface/80 p-2.5 border border-edge-soft">
+                <div className="flex items-center gap-1.5 text-xs text-ink-subtle">
                   <Brain size={14} className="text-amber-400" /> GCS (3-15)
                 </div>
                 <div className={`text-2xl mt-1 ${vitalStatusColor(currentVitals.glasgowComaScale, 15, 15)}`}>
@@ -181,13 +181,13 @@ export function PatientCaseSimulator({ onClose }: { onClose: () => void }) {
           </div>
 
           {/* History of Present Illness & Physical Findings */}
-          <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-4 flex flex-col gap-2.5 text-xs leading-relaxed text-slate-300">
-            <span className="font-bold text-slate-200 uppercase tracking-wider text-[11px]">Clinical Findings</span>
-            <p className="text-slate-300 italic">{activeCase.historyOfPresentIllness}</p>
-            <div className="mt-2 flex flex-col gap-1.5 border-t border-slate-800 pt-2">
+          <div className="rounded-xl border border-edge-soft bg-surface/60 p-4 flex flex-col gap-2.5 text-xs leading-relaxed text-ink-muted">
+            <span className="font-bold text-ink uppercase tracking-wider text-[11px]">Clinical Findings</span>
+            <p className="text-ink-muted italic">{activeCase.historyOfPresentIllness}</p>
+            <div className="mt-2 flex flex-col gap-1.5 border-t border-edge-soft pt-2">
               {activeCase.physicalExaminationFindings.map((finding, idx) => (
-                <div key={idx} className="flex items-start gap-1.5 text-slate-300">
-                  <span className="text-indigo-400 font-bold">•</span>
+                <div key={idx} className="flex items-start gap-1.5 text-ink-muted">
+                  <span className="text-accent font-bold">•</span>
                   <span>{finding}</span>
                 </div>
               ))}
@@ -196,7 +196,7 @@ export function PatientCaseSimulator({ onClose }: { onClose: () => void }) {
         </div>
 
         {/* Right Side: Interactive Investigations & Intervention Orders */}
-        <div className="flex-1 flex flex-col p-6 overflow-y-auto gap-6 bg-slate-950/90">
+        <div className="flex-1 flex flex-col p-6 overflow-y-auto gap-6 bg-canvas">
           {/* Status Banners: Fatal Mistake or Success */}
           {fatalErrorTriggered && (
             <div className="rounded-xl border border-red-500/40 bg-red-950/40 p-4 text-red-200 flex items-start gap-3">
@@ -221,9 +221,9 @@ export function PatientCaseSimulator({ onClose }: { onClose: () => void }) {
                 <p className="text-xs mt-1 text-emerald-200/90">
                   {performedInterventions.find((i) => i.isCorrect && i.category === "procedure")?.feedback}
                 </p>
-                <div className="mt-3 rounded-lg bg-slate-900/80 p-3 border border-emerald-500/20">
+                <div className="mt-3 rounded-lg bg-surface/90 p-3 border border-emerald-500/20">
                   <span className="text-xs font-bold text-emerald-400">Diagnosis: {activeCase.finalDiagnosis}</span>
-                  <div className="mt-2 flex flex-col gap-1 text-[11px] text-slate-300">
+                  <div className="mt-2 flex flex-col gap-1 text-[11px] text-ink-muted">
                     {activeCase.clinicalPearls.map((pearl, pIdx) => (
                       <span key={pIdx}>• {pearl}</span>
                     ))}
@@ -236,8 +236,8 @@ export function PatientCaseSimulator({ onClose }: { onClose: () => void }) {
           {/* Section 1: Order Diagnostic Tests & Bedside Imaging */}
           <div>
             <div className="flex items-center gap-2 mb-3">
-              <FileSearch size={16} className="text-sky-400" />
-              <h3 className="text-sm font-bold text-slate-200">1. Order Diagnostic Tests & Point-of-Care Imaging</h3>
+              <FileSearch size={16} className="text-accent" />
+              <h3 className="text-sm font-bold text-ink">1. Order Diagnostic Tests & Point-of-Care Imaging</h3>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               {activeCase.availableInvestigations.map((inv) => {
@@ -247,29 +247,29 @@ export function PatientCaseSimulator({ onClose }: { onClose: () => void }) {
                     key={inv.id}
                     className={`rounded-xl border p-4 transition-all ${
                       ordered
-                        ? "border-sky-500/40 bg-sky-950/20"
-                        : "border-slate-800 bg-slate-900/60 hover:border-slate-700"
+                        ? "border-accent/40 bg-accent-soft/20"
+                        : "border-edge-soft bg-surface/70 hover:border-edge hover:bg-elevated/80"
                     }`}
                   >
                     <div className="flex items-center justify-between mb-2">
-                      <span className="text-xs font-bold text-slate-200">{inv.name}</span>
+                      <span className="text-xs font-bold text-ink">{inv.name}</span>
                       {!ordered ? (
                         <button
                           disabled={fatalErrorTriggered || caseResolved}
                           onClick={() => handleOrderInvestigation(inv)}
-                          className="rounded bg-sky-600 px-2.5 py-1 text-[11px] font-semibold text-white hover:bg-sky-500 active:scale-95 disabled:opacity-40"
+                          className="rounded bg-accent px-2.5 py-1 text-[11px] font-semibold text-canvas hover:opacity-90 active:scale-95 disabled:opacity-40 transition-opacity"
                         >
                           Order Test
                         </button>
                       ) : (
-                        <span className="text-[11px] font-semibold text-sky-400">● Result Available</span>
+                        <span className="text-[11px] font-semibold text-accent">● Result Available</span>
                       )}
                     </div>
                     {ordered && (
-                      <div className="mt-2 text-xs text-slate-300 border-t border-slate-800 pt-2 leading-relaxed">
-                        <p className="font-mono text-emerald-300/90">{inv.resultSummary}</p>
-                        <p className="mt-1.5 text-[11px] text-slate-400 italic">
-                          <span className="text-amber-400 font-bold">High-Yield Pearl:</span> {inv.highYieldLearningPoint}
+                      <div className="mt-2 text-xs text-ink-muted border-t border-edge-soft pt-2 leading-relaxed">
+                        <p className="font-mono text-emerald-400">{inv.resultSummary}</p>
+                        <p className="mt-1.5 text-[11px] text-ink-subtle italic">
+                          <span className="text-accent font-bold">High-Yield Pearl:</span> {inv.highYieldLearningPoint}
                         </p>
                       </div>
                     )}
@@ -283,7 +283,7 @@ export function PatientCaseSimulator({ onClose }: { onClose: () => void }) {
           <div>
             <div className="flex items-center gap-2 mb-3">
               <Zap size={16} className="text-amber-400" />
-              <h3 className="text-sm font-bold text-slate-200">2. Emergency Interventions & Pharmacotherapy</h3>
+              <h3 className="text-sm font-bold text-ink">2. Emergency Interventions & Pharmacotherapy</h3>
             </div>
             <div className="flex flex-col gap-2.5">
               {activeCase.availableInterventions.map((action) => {
@@ -298,13 +298,13 @@ export function PatientCaseSimulator({ onClose }: { onClose: () => void }) {
                           : action.isCorrect
                           ? "border-emerald-500/60 bg-emerald-950/30"
                           : "border-amber-500/50 bg-amber-950/20"
-                        : "border-slate-800 bg-slate-900/60 hover:border-slate-700"
+                        : "border-edge-soft bg-surface/70 hover:border-edge hover:bg-elevated/80"
                     }`}
                   >
                     <div className="flex-1 pr-4">
                       <div className="flex items-center gap-2">
-                        <span className="text-xs font-bold text-slate-100">{action.name}</span>
-                        <span className="rounded bg-slate-800 px-1.5 py-0.5 text-[10px] uppercase font-mono text-slate-400">
+                        <span className="text-xs font-bold text-ink">{action.name}</span>
+                        <span className="rounded bg-elevated px-1.5 py-0.5 text-[10px] uppercase font-mono text-ink-subtle border border-edge-soft">
                           {action.category}
                         </span>
                       </div>
@@ -319,7 +319,7 @@ export function PatientCaseSimulator({ onClose }: { onClose: () => void }) {
                       <button
                         disabled={fatalErrorTriggered || caseResolved}
                         onClick={() => handlePerformIntervention(action)}
-                        className="rounded-lg bg-indigo-600 px-4 py-2 text-xs font-semibold text-white hover:bg-indigo-500 active:scale-95 disabled:opacity-40 shrink-0"
+                        className="rounded-lg bg-accent px-4 py-2 text-xs font-semibold text-canvas hover:opacity-90 active:scale-95 disabled:opacity-40 shrink-0 transition-opacity"
                       >
                         Administer / Perform
                       </button>

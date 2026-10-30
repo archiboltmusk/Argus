@@ -12,42 +12,42 @@ const FEATURED_CLOUD_GAMES = [
     service: "Xbox Cloud & GeForce NOW",
     badge: "100% Free",
     url: "https://www.xbox.com/play/games/fortnite/BT5P2X999VH2",
-    accent: "border-green-500/30 bg-green-500/10 text-green-400",
+    accent: "border-edge-soft bg-surface/70 text-ink",
   },
   {
     name: "Cyberpunk 2077",
     service: "GeForce NOW RTX",
     badge: "Ray Tracing",
     url: "https://play.geforcenow.com",
-    accent: "border-emerald-500/30 bg-emerald-500/10 text-emerald-400",
+    accent: "border-edge-soft bg-surface/70 text-ink",
   },
   {
     name: "Grand Theft Auto V",
     service: "GeForce NOW & Boosteroid",
     badge: "Instant Play",
     url: "https://play.geforcenow.com",
-    accent: "border-amber-500/30 bg-amber-500/10 text-amber-400",
+    accent: "border-edge-soft bg-surface/70 text-ink",
   },
   {
     name: "Starfield",
     service: "Xbox Game Pass Cloud",
     badge: "Game Pass",
     url: "https://www.xbox.com/play/games/starfield/9NCVJGNZT9SN",
-    accent: "border-sky-500/30 bg-sky-500/10 text-sky-400",
+    accent: "border-edge-soft bg-surface/70 text-ink",
   },
   {
     name: "Genshin Impact",
     service: "GeForce NOW Cloud",
     badge: "Free to Play",
     url: "https://play.geforcenow.com",
-    accent: "border-purple-500/30 bg-purple-500/10 text-purple-400",
+    accent: "border-edge-soft bg-surface/70 text-ink",
   },
   {
     name: "Forza Horizon 5",
     service: "Xbox Cloud & GeForce NOW",
     badge: "4K 60FPS",
     url: "https://www.xbox.com/play/games/forza-horizon-5-standard-edition/9NKX70BBC2TN",
-    accent: "border-pink-500/30 bg-pink-500/10 text-pink-400",
+    accent: "border-edge-soft bg-surface/70 text-ink",
   },
 ];
 
@@ -58,13 +58,14 @@ export function GameCloudHub() {
   return (
     <section className="games-cloud-hub space-y-6 px-4 py-2">
       {/* Header Banner */}
-      <div className="relative overflow-hidden rounded-3xl border border-sky-500/20 bg-gradient-to-r from-sky-950/40 via-surface/90 to-surface p-6 shadow-sm">
+      <div className="relative overflow-hidden rounded-3xl border border-edge-soft bg-surface/90 p-6 shadow-sm">
+        <div className="absolute -right-20 -top-20 h-56 w-56 rounded-full bg-accent/10 blur-3xl pointer-events-none" />
         <div className="relative z-10 flex flex-col gap-3 md:max-w-2xl">
           <div className="flex items-center gap-2">
-            <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-sky-500/20 text-sky-400">
+            <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-accent-soft text-accent">
               <Cloud size={16} />
             </span>
-            <span className="rounded-full bg-sky-500/15 px-2.5 py-0.5 text-[10.5px] font-bold uppercase tracking-wider text-sky-300">
+            <span className="rounded-full bg-accent-soft px-2.5 py-0.5 text-[10.5px] font-bold uppercase tracking-wider text-accent border border-accent/20">
               Zero Local Storage Needed
             </span>
           </div>
@@ -80,7 +81,7 @@ export function GameCloudHub() {
               onClick={() => setActiveTab("services")}
               className={`rounded-full px-4 py-1.5 text-xs font-semibold transition-colors ${
                 activeTab === "services"
-                  ? "bg-sky-500 text-white shadow-sm"
+                  ? "bg-accent text-canvas shadow-sm"
                   : "bg-canvas text-ink-subtle hover:text-ink"
               }`}
             >
@@ -91,7 +92,7 @@ export function GameCloudHub() {
               onClick={() => setActiveTab("games")}
               className={`rounded-full px-4 py-1.5 text-xs font-semibold transition-colors ${
                 activeTab === "games"
-                  ? "bg-sky-500 text-white shadow-sm"
+                  ? "bg-accent text-canvas shadow-sm"
                   : "bg-canvas text-ink-subtle hover:text-ink"
               }`}
             >

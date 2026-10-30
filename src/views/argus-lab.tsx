@@ -107,38 +107,46 @@ export function ArgusLabView({ active = true }: { active?: boolean }) {
     setContract((current) => ({ ...current, [id]: allowed }));
 
   return (
-    <main className="h-full min-h-0 overflow-y-auto bg-canvas text-ink">
-      <div className="mx-auto max-w-[1280px] px-5 pb-16 pt-8 sm:px-8 lg:px-12">
+    <main className="h-full min-h-0 overflow-y-auto bg-canvas text-ink select-none">
+      <div className="mx-auto max-w-[1280px] px-6 pb-16 pt-24 sm:px-10 lg:px-12">
         <header className="mb-8 flex flex-col gap-5 border-b border-edge-soft pb-7 md:flex-row md:items-end md:justify-between">
           <div>
-            <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-accent/25 bg-accent/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-accent">
+            <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-accent/25 bg-accent-soft px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-accent">
               <Compass size={14} /> Local-first experience engine
             </div>
-            <h1 className="text-3xl font-semibold tracking-tight sm:text-5xl">Argus Observatory</h1>
-            <p className="mt-3 max-w-2xl text-sm leading-6 text-ink-subtle sm:text-base">
+            <h1 className="text-3xl font-bold tracking-tight text-ink sm:text-4xl">Argus Observatory</h1>
+            <p className="mt-2.5 max-w-2xl text-sm leading-relaxed text-ink-muted sm:text-base">
               Inspect decisions, set boundaries, and preview how Argus balances playback trade-offs. This page never contacts a media source.
             </p>
           </div>
-          <div className="flex items-center gap-3 rounded-xl border border-edge-soft bg-surface px-4 py-3">
-            <span className={`h-2.5 w-2.5 rounded-full ${online ? "bg-emerald-400" : "bg-amber-400"}`} />
-            <div><p className="text-sm font-medium">{online ? "Device reports online" : "Device reports offline"}</p><p className="text-xs text-ink-subtle">Browser connectivity signal only</p></div>
+          <div className="flex items-center gap-3 rounded-2xl border border-edge-soft bg-surface/80 px-4 py-3 shadow-sm backdrop-blur-md">
+            <span className={`h-2.5 w-2.5 rounded-full ${online ? "bg-accent animate-pulse" : "bg-ink-subtle"}`} />
+            <div>
+              <p className="text-sm font-semibold text-ink">{online ? "Device online" : "Device offline"}</p>
+              <p className="text-xs text-ink-subtle">Local network signal</p>
+            </div>
           </div>
         </header>
 
-        <div className="mb-6 grid grid-cols-1 gap-3 sm:grid-cols-3">
+        <div className="mb-8 grid grid-cols-1 gap-3 sm:grid-cols-3">
           {[
             { icon: ShieldCheck, label: "Your rules", value: Object.values(contract).filter(Boolean).length + " / 4 allowed", sub: "Local preference contract" },
             { icon: Gauge, label: "Decision profile", value: MODES.find((item) => item.id === mode)?.title ?? "Balanced", sub: "Deterministic ranking" },
             { icon: Database, label: "Local storage", value: storageAvailable === null ? "Checking…" : storageAvailable ? "Writable" : "Unavailable", sub: "Small temporary write test" },
           ].map((metric) => (
-            <Panel key={metric.label} className="flex items-start gap-3">
-              <div className="rounded-xl bg-accent/10 p-3 text-accent"><metric.icon size={20} /></div>
-              <div><p className="text-xs text-ink-subtle">{metric.label}</p><p className="mt-1 text-lg font-semibold">{metric.value}</p><p className="mt-1 text-xs text-ink-subtle">{metric.sub}</p></div>
+            <Panel key={metric.label} className="flex items-start gap-3.5">
+              <div className="rounded-xl bg-accent-soft p-3 text-accent border border-accent/20"><metric.icon size={20} /></div>
+              <div>
+                <p className="text-xs font-medium text-ink-subtle">{metric.label}</p>
+                <p className="mt-1 text-lg font-bold text-ink">{metric.value}</p>
+                <p className="mt-0.5 text-xs text-ink-muted">{metric.sub}</p>
+              </div>
             </Panel>
           ))}
         </div>
 
-        <div className="mb-6 flex flex-wrap gap-2" role="tablist" aria-label="Argus Observatory sections">
+        {/* Standardized Fluid View Tabs matching Sports & Education */}
+        <nav className="mb-8 flex items-center gap-6 overflow-x-auto border-b border-edge-soft pb-1 scrollbar-none" role="tablist" aria-label="Argus Observatory sections">
           {([
             ["decision", "Decision Lab"],
             ["telemetry", "Live Telemetry"],
@@ -149,12 +157,22 @@ export function ArgusLabView({ active = true }: { active?: boolean }) {
             ["signals", "Local Signals"],
             ["operations", "Lab Controls"],
           ] as Array<[Tab, string]>).map(([id, label]) => (
-            <button key={id} role="tab" aria-selected={tab === id} onClick={() => setTab(id)}
-              className={`rounded-full px-4 py-2 text-sm font-medium transition-colors ${tab === id ? "bg-accent text-white" : "border border-edge-soft bg-surface text-ink-subtle hover:text-ink"}`}>
+            <button
+              key={id}
+              role="tab"
+              aria-selected={tab === id}
+              onClick={() => setTab(id)}
+              className={`relative pb-3 text-sm font-semibold transition-colors whitespace-nowrap ${
+                tab === id ? "text-ink" : "text-ink-muted hover:text-ink"
+              }`}
+            >
               {label}
+              {tab === id && (
+                <span className="absolute inset-x-0 bottom-0 h-0.5 rounded-full bg-accent" />
+              )}
             </button>
           ))}
-        </div>
+        </nav>
 
         {tab === "decision" && (
           <div className="grid gap-5 xl:grid-cols-[0.8fr_1.2fr]">

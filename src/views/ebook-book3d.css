@@ -175,7 +175,7 @@
   max-height: calc(5lh);
   overflow: hidden;
   color: color-mix(in srgb, var(--hbk-paper-ink) 76%, transparent);
-  font-family: Georgia, "Times New Roman", serif;
+  font-family: var(--font-display, var(--font-book, Georgia, serif));
   font-size: clamp(6.5px, calc(var(--hbk-scale, 1) * 8.5px), 14px);
   line-height: 1.62;
   -webkit-mask-image: linear-gradient(
