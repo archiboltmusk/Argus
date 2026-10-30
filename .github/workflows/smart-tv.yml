@@ -74,6 +74,8 @@ jobs:
           if [[ "${{ github.ref }}" == refs/tags/v* ]]; then
             TAG="${{ github.ref_name }}"
           fi
+          gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1 || \
+            gh release create "$TAG" --title "Argus $TAG" --notes "Argus Automated Build" --repo "$GITHUB_REPOSITORY" || true
           gh release upload "$TAG" \
             Argus-Samsung-Tizen.wgt \
             Argus-Samsung-TheFreestyle.wgt \

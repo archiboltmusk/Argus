@@ -113,7 +113,22 @@ export async function importMihonRepo(
         const added = addHtmlSource({
           name: src.name,
           baseUrl: src.baseUrl,
-          searchUrl: `${src.baseUrl.replace(/\/+$/, "")}/?s={q}`,
+          popularPath: "/",
+          searchPath: "/?s={query}",
+          list: {
+            item: "article, .manga-item, .entry, .bsx, div.card",
+            link: "a",
+            title: "h2, h3, h4, .title, a@title",
+            cover: "img@src|img@data-src",
+          },
+          chapters: {
+            item: "li.chapter, .wp-manga-chapter, .chapter-list li",
+            link: "a",
+            title: "a",
+          },
+          pages: {
+            image: "img.page-image, .reading-content img, #readerarea img",
+          },
         });
         if (added) installed++;
         else failed++;
