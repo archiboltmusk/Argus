@@ -39,6 +39,17 @@ Platforms: **Apple** (iOS, iPadOS, macOS, watchOS, tvOS, visionOS), **Android** 
 | **Linux Desktop** | Ubuntu/Debian, Fedora, Arch, Steam Deck | `Argus-linux-x64.AppImage` / `.deb` | `chmod +x *.AppImage && ./*.AppImage` |
 | **Android Mobile & Tablet** | Android phones, tablets, foldables | `Argus-android-arm64.apk` | Direct sideload `.apk` |
 
+### In-App Update vs. Fresh Download Rule
+
+* **In-App Auto-Update is Sufficient (No Fresh Download)**:
+  * **macOS, Windows, and Linux Desktop**: Existing users do not need to re-download installers. Argus updates itself in-place via **Settings → Updates**. Watch progress, addons, and settings are preserved.
+  * **Self-Hosted Web TV & PWA**: Reload the browser page or refresh cache; updates apply immediately.
+* **Fresh Download / Sideload Required**:
+  * **Android TV, Google TV, Fire TV & Projectors**: Sideload the new `Argus-AndroidTV-arm64.apk` over your existing installation.
+  * **Android Mobile & Tablet**: Sideload `Argus-android-arm64.apk` over the existing app.
+  * **Apple Ecosystem (iOS, iPadOS, tvOS, visionOS, watchOS)**: Sideload the new `.ipa` via AltStore, SideStore, Sideloadly, or TrollStore.
+  * **Smart TVs (Samsung Tizen, LG webOS, Hisense VIDAA, Philips Titan OS, Panasonic)**: Re-push the new `.wgt` or `.zip` bundle via developer mode / USB.
+
 ---
 
 ## Why Argus?

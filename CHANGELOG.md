@@ -10,6 +10,16 @@ All notable changes to the Argus project are documented in this file.
 
 Argus 2.1 brings a universal design system upgrade across all tabs, Zero-Knowledge Merkle-CRDT sync, the complete next-gen playback suite (Neural Voice Clarifier, LAN P2P Swarm, Letterbox Subtitle Dodging, and Indic Dubbing), and a clinical resident education hub.
 
+### Upgrade Guide: Update vs. Fresh Download
+- **In-App Auto-Update is Sufficient (No Fresh Download)**:
+  - **macOS, Windows, and Linux Desktop**: Open **Settings → Updates → Check for Updates** to upgrade to v2.1.0 in-place. All watch history, local libraries, addons, and settings are preserved.
+  - **Web TV & PWA**: Reload the web application in your browser to pull down the latest bundle.
+- **Fresh Download / Sideload Required**:
+  - **Android TV, Google TV & Fire TV**: Download and install `Argus-AndroidTV-arm64.apk` over your existing installation.
+  - **Android Mobile & Tablet**: Download and install `Argus-android-arm64.apk` over the app.
+  - **Apple Sideloading (iOS, iPadOS, tvOS, visionOS, watchOS)**: Download the corresponding `.ipa` (`Argus-iOS-iPadOS.ipa`, `Argus-AppleTV-tvOS.ipa`, `Argus-VisionPro-visionOS.ipa`, `Argus-AppleWatch-watchOS.ipa`) and refresh via AltStore, SideStore, Sideloadly, or TrollStore.
+  - **Smart TVs (Samsung Tizen, LG webOS, Hisense VIDAA, Philips Titan OS, Panasonic)**: Re-push the new release bundle (`.wgt` / `.zip`) using your TV's developer manager.
+
 ### Highlights & Universal Design System
 - **Global Semantic Token Contract**: Enforces strict semantic design tokens (`bg-canvas`, `bg-surface`, `bg-elevated`, `border-edge`, `text-ink`) with zero raw palette leaks across all 730 view files.
 - **Universal Typography Cascade**: Displays, rail headers, and labels strictly adhere to `var(--font-display)` and `var(--font-sans)`, allowing dynamic font pairings to cascade across all tabs.
