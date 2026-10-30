@@ -23,15 +23,15 @@ games = ["dep:leveldb-sys", "dep:unrar_sys", "dep:argus-udfread", "dep:hadris-is
 [dependencies]
 anyhow = "1"
 tauri = { version = "2.12.0", features = ["protocol-asset", "tray-icon", "image-png", "image-ico"] }
-tauri-plugin-opener = "~2.5.0"
-tauri-plugin-clipboard-manager = "~2.3.0"
-tauri-plugin-os = "~2.3.0"
+tauri-plugin-opener = "~2.7.2"
+tauri-plugin-clipboard-manager = "~2.5.0"
+tauri-plugin-os = "~2.4.0"
 tauri-plugin-shell = "2"
 tauri-plugin-http = "2"
 tauri-plugin-dialog = "2"
-tauri-plugin-fs = "~2.5.0"
-tauri-plugin-deep-link = "~2.4.0"
-tauri-plugin-notification = "~2.4.0"
+tauri-plugin-fs = "~2.7.1"
+tauri-plugin-deep-link = "~2.6.2"
+tauri-plugin-notification = "~2.7.0"
 walkdir = "2"
 dunce = "1"
 serde = { version = "1", features = ["derive"] }
@@ -90,7 +90,7 @@ argus-install-recovery = { path = "../argus-install-recovery" }
 librqbit = { version = "=8.1.1", default-features = false, features = ["rust-tls"] }
 url = "2"
 realfft = "3"
-ort = { version = "=2.0.0-rc.10", optional = true }
+ort = { version = "=2.0.0-rc.15", optional = true }
 ndarray = { version = "0.16", optional = true }
 whisper-rs = { version = "0.14", optional = true }
 
@@ -111,9 +111,9 @@ libmpv2 = "4"
 libmpv2-sys = "4"
 ring = "0.17"
 tauri-plugin-single-instance = { version = "2", features = ["deep-link"] }
-tauri-plugin-updater = "~2.10.0"
+tauri-plugin-updater = "~2.14.0"
 minisign-verify = "0.2"
-tauri-plugin-process = "~2.3.0"
+tauri-plugin-process = "~2.4.0"
 tauri-plugin-window-state = "2"
 notify-rust = "4"
 # native-tls means schannel on Windows and Security.framework on macOS, but it
@@ -181,7 +181,7 @@ webview2-com = "0.39"
 [target.'cfg(target_os = "linux")'.dependencies]
 gtk = { version = "0.18", features = ["v3_24"] }
 zbus = { version = "5", default-features = false, features = ["tokio"] }
-rust-ini = "=0.21.1"
+rust-ini = "=0.21.3"
 
 
 [dev-dependencies]
