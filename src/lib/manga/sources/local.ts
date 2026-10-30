@@ -1,7 +1,7 @@
 import type { MangaChapter, MangaProvider, MangaSummary } from "@/lib/manga/types";
 
 const IMG_RE = /\.(jpe?g|png|webp|gif|avif|bmp)$/i;
-const ARCHIVE_RE = /\.(cbz|zip)$/i;
+const COMIC_EXT_RE = /\.(cbz|cbr|zip|pdf)$/i;
 const COVER_RE = /^cover\.(jpe?g|png|webp|avif)$/i;
 
 type FsMod = typeof import("@tauri-apps/plugin-fs");
@@ -53,7 +53,7 @@ async function listDir(path: string): Promise<{ dirs: string[]; images: string[]
   for (const e of entries) {
     if (e.isDirectory) dirs.push(e.name);
     else if (e.isFile && IMG_RE.test(e.name)) images.push(e.name);
-    else if (e.isFile && ARCHIVE_RE.test(e.name)) archives.push(e.name);
+    else if (e.isFile && COMIC_EXT_RE.test(e.name)) archives.push(e.name);
   }
   dirs.sort(naturalCmp);
   images.sort(naturalCmp);
@@ -88,13 +88,22 @@ function cacheBlobs(id: string, urls: string[]): void {
 
 export function makeLocalProvider(root: string): MangaProvider {
   async function listAll(): Promise<MangaSummary[]> {
-    const { dirs } = await listDir(root);
-    return Promise.all(
+    const { dirs, archives } = await listDir(root);
+    const dirItems = await Promise.all(
       dirs.map(async (name) => {
         const path = joinPath(root, name);
         return { id: path, title: name, cover: await firstCover(path) };
       }),
     );
+    const fileItems = archives.map((name) => {
+      const path = joinPath(root, name);
+      return {
+        id: path,
+        title: name.replace(COMIC_EXT_RE, ""),
+        cover: undefined,
+      };
+    });
+    return [...dirItems, ...fileItems];
   }
 
   return {
@@ -106,8 +115,26 @@ export function makeLocalProvider(root: string): MangaProvider {
       const all = await listAll();
       return q ? all.filter((m) => m.title.toLowerCase().includes(q)) : all;
     },
-    detail: async (id) => ({ id, title: basename(id), cover: await firstCover(id) }),
+    detail: async (id) => {
+      const isFile = COMIC_EXT_RE.test(id);
+      return {
+        id,
+        title: isFile ? basename(id).replace(COMIC_EXT_RE, "") : basename(id),
+        cover: isFile ? undefined : await firstCover(id),
+      };
+    },
     chapters: async (id) => {
+      if (COMIC_EXT_RE.test(id)) {
+        return [
+          {
+            id,
+            chapter: chapterNumber(basename(id)) ?? "1",
+            title: basename(id).replace(COMIC_EXT_RE, ""),
+            pages: 1,
+            language: "en",
+          },
+        ];
+      }
       const { dirs, images, archives } = await listDir(id);
       const out: MangaChapter[] = [];
       for (const name of dirs) {
@@ -117,7 +144,7 @@ export function makeLocalProvider(root: string): MangaProvider {
         out.push({
           id: joinPath(id, name),
           chapter: chapterNumber(name),
-          title: name.replace(ARCHIVE_RE, ""),
+          title: name.replace(COMIC_EXT_RE, ""),
           pages: 1,
           language: "en",
         });
@@ -129,7 +156,7 @@ export function makeLocalProvider(root: string): MangaProvider {
       return [];
     },
     pageUrls: async (chapterId) => {
-      if (ARCHIVE_RE.test(chapterId)) {
+      if (/\.(cbz|zip)$/i.test(chapterId)) {
         const cached = archiveBlobs.get(chapterId);
         if (cached) return cached;
         const { readFile } = await fsMod();
@@ -139,6 +166,10 @@ export function makeLocalProvider(root: string): MangaProvider {
         const urls = imgs.map((im) => URL.createObjectURL(new Blob([im.data as BlobPart], { type: mimeFor(im.name) })));
         cacheBlobs(chapterId, urls);
         return urls;
+      }
+      if (/\.pdf$/i.test(chapterId)) {
+        const { convertFileSrc } = await coreMod();
+        return [convertFileSrc(chapterId)];
       }
       const { convertFileSrc } = await coreMod();
       const { images } = await listDir(chapterId);
