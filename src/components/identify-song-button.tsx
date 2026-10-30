@@ -10,11 +10,17 @@ export function IdentifySongButton({
   tight,
   editing,
   iconUrl,
+  movieTitle,
+  playbackTimeSec,
+  filePath,
 }: {
   className?: string;
   tight?: boolean;
   editing?: boolean;
   iconUrl?: string;
+  movieTitle?: string;
+  playbackTimeSec?: number;
+  filePath?: string;
 }) {
   const t = useT();
   const { settings } = useSettings();
@@ -26,7 +32,11 @@ export function IdentifySongButton({
     if (pending) return;
     setPending(true);
     try {
-      await identifyNowPlaying(songIdOptions(settings));
+      await identifyNowPlaying(songIdOptions(settings), {
+        movieTitle,
+        playbackTimeSec,
+        filePath,
+      });
     } finally {
       setPending(false);
     }

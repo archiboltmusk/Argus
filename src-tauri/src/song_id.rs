@@ -50,7 +50,7 @@ pub async fn recognize_now_playing_ai(
                 .map_err(|e| e.to_string())??;
         ensure_audible(&pcm)?;
         let wav = pcm_to_wav(&pcm, sample_rate, channels, bits)?;
-        crate::song_id_gemini::recognize(wav, api_key, model).await
+        crate::song_id_gemini::recognize(wav, api_key, model, None).await
     }
     #[cfg(not(windows))]
     {
@@ -469,6 +469,7 @@ pub async fn recognize_file(
     api_key: String,
     model: Option<String>,
     start_sec: Option<f64>,
+    movie_context: Option<String>,
 ) -> Result<Option<SongResult>, String> {
     let key = api_key.trim().to_string();
     if key.is_empty() {
@@ -487,7 +488,8 @@ pub async fn recognize_file(
             if provider == "audd" {
                 audd_recognize(wav, key).await
             } else {
-                crate::song_id_gemini::recognize(wav, key, model).await
+                crate::song_id_gemini::recognize(wav, key, model, movie_context).await
+            }
             }
         }
         other => Err(format!("Unknown song ID provider: {other}")),

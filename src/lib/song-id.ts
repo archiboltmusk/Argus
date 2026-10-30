@@ -30,7 +30,7 @@ export function onSongIdToast(cb: (msg: SongIdToastMsg) => void): () => void {
   return () => window.removeEventListener(TOAST_EVENT, h);
 }
 
-function youtubeSearchUrl(artist: string, title: string): string {
+export function youtubeSearchUrl(artist: string, title: string): string {
   const q = [artist, title].filter(Boolean).join(" ").trim();
   return "https://www.youtube.com/results?search_query=" + encodeURIComponent(q);
 }
@@ -147,24 +147,36 @@ export async function identifyFile(opts: SongIdOptions): Promise<void> {
   }
 }
 
-function showResult(res: SongResult): void {
+export interface MovieIdentificationContext {
+  movieTitle?: string;
+  playbackTimeSec?: number;
+  filePath?: string;
+}
+
+function showResult(res: SongResult, movieTitle?: string): void {
   const head = res ? res.title || res.artist : "";
   if (!res || !head) {
     toast({ kind: "error", title: t("Couldn't identify the song") });
     return;
   }
+  const filmLabel = movieTitle ? ` (from ${movieTitle})` : "";
   const sub = res.title ? [res.artist, res.album].filter(Boolean).join(" · ") : res.album;
+  const musicSearchHref = `#/music?search=${encodeURIComponent(`${res.title} ${res.artist}`)}`;
+
   toast({
     kind: "result",
     title: head,
-    body: sub || undefined,
+    body: (sub ? `${sub}${filmLabel}` : movieTitle ? `Soundtrack of ${movieTitle}` : undefined),
     art: res.artwork || undefined,
-    href: youtubeSearchUrl(res.artist, res.title),
-    song: { title: res.title, artist: res.artist, album: res.album, artwork: res.artwork },
+    href: musicSearchHref,
+    song: { title: res.title, artist: res.artist, album: res.album || movieTitle || "", artwork: res.artwork },
   });
 }
 
-export async function identifyNowPlaying(opts: SongIdOptions): Promise<void> {
+export async function identifyNowPlaying(
+  opts: SongIdOptions,
+  context?: MovieIdentificationContext,
+): Promise<void> {
   if (busy) return;
   if (opts.provider === "acoustid") {
     toast({
@@ -187,14 +199,26 @@ export async function identifyNowPlaying(opts: SongIdOptions): Promise<void> {
   busy = true;
   toast({ kind: "info", title: t("Listening…") });
   try {
-    const res = useAi
-      ? await invoke<SongResult>("recognize_now_playing_ai", {
-          apiKey: key,
-          model: (opts.aiModel ?? "").trim() || null,
-          seconds: 8,
-        })
-      : await invoke<SongResult>("recognize_now_playing", { apiToken: key, seconds: 7 });
-    showResult(res);
+    let res: SongResult = null;
+    if (context?.filePath) {
+      res = await invoke<SongResult>("recognize_file", {
+        path: context.filePath,
+        provider: opts.provider,
+        apiKey: key,
+        model: (opts.aiModel ?? "").trim() || null,
+        startSec: context.playbackTimeSec ?? null,
+        movieContext: context.movieTitle ?? null,
+      });
+    } else {
+      res = useAi
+        ? await invoke<SongResult>("recognize_now_playing_ai", {
+            apiKey: key,
+            model: (opts.aiModel ?? "").trim() || null,
+            seconds: 8,
+          })
+        : await invoke<SongResult>("recognize_now_playing", { apiToken: key, seconds: 7 });
+    }
+    showResult(res, context?.movieTitle);
   } catch (e) {
     reportFailure(e);
   } finally {

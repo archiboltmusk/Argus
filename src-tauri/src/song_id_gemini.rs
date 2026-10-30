@@ -60,13 +60,14 @@ pub async fn recognize(
     wav: Vec<u8>,
     api_key: String,
     model: Option<String>,
+    movie_context: Option<String>,
 ) -> Result<Option<SongResult>, String> {
     let audio = B64.encode(&wav);
     let mut last = String::new();
     for m in model_chain(model) {
-        match attempt(&audio, &api_key, &m, true).await {
+        match attempt(&audio, &api_key, &m, true, movie_context.as_deref()).await {
             Ok(v) => return Ok(v),
-            Err(e) if e.bad_request => match attempt(&audio, &api_key, &m, false).await {
+            Err(e) if e.bad_request => match attempt(&audio, &api_key, &m, false, movie_context.as_deref()).await {
                 Ok(v) => return Ok(v),
                 Err(e2) if e2.try_next => last = e2.message,
                 Err(e2) => return Err(e2.message),
@@ -82,7 +83,7 @@ pub async fn recognize(
     })
 }
 
-fn build_body(audio: &str, structured: bool) -> Value {
+fn build_body(audio: &str, structured: bool, movie_context: Option<&str>) -> Value {
     let mut cfg = json!({ "temperature": 0.0 });
     if structured {
         cfg["responseMimeType"] = json!("application/json");
@@ -96,11 +97,16 @@ fn build_body(audio: &str, structured: bool) -> Value {
             "required": ["artist", "title"]
         });
     }
+    let prompt_text = if let Some(movie) = movie_context {
+        format!("You identify music like Shazam. The audio is a short capture from the movie or show '{movie}', so a song may sit under dialogue, effects, or crowd noise. Identify the exact song or official soundtrack (OST) track from '{movie}'. Ignore speech and noise and name the music. Reply with only a JSON object using the keys artist, title, album. No prose, no code fence.")
+    } else {
+        PROMPT.to_string()
+    };
     json!({
         "contents": [{
             "role": "user",
             "parts": [
-                { "text": PROMPT },
+                { "text": prompt_text },
                 { "inlineData": { "mimeType": "audio/wav", "data": audio } }
             ]
         }],
@@ -113,8 +119,9 @@ async fn attempt(
     api_key: &str,
     model: &str,
     structured: bool,
+    movie_context: Option<&str>,
 ) -> Result<Option<SongResult>, GErr> {
-    let body = build_body(audio, structured);
+    let body = build_body(audio, structured, movie_context);
 
     let url =
         format!("https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent");
@@ -288,7 +295,7 @@ mod tests {
 
     #[test]
     fn wire_format_matches_documented_contract() {
-        let b = build_body("QUJD", true);
+        let b = build_body("QUJD", true, None);
         assert_eq!(b["contents"][0]["role"], "user");
         assert_eq!(
             b["contents"][0]["parts"][1]["inlineData"]["mimeType"],
@@ -318,7 +325,7 @@ mod tests {
 
     #[test]
     fn unstructured_body_drops_schema_but_keeps_audio() {
-        let b = build_body("QUJD", false);
+        let b = build_body("QUJD", false, None);
         assert!(b["generationConfig"]["responseSchema"].is_null());
         assert!(b["generationConfig"]["responseMimeType"].is_null());
         assert_eq!(b["contents"][0]["parts"][1]["inlineData"]["data"], "QUJD");

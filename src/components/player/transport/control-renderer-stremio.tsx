@@ -489,7 +489,13 @@ export function RenderedStremioControl({
         </Tooltip>
       );
     case "song-id":
-      return <IdentifySongButton editing={ctx.editing} />;
+      return (
+        <IdentifySongButton
+          editing={ctx.editing}
+          movieTitle={ctx.metaTitle ?? ctx.title}
+          playbackTimeSec={ctx.snap.positionSec}
+        />
+      );
     case "pip":
       if (!ctx.capabilities.pictureInPicture) return null;
       return (

@@ -607,7 +607,14 @@ export function renderControl(id: PlayerControlId, ctx: ControlContext): ReactNo
     }
     case "song-id": {
       if (ctx.tight) return null;
-      return <IdentifySongButton editing={ctx.editing} iconUrl={iconUrl} />;
+      return (
+        <IdentifySongButton
+          editing={ctx.editing}
+          iconUrl={iconUrl}
+          movieTitle={ctx.metaTitle ?? ctx.title}
+          playbackTimeSec={ctx.snap.positionSec}
+        />
+      );
     }
     case "pip": {
       if (!ctx.capabilities.pictureInPicture) return null;

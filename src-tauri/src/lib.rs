@@ -1908,6 +1908,7 @@ pub fn run() {
             suwayomi::suwayomi_daemon_status,
             suwayomi::suwayomi_daemon_start,
             suwayomi::suwayomi_daemon_stop,
+            suwayomi::suwayomi_set_custom_path,
             argus_take_pending_file,
         ]))
         .build(context)
