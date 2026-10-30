@@ -166,3 +166,27 @@ export function removeEBookSource(id: string): void {
   deleteOpdsConnection(id);
   write(read().filter((source) => source.id !== id));
 }
+
+export function addStandardEbooks(): boolean {
+  return addEBookOpds("Standard Ebooks", "https://standardebooks.org/opds/all");
+}
+
+export function hasStandardEbooks(): boolean {
+  return read().some((s) => s.kind === "opds" && s.location.includes("standardebooks.org"));
+}
+
+export function addIndicLibrary(): boolean {
+  return addEBookOpds("Bengal & Indic Literary Vault", "https://archive.org/services/collection-rss.php?collection=bengalilibrary");
+}
+
+export function hasIndicLibrary(): boolean {
+  return read().some((s) => s.name.includes("Indic") || s.name.includes("Bengal"));
+}
+
+export function addAnnasArchive(): boolean {
+  return addEBookOpds("Anna's Archive & Shadow Vault", "https://annas-archive.org/opds");
+}
+
+export function hasAnnasArchive(): boolean {
+  return read().some((s) => s.name.includes("Anna"));
+}

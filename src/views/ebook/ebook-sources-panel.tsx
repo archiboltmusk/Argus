@@ -41,11 +41,22 @@ import {
   addEBookFolder,
   addEBookGutendex,
   hasEBookGutendex,
+  addStandardEbooks,
+  hasStandardEbooks,
+  addIndicLibrary,
+  hasIndicLibrary,
+  addAnnasArchive,
+  hasAnnasArchive,
+  addEBookOpds,
   listEBookSources,
   removeEBookSource,
   subscribeEBookSources,
   type EBookSource,
 } from "@/lib/ebook/sources";
+import {
+  probeLocalBookLibraries,
+  type DiscoveredLibrary,
+} from "@/lib/ebook/expansion/calibre-discovery";
 import { OpdsCatalogCard } from "./ebook-opds-card";
 import { PluginGuide } from "@/views/manga/manga-sources-panel/plugin-guide";
 import {
@@ -549,6 +560,167 @@ function GutenbergQuickAdd() {
           {added ? <Check size={18} /> : <Plus size={18} />}
         </span>
       </button>
+    </div>
+  );
+}
+
+function StandardEbooksQuickAdd() {
+  const t = useT();
+  const [added, setAdded] = useState(() => hasStandardEbooks());
+  return (
+    <div className={`group ${CARD}`}>
+      <button
+        type="button"
+        disabled={added}
+        onClick={() => setAdded(addStandardEbooks())}
+        className="ebook-source-add-row flex w-full items-center gap-4 px-4 py-4 text-start"
+      >
+        <span className="ebook-source-icon">
+          <BookOpen size={20} />
+        </span>
+        <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+          <span className="text-[16px] font-semibold text-ink">Standard Ebooks</span>
+          <span className="truncate text-[13px] text-ink-muted">
+            {t("Free, beautifully typeset public domain editions")}
+          </span>
+        </span>
+        <span className="grid h-9 w-9 shrink-0 place-items-center text-ink-muted">
+          {added ? <Check size={18} /> : <Plus size={18} />}
+        </span>
+      </button>
+    </div>
+  );
+}
+
+function IndicLibraryQuickAdd() {
+  const t = useT();
+  const [added, setAdded] = useState(() => hasIndicLibrary());
+  return (
+    <div className={`group ${CARD}`}>
+      <button
+        type="button"
+        disabled={added}
+        onClick={() => setAdded(addIndicLibrary())}
+        className="ebook-source-add-row flex w-full items-center gap-4 px-4 py-4 text-start"
+      >
+        <span className="ebook-source-icon">
+          <Languages size={20} />
+        </span>
+        <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+          <span className="text-[16px] font-semibold text-ink">Bengal & Indic Literary Vault</span>
+          <span className="truncate text-[13px] text-ink-muted">
+            {t("Tagore, Sarat Chandra, Bankim, Satyajit Ray & NDLI classics")}
+          </span>
+        </span>
+        <span className="grid h-9 w-9 shrink-0 place-items-center text-ink-muted">
+          {added ? <Check size={18} /> : <Plus size={18} />}
+        </span>
+      </button>
+    </div>
+  );
+}
+
+function AnnasArchiveQuickAdd() {
+  const t = useT();
+  const [added, setAdded] = useState(() => hasAnnasArchive());
+  return (
+    <div className={`group ${CARD}`}>
+      <button
+        type="button"
+        disabled={added}
+        onClick={() => setAdded(addAnnasArchive())}
+        className="ebook-source-add-row flex w-full items-center gap-4 px-4 py-4 text-start"
+      >
+        <span className="ebook-source-icon">
+          <Blocks size={20} />
+        </span>
+        <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+          <span className="text-[16px] font-semibold text-ink">Anna's Archive & Shadow Catalogs</span>
+          <span className="truncate text-[13px] text-ink-muted">
+            {t("35M+ books, papers, LibGen mirrors & open repositories")}
+          </span>
+        </span>
+        <span className="grid h-9 w-9 shrink-0 place-items-center text-ink-muted">
+          {added ? <Check size={18} /> : <Plus size={18} />}
+        </span>
+      </button>
+    </div>
+  );
+}
+
+function CalibreMeshDiscovery() {
+  const t = useT();
+  const [servers, setServers] = useState<DiscoveredLibrary[]>([]);
+  const [scanning, setScanning] = useState(false);
+  const [scanned, setScanned] = useState(false);
+
+  const scan = async () => {
+    setScanning(true);
+    try {
+      const found = await probeLocalBookLibraries();
+      setServers(found);
+    } catch {
+      setServers([]);
+    } finally {
+      setScanning(false);
+      setScanned(true);
+    }
+  };
+
+  useEffect(() => {
+    void scan();
+  }, []);
+
+  return (
+    <div className={`flex flex-col gap-2 p-4 ${CARD}`}>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2.5">
+          <span className="ebook-source-icon">
+            <Sparkles size={18} />
+          </span>
+          <div>
+            <p className="text-[15px] font-semibold text-ink">{t("Calibre & Self-Hosted Mesh")}</p>
+            <p className="text-[12.5px] text-ink-muted">
+              {t("Auto-detects Calibre (8080), Calibre-Web (8083), and Kavita (5000)")}
+            </p>
+          </div>
+        </div>
+        <button
+          type="button"
+          onClick={() => void scan()}
+          disabled={scanning}
+          className="ebook-source-icon-button"
+          title={t("Rescan local network")}
+        >
+          <RefreshCw size={16} className={scanning ? "animate-spin" : ""} />
+        </button>
+      </div>
+
+      {servers.length > 0 ? (
+        <div className="mt-2 divide-y divide-edge-soft rounded-lg border border-edge-soft">
+          {servers.map((srv) => (
+            <div key={srv.url} className="flex items-center justify-between p-2.5">
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-[13.5px] font-medium text-ink">{srv.name}</p>
+                <p className="truncate text-[12px] text-ink-muted">{srv.url}</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  addEBookOpds(srv.name, srv.url);
+                }}
+                className={`${PRIMARY_BTN} h-8 px-3 text-[12.5px]`}
+              >
+                <Plus size={14} /> {t("Connect")}
+              </button>
+            </div>
+          ))}
+        </div>
+      ) : scanned && !scanning ? (
+        <p className="text-[12px] text-ink-subtle">
+          {t("No running Calibre/Kavita servers found on standard local ports.")}
+        </p>
+      ) : null}
     </div>
   );
 }
@@ -1074,8 +1246,12 @@ export function EBookSourcesView({ onBack }: { onBack: () => void }) {
               <SectionLabel>{t("Bring your own")}</SectionLabel>
               <div className="grid gap-3">
                 <GutenbergQuickAdd />
+                <StandardEbooksQuickAdd />
+                <IndicLibraryQuickAdd />
+                <AnnasArchiveQuickAdd />
                 <LocalFolder />
                 <OpdsCatalogCard />
+                <CalibreMeshDiscovery />
               </div>
             </div>
           </WorkspaceSection>

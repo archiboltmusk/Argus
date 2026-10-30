@@ -1,5 +1,12 @@
 // Newly introduced UI copy remains usable until each locale provides an override.
 const uiFallback: Record<string, string> = {
+  "Free, beautifully typeset public domain editions": "Free, beautifully typeset public domain editions",
+  "Tagore, Sarat Chandra, Bankim, Satyajit Ray & NDLI classics": "Tagore, Sarat Chandra, Bankim, Satyajit Ray & NDLI classics",
+  "35M+ books, papers, LibGen mirrors & open repositories": "35M+ books, papers, LibGen mirrors & open repositories",
+  "Calibre & Self-Hosted Mesh": "Calibre & Self-Hosted Mesh",
+  "Auto-detects Calibre (8080), Calibre-Web (8083), and Kavita (5000)": "Auto-detects Calibre (8080), Calibre-Web (8083), and Kavita (5000)",
+  "Rescan local network": "Rescan local network",
+  "No running Calibre/Kavita servers found on standard local ports.": "No running Calibre/Kavita servers found on standard local ports.",
   "Starting...": "Starting...",
   "Refresh status": "Refresh status",
   "Local Suwayomi Engine": "Local Suwayomi Engine",
