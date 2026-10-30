@@ -24,12 +24,13 @@ test("projector mode generates contrast lift, deband, and high-visibility subtit
 });
 
 test("recommended player engines match platform hardware capabilities across the ecosystem", () => {
-  // Apple Ecosystem
+  // Apple Ecosystem (iOS, iPadOS, macOS, watchOS, tvOS, visionOS)
   assert.equal(getRecommendedPlayerEngine("macos"), "mpv");
   assert.equal(getRecommendedPlayerEngine("ios"), "avplayer");
   assert.equal(getRecommendedPlayerEngine("ipados"), "avplayer");
   assert.equal(getRecommendedPlayerEngine("tvos"), "avplayer");
   assert.equal(getRecommendedPlayerEngine("visionos"), "avplayer");
+  assert.equal(getRecommendedPlayerEngine("watchos"), "avplayer");
 
   // Android & Projectors
   assert.equal(getRecommendedPlayerEngine("android-tv"), "exoplayer");

@@ -28,6 +28,7 @@
     "build:ios": "tauri ios build --config src-tauri/tauri.ios.conf.json",
     "build:tvos": "tauri build --config src-tauri/tauri.tvos.conf.json",
     "build:visionos": "tauri build --config src-tauri/tauri.visionos.conf.json",
+    "build:watchos": "tauri build --config src-tauri/tauri.watchos.conf.json",
     "build:tizen": "pnpm build:tv && node scripts/package-smart-tv.mjs",
     "build:webos": "pnpm build:tv && node scripts/package-smart-tv.mjs",
     "package:smart-tv": "node scripts/package-smart-tv.mjs",

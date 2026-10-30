@@ -134,9 +134,41 @@ jobs:
           path: Argus-VisionPro-visionOS.ipa
           if-no-files-found: error
 
+  watchos:
+    name: Build Apple Watch (watchOS) IPA
+    runs-on: macos-14
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v6
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-apple-watchos
+      - uses: pnpm/action-setup@v5
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm run setup:fonts
+      - name: Build Watch Companion Assets
+        run: pnpm build:desktop
+      - name: Compile and Package watchOS IPA
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/Payload-watchOS/ArgusWatch.app"
+          cp -r dist/* "$RUNNER_TEMP/Payload-watchOS/ArgusWatch.app/"
+          cp src-tauri/tauri.watchos.conf.json "$RUNNER_TEMP/Payload-watchOS/ArgusWatch.app/tauri.conf.json"
+          (cd "$RUNNER_TEMP" && zip -r -9 Argus-AppleWatch-watchOS.ipa Payload-watchOS)
+          cp "$RUNNER_TEMP/Argus-AppleWatch-watchOS.ipa" "$GITHUB_WORKSPACE/Argus-AppleWatch-watchOS.ipa"
+      - uses: actions/upload-artifact@v7
+        with:
+          name: Argus-AppleWatch-watchOS-IPA
+          path: Argus-AppleWatch-watchOS.ipa
+          if-no-files-found: error
+
   publish:
     name: Publish Apple Ecosystem IPAs to Release
-    needs: [ios, tvos, visionos]
+    needs: [ios, tvos, visionos, watchos]
     if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -152,6 +184,9 @@ jobs:
       - uses: actions/download-artifact@v5
         with:
           name: Argus-VisionPro-visionOS-IPA
+      - uses: actions/download-artifact@v5
+        with:
+          name: Argus-AppleWatch-watchOS-IPA
       - env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -163,4 +198,5 @@ jobs:
             Argus-iOS-iPadOS.ipa \
             Argus-AppleTV-tvOS.ipa \
             Argus-VisionPro-visionOS.ipa \
+            Argus-AppleWatch-watchOS.ipa \
             --repo "$GITHUB_REPOSITORY" --clobber || true

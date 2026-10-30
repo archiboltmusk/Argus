@@ -1,0 +1,46 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "Argus Watch",
+  "version": "2.1.0",
+  "identifier": "app.argus.watch.companion",
+  "build": {
+    "beforeDevCommand": "pnpm dev --mode watch",
+    "beforeBuildCommand": "pnpm build:desktop",
+    "devUrl": "http://localhost:1420",
+    "frontendDist": "../dist"
+  },
+  "app": {
+    "windows": [
+      {
+        "label": "main",
+        "title": "Argus Watch Remote",
+        "width": 396,
+        "height": 484,
+        "fullscreen": true,
+        "backgroundColor": [0, 0, 0, 255]
+      }
+    ],
+    "security": {
+      "csp": "default-src 'self' tauri: 'unsafe-inline' 'unsafe-eval' https: http: data: blob:;"
+    }
+  },
+  "bundle": {
+    "category": "Entertainment",
+    "watchOS": {
+      "minimumSystemVersion": "9.0",
+      "frameworks": ["WatchKit.framework", "ClockKit.framework", "AVFoundation.framework"],
+      "complications": {
+        "enabled": true,
+        "families": [
+          "modularSmall",
+          "modularLarge",
+          "utilitarianSmall",
+          "circularSmall",
+          "graphicCorner",
+          "graphicCircular",
+          "graphicRectangular"
+        ]
+      }
+    }
+  }
+}

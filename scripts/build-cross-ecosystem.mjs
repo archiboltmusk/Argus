@@ -54,6 +54,14 @@ export const ECOSYSTEM_MATRIX = [
     outputExt: ".app (visionOS)",
   },
   {
+    id: "watchos",
+    name: "Apple watchOS (Apple Watch Series 4+, SE, Ultra)",
+    family: "apple",
+    targetEngine: "avplayer (WatchKit Remote + Digital Crown Volume + Live Score Complication)",
+    buildCmd: "pnpm tauri build --config src-tauri/tauri.watchos.conf.json",
+    outputExt: ".app / .ipa (watchOS)",
+  },
+  {
     id: "android-mobile",
     name: "Android Mobile & Tablet",
     family: "android",

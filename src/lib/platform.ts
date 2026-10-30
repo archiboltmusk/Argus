@@ -145,6 +145,7 @@ export type ExtendedPlatform =
   | "ipados"
   | "tvos"
   | "visionos"
+  | "watchos"
   | "macos"
   | "android-phone"
   | "android-tablet"
@@ -166,6 +167,7 @@ const WEBOS_UA = /\b(webos|web0s|netcast|smarttv.*lg|lg.*smarttv)\b/i;
 const CHROMEOS_UA = /\b(cros|chromebook)\b/i;
 const TVOS_UA = /\b(appletv|tvos)\b/i;
 const VISIONOS_UA = /\b(realityos|visionos|apple vision)\b/i;
+const WATCHOS_UA = /\b(watchos|apple watch)\b/i;
 const HANDHELD_UA = /\b(steamdeck|rog ally|legion go|msi claw|gpd win|ayaneo|onexplayer)\b/i;
 
 export function isSmartTv(): boolean {
@@ -198,6 +200,12 @@ export function isVisionOS(): boolean {
   return VISIONOS_UA.test(ua);
 }
 
+export function isWatchOS(): boolean {
+  if (typeof navigator === "undefined") return false;
+  const ua = (navigator.userAgent || "").toLowerCase();
+  return WATCHOS_UA.test(ua);
+}
+
 export function isIOS(): boolean {
   if (typeof navigator === "undefined") return false;
   const ua = navigator.userAgent || "";
@@ -208,11 +216,11 @@ export function isIPadOS(): boolean {
   if (typeof navigator === "undefined") return false;
   const ua = navigator.userAgent || "";
   if (/iPad/i.test(ua)) return true;
-  return /Macintosh/i.test(ua) && (navigator.maxTouchPoints ?? 0) > 1 && !isVisionOS();
+  return /Macintosh/i.test(ua) && (navigator.maxTouchPoints ?? 0) > 1 && !isVisionOS() && !isWatchOS();
 }
 
 export function isApplePlatform(): boolean {
-  return isMacDesktop() || isIOS() || isIPadOS() || isTvOS() || isVisionOS();
+  return isMacDesktop() || isIOS() || isIPadOS() || isTvOS() || isVisionOS() || isWatchOS();
 }
 
 export function isAndroidProjector(): boolean {
@@ -244,6 +252,7 @@ export function detectExtendedPlatform(): ExtendedPlatform {
   if (isLGWebOS()) return "webos";
   if (isTvOS()) return "tvos";
   if (isVisionOS()) return "visionos";
+  if (isWatchOS()) return "watchos";
   if (isIPadOS()) return "ipados";
   if (isIOS()) return "ios";
   if (isMacDesktop()) return "macos";
@@ -270,6 +279,7 @@ export function platformFamily(): PlatformFamily {
     case "ipados":
     case "tvos":
     case "visionos":
+    case "watchos":
     case "macos":
       return "apple";
     case "android-phone":
@@ -298,6 +308,7 @@ export function getRecommendedPlayerEngine(platform = detectExtendedPlatform()):
   switch (platform) {
     case "tvos":
     case "visionos":
+    case "watchos":
     case "ios":
     case "ipados":
       return "avplayer";
