@@ -7,6 +7,8 @@ import { makeHtmlProvider, type HtmlSourceConfig } from "./sources/html";
 import { mangadexProvider } from "./sources/mangadex";
 import { comickProvider } from "./sources/comick";
 import { archiveComicsProvider } from "./sources/archive-comics";
+import { magazinesProvider } from "./sources/magazines";
+import { newspapersProvider } from "./sources/newspapers";
 import {
   communityCatalog,
   refreshCommunityCatalog,
@@ -50,6 +52,8 @@ const BUILTIN_PROVIDERS: Record<string, MangaProvider> = {
   mangadex: mangadexProvider,
   comick: comickProvider,
   archive_comics: archiveComicsProvider,
+  magazines: magazinesProvider,
+  newspapers: newspapersProvider,
 };
 
 const CONFIGURED_KEY = "argus.manga.configured.v1";

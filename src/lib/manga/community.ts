@@ -50,6 +50,28 @@ const SEED: CommunitySource[] = [
     lang: "all",
     order: 3,
   },
+  {
+    id: "magazines",
+    name: "Magazines & Periodicals",
+    kind: "builtin",
+    provider: "magazines",
+    baseUrl: "https://archive.org/details/magazine_rack",
+    iconUrl: "https://archive.org/favicon.ico",
+    note: "National Geographic, Anandamela, Time, Wired, Desh, India Today & retro mags",
+    lang: "all",
+    order: 4,
+  },
+  {
+    id: "newspapers",
+    name: "Newspapers & e-Papers",
+    kind: "builtin",
+    provider: "newspapers",
+    baseUrl: "https://archive.org/details/newspapers",
+    iconUrl: "https://archive.org/favicon.ico",
+    note: "Anandabazar Patrika, The Hindu, Indian Express, The Guardian & historical archives",
+    lang: "all",
+    order: 5,
+  },
 ];
 
 function withSeed(list: CommunitySource[]): CommunitySource[] {
