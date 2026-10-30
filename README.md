@@ -11,7 +11,26 @@ Argus the app does the same for your media. It unifies Stremio-compatible addons
 
 Argus ships with **no content and no built-in sources**. You connect the addons, accounts, indexers, servers and playlists you already use and have rights to.
 
-Platforms: **macOS** (Apple Silicon & Intel, signed `.dmg`), **Windows** (`.msi` / `.exe`), **Linux** (`.AppImage` / `.deb`), **Android** (`.apk`), and **Web**.
+Platforms: **macOS** (`.dmg`), **Windows** (`.exe` / `.msi`), **Linux** (`.AppImage` / `.deb`), **Android TV / Fire TV** (`.apk`), **Samsung Tizen** (`.wgt`), **LG webOS** (`.ipk`), **Apple TV** (`tvOS`), **Android Mobile** (`.apk`), and **Web TV**.
+
+---
+
+## Supported Platforms & Download Matrix
+
+| Platform / Ecosystem | Target Devices | Build / Download Format | Install / Sideload Method |
+| --- | --- | --- | --- |
+| **Android TV & Google TV** | Sony, TCL, Xiaomi Mi TV, Chromecast with Google TV | `Argus-AndroidTV-arm64.apk` | `adb install Argus-AndroidTV-arm64.apk` or via *Downloader* app |
+| **Amazon Fire TV** | Fire TV Stick 4K / Max, Fire TV Cube, Fire Edition TVs | `Argus-AndroidTV-arm64.apk` | Sideload via *Downloader* code or ADB |
+| **Smart Projectors** | Portronics Beem 470, Wanbo, Egate, XGIMI, Nebula | Universal TV `.apk` (with Projector Mode) | Sideload via USB drive or ADB |
+| **Samsung Smart TV** | Samsung Smart TVs (Tizen OS 5.5+) | `Argus-Samsung-Tizen.wgt` | Install via Tizen Studio / Device Manager |
+| **LG Smart TV** | LG OLED / QNED / NanoCell (webOS 5.0+) | `Argus-LG-webOS.zip` / `.ipk` | Sideload via webOS Dev Manager |
+| **Apple TV & Vision Pro** | Apple TV 4K (tvOS) & Apple Vision Pro (visionOS) | `.app` (Xcode tvOS / visionOS) | `pnpm build:tvos` / `pnpm build:visionos` |
+| **10-Foot Standalone Web TV** | Self-hosted on local NAS, Raspberry Pi, Home Server | `Argus-WebTV-10foot-standalone.zip` | Extract and host via Nginx / Caddy / static HTTP |
+| **macOS** | Apple Silicon (M1–M4) & Intel Macs | `Argus-aarch64.dmg` | Mount and drag to `/Applications` |
+| **Windows Desktop** | Windows 10/11 & Handhelds (ROG Ally, Legion Go) | `Argus-windows-x64-setup.exe` / `.msi` | Standard NSIS / MSI installer |
+| **Linux Desktop** | Ubuntu/Debian, Fedora, Arch, Steam Deck | `Argus-linux-x64.AppImage` / `.deb` | `chmod +x *.AppImage && ./*.AppImage` |
+| **Android Mobile & Tablet** | Android phones, tablets, foldables | `Argus-android-arm64.apk` | Direct sideload `.apk` |
+| **Apple iOS & iPadOS** | iPhone & iPad | `.ipa` / Xcode archive | `pnpm build:ios` |
 
 ---
 
@@ -116,9 +135,21 @@ cargo test -p argus-core -- --ignored
 ### Packaging Builds
 
 ```sh
-pnpm build:mac      # Package macOS .dmg (Apple Silicon & Intel)
-pnpm build:windows  # Package Windows .msi / .exe
-pnpm build:linux    # Package Linux .AppImage / .deb
+# Desktop builds
+pnpm build:mac          # Package macOS .dmg (Apple Silicon & Intel)
+pnpm build:windows      # Package Windows .msi / .exe
+pnpm build:linux        # Package Linux .AppImage / .deb
+
+# Mobile & Handheld
+pnpm build:android      # Package Android Mobile APK (.apk)
+pnpm build:ios          # Package Apple iOS & iPadOS archive (.ipa)
+
+# Television, Projectors & Smart TV Ecosystem
+pnpm build:android:tv   # Package Android TV & Fire TV APK (.apk)
+pnpm package:smart-tv   # Package Samsung Tizen (.wgt), LG webOS (.zip), & Web TV
+pnpm build:tvos         # Package Apple TV 4K (.app)
+pnpm build:visionos     # Package Apple Vision Pro (.app)
+pnpm build:web          # Package Progressive Web App (PWA)
 ```
 
 ---

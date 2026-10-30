@@ -3,6 +3,8 @@ __pycache__/
 dist
 dist-ssr
 dist-web
+dist-smart-tv
+dist-dmg
 web-smoke.png
 *.local
 *.bak

@@ -105,11 +105,14 @@ jobs:
           "$BT/apksigner" sign --ks "$RUNNER_TEMP/release.jks" --ks-pass "pass:$STORE_PASS" \
             --ks-key-alias "$ALIAS" --out Argus-android-arm64.apk aligned.apk
           "$BT/apksigner" verify Argus-android-arm64.apk
-          ls -la Argus-android-arm64.apk
+          cp Argus-android-arm64.apk Argus-AndroidTV-arm64.apk
+          ls -la Argus-*.apk
       - uses: actions/upload-artifact@v7
         with:
           name: Argus-android-arm64
-          path: Argus-android-arm64.apk
+          path: |
+            Argus-android-arm64.apk
+            Argus-AndroidTV-arm64.apk
           if-no-files-found: error
 
   publish:
@@ -127,4 +130,4 @@ jobs:
       # Sideload only: the in-app updater is not wired on Android.
       - env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release upload beta Argus-android-arm64.apk --repo "$GITHUB_REPOSITORY" --clobber
+        run: gh release upload beta Argus-android-arm64.apk Argus-AndroidTV-arm64.apk --repo "$GITHUB_REPOSITORY" --clobber
