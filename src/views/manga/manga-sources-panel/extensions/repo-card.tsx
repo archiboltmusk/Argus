@@ -18,6 +18,7 @@ import type { ForeignRepoKind } from "@/lib/manga/plugins/types";
 import { CARD } from "../shared";
 import { PluginRow } from "./plugin-row";
 import { MangayomiImport } from "./mangayomi-import";
+import { MihonImport } from "./mihon-import";
 import { useT } from "@/lib/i18n";
 
 function foreignMessage(kind: ForeignRepoKind, count: number, t: (s: string) => string): string {
@@ -200,6 +201,8 @@ export function RepoCard({ url, onRemove }: { url: string; onRemove: () => void 
         ) : repo?.foreign ? (
           repo.foreign.kind === "mangayomi" ? (
             <MangayomiImport url={url} count={repo.foreign.count} />
+          ) : repo.foreign.kind === "tachiyomi" ? (
+            <MihonImport url={url} count={repo.foreign.count} />
           ) : (
             <div className="flex items-start gap-3 border-t border-edge-soft px-5 py-5">
               <span className="mt-0.5 grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-canvas text-accent ring-1 ring-edge-soft">

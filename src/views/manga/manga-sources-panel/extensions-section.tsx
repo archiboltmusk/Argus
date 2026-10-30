@@ -103,10 +103,13 @@ export function ExtensionsSection() {
   };
 
   const add = async () => {
-    const value = url.trim();
+    let value = url.trim();
     if (!/^https?:\/\/.+/i.test(value)) {
       setError(t("Enter a valid http(s):// URL"));
       return;
+    }
+    if (value.includes("github.com/keiyoushi/extensions") && !value.includes("index.min.json")) {
+      value = "https://raw.githubusercontent.com/keiyoushi/extensions/repo/index.min.json";
     }
     setAdding(true);
     setError(null);
