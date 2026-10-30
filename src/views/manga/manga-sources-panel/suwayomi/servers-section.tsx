@@ -112,7 +112,7 @@ function LocalDaemonSupervisorCard() {
       if (typeof selected === "string") {
         const { invoke } = await import("@tauri-apps/api/core");
         await invoke("suwayomi_set_custom_path", { path: selected });
-        void probe();
+        await start();
       }
     } catch {
       /* ignore */

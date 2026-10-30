@@ -93,20 +93,32 @@ export async function startSuwayomiDaemon(): Promise<boolean> {
   currentStatus.lastError = undefined;
   notify();
 
+  let nativeSpawnOk = true;
   try {
-    // Attempt native Tauri invocation if running in desktop app
     if (typeof window !== "undefined" && "__TAURI_INTERNALS__" in window) {
       const { invoke } = await import("@tauri-apps/api/core");
-      await invoke("suwayomi_daemon_start").catch((e: unknown) => {
-        console.warn("[suwayomi-daemon] native start error:", e);
-      });
+      await invoke("suwayomi_daemon_start");
     }
-  } catch (err) {
-    console.warn("[suwayomi-daemon] could not invoke native start:", err);
+  } catch (err: unknown) {
+    nativeSpawnOk = false;
+    currentStatus.lastError =
+      typeof err === "string"
+        ? err
+        : (err as Error)?.message ||
+          "Suwayomi Server not found. Click 'Locate Folder' to select your Suwayomi-Server directory.";
+    console.warn("[suwayomi-daemon] native start error:", err);
   }
 
-  // Poll for up to 20 seconds (Suwayomi/Java takes ~3 to 8s to boot)
-  for (let attempt = 1; attempt <= 12; attempt++) {
+  if (!nativeSpawnOk) {
+    const online = await probeLocalSuwayomi();
+    if (online) return true;
+    currentStatus.state = "offline";
+    notify();
+    return false;
+  }
+
+  // Poll for up to 15 seconds (Suwayomi/Java takes ~3 to 8s to boot)
+  for (let attempt = 1; attempt <= 10; attempt++) {
     await new Promise((r) => setTimeout(r, 1500));
     const online = await probeLocalSuwayomi();
     if (online) {
