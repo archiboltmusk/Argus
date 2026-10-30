@@ -1,6 +1,8 @@
 import type { Meta } from "@/lib/cinemeta";
 import { PickCard } from "./pick-card";
 import { Row, usePosterRow } from "./row";
+import { explainAffinity } from "@/lib/feed/rank";
+import { getStore } from "@/lib/discover/store";
 
 export type ShelfMeta = {
   id: string;
@@ -48,9 +50,18 @@ export function FeedShelf({
       scrollKey={scrollKey}
       onViewAll={onViewAll}
     >
-      {items.map((m) => (
-        <PickCard key={m.id} meta={m} flagRerun={flagRerun} />
-      ))}
+      {items.map((m) => {
+        const explanation = explainAffinity(m, getStore().affinity);
+        return (
+          <PickCard
+            key={m.id}
+            meta={m}
+            flagRerun={flagRerun}
+            reason={explanation?.label}
+            reasonDetail={explanation?.detail}
+          />
+        );
+      })}
     </Row>
   );
 }

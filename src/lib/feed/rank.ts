@@ -7,6 +7,11 @@ import { localeWeights } from "./locale";
 type Affinity = ReturnType<typeof getStore>["affinity"];
 type Locale = ReturnType<typeof localeWeights>;
 
+export type RecommendationExplanation = {
+  label: string;
+  detail: string;
+};
+
 function decadeOf(year?: string): string | undefined {
   if (!year) return undefined;
   const y = parseInt(year.slice(0, 4), 10);
@@ -47,6 +52,32 @@ function scoreItem(item: FeedItem, affinity: Affinity, locale: Locale): number {
     if (w !== 0) score += (w / decadeMax) * 1.5;
   }
   return score;
+}
+
+/** Gives people a truthful, on-device explanation for a ranked title. */
+export function explainAffinity(meta: Meta, affinity: Affinity): RecommendationExplanation | null {
+  if (affinity.totalEvents < 1) return null;
+
+  const matchingGenres = (meta.genres ?? [])
+    .map((genre) => ({ genre, weight: affinity.genres[genre] ?? 0 }))
+    .filter((entry) => entry.weight > 0)
+    .sort((a, b) => b.weight - a.weight);
+  if (matchingGenres.length > 0) {
+    return {
+      label: `Because you enjoy ${matchingGenres[0].genre}`,
+      detail: "Based only on your on-device viewing and rating activity.",
+    };
+  }
+
+  const decade = decadeOf(meta.releaseInfo);
+  if (decade && (affinity.decades[decade] ?? 0) > 0) {
+    return {
+      label: `Because you enjoy ${decade} titles`,
+      detail: "Based only on your on-device viewing and rating activity.",
+    };
+  }
+
+  return null;
 }
 
 export function rankByAffinity(items: FeedItem[]): FeedItem[] {
