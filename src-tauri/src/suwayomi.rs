@@ -1,8 +1,9 @@
 //! Automatic background daemon supervisor for Suwayomi-Server / Tachidesk.
 //!
 //! Eliminates the friction of manually starting the server before launching Argus:
-//! - Multi-tier auto-discovery across Applications, ~/Downloads, ~/Desktop, Home, and system PATH.
-//! - Direct headless binary execution without opening Terminal windows.
+//! - Multi-tier auto-discovery across Applications, ~/.local/share, and user directories.
+//! - Direct headless binary execution without opening Terminal or GUI Launcher windows.
+//! - Persistent path caching to eliminate repeated macOS "Downloads folder" privacy prompts.
 //! - Running process table detection (prevents duplicate instances).
 //! - Fast TCP socket probing with incremental backoff.
 //! - Reports live status (Running, Stopped, Starting, NotFound).
@@ -36,6 +37,38 @@ pub struct SuwayomiLaunchSpec {
 
 static DAEMON_STARTED_BY_ARGUS: AtomicBool = AtomicBool::new(false);
 static CUSTOM_SUWAYOMI_PATH: Mutex<Option<PathBuf>> = Mutex::new(None);
+
+/// Path to persistent cached Suwayomi location so we avoid re-probing ~/Downloads.
+fn cache_file_path() -> Option<PathBuf> {
+    std::env::var("HOME").ok().map(|h| {
+        PathBuf::from(h)
+            .join(".config")
+            .join("argus")
+            .join("suwayomi_cached_path.txt")
+    })
+}
+
+fn read_cached_path() -> Option<PathBuf> {
+    let p = cache_file_path()?;
+    if p.is_file() {
+        if let Ok(content) = std::fs::read_to_string(&p) {
+            let trimmed = PathBuf::from(content.trim());
+            if trimmed.exists() {
+                return Some(trimmed);
+            }
+        }
+    }
+    None
+}
+
+fn write_cached_path(path: &Path) {
+    if let Some(cache_file) = cache_file_path() {
+        if let Some(parent) = cache_file.parent() {
+            let _ = std::fs::create_dir_all(parent);
+        }
+        let _ = std::fs::write(&cache_file, path.to_string_lossy().as_bytes());
+    }
+}
 
 /// Checks whether local port 4567 (or configured port) is actively listening.
 pub fn is_suwayomi_listening(port: u16) -> bool {
@@ -80,15 +113,39 @@ pub fn is_suwayomi_process_running() -> bool {
     false
 }
 
-/// Inspects a specific directory to see if it is a valid Suwayomi/Tachidesk installation.
+/// Inspects a specific directory or app bundle to create a headless launch specification.
 fn inspect_suwayomi_dir(folder: &Path) -> Option<SuwayomiLaunchSpec> {
-    if !folder.is_dir() {
+    if !folder.exists() {
         return None;
     }
 
     #[cfg(target_os = "macos")]
     {
-        // 1. Check for bundled bin/Suwayomi-Server script (Preferred headless launch)
+        // 1. Check if folder is a macOS .app bundle
+        if folder.to_string_lossy().ends_with(".app") {
+            let macos_dir = folder.join("Contents").join("MacOS");
+            if macos_dir.is_dir() {
+                let candidates = ["Suwayomi-Server", "Tachidesk", "app"];
+                for c in candidates {
+                    let exe = macos_dir.join(c);
+                    if exe.is_file() {
+                        return Some(SuwayomiLaunchSpec {
+                            display_path: folder.to_path_buf(),
+                            executable: exe,
+                            args: vec![
+                                "-Djava.awt.headless=true".to_string(),
+                                "-Dsuwayomi.tachidesk.config.server.initialOpenInBrowserEnabled=false".to_string(),
+                                "-Dsuwayomi.tachidesk.config.server.systemTrayEnabled=false".to_string(),
+                            ],
+                            working_dir: Some(folder.to_path_buf()),
+                            is_app_bundle: false, // Run binary directly to suppress GUI launcher window
+                        });
+                    }
+                }
+            }
+        }
+
+        // 2. Check for bundled bin/Suwayomi-Server script (Preferred headless CLI launch)
         let bin = folder.join("bin").join("Suwayomi-Server");
         if bin.is_file() {
             return Some(SuwayomiLaunchSpec {
@@ -100,26 +157,36 @@ fn inspect_suwayomi_dir(folder: &Path) -> Option<SuwayomiLaunchSpec> {
             });
         }
 
-        // 2. Check for bundled JRE + Launcher JAR
+        // 3. Check for bundled JRE + Launcher JAR (Run with headless flags to suppress GUI window)
         let jre_java = folder.join("jre").join("bin").join("java");
         let jar = folder.join("Suwayomi-Launcher.jar");
         if jre_java.is_file() && jar.is_file() {
             return Some(SuwayomiLaunchSpec {
                 display_path: folder.to_path_buf(),
                 executable: jre_java,
-                args: vec!["-jar".to_string(), "Suwayomi-Launcher.jar".to_string()],
+                args: vec![
+                    "-Djava.awt.headless=true".to_string(),
+                    "-Dsuwayomi.tachidesk.config.server.initialOpenInBrowserEnabled=false".to_string(),
+                    "-Dsuwayomi.tachidesk.config.server.systemTrayEnabled=false".to_string(),
+                    "-jar".to_string(),
+                    "Suwayomi-Launcher.jar".to_string(),
+                ],
                 working_dir: Some(folder.to_path_buf()),
                 is_app_bundle: false,
             });
         }
 
-        // 3. Check for Suwayomi Launcher.command script
-        let cmd_script = folder.join("Suwayomi Launcher.command");
-        if cmd_script.is_file() {
+        // 4. Check for server.jar directly
+        let server_jar = folder.join("Suwayomi-Server.jar");
+        if jre_java.is_file() && server_jar.is_file() {
             return Some(SuwayomiLaunchSpec {
                 display_path: folder.to_path_buf(),
-                executable: PathBuf::from("/bin/bash"),
-                args: vec![cmd_script.to_string_lossy().to_string()],
+                executable: jre_java,
+                args: vec![
+                    "-Djava.awt.headless=true".to_string(),
+                    "-jar".to_string(),
+                    "Suwayomi-Server.jar".to_string(),
+                ],
                 working_dir: Some(folder.to_path_buf()),
                 is_app_bundle: false,
             });
@@ -198,89 +265,93 @@ pub fn find_suwayomi_launch_spec() -> Option<SuwayomiLaunchSpec> {
     if let Ok(guard) = CUSTOM_SUWAYOMI_PATH.lock() {
         if let Some(custom) = guard.as_ref() {
             if custom.exists() {
-                if custom.is_dir() {
-                    if let Some(spec) = inspect_suwayomi_dir(custom) {
-                        return Some(spec);
-                    }
-                } else if custom.is_file() {
-                    return Some(SuwayomiLaunchSpec {
-                        display_path: custom.clone(),
-                        executable: custom.clone(),
-                        args: Vec::new(),
-                        working_dir: custom.parent().map(|p| p.to_path_buf()),
-                        is_app_bundle: custom.to_string_lossy().ends_with(".app"),
-                    });
+                if let Some(spec) = inspect_suwayomi_dir(custom) {
+                    return Some(spec);
                 }
             }
         }
     }
 
+    // 1. Persistent cached path (Avoids re-scanning ~/Downloads every time!)
+    if let Some(cached) = read_cached_path() {
+        if let Some(spec) = inspect_suwayomi_dir(&cached) {
+            return Some(spec);
+        }
+    }
+
     #[cfg(target_os = "macos")]
     {
-        // 1. Standard application bundles
+        // 2. Standard application bundles in /Applications (No privacy prompt)
         let app_candidates = [
             "/Applications/Suwayomi-Server.app",
             "/Applications/Tachidesk.app",
+            "/Applications/Suwayomi-Server",
         ];
         for candidate in app_candidates {
             let p = Path::new(candidate);
             if p.exists() {
-                return Some(SuwayomiLaunchSpec {
-                    display_path: p.to_path_buf(),
-                    executable: p.to_path_buf(),
-                    args: Vec::new(),
-                    working_dir: None,
-                    is_app_bundle: true,
-                });
+                if let Some(spec) = inspect_suwayomi_dir(p) {
+                    write_cached_path(p);
+                    return Some(spec);
+                }
             }
         }
 
-        // 2. Homebrew / local bin
-        let bin_candidates = [
-            "/opt/homebrew/bin/suwayomi-server",
-            "/usr/local/bin/suwayomi-server",
-        ];
-        for candidate in bin_candidates {
-            let p = Path::new(candidate);
-            if p.exists() {
-                return Some(SuwayomiLaunchSpec {
-                    display_path: p.to_path_buf(),
-                    executable: p.to_path_buf(),
-                    args: Vec::new(),
-                    working_dir: None,
-                    is_app_bundle: false,
-                });
-            }
-        }
-
-        // 3. User directories (Downloads, Desktop, Home, Applications)
+        // 3. User Applications folder (No privacy prompt)
         if let Ok(home) = std::env::var("HOME") {
             let home_path = PathBuf::from(home);
-
-            // User Applications folder
-            let user_app = home_path.join("Applications/Suwayomi-Server.app");
+            let user_app = home_path.join("Applications").join("Suwayomi-Server.app");
             if user_app.exists() {
-                return Some(SuwayomiLaunchSpec {
-                    display_path: user_app.clone(),
-                    executable: user_app,
-                    args: Vec::new(),
-                    working_dir: None,
-                    is_app_bundle: true,
-                });
+                if let Some(spec) = inspect_suwayomi_dir(&user_app) {
+                    write_cached_path(&user_app);
+                    return Some(spec);
+                }
             }
 
-            // User Downloads folder (Very common for downloaded portable release)
+            let user_app_dir = home_path.join("Applications").join("Suwayomi-Server");
+            if user_app_dir.exists() {
+                if let Some(spec) = inspect_suwayomi_dir(&user_app_dir) {
+                    write_cached_path(&user_app_dir);
+                    return Some(spec);
+                }
+            }
+
+            // 4. .local/share / .suwayomi
+            let local_share = home_path.join(".local").join("share").join("Suwayomi-Server");
+            if local_share.exists() {
+                if let Some(spec) = inspect_suwayomi_dir(&local_share) {
+                    write_cached_path(&local_share);
+                    return Some(spec);
+                }
+            }
+
+            // 5. Homebrew / local bin
+            let bin_candidates = [
+                "/opt/homebrew/bin/suwayomi-server",
+                "/usr/local/bin/suwayomi-server",
+            ];
+            for candidate in bin_candidates {
+                let p = Path::new(candidate);
+                if p.exists() {
+                    return Some(SuwayomiLaunchSpec {
+                        display_path: p.to_path_buf(),
+                        executable: p.to_path_buf(),
+                        args: Vec::new(),
+                        working_dir: None,
+                        is_app_bundle: false,
+                    });
+                }
+            }
+
+            // 6. User Downloads folder as LAST RESORT, cache result immediately so we only probe once!
             if let Some(spec) = scan_parent_folder(&home_path.join("Downloads")) {
+                write_cached_path(&spec.display_path);
                 return Some(spec);
             }
 
-            // User Desktop folder
+            // 7. User Desktop folder
             if let Some(spec) = scan_parent_folder(&home_path.join("Desktop")) {
-                return Some(spec);
-            }
-
-            // User Home folder directly
-            if let Some(spec) = scan_parent_folder(&home_path) {
+                write_cached_path(&spec.display_path);
                 return Some(spec);
             }
         }
@@ -350,6 +421,7 @@ pub fn find_suwayomi_launch_spec() -> Option<SuwayomiLaunchSpec> {
 pub fn suwayomi_set_custom_path(path: String) -> SuwayomiDaemonStatus {
     let p = PathBuf::from(path.trim());
     if p.exists() {
+        write_cached_path(&p);
         if let Ok(mut guard) = CUSTOM_SUWAYOMI_PATH.lock() {
             *guard = Some(p);
         }
@@ -361,9 +433,15 @@ pub fn suwayomi_set_custom_path(path: String) -> SuwayomiDaemonStatus {
 #[tauri::command]
 pub fn suwayomi_daemon_status() -> SuwayomiDaemonStatus {
     let is_running = is_suwayomi_listening(DEFAULT_SUWAYOMI_PORT);
-    let installed = find_suwayomi_launch_spec();
-    let is_installed = installed.is_some() || is_running || is_suwayomi_process_running();
-    let installed_path = installed.map(|s| s.display_path.to_string_lossy().to_string());
+    // If already running, do NOT scan filesystem again
+    let (is_installed, installed_path) = if is_running {
+        (true, read_cached_path().map(|p| p.to_string_lossy().to_string()))
+    } else {
+        let installed = find_suwayomi_launch_spec();
+        let inst = installed.is_some() || is_suwayomi_process_running();
+        let path = installed.map(|s| s.display_path.to_string_lossy().to_string());
+        (inst, path)
+    };
 
     SuwayomiDaemonStatus {
         is_running,
@@ -374,7 +452,7 @@ pub fn suwayomi_daemon_status() -> SuwayomiDaemonStatus {
     }
 }
 
-/// Automatically spawns Suwayomi Server in the background without stealing focus.
+/// Automatically spawns Suwayomi Server in the background without stealing focus or opening GUI.
 #[tauri::command]
 pub async fn suwayomi_daemon_start() -> Result<SuwayomiDaemonStatus, String> {
     if is_suwayomi_listening(DEFAULT_SUWAYOMI_PORT) {
@@ -392,48 +470,32 @@ pub async fn suwayomi_daemon_start() -> Result<SuwayomiDaemonStatus, String> {
     }
 
     let spec = find_suwayomi_launch_spec().ok_or_else(|| {
-        "Suwayomi Server not found on this system. Please place the extracted Suwayomi folder in Downloads, Desktop, or Applications.".to_string()
+        "Suwayomi Server not found. Please place the extracted Suwayomi folder in Applications or Downloads.".to_string()
     })?;
 
-    if spec.is_app_bundle {
-        #[cfg(target_os = "macos")]
-        {
-            let bin_str = spec.executable.to_string_lossy();
-            let status = Command::new("open")
-                .args(["-g", "-a", &bin_str])
-                .stdin(Stdio::null())
-                .stdout(Stdio::null())
-                .stderr(Stdio::null())
-                .status()
-                .map_err(|e| format!("failed to launch Suwayomi app: {}", e))?;
-            if !status.success() {
-                return Err(format!("open command exited with status: {}", status));
-            }
-        }
-    } else {
-        let mut cmd = Command::new(&spec.executable);
-        cmd.args(&spec.args);
-        if let Some(wd) = &spec.working_dir {
-            cmd.current_dir(wd);
-        }
-        cmd.stdin(Stdio::null())
-            .stdout(Stdio::null())
-            .stderr(Stdio::null());
-
-        #[cfg(target_os = "windows")]
-        {
-            use std::os::windows::process::CommandExt;
-            cmd.creation_flags(0x0800_0000); // CREATE_NO_WINDOW
-        }
-
-        cmd.spawn().map_err(|e| {
-            format!(
-                "failed to spawn Suwayomi ({}): {}",
-                spec.executable.display(),
-                e
-            )
-        })?;
+    let mut cmd = Command::new(&spec.executable);
+    cmd.args(&spec.args);
+    if let Some(wd) = &spec.working_dir {
+        cmd.current_dir(wd);
     }
+    cmd.env("JAVA_TOOL_OPTIONS", "-Djava.awt.headless=true");
+    cmd.stdin(Stdio::null())
+        .stdout(Stdio::null())
+        .stderr(Stdio::null());
+
+    #[cfg(target_os = "windows")]
+    {
+        use std::os::windows::process::CommandExt;
+        cmd.creation_flags(0x0800_0000); // CREATE_NO_WINDOW
+    }
+
+    cmd.spawn().map_err(|e| {
+        format!(
+            "failed to spawn Suwayomi ({}): {}",
+            spec.executable.display(),
+            e
+        )
+    })?;
 
     DAEMON_STARTED_BY_ARGUS.store(true, Ordering::SeqCst);
 
