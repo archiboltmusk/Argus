@@ -57,8 +57,9 @@ function parseSrt(text: string): SubCue[] {
     const start = toSec(m[1], m[2], m[3], m[4]);
     const end = toSec(m[5], m[6], m[7], m[8]);
     const body = lines.slice(timingIdx + 1).join("\n");
-    if (body.length === 0) continue;
-    cues.push({ start, end, text: cleanInline(body) });
+    const cleaned = stripSubtitleAds(cleanInline(body));
+    if (cleaned.length === 0) continue;
+    cues.push({ start, end, text: cleaned });
   }
   return cues.sort((a, b) => a.start - b.start);
 }
@@ -85,8 +86,9 @@ function parseVtt(text: string): SubCue[] {
     const start = toSec(m[1] ?? "0", m[2], m[3], m[4]);
     const end = toSec(m[5] ?? "0", m[6], m[7], m[8]);
     const body = lines.slice(timingIdx + 1).join("\n");
-    if (body.length === 0) continue;
-    cues.push({ start, end, text: cleanInline(body) });
+    const cleaned = stripSubtitleAds(cleanInline(body));
+    if (cleaned.length === 0) continue;
+    cues.push({ start, end, text: cleaned });
   }
   return cues.sort((a, b) => a.start - b.start);
 }
@@ -117,7 +119,7 @@ function parseAss(text: string): SubCue[] {
     const start = parseAssTime(parts[startIdx]);
     const end = parseAssTime(parts[endIdx]);
     if (Number.isNaN(start) || Number.isNaN(end)) continue;
-    const body = stripAssTags(parts[textIdx]);
+    const body = stripSubtitleAds(stripAssTags(parts[textIdx]));
     if (body.length === 0) continue;
     cues.push({ start, end, text: body });
   }
@@ -157,6 +159,37 @@ function stripAssTags(s: string): string {
     .replace(/\\n/g, " ")
     .replace(/\\h/g, " ")
     .trim();
+}
+
+const SPAM_AD_PATTERNS = [
+  /jaya\s*9/i,
+  /1x\s*bet/i,
+  /cricket\s+platform/i,
+  /babu\s*88/i,
+  /krikya/i,
+  /parimatch/i,
+  /melbet/i,
+  /dafabet/i,
+  /bet365/i,
+  /mostbet/i,
+  /1win/i,
+  /linebet/i,
+  /subtitles\s+(?:by|created\s+by|downloaded\s+from)/i,
+  /ripped\s+by/i,
+  /synced\s+by/i,
+  /downloaded\s+from/i,
+  /www\.[a-z0-9-]+\.(?:com|org|net|xyz|vip|cc|club|co)/i,
+  /t\.me\/[a-z0-9_]+/i,
+];
+
+export function stripSubtitleAds(text: string): string {
+  const lines = text.split("\n");
+  const filtered = lines.filter((line) => {
+    const trimmed = line.trim();
+    if (!trimmed) return false;
+    return !SPAM_AD_PATTERNS.some((pattern) => pattern.test(trimmed));
+  });
+  return filtered.join("\n").trim();
 }
 
 function cleanInline(s: string): string {

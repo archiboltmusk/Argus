@@ -23,11 +23,14 @@ export function applyLocaleCascade(
 ): void {
   const uiLanguage = normalizeLanguage(next.uiLanguage);
   setUiLanguage(uiLanguage);
+  const subLangs = current.preferredSubLangs[0] === "English"
+    ? current.preferredSubLangs
+    : prepend(next.subtitleLanguage, current.preferredSubLangs);
   update({
     uiLanguage,
     tmdbLanguage: next.tmdbLanguage,
     preferredLanguages: prepend(next.audioLanguage, current.preferredLanguages),
-    preferredSubLangs: prepend(next.subtitleLanguage, current.preferredSubLangs),
+    preferredSubLangs: subLangs,
     preferredAudioLangs: prepend(next.audioLanguage, current.preferredAudioLangs),
   });
 }
