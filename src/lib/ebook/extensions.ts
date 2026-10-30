@@ -112,35 +112,73 @@ function manifest(value: unknown, ebookRepo: boolean): EBookPluginManifest | nul
     row.mediaType !== "novel"
   )
     return null;
-  if (typeof row.id !== "string" || typeof row.name !== "string" || typeof row.entry !== "string")
-    return null;
+  const id = typeof row.id === "string" ? row.id : "";
+  const name = typeof row.name === "string" ? row.name : "";
+  const entry =
+    typeof row.entry === "string"
+      ? row.entry
+      : typeof row.url === "string"
+        ? row.url
+        : typeof row.path === "string"
+          ? row.path
+          : "";
+  if (!id || !name || !entry) return null;
   return {
-    id: row.id,
-    name: row.name,
-    entry: row.entry,
+    id,
+    name,
+    entry,
     version: typeof row.version === "string" ? row.version : "0",
     lang: typeof row.lang === "string" ? row.lang : "en",
     nsfw: row.nsfw === true,
-    icon: typeof row.icon === "string" ? row.icon : undefined,
+    icon:
+      typeof row.icon === "string"
+        ? row.icon
+        : typeof row.iconUrl === "string"
+          ? row.iconUrl
+          : undefined,
   };
 }
 
+export function normalizeEBookRepoUrl(url: string): string {
+  let u = url.trim();
+  if (u.includes("github.com/")) {
+    u = u.replace("github.com/", "raw.githubusercontent.com/").replace(/\/raw\//, "/").replace(/\/blob\//, "/");
+  }
+  if (u.includes("lnreader-sources/plugins/index.json") || u.includes("lnreader-sources")) {
+    u = "https://raw.githubusercontent.com/LNReader/lnreader-plugins/plugins/v2.0.0/.dist/plugins.min.json";
+  }
+  return u;
+}
+
 export async function browseEBookRepo(url: string): Promise<EBookPluginRepo> {
-  const target = assertSafeUrl(url);
+  const normalized = normalizeEBookRepoUrl(url);
+  const target = assertSafeUrl(normalized);
   const response = await safeFetch(target, { signal: AbortSignal.timeout(20_000) });
   if (!response.ok) throw new Error(`Repository HTTP ${response.status}`);
-  const value = JSON.parse(await response.text()) as Record<string, unknown>;
-  const isEBook =
-    value.type === "ebook" ||
-    value.mediaType === "ebook" ||
-    value.type === "novel" ||
-    value.mediaType === "novel";
-  const rows = Array.isArray(value.plugins) ? value.plugins : [];
+  const text = await response.text();
+  let value: unknown;
+  try {
+    value = JSON.parse(text);
+  } catch {
+    throw new Error("Repository returned invalid format.");
+  }
+  let name = "Repository";
+  let rows: unknown[] = [];
+  if (Array.isArray(value)) {
+    rows = value;
+    name = normalized.includes("lnreader") ? "LNReader Official Community Scrapers" : "eBook Extensions";
+  } else if (value && typeof value === "object") {
+    const obj = value as Record<string, unknown>;
+    name = typeof obj.name === "string" ? obj.name : "Repository";
+    if (Array.isArray(obj.plugins)) rows = obj.plugins;
+    else if (Array.isArray(obj.sources)) rows = obj.sources;
+    else if (Array.isArray(obj.extensions)) rows = obj.extensions;
+  }
   return {
-    name: typeof value.name === "string" ? value.name : "Repository",
+    name,
     url: target,
     plugins: rows
-      .map((row) => manifest(row, isEBook))
+      .map((row) => manifest(row, true))
       .filter((row): row is EBookPluginManifest => !!row),
   };
 }

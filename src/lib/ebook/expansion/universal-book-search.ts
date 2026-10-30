@@ -150,24 +150,49 @@ export async function universalBookSearch(
   return combined;
 }
 
+export interface CommunityBookRepo {
+  name: string;
+  url: string;
+  description: string;
+  category: string;
+  kind?: "plugin" | "opds" | "gutenberg" | "annas" | "indic";
+}
+
 /** Pre-configured community repository presets for 1-click addition */
-export const COMMUNITY_BOOK_REPOS = [
+export const COMMUNITY_BOOK_REPOS: CommunityBookRepo[] = [
   {
     name: "LNReader Official Community Scrapers",
-    url: "https://raw.githubusercontent.com/LNReader/lnreader-sources/plugins/index.json",
+    url: "https://raw.githubusercontent.com/LNReader/lnreader-plugins/plugins/v2.0.0/.dist/plugins.min.json",
     description: "Hundreds of community-maintained web novel, light novel, and fiction scrapers.",
     category: "Community Scrapers",
+    kind: "plugin",
   },
   {
-    name: "IReader Open Multi-Source Repository",
-    url: "https://raw.githubusercontent.com/IReaderorg/IReader-extensions/main/index.json",
-    description: "Universal extension feed supporting multi-catalog scraping and direct streaming.",
-    category: "Extensions",
-  },
-  {
-    name: "Standard Ebooks & Open Curated Masterworks",
+    name: "Standard Ebooks Curated Masterworks",
     url: "https://standardebooks.org/opds/all",
     description: "High-typography, beautifully typeset public domain literature editions.",
-    category: "OPDS Catalog",
+    category: "Classic Literature",
+    kind: "opds",
+  },
+  {
+    name: "Project Gutenberg Free Open Library",
+    url: "https://gutendex.com",
+    description: "75,000+ free public domain eBooks across world literature, history, and philosophy.",
+    category: "Public Domain Vault",
+    kind: "gutenberg",
+  },
+  {
+    name: "Anna's Archive & Shadow Catalogs",
+    url: "https://annas-archive.org",
+    description: "35M+ books, research papers, comic trade paperbacks, and LibGen mirrors.",
+    category: "Universal Library",
+    kind: "annas",
+  },
+  {
+    name: "Bengal & Indic Literary Vault",
+    url: "https://argus.internal/indic-vault",
+    description: "Tagore, Sarat Chandra, Bankim, Satyajit Ray, and National Digital Library of India.",
+    category: "Indic Literature",
+    kind: "indic",
   },
 ];

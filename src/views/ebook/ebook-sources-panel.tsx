@@ -1037,7 +1037,16 @@ function Extensions() {
         <p className="text-[13px] font-semibold text-ink">{t("Popular Community Repositories")}</p>
         <div className="grid gap-2 sm:grid-cols-2">
           {COMMUNITY_BOOK_REPOS.map((repo) => {
-            const isAdded = ebookRepoUrls().includes(repo.url);
+            const isAdded =
+              repo.kind === "opds" || repo.url.includes("opds")
+                ? hasStandardEbooks()
+                : repo.kind === "gutenberg"
+                  ? hasEBookGutendex()
+                  : repo.kind === "annas"
+                    ? hasAnnasArchive()
+                    : repo.kind === "indic"
+                      ? hasIndicLibrary()
+                      : ebookRepoUrls().includes(repo.url);
             return (
               <div key={repo.url} className={`flex items-center justify-between p-3.5 ${CARD}`}>
                 <div className="min-w-0 flex-1 pr-2">
@@ -1047,7 +1056,27 @@ function Extensions() {
                 <button
                   type="button"
                   disabled={isAdded || busy}
-                  onClick={() => void addEBookRepo(repo.url)}
+                  onClick={async () => {
+                    setBusy(true);
+                    setError(null);
+                    try {
+                      if (repo.kind === "opds" || repo.url.includes("opds")) {
+                        addStandardEbooks();
+                      } else if (repo.kind === "gutenberg") {
+                        addEBookGutendex();
+                      } else if (repo.kind === "annas") {
+                        addAnnasArchive();
+                      } else if (repo.kind === "indic") {
+                        addIndicLibrary();
+                      } else {
+                        await addEBookRepo(repo.url);
+                      }
+                    } catch {
+                      setError(t("Could not install this repository"));
+                    } finally {
+                      setBusy(false);
+                    }
+                  }}
                   className={`h-8 px-3 text-[12px] ${isAdded ? "text-ink-muted" : PRIMARY_BTN}`}
                 >
                   {isAdded ? <Check size={14} /> : <Plus size={14} />}
