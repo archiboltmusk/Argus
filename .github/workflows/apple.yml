@@ -1,0 +1,86 @@
+name: Apple Ecosystem (iOS & tvOS)
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+    paths:
+      - "src/**"
+      - "src-tauri/**"
+      - "index-tv.html"
+      - "package.json"
+      - "pnpm-lock.yaml"
+      - ".github/workflows/apple.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: apple-mobile-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
+env:
+  CARGO_TERM_COLOR: always
+  NODE_OPTIONS: --max-old-space-size=8192
+
+jobs:
+  ipa:
+    name: Build iOS & iPadOS Sideload IPA
+    runs-on: macos-14
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v6
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-apple-ios
+      - uses: pnpm/action-setup@v5
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm run setup:fonts
+      - name: Build Frontend for Mobile
+        run: pnpm build:desktop
+      - name: Initialize iOS Scaffold
+        run: pnpm tauri ios init --ci
+      - name: Build and Package Unsigned IPA
+        run: |
+          set -euo pipefail
+          # Build with Xcode targeting generic iOS device without code sign enforcement
+          cd src-tauri/gen/apple
+          xcodebuild -workspace Argus.xcworkspace -scheme "argus_iOS" \
+            -configuration Release -destination 'generic/platform=iOS' \
+            -archivePath "$RUNNER_TEMP/Argus.xcarchive" archive \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO
+          
+          # Wrap .app inside Payload/ and zip into .ipa (AltStore / SideStore / Sideloadly format)
+          mkdir -p "$RUNNER_TEMP/Payload"
+          cp -r "$RUNNER_TEMP/Argus.xcarchive/Products/Applications/Argus.app" "$RUNNER_TEMP/Payload/"
+          cd "$RUNNER_TEMP"
+          zip -r -9 Argus-iOS-iPadOS.ipa Payload
+          cp Argus-iOS-iPadOS.ipa "$GITHUB_WORKSPACE/Argus-iOS-iPadOS.ipa"
+      - uses: actions/upload-artifact@v7
+        with:
+          name: Argus-iOS-iPadOS-IPA
+          path: Argus-iOS-iPadOS.ipa
+          if-no-files-found: error
+
+  publish:
+    name: Publish Apple IPAs to Release
+    needs: ipa
+    if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v5
+        with:
+          name: Argus-iOS-iPadOS-IPA
+      - env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG="beta"
+          if [[ "${{ github.ref }}" == refs/tags/v* ]]; then
+            TAG="${{ github.ref_name }}"
+          fi
+          gh release upload "$TAG" Argus-iOS-iPadOS.ipa --repo "$GITHUB_REPOSITORY" --clobber || true
