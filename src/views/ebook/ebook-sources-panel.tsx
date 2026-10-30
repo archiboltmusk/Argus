@@ -57,6 +57,7 @@ import {
   probeLocalBookLibraries,
   type DiscoveredLibrary,
 } from "@/lib/ebook/expansion/calibre-discovery";
+import { COMMUNITY_BOOK_REPOS } from "@/lib/ebook/expansion/universal-book-search";
 import { OpdsCatalogCard } from "./ebook-opds-card";
 import { PluginGuide } from "@/views/manga/manga-sources-panel/plugin-guide";
 import {
@@ -1030,6 +1031,32 @@ function Extensions() {
           </button>
         </div>
         {error && <p className="text-[13px] font-medium text-danger">{error}</p>}
+      </div>
+
+      <div className="flex flex-col gap-2.5">
+        <p className="text-[13px] font-semibold text-ink">{t("Popular Community Repositories")}</p>
+        <div className="grid gap-2 sm:grid-cols-2">
+          {COMMUNITY_BOOK_REPOS.map((repo) => {
+            const isAdded = ebookRepoUrls().includes(repo.url);
+            return (
+              <div key={repo.url} className={`flex items-center justify-between p-3.5 ${CARD}`}>
+                <div className="min-w-0 flex-1 pr-2">
+                  <p className="truncate text-[13.5px] font-semibold text-ink">{repo.name}</p>
+                  <p className="line-clamp-1 text-[12px] text-ink-muted">{repo.description}</p>
+                </div>
+                <button
+                  type="button"
+                  disabled={isAdded || busy}
+                  onClick={() => void addEBookRepo(repo.url)}
+                  className={`h-8 px-3 text-[12px] ${isAdded ? "text-ink-muted" : PRIMARY_BTN}`}
+                >
+                  {isAdded ? <Check size={14} /> : <Plus size={14} />}
+                  {isAdded ? t("Added") : t("Install")}
+                </button>
+              </div>
+            );
+          })}
+        </div>
       </div>
       {ebookRepoUrls().length ? (
         ebookRepoUrls().map((item) => <RepoCard key={item} url={item} />)
