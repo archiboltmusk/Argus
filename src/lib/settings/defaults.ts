@@ -782,6 +782,11 @@ export const DEFAULT: Settings = {
   hybridLegalFallback: true,
   indicDubbingOverlay: false,
   indicDubbingLanguage: "bengali",
+  projectorModeEnabled: false,
+  projectorContrastBoost: 8,
+  projectorGammaLift: 2,
+  projectorKeystoneOverscan: 5,
+  projectorHighContrastSubs: true,
 };
 
 export function getSecondaryPrivileges(

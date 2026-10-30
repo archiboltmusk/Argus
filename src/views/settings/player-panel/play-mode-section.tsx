@@ -241,7 +241,56 @@ export function PlayModePanel() {
         {!isAndroid() && <PlaybackCacheFolder />}
       </SettingGroup>
 
-
+      <SettingGroup label={t("Projector & Big Screen")}>
+        <ToggleRow
+          label={t("Projector display optimization")}
+          sub={t(
+            "Tuned for LED projectors (Portronics Beem, Wanbo, Egate) and home cinema beams. Boosts midtone contrast, enhances gamma, and activates fast deband to eliminate washed-out projection on walls.",
+          )}
+          value={settings.projectorModeEnabled}
+          onChange={(v) => update({ projectorModeEnabled: v })}
+        />
+        {settings.projectorModeEnabled && (
+          <Nested>
+            <SettingRow
+              label={t("Midtone contrast boost")}
+              desc={t("Compensates for ambient light and low ANSI lumens projection.")}
+            >
+              <Segmented
+                value={String(settings.projectorContrastBoost)}
+                options={[
+                  { value: "4", label: t("+4 dB") },
+                  { value: "8", label: t("+8 dB (Recommended)") },
+                  { value: "12", label: t("+12 dB (Daylight)") },
+                ]}
+                onChange={(v) => update({ projectorContrastBoost: Number(v) })}
+              />
+            </SettingRow>
+            <SettingRow
+              label={t("Keystone edge overscan safe-area")}
+              desc={t("Shrinks picture margins slightly (0-10%) so physical keystone distortion does not crop video or subtitles.")}
+            >
+              <Segmented
+                value={String(settings.projectorKeystoneOverscan)}
+                options={[
+                  { value: "0", label: t("None (0%)") },
+                  { value: "5", label: t("5% (Standard)") },
+                  { value: "8", label: t("8% (High keystone)") },
+                ]}
+                onChange={(v) => update({ projectorKeystoneOverscan: Number(v) })}
+              />
+            </SettingRow>
+            <ToggleRow
+              label={t("Wall high-contrast amber subtitles")}
+              sub={t(
+                "Renders subtitles with a bold outline and anti-glare warm cream/amber tone to prevent projector light leakage from washing out text.",
+              )}
+              value={settings.projectorHighContrastSubs}
+              onChange={(v) => update({ projectorHighContrastSubs: v })}
+            />
+          </Nested>
+        )}
+      </SettingGroup>
     </div>
   );
 }

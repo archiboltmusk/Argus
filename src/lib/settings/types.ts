@@ -955,4 +955,9 @@ export type Settings = {
   hybridLegalFallback: boolean;
   indicDubbingOverlay: boolean;
   indicDubbingLanguage: "bengali" | "hindi" | "english";
+  projectorModeEnabled: boolean;
+  projectorContrastBoost: number;
+  projectorGammaLift: number;
+  projectorKeystoneOverscan: number;
+  projectorHighContrastSubs: boolean;
 };
