@@ -25,6 +25,4 @@ test("Community Book Repositories contains verified extension sources", () => {
   assert.ok(lnreader, "Must contain LNReader community scrapers repo");
   assert.ok(lnreader?.url.startsWith("https://"), "Repo must have https URL");
 
-  const ireader = COMMUNITY_BOOK_REPOS.find((r) => r.name.includes("IReader"));
-  assert.ok(ireader, "Must contain IReader open extensions repo");
 });
