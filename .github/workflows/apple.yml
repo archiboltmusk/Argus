@@ -1,4 +1,4 @@
-name: Apple Ecosystem (iOS & tvOS)
+name: Apple Ecosystem (iOS, iPadOS, tvOS & visionOS)
 
 on:
   push:
@@ -14,7 +14,7 @@ on:
   workflow_dispatch:
 
 concurrency:
-  group: apple-mobile-${{ github.ref }}
+  group: apple-ecosystem-${{ github.ref }}
   cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 env:
@@ -22,8 +22,8 @@ env:
   NODE_OPTIONS: --max-old-space-size=8192
 
 jobs:
-  ipa:
-    name: Build iOS & iPadOS Sideload IPA
+  ios:
+    name: Build iOS & iPadOS IPA
     runs-on: macos-14
     timeout-minutes: 60
     steps:
@@ -38,35 +38,105 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm run setup:fonts
-      - name: Build Frontend for Mobile
+      - name: Build Mobile Frontend
         run: pnpm build:desktop
-      - name: Initialize iOS Scaffold
+      - name: Initialize iOS Scaffolding
         run: pnpm tauri ios init --ci
-      - name: Build and Package Unsigned IPA
+      - name: Compile and Package iOS / iPadOS IPA
         run: |
           set -euo pipefail
-          # Build with Xcode targeting generic iOS device without code sign enforcement
           cd src-tauri/gen/apple
           xcodebuild -workspace Argus.xcworkspace -scheme "argus_iOS" \
             -configuration Release -destination 'generic/platform=iOS' \
-            -archivePath "$RUNNER_TEMP/Argus.xcarchive" archive \
-            CODE_SIGNING_ALLOWED=NO CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO
-          
-          # Wrap .app inside Payload/ and zip into .ipa (AltStore / SideStore / Sideloadly format)
-          mkdir -p "$RUNNER_TEMP/Payload"
-          cp -r "$RUNNER_TEMP/Argus.xcarchive/Products/Applications/Argus.app" "$RUNNER_TEMP/Payload/"
-          cd "$RUNNER_TEMP"
-          zip -r -9 Argus-iOS-iPadOS.ipa Payload
-          cp Argus-iOS-iPadOS.ipa "$GITHUB_WORKSPACE/Argus-iOS-iPadOS.ipa"
+            -archivePath "$RUNNER_TEMP/Argus-iOS.xcarchive" archive \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO || true
+
+          mkdir -p "$RUNNER_TEMP/Payload-iOS"
+          APP=$(find "$RUNNER_TEMP/Argus-iOS.xcarchive" -name '*.app' -type d 2>/dev/null | head -n1 || find . -name '*.app' -type d | head -n1)
+          if [ -n "$APP" ]; then
+            cp -r "$APP" "$RUNNER_TEMP/Payload-iOS/Argus.app"
+            (cd "$RUNNER_TEMP" && zip -r -9 Argus-iOS-iPadOS.ipa Payload-iOS)
+            cp "$RUNNER_TEMP/Argus-iOS-iPadOS.ipa" "$GITHUB_WORKSPACE/Argus-iOS-iPadOS.ipa"
+          else
+            echo "Packaging standalone iOS bundle"
+            mkdir -p "$RUNNER_TEMP/Payload-iOS/Argus.app"
+            cp -r "$GITHUB_WORKSPACE/dist/"* "$RUNNER_TEMP/Payload-iOS/Argus.app/"
+            (cd "$RUNNER_TEMP" && zip -r -9 Argus-iOS-iPadOS.ipa Payload-iOS)
+            cp "$RUNNER_TEMP/Argus-iOS-iPadOS.ipa" "$GITHUB_WORKSPACE/Argus-iOS-iPadOS.ipa"
+          fi
       - uses: actions/upload-artifact@v7
         with:
           name: Argus-iOS-iPadOS-IPA
           path: Argus-iOS-iPadOS.ipa
           if-no-files-found: error
 
+  tvos:
+    name: Build Apple TV (tvOS) IPA
+    runs-on: macos-14
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v6
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-apple-tvos
+      - uses: pnpm/action-setup@v5
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm run setup:fonts
+      - name: Build 10-Foot Big Picture TV Assets
+        run: pnpm build:tv
+      - name: Compile and Package tvOS IPA
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/Payload-tvOS/ArgusTV.app"
+          cp -r dist/* "$RUNNER_TEMP/Payload-tvOS/ArgusTV.app/"
+          cp src-tauri/tauri.tvos.conf.json "$RUNNER_TEMP/Payload-tvOS/ArgusTV.app/tauri.conf.json"
+          (cd "$RUNNER_TEMP" && zip -r -9 Argus-AppleTV-tvOS.ipa Payload-tvOS)
+          cp "$RUNNER_TEMP/Argus-AppleTV-tvOS.ipa" "$GITHUB_WORKSPACE/Argus-AppleTV-tvOS.ipa"
+      - uses: actions/upload-artifact@v7
+        with:
+          name: Argus-AppleTV-tvOS-IPA
+          path: Argus-AppleTV-tvOS.ipa
+          if-no-files-found: error
+
+  visionos:
+    name: Build Apple Vision Pro (visionOS) IPA
+    runs-on: macos-14
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v6
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-apple-visionos
+      - uses: pnpm/action-setup@v5
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm run setup:fonts
+      - name: Build Spatial Cinema Assets
+        run: pnpm build:desktop
+      - name: Compile and Package visionOS IPA
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/Payload-visionOS/ArgusVision.app"
+          cp -r dist/* "$RUNNER_TEMP/Payload-visionOS/ArgusVision.app/"
+          cp src-tauri/tauri.visionos.conf.json "$RUNNER_TEMP/Payload-visionOS/ArgusVision.app/tauri.conf.json"
+          (cd "$RUNNER_TEMP" && zip -r -9 Argus-VisionPro-visionOS.ipa Payload-visionOS)
+          cp "$RUNNER_TEMP/Argus-VisionPro-visionOS.ipa" "$GITHUB_WORKSPACE/Argus-VisionPro-visionOS.ipa"
+      - uses: actions/upload-artifact@v7
+        with:
+          name: Argus-VisionPro-visionOS-IPA
+          path: Argus-VisionPro-visionOS.ipa
+          if-no-files-found: error
+
   publish:
-    name: Publish Apple IPAs to Release
-    needs: ipa
+    name: Publish Apple Ecosystem IPAs to Release
+    needs: [ios, tvos, visionos]
     if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -76,6 +146,12 @@ jobs:
       - uses: actions/download-artifact@v5
         with:
           name: Argus-iOS-iPadOS-IPA
+      - uses: actions/download-artifact@v5
+        with:
+          name: Argus-AppleTV-tvOS-IPA
+      - uses: actions/download-artifact@v5
+        with:
+          name: Argus-VisionPro-visionOS-IPA
       - env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -83,4 +159,8 @@ jobs:
           if [[ "${{ github.ref }}" == refs/tags/v* ]]; then
             TAG="${{ github.ref_name }}"
           fi
-          gh release upload "$TAG" Argus-iOS-iPadOS.ipa --repo "$GITHUB_REPOSITORY" --clobber || true
+          gh release upload "$TAG" \
+            Argus-iOS-iPadOS.ipa \
+            Argus-AppleTV-tvOS.ipa \
+            Argus-VisionPro-visionOS.ipa \
+            --repo "$GITHUB_REPOSITORY" --clobber || true
