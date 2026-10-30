@@ -46,7 +46,8 @@ jobs:
       - name: Compile and Package iOS / iPadOS IPA
         run: |
           set -euo pipefail
-          mkdir -p "$RUNNER_TEMP/Payload-iOS/Argus.app"
+          rm -rf "$RUNNER_TEMP/Payload" "$RUNNER_TEMP/Argus-iOS-iPadOS.ipa"
+          mkdir -p "$RUNNER_TEMP/Payload/Argus.app"
           if [ -d "src-tauri/gen/apple" ]; then
             cd src-tauri/gen/apple
             xcodebuild -workspace Argus.xcworkspace -scheme "argus_iOS" \
@@ -55,17 +56,17 @@ jobs:
               CODE_SIGNING_ALLOWED=NO CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO || true
             APP=$(find "$RUNNER_TEMP/Argus-iOS.xcarchive" -name '*.app' -type d 2>/dev/null | head -n1 || find . -name '*.app' -type d | head -n1)
             if [ -n "$APP" ]; then
-              cp -r "$APP/" "$RUNNER_TEMP/Payload-iOS/Argus.app/"
+              cp -r "$APP/" "$RUNNER_TEMP/Payload/Argus.app/"
             fi
             cd "$GITHUB_WORKSPACE"
           fi
 
-          if [ ! -f "$RUNNER_TEMP/Payload-iOS/Argus.app/Info.plist" ]; then
-            cp -r dist/* "$RUNNER_TEMP/Payload-iOS/Argus.app/"
-            cp src-tauri/tauri.ios.conf.json "$RUNNER_TEMP/Payload-iOS/Argus.app/tauri.conf.json"
+          if [ ! -f "$RUNNER_TEMP/Payload/Argus.app/Info.plist" ]; then
+            cp -r dist/* "$RUNNER_TEMP/Payload/Argus.app/"
+            cp src-tauri/tauri.ios.conf.json "$RUNNER_TEMP/Payload/Argus.app/tauri.conf.json"
           fi
 
-          (cd "$RUNNER_TEMP" && zip -r -9 Argus-iOS-iPadOS.ipa Payload-iOS)
+          (cd "$RUNNER_TEMP" && zip -r -9 Argus-iOS-iPadOS.ipa Payload)
           cp "$RUNNER_TEMP/Argus-iOS-iPadOS.ipa" "$GITHUB_WORKSPACE/Argus-iOS-iPadOS.ipa"
       - uses: actions/upload-artifact@v7
         with:
@@ -94,10 +95,11 @@ jobs:
       - name: Compile and Package tvOS IPA
         run: |
           set -euo pipefail
-          mkdir -p "$RUNNER_TEMP/Payload-tvOS/ArgusTV.app"
-          cp -r dist/* "$RUNNER_TEMP/Payload-tvOS/ArgusTV.app/"
-          cp src-tauri/tauri.tvos.conf.json "$RUNNER_TEMP/Payload-tvOS/ArgusTV.app/tauri.conf.json"
-          (cd "$RUNNER_TEMP" && zip -r -9 Argus-AppleTV-tvOS.ipa Payload-tvOS)
+          rm -rf "$RUNNER_TEMP/Payload" "$RUNNER_TEMP/Argus-AppleTV-tvOS.ipa"
+          mkdir -p "$RUNNER_TEMP/Payload/ArgusTV.app"
+          cp -r dist/* "$RUNNER_TEMP/Payload/ArgusTV.app/"
+          cp src-tauri/tauri.tvos.conf.json "$RUNNER_TEMP/Payload/ArgusTV.app/tauri.conf.json"
+          (cd "$RUNNER_TEMP" && zip -r -9 Argus-AppleTV-tvOS.ipa Payload)
           cp "$RUNNER_TEMP/Argus-AppleTV-tvOS.ipa" "$GITHUB_WORKSPACE/Argus-AppleTV-tvOS.ipa"
       - uses: actions/upload-artifact@v7
         with:
@@ -126,10 +128,11 @@ jobs:
       - name: Compile and Package visionOS IPA
         run: |
           set -euo pipefail
-          mkdir -p "$RUNNER_TEMP/Payload-visionOS/ArgusVision.app"
-          cp -r dist/* "$RUNNER_TEMP/Payload-visionOS/ArgusVision.app/"
-          cp src-tauri/tauri.visionos.conf.json "$RUNNER_TEMP/Payload-visionOS/ArgusVision.app/tauri.conf.json"
-          (cd "$RUNNER_TEMP" && zip -r -9 Argus-VisionPro-visionOS.ipa Payload-visionOS)
+          rm -rf "$RUNNER_TEMP/Payload" "$RUNNER_TEMP/Argus-VisionPro-visionOS.ipa"
+          mkdir -p "$RUNNER_TEMP/Payload/ArgusVision.app"
+          cp -r dist/* "$RUNNER_TEMP/Payload/ArgusVision.app/"
+          cp src-tauri/tauri.visionos.conf.json "$RUNNER_TEMP/Payload/ArgusVision.app/tauri.conf.json"
+          (cd "$RUNNER_TEMP" && zip -r -9 Argus-VisionPro-visionOS.ipa Payload)
           cp "$RUNNER_TEMP/Argus-VisionPro-visionOS.ipa" "$GITHUB_WORKSPACE/Argus-VisionPro-visionOS.ipa"
       - uses: actions/upload-artifact@v7
         with:
@@ -158,10 +161,11 @@ jobs:
       - name: Compile and Package watchOS IPA
         run: |
           set -euo pipefail
-          mkdir -p "$RUNNER_TEMP/Payload-watchOS/ArgusWatch.app"
-          cp -r dist/* "$RUNNER_TEMP/Payload-watchOS/ArgusWatch.app/"
-          cp src-tauri/tauri.watchos.conf.json "$RUNNER_TEMP/Payload-watchOS/ArgusWatch.app/tauri.conf.json"
-          (cd "$RUNNER_TEMP" && zip -r -9 Argus-AppleWatch-watchOS.ipa Payload-watchOS)
+          rm -rf "$RUNNER_TEMP/Payload" "$RUNNER_TEMP/Argus-AppleWatch-watchOS.ipa"
+          mkdir -p "$RUNNER_TEMP/Payload/ArgusWatch.app"
+          cp -r dist/* "$RUNNER_TEMP/Payload/ArgusWatch.app/"
+          cp src-tauri/tauri.watchos.conf.json "$RUNNER_TEMP/Payload/ArgusWatch.app/tauri.conf.json"
+          (cd "$RUNNER_TEMP" && zip -r -9 Argus-AppleWatch-watchOS.ipa Payload)
           cp "$RUNNER_TEMP/Argus-AppleWatch-watchOS.ipa" "$GITHUB_WORKSPACE/Argus-AppleWatch-watchOS.ipa"
       - uses: actions/upload-artifact@v7
         with:
