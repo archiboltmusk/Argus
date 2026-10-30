@@ -67,11 +67,13 @@ pub async fn recognize(
     for m in model_chain(model) {
         match attempt(&audio, &api_key, &m, true, movie_context.as_deref()).await {
             Ok(v) => return Ok(v),
-            Err(e) if e.bad_request => match attempt(&audio, &api_key, &m, false, movie_context.as_deref()).await {
-                Ok(v) => return Ok(v),
-                Err(e2) if e2.try_next => last = e2.message,
-                Err(e2) => return Err(e2.message),
-            },
+            Err(e) if e.bad_request => {
+                match attempt(&audio, &api_key, &m, false, movie_context.as_deref()).await {
+                    Ok(v) => return Ok(v),
+                    Err(e2) if e2.try_next => last = e2.message,
+                    Err(e2) => return Err(e2.message),
+                }
+            }
             Err(e) if e.try_next => last = e.message,
             Err(e) => return Err(e.message),
         }

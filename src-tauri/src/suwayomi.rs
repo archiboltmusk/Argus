@@ -48,12 +48,18 @@ pub fn is_suwayomi_listening(port: u16) -> bool {
 pub fn is_suwayomi_process_running() -> bool {
     #[cfg(any(target_os = "macos", target_os = "linux"))]
     {
-        if let Ok(output) = Command::new("pgrep").args(["-f", "-i", "suwayomi"]).output() {
+        if let Ok(output) = Command::new("pgrep")
+            .args(["-f", "-i", "suwayomi"])
+            .output()
+        {
             if output.status.success() && !output.stdout.is_empty() {
                 return true;
             }
         }
-        if let Ok(output) = Command::new("pgrep").args(["-f", "-i", "tachidesk"]).output() {
+        if let Ok(output) = Command::new("pgrep")
+            .args(["-f", "-i", "tachidesk"])
+            .output()
+        {
             if output.status.success() && !output.stdout.is_empty() {
                 return true;
             }
@@ -61,7 +67,10 @@ pub fn is_suwayomi_process_running() -> bool {
     }
     #[cfg(target_os = "windows")]
     {
-        if let Ok(output) = Command::new("tasklist").args(["/fi", "imagename eq Suwayomi*"]).output() {
+        if let Ok(output) = Command::new("tasklist")
+            .args(["/fi", "imagename eq Suwayomi*"])
+            .output()
+        {
             let s = String::from_utf8_lossy(&output.stdout).to_lowercase();
             if s.contains("suwayomi") || s.contains("tachidesk") {
                 return true;
@@ -168,7 +177,11 @@ fn scan_parent_folder(parent: &Path) -> Option<SuwayomiLaunchSpec> {
     for entry in entries.flatten() {
         let p = entry.path();
         if p.is_dir() {
-            let name = p.file_name().unwrap_or_default().to_string_lossy().to_lowercase();
+            let name = p
+                .file_name()
+                .unwrap_or_default()
+                .to_string_lossy()
+                .to_lowercase();
             if name.contains("suwayomi") || name.contains("tachidesk") {
                 if let Some(spec) = inspect_suwayomi_dir(&p) {
                     return Some(spec);
@@ -276,7 +289,8 @@ pub fn find_suwayomi_launch_spec() -> Option<SuwayomiLaunchSpec> {
     #[cfg(target_os = "windows")]
     {
         if let Ok(local_app_data) = std::env::var("LOCALAPPDATA") {
-            let p = PathBuf::from(&local_app_data).join("Programs\\Suwayomi-Server\\Suwayomi-Server.exe");
+            let p = PathBuf::from(&local_app_data)
+                .join("Programs\\Suwayomi-Server\\Suwayomi-Server.exe");
             if p.exists() {
                 return Some(SuwayomiLaunchSpec {
                     display_path: p.clone(),
@@ -412,8 +426,13 @@ pub async fn suwayomi_daemon_start() -> Result<SuwayomiDaemonStatus, String> {
             cmd.creation_flags(0x0800_0000); // CREATE_NO_WINDOW
         }
 
-        cmd.spawn()
-            .map_err(|e| format!("failed to spawn Suwayomi ({}): {}", spec.executable.display(), e))?;
+        cmd.spawn().map_err(|e| {
+            format!(
+                "failed to spawn Suwayomi ({}): {}",
+                spec.executable.display(),
+                e
+            )
+        })?;
     }
 
     DAEMON_STARTED_BY_ARGUS.store(true, Ordering::SeqCst);
@@ -442,7 +461,10 @@ pub async fn suwayomi_daemon_stop() -> Result<bool, String> {
         .build()
         .map_err(|e| e.to_string())?;
 
-    let stop_url = format!("http://127.0.0.1:{}/api/v1/settings/server/stop", DEFAULT_SUWAYOMI_PORT);
+    let stop_url = format!(
+        "http://127.0.0.1:{}/api/v1/settings/server/stop",
+        DEFAULT_SUWAYOMI_PORT
+    );
     let _ = client.post(&stop_url).send().await;
 
     DAEMON_STARTED_BY_ARGUS.store(false, Ordering::SeqCst);

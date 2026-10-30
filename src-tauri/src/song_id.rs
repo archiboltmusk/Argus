@@ -490,7 +490,6 @@ pub async fn recognize_file(
             } else {
                 crate::song_id_gemini::recognize(wav, key, model, movie_context).await
             }
-            }
         }
         other => Err(format!("Unknown song ID provider: {other}")),
     }
