@@ -44,7 +44,10 @@ jobs:
           name: Argus-Smart-TV-Packages
           path: |
             dist-smart-tv/Argus-Samsung-Tizen.wgt
+            dist-smart-tv/Argus-Samsung-TheFreestyle.wgt
             dist-smart-tv/Argus-LG-webOS.zip
+            dist-smart-tv/Argus-LG-CineBeam.zip
+            dist-smart-tv/Argus-SmartProjector-WebTV.zip
             dist-smart-tv/Argus-Hisense-VIDAA.zip
             dist-smart-tv/Argus-Philips-TitanOS.zip
             dist-smart-tv/Argus-Panasonic-MyHomeScreen.zip
@@ -73,7 +76,10 @@ jobs:
           fi
           gh release upload "$TAG" \
             Argus-Samsung-Tizen.wgt \
+            Argus-Samsung-TheFreestyle.wgt \
             Argus-LG-webOS.zip \
+            Argus-LG-CineBeam.zip \
+            Argus-SmartProjector-WebTV.zip \
             Argus-Hisense-VIDAA.zip \
             Argus-Philips-TitanOS.zip \
             Argus-Panasonic-MyHomeScreen.zip \

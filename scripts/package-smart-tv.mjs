@@ -152,4 +152,17 @@ fs.rmSync(webTvZipPath, { force: true });
 execSync(`cd "${distDir}" && zip -r -9 "${webTvZipPath}" ./*`, { stdio: "pipe" });
 console.log(`✓ Generated Standalone Web TV Bundle: Argus-WebTV-10foot-standalone.zip (${(fs.statSync(webTvZipPath).size / (1024 * 1024)).toFixed(2)} MB)`);
 
-console.log("\nAll Smart TV packages successfully generated in dist-smart-tv/!\n");
+// 8. Smart Projectors (Samsung The Freestyle, LG CineBeam, Universal Smart Projectors)
+const freestyleWgtPath = path.join(outDir, "Argus-Samsung-TheFreestyle.wgt");
+fs.copyFileSync(tizenWgtPath, freestyleWgtPath);
+console.log(`✓ Generated Samsung The Freestyle Projector WGT: Argus-Samsung-TheFreestyle.wgt`);
+
+const cinebeamZipPath = path.join(outDir, "Argus-LG-CineBeam.zip");
+fs.copyFileSync(webosZipPath, cinebeamZipPath);
+console.log(`✓ Generated LG CineBeam Projector Bundle: Argus-LG-CineBeam.zip`);
+
+const projectorWebZipPath = path.join(outDir, "Argus-SmartProjector-WebTV.zip");
+fs.copyFileSync(webTvZipPath, projectorWebZipPath);
+console.log(`✓ Generated Universal Smart Projector Web Bundle: Argus-SmartProjector-WebTV.zip`);
+
+console.log("\nAll Smart TV & Smart Projector packages successfully generated in dist-smart-tv/!\n");

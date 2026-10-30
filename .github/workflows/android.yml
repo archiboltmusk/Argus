@@ -106,6 +106,7 @@ jobs:
             --ks-key-alias "$ALIAS" --out Argus-android-arm64.apk aligned.apk
           "$BT/apksigner" verify Argus-android-arm64.apk
           cp Argus-android-arm64.apk Argus-AndroidTV-arm64.apk
+          cp Argus-android-arm64.apk Argus-SmartProjector-AndroidTV.apk
           ls -la Argus-*.apk
       - uses: actions/upload-artifact@v7
         with:
@@ -113,12 +114,13 @@ jobs:
           path: |
             Argus-android-arm64.apk
             Argus-AndroidTV-arm64.apk
+            Argus-SmartProjector-AndroidTV.apk
           if-no-files-found: error
 
   publish:
-    name: Publish APK to beta
+    name: Publish APK to Releases
     needs: apk
-    if: github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
@@ -130,4 +132,9 @@ jobs:
       # Sideload only: the in-app updater is not wired on Android.
       - env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release upload beta Argus-android-arm64.apk Argus-AndroidTV-arm64.apk --repo "$GITHUB_REPOSITORY" --clobber
+        run: |
+          TAG="beta"
+          if [[ "${{ github.ref }}" == refs/tags/v* ]]; then
+            TAG="${{ github.ref_name }}"
+          fi
+          gh release upload "$TAG" Argus-android-arm64.apk Argus-AndroidTV-arm64.apk Argus-SmartProjector-AndroidTV.apk --repo "$GITHUB_REPOSITORY" --clobber
