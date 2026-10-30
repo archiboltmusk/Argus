@@ -187,7 +187,7 @@ export function PlayModePanel() {
             label={t("Auto-skip stalled streams")}
             preview={<StallSkipArt />}
             sub={t(
-              "If a stream hasn't started playing in time (a dead source or an addon that's down), automatically try the next available stream. Off by default.",
+              "If a stream has stopped making progress, quietly try the next compatible source. You can turn this off at any time.",
             )}
             value={settings.autoNextStreamOnStall}
             onChange={(v) => update({ autoNextStreamOnStall: v })}

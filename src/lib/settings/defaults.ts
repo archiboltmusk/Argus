@@ -277,7 +277,7 @@ export const DEFAULT: Settings = {
   seekPreviewEnabled: typeof navigator !== "undefined" && (navigator.hardwareConcurrency || 8) >= 4,
   instantPlay: true,
   instantPlaybackPreparation: false,
-  autoNextStreamOnStall: false,
+  autoNextStreamOnStall: true,
   autoNextStreamOnStallSec: 10,
   suggestQualityUpgrade: true,
   fullscreenMode: "fullscreen",

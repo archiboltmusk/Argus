@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState, type RefObject } from "react";
 import type { PlayerBridge, PlayerSnapshot } from "@/lib/player/bridge";
-import { getPlaybackPosition, usePlaybackFlag } from "@/lib/player/playback-clock";
+import { getPlaybackPosition } from "@/lib/player/playback-clock";
 import { isLivePlaybackSrc } from "@/lib/player/live-src";
 import { peekPickerCache, pinPickerCache, unpinPickerCache } from "@/lib/picker-cache";
 import { prepareCachedDebridStreams } from "@/lib/debrid/playback-preparation";
@@ -15,8 +15,6 @@ import { resolvePlaybackRedirect } from "@/lib/streams/playback-redirect";
 import type { PlayerSrc } from "@/lib/view";
 import type { DebridStore } from "@/lib/debrid/types";
 
-let checkShownThisSession = false;
-
 export function useStreamSwitcher(params: {
   bridgeRef: RefObject<PlayerBridge | null>;
   src: PlayerSrc;
@@ -27,23 +25,10 @@ export function useStreamSwitcher(params: {
   const snapRef = useRef(snap);
   snapRef.current = snap;
 
-  const checkShownRef = useRef(false);
   const [streamCheckOpen, setStreamCheckOpen] = useState(false);
-  const isLive = src.meta.id?.startsWith("iptv:") ?? false;
-  const startedEnough = usePlaybackFlag(() => getPlaybackPosition() >= 1.5);
   useEffect(() => {
-    checkShownRef.current = false;
     setStreamCheckOpen(false);
   }, [src.url]);
-  useEffect(() => {
-    if (checkShownRef.current) return;
-    if (checkShownThisSession) return;
-    if (isLive) return;
-    if (snap.status !== "playing" || !startedEnough) return;
-    checkShownRef.current = true;
-    checkShownThisSession = true;
-    setStreamCheckOpen(true);
-  }, [snap.status, startedEnough, src.url, isLive]);
   useEffect(() => {
     if (!streamCheckOpen) return;
     const t = window.setTimeout(() => setStreamCheckOpen(false), 5500);
@@ -227,7 +212,6 @@ export function useStreamSwitcher(params: {
       }
       setSwapResolvingKey(null);
       setSwitcherOpen(false);
-      checkShownRef.current = false;
       setStreamCheckOpen(false);
     },
     [debrids],

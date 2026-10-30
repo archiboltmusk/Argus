@@ -539,33 +539,22 @@ export const PlayerOverlayLayers = memo(function PlayerOverlayLayers(p: PlayerOv
           visible
           compact={p.mpvEmbedWindowsActive}
           live={p.liveOverlay.isLive}
-          customTitle={t("Playback stalled")}
+          customTitle={t("Getting playback back")}
           customSub={
             p.stallOffer.nextStream
               ? p.stallOffer.secondsLeft != null
-                ? t("Switching to next stream ({stream}) in {s}s...", {
-                    stream:
-                      p.stallOffer.nextStream.resolution ??
-                      p.stallOffer.nextStream.parsedTitle ??
-                      "next stream",
-                    s: p.stallOffer.secondsLeft,
-                  })
-                : t("Next stream available: {stream}", {
-                    stream:
-                      p.stallOffer.nextStream.resolution ??
-                      p.stallOffer.nextStream.parsedTitle ??
-                      "next stream",
-                  })
-              : t("Stream connection stalled. Pick another?")
+                ? t("Trying a better connection…")
+                : t("A better connection is ready.")
+              : t("Looking for a better connection…")
           }
           actionLabel={
             p.stallOffer.secondsLeft != null
-              ? t("Switch now")
+              ? t("Fix now")
               : p.stallOffer.nextStream
-                ? t("Switch stream")
-                : t("Pick another")
+                ? t("Use it")
+                : t("Choose source")
           }
-          dismissLabel={t("Stay on current")}
+          dismissLabel={t("Wait")}
           onDismiss={p.dismissStallFallback ?? (() => {})}
           onPickAnother={p.acceptStallFallback ?? p.pickAnotherOrGuide}
         />
