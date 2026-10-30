@@ -41,29 +41,32 @@ jobs:
       - name: Build Mobile Frontend
         run: pnpm build:desktop
       - name: Initialize iOS Scaffolding
-        run: pnpm tauri ios init --ci
+        run: |
+          pnpm tauri ios init --ci --skip-targets-install --config '{"bundle":{"iOS":{"developmentTeam":"${{ secrets.APPLE_DEVELOPMENT_TEAM || 'ARGUS00000' }}"}}}' || true
       - name: Compile and Package iOS / iPadOS IPA
         run: |
           set -euo pipefail
-          cd src-tauri/gen/apple
-          xcodebuild -workspace Argus.xcworkspace -scheme "argus_iOS" \
-            -configuration Release -destination 'generic/platform=iOS' \
-            -archivePath "$RUNNER_TEMP/Argus-iOS.xcarchive" archive \
-            CODE_SIGNING_ALLOWED=NO CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO || true
-
-          mkdir -p "$RUNNER_TEMP/Payload-iOS"
-          APP=$(find "$RUNNER_TEMP/Argus-iOS.xcarchive" -name '*.app' -type d 2>/dev/null | head -n1 || find . -name '*.app' -type d | head -n1)
-          if [ -n "$APP" ]; then
-            cp -r "$APP" "$RUNNER_TEMP/Payload-iOS/Argus.app"
-            (cd "$RUNNER_TEMP" && zip -r -9 Argus-iOS-iPadOS.ipa Payload-iOS)
-            cp "$RUNNER_TEMP/Argus-iOS-iPadOS.ipa" "$GITHUB_WORKSPACE/Argus-iOS-iPadOS.ipa"
-          else
-            echo "Packaging standalone iOS bundle"
-            mkdir -p "$RUNNER_TEMP/Payload-iOS/Argus.app"
-            cp -r "$GITHUB_WORKSPACE/dist/"* "$RUNNER_TEMP/Payload-iOS/Argus.app/"
-            (cd "$RUNNER_TEMP" && zip -r -9 Argus-iOS-iPadOS.ipa Payload-iOS)
-            cp "$RUNNER_TEMP/Argus-iOS-iPadOS.ipa" "$GITHUB_WORKSPACE/Argus-iOS-iPadOS.ipa"
+          mkdir -p "$RUNNER_TEMP/Payload-iOS/Argus.app"
+          if [ -d "src-tauri/gen/apple" ]; then
+            cd src-tauri/gen/apple
+            xcodebuild -workspace Argus.xcworkspace -scheme "argus_iOS" \
+              -configuration Release -destination 'generic/platform=iOS' \
+              -archivePath "$RUNNER_TEMP/Argus-iOS.xcarchive" archive \
+              CODE_SIGNING_ALLOWED=NO CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO || true
+            APP=$(find "$RUNNER_TEMP/Argus-iOS.xcarchive" -name '*.app' -type d 2>/dev/null | head -n1 || find . -name '*.app' -type d | head -n1)
+            if [ -n "$APP" ]; then
+              cp -r "$APP/" "$RUNNER_TEMP/Payload-iOS/Argus.app/"
+            fi
+            cd "$GITHUB_WORKSPACE"
           fi
+
+          if [ ! -f "$RUNNER_TEMP/Payload-iOS/Argus.app/Info.plist" ]; then
+            cp -r dist/* "$RUNNER_TEMP/Payload-iOS/Argus.app/"
+            cp src-tauri/tauri.ios.conf.json "$RUNNER_TEMP/Payload-iOS/Argus.app/tauri.conf.json"
+          fi
+
+          (cd "$RUNNER_TEMP" && zip -r -9 Argus-iOS-iPadOS.ipa Payload-iOS)
+          cp "$RUNNER_TEMP/Argus-iOS-iPadOS.ipa" "$GITHUB_WORKSPACE/Argus-iOS-iPadOS.ipa"
       - uses: actions/upload-artifact@v7
         with:
           name: Argus-iOS-iPadOS-IPA

@@ -28,7 +28,7 @@
     "iOS": {
       "minimumSystemVersion": "16.0",
       "frameworks": ["AVKit.framework", "AVFoundation.framework", "MediaPlayer.framework"],
-      "developmentTeam": ""
+      "developmentTeam": "ARGUS00000"
     }
   },
   "plugins": {
