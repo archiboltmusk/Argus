@@ -21,7 +21,7 @@ const SETTINGS_KEY = "argus.settings";
 // sensitive so an ordinary word ending in "aft" cannot match it.
 const FIRE_TV_UA = /\bAFT[A-Z0-9]+\b/;
 const TEN_FOOT_UA =
-  /Android ?TV|Google ?TV|SMART-?TV|Tizen|Web ?0S|WebOS|NetCast|BRAVIA|HbbTV|CrKey|VIDAA/i;
+  /Android ?TV|Google ?TV|SMART-?TV|Tizen|Web ?0S|WebOS|NetCast|BRAVIA|HbbTV|CrKey|VIDAA|Titan|Panasonic|Viera|HomeOS|Roku/i;
 
 function clampOverscan(fraction: number): number {
   return Number.isFinite(fraction) ? Math.min(MAX_OVERSCAN, Math.max(0, fraction)) : 0;

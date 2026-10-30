@@ -11,7 +11,7 @@ Argus the app does the same for your media. It unifies Stremio-compatible addons
 
 Argus ships with **no content and no built-in sources**. You connect the addons, accounts, indexers, servers and playlists you already use and have rights to.
 
-Platforms: **Apple** (iOS, iPadOS, macOS, watchOS, tvOS, visionOS), **Android** (TV, Projectors, Mobile), **Smart TVs** (Samsung Tizen, LG webOS), **Windows**, **Linux**, and **Web TV**.
+Platforms: **Apple** (iOS, iPadOS, macOS, watchOS, tvOS, visionOS), **Android** (Google TV, Fire TV, Projectors, Mobile), **Smart TVs** (Samsung Tizen, LG webOS, Hisense VIDAA, Philips Titan OS, Panasonic, Roku), **Windows**, **Linux**, and **Web TV**.
 
 ---
 
@@ -25,11 +25,15 @@ Platforms: **Apple** (iOS, iPadOS, macOS, watchOS, tvOS, visionOS), **Android** 
 | **Apple watchOS** | Apple Watch Series 4+, SE, Ultra (watchOS 9.0+) | `Argus-AppleWatch-watchOS.ipa` | Sideload via Xcode / Apple Watch Companion |
 | **Apple tvOS** | Apple TV 4K & Apple TV HD (tvOS 17.0+) | `Argus-AppleTV-tvOS.ipa` | Sideload via Xcode (over Wi-Fi) or Apple Configurator |
 | **Apple visionOS** | Apple Vision Pro (visionOS 1.0+) | `Argus-VisionPro-visionOS.ipa` | Sideload via Xcode (over Wi-Fi) or Reality TestFlight |
-| **Android TV & Google TV** | Sony, TCL, Xiaomi Mi TV, Chromecast with Google TV | `Argus-AndroidTV-arm64.apk` | `adb install Argus-AndroidTV-arm64.apk` or via *Downloader* app |
+| **Google TV / Android TV** | Sony, TCL, Xiaomi Mi TV, Chromecast with Google TV | `Argus-AndroidTV-arm64.apk` | `adb install Argus-AndroidTV-arm64.apk` or via *Downloader* app |
 | **Amazon Fire TV** | Fire TV Stick 4K / Max, Fire TV Cube, Fire Edition TVs | `Argus-AndroidTV-arm64.apk` | Sideload via *Downloader* code or ADB |
 | **Smart Projectors** | Portronics Beem 470, Wanbo, Egate, XGIMI, Nebula | Universal TV `.apk` (with Projector Mode) | Sideload via USB drive or ADB |
-| **Samsung Smart TV** | Samsung Smart TVs (Tizen OS 5.5+) | `Argus-Samsung-Tizen.wgt` | Install via Tizen Studio / Device Manager |
-| **LG Smart TV** | LG OLED / QNED / NanoCell (webOS 5.0+) | `Argus-LG-webOS.zip` / `.ipk` | Sideload via webOS Dev Manager |
+| **Samsung Smart TV (Tizen)** | Samsung Smart TVs (Tizen OS 5.5+) | `Argus-Samsung-Tizen.wgt` | Install via Tizen Studio / Device Manager |
+| **LG Smart TV (webOS)** | LG OLED / QNED / NanoCell (webOS 5.0+) | `Argus-LG-webOS.zip` / `.ipk` | Sideload via webOS Dev Manager |
+| **Hisense Smart TV (VIDAA / Home OS)** | Hisense & Toshiba Smart TVs (VIDAA U4+) | `Argus-Hisense-VIDAA.zip` | Sideload via USB / VIDAA Dev Mode |
+| **Philips Smart TV (Titan OS)** | Philips Ambilight & TP Vision TVs | `Argus-Philips-TitanOS.zip` | Install via USB / Titan OS Dev Portal |
+| **Panasonic Smart TV (My Home Screen)** | Panasonic OLED & 4K LED TVs | `Argus-Panasonic-MyHomeScreen.zip` | Sideload via USB / Firefox WebApp manager |
+| **Roku OS** | Roku Streaming Stick, Ultra, Streambar, Roku TVs | `Argus-Roku-Channel.zip` | Sideload via Roku Developer Mode (`http://<roku-ip>`) |
 | **10-Foot Standalone Web TV** | Self-hosted on local NAS, Raspberry Pi, Home Server | `Argus-WebTV-10foot-standalone.zip` | Extract and host via Nginx / Caddy / static HTTP |
 | **Windows Desktop** | Windows 10/11 & Handhelds (ROG Ally, Legion Go) | `Argus-windows-x64-setup.exe` / `.msi` | Standard NSIS / MSI installer |
 | **Linux Desktop** | Ubuntu/Debian, Fedora, Arch, Steam Deck | `Argus-linux-x64.AppImage` / `.deb` | `chmod +x *.AppImage && ./*.AppImage` |

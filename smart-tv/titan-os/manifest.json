@@ -1,0 +1,17 @@
+{
+  "id": "app.argus.titan",
+  "name": "Argus",
+  "version": "2.1.0",
+  "author": "Argus Community",
+  "description": "Universal 10-Foot Media & Sports Hub for Philips Titan OS Smart TVs",
+  "start_url": "index-tv.html",
+  "display": "fullscreen",
+  "orientation": "landscape",
+  "icons": [
+    {
+      "src": "icon.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    }
+  ]
+}

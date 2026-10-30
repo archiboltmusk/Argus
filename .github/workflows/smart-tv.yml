@@ -1,4 +1,4 @@
-name: Smart TV & Big Picture
+name: Smart TV Ecosystem (Tizen, webOS, VIDAA, Titan OS, Panasonic, Roku & Web TV)
 
 on:
   push:
@@ -23,7 +23,7 @@ env:
 
 jobs:
   package:
-    name: Build Samsung Tizen, LG webOS & Web TV
+    name: Build All Major Smart TV OS Packages
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -45,6 +45,10 @@ jobs:
           path: |
             dist-smart-tv/Argus-Samsung-Tizen.wgt
             dist-smart-tv/Argus-LG-webOS.zip
+            dist-smart-tv/Argus-Hisense-VIDAA.zip
+            dist-smart-tv/Argus-Philips-TitanOS.zip
+            dist-smart-tv/Argus-Panasonic-MyHomeScreen.zip
+            dist-smart-tv/Argus-Roku-Channel.zip
             dist-smart-tv/Argus-WebTV-10foot-standalone.zip
           if-no-files-found: error
 
@@ -70,5 +74,9 @@ jobs:
           gh release upload "$TAG" \
             Argus-Samsung-Tizen.wgt \
             Argus-LG-webOS.zip \
+            Argus-Hisense-VIDAA.zip \
+            Argus-Philips-TitanOS.zip \
+            Argus-Panasonic-MyHomeScreen.zip \
+            Argus-Roku-Channel.zip \
             Argus-WebTV-10foot-standalone.zip \
             --repo "$GITHUB_REPOSITORY" --clobber || true

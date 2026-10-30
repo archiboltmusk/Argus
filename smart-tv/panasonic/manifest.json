@@ -1,0 +1,13 @@
+{
+  "name": "Argus",
+  "version": "2.1.0",
+  "description": "Universal 10-Foot Media & Sports Hub for Panasonic My Home Screen Smart TVs",
+  "developer": {
+    "name": "Argus"
+  },
+  "launch_path": "/index-tv.html",
+  "icons": {
+    "128": "/icon.png"
+  },
+  "fullscreen": "true"
+}

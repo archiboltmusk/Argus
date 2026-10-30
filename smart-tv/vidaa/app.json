@@ -1,0 +1,12 @@
+{
+  "id": "app.argus.vidaa",
+  "name": "Argus",
+  "version": "2.1.0",
+  "developer": "Argus",
+  "description": "Universal 10-Foot Decentralized Media & Sports Hub for Hisense VIDAA / Home OS",
+  "icon": "icon.png",
+  "main": "index-tv.html",
+  "resolution": "1920x1080",
+  "category": "video",
+  "features": ["pointer", "dpad", "remote", "audio", "video"]
+}
