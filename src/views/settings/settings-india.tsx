@@ -106,6 +106,22 @@ export function SettingsIndia() {
           leading={<Smartphone size={18} />}
         />
 
+        <div className="p-4 rounded-xl bg-elevated/40 border border-edge-soft/60 flex flex-col gap-3">
+          <span className="text-sm font-semibold text-ink">{t("Connection mode")}</span>
+          <p className="text-xs text-ink-muted">
+            {t("Automatic protects mobile and data-saver connections. Choose a mode only when Argus cannot identify your network correctly.")}
+          </p>
+          <Segmented
+            value={settings.networkProfileMode}
+            options={[
+              { value: "auto", label: t("Automatic") },
+              { value: "unlimited-broadband", label: t("Unlimited") },
+              { value: "metered-hotspot", label: t("Travel") },
+            ]}
+            onChange={(networkProfileMode) => update({ networkProfileMode: networkProfileMode as typeof settings.networkProfileMode })}
+          />
+        </div>
+
         {settings.hotspotDataSaver && (
           <div className="p-4 rounded-xl bg-elevated/40 border border-edge-soft/60 flex flex-col gap-3">
             <span className="text-xs font-bold uppercase tracking-wider text-accent">

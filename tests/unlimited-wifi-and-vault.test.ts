@@ -46,6 +46,18 @@ test("connection profiler enforces unlimited broadband by default", () => {
   assert.equal(applyOnMetered, true);
 });
 
+test("automatic connection mode protects metered travel networks", () => {
+  const cellular = getActiveNetworkProfile("auto", true, { type: "cellular", effectiveType: "4g" });
+  assert.equal(cellular.mode, "metered-hotspot");
+  assert.equal(cellular.isSaveDataActive, true);
+
+  const saveData = getActiveNetworkProfile("auto", true, { type: "wifi", saveData: true });
+  assert.equal(saveData.mode, "metered-hotspot");
+
+  const ethernet = getActiveNetworkProfile("auto", true, { type: "ethernet" });
+  assert.equal(ethernet.mode, "unlimited-broadband");
+});
+
 test("power-cut vault updates and retrieves snapshots cleanly", () => {
   powerCutVault.updateSnapshot({
     metaId: "feluda_joy_baba_felunath",
