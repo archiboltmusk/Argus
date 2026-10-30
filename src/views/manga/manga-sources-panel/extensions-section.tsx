@@ -108,7 +108,14 @@ export function ExtensionsSection() {
       setError(t("Enter a valid http(s):// URL"));
       return;
     }
-    if (value.includes("github.com/keiyoushi/extensions") && !value.includes("index.min.json")) {
+    if (value.includes("github.com/")) {
+      value = value.replace("github.com/", "raw.githubusercontent.com/").replace(/\/raw\//, "/").replace(/\/blob\//, "/");
+    }
+    if (value.endsWith("/index.pb") || value.endsWith("index.pb")) {
+      value = value.replace(/index\.pb$/i, "index.min.json");
+    } else if (value.endsWith(".pb")) {
+      value = value.replace(/\.pb$/i, ".min.json");
+    } else if (value.includes("keiyoushi/extensions") && !value.endsWith(".json")) {
       value = "https://raw.githubusercontent.com/keiyoushi/extensions/repo/index.min.json";
     }
     setAdding(true);

@@ -37,10 +37,32 @@ export interface MihonRepoResult {
 const FETCH_TIMEOUT = 25_000;
 
 /**
+ * Normalizes any Mihon / Tachiyomi / Keiyoushi repository URL:
+ * - Maps GitHub raw/blob URLs to raw.githubusercontent.com
+ * - Automatically redirects index.pb (binary protobuf) to index.min.json
+ * - Handles bare repository paths by appending index.min.json
+ */
+export function normalizeMihonRepoUrl(url: string): string {
+  let u = url.trim();
+  if (u.includes("github.com/")) {
+    u = u.replace("github.com/", "raw.githubusercontent.com/").replace(/\/raw\//, "/").replace(/\/blob\//, "/");
+  }
+  if (u.endsWith("/index.pb") || u.endsWith("index.pb")) {
+    u = u.replace(/index\.pb$/i, "index.min.json");
+  } else if (u.endsWith(".pb")) {
+    u = u.replace(/\.pb$/i, ".min.json");
+  } else if (!u.endsWith(".json") && !u.endsWith(".json/")) {
+    u = u.replace(/\/+$/, "") + "/index.min.json";
+  }
+  return u;
+}
+
+/**
  * Fetch and parse a Mihon / Tachiyomi extension repository index
  */
 export async function fetchMihonIndex(url: string): Promise<MihonExtensionEntry[]> {
-  const target = assertSafeUrl(url);
+  const normalized = normalizeMihonRepoUrl(url);
+  const target = assertSafeUrl(normalized);
   const res = await safeFetch(target, { signal: AbortSignal.timeout(FETCH_TIMEOUT) });
   if (!res.ok) throw new Error(`Mihon repository index fetch failed (${res.status})`);
 

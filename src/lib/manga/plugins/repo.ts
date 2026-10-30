@@ -115,7 +115,16 @@ function toManifest(v: unknown): PluginManifest | null {
 }
 
 export async function fetchRepo(url: string): Promise<PluginRepo> {
-  const target = assertSafeUrl(url);
+  let targetUrl = url.trim();
+  if (targetUrl.includes("github.com/")) {
+    targetUrl = targetUrl.replace("github.com/", "raw.githubusercontent.com/").replace(/\/raw\//, "/").replace(/\/blob\//, "/");
+  }
+  if (targetUrl.endsWith("/index.pb") || targetUrl.endsWith("index.pb")) {
+    targetUrl = targetUrl.replace(/index\.pb$/i, "index.min.json");
+  } else if (targetUrl.endsWith(".pb")) {
+    targetUrl = targetUrl.replace(/\.pb$/i, ".min.json");
+  }
+  const target = assertSafeUrl(targetUrl);
   const res = await safeFetch(target, { signal: AbortSignal.timeout(FETCH_TIMEOUT) });
   if (!res.ok) throw new Error("repo fetch failed: " + res.status);
   const parsed: unknown = JSON.parse(await res.text());
