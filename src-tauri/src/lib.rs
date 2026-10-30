@@ -140,6 +140,8 @@ mod shaders;
 #[cfg(desktop)]
 mod song_id;
 #[cfg(desktop)]
+mod suwayomi;
+#[cfg(desktop)]
 mod song_id_gemini;
 #[cfg(desktop)]
 mod sub_extract;
@@ -1903,6 +1905,9 @@ pub fn run() {
             app_icon::set_app_icon,
             deeplink_set_stremio,
             deeplink_is_stremio_registered,
+            suwayomi::suwayomi_daemon_status,
+            suwayomi::suwayomi_daemon_start,
+            suwayomi::suwayomi_daemon_stop,
             argus_take_pending_file,
         ]))
         .build(context)

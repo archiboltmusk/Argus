@@ -1,4 +1,4 @@
-import { Check, Pencil, Plus, Server, Trash2 } from "lucide-react";
+import { Check, Loader2, Pencil, Play, Plus, Power, RefreshCw, Server, Trash2, Zap } from "lucide-react";
 import { useState } from "react";
 import { useT } from "@/lib/i18n";
 import { CARD } from "../shared";
@@ -6,6 +6,7 @@ import { ServerForm } from "./server-form";
 import { removeServer, setActiveServer } from "./servers-store";
 import { useServers } from "./use-servers";
 import { initials, serverHost, type SuwayomiServer } from "./types";
+import { useSuwayomiDaemon } from "@/lib/manga/sources/suwayomi/daemon";
 
 function ServerAvatar({ name }: { name: string }) {
   return (
@@ -82,6 +83,113 @@ function ServerRow({ server, active }: { server: SuwayomiServer; active: boolean
   );
 }
 
+function LocalDaemonSupervisorCard() {
+  const t = useT();
+  const { status, start, stop, setAutoStart, probe } = useSuwayomiDaemon();
+  const [busy, setBusy] = useState(false);
+
+  const handleToggleStart = async () => {
+    setBusy(true);
+    try {
+      if (status.state === "online") {
+        await stop();
+      } else {
+        await start();
+      }
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className={`overflow-hidden p-5 transition-all ${CARD}`}>
+      <div className="flex flex-col gap-4">
+        <div className="flex items-start justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <span className={`grid h-11 w-11 shrink-0 place-items-center rounded-xl ring-1 ring-edge-soft ${
+              status.state === "online" ? "bg-emerald-500/15 text-emerald-400" : status.state === "starting" ? "bg-accent/15 text-accent" : "bg-canvas text-ink-subtle"
+            }`}>
+              <Zap size={20} className={status.state === "starting" ? "animate-pulse" : ""} />
+            </span>
+            <div>
+              <div className="flex items-center gap-2">
+                <h4 className="text-[15.5px] font-bold text-ink">{t("Local Suwayomi Engine")}</h4>
+                {status.state === "online" ? (
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/15 px-2.5 py-0.5 text-[11px] font-bold text-emerald-400 border border-emerald-500/20">
+                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" /> {t("Online (4567)")}
+                  </span>
+                ) : status.state === "starting" ? (
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-accent/15 px-2.5 py-0.5 text-[11px] font-bold text-accent border border-accent/20">
+                    <Loader2 size={11} className="animate-spin" /> {t("Starting...")}
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-raised px-2.5 py-0.5 text-[11px] font-bold text-ink-subtle border border-edge-soft">
+                    {t("Offline")}
+                  </span>
+                )}
+              </div>
+              <p className="mt-0.5 text-xs text-ink-muted">
+                {t("Zero-friction background daemon. Starts automatically with Argus so manga is ready instantly.")}
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              type="button"
+              onClick={() => probe()}
+              title={t("Refresh status")}
+              className="grid h-9 w-9 place-items-center rounded-lg bg-raised text-ink-subtle hover:text-ink ring-1 ring-edge-soft transition-all"
+            >
+              <RefreshCw size={15} />
+            </button>
+            <button
+              type="button"
+              disabled={busy || status.state === "starting"}
+              onClick={handleToggleStart}
+              className={`flex h-9 items-center gap-2 rounded-lg px-3.5 text-xs font-bold transition-all shadow-sm ${
+                status.state === "online"
+                  ? "bg-raised text-ink hover:text-danger border border-edge-soft"
+                  : "bg-accent text-canvas hover:opacity-90 active:scale-95"
+              }`}
+            >
+              {busy || status.state === "starting" ? (
+                <Loader2 size={13} className="animate-spin" />
+              ) : status.state === "online" ? (
+                <Power size={13} />
+              ) : (
+                <Play size={13} fill="currentColor" />
+              )}
+              {status.state === "online" ? t("Stop Server") : t("Start Server")}
+            </button>
+          </div>
+        </div>
+
+        {status.lastError && (
+          <p className="rounded-lg bg-danger/10 border border-danger/20 p-2.5 text-xs text-danger font-medium">
+            {status.lastError}
+          </p>
+        )}
+
+        <div className="flex items-center justify-between border-t border-edge-soft pt-3">
+          <label className="flex items-center gap-2.5 cursor-pointer select-none">
+            <input
+              type="checkbox"
+              checked={status.autoStart}
+              onChange={(e) => setAutoStart(e.target.checked)}
+              className="h-4 w-4 rounded border-edge text-accent focus:ring-accent"
+            />
+            <span className="text-xs font-semibold text-ink">
+              {t("Auto-start Suwayomi daemon when Argus launches")}
+            </span>
+          </label>
+          <span className="text-[11px] text-ink-subtle font-mono">127.0.0.1:4567</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function AddServerCard() {
   const t = useT();
   const [open, setOpen] = useState(false);
@@ -119,8 +227,10 @@ export function ServersSection() {
   const { servers, active } = useServers();
   return (
     <div className="flex flex-col gap-3">
+      <LocalDaemonSupervisorCard />
+
       <p className="mt-2 px-1 text-[12.5px] font-bold uppercase tracking-[0.12em] text-ink-subtle">
-        {t("Servers")}
+        {t("Configured Servers")}
       </p>
       {servers.map((s) => (
         <ServerRow key={s.id} server={s} active={active?.id === s.id} />

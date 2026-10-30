@@ -1,5 +1,14 @@
 // Newly introduced UI copy remains usable until each locale provides an override.
 const uiFallback: Record<string, string> = {
+  "Starting...": "Starting...",
+  "Refresh status": "Refresh status",
+  "Local Suwayomi Engine": "Local Suwayomi Engine",
+  "Zero-friction background daemon. Starts automatically with Argus so manga is ready instantly.": "Zero-friction background daemon. Starts automatically with Argus so manga is ready instantly.",
+  "Auto-start Suwayomi daemon when Argus launches": "Auto-start Suwayomi daemon when Argus launches",
+  "Start Server": "Start Server",
+  "Stop Server": "Stop Server",
+  "Online (4567)": "Online (4567)",
+  "Configured Servers": "Configured Servers",
   "Live Sports Telemetry & Scores": "Live Sports Telemetry & Scores",
   "Sports Hub": "Sports Hub",
   "Live Matches": "Live Matches",

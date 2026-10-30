@@ -139,7 +139,7 @@ dependencies = [
 
 [[package]]
 name = "argus"
-version = "0.4.0"
+version = "2.1.0"
 dependencies = [
  "anyhow",
  "argus-core",
@@ -193,6 +193,7 @@ dependencies = [
  "reqwest 0.12.28",
  "ring",
  "rusqlite",
+ "rust-ini",
  "rust_cast",
  "rustls",
  "serde",

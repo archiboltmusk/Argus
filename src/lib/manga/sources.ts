@@ -26,6 +26,7 @@ import { reconcileSuwayomiServers } from "./sources/suwayomi/server-link";
 import { setSuwayomiBaseResolver } from "./sources/suwayomi/progress-bridge";
 import { makeServer } from "./sources/suwayomi/model";
 import { subscribeSuwayomiSourcesChanged } from "./sources/suwayomi/source-events";
+import { ensureSuwayomiFrictionless } from "./sources/suwayomi/daemon";
 
 export type MangaSourceKind = "suwayomi" | "local" | "plugin" | "html" | "mangayomi";
 
@@ -578,6 +579,7 @@ function migrateCommunitySources(): void {
 export function initMangaSource(): void {
   migrateCommunitySources();
   reconcileSuwayomiServers();
+  void ensureSuwayomiFrictionless();
   void ensureMangaSources();
   void loadInstalledPlugins().then(() => warmPlugins());
   void loadMangayomiSources();
