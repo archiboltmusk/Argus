@@ -14,6 +14,8 @@ import { StremioImportCard } from "./account/stremio-import-card";
 import { SyncedAddonsCard } from "./account/synced-addons-card";
 import { ARGUS_HOSTED } from "@/lib/config/endpoints";
 import { ArgusAccountPanel } from "@/views/account/argus-account-panel";
+import { SupabaseSyncPanel } from "@/views/account/supabase-sync-panel";
+import { SUPABASE } from "@/lib/config/supabase";
 
 import { NuvioCard } from "./account/nuvio-card";
 import { NuvioSyncedAddonsCard } from "./account/nuvio-synced-addons-card";
@@ -31,7 +33,7 @@ import { ShieldAlert } from "lucide-react";
 import { getSecondaryPrivileges } from "@/lib/settings/defaults";
 import { isStremioActivePrimary } from "@/lib/active-profile-id";
 
-type Tab = "provider" | "you" | "profiles" | "argus" | "stremio" | "nuvio";
+type Tab = "provider" | "you" | "profiles" | "argus" | "cloud" | "stremio" | "nuvio";
 
 export function AccountStub() {
   const t = useT();
@@ -67,6 +69,7 @@ export function AccountStub() {
     { id: "you" as const, label: t("Your profile") },
     { id: "profiles" as const, label: t("Profiles") },
     ...(ARGUS_HOSTED ? [{ id: "argus" as const, label: t("Argus account") }] : []),
+    ...(SUPABASE ? [{ id: "cloud" as const, label: t("Cloud sync") }] : []),
     { id: "provider" as const, label: t("Account provider") },
     ...(isNuvio
       ? [{ id: "nuvio" as const, label: t("Nuvio") }]
@@ -150,6 +153,7 @@ export function AccountStub() {
         {tab === "you" && <IdentityTab />}
         {tab === "profiles" && <ProfilesTab />}
         {tab === "argus" && ARGUS_HOSTED && <ArgusAccountPanel />}
+        {tab === "cloud" && SUPABASE && <SupabaseSyncPanel />}
         {tab === "stremio" && <StremioTab />}
         {tab === "nuvio" && <NuvioTab />}
       </div>

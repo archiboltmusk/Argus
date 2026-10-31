@@ -18,6 +18,14 @@ export function cloudTaste(): TasteProfile {
   return cached;
 }
 
+export function currentTasteForSync(): TasteProfile {
+  return mergeTaste(cached, tasteFromAffinity(getStore().affinity));
+}
+
+export function mergeCloudTaste(value: unknown): void {
+  save(mergeTaste(cached, value));
+}
+
 function save(value: unknown): void {
   cached = normalizeTaste(value);
   try {
@@ -26,7 +34,7 @@ function save(value: unknown): void {
 }
 
 registerSection("taste", {
-  read: () => mergeTaste(cached, tasteFromAffinity(getStore().affinity)),
+  read: () => currentTasteForSync(),
   write: (_profileId, value) => save(value),
   merge: (local, incoming) => mergeTaste(local, incoming),
 });
