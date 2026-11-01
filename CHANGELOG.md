@@ -4,6 +4,21 @@ All notable changes to the Argus project are documented in this file.
 
 ---
 
+## [2.1.2] - 2026-11-01
+
+### Argus 2.1.2 — Real-Time Truth Buffering, Proactive Failover & Whisper Metal
+
+Argus 2.1.2 introduces the real-time truth buffering telemetry HUD, proactive addon stream failover, built-in smart silence skipping, and compiles Whisper ASR and Chromaprint offline audio hashing directly into release builds.
+
+### Highlights
+- **Real-Time Truth Buffering HUD**: Upgraded in-player loading indicator with live circular buffer percentage (`0-100%`), throughput speed (`MB/s` / `KB/s`), forward runway (`s`), and diagnostic connection status badges.
+- **Proactive Addon Failover & Speed Rating**: When a stream stalls, Argus instantly identifies responsive alternate cached streams across installed addons and shows historical EWMA throughput badges (`Mbps CDN`).
+- **Smart Silence Skipper**: Integrated podcast/lecture dead air accelerator into the player Speed & Sleep menu to automatically fast-forward quiet intervals at 2.5× without distortion.
+- **Compiled Whisper ASR & Chromaprint**: Added `--features asr-whisper,chromaprint` to macOS production builds, enabling offline AI subtitle generation and local theme detection.
+- **1-Click Verified Addon Batch Installer**: Single button in Argus Lab to install all verified, high-performance community addons in one pass.
+
+---
+
 ## [2.1.0] - 2026-10-30
 
 ### Argus 2.1.0 — Unified Design System & Decentralized Security
