@@ -10,6 +10,7 @@ import { chaptersToSegments } from "./chapters";
 import { fetchIntroDbAppSegments } from "./introdb-app";
 import { fetchSkipDbSegments } from "./skipdb";
 import { fetchIntroDbSegments, readTheIntroDbKey, setTheIntroDbApiKey } from "./theintrodb";
+import { fetchSponsorBlockSegments } from "./sponsorblock";
 import type { SkipSegment } from "./types";
 import { getLocalCache } from "../simkl/activities";
 import { useSettings } from "../settings";
@@ -230,15 +231,34 @@ export function useAdSegments(
     setSegs([]);
     if (!enabled) return;
     let cancelled = false;
+
+    // Check if URL or streamRef carries a YouTube video ID
+    const ytMatch =
+      url.match(/(?:youtube\.com\/(?:watch\?v=|embed\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/i) ||
+      metaId.match(/^yt:([a-zA-Z0-9_-]{11})/i);
+    const ytId = ytMatch ? ytMatch[1] : streamRef?.ytId;
+
+    if (ytId) {
+      fetchSponsorBlockSegments(ytId)
+        .then((s) => {
+          if (!cancelled && s.length > 0) {
+            setSegs(s);
+          }
+        })
+        .catch(() => {});
+    }
+
     fetchAdSegments(fp.content, fp.source, true)
       .then((s) => {
-        if (!cancelled) setSegs(s);
+        if (!cancelled && s.length > 0) {
+          setSegs((prev) => mergeSegments([prev, s]));
+        }
       })
       .catch(() => {});
     return () => {
       cancelled = true;
     };
-  }, [enabled, fp.content, fp.source]);
+  }, [enabled, fp.content, fp.source, url, metaId, streamRef?.ytId]);
   return segs;
 }
 

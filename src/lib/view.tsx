@@ -161,6 +161,7 @@ export type PlayerStreamRef = {
   size?: number | null;
   bingeGroup?: string | null;
   cachedSlugs?: string[];
+  ytId?: string | null;
 };
 
 export type PickerOptions = {
