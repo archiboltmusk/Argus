@@ -1,10 +1,11 @@
-import { Clock, Gauge, Pin, Plus, Settings2, X } from "lucide-react";
+import { Clock, FastForward, Gauge, Pin, Plus, Settings2, X } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   SLEEP_PRESETS,
   type SleepMode,
   type SleepTimerState,
 } from "@/views/player/hooks/use-sleep-timer";
+import { setSilenceSkipperEnabled, getSilenceSkipperConfig } from "@/lib/player/silence-skipper";
 import { useSettings } from "@/lib/settings";
 import { useT } from "@/lib/i18n";
 import { useMenuSide } from "../menu-side";
@@ -43,6 +44,7 @@ export function SpeedMenu({
   const { settings, update } = useSettings();
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState(false);
+  const [skipSilence, setSkipSilence] = useState(() => getSilenceSkipperConfig().enabled);
   const wrap = useRef<HTMLDivElement>(null);
   const { measure } = useMenuSide(wrap, 400);
   useEffect(() => {
@@ -183,6 +185,31 @@ export function SpeedMenu({
               })}
               {editing && (
                 <AddPresetInput placeholder={t("e.g. 1.35")} suffix="×" onAdd={addSpeed} />
+              )}
+              {!editing && (
+                <div className="mt-2 border-t border-edge-soft/60 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const next = !skipSilence;
+                      setSkipSilence(next);
+                      void setSilenceSkipperEnabled(next, rate, 2.5);
+                    }}
+                    className={`flex w-full items-center justify-between rounded-lg px-3 py-2 text-start text-[13px] font-medium transition-colors ${
+                      skipSilence
+                        ? "bg-accent/15 text-accent"
+                        : "text-ink-muted hover:bg-white/8 hover:text-ink"
+                    }`}
+                  >
+                    <span className="flex items-center gap-2">
+                      <FastForward size={14} className={skipSilence ? "text-accent" : "text-ink-subtle"} />
+                      <span>{t("Skip silence")}</span>
+                    </span>
+                    <span className="rounded bg-canvas/60 px-1.5 py-0.5 text-[10px] font-mono uppercase tracking-wider text-ink-subtle">
+                      {skipSilence ? t("On") : t("Off")}
+                    </span>
+                  </button>
+                </div>
               )}
             </Section>
             {sleep && (
