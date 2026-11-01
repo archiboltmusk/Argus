@@ -341,6 +341,9 @@ export const PlayerOverlayLayers = memo(function PlayerOverlayLayers(p: PlayerOv
       {!p.tenFoot && !p.pipMode && (
         <BufferingIndicator
           show={p.snap.buffering && (p.snap.status === "playing" || p.snap.status === "paused")}
+          engine={p.engine}
+          engineStats={p.engineStats}
+          bufferedSec={p.snap.bufferedSec}
         />
       )}
 
@@ -539,22 +542,34 @@ export const PlayerOverlayLayers = memo(function PlayerOverlayLayers(p: PlayerOv
           visible
           compact={p.mpvEmbedWindowsActive}
           live={p.liveOverlay.isLive}
-          customTitle={t("Getting playback back")}
+          customTitle={
+            p.stallOffer.nextStream
+              ? p.stallOffer.nextAddonName
+                ? t("Switch to working source ({addon})", { addon: p.stallOffer.nextAddonName })
+                : t("A faster source is ready")
+              : t("Stream stalled · searching better addon")
+          }
           customSub={
             p.stallOffer.nextStream
-              ? p.stallOffer.secondsLeft != null
-                ? t("Trying a better connection…")
-                : t("A better connection is ready.")
-              : t("Looking for a better connection…")
+              ? p.stallOffer.currentAddonName
+                ? t("{from} stalled ({sec}s) · {to} is responsive", {
+                    from: p.stallOffer.currentAddonName,
+                    sec: p.stallOffer.stalledDurationSec ?? 8,
+                    to: p.stallOffer.nextAddonName || t("healthy source"),
+                  })
+                : p.stallOffer.secondsLeft != null
+                  ? t("Auto-swapping to faster source in {sec}s…", { sec: p.stallOffer.secondsLeft })
+                  : t("Verified healthy cached stream ready.")
+              : t("Looking across all installed addons for working links…")
           }
           actionLabel={
             p.stallOffer.secondsLeft != null
-              ? t("Fix now")
+              ? t("Swap now ({sec}s)", { sec: p.stallOffer.secondsLeft })
               : p.stallOffer.nextStream
-                ? t("Use it")
+                ? t("Switch now")
                 : t("Choose source")
           }
-          dismissLabel={t("Wait")}
+          dismissLabel={t("Keep waiting")}
           onDismiss={p.dismissStallFallback ?? (() => {})}
           onPickAnother={p.acceptStallFallback ?? p.pickAnotherOrGuide}
         />

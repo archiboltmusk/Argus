@@ -17,6 +17,9 @@ import {
 export type StallOffer = {
   nextStream: ScoredStream | null;
   secondsLeft: number | null;
+  currentAddonName?: string;
+  nextAddonName?: string;
+  stalledDurationSec?: number;
 };
 
 export function useStallFallback(params: {
@@ -169,11 +172,26 @@ export function useStallFallback(params: {
         // has ample time to hit "Stay on current" if desired, rather than abruptly aborting playback.
         const canAutoSwitch = autoSwitchEnabled && nextStream && !circuitBreakerTripped;
 
+        const currentAddonName = src.streamRef?.addonName || undefined;
+        const nextAddonName = nextStream?.addonName || undefined;
+        const stalledDurationSec = Math.round(stall.stalledDurationMs / 1000);
+
         setStallOffer((prev) => {
-          if (prev) return prev;
+          if (prev) {
+            // Keep updating duration and addon references even if already offering
+            return {
+              ...prev,
+              currentAddonName,
+              nextAddonName,
+              stalledDurationSec,
+            };
+          }
           return {
             nextStream,
             secondsLeft: canAutoSwitch ? 5 : null,
+            currentAddonName,
+            nextAddonName,
+            stalledDurationSec,
           };
         });
       }
