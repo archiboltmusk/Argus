@@ -1,10 +1,11 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { StreamSpeedButton } from "@/components/player/stream-speed-button";
-import { ChevronDown, Loader2, Skull, ThumbsUp } from "lucide-react";
+import { ChevronDown, Loader2, Skull, ThumbsUp, Zap } from "lucide-react";
 import { AddonLogo } from "@/components/addon-logo";
 import { CopyLinkButton, resolveStreamLink } from "@/components/player/copy-link-button";
 import { FlagStack } from "@/components/flag";
 import { FormatBadge, RuleBadges, streamBadges } from "@/components/format-badge";
+import { getHostEwmaMbps } from "@/lib/streams/host-health";
 import {
   isStreamTargetVerified,
   markStreamAsCorrect,
@@ -176,6 +177,29 @@ export function SwitcherRow({
               />
             </button>
           )}
+          {(() => {
+            const hostSpeed = getHostEwmaMbps(stream.url);
+            if (hostSpeed == null) return null;
+            const isFast = hostSpeed >= 12;
+            const isMedium = hostSpeed >= 4 && hostSpeed < 12;
+            return (
+              <div className="mt-1 flex items-center gap-1.5">
+                <span
+                  className={`inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-mono font-medium ${
+                    isFast
+                      ? "bg-emerald-500/15 text-emerald-400 border border-emerald-500/30"
+                      : isMedium
+                        ? "bg-amber-500/15 text-amber-300 border border-amber-500/30"
+                        : "bg-rose-500/15 text-rose-300 border border-rose-500/30"
+                  }`}
+                  title={t("Historical EWMA throughput measured for this host")}
+                >
+                  <Zap size={9} />
+                  {hostSpeed.toFixed(0)} Mbps CDN
+                </span>
+              </div>
+            );
+          })()}
         </div>
 
         <div className="flex shrink-0 items-center gap-2 pt-0.5">
