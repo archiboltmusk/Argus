@@ -61,19 +61,48 @@ export function AddonDirectoryTab() {
               Curated, peer-reviewed open metadata, soundtrack, and subtitle providers. Argus strictly ships zero scraping streams and operates as an agnostic player.
             </p>
           </div>
-          <div className="flex flex-wrap items-center gap-1.5 rounded-xl border border-edge-soft bg-canvas p-1 text-xs">
-            {["all", "metadata", "subtitles", "catalogs", "anime"].map((cat) => (
-              <button
-                key={cat}
-                type="button"
-                onClick={() => setFilter(cat)}
-                className={`rounded-lg px-2.5 py-1 capitalize font-medium transition-colors ${
-                  filter === cat ? "bg-accent text-white" : "text-ink-subtle hover:text-ink"
-                }`}
-              >
-                {cat}
-              </button>
-            ))}
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              disabled={workingId !== null}
+              onClick={async () => {
+                setWorkingId("install-all");
+                setNotice(null);
+                let count = 0;
+                try {
+                  for (const item of CURATED_COMMUNITY_DIRECTORY) {
+                    if (!installedMap.has(item.id)) {
+                      await installAddon(item.id, item.manifestUrl);
+                      count++;
+                    }
+                  }
+                  setInstalled(loadInstalled());
+                  setNotice(count > 0 ? `Installed ${count} verified addon(s).` : "All verified addons are already installed.");
+                } catch (e) {
+                  setNotice(`Batch install encountered an issue: ${String(e)}`);
+                } finally {
+                  setWorkingId(null);
+                }
+              }}
+              className="inline-flex items-center gap-1.5 rounded-xl bg-accent px-3.5 py-1.5 text-xs font-semibold text-white shadow-sm hover:opacity-90 disabled:opacity-50"
+            >
+              <Download size={13} />
+              {workingId === "install-all" ? "Installing All…" : "Install All Verified"}
+            </button>
+            <div className="flex flex-wrap items-center gap-1.5 rounded-xl border border-edge-soft bg-canvas p-1 text-xs">
+              {["all", "metadata", "subtitles", "catalogs", "anime"].map((cat) => (
+                <button
+                  key={cat}
+                  type="button"
+                  onClick={() => setFilter(cat)}
+                  className={`rounded-lg px-2.5 py-1 capitalize font-medium transition-colors ${
+                    filter === cat ? "bg-accent text-white" : "text-ink-subtle hover:text-ink"
+                  }`}
+                >
+                  {cat}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
 
