@@ -108,41 +108,9 @@ export function BufferingIndicator({
   }
 
   return (
-    <div className="pointer-events-none absolute inset-0 z-[15] flex flex-col items-center justify-center gap-3.5 motion-safe:animate-in motion-safe:fade-in motion-safe:duration-250">
-      <div className="relative flex h-18 w-18 items-center justify-center rounded-2xl border border-white/10 bg-black/60 backdrop-blur-xl shadow-[0_12px_36px_-8px_rgba(0,0,0,0.85)]">
-        {/* Circular buffer meter */}
-        <svg
-          className="h-11 w-11 -rotate-90"
-          viewBox="0 0 44 44"
-          fill="none"
-        >
-          <circle cx="22" cy="22" r="18" stroke="currentColor" strokeOpacity="0.15" strokeWidth="3" className="text-white" />
-          <circle
-            cx="22"
-            cy="22"
-            r="18"
-            stroke="currentColor"
-            strokeWidth="3.5"
-            strokeLinecap="round"
-            strokeDasharray="113.1"
-            strokeDashoffset={
-              bufferPercent != null
-                ? 113.1 - (113.1 * bufferPercent) / 100
-                : 80
-            }
-            className={`${bufferPercent != null ? "text-amber-400 transition-[stroke-dashoffset] duration-300" : "text-white/80 motion-safe:animate-spin origin-center"}`}
-          />
-        </svg>
-
-        {bufferPercent != null ? (
-          <span className="absolute font-mono text-[11px] font-bold tracking-tight text-white tabular-nums">
-            {bufferPercent}%
-          </span>
-        ) : null}
-      </div>
-
-      {/* Real-time status badge */}
-      <div className="flex items-center gap-2 rounded-full border border-white/10 bg-black/75 px-3.5 py-1.5 backdrop-blur-md shadow-[0_8px_20px_-6px_rgba(0,0,0,0.7)] animate-in fade-in duration-300">
+    <div className="pointer-events-none absolute inset-0 z-[15]">
+      {/* Top-left Telemetry HUD: Real-time network speed & runway buffer stats */}
+      <div className="absolute top-6 left-6 flex items-center gap-2 rounded-full border border-white/10 bg-black/70 px-3.5 py-1.5 backdrop-blur-md shadow-[0_8px_20px_-6px_rgba(0,0,0,0.7)] animate-in fade-in slide-in-from-top-2 duration-300">
         <span
           className={`h-2 w-2 rounded-full ${
             speedBytes != null && speedBytes > 0
@@ -153,9 +121,44 @@ export function BufferingIndicator({
           }`}
           aria-hidden
         />
-        <span className="text-[12px] font-medium tracking-wide text-white/90 tabular-nums">
+        <span className="text-[12px] font-medium tracking-wide text-white/90 tabular-nums font-mono">
           {statusDetail}
         </span>
+      </div>
+
+      {/* Dead-center Circular Buffer Progress Meter */}
+      <div className="flex h-full w-full items-center justify-center motion-safe:animate-in motion-safe:fade-in motion-safe:duration-250">
+        <div className="relative flex h-18 w-18 items-center justify-center rounded-2xl border border-white/10 bg-black/60 backdrop-blur-xl shadow-[0_12px_36px_-8px_rgba(0,0,0,0.85)]">
+          {/* Circular buffer meter */}
+          <svg
+            className="h-11 w-11 -rotate-90"
+            viewBox="0 0 44 44"
+            fill="none"
+          >
+            <circle cx="22" cy="22" r="18" stroke="currentColor" strokeOpacity="0.15" strokeWidth="3" className="text-white" />
+            <circle
+              cx="22"
+              cy="22"
+              r="18"
+              stroke="currentColor"
+              strokeWidth="3.5"
+              strokeLinecap="round"
+              strokeDasharray="113.1"
+              strokeDashoffset={
+                bufferPercent != null
+                  ? 113.1 - (113.1 * bufferPercent) / 100
+                  : 80
+              }
+              className={`${bufferPercent != null ? "text-amber-400 transition-[stroke-dashoffset] duration-300" : "text-white/80 motion-safe:animate-spin origin-center"}`}
+            />
+          </svg>
+
+          {bufferPercent != null ? (
+            <span className="absolute font-mono text-[11px] font-bold tracking-tight text-white tabular-nums">
+              {bufferPercent}%
+            </span>
+          ) : null}
+        </div>
       </div>
     </div>
   );
