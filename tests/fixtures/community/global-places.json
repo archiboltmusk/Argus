@@ -1,0 +1,48 @@
+{
+  "results": [
+    {
+      "id": 3061184,
+      "name": "Banská Štiavnica",
+      "latitude": 48.44858,
+      "longitude": 18.91003,
+      "feature_code": "PPLA2",
+      "country_code": "SK",
+      "population": 9426,
+      "country": "Slovakia",
+      "admin1": "Banská Bystrica Region"
+    },
+    {
+      "id": 5128581,
+      "name": "New York",
+      "latitude": 40.71427,
+      "longitude": -74.00597,
+      "feature_code": "PPL",
+      "country_code": "US",
+      "population": 8804190,
+      "country": "United States",
+      "admin1": "New York"
+    },
+    {
+      "id": 5082331,
+      "name": "York",
+      "latitude": 40.86807,
+      "longitude": -97.592,
+      "feature_code": "PPLA2",
+      "country_code": "US",
+      "population": 7864,
+      "country": "United States",
+      "admin1": "Nebraska"
+    },
+    {
+      "id": 4257559,
+      "name": "Florence",
+      "latitude": 38.78423,
+      "longitude": -84.92439,
+      "feature_code": "PPL",
+      "country_code": "US",
+      "population": 80,
+      "country": "United States",
+      "admin1": "Indiana"
+    }
+  ]
+}

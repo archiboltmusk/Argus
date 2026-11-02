@@ -2096,7 +2096,7 @@ function Shell({ onReady }: { onReady?: () => void }) {
             {lifemaxxingAlive && (
               <div {...layerProps(lifemaxxingTop)}>
                 <Suspense fallback={null}>
-                  <LifeMaxxingView />
+                  <LifeMaxxingView active={lifemaxxingTop} />
                 </Suspense>
               </div>
             )}

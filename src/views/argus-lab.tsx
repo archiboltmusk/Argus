@@ -25,6 +25,8 @@ import { TelemetryTab } from "./lab/telemetry-tab";
 import { AddonDirectoryTab } from "./lab/addon-directory-tab";
 import { EcosystemTab } from "./lab/ecosystem-tab";
 import { TrustCenterTab } from "./lab/trust-center-tab";
+import { CommunityTab } from "./lab/community-tab";
+import { useProfiles } from "@/lib/profiles";
 
 const DEMO_CANDIDATES: StreamCandidate[] = [
   { id: "a", label: "Balanced 1080p", startupMs: 1450, quality: 1080, stability: 0.94, estimatedMbps: 7.5, compatible: true, recentFailures: 0, observations: 18 },
@@ -39,6 +41,7 @@ type Tab =
   | "directory"
   | "ecosystem"
   | "trust"
+  | "community"
   | "contract"
   | "signals"
   | "operations";
@@ -63,6 +66,7 @@ function Panel({ children, className = "" }: { children: React.ReactNode; classN
 }
 
 export function ArgusLabView({ active = true }: { active?: boolean }) {
+  const { activeProfile } = useProfiles();
   const [tab, setTab] = useState<Tab>("decision");
   const [initial] = useState(loadLabState);
   const [mode, setMode] = useState<ExperienceMode>(initial.mode);
@@ -153,6 +157,7 @@ export function ArgusLabView({ active = true }: { active?: boolean }) {
             ["directory", "Community Add-ons"],
             ["ecosystem", "Ecosystem & LAN"],
             ["trust", "Trust Center"],
+            ...(!activeProfile || activeProfile.kid ? [] : [["community", "Community"]]),
             ["contract", "Experience Contract"],
             ["signals", "Local Signals"],
             ["operations", "Lab Controls"],
@@ -216,6 +221,9 @@ export function ArgusLabView({ active = true }: { active?: boolean }) {
         {tab === "directory" && <AddonDirectoryTab />}
         {tab === "ecosystem" && <EcosystemTab />}
         {tab === "trust" && <TrustCenterTab />}
+        {tab === "community" && (
+          <CommunityTab profileId={activeProfile?.id ?? null} childProfile={!activeProfile || !!activeProfile.kid} active={active} />
+        )}
 
         {tab === "contract" && (
           <Panel>
