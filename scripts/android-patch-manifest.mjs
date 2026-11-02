@@ -42,9 +42,21 @@ if (!xml.includes("LEANBACK_LAUNCHER")) {
 if (!xml.includes("android.software.leanback")) {
   const features =
     '    <uses-feature android:name="android.software.leanback" android:required="false" />\n' +
-    '    <uses-feature android:name="android.hardware.touchscreen" android:required="false" />\n';
+    '    <uses-feature android:name="android.hardware.touchscreen" android:required="false" />\n' +
+    '    <uses-feature android:name="android.hardware.faketouch" android:required="false" />\n' +
+    '    <uses-feature android:name="android.hardware.telephony" android:required="false" />\n' +
+    '    <uses-feature android:name="android.hardware.camera" android:required="false" />\n' +
+    '    <uses-feature android:name="android.hardware.camera.autofocus" android:required="false" />\n' +
+    '    <uses-feature android:name="android.hardware.bluetooth" android:required="false" />\n' +
+    '    <uses-feature android:name="android.hardware.microphone" android:required="false" />\n' +
+    '    <uses-feature android:name="android.hardware.wifi" android:required="false" />\n';
   must(/<application\b/.test(xml), "no <application> tag in AndroidManifest.xml");
   xml = xml.replace(/(\s*)<application\b/, (m) => `\n${features}${m.replace(/^\n/, "")}`);
+}
+
+// Ensure TV banner attribute is declared on the main activity for Android TV / Projector home screens
+if (!xml.includes("android:banner")) {
+  xml = xml.replace(/<activity\b/, '<activity\n            android:banner="@mipmap/ic_launcher"');
 }
 
 if (!xml.includes('android:scheme="argus"')) {
