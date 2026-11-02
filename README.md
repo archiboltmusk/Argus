@@ -13,6 +13,17 @@ Argus ships with **no content and no built-in sources**. You connect the addons,
 
 Platforms: **Apple** (iOS, iPadOS, macOS, watchOS, tvOS, visionOS), **Android** (Google TV, Fire TV, Projectors, Mobile), **Smart TVs** (Samsung Tizen, LG webOS, Hisense VIDAA, Philips Titan OS, Panasonic, Roku), **Windows**, **Linux**, and **Web TV**.
 
+### Worldwide communities
+
+**LifeMaxxing → Community & Public Discovery** (also available under
+**Argus Observatory → Community**) supports live public web discovery for any place, worldwide
+place search, and private improvement drafts, including offline place entry.
+Web findings retain source links and retrieval times and start unverified.
+Reviewed service adapters cover Purulia / Parishkar, New York City, and Slovakia's
+municipal-service directory. Purulia's sourced district data is the first native
+civic-data integration. Services without a reviewed adapter remain explicitly
+unconnected. See [architecture and migration notes](docs/purulia-integration.md).
+
 ---
 
 ## Supported Platforms & Download Matrix

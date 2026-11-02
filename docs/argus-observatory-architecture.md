@@ -46,6 +46,17 @@ The contract uses explicit boolean policy decisions for automatic switching, ext
 
 ## Privacy and safety invariants
 
+The optional Community tab, shared with LifeMaxxing, provides on-demand public web discovery for any place,
+with source links, retrieval times, and unverified evidence status. It also has
+explicit worldwide place search, an offline
+place option, and temporary private improvement plans. Reviewed jurisdiction
+adapters expose New York City and Slovak service directories; the Purulia adapter
+loads a pinned aggregate district dataset on request. No network request occurs
+on mount or typing. Civic workflows open only in the system browser. This module
+uses no Lab contract permission as blanket consent and keeps no civic state
+between mounted sessions or profiles. See [integration and migration notes](purulia-integration.md)
+for the repository review, lifecycle boundaries, tests, and rollback.
+
 - No stream URL, viewing history, credentials, or addon manifest is accessed by the Observatory page.
 - Local signals describe browser capabilities, not verified internet health.
 - Storage keys are versioned and profile-local; no synchronization is performed.
