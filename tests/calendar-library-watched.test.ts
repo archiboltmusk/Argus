@@ -54,12 +54,27 @@ function load(overrides: Record<string, unknown> = {}): Api {
   return exports as Api;
 }
 
+function getTestDates() {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = now.getMonth();
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return {
+    year,
+    month,
+    airDate1: `${year}-${pad(month + 1)}-12`,
+    airDate2: `${year}-${pad(month + 1)}-19`,
+  };
+}
+
+const { year: TEST_YEAR, month: TEST_MONTH, airDate1: AIR_DATE_1, airDate2: AIR_DATE_2 } = getTestDates();
+
 const TOUGEN_S2 = {
   titles: { en: "Tougen Anki: Nikko Kegon Falls Arc" },
   mappings: {},
   episodes: {
-    "1": { episode: "1", airdate: "2026-10-02" },
-    "2": { episode: "2", airdate: "2026-10-09" },
+    "1": { episode: "1", airdate: AIR_DATE_1 },
+    "2": { episode: "2", airdate: AIR_DATE_2 },
   },
 };
 
@@ -75,10 +90,10 @@ test("a locally started anime reaches the library calendar without a Stremio ent
       pickEpisodeTitle: () => null,
     },
   });
-  const out = await api.fetchLibraryCalendar("key", 2026, 9, { tmdbKey: "", includeTrakt: false });
+  const out = await api.fetchLibraryCalendar("key", TEST_YEAR, TEST_MONTH, { tmdbKey: "", includeTrakt: false });
   assert.equal(out.length, 2);
   assert.equal(out[0].id, "mal:63181:1:1");
-  assert.equal(out[0].releaseDate, "2026-10-02");
+  assert.equal(out[0].releaseDate, AIR_DATE_1);
 });
 
 test("manual-watched anime also becomes a candidate", async () => {
@@ -100,7 +115,7 @@ test("manual-watched anime also becomes a candidate", async () => {
       pickEpisodeTitle: () => null,
     },
   });
-  const out = await api.fetchLibraryCalendar("key", 2026, 9, { tmdbKey: "", includeTrakt: false });
+  const out = await api.fetchLibraryCalendar("key", TEST_YEAR, TEST_MONTH, { tmdbKey: "", includeTrakt: false });
   assert.equal(out.length, 2);
   assert.equal(out[0].id, "kitsu:51018:1:1");
 });
@@ -128,15 +143,15 @@ test("a merged parent-season episode does not duplicate the real sequel airing",
         poster: null,
         isAnime: true,
         episodes: [
-          { season: 1, number: 14, name: "Episode 14", airDate: "2026-10-10", image: null, overview: "", voteAverage: 0 },
-          { season: 2, number: 3, name: "Episode 3", airDate: "2026-10-10", image: null, overview: "", voteAverage: 0 },
+          { season: 1, number: 14, name: "Episode 14", airDate: AIR_DATE_1, image: null, overview: "", voteAverage: 0 },
+          { season: 2, number: 3, name: "Episode 3", airDate: AIR_DATE_1, image: null, overview: "", voteAverage: 0 },
         ],
       }),
       tmdbMovieRelease: async () => null,
       tmdbTvPoster: async () => null,
     },
   });
-  const out = await api.fetchLibraryCalendar("key", 2026, 9, { tmdbKey: "k", includeTrakt: false });
+  const out = await api.fetchLibraryCalendar("key", TEST_YEAR, TEST_MONTH, { tmdbKey: "k", includeTrakt: false });
   assert.equal(out.length, 1, "the merged S1 label must not survive");
   assert.match(out[0].name, /S02E03/);
 });
@@ -161,7 +176,7 @@ test("a catalog row in the same franchise as an anime row is dropped", async () 
           ? {
               titles: { en: "Bleach: Thousand-Year Blood War - The Calamity" },
               mappings: {},
-              episodes: { "9": { episode: "9", seasonNumber: 17, episodeNumber: 49, airdate: "2026-10-19" } },
+              episodes: { "9": { episode: "9", seasonNumber: 17, episodeNumber: 49, airdate: AIR_DATE_1 } },
             }
           : null,
       aniZipByMal: async () => null,
@@ -174,15 +189,15 @@ test("a catalog row in the same franchise as an anime row is dropped", async () 
         poster: null,
         isAnime: true,
         episodes: [
-          { season: 2, number: 49, name: "THE BLADE", airDate: "2026-10-20", image: null, overview: "", voteAverage: 0 },
+          { season: 2, number: 49, name: "THE BLADE", airDate: AIR_DATE_2, image: null, overview: "", voteAverage: 0 },
         ],
       }),
       tmdbMovieRelease: async () => null,
       tmdbTvPoster: async () => null,
     },
   });
-  const out = await api.fetchLibraryCalendar("key", 2026, 9, { tmdbKey: "k", includeTrakt: false });
+  const out = await api.fetchLibraryCalendar("key", TEST_YEAR, TEST_MONTH, { tmdbKey: "k", includeTrakt: false });
   assert.equal(out.length, 1, "the catalog duplicate must be dropped");
-  assert.equal(out[0].releaseDate, "2026-10-19");
+  assert.equal(out[0].releaseDate, AIR_DATE_1);
   assert.match(out[0].name, /S17E49/);
 });
