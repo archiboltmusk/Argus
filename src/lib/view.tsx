@@ -59,6 +59,7 @@ export type View =
   | "ebook"
   | "education"
   | "argus-lab"
+  | "lifemaxxing"
   | "people";
 
 export type PlayEpisode = {
@@ -217,6 +218,7 @@ export type Frame =
   | { kind: "downloads" }
   | { kind: "education" }
   | { kind: "argus-lab" }
+  | { kind: "lifemaxxing" }
   | { kind: "manga"; mangaId?: string }
   | { kind: "ebook"; ebookId?: string }
   | { kind: "people"; source?: RankSource; dept?: PeopleDept; focusSource?: boolean; nonce: number }
@@ -490,6 +492,8 @@ function frameKey(f: Frame): string {
       return "downloads";
     case "education":
       return "education";
+    case "lifemaxxing":
+      return "lifemaxxing";
     case "argus-lab":
       return "argus-lab";
     case "manga":

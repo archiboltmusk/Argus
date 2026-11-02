@@ -311,6 +311,7 @@ const DownloadsView = lazy(() => importDownloads().then((m) => ({ default: m.Dow
 const MangaView = lazy(() => import("@/views/manga").then((m) => ({ default: m.MangaView })));
 const EBookView = lazy(() => import("@/views/ebook").then((m) => ({ default: m.EBookView })));
 const EducationView = lazy(() => import("@/views/education").then((m) => ({ default: m.EducationView })));
+const LifeMaxxingView = lazy(() => import("@/views/lifemaxxing").then((m) => ({ default: m.LifemaxxingView })));
 const ArgusLabView = lazy(() => importArgusLab().then((m) => ({ default: m.ArgusLabView })));
 const OnboardingModal = lazy(() =>
   importOnboarding().then((m) => ({ default: m.OnboardingModal })),
@@ -1665,6 +1666,7 @@ function Shell({ onReady }: { onReady?: () => void }) {
   const vodTop = topKind === "vod";
   const downloadsTop = topKind === "downloads";
   const educationTop = topKind === "education";
+  const lifemaxxingTop = topKind === "lifemaxxing";
   const argusLabTop = topKind === "argus-lab";
   const mangaTop = topKind === "manga" && installFeatures.manga;
   const ebookTop = topKind === "ebook" && installFeatures.ebook;
@@ -1774,6 +1776,7 @@ function Shell({ onReady }: { onReady?: () => void }) {
   const vodAlive = useIdleEvict(vodTop);
   const downloadsAlive = useIdleEvict(downloadsTop);
   const educationAlive = useIdleEvict(educationTop);
+  const lifemaxxingAlive = useIdleEvict(lifemaxxingTop);
   const argusLabAlive = useIdleEvict(argusLabTop);
   const mangaAlive = useIdleEvict(mangaTop);
   const ebookAlive = useIdleEvict(ebookTop);
@@ -2087,6 +2090,13 @@ function Shell({ onReady }: { onReady?: () => void }) {
               <div {...layerProps(educationTop)}>
                 <Suspense fallback={null}>
                   <EducationView />
+                </Suspense>
+              </div>
+            )}
+            {lifemaxxingAlive && (
+              <div {...layerProps(lifemaxxingTop)}>
+                <Suspense fallback={null}>
+                  <LifeMaxxingView />
                 </Suspense>
               </div>
             )}
