@@ -560,7 +560,20 @@ export function SeriesEpisodes({
         </h3>
         <div className="flex min-w-0 flex-wrap items-center justify-end gap-2 xl:gap-2.5">
           <EpisodeDownloadsMenu meta={meta} episodes={downloadEpisodes} />
-          <RandomEpisodeButton meta={meta} seasons={seasons} />
+          <RandomEpisodeButton
+            meta={meta}
+            seasons={seasons}
+            watchedKeys={
+              stremioWatched || traktWatched?.size || simklWatched?.size || pmdbWatched?.size
+                ? new Set([
+                    ...(stremioWatched ? Array.from(stremioWatched) : []),
+                    ...(traktWatched ? Array.from(traktWatched) : []),
+                    ...(simklWatched ? Array.from(simklWatched) : []),
+                    ...(pmdbWatched ? Array.from(pmdbWatched) : []),
+                  ])
+                : undefined
+            }
+          />
           <EpisodeLayoutToggle
             value={settings.episodeLayout}
             onChange={(v) => update({ episodeLayout: v })}

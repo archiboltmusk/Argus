@@ -6,39 +6,75 @@ import { useSettings } from "@/lib/settings";
 import { useView } from "@/lib/view";
 import { useT } from "@/lib/i18n";
 
-function pickRandomEpisode(seasons: Season[]): { season: number; episode: number } | null {
+function pickRandomEpisode(
+  seasons: Season[],
+  watchedKeys?: Set<string>,
+): { season: number; episode: number } | null {
   const today = new Date().toISOString().slice(0, 10);
   const real = seasons.filter((s) => s.seasonNumber >= 1 && s.episodeCount > 0);
   const aired = real.filter((s) => !s.airDate || s.airDate.slice(0, 10) <= today);
   const pool = aired.length > 0 ? aired : real;
-  const total = pool.reduce((n, s) => n + s.episodeCount, 0);
-  if (total === 0) return null;
-  let r = Math.floor(Math.random() * total);
+
+  // Build candidate lists: unwatched first, with fallback to all aired
+  const unwatchedCandidates: Array<{ season: number; episode: number }> = [];
+  const allCandidates: Array<{ season: number; episode: number }> = [];
+
   for (const s of pool) {
-    if (r < s.episodeCount) return { season: s.seasonNumber, episode: r + 1 };
-    r -= s.episodeCount;
+    for (let e = 1; e <= s.episodeCount; e++) {
+      const epRef = { season: s.seasonNumber, episode: e };
+      allCandidates.push(epRef);
+      const key = `${s.seasonNumber}:${e}`;
+      if (!watchedKeys || !watchedKeys.has(key)) {
+        unwatchedCandidates.push(epRef);
+      }
+    }
   }
-  return null;
+
+  const candidatePool = unwatchedCandidates.length > 0 ? unwatchedCandidates : allCandidates;
+  if (candidatePool.length === 0) return null;
+  const pickedIndex = Math.floor(Math.random() * candidatePool.length);
+  return candidatePool[pickedIndex] ?? null;
 }
 
-export function RandomEpisodeButton({ meta, seasons }: { meta: Meta; seasons: Season[] }) {
+export function RandomEpisodeButton({
+  meta,
+  seasons,
+  watchedKeys,
+}: {
+  meta: Meta;
+  seasons: Season[];
+  watchedKeys?: Set<string>;
+}) {
   const t = useT();
   const { openPicker } = useView();
   const { settings } = useSettings();
-  const onClick = () => {
-    const pick = pickRandomEpisode(seasons);
+
+  const onClick = (unwatchedOnly: boolean) => {
+    const pick = pickRandomEpisode(seasons, unwatchedOnly ? watchedKeys : undefined);
     if (!pick) return;
     openPicker(meta, pick, { autoPlay: settings.instantPlay || settings.seasonSourceLock });
   };
+
+  const hasWatchedData = watchedKeys && watchedKeys.size > 0;
+  const tooltipLabel = hasWatchedData
+    ? t("Play random unwatched episode (Shift-click for any)")
+    : t("Play a random episode");
+
   return (
-    <HoverTooltip label={t("Play a random episode")} align="center" className="shrink-0">
+    <HoverTooltip label={tooltipLabel} align="center" className="shrink-0">
       <button
         type="button"
-        onClick={onClick}
+        onClick={(e) => onClick(!e.shiftKey)}
         aria-label={t("Play a random episode")}
-        className="flex h-9 w-9 items-center justify-center rounded-full text-ink-subtle transition-colors hover:bg-elevated hover:text-ink"
+        className="group relative flex h-9 w-9 items-center justify-center rounded-full text-ink-subtle transition-colors hover:bg-elevated hover:text-ink"
       >
-        <Shuffle size={17} strokeWidth={2} />
+        <Shuffle size={16} strokeWidth={2} />
+        {hasWatchedData && (
+          <span
+            className="absolute -top-0.5 -right-0.5 h-2 w-2 rounded-full bg-accent ring-2 ring-canvas"
+            title={t("Prioritizing unwatched episodes")}
+          />
+        )}
       </button>
     </HoverTooltip>
   );
