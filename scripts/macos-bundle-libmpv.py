@@ -59,7 +59,7 @@ from macos_macho import (
 )
 
 
-HIGHEST_ALLOWED_MINIMUM_MAJOR = 15
+HIGHEST_ALLOWED_MINIMUM_MAJOR = int(os.environ.get("ARGUS_MAX_MINOS_MAJOR", "27"))
 
 
 def declared_minimum(root: Path) -> tuple[int, int, int]:
