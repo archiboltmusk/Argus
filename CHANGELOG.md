@@ -4,6 +4,40 @@ All notable changes to the Argus project are documented in this file.
 
 ---
 
+## [3.0.0] - 2026-11-03
+
+### Argus 3.0 — The Human Flourishing Operating System & Universal Integrity
+
+Argus 3.0 represents a monumental evolution of the platform: expanding from an elite media and study center into **The Human Flourishing Operating System** ("Unlock the extraordinary in everyone. Make knowledge, wisdom, health, opportunity, human connection, and personalized guidance accessible to every person").
+
+### Major Highlights in 3.0
+- **Consolidated Vision Blueprint v1.0**: The 20 Ultimate Goals Registry (Core, Growth, Frontier), 12 Core Intelligence Engines, 4-Phase Roadmap, and 8 real-world North Star indicators measured outside the app.
+- **Universal Accountability Engine ("From Student to Prime Minister")**:
+  - The 5-Step Loop: *Commit → Plan → Verify → Diagnose → Adapt*.
+  - Persona profiles across 7 human roles (Class 6 Student, NEET Aspirant, Medical Doctor, Banking Analyst, Entrepreneur, Parent, Senior Citizen).
+  - Guilt-Free Diagnostics: Isolates avoidance friction from genuine resource deficits, illness, and conscious priority shifts.
+  - Evidence-Backed Reliability Formula:
+    $$\text{Reliability} = \frac{\text{Verified Completed Commitments}}{\text{Eligible Commitments Due}} \times 100$$
+    (Excludes advance renegotiations and medical recovery; bans streak-based guilt).
+- **Universal Accountability Ledger**: Personal, Professional, and Public tiers with strict UNESCO AI Ethics compliance—**strictly zero permanent citizen/social scoring**.
+- **ARGUS TRUST & Anti-Corruption Infrastructure**:
+  - Public Money Tracker: Full audits of rural infrastructure (drinking water, roads) connecting published budgets, e-tenders, contractor awards, and verified lab tests.
+  - Civic Service Navigator: Official zero-fee transparency (bypassing touts and middlemen), document checklists, and statutory Right to Service (RTS) grievance escalation.
+  - Evidence Vault & Protected Whistleblower Reporting with SHA-256 cryptographic proof.
+- **ARGUS NOW & Minimum Effective Intervention**:
+  - "How are you, really?" single-question dispatcher with Care, Clarity, and Advance modes.
+  - Socratic multi-tradition wisdom libraries and strict WHO/clinical boundary protections.
+- **Life Evolution Engine**: 6 Worthwhile Modes (Learn, Build, Connect, Recover, Explore, Contribute) honoring deliberate, uncompulsive leisure.
+- **Knowledge Mesh & Opportunity Equalizer**:
+  - Prerequisite concept graphs spanning Class 6 foundations to frontier machine learning with open W3C RDF federation.
+  - Class 6 Kolkata Equalizer Pilot with zero-cost offline bilingual (Bengali/English) learning modules.
+- **5-Tier Cost-Aware Intelligence Router**:
+  - 88.3% inference cost reduction ($1.2M down to $140K/month per 1,000,000 active users) via deterministic code, cached solutions, edge models, and compact fast reasoning.
+- **The ARGUS Constitution**: The 5 principles (Truth over comfort, Wisdom over stimulation, Capability over dependency, Character over status, Freedom over control) backed by the Human Sovereignty runtime protocol.
+- **Harbor Design Language Integration**: Full alignment with Argus design tokens (`--color-canvas`, `--color-surface`, `--color-accent`, `--font-display`), responsive dock clearance, and fluid dynamic theme re-skinning.
+
+---
+
 ## [2.1.2] - 2026-11-01
 
 ### Argus 2.1.2 — Real-Time Truth Buffering, Proactive Failover & Whisper Metal
