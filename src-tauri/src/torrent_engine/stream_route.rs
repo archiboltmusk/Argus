@@ -439,7 +439,7 @@ async fn stream_file_inner(
         );
     }
     let body = Body::from_stream(
-        tokio_util::io::ReaderStream::with_capacity(stream.take(to_take), 65536)
+        tokio_util::io::ReaderStream::with_capacity(stream.take(to_take), 262144)
             .take_until(session.cancellation_token().clone().cancelled_owned()),
     );
     (status, out, body).into_response()

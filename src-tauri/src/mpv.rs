@@ -1158,9 +1158,9 @@ pub async fn mpv_start(
             if full_dl {
                 "100000"
             } else if high_bitrate {
-                "90"
-            } else {
                 "60"
+            } else {
+                "45"
             },
         );
         let _ = mpv.set_property("cache-pause", "yes");
@@ -1169,10 +1169,8 @@ pub async fn mpv_start(
             "cache-pause-wait",
             if full_dl {
                 "10"
-            } else if high_bitrate {
-                "2"
             } else {
-                "1"
+                "0"
             },
         );
         let _ = mpv.set_property(
@@ -1200,25 +1198,26 @@ pub async fn mpv_start(
             if full_dl {
                 "100000"
             } else if high_bitrate {
-                "90"
+                "30"
             } else {
-                "60"
+                "20"
             },
         );
-        let _ = mpv.set_property("cache-on-disk", "yes");
+        let _ = mpv.set_property("cache-on-disk", if full_dl { "yes" } else { "no" });
+        let _ = mpv.set_property("demuxer-lavf-buffersize", "1048576");
         let _ = mpv.set_property("network-timeout", network_timeout_for(&args.url));
         // No reconnect_streamed: on AES-128 HLS every segment ends in a normal
         // EOF that ffmpeg then retries from offset 0, gets an empty body, and
         // backs off 1/3/7s. Measured on a vixsrc stream: 7 segments and 55s of
         // backoff per 100s with the flag, 94 segments and 0s without it.
-        let reconnect_opts = "reconnect=1,reconnect_on_network_error=1,reconnect_on_http_error=429,reconnect_delay_max=10,reconnect_delay_total_max=60";
+        let reconnect_opts = "reconnect=1,reconnect_on_network_error=1,reconnect_on_http_error=429,reconnect_delay_max=5,reconnect_delay_total_max=30";
         match mpv.set_property("stream-lavf-o", reconnect_opts) {
             Ok(()) => eprintln!("[argus::mpv] stream-lavf-o set {}", reconnect_opts),
             Err(e) => eprintln!("[argus::mpv] stream-lavf-o rejected: {:?}", e),
         }
         let _ = mpv.set_property(
             "stream-buffer-size",
-            if high_bitrate { "32MiB" } else { "16MiB" },
+            if high_bitrate { "8MiB" } else { "4MiB" },
         );
     }
     // mpv may auto-select an embedded subtitle as soon as loadfile runs. Keep
