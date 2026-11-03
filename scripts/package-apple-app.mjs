@@ -57,12 +57,46 @@ const CONFIGS = {
 const conf = CONFIGS[platform] || CONFIGS.ios;
 fs.mkdirSync(appDir, { recursive: true });
 
+// Clean up any invalid macOS Contents structure if accidentally copied
+const contentsDir = path.join(appDir, "Contents");
+if (fs.existsSync(contentsDir)) {
+  console.log(`[package-apple-app] Removing macOS Contents folder from ${platform} app bundle...`);
+  fs.rmSync(contentsDir, { recursive: true, force: true });
+}
+
+// Always copy frontend web assets from distDir to appDir
+if (fs.existsSync(distDir)) {
+  console.log(`[package-apple-app] Copying frontend assets from ${distDir} to ${appDir}`);
+  execSync(`cp -R "${distDir}/." "${appDir}/"`, { stdio: "inherit" });
+}
+
 const infoPlistPath = path.join(appDir, "Info.plist");
-if (!fs.existsSync(infoPlistPath)) {
-  console.log(`[package-apple-app] Creating Info.plist for ${platform} at ${infoPlistPath}`);
-  if (fs.existsSync(distDir)) {
-    execSync(`cp -R "${distDir}/." "${appDir}/"`, { stdio: "inherit" });
+let needsPlist = !fs.existsSync(infoPlistPath);
+if (!needsPlist) {
+  try {
+    const existing = fs.readFileSync(infoPlistPath, "utf8");
+    if (
+      existing.includes("$(EXECUTABLE_NAME)") ||
+      existing.includes("$(PRODUCT_NAME)") ||
+      !existing.includes("<key>CFBundleExecutable</key>")
+    ) {
+      needsPlist = true;
+    }
+  } catch {
+    needsPlist = true;
   }
+}
+
+if (needsPlist) {
+  console.log(`[package-apple-app] Writing clean Info.plist for ${platform} at ${infoPlistPath}`);
+  const supportedPlatform =
+    platform === "tvos"
+      ? "AppleTVOS"
+      : platform === "visionos"
+      ? "XROS"
+      : platform === "watchos"
+      ? "WatchOS"
+      : "iPhoneOS";
 
   const plistContent = `<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
@@ -97,7 +131,7 @@ if (!fs.existsSync(infoPlistPath)) {
     </array>
     <key>CFBundleSupportedPlatforms</key>
     <array>
-        <string>iPhoneOS</string>
+        <string>${supportedPlatform}</string>
     </array>
     <key>UIRequiresFullScreen</key>
     <true/>
@@ -121,7 +155,17 @@ if (!fs.existsSync(infoPlistPath)) {
 }
 
 const execPath = path.join(appDir, conf.execName);
-if (!fs.existsSync(execPath)) {
+let needsBinary = !fs.existsSync(execPath);
+if (!needsBinary) {
+  try {
+    const stat = fs.statSync(execPath);
+    if (stat.size === 0) needsBinary = true;
+  } catch {
+    needsBinary = true;
+  }
+}
+
+if (needsBinary) {
   console.log(`[package-apple-app] Compiling native ARM64 Mach-O binary for ${platform} at ${execPath}`);
   const tempSrc = path.join(appDir, "_temp_launcher.m");
 

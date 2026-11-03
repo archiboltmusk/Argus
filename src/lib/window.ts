@@ -157,6 +157,10 @@ const IFRAME_HOSTILE_HOSTS = [
   "github.com",
   "x.com",
   "twitter.com",
+  "api-sports.io",
+  "dashboard.api-football.com",
+  "api-football.com",
+  "thesportsdb.com",
 ];
 
 function isIframeHostile(url: string): boolean {

@@ -32,21 +32,21 @@ export const BUFFER_PROFILES: Record<Exclude<BufferSizeId, "auto">, BufferProfil
     readaheadSecs: 120,
     maxBytes: 512 * MIB,
     maxBackBytes: 64 * MIB,
-    pauseWaitSecs: 0,
+    pauseWaitSecs: 4,
   },
   large: {
     cacheSecs: 600,
     readaheadSecs: 600,
     maxBytes: GIB,
     maxBackBytes: 128 * MIB,
-    pauseWaitSecs: 1,
+    pauseWaitSecs: 10,
   },
   max: {
     cacheSecs: 1800,
     readaheadSecs: 1800,
     maxBytes: 2 * GIB,
     maxBackBytes: 256 * MIB,
-    pauseWaitSecs: 1,
+    pauseWaitSecs: 20,
   },
 };
 

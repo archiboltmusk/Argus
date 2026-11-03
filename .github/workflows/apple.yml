@@ -73,8 +73,8 @@ jobs:
               -archivePath "$RUNNER_TEMP/Argus-iOS.xcarchive" archive \
               CODE_SIGNING_ALLOWED=NO CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO AD_HOC_CODE_SIGNING_ALLOWED=YES 2>/dev/null || true
 
-            APP=$(find "$RUNNER_TEMP" -name '*.app' -type d 2>/dev/null | grep -E "Release-iphoneos|Products/Applications" | head -n1 || find . -name '*.app' -type d 2>/dev/null | head -n1)
-            if [ -n "$APP" ]; then
+            APP=$(find "$RUNNER_TEMP" -name '*.app' -type d 2>/dev/null | grep -E "Release-iphoneos|Products/Applications" | head -n1 || true)
+            if [ -n "$APP" ] && [ -d "$APP" ]; then
               cp -R "$APP/." "$RUNNER_TEMP/Payload/Argus.app/"
             fi
             set -e

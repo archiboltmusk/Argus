@@ -194,9 +194,6 @@ export function useBridgeLoad(params: {
       }
       if (!guestInRoom && (hasExplicitStart ? startSec > 0 : startSec > 5)) {
         setPendingSeekSec(startSec);
-        if (!inRoomRef.current && !src.startPaused) {
-          bridge.play({ reason: "load" }).catch(() => {});
-        }
         return;
       }
       if (!inRoomRef.current && !src.startPaused) {

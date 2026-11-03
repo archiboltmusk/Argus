@@ -205,12 +205,12 @@ function defaultVodBufferProperties(
   if (phase === "startup") {
     // Zero-delay fast start: demux and render the first frame immediately like Netflix
     return [
-      ["cache-secs", highBitrate ? "30" : "20"],
+      ["cache-secs", highBitrate ? "45" : "30"],
       ["cache-pause-wait", "0"],
-      ["demuxer-max-bytes", highBitrate ? "128MiB" : "64MiB"],
-      ["demuxer-max-back-bytes", highBitrate ? "32MiB" : "16MiB"],
-      ["demuxer-readahead-secs", highBitrate ? "20" : "15"],
-      ["stream-buffer-size", highBitrate ? "8MiB" : "4MiB"],
+      ["demuxer-max-bytes", highBitrate ? "256MiB" : "128MiB"],
+      ["demuxer-max-back-bytes", highBitrate ? "64MiB" : "32MiB"],
+      ["demuxer-readahead-secs", highBitrate ? "45" : "30"],
+      ["stream-buffer-size", highBitrate ? "32MiB" : "16MiB"],
     ];
   }
   return [

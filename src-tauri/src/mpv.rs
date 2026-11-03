@@ -1203,8 +1203,10 @@ pub async fn mpv_start(
                 "20"
             },
         );
-        let _ = mpv.set_property("cache-on-disk", if full_dl { "yes" } else { "no" });
+        let _ = mpv.set_property("cache-on-disk", "yes");
         let _ = mpv.set_property("demuxer-lavf-buffersize", "1048576");
+        let _ = mpv.set_property("demuxer-lavf-probesize", "2097152");
+        let _ = mpv.set_property("demuxer-lavf-analyzeduration", "1.0");
         let _ = mpv.set_property("network-timeout", network_timeout_for(&args.url));
         // No reconnect_streamed: on AES-128 HLS every segment ends in a normal
         // EOF that ffmpeg then retries from offset 0, gets an empty body, and
@@ -1217,7 +1219,7 @@ pub async fn mpv_start(
         }
         let _ = mpv.set_property(
             "stream-buffer-size",
-            if high_bitrate { "8MiB" } else { "4MiB" },
+            if high_bitrate { "32MiB" } else { "16MiB" },
         );
     }
     // mpv may auto-select an embedded subtitle as soon as loadfile runs. Keep

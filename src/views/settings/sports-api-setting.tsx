@@ -89,9 +89,11 @@ export function SportsApiSetting() {
             {t(
               "Saving does not verify your key. Sports uses it when loading supported competitions.",
             )}{" "}
-            <ExtLink href="https://dashboard.api-sports.io/register">{t("Get free key")}</ExtLink>
+            <ExtLink href="https://dashboard.api-football.com/register">{t("Get free key")}</ExtLink>
             {" · "}
-            <ExtLink href="https://dashboard.api-sports.io/">{t("API-Sports dashboard")}</ExtLink>
+            <ExtLink href="https://dashboard.api-football.com/">{t("API-Sports dashboard")}</ExtLink>
+            {" · "}
+            <ExtLink href="https://www.thesportsdb.com/">TheSportsDB</ExtLink>
           </>
         }
       />
