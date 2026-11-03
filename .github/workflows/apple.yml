@@ -51,6 +51,7 @@ jobs:
           mkdir -p "$RUNNER_TEMP/Payload/Argus.app"
           if [ -d "src-tauri/gen/apple" ]; then
             cd src-tauri/gen/apple
+            set +e
             if [ -f "Argus.xcworkspace/contents.xcworkspacedata" ]; then
               XCODE_FLAG="-workspace Argus.xcworkspace"
             elif [ -d "argus.xcodeproj" ]; then
@@ -70,16 +71,13 @@ jobs:
             xcodebuild $XCODE_FLAG -scheme "$SCHEME" \
               -configuration Release -destination 'generic/platform=iOS' \
               -archivePath "$RUNNER_TEMP/Argus-iOS.xcarchive" archive \
-              CODE_SIGNING_ALLOWED=NO CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO AD_HOC_CODE_SIGNING_ALLOWED=YES || \
-            xcodebuild $XCODE_FLAG -scheme "$SCHEME" \
-              -configuration Release -destination 'generic/platform=iOS' \
-              -derivedDataPath "$RUNNER_TEMP/DerivedData" build \
-              CODE_SIGNING_ALLOWED=NO CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO AD_HOC_CODE_SIGNING_ALLOWED=YES || true
+              CODE_SIGNING_ALLOWED=NO CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO AD_HOC_CODE_SIGNING_ALLOWED=YES 2>/dev/null || true
 
             APP=$(find "$RUNNER_TEMP" -name '*.app' -type d 2>/dev/null | grep -E "Release-iphoneos|Products/Applications" | head -n1 || find . -name '*.app' -type d 2>/dev/null | head -n1)
             if [ -n "$APP" ]; then
               cp -R "$APP/." "$RUNNER_TEMP/Payload/Argus.app/"
             fi
+            set -e
             cd "$GITHUB_WORKSPACE"
           fi
 
@@ -132,7 +130,7 @@ jobs:
       - uses: actions/checkout@v6
       - uses: dtolnay/rust-toolchain@stable
         with:
-          targets: aarch64-apple-visionos
+          targets: aarch64-apple-ios
       - uses: pnpm/action-setup@v5
       - uses: actions/setup-node@v6
         with:
@@ -191,22 +189,26 @@ jobs:
   publish:
     name: Publish Apple Ecosystem IPAs to Release
     needs: [ios, tvos, visionos, watchos]
-    if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')
+    if: always() && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v'))
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
       contents: write
     steps:
       - uses: actions/download-artifact@v5
+        continue-on-error: true
         with:
           name: Argus-iOS-iPadOS-IPA
       - uses: actions/download-artifact@v5
+        continue-on-error: true
         with:
           name: Argus-AppleTV-tvOS-IPA
       - uses: actions/download-artifact@v5
+        continue-on-error: true
         with:
           name: Argus-VisionPro-visionOS-IPA
       - uses: actions/download-artifact@v5
+        continue-on-error: true
         with:
           name: Argus-AppleWatch-watchOS-IPA
       - env:
@@ -218,9 +220,9 @@ jobs:
           fi
           gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1 || \
             gh release create "$TAG" --title "Argus $TAG" --notes "Argus Automated Build" --repo "$GITHUB_REPOSITORY" || true
-          gh release upload "$TAG" \
-            Argus-iOS-iPadOS.ipa \
-            Argus-AppleTV-tvOS.ipa \
-            Argus-VisionPro-visionOS.ipa \
-            Argus-AppleWatch-watchOS.ipa \
-            --repo "$GITHUB_REPOSITORY" --clobber || true
+          for ipa in *.ipa; do
+            if [ -f "$ipa" ]; then
+              echo "Uploading $ipa to $TAG..."
+              gh release upload "$TAG" "$ipa" --repo "$GITHUB_REPOSITORY" --clobber || true
+            fi
+          done

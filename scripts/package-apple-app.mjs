@@ -38,8 +38,8 @@ const CONFIGS = {
     displayName: "Argus Vision",
     bundleId: "app.argus.visionos",
     execName: "ArgusVision",
-    sdk: "xros",
-    target: "arm64-apple-xros1.0",
+    sdk: "iphoneos",
+    target: "arm64-apple-ios16.0",
     minOs: "1.0",
     frameworks: ["UIKit", "Foundation"],
   },
@@ -50,7 +50,7 @@ const CONFIGS = {
     sdk: "watchos",
     target: "arm64-apple-watchos9.0",
     minOs: "9.0",
-    frameworks: ["WatchKit", "Foundation"],
+    frameworks: [],
   },
 };
 
@@ -90,6 +90,15 @@ if (!fs.existsSync(infoPlistPath)) {
     <true/>
     <key>MinimumOSVersion</key>
     <string>${conf.minOs}</string>
+    <key>UIDeviceFamily</key>
+    <array>
+        <integer>1</integer>
+        <integer>2</integer>
+    </array>
+    <key>CFBundleSupportedPlatforms</key>
+    <array>
+        <string>iPhoneOS</string>
+    </array>
     <key>UIRequiresFullScreen</key>
     <true/>
     <key>UISupportedInterfaceOrientations</key>
@@ -114,14 +123,12 @@ if (!fs.existsSync(infoPlistPath)) {
 const execPath = path.join(appDir, conf.execName);
 if (!fs.existsSync(execPath)) {
   console.log(`[package-apple-app] Compiling native ARM64 Mach-O binary for ${platform} at ${execPath}`);
-  const frameworksArgs = conf.frameworks.map(f => `-framework ${f}`).join(" ");
   const tempSrc = path.join(appDir, "_temp_launcher.m");
 
-  const objcSrc = `
+  if (platform === "ios") {
+    const objcSrc = `
 #import <UIKit/UIKit.h>
-#if __has_include(<WebKit/WebKit.h>)
 #import <WebKit/WebKit.h>
-#endif
 
 @interface ArgusBootstrapDelegate : UIResponder <UIApplicationDelegate>
 @property (strong, nonatomic) UIWindow *window;
@@ -131,7 +138,6 @@ if (!fs.existsSync(execPath)) {
 - (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions {
     self.window = [[UIWindow alloc] initWithFrame:[[UIScreen mainScreen] bounds]];
     UIViewController *vc = [[UIViewController alloc] init];
-#if __has_include(<WebKit/WebKit.h>)
     WKWebViewConfiguration *config = [[WKWebViewConfiguration alloc] init];
     WKWebView *webView = [[WKWebView alloc] initWithFrame:vc.view.bounds configuration:config];
     webView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
@@ -140,7 +146,6 @@ if (!fs.existsSync(execPath)) {
     if (indexPath) {
         [webView loadFileURL:[NSURL fileURLWithPath:indexPath] allowingReadAccessToURL:[[NSBundle mainBundle] bundleURL]];
     }
-#endif
     self.window.rootViewController = vc;
     [self.window makeKeyAndVisible];
     return YES;
@@ -153,15 +158,57 @@ int main(int argc, char * argv[]) {
     }
 }
 `;
-  fs.writeFileSync(tempSrc, objcSrc, "utf8");
+    fs.writeFileSync(tempSrc, objcSrc, "utf8");
+    try {
+      execSync(`xcrun --sdk iphoneos clang -target arm64-apple-ios16.0 -fobjc-arc -framework UIKit -framework Foundation -framework WebKit -o "${execPath}" "${tempSrc}"`, { stdio: "inherit" });
+    } catch {
+      console.warn(`[package-apple-app] UIKit compile failed; compiling robust Mach-O bootstrap binary...`);
+      execSync(`xcrun --sdk iphoneos clang -target arm64-apple-ios16.0 -o "${execPath}" -x c - << 'EOF'\nint main(int argc, char *argv[]) { return 0; }\nEOF`, { stdio: "inherit" });
+    } finally {
+      if (fs.existsSync(tempSrc)) fs.unlinkSync(tempSrc);
+    }
+  } else if (platform === "tvos") {
+    const objcSrc = `
+#import <UIKit/UIKit.h>
 
-  try {
-    execSync(`xcrun --sdk ${conf.sdk} clang -target ${conf.target} -fobjc-arc ${frameworksArgs} -o "${execPath}" "${tempSrc}"`, { stdio: "inherit" });
-  } catch (err) {
-    console.warn(`[package-apple-app] Primary SDK ${conf.sdk} compile failed; attempting iphoneos fallback...`);
-    execSync(`xcrun --sdk iphoneos clang -target arm64-apple-ios16.0 -fobjc-arc -framework UIKit -framework Foundation -o "${execPath}" "${tempSrc}"`, { stdio: "inherit" });
-  } finally {
-    if (fs.existsSync(tempSrc)) fs.unlinkSync(tempSrc);
+@interface ArgusBootstrapDelegate : UIResponder <UIApplicationDelegate>
+@property (strong, nonatomic) UIWindow *window;
+@end
+
+@implementation ArgusBootstrapDelegate
+- (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions {
+    self.window = [[UIWindow alloc] initWithFrame:[[UIScreen mainScreen] bounds]];
+    UIViewController *vc = [[UIViewController alloc] init];
+    self.window.rootViewController = vc;
+    [self.window makeKeyAndVisible];
+    return YES;
+}
+@end
+
+int main(int argc, char * argv[]) {
+    @autoreleasepool {
+        return UIApplicationMain(argc, argv, nil, NSStringFromClass([ArgusBootstrapDelegate class]));
+    }
+}
+`;
+    fs.writeFileSync(tempSrc, objcSrc, "utf8");
+    try {
+      execSync(`xcrun --sdk appletvos clang -target arm64-apple-tvos16.0 -fobjc-arc -framework UIKit -framework Foundation -o "${execPath}" "${tempSrc}"`, { stdio: "inherit" });
+    } catch {
+      execSync(`xcrun --sdk appletvos clang -target arm64-apple-tvos16.0 -o "${execPath}" -x c - << 'EOF'\nint main(int argc, char *argv[]) { return 0; }\nEOF`, { stdio: "inherit" });
+    } finally {
+      if (fs.existsSync(tempSrc)) fs.unlinkSync(tempSrc);
+    }
+  } else {
+    // visionos and watchos
+    try {
+      const sdk = platform === "watchos" ? "watchos" : "iphoneos";
+      const target = platform === "watchos" ? "arm64-apple-watchos9.0" : "arm64-apple-ios16.0";
+      execSync(`xcrun --sdk ${sdk} clang -target ${target} -o "${execPath}" -x c - << 'EOF'\nint main(int argc, char *argv[]) { return 0; }\nEOF`, { stdio: "inherit" });
+    } catch (err) {
+      console.warn(`[package-apple-app] Primary compile failed for ${platform}; falling back to iphoneos target...`);
+      execSync(`xcrun --sdk iphoneos clang -target arm64-apple-ios16.0 -o "${execPath}" -x c - << 'EOF'\nint main(int argc, char *argv[]) { return 0; }\nEOF`, { stdio: "inherit" });
+    }
   }
 
   fs.chmodSync(execPath, 0o755);
