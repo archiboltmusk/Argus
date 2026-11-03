@@ -173,6 +173,19 @@
           custom.appendChild(poster); mark.after(custom); mark.style.display = 'none';
         }
       } catch (e) {}
+      // Fallback watchdog: ensure the boot splash never blocks the screen permanently
+      setTimeout(function() {
+        var boot = document.getElementById('argus-boot');
+        var root = document.getElementById('root');
+        if (boot && !boot.classList.contains('gone')) {
+          boot.classList.add('gone');
+          setTimeout(function() { boot.remove(); }, 280);
+        }
+        if (root) {
+          root.removeAttribute('data-startup-hidden');
+          root.inert = false;
+        }
+      }, 5000);
     </script>
     <script type="module" src="/src/boot-artwork.ts"></script>
     <script type="module" src="/src/main.tsx"></script>

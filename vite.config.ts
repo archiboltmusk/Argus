@@ -58,7 +58,7 @@ export default defineConfig(({ mode }) => {
     staged: { "*": "vp check --fix" },
     plugins: [react(), tailwindcss(), silenceMediapipeSourcemap(), servePublicMediapipe()],
     clearScreen: false,
-    ...(web ? { base: process.env.ARGUS_WEB_BASE || "/" } : {}),
+    base: web ? (process.env.ARGUS_WEB_BASE || "./") : "./",
     define: {
       __APP_VERSION__: JSON.stringify(pkg.version),
       __IS_BETA_BUILD__: JSON.stringify(process.env.ARGUS_CHANNEL !== "stable"),

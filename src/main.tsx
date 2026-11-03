@@ -201,17 +201,24 @@ function MainRoot() {
   }, [appReady]);
 
   useEffect(() => {
-    if (!appReady) return;
-    const wait = Math.max(0, MIN_BOOT_MS - (performance.now() - mountedAt.current));
-    const timer = window.setTimeout(() => {
+    const dismissSplash = () => {
       revealRoot();
       const boot = document.getElementById("argus-boot");
       if (boot) {
         boot.classList.add("gone");
         setTimeout(() => boot.remove(), 280);
       }
-    }, wait);
-    return () => window.clearTimeout(timer);
+    };
+
+    if (appReady) {
+      const wait = Math.max(0, MIN_BOOT_MS - (performance.now() - mountedAt.current));
+      const timer = window.setTimeout(dismissSplash, wait);
+      return () => window.clearTimeout(timer);
+    }
+
+    // Safety watchdog: ensure the boot splash is never stuck on screen on mobile or slow devices
+    const watchdog = window.setTimeout(dismissSplash, 4000);
+    return () => window.clearTimeout(watchdog);
   }, [appReady]);
 
   return <App onReady={markAppReady} />;
@@ -231,17 +238,19 @@ async function mount() {
     returnPreferencesReady = completeBetaReturnPreferences(__APP_VERSION__);
   }
   await Promise.all([
-    loadSecrets(),
+    loadSecrets().catch(() => {}),
     hydrateCustomThemes().catch(() => {}),
-    ensureUiLocale(getUiLanguage()),
+    ensureUiLocale(getUiLanguage()).catch(() => {}),
     !isHdrOverlay && !isModal && !isCaptions && !isPip && !isVideoPip && !isDjDeck
-      ? initializeMusic()
+      ? initializeMusic().catch(() => {})
       : Promise.resolve(),
-  ]);
+  ]).catch(() => {});
   if (!isHdrOverlay && !isModal && !isCaptions && !isDjDeck) void initSubtitleCache();
   if (!isHdrOverlay && !isModal && !isCaptions && !isPip && !isVideoPip && !isDjDeck)
     startTaskbarProgress();
-  createRoot(document.getElementById("root")!).render(
+  const rootEl = document.getElementById("root");
+  if (!rootEl) return;
+  createRoot(rootEl).render(
     <StrictMode>
       {isHdrOverlay ? (
         <HdrOverlayApp />
@@ -262,11 +271,13 @@ async function mount() {
     </StrictMode>,
   );
 }
-void mount().catch(() => {
+void mount().catch((err) => {
   if (isHdrOverlay) {
     void hdrOverlayEmitAction("hdr-stage://dead", {
       stageId: new URLSearchParams(window.location.search).get("stageId"),
     });
   }
-  console.error("[argus] application startup failed");
+  console.error("[argus] application startup failed", err);
+  revealRoot();
+  document.getElementById("argus-boot")?.remove();
 });

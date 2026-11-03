@@ -75,12 +75,18 @@ export const ROW_DESC = `${ROW_DESC_BASE} text-ink-muted`;
 
 export function ExtLink({ href, children }: { href: string; children: React.ReactNode }) {
   return (
-    <button
-      onClick={() => openUrl(href)}
-      className="inline-flex items-center gap-1 text-[15.5px] text-ink underline-offset-4 hover:underline"
+    <a
+      href={href}
+      target="_blank"
+      rel="noopener noreferrer"
+      onClick={(e) => {
+        e.preventDefault();
+        openUrl(href);
+      }}
+      className="inline-flex items-center gap-1 text-[15.5px] text-ink underline-offset-4 hover:underline cursor-pointer"
     >
       {children} <ExternalLink size={14} />
-    </button>
+    </a>
   );
 }
 

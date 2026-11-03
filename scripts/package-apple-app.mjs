@@ -138,8 +138,17 @@ if (!fs.existsSync(execPath)) {
 - (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions {
     self.window = [[UIWindow alloc] initWithFrame:[[UIScreen mainScreen] bounds]];
     UIViewController *vc = [[UIViewController alloc] init];
+    vc.view.backgroundColor = [UIColor colorWithRed:17.0/255.0 green:18.0/255.0 blue:20.0/255.0 alpha:1.0];
     WKWebViewConfiguration *config = [[WKWebViewConfiguration alloc] init];
+    [config.preferences setValue:@YES forKey:@"allowFileAccessFromFileURLs"];
+    @try {
+        [config setValue:@YES forKey:@"allowUniversalAccessFromFileURLs"];
+    } @catch (NSException *e) {}
+    if (@available(iOS 14.0, *)) {
+        [config.defaultWebpagePreferences setAllowsContentJavaScript:YES];
+    }
     WKWebView *webView = [[WKWebView alloc] initWithFrame:vc.view.bounds configuration:config];
+    webView.backgroundColor = [UIColor colorWithRed:17.0/255.0 green:18.0/255.0 blue:20.0/255.0 alpha:1.0];
     webView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
     [vc.view addSubview:webView];
     NSString *indexPath = [[NSBundle mainBundle] pathForResource:@"index" ofType:@"html"];

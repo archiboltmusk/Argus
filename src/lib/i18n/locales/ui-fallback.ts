@@ -1,5 +1,6 @@
 // Newly introduced UI copy remains usable until each locale provides an override.
 const uiFallback: Record<string, string> = {
+  "Get free key": "Get free key",
   "Historical EWMA throughput measured for this host": "Historical EWMA throughput measured for this host",
   "Skip silence": "Skip silence",
   "Play random unwatched episode (Shift-click for any)": "Play random unwatched episode (Shift-click for any)",
