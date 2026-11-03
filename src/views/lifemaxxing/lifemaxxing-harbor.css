@@ -1,0 +1,232 @@
+/* ==========================================================================
+   ARGUS Flourishing & Governance - Harbor Design System Integration
+   Uses official Argus/Harbor tokens:
+   --color-canvas, --color-surface, --color-elevated, --color-raised,
+   --color-ink, --color-ink-muted, --color-ink-subtle, --color-edge,
+   --color-edge-soft, --color-accent, --color-accent-soft, --color-danger,
+   --color-success, --font-display, --font-sans, --font-mono
+   ========================================================================== */
+
+.flourish-container {
+  flex: 1;
+  min-width: 0;
+  min-height: 100vh;
+  overflow-y: auto;
+  overflow-x: hidden;
+  background: var(--color-canvas);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  padding-bottom: var(--argus-dock-gap, 56px);
+  scroll-padding-top: 80px;
+}
+
+.flourish-header-bar {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  background: color-mix(in srgb, var(--color-surface) 85%, transparent);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-bottom: 1px solid var(--color-edge-soft);
+  padding: 14px 28px;
+}
+
+.flourish-masthead {
+  padding: 32px 32px 20px;
+  background: linear-gradient(
+    145deg,
+    color-mix(in srgb, var(--color-surface) 95%, transparent),
+    color-mix(in srgb, var(--color-elevated) 70%, transparent)
+  );
+  border: 1px solid var(--color-edge-soft);
+  border-radius: var(--radius-xl, 20px);
+  margin: 16px 28px 24px;
+  box-shadow: 0 8px 32px -8px rgba(0, 0, 0, 0.35);
+  position: relative;
+  overflow: hidden;
+}
+
+.flourish-masthead::before {
+  content: "";
+  position: absolute;
+  top: -80px;
+  right: -80px;
+  width: 240px;
+  height: 240px;
+  background: radial-gradient(circle, var(--color-accent-soft) 0%, transparent 70%);
+  pointer-events: none;
+  opacity: 0.8;
+}
+
+.flourish-masthead h1 {
+  font-family: var(--font-display);
+  font-size: 28px;
+  line-height: 1.25;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  color: var(--color-ink);
+  margin-top: 8px;
+}
+
+.flourish-masthead p {
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--color-ink-muted);
+  max-width: 680px;
+  margin-top: 6px;
+}
+
+.flourish-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--color-accent);
+}
+
+.flourish-eyebrow-badge {
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--color-accent-soft);
+  color: var(--color-accent);
+  border: 1px solid color-mix(in srgb, var(--color-accent) 30%, transparent);
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.flourish-tabs-bar {
+  position: sticky;
+  top: 59px;
+  z-index: 25;
+  background: color-mix(in srgb, var(--color-canvas) 90%, transparent);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--color-edge-soft);
+  padding: 8px 28px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  overflow-x: auto;
+}
+
+.flourish-tab-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 14px;
+  border-radius: var(--radius-lg, 12px);
+  font-size: 12.5px;
+  font-weight: 500;
+  white-space: nowrap;
+  background: transparent;
+  color: var(--color-ink-subtle);
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: all 0.18s var(--ease-out);
+}
+
+.flourish-tab-button:hover {
+  background: var(--color-surface);
+  color: var(--color-ink);
+  border-color: var(--color-edge-soft);
+}
+
+.flourish-tab-button.active {
+  background: var(--color-elevated);
+  color: var(--color-ink);
+  border-color: var(--color-accent);
+  box-shadow: 0 2px 12px -2px color-mix(in srgb, var(--color-accent) 25%, transparent);
+  font-weight: 600;
+}
+
+.flourish-tab-badge {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  text-transform: uppercase;
+  padding: 1.5px 5px;
+  border-radius: 6px;
+  background: var(--color-surface);
+  color: var(--color-ink-muted);
+}
+
+.flourish-tab-button.active .flourish-tab-badge {
+  background: var(--color-accent-soft);
+  color: var(--color-accent);
+}
+
+.flourish-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-edge-soft);
+  border-radius: var(--radius-lg, 14px);
+  padding: 20px;
+  transition: border-color 0.18s ease, background 0.18s ease;
+}
+
+.flourish-card:hover {
+  border-color: var(--color-edge);
+}
+
+.flourish-card-subtle {
+  background: var(--color-canvas);
+  border: 1px solid var(--color-edge-soft);
+  border-radius: var(--radius-md, 10px);
+  padding: 14px;
+}
+
+.flourish-card-accent {
+  background: color-mix(in srgb, var(--color-accent-soft) 40%, var(--color-surface));
+  border: 1px solid color-mix(in srgb, var(--color-accent) 30%, transparent);
+  border-radius: var(--radius-lg, 14px);
+  padding: 20px;
+}
+
+.flourish-pill-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 16px;
+  border-radius: var(--radius-md, 10px);
+  font-size: 13px;
+  font-weight: 600;
+  background: var(--color-elevated);
+  color: var(--color-ink);
+  border: 1px solid var(--color-edge-soft);
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+
+.flourish-pill-button:hover {
+  background: var(--color-raised);
+  border-color: var(--color-edge);
+}
+
+.flourish-pill-button.primary {
+  background: var(--color-accent);
+  color: var(--color-canvas);
+  border-color: transparent;
+}
+
+.flourish-pill-button.primary:hover {
+  filter: brightness(1.1);
+}
+
+.flourish-badge-success {
+  background: color-mix(in srgb, var(--color-success) 18%, transparent);
+  color: var(--color-success);
+  border: 1px solid color-mix(in srgb, var(--color-success) 35%, transparent);
+}
+
+.flourish-badge-warning {
+  background: color-mix(in srgb, var(--color-accent) 18%, transparent);
+  color: var(--color-accent);
+  border: 1px solid color-mix(in srgb, var(--color-accent) 35%, transparent);
+}
+
+.flourish-badge-danger {
+  background: color-mix(in srgb, var(--color-danger) 18%, transparent);
+  color: var(--color-danger);
+  border: 1px solid color-mix(in srgb, var(--color-danger) 35%, transparent);
+}

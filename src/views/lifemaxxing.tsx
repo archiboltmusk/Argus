@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import "./lifemaxxing/lifemaxxing-harbor.css";
 import {
   Compass,
   FileCheck,
@@ -172,9 +173,9 @@ export const LifemaxxingView: React.FC = () => {
   });
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col">
+    <div className="flourish-container">
       {/* Top OS Header Bar */}
-      <header className="border-b border-slate-800/80 bg-slate-900/60 backdrop-blur-md sticky top-0 z-30 px-4 py-3">
+      <header className="flourish-header-bar">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-indigo-600 via-purple-600 to-emerald-400 p-0.5 shadow-lg shadow-indigo-500/20">
@@ -216,7 +217,7 @@ export const LifemaxxingView: React.FC = () => {
       </header>
 
       {/* Main Tab Bar */}
-      <div className="border-b border-slate-800 bg-slate-950/90 sticky top-[57px] z-20 backdrop-blur-md">
+      <div className="flourish-tabs-bar">
         <div className="max-w-7xl mx-auto px-4 overflow-x-auto scrollbar-none py-2 flex items-center gap-1.5">
           {TABS.map((tab) => {
             const Icon = tab.icon;
@@ -225,21 +226,11 @@ export const LifemaxxingView: React.FC = () => {
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-medium whitespace-nowrap transition-all ${
-                  isActive
-                    ? "bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-md shadow-indigo-950/60 font-semibold"
-                    : "text-slate-400 hover:text-slate-200 hover:bg-slate-900 border border-transparent"
-                }`}
+                className={`flourish-tab-button ${isActive ? "active" : ""}`}
               >
-                <Icon className={`w-3.5 h-3.5 ${isActive ? "text-white" : "text-slate-400"}`} />
+                <Icon className="w-3.5 h-3.5" />
                 <span>{tab.label}</span>
-                <span
-                  className={`text-[9px] px-1.5 py-0.2 rounded font-mono uppercase ${
-                    isActive ? "bg-white/20 text-white" : "bg-slate-800 text-slate-500"
-                  }`}
-                >
-                  {tab.tag}
-                </span>
+                <span className="flourish-tab-badge">{tab.tag}</span>
               </button>
             );
           })}
@@ -252,22 +243,21 @@ export const LifemaxxingView: React.FC = () => {
         {activeTab === "blueprint" && (
           <div className="space-y-8 animate-fadeIn">
             {/* Vision Banner */}
-            <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-indigo-950 via-slate-900 to-slate-950 p-6 md:p-8 border border-indigo-800/40 shadow-xl">
-              <div className="relative z-10 max-w-3xl">
-                <span className="text-xs font-semibold uppercase tracking-wider text-indigo-400 block mb-2">
-                  Consolidated Vision Blueprint v1.0
-                </span>
-                <h1 className="text-2xl md:text-4xl font-extrabold text-white tracking-tight">
-                  The Human Flourishing Operating System
-                </h1>
-                <p className="mt-3 text-sm md:text-base text-slate-300 leading-relaxed">
-                  Make knowledge, wisdom, health, opportunity, human connection, and personalized guidance 
-                  accessible to every person—regardless of wealth, age, profession, location, or background.
-                </p>
-                <div className="mt-5 flex flex-wrap gap-3 text-xs">
-                  <div className="bg-indigo-900/60 px-3 py-1.5 rounded-lg border border-indigo-700/50 text-indigo-200">
-                    <strong>Every human life is precious.</strong> Every person deserves the opportunity to realize their potential.
-                  </div>
+            <div className="flourish-masthead">
+              <div className="flourish-eyebrow">
+                <Compass className="w-4 h-4 text-accent" />
+                <span>Consolidated Vision Blueprint v1.0</span>
+                <span className="flourish-eyebrow-badge">Argus OS Standard</span>
+              </div>
+              <h1>The Human Flourishing Operating System</h1>
+              <p>
+                Make knowledge, wisdom, health, opportunity, human connection, and personalized guidance 
+                accessible to every person—regardless of wealth, age, profession, location, or background.
+              </p>
+              <div className="mt-4 flex flex-wrap gap-3 text-xs">
+                <div className="flourish-card-subtle flex items-center gap-2">
+                  <span className="text-accent font-bold">Core Doctrine:</span>
+                  <span>Every human life is precious. Every person deserves the opportunity to realize their potential.</span>
                 </div>
               </div>
             </div>
