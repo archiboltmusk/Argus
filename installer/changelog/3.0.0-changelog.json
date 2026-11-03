@@ -1,18 +1,48 @@
 {
-  "version": "3.0.0",
-  "title": "Argus 3.0 — The Human Flourishing Operating System",
-  "date": "2026-11-03",
-  "tagline": "Unlock the extraordinary in everyone. Knowledge, wisdom, health, opportunity, trust, and personalized guidance.",
-  "highlights": [
-    "Consolidated Vision Blueprint v1.0: 20 Goals Registry, 12 Core Engines, and 8 real-world North Star indicators.",
-    "Universal Accountability Engine: 5-step loop (Commit → Plan → Verify → Diagnose → Adapt) for 7 personas from student to prime minister.",
-    "Evidence-Backed Commitment Reliability Formula excluding genuine recovery and advance renegotiations.",
-    "Universal Accountability Ledger: Personal, professional, and public tiers with strict UNESCO compliance banning citizen social scoring.",
-    "ARGUS TRUST: Public Money Tracker, Civic Service Navigator with zero-fee transparency, and encrypted Evidence Vault.",
-    "ARGUS NOW: 'How are you, really?' single-question dispatcher with Care, Clarity, and Advance modes.",
-    "Life Evolution Engine: 6 Worthwhile Modes honoring intentional living and unhurried deliberate leisure.",
-    "Knowledge Mesh & Opportunity Equalizer: Prerequisite concept trees and Kolkata Class 6 offline bilingual discovery pilot.",
-    "5-Tier Compute Pyramid: 88.3% cost reduction democratizing high-tier intelligence for every household.",
-    "The ARGUS Constitution: 5 foundational principles with active Human Sovereignty runtime protections."
-  ]
+  "notes": {
+    "3.0.0": {
+      "title": "Argus 3.0 — The Human Flourishing Operating System",
+      "intro": "Argus 3.0 marks a monumental evolution: expanding from an elite media and study center into The Human Flourishing Operating System. Unlock the extraordinary in everyone through accessible knowledge, wisdom, health, opportunity, human connection, trust, and personalized guidance.",
+      "sections": [
+        {
+          "heading": "Vision Blueprint v1.0 & Governance",
+          "items": [
+            "The 20 Ultimate Goals Registry categorized into Core, Growth, and Frontier missions.",
+            "The 12 Core Intelligence Engines with architecture tiering and strict human sovereignty safeguards.",
+            "4-Phase Evolution Roadmap: ARGUS NOW → LEARN & HEAL → LIFE → NETWORK.",
+            "8 North Star indicators tracking real-world freedom and capability outside the app."
+          ]
+        },
+        {
+          "heading": "Universal Accountability Engine",
+          "items": [
+            "Universal 5-Step Loop: Commit → Plan → Verify → Diagnose → Adapt.",
+            "7 tailored persona profiles: Student, Aspirant, Doctor, Analyst, Founder, Parent, and Senior Citizen.",
+            "Accountability without guilt: isolates avoidance friction from resource deficits, illness, and conscious priority shifts.",
+            "Evidence-Backed Commitment Reliability Formula excluding advance renegotiations and medical recovery.",
+            "Universal Accountability Ledger: Personal, professional, and public tiers with strict UNESCO compliance banning citizen social scoring."
+          ]
+        },
+        {
+          "heading": "ARGUS TRUST & Anti-Corruption",
+          "items": [
+            "Public Money Tracker: complete interactive audits of rural infrastructure projects connecting budgets, tenders, and lab tests.",
+            "Civic Service Navigator: statutory zero-fee transparency to eliminate middlemen, document checklists, and RTI channels.",
+            "Evidence Vault with SHA-256 cryptographic document timestamping.",
+            "Zero algorithmic guilt: all documentation deviations are flagged solely for human due process."
+          ]
+        },
+        {
+          "heading": "Life Evolution & Intelligence",
+          "items": [
+            "ARGUS NOW: single-question dispatcher ('How are you, really?') with Care, Clarity, and Advance modes.",
+            "Life Evolution Engine: 6 Worthwhile Modes honoring intentional living and uncompulsive deliberate rest.",
+            "Knowledge Mesh: concept prerequisite trees from basic fractions to graduate AI with W3C RDF federation.",
+            "Opportunity Equalizer: Kolkata Class 6 pilot with bilingual offline discovery missions.",
+            "5-Tier Compute Pyramid: 88.3% cost reduction democratizing high-tier intelligence for every household."
+          ]
+        }
+      ]
+    }
+  }
 }
