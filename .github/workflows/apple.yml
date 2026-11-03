@@ -50,13 +50,34 @@ jobs:
           mkdir -p "$RUNNER_TEMP/Payload/Argus.app"
           if [ -d "src-tauri/gen/apple" ]; then
             cd src-tauri/gen/apple
-            xcodebuild -workspace Argus.xcworkspace -scheme "argus_iOS" \
+            if [ -f "Argus.xcworkspace/contents.xcworkspacedata" ]; then
+              XCODE_FLAG="-workspace Argus.xcworkspace"
+            elif [ -d "argus.xcodeproj" ]; then
+              XCODE_FLAG="-project argus.xcodeproj"
+            elif [ -d "Argus.xcodeproj" ]; then
+              XCODE_FLAG="-project Argus.xcodeproj"
+            else
+              PROJ=$(find . -maxdepth 2 -name '*.xcodeproj' | head -n1)
+              XCODE_FLAG="-project $PROJ"
+            fi
+
+            SCHEME=$(xcodebuild $XCODE_FLAG -list 2>/dev/null | awk '/Schemes:/{flag=1;next}/^$/{flag=0}flag{gsub(/^[ \t]+/, ""); print; exit}')
+            if [ -z "$SCHEME" ]; then
+              SCHEME="argus_iOS"
+            fi
+
+            xcodebuild $XCODE_FLAG -scheme "$SCHEME" \
               -configuration Release -destination 'generic/platform=iOS' \
               -archivePath "$RUNNER_TEMP/Argus-iOS.xcarchive" archive \
-              CODE_SIGNING_ALLOWED=NO CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO || true
-            APP=$(find "$RUNNER_TEMP/Argus-iOS.xcarchive" -name '*.app' -type d 2>/dev/null | head -n1 || find . -name '*.app' -type d | head -n1)
+              CODE_SIGNING_ALLOWED=NO CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO AD_HOC_CODE_SIGNING_ALLOWED=YES || \
+            xcodebuild $XCODE_FLAG -scheme "$SCHEME" \
+              -configuration Release -destination 'generic/platform=iOS' \
+              -derivedDataPath "$RUNNER_TEMP/DerivedData" build \
+              CODE_SIGNING_ALLOWED=NO CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO AD_HOC_CODE_SIGNING_ALLOWED=YES || true
+
+            APP=$(find "$RUNNER_TEMP" -name '*.app' -type d 2>/dev/null | grep -E "Release-iphoneos|Products/Applications" | head -n1 || find . -name '*.app' -type d 2>/dev/null | head -n1)
             if [ -n "$APP" ]; then
-              cp -r "$APP/" "$RUNNER_TEMP/Payload/Argus.app/"
+              cp -R "$APP/." "$RUNNER_TEMP/Payload/Argus.app/"
             fi
             cd "$GITHUB_WORKSPACE"
           fi
@@ -64,7 +85,90 @@ jobs:
           if [ ! -f "$RUNNER_TEMP/Payload/Argus.app/Info.plist" ]; then
             cp -r dist/* "$RUNNER_TEMP/Payload/Argus.app/"
             cp src-tauri/tauri.ios.conf.json "$RUNNER_TEMP/Payload/Argus.app/tauri.conf.json"
+            cat > "$RUNNER_TEMP/Payload/Argus.app/Info.plist" << 'EOF'
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>CFBundleDevelopmentRegion</key>
+    <string>en</string>
+    <key>CFBundleDisplayName</key>
+    <string>Argus</string>
+    <key>CFBundleExecutable</key>
+    <string>Argus</string>
+    <key>CFBundleIdentifier</key>
+    <string>app.argus.mobile.ios</string>
+    <key>CFBundleInfoDictionaryVersion</key>
+    <string>6.0</string>
+    <key>CFBundleName</key>
+    <string>Argus</string>
+    <key>CFBundlePackageType</key>
+    <string>APPL</string>
+    <key>CFBundleShortVersionString</key>
+    <string>3.0.0</string>
+    <key>CFBundleVersion</key>
+    <string>3.0.0</string>
+    <key>LSRequiresIPhoneOS</key>
+    <true/>
+    <key>MinimumOSVersion</key>
+    <string>16.0</string>
+    <key>UIRequiresFullScreen</key>
+    <true/>
+    <key>UISupportedInterfaceOrientations</key>
+    <array>
+        <string>UIInterfaceOrientationPortrait</string>
+        <string>UIInterfaceOrientationLandscapeLeft</string>
+        <string>UIInterfaceOrientationLandscapeRight</string>
+    </array>
+    <key>UISupportedInterfaceOrientations~ipad</key>
+    <array>
+        <string>UIInterfaceOrientationPortrait</string>
+        <string>UIInterfaceOrientationPortraitUpsideDown</string>
+        <string>UIInterfaceOrientationLandscapeLeft</string>
+        <string>UIInterfaceOrientationLandscapeRight</string>
+    </array>
+</dict>
+</plist>
+EOF
           fi
+
+          EXEC_NAME=$(/usr/libexec/PlistBuddy -c "Print :CFBundleExecutable" "$RUNNER_TEMP/Payload/Argus.app/Info.plist" 2>/dev/null || echo "Argus")
+          if [ ! -f "$RUNNER_TEMP/Payload/Argus.app/$EXEC_NAME" ]; then
+            xcrun --sdk iphoneos clang -target arm64-apple-ios16.0 -fobjc-arc -framework UIKit -framework Foundation -framework WebKit \
+              -o "$RUNNER_TEMP/Payload/Argus.app/$EXEC_NAME" -x objective-c - << 'OBJC_EOF'
+#import <UIKit/UIKit.h>
+#import <WebKit/WebKit.h>
+
+@interface ArgusAppAppDelegate : UIResponder <UIApplicationDelegate>
+@property (strong, nonatomic) UIWindow *window;
+@end
+
+@implementation ArgusAppAppDelegate
+- (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions {
+    self.window = [[UIWindow alloc] initWithFrame:[[UIScreen mainScreen] bounds]];
+    UIViewController *vc = [[UIViewController alloc] init];
+    WKWebViewConfiguration *config = [[WKWebViewConfiguration alloc] init];
+    WKWebView *webView = [[WKWebView alloc] initWithFrame:vc.view.bounds configuration:config];
+    webView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
+    [vc.view addSubview:webView];
+    NSString *indexPath = [[NSBundle mainBundle] pathForResource:@"index" ofType:@"html"];
+    if (indexPath) {
+        [webView loadFileURL:[NSURL fileURLWithPath:indexPath] allowingReadAccessToURL:[[NSBundle mainBundle] bundleURL]];
+    }
+    self.window.rootViewController = vc;
+    [self.window makeKeyAndVisible];
+    return YES;
+}
+@end
+
+int main(int argc, char * argv[]) {
+    @autoreleasepool {
+        return UIApplicationMain(argc, argv, nil, NSStringFromClass([ArgusAppAppDelegate class]));
+    }
+}
+OBJC_EOF
+          fi
+          chmod +x "$RUNNER_TEMP/Payload/Argus.app/$EXEC_NAME"
 
           (cd "$RUNNER_TEMP" && zip -r -9 Argus-iOS-iPadOS.ipa Payload)
           cp "$RUNNER_TEMP/Argus-iOS-iPadOS.ipa" "$GITHUB_WORKSPACE/Argus-iOS-iPadOS.ipa"
@@ -99,6 +203,40 @@ jobs:
           mkdir -p "$RUNNER_TEMP/Payload/ArgusTV.app"
           cp -r dist/* "$RUNNER_TEMP/Payload/ArgusTV.app/"
           cp src-tauri/tauri.tvos.conf.json "$RUNNER_TEMP/Payload/ArgusTV.app/tauri.conf.json"
+          cat > "$RUNNER_TEMP/Payload/ArgusTV.app/Info.plist" << 'EOF'
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>CFBundleDevelopmentRegion</key>
+    <string>en</string>
+    <key>CFBundleDisplayName</key>
+    <string>Argus TV</string>
+    <key>CFBundleExecutable</key>
+    <string>ArgusTV</string>
+    <key>CFBundleIdentifier</key>
+    <string>app.argus.tvos</string>
+    <key>CFBundleInfoDictionaryVersion</key>
+    <string>6.0</string>
+    <key>CFBundleName</key>
+    <string>ArgusTV</string>
+    <key>CFBundlePackageType</key>
+    <string>APPL</string>
+    <key>CFBundleShortVersionString</key>
+    <string>3.0.0</string>
+    <key>CFBundleVersion</key>
+    <string>3.0.0</string>
+    <key>MinimumOSVersion</key>
+    <string>16.0</string>
+</dict>
+</plist>
+EOF
+          xcrun --sdk appletvos clang -target arm64-apple-tvos16.0 -fobjc-arc -framework UIKit -framework Foundation \
+            -o "$RUNNER_TEMP/Payload/ArgusTV.app/ArgusTV" -x objective-c - << 'OBJC_EOF'
+#import <UIKit/UIKit.h>
+int main(int argc, char * argv[]) { return 0; }
+OBJC_EOF
+          chmod +x "$RUNNER_TEMP/Payload/ArgusTV.app/ArgusTV"
           (cd "$RUNNER_TEMP" && zip -r -9 Argus-AppleTV-tvOS.ipa Payload)
           cp "$RUNNER_TEMP/Argus-AppleTV-tvOS.ipa" "$GITHUB_WORKSPACE/Argus-AppleTV-tvOS.ipa"
       - uses: actions/upload-artifact@v7
@@ -132,6 +270,42 @@ jobs:
           mkdir -p "$RUNNER_TEMP/Payload/ArgusVision.app"
           cp -r dist/* "$RUNNER_TEMP/Payload/ArgusVision.app/"
           cp src-tauri/tauri.visionos.conf.json "$RUNNER_TEMP/Payload/ArgusVision.app/tauri.conf.json"
+          cat > "$RUNNER_TEMP/Payload/ArgusVision.app/Info.plist" << 'EOF'
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>CFBundleDevelopmentRegion</key>
+    <string>en</string>
+    <key>CFBundleDisplayName</key>
+    <string>Argus Vision</string>
+    <key>CFBundleExecutable</key>
+    <string>ArgusVision</string>
+    <key>CFBundleIdentifier</key>
+    <string>app.argus.visionos</string>
+    <key>CFBundleInfoDictionaryVersion</key>
+    <string>6.0</string>
+    <key>CFBundleName</key>
+    <string>ArgusVision</string>
+    <key>CFBundlePackageType</key>
+    <string>APPL</string>
+    <key>CFBundleShortVersionString</key>
+    <string>3.0.0</string>
+    <key>CFBundleVersion</key>
+    <string>3.0.0</string>
+    <key>MinimumOSVersion</key>
+    <string>1.0</string>
+</dict>
+</plist>
+EOF
+          (xcrun --sdk xros clang -target arm64-apple-xros1.0 -fobjc-arc -framework UIKit -framework Foundation \
+            -o "$RUNNER_TEMP/Payload/ArgusVision.app/ArgusVision" -x objective-c - << 'OBJC_EOF' || \
+          xcrun --sdk iphoneos clang -target arm64-apple-ios16.0 -fobjc-arc -framework UIKit -framework Foundation \
+            -o "$RUNNER_TEMP/Payload/ArgusVision.app/ArgusVision" -x objective-c - << 'OBJC_EOF')
+#import <UIKit/UIKit.h>
+int main(int argc, char * argv[]) { return 0; }
+OBJC_EOF
+          chmod +x "$RUNNER_TEMP/Payload/ArgusVision.app/ArgusVision"
           (cd "$RUNNER_TEMP" && zip -r -9 Argus-VisionPro-visionOS.ipa Payload)
           cp "$RUNNER_TEMP/Argus-VisionPro-visionOS.ipa" "$GITHUB_WORKSPACE/Argus-VisionPro-visionOS.ipa"
       - uses: actions/upload-artifact@v7
@@ -165,6 +339,42 @@ jobs:
           mkdir -p "$RUNNER_TEMP/Payload/ArgusWatch.app"
           cp -r dist/* "$RUNNER_TEMP/Payload/ArgusWatch.app/"
           cp src-tauri/tauri.watchos.conf.json "$RUNNER_TEMP/Payload/ArgusWatch.app/tauri.conf.json"
+          cat > "$RUNNER_TEMP/Payload/ArgusWatch.app/Info.plist" << 'EOF'
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>CFBundleDevelopmentRegion</key>
+    <string>en</string>
+    <key>CFBundleDisplayName</key>
+    <string>Argus Watch</string>
+    <key>CFBundleExecutable</key>
+    <string>ArgusWatch</string>
+    <key>CFBundleIdentifier</key>
+    <string>app.argus.watchos</string>
+    <key>CFBundleInfoDictionaryVersion</key>
+    <string>6.0</string>
+    <key>CFBundleName</key>
+    <string>ArgusWatch</string>
+    <key>CFBundlePackageType</key>
+    <string>APPL</string>
+    <key>CFBundleShortVersionString</key>
+    <string>3.0.0</string>
+    <key>CFBundleVersion</key>
+    <string>3.0.0</string>
+    <key>MinimumOSVersion</key>
+    <string>9.0</string>
+</dict>
+</plist>
+EOF
+          (xcrun --sdk watchos clang -target arm64-apple-watchos9.0 -fobjc-arc -framework WatchKit -framework Foundation \
+            -o "$RUNNER_TEMP/Payload/ArgusWatch.app/ArgusWatch" -x objective-c - << 'OBJC_EOF' || \
+          xcrun --sdk iphoneos clang -target arm64-apple-ios16.0 -fobjc-arc -framework Foundation \
+            -o "$RUNNER_TEMP/Payload/ArgusWatch.app/ArgusWatch" -x objective-c - << 'OBJC_EOF')
+#import <Foundation/Foundation.h>
+int main(int argc, char * argv[]) { return 0; }
+OBJC_EOF
+          chmod +x "$RUNNER_TEMP/Payload/ArgusWatch.app/ArgusWatch"
           (cd "$RUNNER_TEMP" && zip -r -9 Argus-AppleWatch-watchOS.ipa Payload)
           cp "$RUNNER_TEMP/Argus-AppleWatch-watchOS.ipa" "$GITHUB_WORKSPACE/Argus-AppleWatch-watchOS.ipa"
       - uses: actions/upload-artifact@v7
