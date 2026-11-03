@@ -652,6 +652,7 @@ export function ViewProvider({ children }: { children: ReactNode }) {
       if (f.kind === "vod") return "vod";
       if (f.kind === "downloads") return "downloads";
       if (f.kind === "education") return "education";
+      if (f.kind === "lifemaxxing") return "lifemaxxing";
       if (f.kind === "argus-lab") return "argus-lab";
       if (f.kind === "manga") return "manga";
       if (f.kind === "ebook") return "ebook";
@@ -912,6 +913,11 @@ export function ViewProvider({ children }: { children: ReactNode }) {
           scrollMem.current.clear();
           rowScrollMem.current.clear();
           return [{ kind: "education" }];
+        }
+        if (v === "lifemaxxing") {
+          scrollMem.current.clear();
+          rowScrollMem.current.clear();
+          return [{ kind: "lifemaxxing" }];
         }
         if (v === "argus-lab") {
           scrollMem.current.clear();
