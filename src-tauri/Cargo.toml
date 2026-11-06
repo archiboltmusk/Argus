@@ -174,7 +174,7 @@ windows = { version = "0.62", features = [
   "Foundation",
   "Storage_Streams",
 ] }
-window-vibrancy = "0.6"
+window-vibrancy = "0.8"
 wasapi = "0.15"
 webview2-com = "0.39"
 
