@@ -127,7 +127,7 @@ sha2 = "0.10"
 futures = "0.3"
 lofty = "0.22"
 # Spotify Premium playback. Keep librespot component crates in lockstep.
-parking_lot = "0.12"
+parking_lot = "0.13"
 librespot-core = "0.8"
 librespot-metadata = "0.8"
 librespot-playback = "0.8"
