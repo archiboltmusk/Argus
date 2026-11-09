@@ -323,11 +323,13 @@ export function usePickHandler({
           return;
         }
       }
+      const isDebridVia = debrids.some((debrid) => debrid.slug === r.via);
       const needsPreflight = !(
         intent === "download" ||
         r.via === "p2p" ||
         r.via === "direct" ||
         r.via === "local-download" ||
+        isDebridVia ||
         r.readiness?.exactUrlValidated === true
       );
       if (needsPreflight) markPlaybackTrace(playbackTraceId, "preflight-start");

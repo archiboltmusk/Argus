@@ -6,6 +6,7 @@ import {
   Loader2,
   Magnet,
   MoreHorizontal,
+  Smartphone,
   type LucideIcon,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
@@ -17,6 +18,7 @@ import { useT } from "@/lib/i18n";
 import { copyText } from "./copy-link-button";
 import { Tooltip } from "./transport/tooltip";
 import { watchOutsideMouseDown } from "@/lib/player/overlay-dismiss";
+import { PhoneRemoteModal } from "./phone-remote-modal";
 
 type MoreRowSpec = {
   key: string;
@@ -43,6 +45,7 @@ export function MoreMenu({
 }: MoreMenuProps) {
   const t = useT();
   const [open, setOpen] = useState(false);
+  const [remoteModalOpen, setRemoteModalOpen] = useState(false);
   const wrap = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -112,15 +115,28 @@ export function MoreMenu({
       },
     });
   }
+  rows.push({
+    key: "remote",
+    icon: Smartphone,
+    label: t("Phone remote"),
+    feedback: "none",
+    run: () => {
+      setRemoteModalOpen(true);
+      setOpen(false);
+      return true;
+    },
+  });
 
   if (rows.length === 0) return null;
 
   return (
-    <div
-      className={`absolute end-4 top-20 z-30 transition-opacity duration-200 ${
-        visible ? "opacity-100" : "pointer-events-none opacity-0"
-      }`}
-    >
+    <>
+      <PhoneRemoteModal open={remoteModalOpen} onClose={() => setRemoteModalOpen(false)} />
+      <div
+        className={`absolute end-4 top-20 z-30 transition-opacity duration-200 ${
+          visible ? "opacity-100" : "pointer-events-none opacity-0"
+        }`}
+      >
       <div ref={wrap} className="relative">
         <Tooltip label={t("More")} side="bottom" align="end">
           <button
@@ -146,6 +162,7 @@ export function MoreMenu({
         )}
       </div>
     </div>
+    </>
   );
 }
 
