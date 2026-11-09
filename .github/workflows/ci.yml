@@ -122,6 +122,7 @@ jobs:
     env:
       WHISPER_NATIVE: "OFF"
       CMAKE_ARGS: "-DGGML_NATIVE=OFF -DWHISPER_NATIVE=OFF"
+      CMAKE_PROJECT_TOP_LEVEL_INCLUDES: "${{ github.workspace }}/scripts/cmake/disable-ggml-native.cmake"
       CFLAGS: "-DWHISPER_NO_I8MM=1"
       CXXFLAGS: "-DWHISPER_NO_I8MM=1"
     steps:
@@ -194,6 +195,7 @@ jobs:
           ARGUS_TRAKT_CLIENT_ID: ${{ secrets.ARGUS_TRAKT_CLIENT_ID }}
           ARGUS_TRAKT_CLIENT_SECRET: ${{ secrets.ARGUS_TRAKT_CLIENT_SECRET }}
           ARGUS_SIMKL_CLIENT_ID: ${{ secrets.ARGUS_SIMKL_CLIENT_ID }}
+          CMAKE_PROJECT_TOP_LEVEL_INCLUDES: "${{ github.workspace }}/scripts/cmake/disable-ggml-native.cmake"
       - name: Verify the app and build the .dmg
         if: github.event_name != 'pull_request' || needs.changes.outputs.bundle == 'true'
         run: |
