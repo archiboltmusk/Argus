@@ -25,7 +25,7 @@ env:
 jobs:
   ios:
     name: Build iOS & iPadOS IPA
-    runs-on: macos-14
+    runs-on: macos-15
     timeout-minutes: 60
     steps:
       - uses: actions/checkout@v6
@@ -92,7 +92,7 @@ jobs:
 
   tvos:
     name: Build Apple TV (tvOS) IPA
-    runs-on: macos-14
+    runs-on: macos-15
     timeout-minutes: 60
     steps:
       - uses: actions/checkout@v6
@@ -124,7 +124,7 @@ jobs:
 
   visionos:
     name: Build Apple Vision Pro (visionOS) IPA
-    runs-on: macos-14
+    runs-on: macos-15
     timeout-minutes: 60
     steps:
       - uses: actions/checkout@v6
@@ -156,7 +156,7 @@ jobs:
 
   watchos:
     name: Build Apple Watch (watchOS) IPA
-    runs-on: macos-14
+    runs-on: macos-15
     timeout-minutes: 60
     steps:
       - uses: actions/checkout@v6
