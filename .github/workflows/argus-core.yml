@@ -67,5 +67,7 @@ jobs:
           workspaces: argus-core
       - run: cargo check --target wasm32-unknown-unknown
       - name: Install wasm-pack
-        run: curl --fail --location --retry 3 --retry-all-errors https://rustwasm.github.io/wasm-pack/installer/init.sh | sh
+        uses: taiki-e/install-action@v2
+        with:
+          tool: wasm-pack
       - run: wasm-pack build --target bundler --out-dir pkg

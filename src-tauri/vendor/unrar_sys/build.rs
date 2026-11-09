@@ -67,7 +67,8 @@ fn main() {
     ].iter().map(|&s| format!("vendor/unrar/{s}.cpp")).collect();
     let mut build = cc::Build::new();
     // bionic has no lutimes(); take the utimensat() path, which it supports.
-    if std::env::var("CARGO_CFG_TARGET_OS").as_deref() == Ok("android") {
+    let target = std::env::var("TARGET").unwrap_or_default();
+    if target.contains("android") || std::env::var("CARGO_CFG_TARGET_OS").as_deref() == Ok("android") {
         build.define("UNIX_TIME_NS", None);
     }
     build

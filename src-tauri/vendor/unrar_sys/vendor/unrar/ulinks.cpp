@@ -22,6 +22,9 @@ static bool UnixSymlink(CommandData *Cmd,const std::string &Target,const wchar *
     }
     return false;
   }
+#if defined(__ANDROID__)
+#undef USE_LUTIMES
+#endif
 #ifdef USE_LUTIMES
 #ifdef UNIX_TIME_NS
   timespec times[2];
