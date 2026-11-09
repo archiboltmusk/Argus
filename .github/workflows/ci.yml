@@ -116,7 +116,7 @@ jobs:
         include:
           # Apple Silicon only (Intel Macs are out of scope).
           - arch: aarch64
-            runner: macos-14
+            runner: macos-15
             target: aarch64-apple-darwin
     runs-on: ${{ matrix.runner }}
     steps:

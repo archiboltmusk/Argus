@@ -910,6 +910,10 @@ export function useProfiles(): ProfilesValue {
   return v;
 }
 
+export function useOptionalProfiles(): ProfilesValue | null {
+  return useContext(Ctx);
+}
+
 function isNuvioProviderActive(): boolean {
   try {
     const explicit = localStorage.getItem("argus.account-provider");

@@ -51,7 +51,7 @@ tar = "0.4"
 plist = "1.9"
 zip = { version = "4", default-features = false, features = ["deflate-flate2", "aes-crypto"] }
 zeroize = "1"
-sevenz-rust2 = { version = "=0.20.2", default-features = false, features = [
+sevenz-rust2 = { version = "=0.24.2", default-features = false, features = [
   "aes256",
   "bzip2",
   "ppmd",
@@ -78,7 +78,7 @@ hound = "3.5"
 kothok-edge-tts = "0.2.10"
 discord-rich-presence = "1.1"
 rust_cast = { path = "vendor/rust_cast", version = "0.20" }
-mdns-sd = "0.13"
+mdns-sd = "0.21"
 rustls = { version = "0.23", default-features = false, features = [
   "ring",
   "std",
@@ -127,7 +127,7 @@ sha2 = "0.10"
 futures = "0.3"
 lofty = "0.22"
 # Spotify Premium playback. Keep librespot component crates in lockstep.
-parking_lot = "0.12"
+parking_lot = "0.13"
 librespot-core = "0.8"
 librespot-metadata = "0.8"
 librespot-playback = "0.8"
@@ -174,7 +174,7 @@ windows = { version = "0.62", features = [
   "Foundation",
   "Storage_Streams",
 ] }
-window-vibrancy = "0.6"
+window-vibrancy = "0.8"
 wasapi = "0.15"
 webview2-com = "0.39"
 
@@ -185,7 +185,7 @@ rust-ini = "=0.21.1"
 
 
 [dev-dependencies]
-sevenz-rust2 = { version = "=0.20.2", default-features = false, features = ["compress"] }
+sevenz-rust2 = { version = "=0.24.2", default-features = false, features = ["compress"] }
 crc32fast = "1"
 
 [profile.dev]

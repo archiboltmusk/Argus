@@ -33,7 +33,7 @@ import { LifeEvolutionModule as EvolutionModule } from "./lifemaxxing/evolution-
 import { AccountabilityModule } from "./lifemaxxing/accountability-module";
 import { TrustModule } from "./lifemaxxing/trust-module";
 import { CommunityTab } from "./lab/community-tab";
-import { useProfiles } from "@/lib/profiles";
+import { useOptionalProfiles } from "@/lib/profiles";
 
 // Vision Registry
 import {
@@ -170,7 +170,8 @@ const TABS: TabMeta[] = [
 ];
 
 export const LifemaxxingView: React.FC<{ active?: boolean }> = ({ active = true }) => {
-  const { activeProfile } = useProfiles();
+  const profiles = useOptionalProfiles();
+  const activeProfile = profiles?.activeProfile ?? null;
   const [activeTab, setActiveTab] = useState<LifemaxxingTab>("blueprint");
 
   // Blueprint View Filters
