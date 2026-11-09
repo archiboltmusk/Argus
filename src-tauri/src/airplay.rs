@@ -1,6 +1,6 @@
 #![allow(dead_code)]
 
-use mdns_sd::{ServiceDaemon, ServiceEvent};
+use mdns_sd::{ScopedIp, ServiceDaemon, ServiceEvent};
 use std::collections::HashMap;
 use std::net::IpAddr;
 use std::time::Duration;
@@ -16,12 +16,12 @@ pub struct AirPlayDevice {
     pub model: Option<String>,
 }
 
-fn pick_address(addrs: &std::collections::HashSet<IpAddr>) -> Option<IpAddr> {
+fn pick_address(addrs: &std::collections::HashSet<ScopedIp>) -> Option<IpAddr> {
     addrs
         .iter()
-        .copied()
+        .map(|s| s.to_ip_addr())
         .find(|a| a.is_ipv4())
-        .or_else(|| addrs.iter().copied().next())
+        .or_else(|| addrs.iter().map(|s| s.to_ip_addr()).next())
 }
 
 /// AirPlay 2 / HomeKit-required devices set bit 27 (HKPairingAndAccessControl) or

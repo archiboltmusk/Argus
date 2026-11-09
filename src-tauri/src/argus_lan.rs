@@ -1,4 +1,4 @@
-use mdns_sd::{ServiceDaemon, ServiceEvent, ServiceInfo};
+use mdns_sd::{ScopedIp, ServiceDaemon, ServiceEvent, ServiceInfo};
 use serde::Serialize;
 use std::collections::HashMap;
 use std::net::IpAddr;
@@ -119,12 +119,12 @@ fn advert_daemon() -> Option<&'static ServiceDaemon> {
     D.get_or_init(|| ServiceDaemon::new().ok()).as_ref()
 }
 
-fn pick_address(addrs: &std::collections::HashSet<IpAddr>) -> Option<IpAddr> {
+fn pick_address(addrs: &std::collections::HashSet<ScopedIp>) -> Option<IpAddr> {
     addrs
         .iter()
-        .copied()
+        .map(|s| s.to_ip_addr())
         .find(|a| a.is_ipv4())
-        .or_else(|| addrs.iter().copied().next())
+        .or_else(|| addrs.iter().map(|s| s.to_ip_addr()).next())
 }
 
 #[tauri::command]

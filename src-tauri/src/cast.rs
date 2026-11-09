@@ -1,4 +1,4 @@
-use mdns_sd::{ServiceDaemon, ServiceEvent};
+use mdns_sd::{ScopedIp, ServiceDaemon, ServiceEvent};
 use rust_cast::{
     channels::{
         media::{Media, Metadata, MovieMediaMetadata, MusicTrackMediaMetadata, StreamType},
@@ -238,16 +238,20 @@ fn parse_model(properties: &HashMap<String, String>) -> Option<String> {
     properties.get("md").map(|s| s.to_string())
 }
 
-fn pick_address(addrs: &std::collections::HashSet<IpAddr>) -> Option<IpAddr> {
-    addrs.iter().copied().find(|a| a.is_ipv4()).or_else(|| {
-        addrs.iter().copied().find(|a| match a {
-            IpAddr::V6(v6) => {
-                let o = v6.octets();
-                !(o[0] == 0xfe && (o[1] & 0xc0) == 0x80)
-            }
-            _ => false,
+fn pick_address(addrs: &std::collections::HashSet<ScopedIp>) -> Option<IpAddr> {
+    addrs
+        .iter()
+        .map(|s| s.to_ip_addr())
+        .find(|a| a.is_ipv4())
+        .or_else(|| {
+            addrs.iter().map(|s| s.to_ip_addr()).find(|a| match a {
+                IpAddr::V6(v6) => {
+                    let o = v6.octets();
+                    !(o[0] == 0xfe && (o[1] & 0xc0) == 0x80)
+                }
+                _ => false,
+            })
         })
-    })
 }
 
 async fn discover_chromecasts() -> Vec<CastDeviceInfo> {

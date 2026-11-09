@@ -9,7 +9,7 @@ pub fn configure_command(cmd: &mut Command) {
     #[cfg(target_os = "linux")]
     unsafe {
         cmd.pre_exec(|| {
-            unsafe { libc::prctl(libc::PR_SET_PDEATHSIG, libc::SIGKILL) };
+            libc::prctl(libc::PR_SET_PDEATHSIG, libc::SIGKILL);
             Ok(())
         });
     }
