@@ -32,6 +32,8 @@ import { EconomicsAffordabilityModule as EconomicsModule } from "./lifemaxxing/e
 import { LifeEvolutionModule as EvolutionModule } from "./lifemaxxing/evolution-module";
 import { AccountabilityModule } from "./lifemaxxing/accountability-module";
 import { TrustModule } from "./lifemaxxing/trust-module";
+import { CommunityTab } from "./lab/community-tab";
+import { useProfiles } from "@/lib/profiles";
 
 // Vision Registry
 import {
@@ -47,6 +49,7 @@ export type LifemaxxingTab =
   | "now"
   | "accountability"
   | "trust"
+  | "community"
   | "evolution"
   | "solver"
   | "health"
@@ -93,6 +96,13 @@ const TABS: TabMeta[] = [
     shortDesc: "Immediate Contextual Intervention",
     icon: Compass,
     tag: "Core"
+  },
+  {
+    id: "community",
+    label: "Community & Public Discovery",
+    shortDesc: "Worldwide sources, local action",
+    icon: Search,
+    tag: "Live"
   },
   {
     id: "evolution",
@@ -159,7 +169,8 @@ const TABS: TabMeta[] = [
   }
 ];
 
-export const LifemaxxingView: React.FC = () => {
+export const LifemaxxingView: React.FC<{ active?: boolean }> = ({ active = true }) => {
+  const { activeProfile } = useProfiles();
   const [activeTab, setActiveTab] = useState<LifemaxxingTab>("blueprint");
 
   // Blueprint View Filters
@@ -219,7 +230,7 @@ export const LifemaxxingView: React.FC = () => {
       {/* Main Tab Bar */}
       <div className="flourish-tabs-bar">
         <div className="max-w-7xl mx-auto px-4 overflow-x-auto scrollbar-none py-2 flex items-center gap-1.5">
-          {TABS.map((tab) => {
+          {TABS.filter((tab) => tab.id !== "community" || (activeProfile && !activeProfile.kid)).map((tab) => {
             const Icon = tab.icon;
             const isActive = activeTab === tab.id;
             return (
@@ -417,6 +428,7 @@ export const LifemaxxingView: React.FC = () => {
         {/* OTHER SUB-MODULES */}
         {activeTab === "accountability" && <AccountabilityModule />}
         {activeTab === "trust" && <TrustModule />}
+        {activeTab === "community" && <CommunityTab profileId={activeProfile?.id ?? null} childProfile={!activeProfile || !!activeProfile.kid} active={active} />}
         {activeTab === "now" && <NowModule />}
         {activeTab === "evolution" && <EvolutionModule />}
         {activeTab === "solver" && <SolverModule />}

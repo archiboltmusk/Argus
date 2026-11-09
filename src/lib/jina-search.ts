@@ -26,7 +26,7 @@ function decodeUrl(raw: string): string {
   }
 }
 
-function parseHits(md: string): WebHit[] {
+export function parseHits(md: string, retainHeadingTitle = false): WebHit[] {
   const hits: WebHit[] = [];
   const seen = new Set<string>();
   const lines = md.split(/\r?\n/);
@@ -69,7 +69,7 @@ function parseHits(md: string): WebHit[] {
     if (seen.has(url)) continue;
 
     let title = cleanText(m[1]);
-    for (let j = i + 1; j < Math.min(lines.length, i + 12); j++) {
+    for (let j = i + 1; !retainHeadingTitle && j < Math.min(lines.length, i + 12); j++) {
       const ln = lines[j];
       if (/^\s*!\[/.test(ln)) continue;
       const pm = /^\s*\[([^\]]+)\]\(([^)]+)\)/.exec(ln);

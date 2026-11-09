@@ -1,0 +1,74 @@
+{
+  "generated": "2026-10-03",
+  "sources": {
+    "jjm": {
+      "name": "Jal Jeevan Mission dashboard, Ministry of Jal Shakti",
+      "read": "2026-10-03",
+      "url": "https://ejalshakti.gov.in/jjmreport/JJMDistrictView.aspx"
+    },
+    "nfhs": {
+      "name": "NFHS-5 (2019-21) and NFHS-4 (2015-16) district fact sheets, IIPS / MoHFW",
+      "read": "2026-10-03",
+      "url": "https://rchiips.org/nfhs/districtfactsheet_NFHS-5.shtml"
+    },
+    "wikidata": {
+      "licence": "CC0",
+      "name": "Wikidata (Census of India 2011 figures)",
+      "read": "2026-10-03"
+    }
+  },
+  "districts": {
+    "purulia": {
+      "census2011": {
+        "female": 1433119,
+        "households": 567824,
+        "male": 1496996,
+        "population": 2930115,
+        "rural": 2556801,
+        "urban": 373314
+      },
+      "jjm": {
+        "homes": 547724,
+        "of_india": 754,
+        "of_wb": 22,
+        "pct": 32.45,
+        "rank_india": 749,
+        "rank_wb": 22,
+        "tap": 177745
+      },
+      "name": "Purulia",
+      "nfhs_district": "Puruliya"
+    },
+    "alipurduar": {
+      "census2011": {
+        "population": 1501983
+      },
+      "jjm": {
+        "homes": 365004,
+        "of_india": 754,
+        "of_wb": 22,
+        "pct": 58.5,
+        "rank_india": 677,
+        "rank_wb": 9,
+        "tap": 213536
+      },
+      "name": "Alipurduar",
+      "nfhs_district": "Jalpaiguri",
+      "nfhs_part_of": "Jalpaiguri"
+    }
+  },
+  "nfhs": {
+    "districts": {
+      "Puruliya": {
+        "water": [87.6, 82.4],
+        "sanitation": [29.2, 12.1],
+        "electricity": [88.6, 82.3]
+      },
+      "Jalpaiguri": {
+        "water": [95.2, 85.2],
+        "sanitation": [73.2, 51.0],
+        "electricity": [97.4, 90.5]
+      }
+    }
+  }
+}
