@@ -119,6 +119,11 @@ jobs:
             runner: macos-15
             target: aarch64-apple-darwin
     runs-on: ${{ matrix.runner }}
+    env:
+      WHISPER_NATIVE: "OFF"
+      CMAKE_ARGS: "-DGGML_NATIVE=OFF -DWHISPER_NATIVE=OFF"
+      CFLAGS: "-DWHISPER_NO_I8MM=1"
+      CXXFLAGS: "-DWHISPER_NO_I8MM=1"
     steps:
       - uses: actions/checkout@v6
       - uses: dtolnay/rust-toolchain@stable
