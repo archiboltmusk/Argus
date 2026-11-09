@@ -1,5 +1,7 @@
 // Newly introduced UI copy remains usable until each locale provides an override.
 const uiFallback: Record<string, string> = {
+  "Phone Remote": "Phone Remote",
+  "Scan with your phone camera to control playback, timeline scrub, and volume.": "Scan with your phone camera to control playback, timeline scrub, and volume.",
   "Get free key": "Get free key",
   "Historical EWMA throughput measured for this host": "Historical EWMA throughput measured for this host",
   "Skip silence": "Skip silence",
