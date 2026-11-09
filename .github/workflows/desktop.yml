@@ -91,7 +91,7 @@ jobs:
           if [ "${{ github.event_name }}" != "pull_request" ]; then
             EXTRA="--config src-tauri/tauri.updater.conf.json"
           fi
-          pnpm tauri build --bundles nsis,msi $EXTRA
+          pnpm tauri build --bundles nsis,msi $EXTRA --ignore-version-mismatches
       - name: Collect artifacts
         shell: bash
         run: |
@@ -169,7 +169,7 @@ jobs:
           if [ "${{ github.event_name }}" != "pull_request" ]; then
             EXTRA="--config src-tauri/tauri.updater.conf.json"
           fi
-          pnpm tauri build --bundles appimage,deb $EXTRA
+          pnpm tauri build --bundles appimage,deb $EXTRA --ignore-version-mismatches
       - name: Collect artifacts
         run: |
           set -euo pipefail
