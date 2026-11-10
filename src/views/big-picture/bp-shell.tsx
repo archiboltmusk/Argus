@@ -45,6 +45,7 @@ import {
   BpLive,
   BpMovies,
   BpPerson,
+  BpProjectorLauncher,
   BpSearch,
   BpService,
   BpSettings,
@@ -88,6 +89,7 @@ import { BpControllerToast } from "./bp-controller-toast";
 
 const HINTS: Record<string, BpAction[]> = {
   home: ["select", "exit", "quick", "tabs"],
+  "projector-launcher": ["select", "back", "quick", "tabs"],
   anime: ["select", "back", "quick", "tabs"],
   shows: ["select", "back", "tabs"],
   movies: ["select", "back", "tabs"],
@@ -442,6 +444,7 @@ export function BigPictureShell() {
           >
             <Suspense fallback={<BpRouteFallback />}>
               {route.kind === "home" && <BpHome onSelect={openDetail} />}
+              {route.kind === "projector-launcher" && <BpProjectorLauncher />}
               {route.kind === "anime" && <BpAnime onSelect={openDetail} />}
               {route.kind === "shows" && <BpShows onSelect={openDetail} />}
               {route.kind === "movies" && <BpMovies onSelect={openDetail} />}

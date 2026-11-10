@@ -1,6 +1,7 @@
 import { NavGlyph } from "@/components/icons/nav-glyph";
 import { AnimeIcon } from "@/components/icons/anime-icon";
 import { HomeIcon } from "@/components/icons/home-icon";
+import { ProjectorIcon } from "@/components/icons/projector-icon";
 import { LibraryIcon } from "@/components/icons/library-icon";
 import { MoviesIcon } from "@/components/icons/movies-icon";
 import { SettingsIcon } from "@/components/icons/settings-icon";
@@ -40,6 +41,11 @@ type BpTab = {
 
 const TABS: BpTab[] = [
   { kind: "home", label: "Home", icon: (a) => <HomeIcon active={a} /> },
+  {
+    kind: "projector-launcher",
+    label: "Projector Hub",
+    icon: (a) => <ProjectorIcon active={a} />,
+  },
   {
     kind: "discover",
     label: "Discover",

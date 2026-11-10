@@ -4,6 +4,7 @@ import type { SportsGame } from "@/lib/sports/espn-types";
 
 export type BigPictureRoute =
   | { kind: "home" }
+  | { kind: "projector-launcher" }
   | { kind: "anime" }
   | { kind: "shows" }
   | { kind: "movies" }
@@ -91,6 +92,7 @@ export function resetBigPictureToHome(): void {
 
 export type BigPictureTabKind =
   | "home"
+  | "projector-launcher"
   | "discover"
   | "anime"
   | "shows"

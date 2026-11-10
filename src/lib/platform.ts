@@ -59,7 +59,7 @@ export function isAndroid(): boolean {
 // Every other platform answers from plugin-os, which reports only "android" for
 // a phone and a television alike. Leanback is not an OS, so the panel can only
 // be told apart by the strings the WebView carries.
-const TV_UA = /\b(tv|leanback|androidtv|aft[a-z]*|bravia|firetv|googletv|shield)\b/;
+const TV_UA = /\b(tv|leanback|androidtv|aft[a-z]*|bravia|firetv|googletv|shield|projector|portronics|beem|wanbo|egate|xgimi|nebula|dangbei|formovie)\b/;
 
 let cachedTv: boolean | null = null;
 
@@ -72,6 +72,12 @@ export function isAndroidTv(): boolean {
   const ua = (navigator.userAgent || "").toLowerCase();
   cachedTv = TV_UA.test(ua) || ua.includes("android tv") || ua.includes("google tv");
   return cachedTv;
+}
+
+export function isSmartProjector(): boolean {
+  if (typeof navigator === "undefined") return false;
+  const ua = (navigator.userAgent || "").toLowerCase();
+  return /projector|portronics|beem|wanbo|egate|xgimi|nebula|dangbei|formovie|zebronics/i.test(ua);
 }
 
 export function isMobileDevice(): boolean {
@@ -107,6 +113,19 @@ export function isRemoteRoute(): boolean {
     if (path === "/reader" || path.endsWith("/reader")) return true;
     const q = new URLSearchParams(window.location.search);
     return q.get("remote") === "1" || q.get("reader") === "1" || q.get("setup") !== null;
+  } catch {
+    return false;
+  }
+}
+
+export function isLauncherRoute(): boolean {
+  try {
+    const path = window.location.pathname.replace(/\/+$/, "") || "/";
+    if (path === "/launcher" || path.endsWith("/launcher") || path === "/projector" || path.endsWith("/projector")) {
+      return true;
+    }
+    const q = new URLSearchParams(window.location.search);
+    return q.get("launcher") === "1" || q.get("mode") === "launcher" || q.get("projector") === "1";
   } catch {
     return false;
   }

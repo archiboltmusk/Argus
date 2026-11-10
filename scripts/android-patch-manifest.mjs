@@ -30,13 +30,34 @@ if (!xml.includes("networkSecurityConfig")) {
   xml = xml.replace(/<application\b/, '<application\n        android:networkSecurityConfig="@xml/network_security_config"');
 }
 
-if (!xml.includes("LEANBACK_LAUNCHER")) {
+if (!xml.includes("LEANBACK_LAUNCHER") || !xml.includes("android.intent.category.HOME")) {
   const launcher = /(\s*)<category android:name="android\.intent\.category\.LAUNCHER"\s*\/>/;
   must(launcher.test(xml), "no LAUNCHER category in AndroidManifest.xml");
   xml = xml.replace(
     launcher,
-    (m, indent) => `${m}${indent}<category android:name="android.intent.category.LEANBACK_LAUNCHER" />`,
+    (m, indent) =>
+      `${m}${indent}<category android:name="android.intent.category.LEANBACK_LAUNCHER" />` +
+      `${indent}<category android:name="android.intent.category.HOME" />` +
+      `${indent}<category android:name="android.intent.category.DEFAULT" />`,
   );
+}
+
+if (!xml.includes("<queries>")) {
+  const queries =
+    '    <queries>\n' +
+    '      <intent>\n' +
+    '        <action android:name="android.intent.action.MAIN" />\n' +
+    '        <category android:name="android.intent.category.LEANBACK_LAUNCHER" />\n' +
+    '      </intent>\n' +
+    '      <intent>\n' +
+    '        <action android:name="android.intent.action.MAIN" />\n' +
+    '        <category android:name="android.intent.category.LAUNCHER" />\n' +
+    '      </intent>\n' +
+    '      <intent>\n' +
+    '        <action android:name="android.media.tv.action.VIEW_INPUTS" />\n' +
+    '      </intent>\n' +
+    '    </queries>\n';
+  xml = xml.replace(/(\s*)<application\b/, (m) => `\n${queries}${m.replace(/^\n/, "")}`);
 }
 
 if (!xml.includes("android.software.leanback")) {

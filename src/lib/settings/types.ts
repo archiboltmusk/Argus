@@ -960,4 +960,7 @@ export type Settings = {
   projectorGammaLift: number;
   projectorKeystoneOverscan: number;
   projectorHighContrastSubs: boolean;
+  projectorLauncherDefault: boolean;
+  projectorWallColorTint: "white" | "ivory" | "cool-grey" | "peach" | "green";
+  projectorPictureProfile: "cinema" | "daylight" | "eco" | "night";
 };

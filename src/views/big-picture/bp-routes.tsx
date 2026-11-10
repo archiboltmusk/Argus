@@ -33,6 +33,11 @@ export function BpRouteFallback() {
  * settles without ever showing a fallback.
  */
 export const BpAnime = lazy(() => import("./bp-anime").then((m) => ({ default: m.BpAnime })));
+export const BpProjectorLauncher = lazy(() =>
+  import("./projector-launcher/bp-projector-launcher").then((m) => ({
+    default: m.BpProjectorLauncher,
+  })),
+);
 export const BpShows = lazy(() => import("./bp-shows").then((m) => ({ default: m.BpShows })));
 export const BpMovies = lazy(() => import("./bp-movies").then((m) => ({ default: m.BpMovies })));
 export const BpLive = lazy(() => import("./bp-live").then((m) => ({ default: m.BpLive })));

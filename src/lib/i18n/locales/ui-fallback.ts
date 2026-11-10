@@ -1,5 +1,7 @@
 // Newly introduced UI copy remains usable until each locale provides an override.
 const uiFallback: Record<string, string> = {
+  "Projector Android Launcher as default home": "Projector Android Launcher as default home",
+  "Launches the Google Home style 10-foot Projector Launcher on startup, featuring quick source switcher (HDMI 1/2, AV, USB), projector focus & keystone test pattern, wall color compensation, and installed TV apps.": "Launches the Google Home style 10-foot Projector Launcher on startup, featuring quick source switcher (HDMI 1/2, AV, USB), projector focus & keystone test pattern, wall color compensation, and installed TV apps.",
   "Phone Remote": "Phone Remote",
   "Scan with your phone camera to control playback, timeline scrub, and volume.": "Scan with your phone camera to control playback, timeline scrub, and volume.",
   "Get free key": "Get free key",

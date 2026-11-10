@@ -55,7 +55,7 @@ import {
 import { synchronizeMediaServer } from "@/lib/media-server/sync";
 import { setNativeMemoryActive } from "@/lib/native-memory";
 import { useOverlayPinned } from "@/lib/overlay-pin";
-import { isMobileWeb, isRemoteRoute } from "@/lib/platform";
+import { isLauncherRoute, isMobileWeb, isRemoteRoute, isSmartProjector } from "@/lib/platform";
 import { makeSafeTauriUnlisten } from "@/lib/tauri-unlisten";
 import { activeLayout } from "@/lib/theme";
 import { useThemePreview } from "@/lib/theme-preview";
@@ -195,7 +195,7 @@ import {
   focusTvPageDefault,
   isVisible,
 } from "@/lib/keyboard-navigation";
-import { enterBigPicture, useBigPicture } from "@/lib/big-picture";
+import { enterBigPicture, pushBigPicture, useBigPicture } from "@/lib/big-picture";
 import { moveMainToMonitor } from "@/lib/monitors";
 import { BpErrorBoundary } from "@/views/big-picture/bp-error-boundary";
 import { shouldAutoStartBigPicture, shouldOfferBigPicture } from "@/views/big-picture/bp-logic";
@@ -1026,6 +1026,13 @@ function Shell({ onReady }: { onReady?: () => void }) {
     }
     enterBigPicture();
   }, [settings.bigPictureAutoStart, settings.bigPictureDisplay, kid]);
+
+  useEffect(() => {
+    if (isLauncherRoute() || (isSmartProjector() && settings.projectorLauncherDefault)) {
+      enterBigPicture();
+      pushBigPicture({ kind: "projector-launcher" });
+    }
+  }, [settings.projectorLauncherDefault]);
 
   useKeyboardNavigation({
     enabled: settings.tvNavigation && !player && !picker && !bigPicture,

@@ -787,6 +787,9 @@ export const DEFAULT: Settings = {
   projectorGammaLift: 2,
   projectorKeystoneOverscan: 5,
   projectorHighContrastSubs: true,
+  projectorLauncherDefault: false,
+  projectorWallColorTint: "white",
+  projectorPictureProfile: "cinema",
 };
 
 export function getSecondaryPrivileges(

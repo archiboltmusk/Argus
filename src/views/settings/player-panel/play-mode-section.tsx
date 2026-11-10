@@ -243,6 +243,14 @@ export function PlayModePanel() {
 
       <SettingGroup label={t("Projector & Big Screen")}>
         <ToggleRow
+          label={t("Projector Android Launcher as default home")}
+          sub={t(
+            "Launches the Google Home style 10-foot Projector Launcher on startup, featuring quick source switcher (HDMI 1/2, AV, USB), projector focus & keystone test pattern, wall color compensation, and installed TV apps.",
+          )}
+          value={settings.projectorLauncherDefault}
+          onChange={(v) => update({ projectorLauncherDefault: v })}
+        />
+        <ToggleRow
           label={t("Projector display optimization")}
           sub={t(
             "Tuned for LED projectors (Portronics Beem, Wanbo, Egate) and home cinema beams. Boosts midtone contrast, enhances gamma, and activates fast deband to eliminate washed-out projection on walls.",
