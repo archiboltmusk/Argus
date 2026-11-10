@@ -4,6 +4,7 @@ import type { Meta } from "@/lib/cinemeta";
 const IMPRESSION_STORAGE_KEY = "argus.algo.impressions.v1";
 const DWELL_POSITIVE_THRESHOLD_MS = 1400; // 1.4s dwell = positive signal
 const DWELL_SUPER_THRESHOLD_MS = 4000; // 4.0s dwell = high interest
+const IDLE_THRESHOLD_MS = 90_000; // 90 seconds idle threshold
 
 type ImpressionRecord = {
   count: number;
@@ -15,6 +16,25 @@ type ImpressionMap = Record<string, ImpressionRecord>;
 
 let impressionsCache: ImpressionMap | null = null;
 const activeDwells = new Map<string, { start: number; meta?: Meta }>();
+let lastUserInteractionTs = Date.now();
+
+if (typeof window !== "undefined") {
+  const markActive = () => {
+    lastUserInteractionTs = Date.now();
+  };
+  window.addEventListener("pointerdown", markActive, { passive: true });
+  window.addEventListener("keydown", markActive, { passive: true });
+  window.addEventListener("scroll", markActive, { passive: true });
+  window.addEventListener("touchstart", markActive, { passive: true });
+}
+
+export function isUserActive(): boolean {
+  return Date.now() - lastUserInteractionTs < IDLE_THRESHOLD_MS;
+}
+
+export function markUserActiveForTest(active = true) {
+  lastUserInteractionTs = active ? Date.now() : Date.now() - IDLE_THRESHOLD_MS - 1000;
+}
 
 function getImpressions(): ImpressionMap {
   if (impressionsCache) return impressionsCache;
@@ -30,23 +50,34 @@ function getImpressions(): ImpressionMap {
 function saveImpressions() {
   if (!impressionsCache) return;
   try {
-    // Keep max 500 entries to prevent storage bloat
+    // Keep max 300 entries to prevent storage bloat
     const entries = Object.entries(impressionsCache);
-    if (entries.length > 500) {
+    if (entries.length > 300) {
       entries.sort((a, b) => b[1].lastSeen - a[1].lastSeen);
-      impressionsCache = Object.fromEntries(entries.slice(0, 500));
+      impressionsCache = Object.fromEntries(entries.slice(0, 300));
     }
     localStorage.setItem(IMPRESSION_STORAGE_KEY, JSON.stringify(impressionsCache));
-  } catch {
-    /* ignore storage quota on mobile */
+  } catch (err) {
+    // Quota guard: prune aggressively down to 100 entries on constrained devices
+    try {
+      const entries = Object.entries(impressionsCache);
+      entries.sort((a, b) => b[1].lastSeen - a[1].lastSeen);
+      impressionsCache = Object.fromEntries(entries.slice(0, 100));
+      localStorage.setItem(IMPRESSION_STORAGE_KEY, JSON.stringify(impressionsCache));
+    } catch {
+      /* ignore if completely exhausted */
+    }
   }
 }
 
 /**
  * Record an on-screen impression of an item.
+ * Loophole protection: only registers if the user was recently active (not an idle screen).
  */
 export function recordImpression(metaId: string) {
   if (!metaId) return;
+  if (!isUserActive()) return;
+
   const imps = getImpressions();
   const existing = imps[metaId] ?? { count: 0, lastSeen: 0, clicked: false };
   existing.count += 1;

@@ -24,6 +24,29 @@ export interface CloudSyncState {
 }
 
 const CLOUD_SYNC_TIMESTAMP_KEY = "argus.cloud-sync.last_synced_at";
+const CLOUD_SYNC_REVISION_KEY = "argus.cloud-sync.revision.v1";
+
+let memRevision: number | null = null;
+
+export function getSyncRevision(): number {
+  if (memRevision !== null) return memRevision;
+  try {
+    const raw = localStorage.getItem(CLOUD_SYNC_REVISION_KEY);
+    memRevision = raw ? parseInt(raw, 10) || 0 : 0;
+  } catch {
+    memRevision = 0;
+  }
+  return memRevision;
+}
+
+export function bumpSyncRevision(): number {
+  const next = getSyncRevision() + 1;
+  memRevision = next;
+  try {
+    localStorage.setItem(CLOUD_SYNC_REVISION_KEY, String(next));
+  } catch {}
+  return next;
+}
 
 let activeState: CloudSyncState = {
   provider: "none",
@@ -128,6 +151,7 @@ export async function syncAllCloudData(): Promise<{ ok: boolean; count: number; 
     }
 
     const now = Date.now();
+    const revision = bumpSyncRevision();
     try {
       localStorage.setItem(CLOUD_SYNC_TIMESTAMP_KEY, String(now));
     } catch {}
@@ -144,7 +168,7 @@ export async function syncAllCloudData(): Promise<{ ok: boolean; count: number; 
     if (typeof window !== "undefined") {
       window.dispatchEvent(
         new CustomEvent("argus:cloud-sync-complete", {
-          detail: { provider: current.provider, itemsCount: totalItems, timestamp: now },
+          detail: { provider: current.provider, itemsCount: totalItems, timestamp: now, revision },
         }),
       );
     }

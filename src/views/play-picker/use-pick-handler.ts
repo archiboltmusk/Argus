@@ -240,7 +240,7 @@ export function usePickHandler({
       const hint = episode
         ? { season: episode.season ?? null, episode: episode.episode ?? null }
         : undefined;
-      const allowP2pFallback = streamMode !== "addons" || !!stream.infoHash;
+      const allowP2pFallback = streamMode !== "addons";
       const r = await resolveStream(
         stream,
         debrids,

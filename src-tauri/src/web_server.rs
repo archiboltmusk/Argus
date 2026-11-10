@@ -239,11 +239,51 @@ async fn serve_http(State(state): State<ServeState>, uri: axum::http::Uri) -> Re
     serve_bundled_asset(&state.app, uri.path())
 }
 
+fn is_allowed_ws_origin(origin: &str) -> bool {
+    let lower = origin.to_lowercase();
+    if lower.starts_with("http://localhost:")
+        || lower.starts_with("https://localhost:")
+        || lower.starts_with("http://127.0.0.1:")
+        || lower.starts_with("https://127.0.0.1:")
+        || lower.starts_with("tauri://")
+        || lower.starts_with("nuvio://")
+        || lower.starts_with("argus://")
+    {
+        return true;
+    }
+    if lower.starts_with("http://192.168.")
+        || lower.starts_with("https://192.168.")
+        || lower.starts_with("http://10.")
+        || lower.starts_with("https://10.")
+    {
+        return true;
+    }
+    for i in 16..=31 {
+        let prefix_http = format!("http://172.{}.", i);
+        let prefix_https = format!("https://172.{}.", i);
+        if lower.starts_with(&prefix_http) || lower.starts_with(&prefix_https) {
+            return true;
+        }
+    }
+    false
+}
+
 async fn remote_ws_handler(
+    headers: HeaderMap,
     ws: WebSocketUpgrade,
     State(state): State<ServeState>,
-) -> impl IntoResponse {
-    ws.on_upgrade(move |socket| handle_remote_socket(socket, state))
+) -> Response<Body> {
+    // Cross-origin WebSocket hijack protection:
+    // If an Origin header is present, ensure it is from a trusted local/LAN origin.
+    if let Some(origin) = headers.get(header::ORIGIN).and_then(|v| v.to_str().ok()) {
+        if !is_allowed_ws_origin(origin) {
+            return Response::builder()
+                .status(StatusCode::FORBIDDEN)
+                .body(Body::from("Cross-origin WebSocket connection forbidden"))
+                .unwrap();
+        }
+    }
+    ws.on_upgrade(move |socket| handle_remote_socket(socket, state)).into_response()
 }
 
 async fn handle_remote_socket(socket: WebSocket, state: ServeState) {
