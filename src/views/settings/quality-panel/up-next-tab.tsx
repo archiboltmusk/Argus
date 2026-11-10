@@ -137,6 +137,16 @@ export function UpNextTab() {
         />
         {settings.autoPlayNextEpisode && (
           <ToggleRow
+            label={t("Zero-wait binge preloading")}
+            sub={t(
+              "Pre-resolves top stream candidates for the next episode in the background during credits so playback starts instantly with 0 buffering delay.",
+            )}
+            value={settings.zeroWaitBinge}
+            onChange={(v) => update({ zeroWaitBinge: v })}
+          />
+        )}
+        {settings.autoPlayNextEpisode && (
+          <ToggleRow
             label={t("Ask if you're still watching")}
             sub={t(
               "After several episodes auto-play in a row with no input, pause and check you're still there before continuing. Off by default.",

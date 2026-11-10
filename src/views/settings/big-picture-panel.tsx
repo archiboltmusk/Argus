@@ -55,6 +55,16 @@ export function BigPicturePanel() {
             onChange={(v) => update({ bigPictureSound: v })}
           />
         </SettingRow>
+        <SettingRow wide label={t("Card layout")}>
+          <Segmented
+            value={settings.bpCardLayout || "poster"}
+            options={[
+              { value: "poster", label: t("Poster (2:3)") },
+              { value: "landscape", label: t("Landscape (16:9)") },
+            ]}
+            onChange={(v) => update({ bpCardLayout: v as "poster" | "landscape" })}
+          />
+        </SettingRow>
       </Section>
 
       <Section title={t("Picture")}>

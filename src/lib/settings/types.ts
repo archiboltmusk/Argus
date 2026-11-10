@@ -963,4 +963,12 @@ export type Settings = {
   projectorLauncherDefault: boolean;
   projectorWallColorTint: "white" | "ivory" | "cool-grey" | "peach" | "green";
   projectorPictureProfile: "cinema" | "daylight" | "eco" | "night";
+  audioNightMode: boolean;
+  bpCardLayout: "poster" | "landscape";
+  jellyfinEnabled: boolean;
+  jellyfinServerUrl: string;
+  jellyfinApiKey: string;
+  jellyfinUserId: string;
+  mdblistUserToken: string;
+  zeroWaitBinge: boolean;
 };

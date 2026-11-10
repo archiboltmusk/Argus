@@ -790,6 +790,14 @@ export const DEFAULT: Settings = {
   projectorLauncherDefault: false,
   projectorWallColorTint: "white",
   projectorPictureProfile: "cinema",
+  audioNightMode: false,
+  bpCardLayout: "poster",
+  jellyfinEnabled: false,
+  jellyfinServerUrl: "",
+  jellyfinApiKey: "",
+  jellyfinUserId: "",
+  mdblistUserToken: "",
+  zeroWaitBinge: true,
 };
 
 export function getSecondaryPrivileges(

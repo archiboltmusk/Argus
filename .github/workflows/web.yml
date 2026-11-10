@@ -70,7 +70,7 @@ jobs:
     needs: build
     if: github.ref == 'refs/heads/main' && vars.ARGUS_WEB_DEPLOY == 'true'
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 30
     permissions:
       pages: write
       id-token: write
@@ -80,3 +80,5 @@ jobs:
     steps:
       - id: deployment
         uses: actions/deploy-pages@v4
+        with:
+          timeout: 1800000

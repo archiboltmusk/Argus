@@ -11,6 +11,7 @@ import { isPluginAddon } from "@/lib/streams/plugins";
 import { probeTopStreams } from "@/lib/streams/top-stream-prober";
 import { prepareCachedDebridStreams } from "@/lib/debrid/playback-preparation";
 import { prewarmCandidateStream } from "@/lib/streams/prewarm-candidate";
+import { storePreloadedNextStream } from "@/lib/player/zero-wait-binge";
 import type { PlayEpisode } from "@/lib/view";
 import { useAddons } from "@/views/play-picker/use-addons";
 import { useAnimeAltTitles } from "@/views/play-picker/use-anime-alt-titles";
@@ -112,6 +113,9 @@ export function NextEpisodePrefetch({
           // Netflix Standard: Pre-resolve the top stream for the next episode in the background
           const top = streams[0] as any;
           if (top) {
+            if (settings.zeroWaitBinge !== false) {
+              storePreloadedNextStream(meta.id, nextEpisode, top);
+            }
             if (top.url) {
               prewarmCandidateStream(top);
             } else if (debrids.length > 0) {

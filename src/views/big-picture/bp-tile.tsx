@@ -84,19 +84,21 @@ function BpTileBody({
 }) {
   const boxRef = useRef<HTMLButtonElement | null>(null);
   const { settings } = useSettings();
-  const ranked = shape === "rank";
-  const override = useBpPosterChain(meta, shape, boxRef);
+  const effectiveShape: BpTileShape =
+    settings.bpCardLayout === "landscape" && shape === "poster" ? "wide" : shape;
+  const ranked = effectiveShape === "rank";
+  const override = useBpPosterChain(meta, effectiveShape, boxRef);
   const art = useBpArt({
     ref: boxRef,
     id: meta.id,
     type: meta.type,
     // A ranked cell draws a portrait poster, so it takes the poster art chain.
     // useBpArt has its own two-value shape and does not know this one.
-    shape: shape === "wide" ? "wide" : "poster",
+    shape: effectiveShape === "wide" ? "wide" : "poster",
     override,
     poster: meta.poster,
     background: meta.background,
-    targetWidth: artWidth(shape, fluid),
+    targetWidth: artWidth(effectiveShape, fluid),
   });
   const src = useProxiedImageSrc(art.url);
   // The shimmer is gone, not merely ungated, and this must not be re-added
@@ -120,7 +122,7 @@ function BpTileBody({
 
   const [loaded, setLoaded] = useState(false);
   const [focused, setFocused] = useState(false);
-  const dims = SHAPE[shape];
+  const dims = SHAPE[effectiveShape];
   // Extraction refetches and decodes the whole poster, and the glow only paints
   // on the focused tile, so a grid of hundreds must not all pay for it.
   const glow = useArtGlow(focused && loaded ? src : undefined);
@@ -153,7 +155,7 @@ function BpTileBody({
     <button
       type="button"
       data-bp-focusable
-      data-bp-tile={shape === "wide" ? "wide" : "poster"}
+      data-bp-tile={effectiveShape === "wide" ? "wide" : "poster"}
       data-bp-autofocus={autofocus ? "true" : undefined}
       data-bp-restore-key={meta.id}
       ref={(el) => {

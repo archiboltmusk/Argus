@@ -7,6 +7,7 @@ import { subtitleStreamDescriptor } from "@/lib/subtitles/provider-label";
 import { publishSubtitleSearch } from "@/components/player/subtitle-menu/subtitle-search-store";
 import { publishSubtitleContext } from "@/components/player/subtitle-menu/subtitle-context-store";
 import { readPlayerPrefs, writePlayerPrefs, type PerShowPrefs } from "@/lib/player-prefs";
+import { loadLangAudioDelay, saveLangAudioDelay } from "@/lib/player/audio-night-mode";
 import { playbackSourceKey, readActualPlaybackFor } from "@/lib/playback-history";
 import { playbackAudioChoice, selectPlaybackAudio, pickBestAudioTrack } from "@/lib/player/audio-choice";
 import { tmdbImdbId } from "@/lib/providers/tmdb";
@@ -932,23 +933,31 @@ export function useTrackAutoload(params: {
   const audioOffsetSec = settings.audioOutputLatencyMs / 1000;
   const appliedAudioDelayRef = useRef<number | null>(null);
   useEffect(() => {
+    const curAudio = snap.audioTracks.find((t) => t.selected);
+    const langDelay = curAudio?.lang ? loadLangAudioDelay(curAudio.lang) : 0;
     const remembered = settings.audioDelayRemember
-      ? (readPlayerPrefs(src.meta.id)?.audioDelaySec ?? 0)
-      : 0;
+      ? (readPlayerPrefs(src.meta.id)?.audioDelaySec ?? langDelay)
+      : langDelay;
     const wanted = Math.round((remembered + audioOffsetSec) * 1000) / 1000;
     appliedAudioDelayRef.current = wanted;
     bridgeRef.current?.setAudioDelay(wanted);
-  }, [src.url, src.meta.id, settings.audioDelayRemember, audioOffsetSec]);
+  }, [src.url, src.meta.id, settings.audioDelayRemember, audioOffsetSec, snap.audioTracks]);
 
   useEffect(() => {
-    if (!settings.audioDelayRemember || !src.meta.id) return;
     const applied = appliedAudioDelayRef.current;
     if (applied == null || Math.abs(snap.audioDelaySec - applied) < 0.0005) return;
     appliedAudioDelayRef.current = snap.audioDelaySec;
-    writePlayerPrefs(src.meta.id, {
-      audioDelaySec: Math.round((snap.audioDelaySec - audioOffsetSec) * 1000) / 1000,
-    });
-  }, [snap.audioDelaySec, settings.audioDelayRemember, audioOffsetSec, src.meta.id]);
+    const normalizedDelay = Math.round((snap.audioDelaySec - audioOffsetSec) * 1000) / 1000;
+    const curAudio = snap.audioTracks.find((t) => t.selected);
+    if (curAudio?.lang) {
+      saveLangAudioDelay(curAudio.lang, normalizedDelay);
+    }
+    if (settings.audioDelayRemember && src.meta.id) {
+      writePlayerPrefs(src.meta.id, {
+        audioDelaySec: normalizedDelay,
+      });
+    }
+  }, [snap.audioDelaySec, settings.audioDelayRemember, audioOffsetSec, src.meta.id, snap.audioTracks]);
 
   useEffect(() => {
     if (!subsOffFor(readPlayerPrefs(src.meta.id), settings)) return;

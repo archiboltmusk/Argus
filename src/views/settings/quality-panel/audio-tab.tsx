@@ -112,6 +112,12 @@ export function AudioTab() {
         value={settings.audioDelayRemember}
         onChange={(v) => update({ audioDelayRemember: v })}
       />
+      <ToggleRow
+        label={t("Night mode (Dynamic Range Compression)")}
+        sub={t("Softens loud explosive spikes and boosts quiet whisper dialogue frequencies for comfortable late-night viewing.")}
+        value={settings.audioNightMode}
+        onChange={(v) => update({ audioNightMode: v })}
+      />
       <SettingRow
         wide
         label={t("Wireless output delay")}
