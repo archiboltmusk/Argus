@@ -75,6 +75,7 @@ export const BpStreams = lazy(() => import("./bp-streams").then((m) => ({ defaul
 // sixteen imports at once on a television puts the parse cost straight back
 // onto the frame budget the home screen is still using to draw itself.
 const WARM: Array<() => Promise<unknown>> = [
+  () => import("./projector-launcher/bp-projector-launcher"),
   () => import("./bp-detail"),
   () => import("./bp-search"),
   () => import("./bp-shows"),

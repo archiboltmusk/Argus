@@ -236,6 +236,7 @@ export function shouldRenderBigPicture(state: {
   kidProfileActive: boolean;
   tvShell?: boolean;
 }): boolean {
+  if (state.tvShell ?? tvShell) return true;
   if (!state.active) return false;
   // A kid profile sends the DESKTOP out to its own kids surface, which is why this
   // refuses there. On the television there is no such surface: returning false makes

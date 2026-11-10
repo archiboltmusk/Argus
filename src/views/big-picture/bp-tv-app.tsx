@@ -9,7 +9,7 @@ import { SettingsProfileBridge } from "@/lib/settings-profile-bridge";
 import { TrackerProfileBridge } from "@/lib/tracker-profile-bridge";
 import { AnilistProvider } from "@/lib/anilist/provider";
 import { AuthProvider } from "@/lib/auth";
-import { enterBigPicture, useBigPicture } from "@/lib/big-picture";
+import { enterBigPicture, pushBigPicture, useBigPicture } from "@/lib/big-picture";
 import { CharacterFavoritesProvider } from "@/lib/character-favorites";
 import { ContextMenuProvider } from "@/lib/context-menu";
 import { DvrProvider } from "@/lib/dvr/provider";
@@ -32,6 +32,9 @@ import { TogetherProvider } from "@/lib/together/provider";
 import { TopRankModalProvider } from "@/lib/top-rank-modal";
 import { TraktProvider } from "@/lib/trakt/provider";
 import { ViewProvider } from "@/lib/view";
+import { isLauncherRoute, isSmartProjector } from "@/lib/platform";
+import { BpErrorBoundary } from "./bp-error-boundary";
+import { BpRouteFallback } from "./bp-routes";
 import { setBpTvShell } from "./bp-logic";
 import { setBpOverscanDefault, TEN_FOOT_OVERSCAN } from "./bp-safe-area";
 
@@ -39,6 +42,7 @@ import { setBpOverscanDefault, TEN_FOOT_OVERSCAN } from "./bp-safe-area";
 // mount. Without this a kid profile makes the shell return null and the television is a
 // black screen a power cycle cannot clear.
 setBpTvShell(true);
+enterBigPicture();
 
 // This entry only ever boots on a television, so it states the inset outright
 // rather than waiting for bp-safe-area to recognise the device from its agent.
@@ -92,13 +96,19 @@ function BpTvSound() {
 
 function BpTvRoot() {
   const { active } = useBigPicture();
+  const { settings } = useSettings();
 
   // The kid check that used to guard this was the second half of the black screen: the
   // shell had already exited and this refused to re-enter, so nothing was mounted at all.
   useEffect(() => {
-    if (active) return;
-    enterBigPicture();
+    if (!active) enterBigPicture();
   }, [active]);
+
+  useEffect(() => {
+    if (isLauncherRoute() || (isSmartProjector() && settings.projectorLauncherDefault)) {
+      pushBigPicture({ kind: "projector-launcher" });
+    }
+  }, [settings.projectorLauncherDefault]);
 
   return (
     <>
@@ -114,7 +124,7 @@ function BpTvRoot() {
       <SettingsProfileBridge />
       <TrackerProfileBridge />
       <ProfileSyncRunner />
-      <Suspense fallback={null}>
+      <Suspense fallback={<BpRouteFallback />}>
         <BigPictureShell />
       </Suspense>
       <CurfewGuard />
@@ -127,5 +137,5 @@ export function BpTvApp() {
     (node, Provider) => <Provider>{node}</Provider>,
     <BpTvRoot />,
   );
-  return <>{tree}</>;
+  return <BpErrorBoundary>{tree}</BpErrorBoundary>;
 }

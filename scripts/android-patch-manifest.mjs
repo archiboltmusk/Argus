@@ -30,16 +30,28 @@ if (!xml.includes("networkSecurityConfig")) {
   xml = xml.replace(/<application\b/, '<application\n        android:networkSecurityConfig="@xml/network_security_config"');
 }
 
-if (!xml.includes("LEANBACK_LAUNCHER") || !xml.includes("android.intent.category.HOME")) {
+if (!xml.includes("LEANBACK_LAUNCHER")) {
   const launcher = /(\s*)<category android:name="android\.intent\.category\.LAUNCHER"\s*\/>/;
   must(launcher.test(xml), "no LAUNCHER category in AndroidManifest.xml");
   xml = xml.replace(
     launcher,
-    (m, indent) =>
-      `${m}${indent}<category android:name="android.intent.category.LEANBACK_LAUNCHER" />` +
-      `${indent}<category android:name="android.intent.category.HOME" />` +
-      `${indent}<category android:name="android.intent.category.DEFAULT" />`,
+    (m, indent) => `${m}${indent}<category android:name="android.intent.category.LEANBACK_LAUNCHER" />`,
   );
+}
+
+// Android Home replacement launcher must live in its own separate intent-filter.
+// Mixing HOME with LAUNCHER / LEANBACK_LAUNCHER in a single filter corrupts task affinity
+// and breaks standard app launch on Android TV / Projector firmwares.
+if (!xml.includes("android.intent.category.HOME")) {
+  const homeFilter =
+    '      <intent-filter>\n' +
+    '        <action android:name="android.intent.action.MAIN" />\n' +
+    '        <category android:name="android.intent.category.HOME" />\n' +
+    '        <category android:name="android.intent.category.DEFAULT" />\n' +
+    '      </intent-filter>\n';
+  const activityClose = /<\/activity>/;
+  must(activityClose.test(xml), "no </activity> in AndroidManifest.xml");
+  xml = xml.replace(activityClose, `${homeFilter}    </activity>`);
 }
 
 if (!xml.includes("<queries>")) {

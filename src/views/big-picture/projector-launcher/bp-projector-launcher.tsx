@@ -171,7 +171,7 @@ export function BpProjectorLauncher() {
 
       {/* Source Switch Toast Notification */}
       {activeSourceToast && (
-        <div className="fixed top-8 left-1/2 -translate-x-1/2 z-[9950] px-6 py-3 rounded-2xl bg-zinc-900/95 border border-cyan-400 text-cyan-200 text-sm font-semibold shadow-[0_0_25px_rgba(34,211,238,0.4)] backdrop-blur-md animate-in fade-in slide-in-from-top-4 duration-300">
+        <div className="fixed top-8 left-1/2 -translate-x-1/2 z-[9950] px-6 py-3 rounded-2xl bg-zinc-900/95 border border-cyan-400 text-cyan-200 text-sm font-semibold shadow-[0_0_25px_rgba(34,211,238,0.4)] backdrop-blur-md animate-in fade-in slide-in-from-top-4 duration-300 motion-reduce:animate-none">
           {activeSourceToast}
         </div>
       )}
@@ -188,7 +188,7 @@ export function BpProjectorLauncher() {
 
           <div className="flex flex-wrap items-center gap-3 mt-3 text-xs font-medium text-zinc-400">
             <span className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-cyan-950/60 border border-cyan-500/40 text-cyan-300">
-              <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse" />
+              <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse motion-reduce:animate-none" />
               Smart Projector Mode
             </span>
             <span className="px-3 py-1 rounded-full bg-zinc-800/80 border border-white/10 text-zinc-300">
@@ -204,14 +204,17 @@ export function BpProjectorLauncher() {
         </div>
 
         {/* Quick Projector Controls Pill Bar */}
-        <div className="flex items-center gap-3">
+        <div data-bp-row data-bp-row-key="proj-quick-controls" className="flex items-center gap-3">
           <button
             type="button"
+            data-bp-focusable
+            data-bp-chip
+            data-bp-restore-key="proj-lens-setup"
             onClick={() => {
               SFX.open();
               setShowCalibration(true);
             }}
-            className="px-4 py-2.5 rounded-2xl bg-cyan-500/20 hover:bg-cyan-500/30 border border-cyan-400/50 text-cyan-200 text-sm font-semibold tracking-wide flex items-center gap-2 transition-all hover:scale-105 active:scale-95 shadow-[0_0_15px_rgba(34,211,238,0.2)]"
+            className="px-4 py-2.5 rounded-2xl bg-cyan-500/20 hover:bg-cyan-500/30 border border-cyan-400/50 text-cyan-200 text-sm font-semibold tracking-wide flex items-center gap-2 transition-all hover:scale-105 active:scale-95 shadow-[0_0_15px_rgba(34,211,238,0.2)] focus:ring-2 focus:ring-cyan-400"
           >
             <svg className="w-4 h-4 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <circle cx="12" cy="12" r="3" strokeWidth="2" />
@@ -225,11 +228,14 @@ export function BpProjectorLauncher() {
 
           <button
             type="button"
+            data-bp-focusable
+            data-bp-chip
+            data-bp-restore-key="proj-focus-grid"
             onClick={() => {
               SFX.open();
               setShowTestPattern(true);
             }}
-            className="px-4 py-2.5 rounded-2xl bg-zinc-800/80 hover:bg-zinc-700/80 border border-white/15 text-zinc-200 text-sm font-semibold tracking-wide flex items-center gap-2 transition-all hover:scale-105 active:scale-95"
+            className="px-4 py-2.5 rounded-2xl bg-zinc-800/80 hover:bg-zinc-700/80 border border-white/15 text-zinc-200 text-sm font-semibold tracking-wide flex items-center gap-2 transition-all hover:scale-105 active:scale-95 focus:ring-2 focus:ring-emerald-400"
           >
             <svg className="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <circle cx="12" cy="12" r="9" strokeWidth="2" />
@@ -240,8 +246,11 @@ export function BpProjectorLauncher() {
 
           <button
             type="button"
+            data-bp-focusable
+            data-bp-chip
+            data-bp-restore-key="proj-cinema-hub"
             onClick={() => resetBigPictureToHome()}
-            className="px-4 py-2.5 rounded-2xl bg-amber-500 hover:bg-amber-400 text-black font-bold text-sm tracking-wide transition-all hover:scale-105 active:scale-95 shadow-[0_0_15px_rgba(245,158,11,0.3)] flex items-center gap-2"
+            className="px-4 py-2.5 rounded-2xl bg-amber-500 hover:bg-amber-400 text-black font-bold text-sm tracking-wide transition-all hover:scale-105 active:scale-95 shadow-[0_0_15px_rgba(245,158,11,0.3)] flex items-center gap-2 focus:ring-2 focus:ring-amber-300"
           >
             <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24">
               <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z" />
@@ -252,7 +261,7 @@ export function BpProjectorLauncher() {
       </header>
 
       {/* SECTION 1: Google Home / Quick Source Switcher Row */}
-      <section className="mb-10">
+      <section data-bp-row data-bp-row-key="proj-sources" className="mb-10">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
             <span className="w-2.5 h-2.5 rounded-full bg-cyan-400 shadow-[0_0_8px_rgba(34,211,238,0.8)]" />
@@ -265,11 +274,15 @@ export function BpProjectorLauncher() {
           </span>
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
+        <div data-bp-grid className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
           {PROJECTOR_INPUT_SOURCES.map((source) => (
             <button
               key={source.id}
               type="button"
+              data-bp-focusable
+              data-bp-tile
+              data-bp-autofocus={source.id === "argus" ? "true" : undefined}
+              data-bp-restore-key={`proj-src-${source.id}`}
               onClick={() => handleSelectSource(source)}
               className="group relative flex flex-col items-start p-4 rounded-3xl bg-zinc-900/80 hover:bg-zinc-800/90 border border-white/10 hover:border-cyan-400/80 transition-all duration-200 text-left hover:scale-[1.03] active:scale-[0.98] shadow-lg hover:shadow-[0_0_20px_rgba(34,211,238,0.25)] focus:outline-none focus:ring-2 focus:ring-cyan-400"
             >
@@ -329,7 +342,7 @@ export function BpProjectorLauncher() {
 
       {/* SECTION 2: Google TV Continue Watching Rail */}
       {cwReady && cwItems.length > 0 && (
-        <section className="mb-10">
+        <section data-bp-row data-bp-row-key="proj-cw" className="mb-10">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
               <span className="w-2.5 h-2.5 rounded-full bg-amber-400 shadow-[0_0_8px_rgba(251,191,36,0.8)]" />
@@ -342,7 +355,7 @@ export function BpProjectorLauncher() {
             </span>
           </div>
 
-          <div className="flex gap-4 overflow-x-auto pb-4 pt-1 snap-x scrollbar-none">
+          <div data-bp-scroll-x className="flex gap-4 overflow-x-auto pb-4 pt-1 snap-x scrollbar-none">
             {cwItems.map((item) => {
               const progressPct =
                 item.state?.duration && item.state?.duration > 0
@@ -353,6 +366,9 @@ export function BpProjectorLauncher() {
                 <button
                   key={item._id}
                   type="button"
+                  data-bp-focusable
+                  data-bp-tile
+                  data-bp-restore-key={`proj-cw-${item._id}`}
                   onClick={() => handlePlayCw(item)}
                   className="group relative flex-none w-56 md:w-64 rounded-3xl bg-zinc-900 border border-white/10 hover:border-amber-400 overflow-hidden text-left transition-all duration-200 hover:scale-[1.04] active:scale-[0.98] shadow-lg hover:shadow-[0_0_25px_rgba(251,191,36,0.25)] focus:outline-none focus:ring-2 focus:ring-amber-400"
                 >
@@ -406,7 +422,7 @@ export function BpProjectorLauncher() {
       )}
 
       {/* SECTION 3: Google TV Installed TV Apps Drawer */}
-      <section className="mb-10">
+      <section data-bp-row data-bp-row-key="proj-apps" className="mb-10">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
             <span className="w-2.5 h-2.5 rounded-full bg-indigo-400 shadow-[0_0_8px_rgba(99,102,241,0.8)]" />
@@ -416,18 +432,24 @@ export function BpProjectorLauncher() {
           </div>
           <button
             type="button"
+            data-bp-focusable
+            data-bp-chip
+            data-bp-restore-key="proj-app-add"
             onClick={() => setShowAddApp(true)}
-            className="text-xs font-semibold text-indigo-300 hover:text-indigo-200 transition-colors"
+            className="text-xs font-semibold text-indigo-300 hover:text-indigo-200 transition-colors focus:ring-2 focus:ring-indigo-400 px-3 py-1 rounded-xl bg-indigo-500/10 border border-indigo-500/20"
           >
             + Add Custom App
           </button>
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-4">
+        <div data-bp-grid className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-4">
           {apps.map((app) => (
             <button
               key={app.id}
               type="button"
+              data-bp-focusable
+              data-bp-tile
+              data-bp-restore-key={`proj-app-${app.id}`}
               onClick={() => handleLaunchApp(app)}
               className="group flex flex-col items-center justify-center p-5 rounded-3xl bg-zinc-900/80 hover:bg-zinc-800 border border-white/10 hover:border-indigo-400 text-center transition-all duration-200 hover:scale-[1.05] active:scale-[0.98] shadow-lg hover:shadow-[0_0_20px_rgba(99,102,241,0.25)] focus:outline-none focus:ring-2 focus:ring-indigo-400"
             >
@@ -451,7 +473,7 @@ export function BpProjectorLauncher() {
       </section>
 
       {/* SECTION 4: Google Home Style Smart Ambiance Modes */}
-      <section>
+      <section data-bp-row data-bp-row-key="proj-scenes">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
             <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.8)]" />
@@ -464,13 +486,16 @@ export function BpProjectorLauncher() {
           </span>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div data-bp-grid className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {AMBIANCE_SCENES.map((scene) => {
             const active = activeAmbiance === scene.id;
             return (
               <button
                 key={scene.id}
                 type="button"
+                data-bp-focusable
+                data-bp-tile
+                data-bp-restore-key={`proj-scene-${scene.id}`}
                 onClick={() => handleSelectAmbiance(scene)}
                 className={`flex flex-col items-start p-4 rounded-3xl border transition-all duration-200 text-left hover:scale-[1.02] active:scale-[0.98] ${
                   active

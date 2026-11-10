@@ -27,18 +27,47 @@ applyOsDataset();
 
 async function mount() {
   performance.mark("argus:mount-start");
-  await Promise.all([loadSecrets(), hydrateCustomThemes().catch(() => {})]);
-  performance.mark("argus:secrets-done");
-  // Only the selected language, and only if it is not the one compiled in.
-  // The other catalogs never enter this entry's graph.
-  await ensureUiLocale(getUiLanguage());
-  performance.mark("argus:locale-done");
-  createRoot(document.getElementById("root")!).render(
-    <StrictMode>
-      <BpTvApp />
-    </StrictMode>,
-  );
-  performance.mark("argus:render-called");
+
+  // Safety watchdog: ensure the boot splash (#boot) is ALWAYS dismissed within 3500ms
+  // regardless of network latency, slow projector hardware, or asset loading.
+  const dismissSplash = () => {
+    const el = document.getElementById("boot");
+    if (!el || el.dataset.leaving) return;
+    el.dataset.leaving = "true";
+    window.setTimeout(() => {
+      try {
+        el.remove();
+      } catch {}
+    }, 620);
+  };
+  window.setTimeout(dismissSplash, 3500);
+
+  try {
+    await Promise.all([
+      loadSecrets().catch(() => {}),
+      hydrateCustomThemes().catch(() => {}),
+    ]);
+    performance.mark("argus:secrets-done");
+
+    // Only the selected language, and only if it is not the one compiled in.
+    // The other catalogs never enter this entry's graph.
+    await ensureUiLocale(getUiLanguage()).catch(() => {});
+    performance.mark("argus:locale-done");
+
+    const rootEl = document.getElementById("root");
+    if (rootEl) {
+      createRoot(rootEl).render(
+        <StrictMode>
+          <BpTvApp />
+        </StrictMode>,
+      );
+      performance.mark("argus:render-called");
+    }
+  } catch (err) {
+    console.error("[main-tv] mount error:", err);
+    dismissSplash();
+  }
+
   // The subtitle cache configures storage hooks that nothing reads until a
   // stream plays, and importing it up here put the whole subtitle stack in
   // front of the television's first paint. Loaded after the root is handed to
@@ -48,4 +77,15 @@ async function mount() {
     .catch(() => {});
 }
 
-void mount();
+void mount().catch((err) => {
+  console.error("[main-tv] fatal mount error:", err);
+  const el = document.getElementById("boot");
+  if (el) {
+    el.dataset.leaving = "true";
+    window.setTimeout(() => {
+      try {
+        el.remove();
+      } catch {}
+    }, 620);
+  }
+});

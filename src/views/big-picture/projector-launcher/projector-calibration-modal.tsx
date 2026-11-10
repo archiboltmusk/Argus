@@ -50,6 +50,7 @@ export function ProjectorCalibrationModal({
       onClick={onClose}
     >
       <div
+        data-bp-dialog
         className="w-full max-w-4xl bg-zinc-900/95 border border-white/15 rounded-3xl p-8 shadow-2xl flex flex-col gap-6 max-h-[90vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
@@ -63,15 +64,18 @@ export function ProjectorCalibrationModal({
           </div>
           <button
             type="button"
+            data-bp-focusable
+            data-bp-chip
+            data-bp-restore-key="proj-calib-done"
             onClick={onClose}
-            className="px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-sm font-semibold text-zinc-300 transition-colors"
+            className="px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-sm font-semibold text-zinc-300 transition-colors focus:ring-2 focus:ring-white"
           >
             Done
           </button>
         </div>
 
         {/* Section 1: Wall Color Tint Compensation */}
-        <div className="flex flex-col gap-3">
+        <div data-bp-row data-bp-row-key="proj-wall-tint" className="flex flex-col gap-3">
           <div className="flex items-center justify-between">
             <span className="text-sm font-semibold text-zinc-300 uppercase tracking-wider">
               Wall Color Tint Compensation
@@ -81,13 +85,16 @@ export function ProjectorCalibrationModal({
             </span>
           </div>
 
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+          <div data-bp-grid className="grid grid-cols-2 md:grid-cols-5 gap-3">
             {WALL_COLOR_PRESETS.map((preset) => {
               const selected = activeWallColor === preset.id;
               return (
                 <button
                   key={preset.id}
                   type="button"
+                  data-bp-focusable
+                  data-bp-tile
+                  data-bp-restore-key={`proj-wall-${preset.id}`}
                   onClick={() => handleSelectWallColor(preset.id)}
                   className={`flex flex-col items-start p-3.5 rounded-2xl border transition-all text-left relative overflow-hidden ${
                     selected
@@ -112,7 +119,7 @@ export function ProjectorCalibrationModal({
         </div>
 
         {/* Section 2: Picture & Lamp Mode Profiles */}
-        <div className="flex flex-col gap-3">
+        <div data-bp-row data-bp-row-key="proj-lamp-profiles" className="flex flex-col gap-3">
           <div className="flex items-center justify-between">
             <span className="text-sm font-semibold text-zinc-300 uppercase tracking-wider">
               Projector Picture &amp; Lamp Profile
@@ -122,13 +129,16 @@ export function ProjectorCalibrationModal({
             </span>
           </div>
 
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <div data-bp-grid className="grid grid-cols-2 md:grid-cols-4 gap-3">
             {PICTURE_PROFILES.map((prof) => {
               const selected = activeProfile === prof.id;
               return (
                 <button
                   key={prof.id}
                   type="button"
+                  data-bp-focusable
+                  data-bp-tile
+                  data-bp-restore-key={`proj-lamp-${prof.id}`}
                   onClick={() => handleSelectProfile(prof.id)}
                   className={`flex flex-col items-start p-4 rounded-2xl border transition-all text-left ${
                     selected
@@ -157,7 +167,7 @@ export function ProjectorCalibrationModal({
         </div>
 
         {/* Section 3: Keystone Safe Area & Focus Test Pattern */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2 border-t border-white/10">
+        <div data-bp-row data-bp-row-key="proj-keystone-test" className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2 border-t border-white/10">
           {/* Overscan Slider */}
           <div className="flex flex-col gap-2 p-4 rounded-2xl bg-zinc-800/50 border border-white/10">
             <div className="flex items-center justify-between">
@@ -171,15 +181,25 @@ export function ProjectorCalibrationModal({
             <p className="text-xs text-zinc-400">
               Pulls UI inward to avoid physical wall corner cuts and trapezoid distortion.
             </p>
-            <input
-              type="range"
-              min="0"
-              max="12"
-              step="1"
-              value={settings.projectorKeystoneOverscan ?? 5}
-              onChange={(e) => handleOverscanChange(Number(e.target.value))}
-              className="w-full accent-cyan-400 cursor-pointer"
-            />
+            <div className="flex items-center gap-2">
+              {[0, 3, 5, 8, 10].map((inset) => (
+                <button
+                  key={inset}
+                  type="button"
+                  data-bp-focusable
+                  data-bp-chip
+                  data-bp-restore-key={`proj-overscan-${inset}`}
+                  onClick={() => handleOverscanChange(inset)}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-mono font-bold transition-all ${
+                    (settings.projectorKeystoneOverscan ?? 5) === inset
+                      ? "bg-cyan-500 text-black shadow-md"
+                      : "bg-zinc-700/80 text-zinc-300 hover:bg-zinc-600"
+                  }`}
+                >
+                  {inset}%
+                </button>
+              ))}
+            </div>
           </div>
 
           {/* Optical Focus Pattern Launcher */}
@@ -194,11 +214,14 @@ export function ProjectorCalibrationModal({
             </div>
             <button
               type="button"
+              data-bp-focusable
+              data-bp-chip
+              data-bp-restore-key="proj-open-test-pattern"
               onClick={() => {
                 SFX.open();
                 onOpenTestPattern();
               }}
-              className="mt-3 px-4 py-2.5 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-black font-bold text-sm tracking-wide transition-all shadow-[0_0_15px_rgba(34,211,238,0.4)] flex items-center justify-center gap-2"
+              className="mt-3 px-4 py-2.5 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-black font-bold text-sm tracking-wide transition-all shadow-[0_0_15px_rgba(34,211,238,0.4)] flex items-center justify-center gap-2 focus:ring-2 focus:ring-cyan-300"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <circle cx="12" cy="12" r="9" strokeWidth="2" />
@@ -210,7 +233,7 @@ export function ProjectorCalibrationModal({
         </div>
 
         {/* Section 4: Projector Sleep Timer */}
-        <div className="flex items-center justify-between p-4 rounded-2xl bg-zinc-800/40 border border-white/10">
+        <div data-bp-row data-bp-row-key="proj-sleep-timer" className="flex items-center justify-between p-4 rounded-2xl bg-zinc-800/40 border border-white/10">
           <div className="flex flex-col">
             <span className="text-sm font-semibold text-zinc-200">
               Projector Bulb Sleep Timer
@@ -220,13 +243,16 @@ export function ProjectorCalibrationModal({
             </span>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div data-bp-scroll-x className="flex items-center gap-2">
             {[null, 15, 30, 60, 120].map((mins) => {
               const active = sleepTimerMinutes === mins;
               return (
                 <button
                   key={String(mins)}
                   type="button"
+                  data-bp-focusable
+                  data-bp-chip
+                  data-bp-restore-key={`proj-sleep-${mins ?? "off"}`}
                   onClick={() => {
                     SFX.click();
                     setSleepTimerMinutes(mins);

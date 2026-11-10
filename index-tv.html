@@ -223,6 +223,21 @@
         }
       } catch (e) {}
     </script>
+    <script>
+      // Fallback boot splash watchdog: if module scripts stall, fail syntax parsing on older
+      // Android WebViews, or offline network times out, ensure #boot is dismissed after 4000ms.
+      (function () {
+        window.setTimeout(function () {
+          var b = document.getElementById('boot');
+          if (b && !b.dataset.leaving) {
+            b.dataset.leaving = 'true';
+            window.setTimeout(function () {
+              if (b.parentNode) b.parentNode.removeChild(b);
+            }, 650);
+          }
+        }, 4000);
+      })();
+    </script>
     <script type="module" src="/src/boot-artwork.ts"></script>
     <script type="module" src="/src/main-tv.tsx"></script>
   </body>

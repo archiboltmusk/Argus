@@ -123,7 +123,7 @@ export function ProjectorTestPattern({ onClose }: ProjectorTestPatternProps) {
 
       {/* Guidance pill */}
       <div className="absolute top-[8vh] px-5 py-2 rounded-full bg-zinc-900/90 border border-white/20 backdrop-blur-md shadow-2xl flex items-center gap-3">
-        <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse" />
+        <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse motion-reduce:animate-none" />
         <span className="text-sm font-medium text-zinc-200">
           Adjust lens focus until concentric rings &amp; center text are razor-sharp
         </span>

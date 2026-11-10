@@ -11,12 +11,20 @@ export function isWeb(): boolean {
 export type OsClass = "linux" | "macos" | "windows" | "android" | "web";
 
 function detectOs(): OsClass {
-  if (!isTauri()) return "web";
-  const platform = nativePlatform();
-  if (platform === "linux") return "linux";
-  if (platform === "macos") return "macos";
-  if (platform === "windows") return "windows";
-  if (platform === "android") return "android";
+  try {
+    if (!isTauri()) {
+      if (typeof navigator !== "undefined" && /Android/i.test(navigator.userAgent)) return "android";
+      return "web";
+    }
+    const platform = nativePlatform();
+    if (platform === "linux") return "linux";
+    if (platform === "macos") return "macos";
+    if (platform === "windows") return "windows";
+    if (platform === "android") return "android";
+  } catch {
+    if (typeof navigator !== "undefined" && /Android/i.test(navigator.userAgent)) return "android";
+    return "web";
+  }
   return "web";
 }
 
