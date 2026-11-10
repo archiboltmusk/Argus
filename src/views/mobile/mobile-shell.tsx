@@ -8,6 +8,7 @@ import { MobileBrowse } from "./mobile-browse";
 import { MobileProfile } from "./mobile-profile";
 import { MobileSearch } from "./mobile-search";
 import { MobileLibrary } from "./mobile-library";
+import { MobileReels } from "./mobile-reels";
 import { DpadRemote } from "./dpad-remote";
 import { BottomTabBar, type MobileTab } from "./bottom-tab-bar";
 import { MobileRemoteProvider, useMobileRemote } from "./mobile-remote";
@@ -92,6 +93,9 @@ function ShellBody() {
       <div className="relative flex min-h-0 flex-1 flex-col">
         <TabLayer active={tab === "home"}>
           {seen.has("home") && <MobileBrowse />}
+        </TabLayer>
+        <TabLayer active={tab === "foryou"}>
+          {seen.has("foryou") && <MobileReels />}
         </TabLayer>
         <TabLayer active={tab === "search"}>
           {seen.has("search") && (

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { Heart } from "lucide-react";
 import type { Meta } from "@/lib/cinemeta";
 import { useSettings } from "@/lib/settings";
 import { useT } from "@/lib/i18n";
@@ -7,6 +8,9 @@ import { getStore } from "@/lib/discover/store";
 import { fetchCriticsPickList, selectDailyRows } from "@/lib/feed";
 import { buildFeatured, buildFeaturedFast } from "@/lib/feed/featured";
 import { ANCHOR_TRENDING } from "@/lib/feed/daily-rows-anchors";
+import { generateDailyMixes } from "@/lib/algo/content-dna";
+import { DailyMixes } from "@/views/discover/daily-mixes";
+import { TasteBlendModal } from "@/views/discover/taste-blend-modal";
 import { MobileRail, MobileRankRail } from "./mobile-rail";
 import { MobileDetail } from "./mobile-detail";
 import { MobileFeatured } from "./mobile-featured";
@@ -51,6 +55,7 @@ export function MobileDiscover() {
   const [failed, setFailed] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
   const [detailMeta, setDetailMeta] = useState<Meta | null>(null);
+  const [showBlendModal, setShowBlendModal] = useState(false);
   const key = settings.tmdbKey;
 
   useEffect(() => {
@@ -146,9 +151,35 @@ export function MobileDiscover() {
     );
   }
 
+  const allMetas = useMemo(() => {
+    return shownRows.flatMap((r) => r.metas);
+  }, [shownRows]);
+
+  const dailyMixes = useMemo(() => {
+    return generateDailyMixes([], allMetas, 4);
+  }, [allMetas]);
+
   return (
     <div className="flex flex-col gap-7 pt-3 motion-safe:[animation:argus-step-in_420ms_var(--ease-out)_both]">
+      <div className="flex items-center justify-between px-4">
+        <button
+          type="button"
+          onClick={() => setShowBlendModal(true)}
+          className="flex items-center gap-2 rounded-full bg-pink-500/20 px-4 py-2 text-xs font-bold text-pink-400 border border-pink-500/30 hover:bg-pink-500/30 transition active:scale-95"
+        >
+          <Heart size={14} className="fill-current" />
+          <span>Movie Night Taste Blend</span>
+        </button>
+      </div>
+
       <MobileFeatured items={shownFeatured} onOpen={setDetailMeta} />
+
+      {dailyMixes.length > 0 && (
+        <div className="px-4">
+          <DailyMixes clusters={dailyMixes} onSelectMeta={setDetailMeta} />
+        </div>
+      )}
+
       {shownRows.map((r, i) =>
         i === 0 && r.id.split(":")[0] === ANCHOR_TRENDING && r.metas.length >= 6 ? (
           <MobileRankRail
@@ -163,6 +194,13 @@ export function MobileDiscover() {
       )}
       <div className="h-4" />
       {detailMeta && <MobileDetail meta={detailMeta} onClose={() => setDetailMeta(null)} />}
+      {showBlendModal && (
+        <TasteBlendModal
+          candidatePool={allMetas}
+          onClose={() => setShowBlendModal(false)}
+          onSelectMeta={setDetailMeta}
+        />
+      )}
     </div>
   );
 }

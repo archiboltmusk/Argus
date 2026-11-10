@@ -1,5 +1,15 @@
 // Newly introduced UI copy remains usable until each locale provides an override.
 const uiFallback: Record<string, string> = {
+  "Infinite 'For You' Video Reels": "Infinite 'For You' Video Reels",
+  "Full-bleed cinematic previews, auto-advancing hooks, and one-touch streaming.": "Full-bleed cinematic previews, auto-advancing hooks, and one-touch streaming.",
+  "Launch Feed": "Launch Feed",
+  "Movie Night Taste Blend": "Movie Night Taste Blend",
+  "Merge two profiles to calculate joint cinematic synergy and zero-conflict picks.": "Merge two profiles to calculate joint cinematic synergy and zero-conflict picks.",
+  "Blend Profiles": "Blend Profiles",
+  "For You Video Reels": "For You Video Reels",
+  "TikTok and Instagram-grade full-screen trailer feed.": "TikTok and Instagram-grade full-screen trailer feed.",
+  "Taste Blend": "Taste Blend",
+  "Spotify-grade co-watching compatibility and zero-conflict movie night picks.": "Spotify-grade co-watching compatibility and zero-conflict movie night picks.",
   "Sign in failed": "Sign in failed",
   "Connect Cloud Account & Sync": "Connect Cloud Account & Sync",
   "Log in once to access your Continue Watching, Library, and Addons on any device.": "Log in once to access your Continue Watching, Library, and Addons on any device.",

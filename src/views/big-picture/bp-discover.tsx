@@ -1,8 +1,11 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { AwardSourceId } from "@/lib/anime-awards";
 import type { Meta } from "@/lib/cinemeta";
 import type { AwardType } from "@/lib/providers/wikidata";
 import { useSettings } from "@/lib/settings";
+import { ReelsFeed } from "@/views/feed/reels-feed";
+import { TasteBlendModal } from "@/views/discover/taste-blend-modal";
+import { BpReelsBand, BpTasteBlendBand } from "./bp-algo-bands";
 import { BpAnimeAward } from "./bp-anime-awards";
 import { BpAward } from "./bp-award";
 import { BpAwardsBand } from "./bp-award-tiles";
@@ -39,6 +42,8 @@ const OVERLAY_SEED_MS = 8000;
 
 type BpDiscoverOverlay =
   | { kind: "queue" }
+  | { kind: "reels" }
+  | { kind: "blend" }
   | { kind: "award"; awardType: AwardType }
   | { kind: "anime-award"; source: AwardSourceId }
   | { kind: "genre"; genre: string };
@@ -157,10 +162,18 @@ export function BpDiscover({ onSelect }: { onSelect: (m: Meta) => void }) {
     setOverlay(next);
   };
 
+  const allRailsMetas = useMemo(() => rails.flatMap((r) => r.metas), [rails]);
+
   if (overlay) {
     return (
       <div ref={overlayRef} data-bp-dialog className="absolute inset-0 bg-[var(--bp-void)]">
         {overlay.kind === "queue" && <BpQueue onSelect={onSelect} />}
+        {overlay.kind === "reels" && (
+          <ReelsFeed items={allRailsMetas} onSelectMeta={onSelect} onClose={() => setOverlay(null)} />
+        )}
+        {overlay.kind === "blend" && (
+          <TasteBlendModal candidatePool={allRailsMetas} onSelectMeta={onSelect} onClose={() => setOverlay(null)} />
+        )}
         {overlay.kind === "award" && (
           <BpAward awardType={overlay.awardType} onSelect={onSelect} />
         )}
@@ -175,6 +188,32 @@ export function BpDiscover({ onSelect }: { onSelect: (m: Meta) => void }) {
   // Indices come from position in this list, never from arithmetic, and every
   // band's headline copy sits beside the node it describes.
   const entries: BpDiscoverEntry[] = [];
+
+  entries.push({
+    key: "reels",
+    eyebrow: t("Discover"),
+    title: t("For You Video Reels"),
+    blurb: t("TikTok and Instagram-grade full-screen trailer feed."),
+    node: (
+      <BpReelsBand
+        onOpen={() => open({ kind: "reels" }, "bp-lead:reels")}
+        onTint={(colour) => setTint({ band: "reels", colour })}
+      />
+    ),
+  });
+
+  entries.push({
+    key: "blend",
+    eyebrow: t("Discover"),
+    title: t("Taste Blend"),
+    blurb: t("Spotify-grade co-watching compatibility and zero-conflict movie night picks."),
+    node: (
+      <BpTasteBlendBand
+        onOpen={() => open({ kind: "blend" }, "bp-lead:blend")}
+        onTint={(colour) => setTint({ band: "blend", colour })}
+      />
+    ),
+  });
 
   entries.push({
     key: "queue",

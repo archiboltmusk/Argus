@@ -1,4 +1,4 @@
-import { Bookmark, Home, MonitorSmartphone, User } from "lucide-react";
+import { Bookmark, Home, MonitorSmartphone, Sparkles, User } from "lucide-react";
 import { Search } from "@/components/icons/search-icon";
 import type { ComponentType } from "react";
 import { useProfiles } from "@/lib/profiles";
@@ -6,7 +6,7 @@ import { useT } from "@/lib/i18n";
 import { useMobileRemote } from "./mobile-remote";
 import { useSheetLock } from "./mobile-sheet-lock";
 
-export type MobileTab = "remote" | "search" | "home" | "mystuff" | "profile";
+export type MobileTab = "remote" | "search" | "home" | "foryou" | "mystuff" | "profile";
 
 const TABS: Array<{
   id: MobileTab;
@@ -16,6 +16,7 @@ const TABS: Array<{
   { id: "remote", label: "Remote", icon: MonitorSmartphone },
   { id: "search", label: "Search", icon: Search },
   { id: "home", label: "Home", icon: Home },
+  { id: "foryou", label: "For You", icon: Sparkles },
   { id: "mystuff", label: "My Stuff", icon: Bookmark },
   { id: "profile", label: "Profile", icon: User },
 ];

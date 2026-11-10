@@ -8,7 +8,7 @@ const DUP_WINDOW_MS = 90_000;
 
 let mem: DiscoverStore = load();
 const subs = new Set<() => void>();
-let persistTimer: number | null = null;
+let persistTimer: ReturnType<typeof setTimeout> | number | null = null;
 let affinityDirty = false;
 
 function flushAffinity() {
@@ -33,7 +33,7 @@ function load(): DiscoverStore {
 
 function persistSoon() {
   if (persistTimer) clearTimeout(persistTimer);
-  persistTimer = window.setTimeout(() => {
+  persistTimer = (typeof window !== "undefined" ? window.setTimeout : setTimeout)(() => {
     flushAffinity();
     try {
       localStorage.setItem(KEY, JSON.stringify(mem));
