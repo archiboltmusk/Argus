@@ -79,14 +79,15 @@ export default defineConfig(({ mode }) => {
     // which the QR hand-off in onboarding depends on. Listing tv alone left the
     // phone staring at "web assets are not available in this build".
     // Vite 7 defaults to baseline-widely-available, a chrome107 floor. Android
-    // TV sticks and Fire TV ship a System WebView well below that, and the
+    // TV sticks, projectors and Fire TV ship a System WebView well below that, and the
     // failure is a bare SyntaxError before React mounts, with no error surface
     // on a device you cannot open devtools on. Pin a floor the hardware meets.
-    // This lowers syntax only; esbuild adds no API polyfills.
+    // Lowering to chrome74 ensures all syntax (optional chaining, nullish coalescing,
+    // logical assignment ??=) is transpiled for older projector firmwares.
     ...(android
       ? {
           build: {
-            target: "chrome87",
+            target: "chrome74",
             rollupOptions: { input: { tv: "index-tv.html", main: "index.html" } as Record<string, string> },
           },
         }

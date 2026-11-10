@@ -2,8 +2,9 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import type { Meta } from "@/lib/cinemeta";
 import type { HomeRow } from "@/views/home/home-types";
 import { pushBigPicture } from "@/lib/big-picture";
-import { isAndroidTv } from "@/lib/platform";
+import { isAndroidTv, isSmartProjector } from "@/lib/platform";
 import { useSettings, type StreamingService } from "@/lib/settings";
+import { BpProjectorShelf } from "./bp-projector-shelf";
 import { useMobileCw, useMobileCwReady } from "@/views/mobile/mobile-cw-row";
 import { BpPageSkeleton } from "./bp-page-skeleton";
 import { BpSpotlight } from "./bp-spotlight";
@@ -163,6 +164,15 @@ export function BpHome({ onSelect }: { onSelect: (m: Meta) => void }) {
           }}
         />
       ),
+    });
+  }
+
+  // On smart projectors or Android TV, render the Projector Hub & Sources shelf right on Home
+  if (isSmartProjector() || isAndroidTv() || settings.projectorLauncherDefault || settings.projectorModeEnabled) {
+    entries.push({
+      key: "projector-shelf",
+      band: "catalog",
+      node: <BpProjectorShelf />,
     });
   }
 

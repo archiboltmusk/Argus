@@ -10,6 +10,7 @@ import {
 import { useState, type ReactNode } from "react";
 import { useAuth } from "@/lib/auth";
 import { useProfiles } from "@/lib/profiles";
+import { useSettings } from "@/lib/settings";
 import { useT } from "@/lib/i18n";
 import { MobileWhosWatching } from "./mobile-whos-watching";
 import { useMobileRemote } from "./mobile-remote";
@@ -21,12 +22,15 @@ export function MobileProfile({ onOpenRemote }: { onOpenRemote: () => void }) {
   const t = useT();
   const { user, signOut } = useAuth();
   const { activeProfile } = useProfiles();
+  const { settings, update } = useSettings();
   const { snapshot } = useMobileRemote();
   const remote = snapshot.profile;
   const name = remote?.name || activeProfile?.name || user?.email?.split("@")[0] || t("Guest");
   const avatar = remote?.avatar ?? activeProfile?.avatar ?? null;
   const color = remote?.color ?? activeProfile?.color ?? "oklch(0.78 0.13 60)";
   const [switching, setSwitching] = useState(false);
+  const [rdKeyInput, setRdKeyInput] = useState(settings.rdKey || "");
+  const [rdSaved, setRdSaved] = useState(false);
 
   return (
     <div className="flex h-full flex-col gap-6 px-5 pt-4">
@@ -63,6 +67,76 @@ export function MobileProfile({ onOpenRemote }: { onOpenRemote: () => void }) {
         <div className="grid grid-cols-2 gap-3">
           <StylePreview kind="dpad" label={t("D-pad")} />
           <StylePreview kind="minimal" label={t("Touchpad")} />
+        </div>
+      </section>
+
+      <section className="flex flex-col gap-3">
+        <h2 className="px-1 text-[12px] font-bold uppercase tracking-[0.16em] text-ink-subtle">
+          {t("Media Player on iOS")}
+        </h2>
+        <div className="grid grid-cols-3 gap-2">
+          {[
+            { id: "ask", label: "Ask Every Time" },
+            { id: "outplayer", label: "Outplayer" },
+            { id: "infuse", label: "Infuse" },
+            { id: "vlc", label: "VLC" },
+            { id: "vidhub", label: "VidHub" },
+            { id: "in-app", label: "In-App" },
+          ].map((opt) => {
+            const active = (settings.iosExternalPlayer || "ask") === opt.id;
+            return (
+              <button
+                key={opt.id}
+                type="button"
+                onClick={() => update({ iosExternalPlayer: opt.id as any })}
+                className={`py-2.5 px-3 rounded-xl border text-xs font-semibold text-center transition-all ${
+                  active
+                    ? "bg-cyan-500/20 border-cyan-400 text-cyan-200 shadow-[0_0_12px_rgba(6,182,212,0.3)]"
+                    : "bg-surface/50 border-edge-soft/70 text-ink-muted hover:text-ink"
+                }`}
+              >
+                {opt.label}
+              </button>
+            );
+          })}
+        </div>
+      </section>
+
+      <section className="flex flex-col gap-3">
+        <h2 className="px-1 text-[12px] font-bold uppercase tracking-[0.16em] text-ink-subtle flex items-center justify-between">
+          <span>{t("Debrid & Streaming Accounts")}</span>
+          <span className="text-[10px] text-cyan-400 font-normal">Real-Debrid / TorBox</span>
+        </h2>
+        <div className="rounded-2xl border border-edge-soft/70 bg-elevated/40 p-3.5 flex flex-col gap-2.5">
+          <label className="text-xs font-medium text-ink-muted">
+            Real-Debrid API Key:
+          </label>
+          <div className="flex items-center gap-2">
+            <input
+              type="password"
+              placeholder="Paste Real-Debrid API key here"
+              value={rdKeyInput}
+              onChange={(e) => {
+                setRdKeyInput(e.target.value);
+                setRdSaved(false);
+              }}
+              className="flex-1 px-3 py-2 rounded-xl bg-surface border border-edge-soft/70 text-ink text-xs focus:outline-none focus:ring-1 focus:ring-cyan-400"
+            />
+            <button
+              type="button"
+              onClick={() => {
+                update({ rdKey: rdKeyInput.trim() });
+                setRdSaved(true);
+                setTimeout(() => setRdSaved(false), 2500);
+              }}
+              className="px-3 py-2 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-black text-xs font-bold transition-all shrink-0 active:scale-95"
+            >
+              {rdSaved ? "Saved!" : "Save"}
+            </button>
+          </div>
+          <p className="text-[11px] text-ink-subtle">
+            Enables instant 4K &amp; 1080p cached streams for all movies and shows on your iPhone.
+          </p>
         </div>
       </section>
 

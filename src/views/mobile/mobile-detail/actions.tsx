@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
-import { Bookmark, Check, Eye, Film, Monitor, MoreHorizontal } from "lucide-react";
+import { Bookmark, Check, Eye, Film, Monitor, MoreHorizontal, Smartphone } from "lucide-react";
 import { Play } from "@/components/icons/play-filled";
 import type { Meta } from "@/lib/cinemeta";
 import type { TmdbDetail } from "@/lib/providers/tmdb";
@@ -20,12 +20,14 @@ export function DetailActions({
   title,
   trailerId,
   onPlay,
+  onWatchHere,
 }: {
   meta: Meta;
   detail: TmdbDetail | null;
   title: string;
   trailerId: string | null;
   onPlay: () => void;
+  onWatchHere?: () => void;
 }) {
   const t = useT();
   const { settings } = useSettings();
@@ -73,6 +75,7 @@ export function DetailActions({
           detail={detail}
           title={title}
           trailerId={trailer}
+          onWatchHere={onWatchHere}
           onPlayTrailer={() => {
             setSheetOpen(false);
             setTrailerOpen(true);
@@ -102,6 +105,7 @@ function ActionsSheet({
   title,
   trailerId,
   onPlayTrailer,
+  onWatchHere,
   onClose,
 }: {
   meta: Meta;
@@ -109,6 +113,7 @@ function ActionsSheet({
   title: string;
   trailerId: string | null;
   onPlayTrailer: () => void;
+  onWatchHere?: () => void;
   onClose: () => void;
 }) {
   const t = useT();
@@ -179,6 +184,17 @@ function ActionsSheet({
         </div>
 
         <div className="flex flex-col px-3 pb-1">
+          {onWatchHere && (
+            <SheetRow
+              icon={<Smartphone size={20} strokeWidth={2} />}
+              label={t("Watch on this device")}
+              sublabel={t("Stream using Outplayer, Infuse, VLC, or in-app")}
+              onClick={() => {
+                onClose();
+                onWatchHere();
+              }}
+            />
+          )}
           {trailerId && (
             <SheetRow
               icon={<Film size={20} strokeWidth={2} />}

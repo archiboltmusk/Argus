@@ -187,7 +187,7 @@ export function BigPictureShell() {
     return out;
   }, [rows]);
   const intro = useBpIntro(active, !loading && rows.length > 0);
-  const introUp = intro !== "done";
+  const introUp = route.kind !== "projector-launcher" && intro !== "done";
   useEffect(() => {
     bpIntroPoolSave(introPool.map((m) => m.poster).filter((p): p is string => !!p));
   }, [introPool]);
@@ -201,11 +201,16 @@ export function BigPictureShell() {
   // stay out of the way of. Desktop already set it before mounting, so this is
   // a no-op there.
   useEffect(() => {
+    if (route.kind === "projector-launcher") {
+      bpBootSplashDismiss(false);
+      bpWarmRoutes();
+      return;
+    }
     if (introUp) return;
     bpBootSplashDismiss(true);
     ensureBundledAwards();
     bpWarmRoutes();
-  }, [introUp]);
+  }, [introUp, route.kind]);
   // Setup waits for the splash. Two full-screen takeovers at z-60 at once would
   // leave the focus scope on whichever mounted last with nothing behind it.
   const onboarding = useBpOnboardingGate(chrome.mounted && !introUp);

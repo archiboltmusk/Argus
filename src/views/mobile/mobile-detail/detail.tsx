@@ -41,6 +41,9 @@ import {
 import { useAnimeAnilistDetails } from "@/views/detail/use-anime-anilist-details";
 import { useAnimeCharacters } from "@/views/detail/use-anime-characters";
 import { useMalRating } from "@/lib/mal-rating";
+import type { PlayEpisode, PlayerSrc } from "@/lib/view";
+import { MobileStreamPicker } from "../mobile-stream-picker/mobile-stream-picker";
+import { MobilePlayerModal } from "../mobile-player/mobile-player-modal";
 
 export function MobileDetail({ meta, onClose }: { meta: Meta; onClose: () => void }) {
   const [reduced] = useState(prefersReducedMotion);
@@ -104,7 +107,9 @@ function DetailBody({
 }) {
   const t = useT();
   const { settings } = useSettings();
-  const { playOnHost, openOnHost, snapshot } = useMobileRemote();
+  const { playOnHost, openOnHost, snapshot, connected } = useMobileRemote();
+  const [pickerTarget, setPickerTarget] = useState<{ episode?: PlayEpisode } | null>(null);
+  const [playerSrc, setPlayerSrc] = useState<PlayerSrc | null>(null);
   const key = settings.tmdbKey;
   const isAnime = isAnimeId(meta.id);
   const full = useCinemetaFull(meta);
@@ -192,9 +197,19 @@ function DetailBody({
   const shownRecItems = useHideAnimeMetas(recItems);
   const shownSimItems = useHideAnimeMetas(simItems);
 
+  const handleWatchHere = (ep?: PlayEpisode) => {
+    const target =
+      ep ?? (isSeries && first ? { season: first.season, episode: first.episode } : undefined);
+    setPickerTarget({ episode: target });
+  };
+
   const onPlay = () => {
-    if (isSeries && first) playOnHost(meta, { season: first.season, episode: first.episode });
-    else playOnHost(meta);
+    if (connected) {
+      if (isSeries && first) playOnHost(meta, { season: first.season, episode: first.episode });
+      else playOnHost(meta);
+    } else {
+      handleWatchHere();
+    }
   };
 
   return (
@@ -225,6 +240,7 @@ function DetailBody({
           title={title}
           trailerId={trailerId}
           onPlay={onPlay}
+          onWatchHere={handleWatchHere}
         />
 
         {overview ? (
@@ -244,7 +260,13 @@ function DetailBody({
             detail={detail}
             tmdbKey={key}
             seasons={seasons}
-            onPlay={(ep) => playOnHost(meta, { season: ep.season, episode: ep.episode })}
+            onPlay={(ep) => {
+              if (connected) {
+                playOnHost(meta, { season: ep.season, episode: ep.episode });
+              } else {
+                handleWatchHere({ season: ep.season, episode: ep.episode, name: ep.name });
+              }
+            }}
           />
         )}
 
@@ -294,6 +316,22 @@ function DetailBody({
 
         {awardGroups.length > 0 && <AwardsSection groups={awardGroups} awards={awards} />}
       </div>
+
+      {pickerTarget && (
+        <MobileStreamPicker
+          meta={meta}
+          episode={pickerTarget.episode}
+          onClose={() => setPickerTarget(null)}
+          onPlayInApp={(src) => setPlayerSrc(src)}
+        />
+      )}
+
+      {playerSrc && (
+        <MobilePlayerModal
+          src={playerSrc}
+          onClose={() => setPlayerSrc(null)}
+        />
+      )}
     </div>
   );
 }

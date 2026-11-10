@@ -149,26 +149,16 @@ export function BpProjectorLauncher() {
     pushBigPicture({ kind: "detail", metaId: item._id });
   };
 
-  const overscanPadding = `${settings.projectorKeystoneOverscan ?? 5}vh ${settings.projectorKeystoneOverscan ?? 5}vw`;
-
   return (
     <div
-      className="relative w-full min-h-screen text-white select-none overflow-x-hidden overflow-y-auto pb-24"
+      className="relative h-full w-full text-white select-none overflow-x-hidden overflow-y-auto scrollbar-none pt-[calc(var(--bp-page-top,84px)+16px)] px-[var(--bp-gutter,36px)] pb-36 bg-gradient-to-b from-zinc-950 via-zinc-900 to-black"
       style={{
-        padding: overscanPadding,
-        filter: activeWallPreset.filter,
+        paddingLeft: `calc(var(--bp-gutter,36px) + ${settings.projectorKeystoneOverscan ?? 5}vw)`,
+        paddingRight: `calc(var(--bp-gutter,36px) + ${settings.projectorKeystoneOverscan ?? 5}vw)`,
+        paddingBottom: `calc(9rem + ${settings.projectorKeystoneOverscan ?? 5}vh)`,
+        filter: activeWallPreset.filter !== "none" ? activeWallPreset.filter : undefined,
       }}
     >
-      {/* Cinematic Ambient Backdrop */}
-      <div
-        className="fixed inset-0 pointer-events-none -z-10 bg-gradient-to-b from-zinc-950 via-zinc-900 to-black opacity-95"
-        aria-hidden="true"
-      />
-      <div
-        className="fixed inset-0 pointer-events-none -z-10 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-cyan-900/25 via-transparent to-transparent"
-        aria-hidden="true"
-      />
-
       {/* Source Switch Toast Notification */}
       {activeSourceToast && (
         <div className="fixed top-8 left-1/2 -translate-x-1/2 z-[9950] px-6 py-3 rounded-2xl bg-zinc-900/95 border border-cyan-400 text-cyan-200 text-sm font-semibold shadow-[0_0_25px_rgba(34,211,238,0.4)] backdrop-blur-md animate-in fade-in slide-in-from-top-4 duration-300 motion-reduce:animate-none">

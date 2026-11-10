@@ -266,6 +266,7 @@ export const DEFAULT: Settings = {
   discordMusicPresence: true,
   discordHideMusicWhenPaused: true,
   playerEngine: "auto",
+  iosExternalPlayer: "ask",
   playerExternalMpv: false,
   playerExternalMpvPath: "",
   playerExternalMpvArgs: "",

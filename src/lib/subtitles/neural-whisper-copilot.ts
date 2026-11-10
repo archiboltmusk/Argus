@@ -38,7 +38,19 @@ export function convertWhisperSegmentsToCues(
   const cues: SubCue[] = [];
 
   for (const seg of segments) {
-    const cleanedText = stripSubtitleAds(seg.text);
+    const raw = seg.text?.trim() ?? "";
+    if (
+      !raw ||
+      raw === "..." ||
+      raw === "." ||
+      raw === "-" ||
+      raw.startsWith("[_") ||
+      raw.startsWith("<|")
+    ) {
+      continue;
+    }
+
+    const cleanedText = stripSubtitleAds(raw);
     if (!cleanedText) continue;
 
     cues.push({

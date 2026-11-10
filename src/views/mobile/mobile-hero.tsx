@@ -32,7 +32,7 @@ export function MobileHero({
 }) {
   const t = useT();
   const { settings } = useSettings();
-  const { openOnHost, playOnHost } = useMobileRemote();
+  const { openOnHost, playOnHost, connected } = useMobileRemote();
   const shown = useMemo(() => slides.slice(0, 6), [slides]);
   const logos = useHeroLogos(slides, settings);
 
@@ -217,7 +217,10 @@ export function MobileHero({
             >
               <button
                 type="button"
-                onClick={() => playOnHost(current)}
+                onClick={() => {
+                  if (connected) playOnHost(current);
+                  else onOpenDetail?.(current);
+                }}
                 className="flex h-[52px] items-center gap-2.5 rounded-full bg-white px-8 text-[16px] font-semibold text-black shadow-[0_6px_20px_-6px_rgba(0,0,0,0.5)] transition-transform duration-150 active:scale-[0.97]"
               >
                 <Play size={19} strokeWidth={0} fill="currentColor" />

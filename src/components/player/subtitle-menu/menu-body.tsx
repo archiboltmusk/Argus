@@ -27,6 +27,7 @@ import { Count, EmptyState, ImportBanner, Tab, ToggleChip } from "./menu-body-pa
 import type { SubtitleMenuProps } from "./types";
 import { subtitleTrackLanguageLabel } from "@/lib/subtitles/track-label";
 import { groupByLang, isVeryNewRelease, variantTitle } from "./utils";
+import { useLiveTranscriptionSession } from "@/lib/subtitles/live-transcription-service";
 
 type SourceFilter = "all" | "embedded" | "external";
 const ALL_LANGS = "__all__";
@@ -132,8 +133,8 @@ export function MenuBody(props: SubtitleMenuProps & { onClose: () => void }) {
   };
 
   const subContext = useSubtitleContext();
-  const [generatingWhisper, setGeneratingWhisper] = useState(false);
-  const [whisperStatus, setWhisperStatus] = useState<string | null>(null);
+  const liveSession = useLiveTranscriptionSession();
+  const [translateToEn, setTranslateToEn] = useState(false);
   const [whisperAvailable, setWhisperAvailable] = useState<boolean>(false);
 
   useEffect(() => {
@@ -149,112 +150,25 @@ export function MenuBody(props: SubtitleMenuProps & { onClose: () => void }) {
       return;
     }
     setLocalError(null);
-    setGeneratingWhisper(true);
-    setWhisperStatus(tr("Transcribing audio with local Whisper…"));
 
-    let unlistenProgress: (() => void) | null = null;
-    let unlistenLive: (() => void) | null = null;
-    let filePath: string | null = null;
-    let mountedTrack = false;
-    const name = "Whisper AI (Live Transcription)";
-
-    try {
-      if (isTauri) {
-        const pathMod = await import("@tauri-apps/api/path");
-        const dir = await pathMod.join(await pathMod.tempDir(), "argus-subs");
-        filePath = await pathMod.join(dir, `whisper-live-${Date.now()}.srt`);
-
-        const { listen } = await import("@tauri-apps/api/event");
-        unlistenProgress = await listen<{
-          current: number;
-          total: number;
-          currentSec: number;
-          totalSec: number;
-        }>("asr://progress", (event) => {
-          const pct = Math.round((event.payload.current / event.payload.total) * 100);
-          const mins = Math.floor(event.payload.currentSec / 60);
-          const totalMins = Math.floor(event.payload.totalSec / 60);
-          setWhisperStatus(`Live Whisper transcription (${pct}% · ${mins}m / ${totalMins}m)…`);
-        });
-
-        unlistenLive = await listen<{
-          chunk: number;
-          total: number;
-          srt: string;
-          count: number;
-        }>("asr://live-cues", async (event) => {
-          if (!filePath) return;
-          try {
-            await invoke("save_text_file", { path: filePath, contents: event.payload.srt });
-            if (!mountedTrack) {
-              mountedTrack = true;
-              const ok = await props.onAddSubtitle(filePath, "en", name, {
-                format: "srt",
-                timingMeasurementStatus: "measured",
-              });
-              if (ok !== false) {
-                markImportedSub(name);
-                setActiveLang(ALL_LANGS);
-                setJustImported(name);
-              }
-            } else {
-              // Reload subtitles in mpv so newly appended live dialogue is immediately displayed
-              await invoke("mpv_command", { cmd: ["sub-reload"] }).catch(() => {});
-            }
-          } catch (err) {
-            console.warn("[whisper] live cue update error:", err);
-          }
-        });
-      }
-
-      const srt = await invoke<string>("asr_generate_subtitles", {
-        url: subContext.mediaUrl,
-        headers: subContext.headers ?? null,
-        durationSec: subContext.durationSec ?? null,
-        lang: null,
-      });
-
-      if (!srt || srt.trim().length === 0) {
-        setLocalError(tr("No speech detected or Whisper transcription returned empty."));
-        setGeneratingWhisper(false);
-        setWhisperStatus(null);
-        return;
-      }
-
-      if (!filePath) {
-        const pathMod = await import("@tauri-apps/api/path");
-        const dir = await pathMod.join(await pathMod.tempDir(), "argus-subs");
-        filePath = await pathMod.join(dir, `whisper-${Date.now()}.srt`);
-      }
-      await invoke("save_text_file", { path: filePath, contents: srt });
-
-      if (!mountedTrack) {
-        const ok = await props.onAddSubtitle(filePath, "en", name, {
+    await liveSession.start({
+      mediaUrl: subContext.mediaUrl,
+      headers: subContext.headers ?? null,
+      durationSec: subContext.durationSec ?? null,
+      lang: null,
+      translate: translateToEn,
+      onAddTrack: async (filePath, lang, name) => {
+        const ok = await props.onAddSubtitle(filePath, lang, name, {
           format: "srt",
           timingMeasurementStatus: "measured",
         });
-
-        if (ok === false) {
-          setLocalError(tr("Could not mount generated subtitles into the player."));
-        } else {
+        if (ok !== false) {
           markImportedSub(name);
           setActiveLang(ALL_LANGS);
           setJustImported(name);
-          window.setTimeout(() => onClose(), 1700);
         }
-      } else {
-        await invoke("mpv_command", { cmd: ["sub-reload"] }).catch(() => {});
-        window.setTimeout(() => onClose(), 1700);
-      }
-    } catch (e: any) {
-      console.error("[whisper] failed to generate subtitles:", e);
-      setLocalError(typeof e === "string" ? e : (e?.message ?? tr("Whisper transcription failed.")));
-    } finally {
-      unlistenProgress?.();
-      unlistenLive?.();
-      setGeneratingWhisper(false);
-      setWhisperStatus(null);
-    }
+      },
+    });
   };
 
   const loadLocal = async () => {
@@ -587,10 +501,21 @@ export function MenuBody(props: SubtitleMenuProps & { onClose: () => void }) {
             </div>
           )}
 
-          {whisperStatus && (
-            <div className="flex shrink-0 items-center gap-2 border-t border-edge-soft bg-accent-soft/20 px-3 py-1.5 text-[11.5px] text-accent">
-              <Loader2 size={12} className="animate-spin" />
-              <span>{whisperStatus}</span>
+          {(liveSession.isActive || liveSession.status === "transcribing" || liveSession.status === "preparing") && (
+            <div className="flex shrink-0 items-center justify-between gap-2 border-t border-edge-soft bg-cyan-950/40 px-3 py-1.5 text-[11.5px] text-cyan-300">
+              <div className="flex items-center gap-2 overflow-hidden">
+                <Loader2 size={12} className="animate-spin motion-reduce:[animation-duration:2.4s] shrink-0 text-cyan-400" />
+                <span className="truncate">
+                  {liveSession.translate ? tr("Translating speech to English") : tr("Live Whisper transcription")} ({liveSession.progressPct}% · {Math.floor(liveSession.currentSec / 60)}m / {Math.floor(liveSession.totalSec / 60)}m · {liveSession.cueCount} cues)
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => void liveSession.stop()}
+                className="shrink-0 px-2 py-0.5 rounded bg-red-500/20 hover:bg-red-500/30 text-red-300 text-[10px] font-bold uppercase transition-colors"
+              >
+                {tr("Stop")}
+              </button>
             </div>
           )}
 
@@ -622,20 +547,35 @@ export function MenuBody(props: SubtitleMenuProps & { onClose: () => void }) {
             {isTauri && (
               <>
                 {whisperAvailable && (
-                  <HoverTooltip label={tr("Generate subtitles offline with local Whisper ASR on Mac Metal")} align="end">
-                    <button
-                      disabled={generatingWhisper}
-                      onClick={() => void generateWithWhisper()}
-                      className="flex h-full shrink-0 items-center gap-1.5 border-s border-edge-soft px-3 py-2 text-[12px] font-semibold text-accent transition-colors hover:bg-accent-soft/20 disabled:opacity-50"
-                    >
-                      {generatingWhisper ? (
-                        <Loader2 size={12} className="animate-spin" />
-                      ) : (
-                        <Sparkles size={12} strokeWidth={2.2} />
-                      )}
-                      {tr("Generate")}
-                    </button>
-                  </HoverTooltip>
+                  <>
+                    <HoverTooltip label={tr("Toggle English translation for anime & foreign movies")} align="end">
+                      <button
+                        type="button"
+                        onClick={() => setTranslateToEn(!translateToEn)}
+                        className={`flex h-full shrink-0 items-center px-2 py-2 text-[11px] font-bold border-s border-edge-soft transition-colors ${
+                          translateToEn
+                            ? "bg-cyan-500/20 text-cyan-300"
+                            : "text-ink-muted hover:text-ink hover:bg-canvas/40"
+                        }`}
+                      >
+                        {translateToEn ? tr("EN Trans") : tr("Verbatim")}
+                      </button>
+                    </HoverTooltip>
+                    <HoverTooltip label={tr("Generate continuous offline subtitles with Whisper ASR")} align="end">
+                      <button
+                        disabled={liveSession.isActive}
+                        onClick={() => void generateWithWhisper()}
+                        className="flex h-full shrink-0 items-center gap-1.5 border-s border-edge-soft px-3 py-2 text-[12px] font-semibold text-accent transition-colors hover:bg-accent-soft/20 disabled:opacity-50"
+                      >
+                        {liveSession.isActive ? (
+                          <Loader2 size={12} className="animate-spin motion-reduce:[animation-duration:2.4s]" />
+                        ) : (
+                          <Sparkles size={12} strokeWidth={2.2} />
+                        )}
+                        {liveSession.isActive ? `${liveSession.progressPct}%` : tr("Generate")}
+                      </button>
+                    </HoverTooltip>
+                  </>
                 )}
                 <HoverTooltip label={tr("Load a .srt or .ass from your computer")} align="end">
                   <button

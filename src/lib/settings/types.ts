@@ -338,6 +338,8 @@ export type Settings = {
   discordMusicPresence: boolean;
   discordHideMusicWhenPaused: boolean;
   playerEngine: "auto" | "html5" | "mpv";
+  /** External player handoff selection for iOS / iPadOS */
+  iosExternalPlayer: "ask" | "outplayer" | "infuse" | "vlc" | "vidhub" | "nplayer" | "in-app";
   /** Play in the user's own external mpv, with IPC to keep progress synced. */
   playerExternalMpv: boolean;
   /** Path to the mpv executable. If left empty then it uses mpv from PATH. */

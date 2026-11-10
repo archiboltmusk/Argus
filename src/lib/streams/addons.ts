@@ -369,29 +369,14 @@ function pickIds(
   if (accepted.length === 0) return [];
   const animeId = accepted.find((id) => ANIME_SCHEMES.some((s) => id.startsWith(s)));
   const ttId = accepted.find((id) => id.startsWith("tt"));
-  if (animeId && ttId) {
-    if (animeIdUnverified) return [ttId];
-    // Specials have no reliable kitsu numbering, so both identities stay.
-    if (SPECIALS_SCOPED_TT_RX.test(ttId)) {
-      return ttId === preferredAnimeImdbId ? [ttId, animeId] : [animeId, ttId];
-    }
-    // Nuvio-style multi-scheme querying: query both anime (Kitsu/MAL) and IMDb (tt)
-    // so addons that index torrents under either scheme return the complete result set.
-    return [animeId, ttId];
+  if (!animeId || !ttId) return [accepted[0]];
+  // Specials have no reliable kitsu numbering, so both identities stay.
+  if (SPECIALS_SCOPED_TT_RX.test(ttId)) {
+    return ttId === preferredAnimeImdbId ? [ttId, animeId] : [animeId, ttId];
   }
-  // When an addon accepts multiple distinct scheme IDs (e.g. IMDb tt... and TMDB tmdb:...),
-  // query across distinct schemes rather than discarding alternative IDs.
-  const schemesSeen = new Set<string>();
-  const out: string[] = [];
-  for (const id of accepted) {
-    const s = idScheme(id);
-    if (!schemesSeen.has(s)) {
-      schemesSeen.add(s);
-      out.push(id);
-      if (out.length >= 2) break;
-    }
-  }
-  return out.length > 0 ? out : [accepted[0]];
+  if (ttId === preferredAnimeImdbId) return [ttId];
+  if (animeIdUnverified) return [ttId];
+  return [animeId];
 }
 
 function pickIdByDeclaredTypes(

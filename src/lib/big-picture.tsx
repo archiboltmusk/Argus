@@ -1,6 +1,7 @@
 import { useSyncExternalStore } from "react";
 import type { StreamingService } from "@/lib/settings/types";
 import type { SportsGame } from "@/lib/sports/espn-types";
+import { isLauncherRoute } from "@/lib/platform";
 
 export type BigPictureRoute =
   | { kind: "home" }
@@ -55,9 +56,29 @@ export function isBigPictureActive(): boolean {
   return state.active;
 }
 
-export function enterBigPicture(): void {
-  if (state.active) return;
-  emit({ active: true, stack: [HOME] });
+function shouldBootProjectorLauncher(): boolean {
+  try {
+    if (typeof window === "undefined") return false;
+    if (isLauncherRoute()) return true;
+    const rawSettings = localStorage.getItem("argus.settings");
+    if (rawSettings) {
+      const s = JSON.parse(rawSettings);
+      if (s.projectorLauncherDefault === true) return true;
+    }
+  } catch {}
+  return false;
+}
+
+export function enterBigPicture(initialRoute?: BigPictureRoute): void {
+  const target = initialRoute ?? (shouldBootProjectorLauncher() ? { kind: "projector-launcher" } : HOME);
+  if (state.active) {
+    if (initialRoute) pushBigPicture(initialRoute);
+    return;
+  }
+  emit({
+    active: true,
+    stack: target.kind === "home" ? [HOME] : [HOME, target],
+  });
 }
 
 export function exitBigPicture(): void {
@@ -66,7 +87,10 @@ export function exitBigPicture(): void {
 }
 
 export function pushBigPicture(route: BigPictureRoute): void {
-  if (!state.active) return;
+  if (!state.active) {
+    emit({ active: true, stack: route.kind === "home" ? [HOME] : [HOME, route] });
+    return;
+  }
   const top = state.stack[state.stack.length - 1];
   if (top && top.kind === route.kind && routeKey(top) === routeKey(route)) return;
   emit({ active: true, stack: [...state.stack, route] });

@@ -236,7 +236,7 @@ function AnimeHeroMobile({
 }) {
   const t = useT();
   const { settings } = useSettings();
-  const { playOnHost } = useMobileRemote();
+  const { playOnHost, connected } = useMobileRemote();
   const [active, setActive] = useState(0);
   const pausedUntil = useRef(0);
   const logos = useHeroLogos(slides, settings);
@@ -287,7 +287,10 @@ function AnimeHeroMobile({
         <div className="flex items-center gap-2.5">
           <button
             type="button"
-            onClick={() => playOnHost(current)}
+            onClick={() => {
+              if (connected) playOnHost(current);
+              else onOpenDetail(current);
+            }}
             className="flex h-[52px] flex-1 items-center justify-center gap-2.5 rounded-full bg-ink text-[16px] font-semibold text-canvas shadow-[0_6px_20px_-6px_rgba(0,0,0,0.4)] transition-transform duration-150 active:scale-[0.97]"
           >
             <Play size={19} strokeWidth={0} fill="currentColor" />

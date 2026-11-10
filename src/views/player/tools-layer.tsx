@@ -2,6 +2,7 @@ import { memo } from "react";
 import type { ComponentProps } from "react";
 import { ClipChooser } from "@/components/player/clip-chooser";
 import { GifRecordPill } from "@/components/player/gif-record-pill";
+import { LiveTranscriptionPill } from "@/components/player/live-transcription-pill";
 import { QuickTools } from "@/components/player/quick-tools";
 import type { PlayEpisode } from "@/lib/view";
 import { SkipPillContainer } from "./skip-pill-container";
@@ -88,6 +89,9 @@ export const ToolsLayer = memo(function ToolsLayer({
           gifToast={gif.toast}
           clipToast={clip.toast}
         />
+      )}
+      {!pipMode && !drawMode && (
+        <LiveTranscriptionPill visible={showChrome} />
       )}
       {!pipMode && !drawMode && (
         <GifRecordPill

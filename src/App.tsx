@@ -55,7 +55,7 @@ import {
 import { synchronizeMediaServer } from "@/lib/media-server/sync";
 import { setNativeMemoryActive } from "@/lib/native-memory";
 import { useOverlayPinned } from "@/lib/overlay-pin";
-import { isLauncherRoute, isMobileWeb, isRemoteRoute, isSmartProjector } from "@/lib/platform";
+import { isLauncherRoute, isMobilePlatform, isRemoteRoute, isSmartProjector } from "@/lib/platform";
 import { makeSafeTauriUnlisten } from "@/lib/tauri-unlisten";
 import { activeLayout } from "@/lib/theme";
 import { useThemePreview } from "@/lib/theme-preview";
@@ -505,7 +505,7 @@ export function App({ onReady }: { onReady?: () => void }) {
                                                       <Profiled id="startup.watchlist-sync">
                                                         <WatchlistSync />
                                                       </Profiled>
-                                                      {isMobileWeb() || isRemoteRoute() ? (
+                                                      {isMobilePlatform() || isRemoteRoute() ? (
                                                         <>
                                                           <Suspense fallback={null}>
                                                             <MobileShell />
@@ -517,7 +517,7 @@ export function App({ onReady }: { onReady?: () => void }) {
                                                           <Shell onReady={onReady} />
                                                         </Profiled>
                                                       )}
-                                                      {!isMobileWeb() && !isRemoteRoute() && (
+                                                      {!isMobilePlatform() && !isRemoteRoute() && (
                                                         <Suspense fallback={null}>
                                                           <OnboardingModal />
                                                         </Suspense>

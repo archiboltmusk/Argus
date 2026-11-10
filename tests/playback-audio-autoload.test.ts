@@ -96,6 +96,10 @@ async function fixture(remembered = true) {
       subtitleMediaKey: () => "fixture",
       rememberedSubAppliesToStream: () => false,
     },
+    "@/lib/player/audio-night-mode": {
+      loadLangAudioDelay: () => 0,
+      saveLangAudioDelay: () => {},
+    },
   };
   const source = readFileSync(
     new URL("../src/views/player/hooks/use-track-autoload.ts", import.meta.url),

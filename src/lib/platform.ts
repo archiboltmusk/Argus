@@ -85,7 +85,7 @@ export function isAndroidTv(): boolean {
 export function isSmartProjector(): boolean {
   if (typeof navigator === "undefined") return false;
   const ua = (navigator.userAgent || "").toLowerCase();
-  return /projector|portronics|beem|wanbo|egate|xgimi|nebula|dangbei|formovie|zebronics/i.test(ua);
+  return /projector|portronics|beem|wanbo|egate|xgimi|nebula|dangbei|formovie|jmgo|alpd|zebronics|magcubic|hy300|hy320|toptro|wimius|aurzen|vankyo|groview|happrun|nexigo|sovmoi|salange/i.test(ua);
 }
 
 export function isMobileDevice(): boolean {
@@ -129,7 +129,15 @@ export function isRemoteRoute(): boolean {
 export function isLauncherRoute(): boolean {
   try {
     const path = window.location.pathname.replace(/\/+$/, "") || "/";
-    if (path === "/launcher" || path.endsWith("/launcher") || path === "/projector" || path.endsWith("/projector")) {
+    const hash = window.location.hash || "";
+    if (
+      path === "/launcher" ||
+      path.endsWith("/launcher") ||
+      path === "/projector" ||
+      path.endsWith("/projector") ||
+      hash.includes("launcher") ||
+      hash.includes("projector")
+    ) {
       return true;
     }
     const q = new URLSearchParams(window.location.search);
@@ -154,8 +162,12 @@ export function isMobileWeb(): boolean {
   } catch {
     /* ignore */
   }
-  mobileWebCache = forcedOn || (isWeb() && isMobileDevice());
+  mobileWebCache = forcedOn || isMobileDevice();
   return mobileWebCache;
+}
+
+export function isMobilePlatform(): boolean {
+  return isIOS() || isIPadOS() || isMobileDevice() || isMobileWeb();
 }
 
 export function isSetupRoute(): boolean {
