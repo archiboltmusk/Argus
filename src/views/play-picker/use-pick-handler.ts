@@ -48,6 +48,7 @@ import {
   streamIdentity,
   type PickerError,
 } from "./picker-utils";
+import { preburstStreamHeader } from "@/lib/streams/stream-header-preburst";
 
 export type ResolvingSelection = { stream: ScoredStream; p2p: boolean };
 
@@ -393,6 +394,9 @@ export function usePickHandler({
         claimHost(true);
         sendInvite(buildPlayInvite(meta, episode));
         inviteSentRef.current = `${meta.id}|${episode?.season ?? ""}|${episode?.episode ?? ""}`;
+      }
+      if (playUrl) {
+        preburstStreamHeader(playUrl, ac.signal).catch(() => {});
       }
       openPlayer({
         meta,

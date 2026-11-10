@@ -42,6 +42,7 @@ import {
   type PlayerSource,
   type TrackInfo,
 } from "./bridge";
+import { isNightShieldEnabled, subscribeNightShield } from "./cinema-night-shield";
 
 export type MpvProbe = {
   available: boolean;
@@ -303,12 +304,19 @@ export function createMpvBridge(mpvOptions?: MpvOptions): PlayerBridge {
   let hdrToSdr = mpvOptions?.hdrToSdr ?? true;
   const applyAudioFilters = () => {
     const parts: string[] = [];
-    if (snap.audioNormalize) parts.push("dynaudnorm=f=500:g=31:p=0.9:m=4:b=1");
+    if (isNightShieldEnabled()) {
+      parts.push("lavfi=[highpass=f=45]");
+      parts.push("lavfi=[equalizer=f=2200:width_type=q:w=1.2:g=4.5]");
+      parts.push("dynaudnorm=f=400:g=31:p=0.92:m=3.5:b=1");
+    } else if (snap.audioNormalize) {
+      parts.push("dynaudnorm=f=500:g=31:p=0.9:m=4:b=1");
+    }
     if (profileAf) parts.push(profileAf);
     if (equalizerAf) parts.push(equalizerAf);
     if (parts.length > 0) parts.push("lavfi=[alimiter=limit=0.97]");
     invoke("mpv_command", { cmd: ["af", "set", parts.join(",")] }).catch(() => {});
   };
+  const unsubNightShield = subscribeNightShield(() => applyAudioFilters());
   const listeners = new Set<(s: PlayerSnapshot) => void>();
   let unlistenEvent: UnlistenFn | null = null;
   let unlistenLog: UnlistenFn | null = null;
@@ -1629,6 +1637,7 @@ export function createMpvBridge(mpvOptions?: MpvOptions): PlayerBridge {
       };
     },
     destroy() {
+      unsubNightShield();
       clearAudioDeviceReload();
       stopGeometryTracking?.();
       stopGeometryTracking = null;
