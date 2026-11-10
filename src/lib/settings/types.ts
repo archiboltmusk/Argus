@@ -973,4 +973,13 @@ export type Settings = {
   jellyfinUserId: string;
   mdblistUserToken: string;
   zeroWaitBinge: boolean;
+  projectorAutoFrameRate: boolean;
+  projectorAutoDayNight: boolean;
+  projectorSleepTimerMinutes: number;
+  dualSubtitlesEnabled: boolean;
+  nightDialogueBooster: boolean;
+  speakerDiarizationColors: boolean;
+  nextEpisodePreBuffer: boolean;
+  iosNativePipEnabled: boolean;
+  cloudSyncConsolidationEnabled: boolean;
 };

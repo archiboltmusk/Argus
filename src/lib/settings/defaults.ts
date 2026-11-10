@@ -799,6 +799,15 @@ export const DEFAULT: Settings = {
   jellyfinUserId: "",
   mdblistUserToken: "",
   zeroWaitBinge: true,
+  projectorAutoFrameRate: true,
+  projectorAutoDayNight: true,
+  projectorSleepTimerMinutes: 0,
+  dualSubtitlesEnabled: false,
+  nightDialogueBooster: true,
+  speakerDiarizationColors: true,
+  nextEpisodePreBuffer: true,
+  iosNativePipEnabled: true,
+  cloudSyncConsolidationEnabled: true,
 };
 
 export function getSecondaryPrivileges(

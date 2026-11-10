@@ -10,12 +10,15 @@ import {
   VolumeX,
   Maximize,
   AlertTriangle,
+  Cast,
+  Tv,
 } from "lucide-react";
 import type { PlayerSrc } from "@/lib/view";
 import {
   launchIosExternalPlayer,
   type IosPlayerId,
 } from "@/lib/player/ios-external-players";
+import { triggerNativeAirPlay, beamStreamToTarget } from "@/lib/player/beam-to-projector";
 
 interface MobilePlayerModalProps {
   src: PlayerSrc;
@@ -287,9 +290,57 @@ export function MobilePlayerModal({ src, onClose }: MobilePlayerModalProps) {
             >
               {muted ? <VolumeX size={18} /> : <Volume2 size={18} />}
             </button>
+
+            {/* Beam to Projector on LAN */}
+            <button
+              type="button"
+              onClick={async () => {
+                const res = await beamStreamToTarget("127.0.0.1", 11470, {
+                  title: src.title || src.meta.name,
+                  streamUrl: src.url,
+                  positionSec: currentTime,
+                  durationSec: duration,
+                });
+                if (res.ok) {
+                  bumpTimer();
+                }
+              }}
+              title="Beam to Projector"
+              className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white/10 hover:bg-white/20 text-cyan-300 text-xs font-semibold"
+            >
+              <Tv size={14} />
+              <span>Projector</span>
+            </button>
+
+            {/* Native Apple AirPlay Trigger */}
+            <button
+              type="button"
+              onClick={() => {
+                triggerNativeAirPlay(videoRef.current);
+              }}
+              title="AirPlay"
+              className="p-2 text-zinc-300 hover:text-white"
+            >
+              <Cast size={18} />
+            </button>
           </div>
 
           <div className="flex items-center gap-3">
+            {/* Picture-in-Picture */}
+            <button
+              type="button"
+              onClick={() => {
+                if (document.pictureInPictureElement) {
+                  void document.exitPictureInPicture();
+                } else if (videoRef.current && document.pictureInPictureEnabled) {
+                  void videoRef.current.requestPictureInPicture();
+                }
+              }}
+              className="text-xs text-zinc-300 hover:text-white font-medium px-2 py-1"
+            >
+              PiP
+            </button>
+
             <button
               type="button"
               onClick={() => {

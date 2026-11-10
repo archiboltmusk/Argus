@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react";
 import { SFX } from "@/lib/sfx";
+import { playFocusAcousticPing } from "@/lib/projector/projector-afr";
 
 interface ProjectorTestPatternProps {
   onClose: () => void;
@@ -129,8 +130,18 @@ export function ProjectorTestPattern({ onClose }: ProjectorTestPatternProps) {
         </span>
         <button
           type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            playFocusAcousticPing();
+          }}
+          className="ml-1 px-3 py-1 rounded-md bg-cyan-500/20 hover:bg-cyan-500/30 border border-cyan-400/50 text-cyan-200 text-xs font-semibold transition-colors"
+        >
+          🔊 Acoustic Ping
+        </button>
+        <button
+          type="button"
           onClick={onClose}
-          className="ml-2 px-3 py-1 rounded-md bg-white/10 hover:bg-white/20 text-xs font-semibold text-white transition-colors"
+          className="ml-1 px-3 py-1 rounded-md bg-white/10 hover:bg-white/20 text-xs font-semibold text-white transition-colors"
         >
           Done (Exit)
         </button>
