@@ -57,7 +57,8 @@
     "resources": {
       "fonts/*": "fonts/",
       "THIRD-PARTY-NOTICES.txt": "notices/",
-      "resources/argus-stream-blocker/": "resources/argus-stream-blocker/"
+      "resources/argus-stream-blocker/": "resources/argus-stream-blocker/",
+      "resources/models/*": "models/"
     },
     "licenseFile": "installer/eula.txt",
     "icon": [

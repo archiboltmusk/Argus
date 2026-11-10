@@ -1,4 +1,4 @@
-import { RefreshCw } from "lucide-react";
+import { Cloud, RefreshCw } from "lucide-react";
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 import { SFX } from "@/lib/sfx";
 import { useProfiles, type Profile } from "@/lib/profiles";
@@ -7,6 +7,7 @@ import { pushBpBack } from "./bp-back";
 import { setBpFocus } from "./use-bp-focus";
 import { BpWhoPin } from "./bp-who-is-watching-pin";
 import { BpWhoTile, type BpWhoTileState } from "./bp-who-is-watching-tile";
+import { BpCloudLinkModal } from "./bp-cloud-link-modal";
 import {
   bpWhoFaceSize,
   bpWhoKidSelectable,
@@ -43,6 +44,7 @@ export function BpWhoIsWatching({ onClose }: { onClose: () => void }) {
   const [chosenId, setChosenId] = useState<string | null>(null);
   const [exiting, setExiting] = useState(false);
   const [blockedId, setBlockedId] = useState<string | null>(null);
+  const [showCloudLink, setShowCloudLink] = useState(false);
   const timers = useRef<number[]>([]);
 
   useEffect(
@@ -231,6 +233,23 @@ export function BpWhoIsWatching({ onClose }: { onClose: () => void }) {
             ))}
           </div>
 
+          {/* Action Row for Cloud Account Linking / Sign In */}
+          <div data-bp-row className="flex items-center justify-center gap-3 mt-2">
+            <button
+              type="button"
+              data-bp-focusable
+              data-bp-chip
+              onClick={() => {
+                SFX.open();
+                setShowCloudLink(true);
+              }}
+              className="flex items-center gap-2.5 rounded-[var(--bp-r-md)] border border-cyan-400/40 bg-cyan-950/40 px-5 py-3 text-sm font-semibold text-cyan-200 shadow-md hover:bg-cyan-900/50 transition-all motion-reduce:transition-none"
+            >
+              <Cloud size={17} className="text-cyan-400" />
+              <span>{t("Cloud Account / Link TV")}</span>
+            </button>
+          </div>
+
           <BpWhoNotice
             line={
               blocked
@@ -245,6 +264,10 @@ export function BpWhoIsWatching({ onClose }: { onClose: () => void }) {
             retryLabel={t("Retry")}
           />
         </>
+      )}
+
+      {showCloudLink && (
+        <BpCloudLinkModal onClose={() => setShowCloudLink(false)} />
       )}
     </div>
   );

@@ -67,6 +67,28 @@ fn model_dir(app: &tauri::AppHandle) -> Result<PathBuf, String> {
     Ok(base.join("asr"))
 }
 
+pub fn resolve_model_path(app: &tauri::AppHandle, filename: &str) -> Option<PathBuf> {
+    // 1. Check bundled application resources (Contents/Resources/models/<filename>)
+    if let Ok(res_dir) = app.path().resource_dir() {
+        let bundled = res_dir.join("models").join(filename);
+        if matches!(std::fs::metadata(&bundled), Ok(m) if m.len() >= MIN_VALID_BYTES) {
+            return Some(bundled);
+        }
+        let bundled_direct = res_dir.join(filename);
+        if matches!(std::fs::metadata(&bundled_direct), Ok(m) if m.len() >= MIN_VALID_BYTES) {
+            return Some(bundled_direct);
+        }
+    }
+    // 2. Check user app data dir (app_data_dir/asr/<filename>)
+    if let Ok(dir) = model_dir(app) {
+        let local = dir.join(filename);
+        if matches!(std::fs::metadata(&local), Ok(m) if m.len() >= MIN_VALID_BYTES) {
+            return Some(local);
+        }
+    }
+    None
+}
+
 pub fn active_model_id(app: &tauri::AppHandle) -> String {
     if let Ok(dir) = model_dir(app) {
         let tag = dir.join("active_model.txt");
@@ -76,13 +98,13 @@ pub fn active_model_id(app: &tauri::AppHandle) -> String {
                 return trimmed;
             }
         }
-        // Default to tiny if already downloaded, else base.en
-        if dir.join("ggml-tiny.bin").exists() {
-            return "tiny".to_string();
-        }
-        if dir.join("ggml-base.en.bin").exists() {
-            return "base.en".to_string();
-        }
+    }
+    // Check bundled or pre-downloaded models
+    if resolve_model_path(app, "ggml-base.en.bin").is_some() {
+        return "base.en".to_string();
+    }
+    if resolve_model_path(app, "ggml-tiny.bin").is_some() {
+        return "tiny".to_string();
     }
     "base.en".to_string()
 }
@@ -99,12 +121,10 @@ pub fn set_active_model_id(app: &tauri::AppHandle, id: &str) -> Result<(), Strin
 
 #[tauri::command]
 pub fn asr_list_models(app: tauri::AppHandle) -> Result<Vec<ModelSpec>, String> {
-    let dir = model_dir(&app)?;
     let active = active_model_id(&app);
     let mut list = Vec::new();
     for (id, filename, url, name, desc, size_mb) in model_specs() {
-        let dest = dir.join(filename);
-        let downloaded = matches!(std::fs::metadata(&dest), Ok(m) if m.len() >= MIN_VALID_BYTES);
+        let downloaded = resolve_model_path(&app, filename).is_some();
         list.push(ModelSpec {
             id: id.to_string(),
             filename: filename.to_string(),
@@ -126,24 +146,20 @@ pub fn asr_set_active_model(app: tauri::AppHandle, model_id: String) -> Result<(
 
 #[tauri::command]
 pub fn asr_model_path(app: tauri::AppHandle) -> Result<Option<String>, String> {
-    let dir = model_dir(&app)?;
     let active = active_model_id(&app);
     let spec = model_specs()
         .iter()
         .find(|(id, ..)| *id == active)
         .or_else(|| model_specs().first())
         .unwrap();
-    let dest = dir.join(spec.1);
-    match std::fs::metadata(&dest) {
-        Ok(m) if m.len() >= MIN_VALID_BYTES => Ok(Some(dest.to_string_lossy().into_owned())),
-        _ => Ok(None),
+    if let Some(dest) = resolve_model_path(&app, spec.1) {
+        return Ok(Some(dest.to_string_lossy().into_owned()));
     }
+    Ok(None)
 }
 
 #[tauri::command]
 pub async fn asr_ensure_model(app: tauri::AppHandle) -> Result<String, String> {
-    let dir = model_dir(&app)?;
-    std::fs::create_dir_all(&dir).map_err(|e| format!("create dir: {}", e))?;
     let active = active_model_id(&app);
     let spec = model_specs()
         .iter()
@@ -151,13 +167,16 @@ pub async fn asr_ensure_model(app: tauri::AppHandle) -> Result<String, String> {
         .or_else(|| model_specs().first())
         .unwrap();
     let filename = spec.1;
+
+    // Check if model already exists in bundled resources or app_data_dir
+    if let Some(existing) = resolve_model_path(&app, filename) {
+        return Ok(existing.to_string_lossy().into_owned());
+    }
+
+    let dir = model_dir(&app)?;
+    std::fs::create_dir_all(&dir).map_err(|e| format!("create dir: {}", e))?;
     let url = spec.2;
     let dest = dir.join(filename);
-    if let Ok(m) = std::fs::metadata(&dest) {
-        if m.len() >= MIN_VALID_BYTES {
-            return Ok(dest.to_string_lossy().into_owned());
-        }
-    }
 
     let tmp = dir.join(format!("{}.part", filename));
     let client = reqwest::Client::builder()

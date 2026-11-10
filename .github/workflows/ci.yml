@@ -162,6 +162,8 @@ jobs:
       - run: pnpm run setup:fonts
       # yt-dlp / ffmpeg / ffprobe sidecars declared as externalBin.
       - run: pnpm run setup:binaries
+      # Pre-bundle Whisper speech-to-text models for 100% offline self-contained package (>100MB)
+      - run: pnpm run setup:models
       # PRs that only touch Rust sources skip the bundle and compile-check instead.
       - name: Cargo check (PR without packaging changes)
         if: github.event_name == 'pull_request' && needs.changes.outputs.bundle != 'true'

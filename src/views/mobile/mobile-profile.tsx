@@ -1,10 +1,14 @@
 import {
   Check,
   ChevronRight,
+  Cloud,
   FileText,
   HelpCircle,
+  LogIn,
   LogOut,
   MonitorSmartphone,
+  RefreshCw,
+  Sparkles,
   Users,
 } from "lucide-react";
 import { useState, type ReactNode } from "react";
@@ -12,6 +16,9 @@ import { useAuth } from "@/lib/auth";
 import { useProfiles } from "@/lib/profiles";
 import { useSettings } from "@/lib/settings";
 import { useT } from "@/lib/i18n";
+import { useCloudSync } from "@/lib/cloud-sync/unified-cloud-sync";
+import { NuvioAuthModal } from "@/components/nuvio-auth-modal";
+import { AuthModal } from "@/components/auth-modal";
 import { MobileWhosWatching } from "./mobile-whos-watching";
 import { useMobileRemote } from "./mobile-remote";
 import { setMobileRemoteStyle, useMobileRemoteStyle, type MobileRemoteStyle } from "./remote-style";
@@ -20,31 +27,72 @@ import { openUrl } from "@/lib/window";
 
 export function MobileProfile({ onOpenRemote }: { onOpenRemote: () => void }) {
   const t = useT();
-  const { user, signOut } = useAuth();
+  const { user, signOut: signOutStremio } = useAuth();
   const { activeProfile } = useProfiles();
   const { settings, update } = useSettings();
   const { snapshot } = useMobileRemote();
+  const {
+    isConnected,
+    provider,
+    userEmail,
+    lastSyncedAt,
+    isSyncing,
+    syncNow,
+    signOutCloud,
+  } = useCloudSync();
+
   const remote = snapshot.profile;
-  const name = remote?.name || activeProfile?.name || user?.email?.split("@")[0] || t("Guest");
+  const name =
+    remote?.name ||
+    activeProfile?.name ||
+    userEmail?.split("@")[0] ||
+    user?.email?.split("@")[0] ||
+    t("Guest");
   const avatar = remote?.avatar ?? activeProfile?.avatar ?? null;
   const color = remote?.color ?? activeProfile?.color ?? "oklch(0.78 0.13 60)";
+
   const [switching, setSwitching] = useState(false);
+  const [showNuvioAuth, setShowNuvioAuth] = useState(false);
+  const [showStremioAuth, setShowStremioAuth] = useState(false);
   const [rdKeyInput, setRdKeyInput] = useState(settings.rdKey || "");
   const [rdSaved, setRdSaved] = useState(false);
+  const [syncFeedback, setSyncFeedback] = useState<string | null>(null);
+
+  const handleSyncClick = async () => {
+    setSyncFeedback(null);
+    const res = await syncNow();
+    if (res.ok) {
+      setSyncFeedback(t("Synced!"));
+      setTimeout(() => setSyncFeedback(null), 3000);
+    } else {
+      setSyncFeedback(t("Sync failed"));
+      setTimeout(() => setSyncFeedback(null), 3000);
+    }
+  };
+
+  const handleSignOut = async () => {
+    if (provider === "nuvio") {
+      await signOutCloud();
+    }
+    if (user) {
+      signOutStremio();
+    }
+  };
 
   return (
-    <div className="flex h-full flex-col gap-6 px-5 pt-4">
+    <div className="flex h-full flex-col gap-6 px-5 pt-4 pb-12 overflow-y-auto">
       <header className="flex items-center justify-center">
-        <h1 className="font-display text-[22px] font-medium text-ink">{t("Profile")}</h1>
+        <h1 className="font-display text-[22px] font-medium text-ink">{t("Profile & Accounts")}</h1>
       </header>
 
+      {/* Profile Header Card */}
       <button
         type="button"
         onClick={() => setSwitching(true)}
         className="flex flex-col items-center gap-3 transition-transform active:scale-[0.98]"
       >
         <span
-          className="flex h-[84px] w-[84px] items-center justify-center overflow-hidden rounded-full text-[30px] font-bold text-white shadow-[0_10px_28px_-10px_rgba(0,0,0,0.6)]"
+          className="flex h-[84px] w-[84px] items-center justify-center overflow-hidden rounded-full text-[30px] font-bold text-white shadow-[0_10px_28px_-10px_rgba(0,0,0,0.6)] ring-2 ring-edge-soft"
           style={{ background: avatar ? undefined : color }}
         >
           {avatar ? (
@@ -60,6 +108,100 @@ export function MobileProfile({ onOpenRemote }: { onOpenRemote: () => void }) {
         </span>
       </button>
 
+      {/* SECTION: Cloud Account & Data Portability Sync */}
+      <section className="flex flex-col gap-3">
+        <div className="flex items-center justify-between px-1">
+          <h2 className="text-[12px] font-bold uppercase tracking-[0.16em] text-ink-subtle flex items-center gap-1.5">
+            <Cloud size={14} className="text-cyan-400" />
+            <span>{t("Cloud Account & Sync")}</span>
+          </h2>
+          {isConnected && (
+            <span className="flex items-center gap-1 text-[11px] font-medium text-emerald-400">
+              <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
+              {provider === "nuvio" ? "Nuvio Cloud" : "Stremio Cloud"}
+            </span>
+          )}
+        </div>
+
+        {isConnected ? (
+          <div className="rounded-2xl border border-edge-soft/80 bg-elevated/50 p-4 flex flex-col gap-3 shadow-md">
+            <div className="flex items-center justify-between">
+              <div className="flex flex-col">
+                <span className="text-xs font-semibold text-ink truncate max-w-[220px]">
+                  {userEmail}
+                </span>
+                <span className="text-[11px] text-ink-subtle">
+                  {lastSyncedAt
+                    ? t("Last synced {time}", {
+                        time: new Date(lastSyncedAt).toLocaleTimeString([], {
+                          hour: "numeric",
+                          minute: "2-digit",
+                        }),
+                      })
+                    : t("Cloud Sync Active")}
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={handleSyncClick}
+                disabled={isSyncing}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-cyan-500/20 border border-cyan-400/40 text-cyan-200 text-xs font-semibold hover:bg-cyan-500/30 active:scale-95 transition-all"
+              >
+                <RefreshCw size={13} className={isSyncing ? "animate-spin" : ""} />
+                <span>{isSyncing ? t("Syncing...") : syncFeedback || t("Sync Now")}</span>
+              </button>
+            </div>
+            <div className="h-px bg-edge-soft/60" />
+            <div className="flex items-center justify-between text-[11px] text-ink-subtle">
+              <span>{t("Watch progress, library & addons stay in sync everywhere")}</span>
+              <button
+                type="button"
+                onClick={handleSignOut}
+                className="text-danger hover:underline font-medium ml-2"
+              >
+                {t("Sign out")}
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div className="rounded-2xl border border-cyan-500/30 bg-gradient-to-br from-cyan-950/40 via-elevated/40 to-surface p-4 flex flex-col gap-3.5 shadow-lg">
+            <div className="flex items-start gap-2.5">
+              <Sparkles size={18} className="text-cyan-400 shrink-0 mt-0.5" />
+              <div className="flex flex-col">
+                <h3 className="text-[14px] font-semibold text-ink">
+                  {t("Sync Across All Your Devices")}
+                </h3>
+                <p className="text-[12px] text-ink-subtle leading-relaxed mt-0.5">
+                  {t(
+                    "Sign in with your account so your Continue Watching, Library, and Addons follow you seamlessly between this iPhone, your Android Projector, and Mac.",
+                  )}
+                </p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2 pt-1">
+              <button
+                type="button"
+                onClick={() => setShowNuvioAuth(true)}
+                className="flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-black text-xs font-bold transition-all active:scale-95 shadow-md shadow-cyan-500/20"
+              >
+                <LogIn size={14} />
+                <span>{t("Nuvio Sign In")}</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowStremioAuth(true)}
+                className="flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl bg-surface/80 border border-edge-soft/80 hover:bg-elevated text-ink text-xs font-semibold transition-all active:scale-95"
+              >
+                <LogIn size={14} />
+                <span>{t("Stremio Sign In")}</span>
+              </button>
+            </div>
+          </div>
+        )}
+      </section>
+
+      {/* SECTION: Remote Style */}
       <section className="flex flex-col gap-3">
         <h2 className="px-1 text-[12px] font-bold uppercase tracking-[0.16em] text-ink-subtle">
           {t("Remote style")}
@@ -70,6 +212,7 @@ export function MobileProfile({ onOpenRemote }: { onOpenRemote: () => void }) {
         </div>
       </section>
 
+      {/* SECTION: Media Player on iOS */}
       <section className="flex flex-col gap-3">
         <h2 className="px-1 text-[12px] font-bold uppercase tracking-[0.16em] text-ink-subtle">
           {t("Media Player on iOS")}
@@ -102,6 +245,7 @@ export function MobileProfile({ onOpenRemote }: { onOpenRemote: () => void }) {
         </div>
       </section>
 
+      {/* SECTION: Debrid & Streaming Accounts */}
       <section className="flex flex-col gap-3">
         <h2 className="px-1 text-[12px] font-bold uppercase tracking-[0.16em] text-ink-subtle flex items-center justify-between">
           <span>{t("Debrid & Streaming Accounts")}</span>
@@ -140,6 +284,7 @@ export function MobileProfile({ onOpenRemote }: { onOpenRemote: () => void }) {
         </div>
       </section>
 
+      {/* Utility Actions */}
       <section className="overflow-hidden rounded-2xl border border-edge-soft/70 bg-elevated/40">
         <Row
           icon={<MonitorSmartphone size={20} strokeWidth={2} />}
@@ -154,20 +299,27 @@ export function MobileProfile({ onOpenRemote }: { onOpenRemote: () => void }) {
         />
         <Divider />
         <Row icon={<FileText size={20} strokeWidth={2} />} label={t("Legal")} onClick={() => {}} />
-        {user && (
+        {(isConnected || user) && (
           <>
             <Divider />
             <Row
               icon={<LogOut size={20} strokeWidth={2} />}
               label={t("Sign out")}
               danger
-              onClick={signOut}
+              onClick={handleSignOut}
             />
           </>
         )}
       </section>
 
       {switching && <MobileWhosWatching onClose={() => setSwitching(false)} />}
+      {showNuvioAuth && (
+        <NuvioAuthModal
+          onClose={() => setShowNuvioAuth(false)}
+          onSuccess={() => void syncNow()}
+        />
+      )}
+      {showStremioAuth && <AuthModal onClose={() => setShowStremioAuth(false)} />}
     </div>
   );
 }
@@ -218,10 +370,6 @@ function TouchpadGlyph() {
   );
 }
 
-/* `href` renders a real anchor rather than a button calling window.open. This
-   screen is where the setup flow lands people, and a programmatic open that a
-   mobile browser does not credit as a user gesture can navigate the current
-   tab instead, which is how a viewer ends up outside Argus with no way back. */
 function Row({
   icon,
   label,

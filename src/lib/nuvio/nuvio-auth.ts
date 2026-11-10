@@ -72,8 +72,34 @@ export async function signInWithEmailPassword(
     const state = loadNuvioState();
     saveNuvioState({ ...state, session });
 
+    // Activate Nuvio as the active cloud provider
+    try {
+      localStorage.setItem("argus.account-provider", "nuvio");
+      const raw = localStorage.getItem("argus.settings");
+      if (raw) {
+        const p = JSON.parse(raw);
+        localStorage.setItem("argus.settings", JSON.stringify({ ...p, accountProvider: "nuvio" }));
+      }
+    } catch {}
+    window.dispatchEvent(
+      new CustomEvent("argus:account-provider-changed", { detail: { provider: "nuvio" } }),
+    );
+
     // Fetch user profiles immediately after login
     await fetchNuvioProfiles();
+
+    // Trigger cloud data hydration in background
+    setTimeout(async () => {
+      try {
+        const { pullWatchProgressFromNuvio, pullAddonsFromNuvio } = await import("./nuvio-sync");
+        const { pullNuvioLibrarySnapshot } = await import("./nuvio-library");
+        await pullWatchProgressFromNuvio(1);
+        await pullAddonsFromNuvio("1");
+        await pullNuvioLibrarySnapshot(1);
+      } catch (e) {
+        console.warn("[nuvio-auth] initial hydration error", e);
+      }
+    }, 50);
 
     return { ok: true, session };
   } catch (e) {
@@ -185,7 +211,35 @@ export async function pollDeviceCodeSession(
 
         const state = loadNuvioState();
         saveNuvioState({ ...state, session });
+
+        // Activate Nuvio as the active cloud provider
+        try {
+          localStorage.setItem("argus.account-provider", "nuvio");
+          const raw = localStorage.getItem("argus.settings");
+          if (raw) {
+            const p = JSON.parse(raw);
+            localStorage.setItem("argus.settings", JSON.stringify({ ...p, accountProvider: "nuvio" }));
+          }
+        } catch {}
+        window.dispatchEvent(
+          new CustomEvent("argus:account-provider-changed", { detail: { provider: "nuvio" } }),
+        );
+
         await fetchNuvioProfiles();
+
+        // Trigger cloud data hydration in background
+        setTimeout(async () => {
+          try {
+            const { pullWatchProgressFromNuvio, pullAddonsFromNuvio } = await import("./nuvio-sync");
+            const { pullNuvioLibrarySnapshot } = await import("./nuvio-library");
+            await pullWatchProgressFromNuvio(1);
+            await pullAddonsFromNuvio("1");
+            await pullNuvioLibrarySnapshot(1);
+          } catch (e) {
+            console.warn("[nuvio-auth] initial device hydration error", e);
+          }
+        }, 50);
+
         return session;
       }
     }

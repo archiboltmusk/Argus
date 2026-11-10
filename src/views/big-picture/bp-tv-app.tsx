@@ -32,6 +32,7 @@ import { TogetherProvider } from "@/lib/together/provider";
 import { TopRankModalProvider } from "@/lib/top-rank-modal";
 import { TraktProvider } from "@/lib/trakt/provider";
 import { ViewProvider } from "@/lib/view";
+import { initUnifiedCloudSyncRunner } from "@/lib/cloud-sync/unified-cloud-sync";
 import { isLauncherRoute, isSmartProjector } from "@/lib/platform";
 import { BpErrorBoundary } from "./bp-error-boundary";
 import { BpRouteFallback } from "./bp-routes";
@@ -94,6 +95,13 @@ function BpTvSound() {
   return null;
 }
 
+function UnifiedCloudSyncRunner() {
+  useEffect(() => {
+    return initUnifiedCloudSyncRunner();
+  }, []);
+  return null;
+}
+
 function BpTvRoot() {
   const { active } = useBigPicture();
   const { settings } = useSettings();
@@ -114,6 +122,7 @@ function BpTvRoot() {
     <>
       <BpTvSound />
       <GamepadRunner />
+      <UnifiedCloudSyncRunner />
       {/* Mounted here, not on desktop only. Without these a profile switch on the
           television changed the avatar and nothing else: settings did not reload,
           tracker sessions kept the previous profile's tokens, and CURFEW WAS NOT

@@ -122,6 +122,7 @@ import { MangaTrackingRunner } from "@/lib/manga-tracking";
 import { RemoteHostMount } from "@/lib/remote/host-mount";
 import { RemoteOpenBridge } from "@/lib/remote/remote-open-bridge";
 import { PlayOnModal } from "@/components/play-on-modal";
+import { initUnifiedCloudSyncRunner } from "@/lib/cloud-sync/unified-cloud-sync";
 import { ControllerConnectedToast } from "@/components/controller-connected-toast";
 import { GamepadRunner } from "@/components/gamepad-runner";
 import { ProfileIdentitySync } from "@/lib/profile-identity-sync";
@@ -535,6 +536,7 @@ export function App({ onReady }: { onReady?: () => void }) {
                                                       <DiagnosticsConsentHost />
                                                       <TogetherLeaveForLiveModal />
                                                       <AfterFirstPaint>
+                                                        <UnifiedCloudSyncRunner />
                                                         <TogetherLocationPublisher />
                                                         <IdleAwayRunner />
                                                         <SessionRefreshRunner />
@@ -722,6 +724,13 @@ function MediaServerSyncRunner() {
       window.removeEventListener("online", refresh);
       document.removeEventListener("visibilitychange", onWake);
     };
+  }, []);
+  return null;
+}
+
+function UnifiedCloudSyncRunner() {
+  useEffect(() => {
+    return initUnifiedCloudSyncRunner();
   }, []);
   return null;
 }

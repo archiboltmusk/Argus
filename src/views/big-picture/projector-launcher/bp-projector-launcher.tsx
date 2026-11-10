@@ -1,6 +1,8 @@
 import { useState, useEffect, useMemo } from "react";
+import { Cloud } from "lucide-react";
 import { SFX } from "@/lib/sfx";
 import { useSettings } from "@/lib/settings";
+import { useCloudSync } from "@/lib/cloud-sync/unified-cloud-sync";
 import { useMobileCw, useMobileCwReady } from "@/views/mobile/mobile-cw-row";
 import { pushBigPicture, resetBigPictureToHome } from "@/lib/big-picture";
 import { isAndroid } from "@/lib/platform";
@@ -18,6 +20,7 @@ import {
 } from "@/lib/projector/projector-launcher";
 import { ProjectorTestPattern } from "./projector-test-pattern";
 import { ProjectorCalibrationModal } from "./projector-calibration-modal";
+import { BpCloudLinkModal } from "../bp-cloud-link-modal";
 
 function useLauncherClock() {
   const [time, setTime] = useState(() => new Date());
@@ -42,9 +45,11 @@ export function BpProjectorLauncher() {
   const cwItems = useMobileCw(12);
   const cwReady = useMobileCwReady();
   const { timeStr, dateStr } = useLauncherClock();
+  const cloudSync = useCloudSync();
 
   const [showCalibration, setShowCalibration] = useState(false);
   const [showTestPattern, setShowTestPattern] = useState(false);
+  const [showCloudLink, setShowCloudLink] = useState(false);
   const [activeSourceToast, setActiveSourceToast] = useState<string | null>(null);
   const [apps, setApps] = useState<ProjectorAppItem[]>(() => {
     try {
@@ -195,6 +200,25 @@ export function BpProjectorLauncher() {
 
         {/* Quick Projector Controls Pill Bar */}
         <div data-bp-row data-bp-row-key="proj-quick-controls" className="flex items-center gap-3">
+          <button
+            type="button"
+            data-bp-focusable
+            data-bp-chip
+            data-bp-restore-key="proj-cloud-sync"
+            onClick={() => {
+              SFX.open();
+              setShowCloudLink(true);
+            }}
+            className="px-4 py-2.5 rounded-2xl bg-cyan-950/70 hover:bg-cyan-900/70 border border-cyan-400/50 text-cyan-200 text-sm font-semibold tracking-wide flex items-center gap-2 transition-all hover:scale-105 active:scale-95 shadow-[0_0_15px_rgba(34,211,238,0.25)] focus:ring-2 focus:ring-cyan-400"
+          >
+            <Cloud className="w-4 h-4 text-cyan-400 shrink-0" />
+            <span>
+              {cloudSync.isConnected
+                ? cloudSync.userEmail?.split("@")[0] || "Synced"
+                : "Cloud Account / Link"}
+            </span>
+          </button>
+
           <button
             type="button"
             data-bp-focusable
@@ -571,6 +595,11 @@ export function BpProjectorLauncher() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Modal 4: TV / Projector Cloud Account & Link */}
+      {showCloudLink && (
+        <BpCloudLinkModal onClose={() => setShowCloudLink(false)} />
       )}
     </div>
   );

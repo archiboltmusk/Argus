@@ -69,6 +69,7 @@ jobs:
       - run: pnpm run setup:libmpv
       - run: pnpm run setup:mpv
       - run: pnpm run setup:binaries
+      - run: pnpm run setup:models
       - name: Set beta version and updater key
         if: github.event_name != 'pull_request'
         shell: bash
@@ -150,6 +151,7 @@ jobs:
       - run: pnpm run setup:fonts
       # yt-dlp / ffmpeg / ffprobe sidecars declared as externalBin.
       - run: pnpm run setup:binaries
+      - run: pnpm run setup:models
       - name: Set beta version and updater key
         if: github.event_name != 'pull_request'
         env:
