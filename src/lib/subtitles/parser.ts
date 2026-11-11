@@ -206,12 +206,16 @@ function cleanInline(s: string): string {
 }
 
 function toSec(h: string, m: string, s: string, ms: string): number {
-  const padded = (ms + "000").slice(0, 3);
-  return parseInt(h, 10) * 3600 + parseInt(m, 10) * 60 + parseInt(s, 10) + parseInt(padded, 10) / 1000;
+  const hours = parseInt(h || "0", 10) || 0;
+  const minutes = parseInt(m || "0", 10) || 0;
+  const seconds = parseInt(s || "0", 10) || 0;
+  const millis = parseInt((ms + "000").slice(0, 3), 10) || 0;
+  return hours * 3600 + minutes * 60 + seconds + millis / 1000;
 }
 
 export function findActiveCue(cues: SubCue[], timeSec: number): SubCue | null {
   if (cues.length === 0) return null;
+  // Fast binary search approximation
   let lo = 0;
   let hi = cues.length - 1;
   while (lo <= hi) {
@@ -221,5 +225,16 @@ export function findActiveCue(cues: SubCue[], timeSec: number): SubCue | null {
     else if (timeSec >= c.end) lo = mid + 1;
     else return c;
   }
+  // Fallback linear scan if overlapping cues exist near timeSec
+  for (let i = Math.max(0, lo - 5); i < Math.min(cues.length, lo + 5); i++) {
+    if (timeSec >= cues[i].start && timeSec < cues[i].end) {
+      return cues[i];
+    }
+  }
   return null;
+}
+
+export function findActiveCues(cues: SubCue[], timeSec: number): SubCue[] {
+  if (cues.length === 0) return [];
+  return cues.filter((c) => timeSec >= c.start && timeSec < c.end);
 }

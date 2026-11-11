@@ -124,6 +124,15 @@ export function mpvBridgeHarness(prefs = { volume: 0.35, muted: false }, options
       ...snapshots,
       initialPlayerSnapshot: () => ({ ...snapshots.emptySnapshot, ...prefs }),
     },
+    "./cinema-night-shield": {
+      isNightShieldEnabled: () => false,
+      subscribeNightShield: () => () => {},
+      buildNightShieldFilterString: () => "",
+    },
+    "./binaural-spatializer": {
+      buildSpatializerFilterString: () => null,
+      subscribeSpatializer: () => () => {},
+    },
   };
   const module = { exports: {} as { createMpvBridge: (options?: MpvOptions) => PlayerBridge } };
   const windowEvents = new EventTarget();
