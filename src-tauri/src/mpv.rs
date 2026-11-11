@@ -1204,9 +1204,10 @@ pub async fn mpv_start(
         );
         let _ = mpv.set_property("cache-on-disk", "yes");
         let _ = mpv.set_property("demuxer-lavf-buffersize", "524288");
-        let _ = mpv.set_property("demuxer-lavf-probesize", "65536");
-        let _ = mpv.set_property("demuxer-lavf-analyzeduration", "0.25");
-        let _ = mpv.set_property("demuxer-lavf-o", "fpsprobesize=0");
+        let _ = mpv.set_property("demuxer-lavf-probesize", "32768");
+        let _ = mpv.set_property("demuxer-lavf-analyzeduration", "0.1");
+        let _ = mpv.set_property("demuxer-lavf-o", "fpsprobesize=0,max_reload=1");
+        let _ = mpv.set_property("initial-audio-sync", "no");
         let _ = mpv.set_property("network-timeout", network_timeout_for(&args.url));
         // No reconnect_streamed: on AES-128 HLS every segment ends in a normal
         // EOF that ffmpeg then retries from offset 0, gets an empty body, and
@@ -3334,6 +3335,31 @@ pub async fn mpv_restore_media_surface(
         let _ = state;
         Ok(false)
     }
+}
+
+#[tauri::command]
+pub async fn mpv_prewarm_connection(url: String) -> Result<(), String> {
+    tokio::spawn(async move {
+        let Ok(parsed) = url::Url::parse(&url) else {
+            return;
+        };
+        let host = match parsed.host_str() {
+            Some(h) => h.to_string(),
+            None => return,
+        };
+        let port = parsed.port_or_known_default().unwrap_or(443);
+        let addrs_res = tokio::net::lookup_host((host.as_str(), port)).await;
+        if let Ok(mut addrs) = addrs_res {
+            if let Some(target) = addrs.next() {
+                let _ = tokio::time::timeout(
+                    std::time::Duration::from_millis(1500),
+                    tokio::net::TcpStream::connect(target),
+                )
+                .await;
+            }
+        }
+    });
+    Ok(())
 }
 
 #[cfg(windows)]

@@ -23,6 +23,7 @@ import { useDebridClients } from "@/lib/debrid/registry";
 import {
   cachedDebridPreparationSignature,
   prepareCachedDebridStreams,
+  prewarmMediaConnection,
 } from "@/lib/debrid/playback-preparation";
 import { useTogether } from "@/lib/together/provider";
 import { buildMatchScores, matchBadge, MATCH_CLOSE } from "@/lib/together/source-match";
@@ -481,18 +482,29 @@ export function PlayPicker({
   }, [settings.instantPlaybackPreparation, isDownload, playbackPreparationSignature]);
 
   useEffect(() => {
-    if (!filteredPicker?.primary || isDownload || debrids.length === 0) return;
-    void prepareCachedDebridStreams(
-      [filteredPicker.primary],
-      debrids,
-      playbackPreparationHint,
-      new AbortController().signal,
-    ).catch(() => {});
-  }, [filteredPicker?.primary, isDownload, debrids, playbackPreparationHint]);
+    if (!filteredPicker?.primary || isDownload) return;
+    const targets = [filteredPicker.primary];
+    if (filteredPicker.all.length > 1 && filteredPicker.all[1] !== filteredPicker.primary) {
+      targets.push(filteredPicker.all[1]);
+    }
+    for (const t of targets) {
+      if (t.url) prewarmMediaConnection(t.url);
+    }
+    if (debrids.length > 0) {
+      void prepareCachedDebridStreams(
+        targets,
+        debrids,
+        playbackPreparationHint,
+        new AbortController().signal,
+      ).catch(() => {});
+    }
+  }, [filteredPicker?.primary, filteredPicker?.all, isDownload, debrids, playbackPreparationHint]);
 
   const warmStream = useCallback(
     (stream: ScoredStream) => {
-      if (isDownload || debrids.length === 0) return;
+      if (isDownload) return;
+      if (stream.url) prewarmMediaConnection(stream.url);
+      if (debrids.length === 0) return;
       void prepareCachedDebridStreams(
         [stream],
         debrids,

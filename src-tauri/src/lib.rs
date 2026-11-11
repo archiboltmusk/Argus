@@ -1773,6 +1773,7 @@ pub fn run() {
             mpv::mpv_stop,
             mpv::mpv_release_media,
             mpv::mpv_restore_media_surface,
+            mpv::mpv_prewarm_connection,
             pip::pip_open,
             pip::pip_get_session,
             pip::pip_close,

@@ -150,6 +150,7 @@ async function prepareOne(
         expiresAt: Date.now() + PREPARED_LINK_TTL_MS,
       });
       prune();
+      if (result.data.url) prewarmMediaConnection(result.data.url);
       return result.data;
     } catch {
       return null;
@@ -240,4 +241,26 @@ export function invalidatePreparedDebridLink(
 ): void {
   const key = preparationKey(stream, debrid, hint);
   if (key) prepared.delete(key);
+}
+
+export function prewarmMediaConnection(url: string): void {
+  if (!url || typeof window === "undefined") return;
+  try {
+    if ("__TAURI_INTERNALS__" in window) {
+      import("@tauri-apps/api/core")
+        .then(({ invoke }) => {
+          void invoke("mpv_prewarm_connection", { url }).catch(() => {});
+        })
+        .catch(() => {});
+    }
+    const origin = new URL(url).origin;
+    if (origin.startsWith("http")) {
+      void fetch(origin, {
+        method: "HEAD",
+        mode: "no-cors",
+        cache: "no-store",
+        signal: AbortSignal.timeout(1500),
+      }).catch(() => {});
+    }
+  } catch {}
 }

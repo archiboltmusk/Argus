@@ -110,5 +110,7 @@ test("startup buffering is staged and adapts without lowering media quality", ()
   assert.match(mpv, /\["demuxer-max-bytes", highBitrate \? "768MiB" : "512MiB"\]/);
   assert.match(mpv, /steadyBufferLoadId !== mediaLoadId/);
   assert.match(nativeMpv, /"cache-pause-initial", "no"/);
+  assert.match(nativeMpv, /"initial-audio-sync", "no"/);
+  assert.match(mpv, /\["initial-audio-sync", "no"\]/);
   assert.doesNotMatch(startupProfile, /resolution.*replace|transcode|downscale/i);
 });
