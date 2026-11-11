@@ -824,8 +824,8 @@ function PluginRow({ item, repoUrl }: { item: EBookPluginManifest; repoUrl: stri
     try {
       if (!installed) await installEBookPlugin(item, repoUrl);
       else await removeEBookPlugin(item.id);
-    } catch {
-      setError(t("Install failed"));
+    } catch (e) {
+      setError(e instanceof Error ? e.message : t("Install failed"));
     } finally {
       setBusy(false);
     }

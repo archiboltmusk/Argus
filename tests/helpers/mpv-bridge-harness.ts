@@ -133,6 +133,11 @@ export function mpvBridgeHarness(prefs = { volume: 0.35, muted: false }, options
       buildSpatializerFilterString: () => null,
       subscribeSpatializer: () => () => {},
     },
+    "./audio/neural-dialogue-enhancer": {
+      buildDialogueEnhancerFilterString: () => null,
+      subscribeDialogueEnhancer: () => () => {},
+      isDialogueEnhancementEnabled: () => false,
+    },
   };
   const module = { exports: {} as { createMpvBridge: (options?: MpvOptions) => PlayerBridge } };
   const windowEvents = new EventTarget();

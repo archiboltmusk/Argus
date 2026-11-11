@@ -43,6 +43,10 @@ import {
   type TrackInfo,
 } from "./bridge";
 import { isNightShieldEnabled, subscribeNightShield } from "./cinema-night-shield";
+import {
+  buildDialogueEnhancerFilterString,
+  subscribeDialogueEnhancer,
+} from "./audio/neural-dialogue-enhancer";
 import { buildSpatializerFilterString, subscribeSpatializer } from "./binaural-spatializer";
 
 export type MpvProbe = {
@@ -319,11 +323,14 @@ export function createMpvBridge(mpvOptions?: MpvOptions): PlayerBridge {
     if (equalizerAf) parts.push(equalizerAf);
     const spatialAf = buildSpatializerFilterString();
     if (spatialAf) parts.push(spatialAf);
+    const dialogueFilters = buildDialogueEnhancerFilterString();
+    if (dialogueFilters.length > 0) parts.push(...dialogueFilters);
     if (parts.length > 0) parts.push("lavfi=[alimiter=limit=0.97]");
     invoke("mpv_command", { cmd: ["af", "set", parts.join(",")] }).catch(() => {});
   };
   const unsubNightShield = subscribeNightShield(() => applyAudioFilters());
   const unsubSpatializer = subscribeSpatializer(() => applyAudioFilters());
+  const unsubDialogue = subscribeDialogueEnhancer(() => applyAudioFilters());
   const listeners = new Set<(s: PlayerSnapshot) => void>();
   let unlistenEvent: UnlistenFn | null = null;
   let unlistenLog: UnlistenFn | null = null;
@@ -1646,6 +1653,7 @@ export function createMpvBridge(mpvOptions?: MpvOptions): PlayerBridge {
     destroy() {
       unsubNightShield();
       unsubSpatializer();
+      unsubDialogue();
       clearAudioDeviceReload();
       stopGeometryTracking?.();
       stopGeometryTracking = null;

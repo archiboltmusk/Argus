@@ -115,9 +115,8 @@ FormDataShim.prototype.append = function (name, value) {
 FormDataShim.prototype.toString = function () {
   return this._fields.map(function (pair) { return pair[0] + "=" + pair[1]; }).join("&");
 };
-if (typeof FormData === "undefined") {
-  __g.FormData = FormDataShim;
-}
+var FormData = (typeof FormData !== "undefined") ? FormData : FormDataShim;
+__g.FormData = FormData;
 
 // Fetch API shim routing through argus.http
 function __fetchApi(url, init) {

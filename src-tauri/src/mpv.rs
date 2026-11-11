@@ -175,7 +175,6 @@ pub struct MpvState {
 struct MpvSession {
     mpv: Arc<Mpv>,
     is_live: bool,
-    #[cfg(any(windows, target_os = "linux"))]
     embedded: bool,
     /// OS-level HDR state when the session started. Compared against the
     /// script-reported state at teardown: only an off->on flip waits.
@@ -1321,8 +1320,12 @@ pub async fn mpv_start(
         is_live,
         #[cfg(windows)]
         embedded: embed_hwnd.is_some(),
+        #[cfg(target_os = "macos")]
+        embedded: want_embed,
         #[cfg(target_os = "linux")]
         embedded: use_render_api,
+        #[cfg(all(not(windows), not(target_os = "macos"), not(target_os = "linux")))]
+        embedded: false,
         #[cfg(windows)]
         hdr_baseline_on,
         #[cfg(windows)]
