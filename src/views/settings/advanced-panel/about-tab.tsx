@@ -1,5 +1,6 @@
 import { ActionRow } from "./action-row";
 import { ExperimentalChangelog } from "@/components/update/experimental-changelog";
+import { WhatsNewSection } from "../whats-new-section";
 import { useOnboarding } from "@/lib/onboarding";
 import { Check, RotateCw } from "../icons";
 import { useEffect, useState } from "react";
@@ -26,6 +27,8 @@ export function AboutTab() {
         <AboutRow />
         <ExperimentalChangelog />
       </Section>
+
+      <WhatsNewSection />
 
       <LegalDisclaimer />
 

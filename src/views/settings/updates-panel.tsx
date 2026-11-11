@@ -2,6 +2,7 @@ import { useT } from "@/lib/i18n";
 import { ExperimentalChangelog } from "@/components/update/experimental-changelog";
 import { isLinuxDesktop } from "@/lib/platform";
 import { Section } from "./shared";
+import { WhatsNewSection } from "./whats-new-section";
 import { BetaChannelRow, ModifyInstallationRow, UpdatesRow } from "./advanced-panel";
 import { RollbackRow } from "./rollback-row";
 import { BuildFeedback } from "./build-feedback";
@@ -21,6 +22,7 @@ export function UpdatesPanel() {
 
   return (
     <>
+      <WhatsNewSection />
       <ExperimentalChangelog />
       {supportsInAppUpdates && (
         <Section
