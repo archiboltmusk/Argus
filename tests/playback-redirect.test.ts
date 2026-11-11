@@ -137,6 +137,7 @@ function pickerHarness(intent = "play") {
     },
     "@/lib/download/season-download": { downloadSeasonFromPack() {} },
     "@/lib/download/season-pack": { isDownloadableSeasonPack: () => false },
+    "@/lib/streams/stream-header-preburst": { preburstStreamHeader: async () => {} },
     "./picker-utils": {
       formatStreamQuality: () => "1080p",
       isDebridFailure: () => false,

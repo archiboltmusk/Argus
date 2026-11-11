@@ -5,7 +5,7 @@
 
 import { nuvioFetch, loadNuvioState, saveNuvioState, isNuvioSignedIn, getNuvioAccountId } from "./nuvio-client";
 import { safeFetch } from "@/lib/safe-fetch";
-import { hashProfilePassword } from "@/lib/profile-password";
+import { hashProfilePassword, verifyProfilePassword } from "@/lib/profile-password";
 import type {
   NuvioProfile,
   ProfilePushPayload,
@@ -637,8 +637,7 @@ export async function verifyNuvioPinLocally(profileIndex: number, pin: string): 
   try {
     const cachedHash = localStorage.getItem(getPinCacheKey(profileIndex));
     if (!cachedHash) return false;
-    const candidate = await hashProfilePassword(pin);
-    return candidate === cachedHash;
+    return await verifyProfilePassword(pin, cachedHash);
   } catch {
     return false;
   }
