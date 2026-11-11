@@ -25,6 +25,20 @@ applyOsDataset();
 // Add visible:false there and the TV stays black forever, because none of the
 // reveal machinery is compiled into the Android binary.
 
+async function withTimeout(promise: Promise<unknown>, ms: number): Promise<void> {
+  let timer: number | undefined;
+  try {
+    await Promise.race([
+      promise.catch(() => {}),
+      new Promise<void>((resolve) => {
+        timer = window.setTimeout(resolve, ms);
+      }),
+    ]);
+  } finally {
+    if (timer !== undefined) window.clearTimeout(timer);
+  }
+}
+
 async function mount() {
   performance.mark("argus:mount-start");
 
@@ -43,15 +57,18 @@ async function mount() {
   window.setTimeout(dismissSplash, 3500);
 
   try {
-    await Promise.all([
-      loadSecrets().catch(() => {}),
-      hydrateCustomThemes().catch(() => {}),
-    ]);
+    await withTimeout(
+      Promise.all([
+        loadSecrets().catch(() => {}),
+        hydrateCustomThemes().catch(() => {}),
+      ]),
+      1500,
+    );
     performance.mark("argus:secrets-done");
 
     // Only the selected language, and only if it is not the one compiled in.
     // The other catalogs never enter this entry's graph.
-    await ensureUiLocale(getUiLanguage()).catch(() => {});
+    await withTimeout(ensureUiLocale(getUiLanguage()), 1500);
     performance.mark("argus:locale-done");
 
     const rootEl = document.getElementById("root");

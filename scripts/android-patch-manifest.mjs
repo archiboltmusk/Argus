@@ -30,6 +30,17 @@ if (!xml.includes("networkSecurityConfig")) {
   xml = xml.replace(/<application\b/, '<application\n        android:networkSecurityConfig="@xml/network_security_config"');
 }
 
+// Budget Android 9/11 projectors (1GB RAM) cap per-app memory aggressively unless largeHeap is enabled.
+if (!xml.includes("android:largeHeap")) {
+  must(/<application\b/.test(xml), "no <application> tag in AndroidManifest.xml");
+  xml = xml.replace(/<application\b/, '<application\n        android:largeHeap="true"');
+}
+
+if (!xml.includes("android:hardwareAccelerated")) {
+  must(/<application\b/.test(xml), "no <application> tag in AndroidManifest.xml");
+  xml = xml.replace(/<application\b/, '<application\n        android:hardwareAccelerated="true"');
+}
+
 if (!xml.includes("LEANBACK_LAUNCHER")) {
   const launcher = /(\s*)<category android:name="android\.intent\.category\.LAUNCHER"\s*\/>/;
   must(launcher.test(xml), "no LAUNCHER category in AndroidManifest.xml");

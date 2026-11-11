@@ -4,6 +4,90 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <script>
+      // Legacy Android WebView Polyfills (Chrome 74-95 compatibility for smart projectors like Portronics Beem 470, Wanbo, HY300)
+      (function () {
+        if (typeof globalThis === "undefined") { window.globalThis = window; }
+        if (!String.prototype.replaceAll) {
+          String.prototype.replaceAll = function (str, newStr) {
+            if (Object.prototype.toString.call(str).toLowerCase() === "[object regexp]") {
+              return this.replace(str, newStr);
+            }
+            return this.replace(new RegExp(String(str).replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "g"), newStr);
+          };
+        }
+        if (!Array.prototype.at) {
+          Array.prototype.at = function (n) {
+            n = Math.trunc(n) || 0;
+            if (n < 0) n += this.length;
+            if (n < 0 || n >= this.length) return undefined;
+            return this[n];
+          };
+        }
+        if (!String.prototype.at) {
+          String.prototype.at = function (n) {
+            n = Math.trunc(n) || 0;
+            if (n < 0) n += this.length;
+            if (n < 0 || n >= this.length) return undefined;
+            return this.charAt(n);
+          };
+        }
+        if (!Object.hasOwn) {
+          Object.hasOwn = function (obj, prop) {
+            return obj != null && Object.prototype.hasOwnProperty.call(obj, prop);
+          };
+        }
+        if (typeof Promise !== "undefined" && !Promise.allSettled) {
+          Promise.allSettled = function (promises) {
+            return Promise.all(
+              Array.from(promises).map(function (p) {
+                return Promise.resolve(p).then(
+                  function (value) { return { status: "fulfilled", value: value }; },
+                  function (reason) { return { status: "rejected", reason: reason }; }
+                );
+              })
+            );
+          };
+        }
+        if (typeof structuredClone !== "function") {
+          window.structuredClone = function (val) {
+            if (val === undefined || val === null || typeof val !== "object") return val;
+            return JSON.parse(JSON.stringify(val));
+          };
+        }
+        if (typeof crypto !== "undefined" && !crypto.randomUUID) {
+          crypto.randomUUID = function () {
+            if (crypto.getRandomValues) {
+              var b = crypto.getRandomValues(new Uint8Array(16));
+              b[6] = (b[6] & 0x0f) | 0x40;
+              b[8] = (b[8] & 0x3f) | 0x80;
+              var h = [];
+              for (var i = 0; i < b.length; i++) {
+                h.push((b[i] < 16 ? "0" : "") + b[i].toString(16));
+              }
+              return h.slice(0,4).join("") + "-" + h.slice(4,6).join("") + "-" + h.slice(6,8).join("") + "-" + h.slice(8,10).join("") + "-" + h.slice(10).join("");
+            }
+            return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, function (c) {
+              var r = (Math.random() * 16) | 0;
+              return (c === "x" ? r : (r & 0x3) | 0x8).toString(16);
+            });
+          };
+        }
+        if (typeof Element !== "undefined" && !Element.prototype.replaceChildren) {
+          Element.prototype.replaceChildren = function () {
+            while (this.firstChild) this.removeChild(this.firstChild);
+            for (var i = 0; i < arguments.length; i++) {
+              this.appendChild(typeof arguments[i] === "string" ? document.createTextNode(arguments[i]) : arguments[i]);
+            }
+          };
+        }
+        // Track startup health so older projectors never stall permanently on a blank black screen
+        window.__argusBootErrors = [];
+        window.addEventListener("error", function (e) {
+          window.__argusBootErrors.push(String(e && (e.message || e.error || "Unknown script error")));
+        });
+      })();
+    </script>
+    <script>
       // A television lays out on this canvas, settled by eye on a real panel
       // from a sofa. Fixed on purpose, never derived: apparent size across a
       // room is a fraction of the screen, not a pixel count. Deriving it from
@@ -236,6 +320,20 @@
             }, 650);
           }
         }, 4000);
+
+        window.setTimeout(function () {
+          var root = document.getElementById('root');
+          if (root && root.children.length === 0) {
+            var errs = (window.__argusBootErrors || []).slice(-3);
+            var msg = errs.length > 0 ? errs.join(' | ') : 'WebView engine did not finish loading bundle (System WebView may be outdated).';
+            root.innerHTML =
+              '<div style="position:fixed;inset:0;background:#08090a;color:#f3f4f6;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:48px;text-align:center;font-family:system-ui,sans-serif;z-index:99999">' +
+                '<h1 style="font-size:28px;font-weight:700;margin:0 0 12px">Argus Recovery Mode</h1>' +
+                '<p style="font-size:16px;color:#9ca3af;max-width:640px;margin:0 0 24px;line-height:1.5">' + msg.replace(/</g, '&lt;') + '</p>' +
+                '<button onclick="location.reload()" autofocus style="background:#e8a95c;color:#111214;border:0;border-radius:8px;padding:12px 28px;font-size:16px;font-weight:600;cursor:pointer">Reload Argus</button>' +
+              '</div>';
+          }
+        }, 8500);
       })();
     </script>
     <script type="module" src="/src/boot-artwork.ts"></script>

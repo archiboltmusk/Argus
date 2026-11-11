@@ -88,3 +88,22 @@ test("Android External Players: Intent builder creates valid View intent", () =>
   assert.ok(intent.includes("S.title=Inception%20(2010)"));
   assert.ok(intent.endsWith(";end"));
 });
+
+test("Smart Projector Boot: GamepadRunner avoids unpolyfilled replaceAll for Chrome 74-84 compatibility", async () => {
+  const fs = await import("node:fs");
+  const code = fs.readFileSync(new URL("../src/components/gamepad-runner.tsx", import.meta.url), "utf8");
+  assert.equal(code.includes(".replaceAll("), false, "GamepadRunner must not use .replaceAll() directly");
+  assert.ok(code.includes(".replace(/:hover/g"), "GamepadRunner must use RegExp replacement");
+});
+
+test("Smart Projector Boot: index-tv.html includes runtime polyfills for legacy Android WebViews", async () => {
+  const fs = await import("node:fs");
+  const html = fs.readFileSync(new URL("../index-tv.html", import.meta.url), "utf8");
+  assert.ok(html.includes("String.prototype.replaceAll"));
+  assert.ok(html.includes("Array.prototype.at"));
+  assert.ok(html.includes("Object.hasOwn"));
+  assert.ok(html.includes("Promise.allSettled"));
+  assert.ok(html.includes("structuredClone"));
+  assert.ok(html.includes("crypto.randomUUID"));
+  assert.ok(html.includes("__argusBootErrors"));
+});

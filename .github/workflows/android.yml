@@ -69,11 +69,10 @@ jobs:
       - run: pnpm tauri android init --ci
       # Cleartext to the local torrent engine and the Android TV launcher entry.
       - run: node scripts/android-patch-manifest.mjs
-      - name: Build release APKs (arm64 and armv7)
+      - name: Build release APKs (arm64, armv7, and universal)
         run: |
-          pnpm tauri android build --apk --target aarch64 --ci --ignore-version-mismatches
-          # Also build armv7 (32-bit) which is required by almost all budget/smart projectors
-          pnpm tauri android build --apk --target armv7 --ci --ignore-version-mismatches || echo "::warning::armv7 build step failed, continuing with arm64"
+          pnpm tauri android build --apk -t aarch64 -t armv7 --split-per-abi --ci --ignore-version-mismatches
+          pnpm tauri android build --apk -t aarch64 -t armv7 --ci --ignore-version-mismatches
       # Release APKs come out unsigned and cannot be installed. Sign with the
       # ANDROID_KEYSTORE_* secrets when set so updates over an older install
       # work; otherwise fall back to a throwaway key (fresh installs only).
@@ -105,9 +104,9 @@ jobs:
           fi
 
           # Find and sign arm64 APK
-          ARM64_APK=$(find src-tauri/gen/android -name '*arm64*-release-unsigned.apk' -o -name '*aarch64*-release-unsigned.apk' -print -quit || true)
+          ARM64_APK=$(find src-tauri/gen/android -name '*arm64-v8a*-release-unsigned.apk' -print -quit || true)
           if [ -z "$ARM64_APK" ]; then
-            ARM64_APK=$(find src-tauri/gen/android -name '*-release-unsigned.apk' -print -quit)
+            ARM64_APK=$(find src-tauri/gen/android \( -name '*universal*-release-unsigned.apk' -o -name '*-release-unsigned.apk' \) -print -quit)
           fi
           test -n "$ARM64_APK"
           "$BT/zipalign" -f -p 4 "$ARM64_APK" aligned-arm64.apk
@@ -116,18 +115,26 @@ jobs:
           "$BT/apksigner" verify Argus-android-arm64.apk
           cp Argus-android-arm64.apk Argus-AndroidTV-arm64.apk
 
-          # Find and sign armv7 (32-bit projector) APK if built
-          ARMV7_APK=$(find src-tauri/gen/android -name '*armv7*-release-unsigned.apk' -o -name '*armeabi*-release-unsigned.apk' -print -quit || true)
+          # Find and sign armv7 (32-bit projector) APK
+          ARMV7_APK=$(find src-tauri/gen/android \( -name '*armeabi-v7a*-release-unsigned.apk' -o -name '*armv7*-release-unsigned.apk' \) -print -quit || true)
           if [ -n "$ARMV7_APK" ]; then
             "$BT/zipalign" -f -p 4 "$ARMV7_APK" aligned-armv7.apk
             "$BT/apksigner" sign --ks "$RUNNER_TEMP/release.jks" --ks-pass "pass:$STORE_PASS" \
               --ks-key-alias "$ALIAS" --out Argus-android-armv7.apk aligned-armv7.apk
             "$BT/apksigner" verify Argus-android-armv7.apk
             cp Argus-android-armv7.apk Argus-SmartProjector-AndroidTV-armv7.apk
-            # Projectors default to armv7 if 32-bit:
-            cp Argus-android-armv7.apk Argus-SmartProjector-AndroidTV.apk
+          fi
+
+          # Sign Universal (arm64 + armv7 dual ABI) APK as the primary Smart Projector APK
+          UNIV_APK=$(find src-tauri/gen/android -name '*universal*-release-unsigned.apk' -print -quit || true)
+          if [ -n "$UNIV_APK" ]; then
+            "$BT/zipalign" -f -p 4 "$UNIV_APK" aligned-univ.apk
+            "$BT/apksigner" sign --ks "$RUNNER_TEMP/release.jks" --ks-pass "pass:$STORE_PASS" \
+              --ks-key-alias "$ALIAS" --out Argus-SmartProjector-AndroidTV.apk aligned-univ.apk
+            "$BT/apksigner" verify Argus-SmartProjector-AndroidTV.apk
+          elif [ -n "$ARMV7_APK" ]; then
+            cp Argus-SmartProjector-AndroidTV-armv7.apk Argus-SmartProjector-AndroidTV.apk
           else
-            echo "::notice::armv7 APK was not produced; falling back Argus-SmartProjector-AndroidTV.apk to arm64"
             cp Argus-android-arm64.apk Argus-SmartProjector-AndroidTV.apk
           fi
 
@@ -155,7 +162,7 @@ jobs:
       - env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          TAG="beta"
+          TAG="v3.17.1"
           if [[ "${{ github.ref }}" == refs/tags/v* ]]; then
             TAG="${{ github.ref_name }}"
           fi

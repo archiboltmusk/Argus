@@ -14,7 +14,7 @@ function hoverCss(rules: CSSRuleList): string {
     .map((rule) => {
       if (rule instanceof CSSKeyframesRule) return "";
       if (rule instanceof CSSStyleRule && rule.selectorText.includes(":hover")) {
-        return `${rule.selectorText.replaceAll(":hover", "[data-gamepad-hover]")}{${rule.style.cssText}${hoverCss(rule.cssRules)}}`;
+        return `${rule.selectorText.replace(/:hover/g, "[data-gamepad-hover]")}{${rule.style.cssText}${hoverCss(rule.cssRules)}}`;
       }
       if (!("cssRules" in rule)) return "";
       const inner = hoverCss((rule as CSSGroupingRule).cssRules);

@@ -1,4 +1,6 @@
 import { useEffect, useRef, useState } from "react";
+import { isSmartProjector } from "@/lib/platform";
+import { isBudgetProjectorDevice } from "@/lib/player/projector-mode";
 import { bpBootElapsedMs } from "./bp-boot-splash";
 
 const MIN_VISIBLE_MS = 5000;
@@ -69,7 +71,10 @@ export function useBpIntro(active: boolean, contentReady: boolean): BpIntroPhase
       }, FADE_MS + 40);
     };
 
-    const capIn = Math.max(MIN_AFTER_MOUNT_MS, MAX_VISIBLE_MS - (Date.now() - openedAt));
+    const isProj = isSmartProjector() || isBudgetProjectorDevice();
+    const effectiveMinAfterMount = isProj ? 1200 : MIN_AFTER_MOUNT_MS;
+    const effectiveMaxVisible = isProj ? 3500 : MAX_VISIBLE_MS;
+    const capIn = Math.max(effectiveMinAfterMount, effectiveMaxVisible - (Date.now() - openedAt));
     const cap = window.setTimeout(beginLeave, capIn);
 
     // Navigation is dead while the splash is up. Without a skip the first
@@ -92,7 +97,8 @@ export function useBpIntro(active: boolean, contentReady: boolean): BpIntroPhase
     const tick = () => {
       if (!contentReady) return;
       const waited = Date.now() - openedAt;
-      const remaining = Math.max(0, MIN_VISIBLE_MS - waited);
+      const effectiveMinVisible = isProj ? 1800 : MIN_VISIBLE_MS;
+      const remaining = Math.max(0, effectiveMinVisible - waited);
       window.clearTimeout(cap);
       leaveTimer = window.setTimeout(beginLeave, remaining);
     };

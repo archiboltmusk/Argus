@@ -1,5 +1,5 @@
 import { openUrl as tauriOpenUrl } from "@tauri-apps/plugin-opener";
-import { isAndroid, isAndroidTv, isSmartProjector } from "@/lib/platform";
+import { isAndroid } from "@/lib/platform";
 
 export type AndroidPlayerId =
   | "justplayer"

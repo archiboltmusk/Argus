@@ -3,6 +3,8 @@ import { Poster } from "@/components/poster";
 import { CustomArtwork } from "@/components/custom-artwork";
 import type { Meta } from "@/lib/cinemeta";
 import { useReducedMotion } from "@/lib/use-reduced-motion";
+import { isSmartProjector } from "@/lib/platform";
+import { isBudgetProjectorDevice } from "@/lib/player/projector-mode";
 import { bpBoxPx, bpCardArt, bpViewportWidth, type BpArtBox } from "./bp-art";
 import { bpBootSplashDismiss, bpBootSplashUp } from "./bp-boot-splash";
 import { bpIntroPoolLoad } from "./bp-intro-pool";
@@ -89,6 +91,7 @@ export function BpIntro({ pool, leaving }: { pool: Meta[]; leaving: boolean }) {
   }
 
   const posters = frozen.current ?? [];
+  const isProjector = isSmartProjector() || isBudgetProjectorDevice();
 
   return (
     <div
@@ -97,11 +100,13 @@ export function BpIntro({ pool, leaving }: { pool: Meta[]; leaving: boolean }) {
         leaving ? "[animation:bp-intro-out_620ms_var(--bp-ease)_forwards]" : ""
       } motion-reduce:[animation:none]`}
     >
-      <div className="absolute inset-0 flex gap-[clamp(10px,1vw,20px)] px-[clamp(10px,1vw,20px)] opacity-[0.5] [animation:bp-intro-bed_1400ms_var(--bp-ease)_both] motion-reduce:[animation:none]">
-        {Array.from({ length: COLUMNS }, (_, col) => (
-          <BpIntroColumn key={col} idx={col} posters={posters} />
-        ))}
-      </div>
+      {!isProjector && (
+        <div className="absolute inset-0 flex gap-[clamp(10px,1vw,20px)] px-[clamp(10px,1vw,20px)] opacity-[0.5] [animation:bp-intro-bed_1400ms_var(--bp-ease)_both] motion-reduce:[animation:none]">
+          {Array.from({ length: COLUMNS }, (_, col) => (
+            <BpIntroColumn key={col} idx={col} posters={posters} />
+          ))}
+        </div>
+      )}
 
       <div
         className="absolute inset-0"
