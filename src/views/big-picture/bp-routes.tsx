@@ -1,4 +1,6 @@
 import { lazy } from "react";
+import { isSmartProjector } from "@/lib/platform";
+import { isBudgetProjectorDevice } from "@/lib/player/projector-mode";
 
 /**
  * What a split route shows while its chunk resolves.
@@ -96,6 +98,10 @@ let warmed = false;
 export function bpWarmRoutes(): void {
   if (warmed) return;
   warmed = true;
+  // On 1GB RAM budget/smart projectors (Portronics Beem 470, Wanbo, HY300), background
+  // preloading of 14 heavy route chunks bloats WebView memory and risks OOM kills;
+  // routes load lazily on demand instead.
+  if (isSmartProjector() || isBudgetProjectorDevice()) return;
   let i = 0;
   const idle: (cb: () => void) => void =
     typeof requestIdleCallback === "function"

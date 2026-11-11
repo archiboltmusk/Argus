@@ -5,8 +5,8 @@
 //   - Android TV: leanback launcher entry and non-required touchscreen/leanback features
 //   - Deep linking: native intent-filters for argus://, nuvio://, and stremio://
 // Fails loudly when the template changes shape so a release never ships unpatched.
-import { copyFileSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
-import { join } from "node:path";
+import { copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
+import { dirname, join } from "node:path";
 
 const app = join("src-tauri", "gen", "android", "app", "src", "main");
 const manifestPath = join(app, "AndroidManifest.xml");
@@ -119,5 +119,108 @@ if (!xml.includes('android:scheme="argus"')) {
   }
 }
 
+if (!xml.includes("ArgusNativePlayerActivity")) {
+  const playerActivity =
+    '      <activity\n' +
+    '          android:name=".ArgusNativePlayerActivity"\n' +
+    '          android:configChanges="orientation|screenSize|smallestScreenSize|screenLayout|keyboard|keyboardHidden|navigation|uiMode"\n' +
+    '          android:theme="@style/Theme.AppCompat.NoActionBar"\n' +
+    '          android:launchMode="singleTop"\n' +
+    '          android:exported="false" />\n';
+  must(/<\/application>/.test(xml), "no </application> tag in AndroidManifest.xml");
+  xml = xml.replace(/<\/application>/, `${playerActivity}    </application>`);
+}
+
 writeFileSync(manifestPath, xml);
 console.log("[android-patch] patched", manifestPath);
+
+// Locate generated MainActivity.kt inside src/main/java or src/main/kotlin
+function findFileRecursive(dir, filename) {
+  if (!existsSync(dir)) return null;
+  for (const entry of readdirSync(dir, { withFileTypes: true })) {
+    const full = join(dir, entry.name);
+    if (entry.isDirectory()) {
+      const hit = findFileRecursive(full, filename);
+      if (hit) return hit;
+    } else if (entry.name === filename) {
+      return full;
+    }
+  }
+  return null;
+}
+
+const mainActivityPath =
+  findFileRecursive(join(app, "java"), "MainActivity.kt") ||
+  findFileRecursive(join(app, "kotlin"), "MainActivity.kt");
+must(Boolean(mainActivityPath), "could not locate MainActivity.kt inside generated Android app");
+
+const kotlinDir = dirname(mainActivityPath);
+let mainActivitySrc = readFileSync(mainActivityPath, "utf8");
+const pkgMatch = /^\s*package\s+([A-Za-z0-9_.]+)/m.exec(mainActivitySrc);
+must(Boolean(pkgMatch), `no package declaration in ${mainActivityPath}`);
+const appPackage = pkgMatch[1];
+
+const nativePlayerTemplateDir = join("docs", "android", "native-player");
+for (const ktFile of [
+  "ArgusNativePlayerState.kt",
+  "ArgusNativePlayerActivity.kt",
+  "ArgusNativePlayerBridge.kt",
+]) {
+  const src = readFileSync(join(nativePlayerTemplateDir, ktFile), "utf8").replace(
+    /__PACKAGE_NAME__/g,
+    appPackage,
+  );
+  writeFileSync(join(kotlinDir, ktFile), src);
+}
+
+if (!mainActivitySrc.includes("onWebViewCreate")) {
+  if (!mainActivitySrc.includes("android.webkit.WebView")) {
+    mainActivitySrc = mainActivitySrc.replace(
+      /(package\s+[^\r\n]+)/,
+      "$1\n\nimport android.webkit.WebView",
+    );
+  }
+  const webViewHook =
+    "\n  override fun onWebViewCreate(webView: WebView) {\n" +
+    "    super.onWebViewCreate(webView)\n" +
+    "    webView.settings.domStorageEnabled = true\n" +
+    "    webView.settings.databaseEnabled = true\n" +
+    "    webView.settings.mediaPlaybackRequiresUserGesture = false\n" +
+    '    webView.addJavascriptInterface(ArgusNativePlayerBridge(this, webView), "ArgusNativePlayer")\n' +
+    "  }\n";
+  must(/}\s*$/.test(mainActivitySrc), "unexpected end of MainActivity.kt");
+  mainActivitySrc = mainActivitySrc.replace(/}\s*$/, `${webViewHook}}\n`);
+  writeFileSync(mainActivityPath, mainActivitySrc);
+  console.log("[android-patch] wired ArgusNativePlayer bridge into", mainActivityPath);
+}
+
+// Inject Media3 ExoPlayer + LibVLC native dependencies into app/build.gradle.kts
+const appGradlePath = join("src-tauri", "gen", "android", "app", "build.gradle.kts");
+must(existsSync(appGradlePath), `missing ${appGradlePath}`);
+let appGradle = readFileSync(appGradlePath, "utf8");
+
+if (!appGradle.includes("media3-exoplayer")) {
+  const mediaDeps =
+    '    implementation("androidx.media3:media3-exoplayer:1.5.1")\n' +
+    '    implementation("androidx.media3:media3-exoplayer-hls:1.5.1")\n' +
+    '    implementation("androidx.media3:media3-exoplayer-dash:1.5.1")\n' +
+    '    implementation("androidx.media3:media3-ui:1.5.1")\n' +
+    '    implementation("androidx.media3:media3-common:1.5.1")\n' +
+    '    implementation("org.videolan.android:libvlc-all:3.6.0")\n';
+  must(/dependencies\s*\{/.test(appGradle), "no dependencies block in app/build.gradle.kts");
+  appGradle = appGradle.replace(/dependencies\s*\{/, `dependencies {\n${mediaDeps}`);
+}
+
+if (!appGradle.includes("libc++_shared.so")) {
+  const packagingBlock =
+    '    packaging {\n' +
+    '        jniLibs {\n' +
+    '            pickFirsts.add("**/libc++_shared.so")\n' +
+    '        }\n' +
+    '    }\n';
+  must(/android\s*\{/.test(appGradle), "no android block in app/build.gradle.kts");
+  appGradle = appGradle.replace(/android\s*\{/, `android {\n${packagingBlock}`);
+}
+
+writeFileSync(appGradlePath, appGradle);
+console.log("[android-patch] patched dependencies in", appGradlePath);

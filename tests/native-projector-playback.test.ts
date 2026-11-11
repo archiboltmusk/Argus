@@ -107,3 +107,104 @@ test("Smart Projector Boot: index-tv.html includes runtime polyfills for legacy 
   assert.ok(html.includes("crypto.randomUUID"));
   assert.ok(html.includes("__argusBootErrors"));
 });
+
+test("Phase 1 CSS Compatibility: lowerAndroidCss unwraps @layer, sets @property defaults, and converts oklch/color-mix", async () => {
+  const { lowerAndroidCss } = await import("../scripts/android-css-compat.mjs");
+  const sampleCss = `
+    @layer theme, base, utilities;
+    @layer base { :root { --color-accent: oklch(78% 0.13 60); } }
+    @layer utilities { .bg-accent-soft { background: color-mix(in oklab, var(--color-accent) 20%, transparent); } }
+    @property --tw-border-style { syntax: "*"; inherits: false; initial-value: solid; }
+  `;
+  const lowered = lowerAndroidCss(sampleCss);
+  assert.equal(/@layer[\s{;]/.test(lowered), false, "@layer blocks must be unwrapped");
+  assert.equal(lowered.includes("oklch("), false, "oklch() must be lowered to rgb/rgba");
+  assert.equal(lowered.includes("color-mix("), false, "color-mix() must be lowered to rgba");
+  assert.ok(lowered.includes("--tw-border-style:solid"), "missing @property defaults in :root");
+  assert.ok(lowered.includes("rgb(") || lowered.includes("rgba("), "rgb/rgba output missing");
+});
+
+test("Phase 2 Native Android Player: Kotlin Media3 ExoPlayer + LibVLC activity and ExoPlayer bridge delegate cleanly", async () => {
+  const fs = await import("node:fs");
+  const ktActivity = fs.readFileSync(
+    new URL("../docs/android/native-player/ArgusNativePlayerActivity.kt", import.meta.url),
+    "utf8",
+  );
+  const ktBridge = fs.readFileSync(
+    new URL("../docs/android/native-player/ArgusNativePlayerBridge.kt", import.meta.url),
+    "utf8",
+  );
+  const patchScript = fs.readFileSync(
+    new URL("../scripts/android-patch-manifest.mjs", import.meta.url),
+    "utf8",
+  );
+  assert.ok(ktActivity.includes("ExoPlayer") && ktActivity.includes("LibVLC"));
+  assert.ok(ktBridge.includes("@JavascriptInterface"));
+  assert.ok(patchScript.includes("media3-exoplayer:1.5.1"));
+  assert.ok(patchScript.includes("libvlc-all:3.6.0"));
+
+  // Simulate Android WebView injected ArgusNativePlayer JS interface
+  const calls: Array<{ method: string; arg?: unknown }> = [];
+  const g = globalThis as unknown as {
+    window?: Record<string, unknown>;
+    self?: unknown;
+  };
+  const prevWindow = g.window;
+  const prevSelf = g.self;
+  try {
+    if (!g.self) g.self = g;
+    g.window = {
+      ArgusNativePlayer: {
+        isAvailable: () => true,
+        play: (json: string) => {
+          calls.push({ method: "play", arg: JSON.parse(json) });
+          return true;
+        },
+        pause: () => calls.push({ method: "pause" }),
+        resume: () => calls.push({ method: "resume" }),
+        seekTo: (ms: number) => calls.push({ method: "seekTo", arg: ms }),
+        setRate: (r: number) => calls.push({ method: "setRate", arg: r }),
+        setAudioTrack: () => {},
+        setSubtitleTrack: () => {},
+        addSubtitle: () => {},
+        stop: () => calls.push({ method: "stop" }),
+        getStateJson: () => JSON.stringify({ status: "playing", positionMs: 12000, durationMs: 3600000 }),
+      },
+      setInterval,
+      clearInterval,
+    };
+
+    const { createExoPlayerBridge, isAndroidNativePlayerAvailable } = await import(
+      "../src/lib/player/engines/exoplayer-bridge.ts"
+    );
+    assert.equal(isAndroidNativePlayerAvailable(), true);
+    const bridge = createExoPlayerBridge({ isProjector: true, isTv: true });
+    let latestPos = 0;
+    bridge.subscribe((s) => {
+      latestPos = s.positionSec;
+    });
+    await bridge.load({
+      url: "http://127.0.0.1:11470/movie.mkv",
+      title: "Dune Part Two",
+      startAtSec: 30,
+      notWebReady: true,
+    });
+    bridge.seek(120);
+    bridge.pause();
+    bridge.destroy();
+
+    const playCall = calls.find((c) => c.method === "play")?.arg as Record<string, unknown>;
+    assert.equal(playCall.url, "http://127.0.0.1:11470/movie.mkv");
+    assert.equal(playCall.startPositionMs, 30000);
+    assert.equal(playCall.projectorMode, true);
+    assert.ok(calls.some((c) => c.method === "seekTo" && c.arg === 120000));
+    assert.ok(calls.some((c) => c.method === "pause"));
+    assert.ok(calls.some((c) => c.method === "stop"));
+    assert.equal(latestPos, 0);
+  } finally {
+    if (prevWindow === undefined) delete g.window;
+    else g.window = prevWindow;
+    if (prevSelf === undefined) delete g.self;
+    else g.self = prevSelf;
+  }
+});

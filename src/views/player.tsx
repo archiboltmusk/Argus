@@ -27,6 +27,7 @@ import { useSkipSegments, useAdSegments } from "@/lib/skip-intro";
 import { withinAdWindow } from "@/lib/ad-report/window";
 import { isLocalUrl } from "@/lib/player/local-url";
 import { isLivePlaybackSrc } from "@/lib/player/live-src";
+import { isAndroidNativePlayerAvailable } from "@/lib/player/engines/exoplayer-bridge";
 import { hasPlaybackStartedForStallCheck, stallWaitMs } from "@/lib/player/stall-wait";
 import { useAuth } from "@/lib/auth";
 import { embedFlags } from "./player/player-utils";
@@ -818,6 +819,7 @@ function NativePlayerView({ src }: { src: PlayerSrc }) {
   const showHeaderWarning =
     src.notWebReady === true &&
     engine === "html5" &&
+    !isAndroidNativePlayerAvailable() &&
     !settings.playerExternalMpv &&
     (snap.status === "error" || snap.status === "loading");
   // The browser has no mpv to fall back to, so say why a source can't play

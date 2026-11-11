@@ -4,6 +4,7 @@ import { defineConfig, type ViteDevServer, type HttpProxy } from "vite";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 import pkg from "./package.json" with { type: "json" };
+import { lowerAndroidCss } from "./scripts/android-css-compat.mjs";
 
 import process from "node:process";
 
@@ -48,6 +49,21 @@ function servePublicMediapipe() {
   };
 }
 
+function androidLegacyCssPlugin() {
+  return {
+    name: "android-legacy-css-compat",
+    apply: "build" as const,
+    enforce: "post" as const,
+    generateBundle(_options: unknown, bundle: Record<string, { type: string; source?: string | Uint8Array }>) {
+      for (const [fileName, item] of Object.entries(bundle)) {
+        if (fileName.endsWith(".css") && item.type === "asset" && typeof item.source === "string") {
+          item.source = lowerAndroidCss(item.source);
+        }
+      }
+    },
+  };
+}
+
 export default defineConfig(({ mode }) => {
   const android = mode === "android" || process.env.ARGUS_TARGET === "android";
   // Static browser build: main entry only, no Tauri windows. The base path is
@@ -56,7 +72,13 @@ export default defineConfig(({ mode }) => {
   const devHost = process.env.TAURI_DEV_HOST;
   return {
     staged: { "*": "vp check --fix" },
-    plugins: [react(), tailwindcss(), silenceMediapipeSourcemap(), servePublicMediapipe()],
+    plugins: [
+      react(),
+      tailwindcss(),
+      silenceMediapipeSourcemap(),
+      servePublicMediapipe(),
+      ...(android ? [androidLegacyCssPlugin()] : []),
+    ],
     clearScreen: false,
     base: web ? (process.env.ARGUS_WEB_BASE || "./") : "./",
     define: {
@@ -88,7 +110,26 @@ export default defineConfig(({ mode }) => {
       ? {
           build: {
             target: "chrome74",
-            rollupOptions: { input: { tv: "index-tv.html", main: "index.html" } as Record<string, string> },
+            cssTarget: "chrome74",
+            rollupOptions: {
+              input: { tv: "index-tv.html", main: "index.html" } as Record<string, string>,
+              output: {
+                manualChunks(id: string) {
+                  if (id.includes("node_modules/react/") || id.includes("node_modules/react-dom/")) {
+                    return "react-vendor";
+                  }
+                  if (id.includes("node_modules/hls.js") || id.includes("node_modules/mpegts.js")) {
+                    return "media-streams";
+                  }
+                  if (id.includes("node_modules/pdfmake") || id.includes("node_modules/html-to-pdfmake")) {
+                    return "pdf-export";
+                  }
+                  if (id.includes("node_modules/skinview3d")) {
+                    return "skinview3d";
+                  }
+                },
+              },
+            },
           },
         }
       : web

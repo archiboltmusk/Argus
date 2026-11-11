@@ -821,15 +821,81 @@ export const BP_TOKENS = `
 
 export const BP_STYLE_ID = "argus-big-picture-tokens";
 
+// Legacy WebView fallback (Chromium < 111 lacks CSS color-mix()). Applied only
+// when CSS.supports("color", "color-mix(in oklab, red, red)") evaluates to false.
+const BP_LEGACY_COLOR_OVERRIDES = `
+[data-bp-root] {
+  --bp-void: rgb(13, 14, 17);
+  --bp-page: rgb(17, 18, 22);
+  --bp-panel: rgb(22, 24, 28);
+  --bp-panel-2: rgb(33, 36, 42);
+  --bp-glass: rgba(244, 245, 247, 0.07);
+  --bp-edge: rgba(244, 245, 247, 0.11);
+  --bp-edge-2: rgba(244, 245, 247, 0.18);
+  --bp-on: rgb(64, 66, 70);
+  --bp-plate-lo: rgba(244, 245, 247, 0.07);
+  --bp-plate-hi: rgba(244, 245, 247, 0.11);
+  --bp-focus-stroke: rgba(244, 245, 247, 0.86);
+  --bp-focus-face: rgb(79, 82, 88);
+  --bp-scrim-up: linear-gradient(
+    0deg,
+    rgb(13, 14, 17) 0%,
+    rgba(13, 14, 17, 0.88) 18%,
+    rgba(13, 14, 17, 0.62) 34%,
+    rgba(13, 14, 17, 0.3) 52%,
+    rgba(13, 14, 17, 0.1) 68%,
+    transparent 82%
+  );
+  --bp-scrim-side: linear-gradient(
+    100deg,
+    rgba(13, 14, 17, 0.82) 0%,
+    rgba(13, 14, 17, 0.52) 30%,
+    rgba(13, 14, 17, 0.16) 52%,
+    transparent 70%
+  );
+}
+[dir="rtl"] [data-bp-root] {
+  --bp-scrim-side: linear-gradient(
+    260deg,
+    rgba(13, 14, 17, 0.82) 0%,
+    rgba(13, 14, 17, 0.52) 30%,
+    rgba(13, 14, 17, 0.16) 52%,
+    transparent 70%
+  );
+}
+[data-bp-root] [data-bp-top-bar] nav[data-bp-row]:not([data-bp-row-focus]) [data-bp-chip] {
+  color: rgba(244, 245, 247, 0.46);
+}
+[data-bp-root] [data-bp-top-bar] nav[data-bp-row]:not([data-bp-row-focus]) [data-bp-chip][data-bp-tab-on="true"] {
+  background: rgba(244, 245, 247, 0.08);
+}
+`;
+
+function buildBpTokensText(): string {
+  try {
+    const supportsColorMix =
+      typeof CSS !== "undefined" &&
+      typeof CSS.supports === "function" &&
+      CSS.supports("color", "color-mix(in oklab, red, red)");
+    if (!supportsColorMix) {
+      return BP_TOKENS + BP_LEGACY_COLOR_OVERRIDES;
+    }
+  } catch {
+    return BP_TOKENS + BP_LEGACY_COLOR_OVERRIDES;
+  }
+  return BP_TOKENS;
+}
+
 export function ensureBigPictureTokens(): void {
   if (typeof document === "undefined") return;
+  const cssText = buildBpTokensText();
   const existing = document.getElementById(BP_STYLE_ID);
   if (existing) {
-    if (existing.textContent !== BP_TOKENS) existing.textContent = BP_TOKENS;
+    if (existing.textContent !== cssText) existing.textContent = cssText;
     return;
   }
   const el = document.createElement("style");
   el.id = BP_STYLE_ID;
-  el.textContent = BP_TOKENS;
+  el.textContent = cssText;
   document.head.appendChild(el);
 }
