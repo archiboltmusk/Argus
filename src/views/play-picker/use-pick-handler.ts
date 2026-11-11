@@ -306,10 +306,8 @@ export function usePickHandler({
       }
       markPlaybackTrace(playbackTraceId, "resolve-ready");
       const hasProxyHeaders = !!r.data.headers && Object.keys(r.data.headers).length > 0;
-      // Native mpv can consume ordinary debrid URLs directly. Keep the local
-      // proxy off the startup path unless the source actually requires custom
-      // request headers.
-      if (intent !== "download" && hasProxyHeaders) {
+      const isWebPlatform = typeof window !== "undefined" && !("__TAURI_INTERNALS__" in window);
+      if (intent !== "download" && hasProxyHeaders && isWebPlatform) {
         try {
           const proxied = await registerStreamProxy(r.data.url, r.data.headers);
           playUrl = proxied.url;
@@ -413,6 +411,7 @@ export function usePickHandler({
               }
             : undefined,
         url: playUrl,
+        headers: r.data.headers,
         title: episode
           ? episode.name ||
             metaEpisodeName(meta, episode) ||

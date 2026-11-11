@@ -480,6 +480,29 @@ export function PlayPicker({
     return () => ac.abort();
   }, [settings.instantPlaybackPreparation, isDownload, playbackPreparationSignature]);
 
+  useEffect(() => {
+    if (!filteredPicker?.primary || isDownload || debrids.length === 0) return;
+    void prepareCachedDebridStreams(
+      [filteredPicker.primary],
+      debrids,
+      playbackPreparationHint,
+      new AbortController().signal,
+    ).catch(() => {});
+  }, [filteredPicker?.primary, isDownload, debrids, playbackPreparationHint]);
+
+  const warmStream = useCallback(
+    (stream: ScoredStream) => {
+      if (isDownload || debrids.length === 0) return;
+      void prepareCachedDebridStreams(
+        [stream],
+        debrids,
+        playbackPreparationHint,
+        new AbortController().signal,
+      ).catch(() => {});
+    },
+    [isDownload, debrids, playbackPreparationHint],
+  );
+
   const langHiddenCount = useMemo(() => {
     if (!result || preferredLangs.length === 0) return 0;
     return result.picker.all.filter((s) => !streamMatchesLangs(s, preferredLangs)).length;
@@ -1170,6 +1193,7 @@ export function PlayPicker({
             preserveOrder={addonOrderMode || !!hostMatch}
             matchFor={hostMatch ? matchFor : undefined}
             onPlay={playManually}
+            onWarm={warmStream}
             download={isDownload}
             downloadStateFor={(stream) =>
               resolving?.stream === stream

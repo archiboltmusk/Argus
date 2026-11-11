@@ -2,10 +2,11 @@ import type { EpisodeHint } from "@/lib/streams/episode-file";
 import type { ParsedStream, ScoredStream } from "@/lib/streams/types";
 import { magnetFromHash, type DebridStore, type DirectLink } from "./types";
 
-const PREPARED_LINK_TTL_MS = 2 * 60 * 1000;
-const MAX_PREPARES_PER_MINUTE = 6;
-const MAX_PREPARES_PER_HOUR = 30;
-const MAX_CACHE_ENTRIES = 64;
+const PREPARED_LINK_TTL_MS = 5 * 60 * 1000;
+const MAX_PREPARES_PER_MINUTE = 30;
+const MAX_PREPARES_PER_HOUR = 120;
+const MAX_CACHE_ENTRIES = 128;
+const MAX_CONCURRENT_PER_PROVIDER = 2;
 
 type PreparedEntry = {
   data: DirectLink;
@@ -19,7 +20,7 @@ type PreparationCandidate = {
 
 const prepared = new Map<string, PreparedEntry>();
 const inFlight = new Map<string, Promise<DirectLink | null>>();
-const activeProviders = new Set<DebridStore["slug"]>();
+const activeProviderCounts = new Map<DebridStore["slug"], number>();
 const prepareStarts: number[] = [];
 const clientIds = new WeakMap<DebridStore, number>();
 let nextClientId = 0;
@@ -55,7 +56,11 @@ function preparationKey(
 }
 
 function isVerifiedFor(stream: ParsedStream | ScoredStream, debrid: DebridStore): boolean {
-  return stream.cacheVerified?.[debrid.slug] === true || stream.inLibrary?.[debrid.slug] === true;
+  return (
+    stream.cacheVerified?.[debrid.slug] === true ||
+    stream.cached?.[debrid.slug] === true ||
+    stream.inLibrary?.[debrid.slug] === true
+  );
 }
 
 function prune(now = Date.now()) {
@@ -127,9 +132,10 @@ async function prepareOne(
   if (cached) return cached;
   const existing = inFlight.get(key);
   if (existing) return waitForPending(existing, signal);
-  if (activeProviders.has(debrid.slug) || !reservePreparation()) return null;
+  const activeCount = activeProviderCounts.get(debrid.slug) ?? 0;
+  if (activeCount >= MAX_CONCURRENT_PER_PROVIDER || !reservePreparation()) return null;
 
-  activeProviders.add(debrid.slug);
+  activeProviderCounts.set(debrid.slug, activeCount + 1);
   const pending = (async () => {
     try {
       const result = await debrid.playableUrl(
@@ -148,7 +154,9 @@ async function prepareOne(
     } catch {
       return null;
     } finally {
-      activeProviders.delete(debrid.slug);
+      const cur = activeProviderCounts.get(debrid.slug) ?? 1;
+      if (cur <= 1) activeProviderCounts.delete(debrid.slug);
+      else activeProviderCounts.set(debrid.slug, cur - 1);
       inFlight.delete(key);
     }
   })();
@@ -164,7 +172,7 @@ function selectPreparationCandidates(
   const selected: PreparationCandidate[] = [];
   const seen = new Set<string>();
   for (const stream of streams) {
-    if (selected.length >= 2) break;
+    if (selected.length >= 3) break;
     if (stream.url || !stream.infoHash) continue;
     const debrid = debrids.find((candidate) => isVerifiedFor(stream, candidate));
     if (!debrid) continue;

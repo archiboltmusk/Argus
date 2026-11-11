@@ -205,23 +205,26 @@ function defaultVodBufferProperties(
 ): Array<[string, string]> {
   const highBitrate = profile === "high-bitrate";
   if (phase === "startup") {
-    // Zero-delay fast start: demux and render the first frame immediately like Netflix
+    // Zero-delay fast start: demux and render the first frame immediately like Nuvio/Netflix
     return [
-      ["cache-secs", highBitrate ? "45" : "30"],
+      ["cache-secs", "30"],
+      ["cache-pause-initial", "no"],
       ["cache-pause-wait", "0"],
-      ["demuxer-max-bytes", highBitrate ? "256MiB" : "128MiB"],
-      ["demuxer-max-back-bytes", highBitrate ? "64MiB" : "32MiB"],
-      ["demuxer-readahead-secs", highBitrate ? "45" : "30"],
-      ["stream-buffer-size", highBitrate ? "32MiB" : "16MiB"],
+      ["demuxer-lavf-o", "probesize=65536,fpsprobesize=0"],
+      ["demuxer-max-bytes", highBitrate ? "128MiB" : "64MiB"],
+      ["demuxer-max-back-bytes", "32MiB"],
+      ["demuxer-readahead-secs", "10"],
+      ["stream-buffer-size", "512KiB"],
     ];
   }
   return [
     ["cache-secs", "300"],
     ["cache-pause-wait", "1"],
+    ["demuxer-lavf-o", "probesize=524288"],
     ["demuxer-max-bytes", highBitrate ? "768MiB" : "512MiB"],
     ["demuxer-max-back-bytes", "64MiB"],
     ["demuxer-readahead-secs", "180"],
-    ["stream-buffer-size", highBitrate ? "32MiB" : "16MiB"],
+    ["stream-buffer-size", highBitrate ? "16MiB" : "8MiB"],
   ];
 }
 
@@ -1195,7 +1198,7 @@ export function createMpvBridge(mpvOptions?: MpvOptions): PlayerBridge {
       const nextStartupProfile =
         src.startupProfile ?? currentStartupProfile ?? retainedMpv?.startupProfile ?? "standard";
       const reuseConfigKey = mpvReuseConfigKey(mpvOptions, hdrToSdr);
-      const canRetain = isWindowsDesktop() && mpvOptions?.embed === true;
+      const canRetain = (isWindowsDesktop() || isMacDesktop()) && mpvOptions?.embed === true;
       if (
         !mpvStarted &&
         canRetain &&
@@ -1653,7 +1656,10 @@ export function createMpvBridge(mpvOptions?: MpvOptions): PlayerBridge {
       finishPlaybackTrace(activeTraceId, "aborted");
       activeTraceId = null;
       const keepNativeSession =
-        mpvStarted && currentIsLive != null && isWindowsDesktop() && mpvOptions?.embed === true;
+        mpvStarted &&
+        currentIsLive != null &&
+        (isWindowsDesktop() || isMacDesktop()) &&
+        mpvOptions?.embed === true;
       if (keepNativeSession) {
         invalidateMpvSubtitleFpsContext();
         const retained: RetainedMpv = {

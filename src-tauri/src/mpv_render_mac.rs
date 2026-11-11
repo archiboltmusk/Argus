@@ -405,6 +405,18 @@ pub fn resize_to(css: MpvGeometry) -> Result<(), String> {
     Ok(())
 }
 
+pub fn set_visible(visible: bool) -> Result<(), String> {
+    let _mtm =
+        MainThreadMarker::new().ok_or_else(|| "set_visible must run on main thread".to_string())?;
+    let guard = slot().lock().map_err(|e| format!("slot lock: {}", e))?;
+    let Some(embed) = guard.as_ref() else {
+        return Ok(());
+    };
+    let view_as_view: &NSView = embed.view.as_super();
+    view_as_view.setHidden(!visible);
+    Ok(())
+}
+
 pub fn render_now() -> Result<(), String> {
     let _mtm =
         MainThreadMarker::new().ok_or_else(|| "render_now must run on main thread".to_string())?;

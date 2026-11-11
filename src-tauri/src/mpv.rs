@@ -1204,9 +1204,10 @@ pub async fn mpv_start(
             },
         );
         let _ = mpv.set_property("cache-on-disk", "yes");
-        let _ = mpv.set_property("demuxer-lavf-buffersize", "1048576");
-        let _ = mpv.set_property("demuxer-lavf-probesize", "2097152");
-        let _ = mpv.set_property("demuxer-lavf-analyzeduration", "1.0");
+        let _ = mpv.set_property("demuxer-lavf-buffersize", "524288");
+        let _ = mpv.set_property("demuxer-lavf-probesize", "65536");
+        let _ = mpv.set_property("demuxer-lavf-analyzeduration", "0.25");
+        let _ = mpv.set_property("demuxer-lavf-o", "fpsprobesize=0");
         let _ = mpv.set_property("network-timeout", network_timeout_for(&args.url));
         // No reconnect_streamed: on AES-128 HLS every segment ends in a normal
         // EOF that ffmpeg then retries from offset 0, gets an empty body, and
@@ -1217,10 +1218,7 @@ pub async fn mpv_start(
             Ok(()) => eprintln!("[argus::mpv] stream-lavf-o set {}", reconnect_opts),
             Err(e) => eprintln!("[argus::mpv] stream-lavf-o rejected: {:?}", e),
         }
-        let _ = mpv.set_property(
-            "stream-buffer-size",
-            if high_bitrate { "32MiB" } else { "16MiB" },
-        );
+        let _ = mpv.set_property("stream-buffer-size", "512KiB");
     }
     // mpv may auto-select an embedded subtitle as soon as loadfile runs. Keep
     // both subtitle slots empty until Argus applies the user's language choice.
@@ -3269,7 +3267,26 @@ pub async fn mpv_release_media(app: AppHandle, state: State<'_, MpvState>) -> Re
         set_embedded_mpv_children_visible(&app, false)?;
         return Ok(true);
     }
-    #[cfg(not(windows))]
+    #[cfg(target_os = "macos")]
+    {
+        let (mpv, embedded) = {
+            let g = state.inner.lock().await;
+            let Some(session) = g.as_ref() else {
+                return Ok(false);
+            };
+            (session.mpv.clone(), session.embedded)
+        };
+        if !embedded {
+            return Ok(false);
+        }
+        mpv.command("stop", &[])
+            .map_err(|e| format!("stop retained mpv media: {e}"))?;
+        let _ = app.run_on_main_thread(|| {
+            let _ = crate::mpv_render_mac::set_visible(false);
+        });
+        return Ok(true);
+    }
+    #[cfg(all(not(windows), not(target_os = "macos")))]
     {
         let _ = app;
         let _ = state;
@@ -3294,7 +3311,21 @@ pub async fn mpv_restore_media_surface(
         set_embedded_mpv_children_visible(&app, true)?;
         return Ok(true);
     }
-    #[cfg(not(windows))]
+    #[cfg(target_os = "macos")]
+    {
+        let embedded = {
+            let g = state.inner.lock().await;
+            g.as_ref().is_some_and(|session| session.embedded)
+        };
+        if !embedded {
+            return Ok(false);
+        }
+        let _ = app.run_on_main_thread(|| {
+            let _ = crate::mpv_render_mac::set_visible(true);
+        });
+        return Ok(true);
+    }
+    #[cfg(all(not(windows), not(target_os = "macos")))]
     {
         let _ = app;
         let _ = state;

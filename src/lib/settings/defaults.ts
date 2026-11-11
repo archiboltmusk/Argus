@@ -277,7 +277,7 @@ export const DEFAULT: Settings = {
   playerScreenLockEnabled: false,
   seekPreviewEnabled: typeof navigator !== "undefined" && (navigator.hardwareConcurrency || 8) >= 4,
   instantPlay: true,
-  instantPlaybackPreparation: false,
+  instantPlaybackPreparation: true,
   autoNextStreamOnStall: true,
   autoNextStreamOnStallSec: 10,
   suggestQualityUpgrade: true,

@@ -72,11 +72,11 @@ test("playback timing is local-only and contains no media URLs or account identi
 });
 
 test("early debrid preparation is explicit, bounded, verified, and memory-only", () => {
-  assert.match(settingsDefaults, /instantPlaybackPreparation: false/);
+  assert.match(settingsDefaults, /instantPlaybackPreparation: true/);
   assert.match(playModeSettings, /may create or update transfers on your debrid account/i);
-  assert.match(preparation, /MAX_PREPARES_PER_MINUTE = 6/);
-  assert.match(preparation, /MAX_PREPARES_PER_HOUR = 30/);
-  assert.match(preparation, /PREPARED_LINK_TTL_MS = 2 \* 60 \* 1000/);
+  assert.match(preparation, /MAX_PREPARES_PER_MINUTE = 30/);
+  assert.match(preparation, /MAX_PREPARES_PER_HOUR = 120/);
+  assert.match(preparation, /PREPARED_LINK_TTL_MS = 5 \* 60 \* 1000/);
   assert.match(preparation, /stream\.cacheVerified\?\.\[debrid\.slug\] === true/);
   assert.match(preparation, /const clientIds = new WeakMap/);
   assert.match(preparation, /invalidatePreparedDebridLink/);
@@ -104,9 +104,9 @@ test("startup buffering is staged and adapts without lowering media quality", ()
   assert.match(startupProfile, /HIGH_BITRATE_MIN_BYTES = 12 \* 1024 \* 1024 \* 1024/);
   assert.match(startupProfile, /2160p\?|4320p\?|4k\|8k\|uhd\|remux/);
   assert.match(nativeMpv, /startup_profile: Option<String>/);
-  assert.match(nativeMpv, /if high_bitrate \{ "32MiB" \} else \{ "16MiB" \}/);
+  assert.match(nativeMpv, /stream-buffer-size.*512KiB/);
   assert.match(mpv, /phase === "startup"/);
-  assert.match(mpv, /\["demuxer-max-bytes", highBitrate \? "256MiB" : "128MiB"\]/);
+  assert.match(mpv, /\["demuxer-max-bytes", highBitrate \? "128MiB" : "64MiB"\]/);
   assert.match(mpv, /\["demuxer-max-bytes", highBitrate \? "768MiB" : "512MiB"\]/);
   assert.match(mpv, /steadyBufferLoadId !== mediaLoadId/);
   assert.match(nativeMpv, /"cache-pause-initial", "no"/);

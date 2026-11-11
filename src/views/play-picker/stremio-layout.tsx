@@ -21,6 +21,7 @@ export function StremioLayout({
   preserveOrder,
   matchFor,
   onPlay,
+  onWarm,
   download = false,
   downloadStateFor,
   isAnime = false,
@@ -33,6 +34,7 @@ export function StremioLayout({
   preserveOrder?: boolean;
   matchFor?: (s: ScoredStream) => "same" | "close" | null;
   onPlay: (stream: ScoredStream) => void;
+  onWarm?: (stream: ScoredStream) => void;
   download?: boolean;
   downloadStateFor?: (stream: ScoredStream) => "idle" | "preparing" | "queued";
   isAnime?: boolean;
@@ -204,6 +206,7 @@ export function StremioLayout({
             addonLogo={addonLogoMap.get(s.addonUrl ?? "") ?? addonLogoMap.get(s.addonId) ?? null}
             match={matchFor ? matchFor(s) : null}
             onPlay={() => onPlay(s)}
+            onHover={onWarm ? () => onWarm(s) : undefined}
             download={download}
             downloadState={downloadStateFor?.(s)}
             isAnime={isAnime}

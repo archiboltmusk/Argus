@@ -23,6 +23,7 @@ export function StremioRow({
   addonLogo,
   match = null,
   onPlay,
+  onHover,
   download = false,
   downloadState = "idle",
   isAnime = false,
@@ -32,6 +33,7 @@ export function StremioRow({
   addonLogo: string | null;
   match?: "same" | "close" | null;
   onPlay: () => void;
+  onHover?: () => void;
   download?: boolean;
   downloadState?: "idle" | "preparing" | "queued";
   isAnime?: boolean;
@@ -58,6 +60,8 @@ export function StremioRow({
 
   return (
     <div
+      onMouseEnter={onHover}
+      onFocus={onHover}
       className={`group flex items-stretch gap-5 rounded-2xl bg-elevated/40 p-5 ring-1 transition-colors ${
         failed ? "ring-danger/40 bg-danger/5" : "ring-edge-soft/50"
       }`}
