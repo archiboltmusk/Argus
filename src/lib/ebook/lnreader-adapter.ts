@@ -24,6 +24,7 @@ export function isLNReaderSource(
 
 export const LNREADER_ENV_PRELUDE = String.raw`
 var __g = (typeof self !== "undefined") ? self : (typeof globalThis !== "undefined") ? globalThis : {};
+var plugin;
 var module = { exports: {} };
 var exports = module.exports;
 
@@ -36,11 +37,11 @@ function dayjs(val) {
       return d.toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" });
     },
     subtract: function (amt, unit) {
-      var mult = unit === "second" ? 1000 : unit === "minute" ? 60000 : unit === "hours" ? 3600000 : 86400000;
+      var mult = unit === "second" || unit === "seconds" ? 1000 : unit === "minute" || unit === "minutes" ? 60000 : unit === "hour" || unit === "hours" ? 3600000 : unit === "week" || unit === "weeks" ? 604800000 : unit === "month" || unit === "months" ? 2592000000 : unit === "year" || unit === "years" ? 31536000000 : 86400000;
       return dayjs(new Date(d.getTime() - (amt || 0) * mult));
     },
     add: function (amt, unit) {
-      var mult = unit === "second" ? 1000 : unit === "minute" ? 60000 : unit === "hours" ? 3600000 : 86400000;
+      var mult = unit === "second" || unit === "seconds" ? 1000 : unit === "minute" || unit === "minutes" ? 60000 : unit === "hour" || unit === "hours" ? 3600000 : unit === "week" || unit === "weeks" ? 604800000 : unit === "month" || unit === "months" ? 2592000000 : unit === "year" || unit === "years" ? 31536000000 : 86400000;
       return dayjs(new Date(d.getTime() + (amt || 0) * mult));
     }
   };
@@ -70,6 +71,38 @@ var __novelStatus = {
 // Default cover mock
 var __defaultCover = {
   defaultCover: ""
+};
+
+// Filter inputs shim
+var __filterTypesObj = {
+  Picker: "Picker",
+  Switch: "Switch",
+  CheckboxGroup: "CheckboxGroup",
+  Checkbox: "Checkbox",
+  TextInput: "TextInput",
+  Text: "Text",
+  ExcludableCheckboxGroup: "ExcludableCheckboxGroup",
+  Sort: "Sort"
+};
+var __filterInputs = {
+  FilterTypes: (typeof Proxy !== "undefined")
+    ? new Proxy(__filterTypesObj, {
+        get: function (target, prop) {
+          if (prop in target) return target[prop];
+          return typeof prop === "string" ? prop : undefined;
+        }
+      })
+    : __filterTypesObj
+};
+
+// URL absolute check shim
+function __isUrlAbs(u) {
+  return /^(?:[a-z]+:)?\/\//i.test(String(u || ""));
+}
+var __isAbsoluteUrl = {
+  isUrlAbsolute: __isUrlAbs,
+  isAbsoluteUrl: __isUrlAbs,
+  default: __isUrlAbs
 };
 
 // Form data shim
@@ -146,6 +179,8 @@ function require(modName) {
   if (m === "dayjs") return dayjs;
   if (m === "htmlparser2") return __htmlparser2;
   if (m.indexOf("fetch") >= 0) return __fetchModule;
+  if (m.indexOf("filterinput") >= 0) return __filterInputs;
+  if (m.indexOf("isabsoluteurl") >= 0) return __isAbsoluteUrl;
   if (m.indexOf("defaultcover") >= 0) return __defaultCover;
   if (m.indexOf("novelstatus") >= 0) return __novelStatus;
   if (m.indexOf("storage") >= 0) return __storage;

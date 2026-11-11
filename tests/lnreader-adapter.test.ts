@@ -99,10 +99,19 @@ exports.default = new MockMadaraPlugin();
     parseHtml: () => ({ querySelector: () => null }),
   };
 
-  // Execute using Function as Worker would
-  let pluginVar: any;
-  const runner = new Function("argus", "plugin", adaptedSource + "\nreturn plugin;");
-  const result = runner(mockArgus, pluginVar);
+  // Execute using Function exactly as sandbox.ts Worker does (strict mode, shadowed globals, no plugin param)
+  const SHADOW = [
+    "self", "globalThis", "window", "fetch", "XMLHttpRequest", "WebSocket",
+    "EventSource", "importScripts", "indexedDB", "caches", "Worker",
+    "SharedWorker", "BroadcastChannel", "MessageChannel", "postMessage",
+    "close", "navigator", "location", "document", "Request", "Response"
+  ];
+  const params = ["argus"].concat(SHADOW);
+  const body = '"use strict";\n' + adaptedSource + "\n;return (typeof plugin !== 'undefined') ? plugin : undefined;";
+  const factory = new Function(params, body);
+  const callArgs: any[] = [mockArgus];
+  for (let i = 0; i < SHADOW.length; i++) callArgs.push(undefined);
+  const result = factory.apply(undefined, callArgs);
 
   assert.ok(registeredProvider, "Provider must be registered");
   assert.ok(result, "Function must return adapted plugin");
@@ -117,7 +126,7 @@ exports.default = new MockMadaraPlugin();
   assert.equal(typeof registeredProvider.content, "function");
 });
 
-test("buildLNReaderSource adapts real-world ArNovel LNReader plugin script", async () => {
+test("buildLNReaderSource adapts real-world ArNovel LNReader plugin script in strict sandbox", async () => {
   const manifest = {
     id: "arnovel",
     name: "ArNovel",
@@ -147,13 +156,72 @@ test("buildLNReaderSource adapts real-world ArNovel LNReader plugin script", asy
     parseHtml: () => ({ querySelector: () => null }),
   };
 
-  let pluginVar: any;
-  const runner = new Function("argus", "plugin", adapted + "\nreturn plugin;");
-  const result = runner(mockArgus, pluginVar);
+  const SHADOW = [
+    "self", "globalThis", "window", "fetch", "XMLHttpRequest", "WebSocket",
+    "EventSource", "importScripts", "indexedDB", "caches", "Worker",
+    "SharedWorker", "BroadcastChannel", "MessageChannel", "postMessage",
+    "close", "navigator", "location", "document", "Request", "Response"
+  ];
+  const params = ["argus"].concat(SHADOW);
+  const body = '"use strict";\n' + adapted + "\n;return (typeof plugin !== 'undefined') ? plugin : undefined;";
+  const factory = new Function(params, body);
+  const callArgs: any[] = [mockArgus];
+  for (let i = 0; i < SHADOW.length; i++) callArgs.push(undefined);
+  const result = factory.apply(undefined, callArgs);
 
   assert.ok(registeredProvider, "ArNovel must register cleanly without throwing CommonJS errors");
   assert.equal(registeredProvider.id, "arnovel");
   assert.equal(registeredProvider.name, "ArNovel");
+  assert.equal(typeof registeredProvider.popular, "function");
+  assert.equal(typeof registeredProvider.search, "function");
+  assert.equal(typeof registeredProvider.detail, "function");
+  assert.equal(typeof registeredProvider.chapters, "function");
+  assert.equal(typeof registeredProvider.content, "function");
+});
+
+test("buildLNReaderSource supports plugins requiring @libs/filterInputs and @libs/isAbsoluteUrl (e.g. Azora Manga)", async () => {
+  const manifest = {
+    id: "azorafly",
+    name: "Azora Manga",
+    version: "1.0.0",
+    lang: "ar",
+    nsfw: false,
+    entry: "https://raw.githubusercontent.com/lnreader/lnreader-plugins/plugins/v3.0.0/.js/src/plugins/arabic/azorafly.js",
+  };
+
+  const res = await fetch(manifest.entry);
+  if (!res.ok) return;
+  const realSource = await res.text();
+
+  assert.ok(isLNReaderSource(realSource, undefined, manifest.entry));
+  const adapted = buildLNReaderSource(realSource, manifest);
+
+  let registeredProvider: any = null;
+  const mockArgus = {
+    register: (p: any) => {
+      registeredProvider = p;
+    },
+    http: async () => ({ status: 200, ok: true, body: "<html></html>", headers: {} }),
+    log: () => {},
+    parseHtml: () => ({ querySelector: () => null }),
+  };
+
+  const SHADOW = [
+    "self", "globalThis", "window", "fetch", "XMLHttpRequest", "WebSocket",
+    "EventSource", "importScripts", "indexedDB", "caches", "Worker",
+    "SharedWorker", "BroadcastChannel", "MessageChannel", "postMessage",
+    "close", "navigator", "location", "document", "Request", "Response"
+  ];
+  const params = ["argus"].concat(SHADOW);
+  const body = '"use strict";\n' + adapted + "\n;return (typeof plugin !== 'undefined') ? plugin : undefined;";
+  const factory = new Function(params, body);
+  const callArgs: any[] = [mockArgus];
+  for (let i = 0; i < SHADOW.length; i++) callArgs.push(undefined);
+  const result = factory.apply(undefined, callArgs);
+
+  assert.ok(registeredProvider, "Azora Manga must register cleanly");
+  assert.equal(registeredProvider.id, "azorafly");
+  assert.equal(registeredProvider.name, "Azora Manga");
   assert.equal(typeof registeredProvider.popular, "function");
   assert.equal(typeof registeredProvider.search, "function");
   assert.equal(typeof registeredProvider.detail, "function");
