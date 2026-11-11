@@ -2,31 +2,40 @@ import { useEffect, useState } from "react";
 import {
   fetchAnilistMediaDetails,
   fetchAnilistMediaDetailsByKitsu,
+  fetchAnilistMediaDetailsByTitle,
   type AnilistMediaDetails,
 } from "@/lib/anilist/media-details";
 
 export function useAnimeAnilistDetails(
   canonicalId: string | null,
   isAnime: boolean,
+  fallbackTitle?: string,
 ): AnilistMediaDetails | null {
   const [details, setDetails] = useState<AnilistMediaDetails | null>(null);
 
   useEffect(() => {
-    if (!isAnime || !canonicalId) {
+    if (!isAnime || (!canonicalId && !fallbackTitle)) {
       setDetails(null);
       return;
     }
     let cancelled = false;
     const load = async (): Promise<AnilistMediaDetails | null> => {
-      if (canonicalId.startsWith("kitsu:")) {
+      if (canonicalId?.startsWith("kitsu:")) {
         const kitsuId = Number(canonicalId.slice(6));
-        if (!Number.isFinite(kitsuId)) return null;
-        return fetchAnilistMediaDetailsByKitsu(kitsuId);
+        if (Number.isFinite(kitsuId)) {
+          const res = await fetchAnilistMediaDetailsByKitsu(kitsuId);
+          if (res) return res;
+        }
       }
-      if (canonicalId.startsWith("anilist:")) {
+      if (canonicalId?.startsWith("anilist:")) {
         const anilistId = Number(canonicalId.slice(8));
-        if (!Number.isFinite(anilistId)) return null;
-        return fetchAnilistMediaDetails(anilistId);
+        if (Number.isFinite(anilistId)) {
+          const res = await fetchAnilistMediaDetails(anilistId);
+          if (res) return res;
+        }
+      }
+      if (fallbackTitle?.trim()) {
+        return fetchAnilistMediaDetailsByTitle(fallbackTitle);
       }
       return null;
     };
@@ -41,7 +50,7 @@ export function useAnimeAnilistDetails(
     return () => {
       cancelled = true;
     };
-  }, [canonicalId, isAnime]);
+  }, [canonicalId, isAnime, fallbackTitle]);
 
   return details;
 }

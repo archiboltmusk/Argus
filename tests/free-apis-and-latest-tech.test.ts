@@ -63,3 +63,9 @@ test("AniList API: handles empty title query without crashing", async () => {
   const res = await fetchAniListAnimeDetails("   ");
   assert.equal(res, null);
 });
+
+test("Settings Defaults: songIdEnabled is active and acoustidKey defaults to public key", async () => {
+  const { DEFAULT } = await import("../src/lib/settings/defaults");
+  assert.equal(DEFAULT.songIdEnabled, true);
+  assert.equal(DEFAULT.acoustidKey, "8XaBELgH");
+});

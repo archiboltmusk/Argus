@@ -416,7 +416,7 @@ export const DEFAULT: Settings = {
   mdblistKey: "",
   auddKey: "",
   songIdProvider: "audd",
-  acoustidKey: "",
+  acoustidKey: "8XaBELgH",
   songIdAiKey: "",
   songIdAiModel: "gemini-3.6-flash",
   aiSearchKey: "",
@@ -541,7 +541,7 @@ export const DEFAULT: Settings = {
   spoilerHideDescriptions: true,
   spoilerSkipNext: true,
   streamBackdropBlur: true,
-  songIdEnabled: false,
+  songIdEnabled: true,
   songCardStyle: "cinematic",
   songCardDetails: true,
   hideContent: {

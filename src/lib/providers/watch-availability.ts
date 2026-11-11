@@ -39,13 +39,16 @@ export async function getWatchProviders(params: {
   tmdbId: number;
   mediaType?: "movie" | "tv";
   countryCode?: string;
+  apiKey?: string;
   signal?: AbortSignal;
 }): Promise<StreamingService[]> {
-  const { tmdbId, mediaType = "movie", countryCode = "US", signal } = params;
+  const { tmdbId, mediaType = "movie", countryCode = "US", apiKey, signal } = params;
   if (!tmdbId) return [];
 
   try {
-    const url = `https://api.themoviedb.org/3/${mediaType}/${tmdbId}/watch/providers`;
+    const url = apiKey
+      ? `https://api.themoviedb.org/3/${mediaType}/${tmdbId}/watch/providers?api_key=${encodeURIComponent(apiKey)}`
+      : `https://api.themoviedb.org/3/${mediaType}/${tmdbId}/watch/providers`;
     // TMDB watch providers endpoint returns free JustWatch attribution data
     const res = await fetch(url, {
       method: "GET",

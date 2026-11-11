@@ -34,6 +34,37 @@ const MEDIA_DETAILS_QUERY = `query ($id: Int) {
   }
 }`;
 
+const MEDIA_DETAILS_SEARCH_QUERY = `query ($search: String) {
+  Media(search: $search, type: ANIME) {
+    id
+    title { native romaji english }
+    synonyms
+    source(version: 3)
+    favourites
+    episodes
+    nextAiringEpisode { airingAt episode }
+    tags { name rank isMediaSpoiler isGeneralSpoiler }
+    studios { nodes { name isAnimationStudio } }
+    stats { statusDistribution { status amount } scoreDistribution { score amount } }
+    relations {
+      edges {
+        relationType(version: 2)
+        node {
+          id
+          type
+          format
+          status
+          seasonYear
+          averageScore
+          title { english romaji native userPreferred }
+          coverImage { large }
+          startDate { year }
+        }
+      }
+    }
+  }
+}`;
+
 const SOURCE_LABELS: Record<string, string> = {
   ORIGINAL: "Original",
   MANGA: "Manga",
@@ -289,4 +320,33 @@ export async function fetchAnilistMediaDetailsByKitsu(
   const anilistId = await kitsuToAnilist(kitsuId).catch(() => null);
   if (!anilistId) return null;
   return fetchAnilistMediaDetails(anilistId);
+}
+
+const titleCache = new Map<string, AnilistMediaDetails | null>();
+
+export async function fetchAnilistMediaDetailsByTitle(
+  search: string,
+): Promise<AnilistMediaDetails | null> {
+  const clean = search.trim();
+  if (!clean) return null;
+  const key = clean.toLowerCase();
+  if (titleCache.has(key)) return titleCache.get(key) ?? null;
+  try {
+    const data = await anilistRequest<RawResponse>(
+      MEDIA_DETAILS_SEARCH_QUERY,
+      { search: clean },
+      undefined,
+      true,
+    );
+    const media = data?.Media;
+    if (!media) {
+      lruSet(titleCache, key, null, CACHE_MAX);
+      return null;
+    }
+    const result = shape(media);
+    lruSet(titleCache, key, result, CACHE_MAX);
+    return result;
+  } catch {
+    return null;
+  }
 }

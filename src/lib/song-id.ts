@@ -77,7 +77,7 @@ function activeKey(opts: SongIdOptions): string {
   const keys: Record<SongIdProvider, string> = {
     audd: opts.auddKey,
     ai: opts.aiKey,
-    acoustid: opts.acoustidKey,
+    acoustid: opts.acoustidKey || "8XaBELgH",
   };
   return (keys[opts.provider] ?? "").trim();
 }

@@ -13,6 +13,7 @@ import { StreamCheckPill } from "@/components/player/stream-check-pill";
 import type { StallOffer } from "./hooks/use-stall-fallback";
 import { AdReportButton } from "@/components/player/ad-report-button";
 import { XrayOverlay } from "@/components/player/xray/xray-overlay";
+import { CinemaAiCompanion } from "@/components/player/cinema-ai-companion";
 import { BufferingIndicator } from "@/components/player/buffering-indicator";
 import { P2pStatusChip } from "@/components/player/p2p-status-chip";
 import type { VolumeHudPosition, VolumeIndicatorState } from "@/components/player/volume-indicator";
@@ -420,6 +421,15 @@ export const PlayerOverlayLayers = memo(function PlayerOverlayLayers(p: PlayerOv
           meta={p.src.meta}
           visible={p.showChrome}
           isPaused={p.snap.status === "paused"}
+          bridgeRef={p.bridgeRef}
+        />
+      )}
+
+      {!p.pipMode && !p.drawMode && (
+        <CinemaAiCompanion
+          meta={p.src.meta}
+          visible={p.showChrome}
+          snap={p.snap}
           bridgeRef={p.bridgeRef}
         />
       )}

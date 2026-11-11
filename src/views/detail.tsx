@@ -58,6 +58,7 @@ import {
   type TmdbDetail,
   type WatchProvider,
 } from "@/lib/providers/tmdb";
+import { getWatchProviders } from "@/lib/providers/watch-availability";
 import { cinemetaDetails } from "@/lib/providers/cinemeta-details";
 import { useAuth } from "@/lib/auth";
 import { useSettings } from "@/lib/settings";
@@ -466,7 +467,7 @@ export function DetailView({
 
   const idAnime = /^(kitsu|mal|anilist|anidb):/.test(meta.id);
   const isAnime = idAnime || detectedKitsu != null;
-  const anilistExtra = useAnimeAnilistDetails(animeCanonicalId, isAnime);
+  const anilistExtra = useAnimeAnilistDetails(animeCanonicalId, isAnime, meta.name);
   const animeCharacters = useAnimeCharacters(animeCanonicalId, isAnime);
   const stickyAwardName = useRef<string | null>(null);
   useEffect(() => {
@@ -1149,15 +1150,35 @@ export function DetailView({
 
   useEffect(() => {
     setWatchProviders([]);
-    if (isAnime || !settings.tmdbKey || !detail) return;
+    if (isAnime || !detail) return;
     const k = detail.kind;
     if ((k !== "movie" && k !== "tv") || !Number.isFinite(Number(detail.id))) return;
     let cancelled = false;
-    tmdbWatchProviders(settings.tmdbKey, k, detail.id, settings.region)
-      .then((p) => {
-        if (!cancelled) setWatchProviders(p);
+    const tmdbId = Number(detail.id);
+    if (settings.tmdbKey) {
+      tmdbWatchProviders(settings.tmdbKey, k, tmdbId, settings.region)
+        .then((p) => {
+          if (!cancelled) setWatchProviders(p);
+        })
+        .catch(() => {});
+    } else {
+      getWatchProviders({
+        tmdbId,
+        mediaType: k,
+        countryCode: settings.region || "US",
       })
-      .catch(() => {});
+        .then((services) => {
+          if (cancelled || !services.length) return;
+          const mapped: WatchProvider[] = services.map((s, idx) => ({
+            id: idx + 1000,
+            name: s.name,
+            logo: s.iconUrl || "",
+            link: s.webUrl || "",
+          }));
+          setWatchProviders(mapped);
+        })
+        .catch(() => {});
+    }
     return () => {
       cancelled = true;
     };

@@ -15,10 +15,42 @@ export type UpgradeRelease = {
 
 export const RECENT_UPGRADES: UpgradeRelease[] = [
   {
+    version: "v3.17.1",
+    title: "In-Player AI Companion UI & Free Metadata Out-of-the-Box",
+    date: "November 2026",
+    badge: "Latest",
+    highlights: [
+      {
+        icon: "bot",
+        title: "In-Player 'Ask Scene AI' Drawer (Shift + A)",
+        description:
+          "Floating interactive companion drawer powered by on-device Ollama with strict anti-spoiler timestamp protection and quick scene queries.",
+      },
+      {
+        icon: "audio",
+        title: "Instant Song Recognition in Player Transport",
+        description:
+          "Bottom-right player transport button enabled by default with free AcoustID acoustic fingerprinting.",
+      },
+      {
+        icon: "film",
+        title: "Where to Watch Badges Without API Keys",
+        description:
+          "Legal streaming providers (Netflix, Prime, Disney+, Apple TV+) automatically display on titles even without personal TMDB keys.",
+      },
+      {
+        icon: "sparkles",
+        title: "Universal AniList Anime Metadata by Title",
+        description:
+          "Native kanji titles, character voice actor galleries, and adaptation relation trees populate for any anime regardless of source catalog.",
+      },
+    ],
+  },
+  {
     version: "v3.17.0",
     title: "Free Intelligence APIs & On-Device AI Companion",
     date: "November 2026",
-    badge: "Latest",
+    badge: "Major",
     highlights: [
       {
         icon: "bot",
