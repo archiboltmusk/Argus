@@ -224,7 +224,11 @@ jobs:
           pnpm tauri signer sign "$PWD/Argus-${{ matrix.arch }}.app.tar.gz"
           VERSION=$(node -p 'require("./src-tauri/tauri.conf.json").version')
           SIG=$(cat "Argus-${{ matrix.arch }}.app.tar.gz.sig")
-          URL="https://github.com/${{ github.repository }}/releases/download/beta/Argus-${{ matrix.arch }}.app.tar.gz"
+          TAG_VAL="${{ inputs.release_tag || (startsWith(github.ref, 'refs/tags/v') && github.ref_name) || '' }}"
+          if [ -z "$TAG_VAL" ]; then
+            TAG_VAL="v$VERSION"
+          fi
+          URL="https://github.com/${{ github.repository }}/releases/download/$TAG_VAL/Argus-${{ matrix.arch }}.app.tar.gz"
           node -e '
             const [version, sig, url, sha] = process.argv.slice(1);
             const out = {
@@ -259,58 +263,31 @@ jobs:
       - uses: actions/download-artifact@v8
         with:
           name: Argus-macOS-aarch64
-      # Stable release feed. The tag keeps its original name so installs that already
-      # point the updater at beta/latest.json keep updating.
+      - name: Determine release tag
+        id: rtag
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+        run: |
+          if [ -n "${{ inputs.release_tag }}" ]; then
+            TAG="${{ inputs.release_tag }}"
+          elif [[ "${{ github.ref }}" == refs/tags/v* ]]; then
+            TAG="${{ github.ref_name }}"
+          else
+            VERSION=$(jq -r .version latest.json 2>/dev/null || echo "3.17.1")
+            TAG="v$VERSION"
+          fi
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
       - uses: softprops/action-gh-release@v2
         with:
-          tag_name: beta
-          name: Argus 1.0
+          tag_name: ${{ steps.rtag.outputs.tag }}
+          name: Argus ${{ steps.rtag.outputs.tag }}
           prerelease: false
           make_latest: true
           files: |
             Argus-aarch64.dmg
             Argus-aarch64.app.tar.gz
             latest.json
-          body: |
-            Argus 1.0, latest stable build. Installed copies of Argus update themselves from here (Settings → Updates).
-            First install: download the .dmg. Apple Silicon only. Unsigned build: right-click Argus.app → Open the first time.
-      # Keep the last builds as their own releases and list them in
-      # versions-beta.json so Settings > Rollback can offer earlier versions.
-      - name: Update version history
-        env:
-          GH_TOKEN: ${{ github.token }}
-          REPO: ${{ github.repository }}
-          COMMIT_MSG: ${{ github.event.head_commit.message }}
-        run: |
-          set -euo pipefail
-          [ "${{ github.ref }}" = "refs/heads/main" ] || exit 0
-          VERSION=$(jq -r .version latest.json)
-          TAG="build-$VERSION"
-          NOTES=$(printf '%s' "$COMMIT_MSG" | head -n1)
-          gh release create "$TAG" Argus-aarch64.dmg --repo "$REPO" --latest=false \
-            --target "$GITHUB_SHA" --title "Argus $VERSION" --notes "$NOTES"
-          gh release download beta --repo "$REPO" -p versions-beta.json -O old.json || echo '{"versions":[]}' > old.json
-          jq --arg v "$VERSION" --arg n "$NOTES" --arg d "$(date -u +%FT%TZ)" \
-             --arg u "https://github.com/$REPO/releases/download/$TAG/Argus-aarch64.dmg" \
-            '{versions: ([{version:$v,date:$d,notes:$n,mac:$u,channel:"beta"}] + (.versions // [] | map(select(.version != $v))))[:10]}' \
-            old.json > versions-beta.json
-          gh release upload beta versions-beta.json --repo "$REPO" --clobber
-          # Drop build releases that fell out of the list.
-          for old in $(jq -r '.versions[]?.version' old.json); do
-            if ! jq -e --arg v "$old" '.versions[] | select(.version == $v)' versions-beta.json > /dev/null; then
-              gh release delete "build-$old" --repo "$REPO" --cleanup-tag -y || true
-            fi
-          done
-      # A v* tag push, or a manual run with release_tag set, publishes the
-      # .dmg as a GitHub pre-release (the tag is created if missing).
-      - if: startsWith(github.ref, 'refs/tags/v') || inputs.release_tag != ''
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: ${{ inputs.release_tag || github.ref_name }}
-          target_commitish: ${{ github.sha }}
-          name: Argus ${{ inputs.release_tag || github.ref_name }}
-          files: Argus-aarch64.dmg
-          prerelease: false
           generate_release_notes: true
           body: |
             Apple Silicon (M1 or newer), macOS 11+. Unsigned build: on first launch, right-click Argus.app → Open, or run `xattr -dr com.apple.quarantine /Applications/Argus.app`.

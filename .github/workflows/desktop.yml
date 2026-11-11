@@ -8,6 +8,8 @@ on:
     workflows: [CI]
     types: [completed]
     branches: [main]
+  push:
+    tags: ["v*"]
   pull_request:
     paths:
       - ".github/workflows/desktop.yml"
@@ -15,6 +17,11 @@ on:
       - "src-tauri/tauri.linux*.json"
       - "src-tauri/tauri.updater.conf.json"
   workflow_dispatch:
+    inputs:
+      target_tag:
+        description: "Release tag to publish to (e.g. v3.17.1)"
+        required: false
+        default: ""
 
 concurrency:
   group: desktop-${{ github.event_name == 'pull_request' && github.ref || 'main' }}
@@ -26,20 +33,33 @@ env:
 
 jobs:
   version:
-    name: Resolve Mac build version
+    name: Resolve target release version
     if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
     timeout-minutes: 5
     outputs:
       version: ${{ steps.v.outputs.version }}
+      tag: ${{ steps.v.outputs.tag }}
     steps:
       - id: v
         env:
           GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
         run: |
           if [ "${{ github.event_name }}" = "pull_request" ]; then exit 0; fi
-          gh release download beta --repo "$GITHUB_REPOSITORY" -p latest.json -O latest.json
-          echo "version=$(jq -r .version latest.json)" >> "$GITHUB_OUTPUT"
+          if [ -n "${{ inputs.target_tag }}" ]; then
+            TAG="${{ inputs.target_tag }}"
+          elif [[ "${{ github.ref }}" == refs/tags/v* ]]; then
+            TAG="${{ github.ref_name }}"
+          else
+            TAG=$(gh release view --repo "$REPO" --json tagName -q .tagName 2>/dev/null || echo "")
+            if [ -z "$TAG" ] || [ "$TAG" = "null" ] || [ "$TAG" = "beta" ]; then
+              TAG="v3.17.1"
+            fi
+          fi
+          VERSION="${TAG#v}"
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
   windows:
     name: Windows x64 (NSIS, MSI)
@@ -190,7 +210,7 @@ jobs:
           if-no-files-found: error
 
   publish-desktop:
-    name: Publish Windows and Linux beta
+    name: Publish Windows and Linux release
     needs: [version, windows, linux]
     if: ${{ !cancelled() && github.event_name != 'pull_request' && (needs.windows.result == 'success' || needs.linux.result == 'success') }}
     runs-on: ubuntu-latest
@@ -212,25 +232,26 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           REPO: ${{ github.repository }}
+          TAG: ${{ needs.version.outputs.tag }}
         run: |
           set -euo pipefail
-          BASE="https://github.com/$REPO/releases/download/beta"
-          gh release download beta --repo "$REPO" -p latest.json -O latest.json
-          # A newer Mac build replaced the feed while this one was building: skip, its own run adds these.
-          if [ "$(jq -r .version latest.json)" != "${{ needs.version.outputs.version }}" ]; then
-            echo "::notice::Feed moved on; skipping Windows/Linux for ${{ needs.version.outputs.version }}"; exit 0
-          fi
+          BASE="https://github.com/$REPO/releases/download/$TAG"
+          gh release download "$TAG" --repo "$REPO" -p latest.json -O latest.json || echo '{"platforms":{}}' > latest.json
           FILES=()
-          if [ -d win ] && [ -f win/Argus-windows-x64-setup.exe.sig ]; then
-            jq --rawfile sig win/Argus-windows-x64-setup.exe.sig --arg url "$BASE/Argus-windows-x64-setup.exe" \
-              '.platforms["windows-x86_64"] = {signature: ($sig|rtrimstr("\n")), url: $url}' latest.json > l.tmp && mv l.tmp latest.json
+          if [ -d win ]; then
+            if [ -f win/Argus-windows-x64-setup.exe.sig ]; then
+              jq --rawfile sig win/Argus-windows-x64-setup.exe.sig --arg url "$BASE/Argus-windows-x64-setup.exe" \
+                '.platforms["windows-x86_64"] = {signature: ($sig|rtrimstr("\n")), url: $url}' latest.json > l.tmp && mv l.tmp latest.json
+            fi
             FILES+=(win/Argus-windows-x64-setup.exe win/Argus-windows-x64.msi)
           fi
-          if [ -d linux ] && [ -f linux/Argus-linux-x64.AppImage.sig ]; then
-            jq --rawfile sig linux/Argus-linux-x64.AppImage.sig --arg url "$BASE/Argus-linux-x64.AppImage" \
-              '.platforms["linux-x86_64"] = {signature: ($sig|rtrimstr("\n")), url: $url}' latest.json > l.tmp && mv l.tmp latest.json
+          if [ -d linux ]; then
+            if [ -f linux/Argus-linux-x64.AppImage.sig ]; then
+              jq --rawfile sig linux/Argus-linux-x64.AppImage.sig --arg url "$BASE/Argus-linux-x64.AppImage" \
+                '.platforms["linux-x86_64"] = {signature: ($sig|rtrimstr("\n")), url: $url}' latest.json > l.tmp && mv l.tmp latest.json
+            fi
             FILES+=(linux/Argus-linux-x64.AppImage linux/Argus-linux-x64.deb)
           fi
           [ ${#FILES[@]} -gt 0 ] || { echo "::error::No signed Windows/Linux bundle to publish"; exit 1; }
           cat latest.json
-          gh release upload beta "${FILES[@]}" latest.json --repo "$REPO" --clobber
+          gh release upload "$TAG" "${FILES[@]}" latest.json --repo "$REPO" --clobber
