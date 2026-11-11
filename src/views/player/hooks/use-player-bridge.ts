@@ -16,6 +16,7 @@ import type { PlayerSrc } from "@/lib/view";
 import type { Settings } from "@/lib/settings";
 import { setPlaybackClock, setPlaybackStatus } from "@/lib/player/playback-clock";
 import { isLinuxDesktop, isMacDesktop, isWindowsDesktop } from "@/lib/platform";
+import { isAndroidNativePlayerAvailable } from "@/lib/player/engines/exoplayer-bridge";
 import { isLivePlaybackSrc } from "@/lib/player/live-src";
 import { readEmbedRect } from "@/lib/player/embed-rect";
 import { svpEnsureRunning, svpStatus } from "@/lib/svp";
@@ -140,8 +141,11 @@ export function usePlayerBridge(params: {
   const isLiveLike = isLivePlaybackSrc(src);
   const externalMpv =
     settings.playerExternalMpv && (isWindowsDesktop() || isMacDesktop() || isLinuxDesktop());
-  const chosenEngine =
-    isLiveLike && !src.notWebReady ? "html5" : autoFallbackTried ? "mpv" : settings.playerEngine;
+  const chosenEngine = autoFallbackTried
+    ? "mpv"
+    : isLiveLike && !src.notWebReady && !isAndroidNativePlayerAvailable()
+      ? "html5"
+      : settings.playerEngine;
   const bridgeKey = `${chosenEngine}|${anime4kOn}|${embedActive}|${anime4kOn ? settings.playerAnime4kShaders.join(",") : ""}|${generalShaderKey(settings)}|${svpOn}|${svpOn ? settings.svpVpyPath : ""}|${externalMpv ? `ext:${settings.playerExternalMpvPath}:${settings.playerExternalMpvArgs}` : ""}`;
   const [bridgeReady, setBridgeReady] = useState(false);
   useEffect(() => {

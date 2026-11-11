@@ -9,6 +9,29 @@ import { initialPlayerSnapshot } from "../bridge";
 import { createHtml5Bridge } from "../html5";
 
 /**
+ * Builds an Apple ecosystem external-player URL handoff (VLC Mobile, Infuse, Outplayer)
+ * when an iOS/iPadOS/tvOS user wants raw non-WebKit formats (MKV/DTS-HD/TrueHD)
+ * without server-side remuxing.
+ */
+export function buildAppleExternalPlayerUrl(
+  playerApp: "vlc" | "infuse" | "outplayer",
+  streamUrl: string,
+  subtitleUrl?: string,
+): string {
+  const encodedUrl = encodeURIComponent(streamUrl);
+  switch (playerApp) {
+    case "vlc":
+      return `vlc-x-callback://x-callback-url/stream?url=${encodedUrl}${
+        subtitleUrl ? `&sub=${encodeURIComponent(subtitleUrl)}` : ""
+      }`;
+    case "infuse":
+      return `infuse://x-callback-url/play?url=${encodedUrl}`;
+    case "outplayer":
+      return `outplayer://${streamUrl.replace(/^https?:\/\//i, "")}`;
+  }
+}
+
+/**
  * AVPlayer Bridge: Apple Ecosystem (iOS, iPadOS, tvOS, visionOS, macOS native)
  * Harnesses VideoToolbox, Apple AVKit, AirPlay 2, Spatial Audio, and Picture-in-Picture.
  */
@@ -16,6 +39,15 @@ export function createAvPlayerBridge(): PlayerBridge {
   const fallback = createHtml5Bridge();
   let snap: PlayerSnapshot = initialPlayerSnapshot();
   const listeners = new Set<(s: PlayerSnapshot) => void>();
+  let attachedHost: HTMLElement | null = null;
+
+  const configureAppleVideoAttributes = () => {
+    const video = attachedHost?.querySelector("video");
+    if (!video) return;
+    video.playsInline = true;
+    video.setAttribute("webkit-playsinline", "true");
+    video.setAttribute("x-webkit-airplay", "allow");
+  };
 
   const emit = () => {
     const copy = { ...snap };
@@ -36,13 +68,17 @@ export function createAvPlayerBridge(): PlayerBridge {
 
   return {
     attach(host: HTMLElement) {
+      attachedHost = host;
       fallback.attach(host);
+      queueMicrotask(configureAppleVideoAttributes);
     },
     detach() {
+      attachedHost = null;
       fallback.detach();
     },
     async load(src: PlayerSource) {
       await fallback.load(src);
+      queueMicrotask(configureAppleVideoAttributes);
       snap = initialPlayerSnapshot();
       snap.status = "loading";
       emit();

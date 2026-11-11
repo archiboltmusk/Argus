@@ -17,6 +17,15 @@ export function createWebosMediaBridge(): PlayerBridge {
   const fallback = createHtml5Bridge();
   let snap: PlayerSnapshot = initialPlayerSnapshot();
   const listeners = new Set<(s: PlayerSnapshot) => void>();
+  let attachedHost: HTMLElement | null = null;
+
+  const configureWebosVideoAttributes = () => {
+    const video = attachedHost?.querySelector("video");
+    if (!video) return;
+    // LG webOS Starfish hardware media pipeline handles inline 4K/HDR10/MKV/AC3 directly on <video>
+    video.playsInline = true;
+    video.setAttribute("x-webkit-airplay", "allow");
+  };
 
   const emit = () => {
     const copy = { ...snap };
@@ -36,13 +45,17 @@ export function createWebosMediaBridge(): PlayerBridge {
 
   return {
     attach(host: HTMLElement) {
+      attachedHost = host;
       fallback.attach(host);
+      queueMicrotask(configureWebosVideoAttributes);
     },
     detach() {
+      attachedHost = null;
       fallback.detach();
     },
     async load(src: PlayerSource) {
       await fallback.load(src);
+      queueMicrotask(configureWebosVideoAttributes);
       snap = initialPlayerSnapshot();
       snap.status = "loading";
       emit();

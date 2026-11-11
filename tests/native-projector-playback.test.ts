@@ -208,3 +208,69 @@ test("Phase 2 Native Android Player: Kotlin Media3 ExoPlayer + LibVLC activity a
     else g.self = prevSelf;
   }
 });
+
+test("Cross-OS Native Playback: Tizen webapis.avplay and Apple external player URLs work cleanly", async () => {
+  const g = globalThis as unknown as {
+    window?: Record<string, unknown>;
+    self?: unknown;
+  };
+  const prevWindow = g.window;
+  const prevSelf = g.self;
+  const avCalls: string[] = [];
+
+  try {
+    if (!g.self) g.self = g;
+    g.window = {
+      innerWidth: 1920,
+      innerHeight: 1080,
+      webapis: {
+        avplay: {
+          open: (u: string) => avCalls.push(`open:${u}`),
+          close: () => avCalls.push("close"),
+          prepareAsync: (ok: () => void) => {
+            avCalls.push("prepare");
+            ok();
+          },
+          play: () => avCalls.push("play"),
+          pause: () => avCalls.push("pause"),
+          stop: () => avCalls.push("stop"),
+          seekTo: (ms: number) => avCalls.push(`seek:${ms}`),
+          setDisplayRect: () => avCalls.push("rect"),
+          setSpeed: (r: number) => avCalls.push(`rate:${r}`),
+          getDuration: () => 5400000,
+          setListener: () => {},
+        },
+      },
+    };
+
+    const { createTizenAvplayBridge } = await import(
+      "../src/lib/player/engines/tizen-avplay-bridge.ts"
+    );
+    const { buildAppleExternalPlayerUrl } = await import(
+      "../src/lib/player/engines/avplayer-bridge.ts"
+    );
+
+    const tizen = createTizenAvplayBridge();
+    await tizen.load({ url: "http://192.168.1.50/movie.mkv", startAtSec: 12 });
+    tizen.seek(45);
+    tizen.pause();
+    tizen.destroy();
+
+    assert.ok(avCalls.includes("open:http://192.168.1.50/movie.mkv"));
+    assert.ok(avCalls.includes("prepare"));
+    assert.ok(avCalls.includes("play"));
+    assert.ok(avCalls.includes("seek:45000"));
+    assert.ok(avCalls.includes("pause"));
+    assert.ok(avCalls.includes("stop"));
+
+    const vlcUrl = buildAppleExternalPlayerUrl("vlc", "https://cdn.example/show.mkv");
+    assert.ok(vlcUrl.startsWith("vlc-x-callback://x-callback-url/stream?url="));
+    const infuseUrl = buildAppleExternalPlayerUrl("infuse", "https://cdn.example/show.mkv");
+    assert.ok(infuseUrl.startsWith("infuse://x-callback-url/play?url="));
+  } finally {
+    if (prevWindow === undefined) delete g.window;
+    else g.window = prevWindow;
+    if (prevSelf === undefined) delete g.self;
+    else g.self = prevSelf;
+  }
+});
