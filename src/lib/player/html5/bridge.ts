@@ -37,6 +37,8 @@ import {
 } from "@/lib/player/subtitle-selection";
 import { PreparedSubtitleSeedBatch } from "@/lib/subtitles/seed-batch";
 import { isSafeProviderSubtitleUrl } from "@/lib/subtitles/provider-url";
+import { getProjectorHlsOptions } from "@/lib/player/projector-mode";
+import { isSmartProjector, isAndroidProjector, isAndroidTv } from "@/lib/platform";
 
 let DOCUMENT_PIP_KNOWN_BROKEN = false;
 
@@ -783,6 +785,8 @@ export function createHtml5Bridge(): PlayerBridge {
       const isTs =
         bare.endsWith(".ts") || (isLiveSrc && !isHls && !/\.(mp4|webm|mov|mkv|mpd)$/.test(bare));
       if (isHls && Hls.isSupported()) {
+        const isProjOrTv = isSmartProjector() || isAndroidProjector() || isAndroidTv();
+        const baseProjOpts = isProjOrTv ? getProjectorHlsOptions() : {};
         hls = new Hls(
           isLiveSrc
             ? {
@@ -790,8 +794,12 @@ export function createHtml5Bridge(): PlayerBridge {
                 lowLatencyMode: false,
                 liveDurationInfinity: true,
                 backBufferLength: 30,
+                ...baseProjOpts,
               }
-            : { enableWorker: true },
+            : {
+                enableWorker: true,
+                ...baseProjOpts,
+              },
         );
         hls.loadSource(src.url);
         hls.attachMedia(video);

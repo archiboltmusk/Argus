@@ -7,17 +7,33 @@ import type {
 } from "../bridge";
 import { initialPlayerSnapshot } from "../bridge";
 import { createHtml5Bridge } from "../html5";
+import { WebAudioDownmixer } from "../web-audio-downmixer";
+import { getProjectorCssFilter, isBudgetProjectorDevice } from "../projector-mode";
+import { isSmartProjector, isAndroidProjector, isAndroidTv } from "@/lib/platform";
 
 /**
  * ExoPlayer (Media3) Bridge: Android Ecosystem
- * Optimized for Android TV, Google TV, Smart Projectors (XGIMI, Nebula, Dangbei, Formovie),
- * Tablets, Foldables, and Mobile. Supports MediaCodec tunneling, Dolby Atmos bitstreaming,
- * and adaptive framerate matching.
+ * Optimized for Android TV, Google TV, Smart Projectors (XGIMI, Nebula, Dangbei, Formovie, Wanbo, Beem),
+ * Tablets, Foldables, and Mobile.
+ *
+ * Implements:
+ * 1. MediaCodec hardware acceleration & display sync.
+ * 2. Multi-channel audio software downmixing (AC3/E-AC3/DTS to stereo 2.0) with vocal presence lift.
+ * 3. Wall projection contrast & gamma compensation.
+ * 4. Low-memory footprint guarding against low-RAM (1GB/2GB) SoC crashes during movies and series.
  */
 export function createExoPlayerBridge(options?: { isProjector?: boolean; isTv?: boolean }): PlayerBridge {
   const fallback = createHtml5Bridge();
   let snap: PlayerSnapshot = initialPlayerSnapshot();
   const listeners = new Set<(s: PlayerSnapshot) => void>();
+  const downmixer = new WebAudioDownmixer();
+  let attachedHost: HTMLElement | null = null;
+  const isProj = Boolean(
+    options?.isProjector ||
+    isSmartProjector() ||
+    isAndroidProjector() ||
+    isBudgetProjectorDevice()
+  );
 
   const emit = () => {
     const copy = { ...snap };
@@ -32,16 +48,39 @@ export function createExoPlayerBridge(options?: { isProjector?: boolean; isTv?: 
     chromecast: true,
     hdrPassthrough: true,
     hardwareDecode: true,
-    tunneling: Boolean(options?.isTv || options?.isProjector),
+    tunneling: Boolean(options?.isTv || isProj || isAndroidTv()),
     dolbyVision: true,
     spatialAudio: false,
   };
 
+  const applyProjectorOptimizations = (host: HTMLElement) => {
+    if (!isProj) return;
+    const video = host.querySelector("video");
+    if (video) {
+      // Invert projector washed-out wall dispersion
+      const filter = getProjectorCssFilter({ enabled: true, contrastBoost: 8, gammaLift: 2 });
+      if (filter) video.style.filter = filter;
+      // Connect multi-channel downmixer and speech clarifier
+      downmixer.attach(video, {
+        profileId: "projector-beem",
+        boostVolume: 1.25,
+        enableCompression: true,
+      });
+    }
+  };
+
   return {
     attach(host: HTMLElement) {
+      attachedHost = host;
       fallback.attach(host);
+      // Wait a microtask for HTML5 video element creation inside host
+      queueMicrotask(() => {
+        if (attachedHost) applyProjectorOptimizations(attachedHost);
+      });
     },
     detach() {
+      downmixer.detach();
+      attachedHost = null;
       fallback.detach();
     },
     async load(src: PlayerSource) {
@@ -49,6 +88,11 @@ export function createExoPlayerBridge(options?: { isProjector?: boolean; isTv?: 
       snap = initialPlayerSnapshot();
       snap.status = "loading";
       emit();
+      if (attachedHost) {
+        setTimeout(() => {
+          if (attachedHost) applyProjectorOptimizations(attachedHost);
+        }, 150);
+      }
     },
     play(options) {
       return fallback.play(options);
@@ -159,6 +203,8 @@ export function createExoPlayerBridge(options?: { isProjector?: boolean; isTv?: 
     },
     destroy() {
       listeners.clear();
+      downmixer.detach();
+      attachedHost = null;
       fallback.destroy();
     },
   };

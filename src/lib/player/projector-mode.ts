@@ -2,7 +2,7 @@
  * Projector Display & Hardware Optimization Profile
  *
  * Specifically tuned for budget Android smart LED projectors (e.g. Portronics Beem 470 / 410,
- * Egate, Wanbo, Zebronics) running Android 9/11/12 on 1GB - 2GB RAM SoCs.
+ * Egate, Wanbo, Zebronics, Magcubic HY300/320, XGIMI, Dangbei) running Android 9/11/12 on 1GB - 2GB RAM SoCs.
  *
  * Addresses key projector constraints:
  * 1. Low contrast / washed-out projection on white walls: boosts midtone contrast & gamma.
@@ -19,6 +19,7 @@ export interface ProjectorDisplayConfig {
   highContrastSubtitles: boolean;
   overscanInsetPercent: number; // 0 - 10%
   lowMemoryFootprint: boolean;
+  wallColorTint?: "white" | "ivory" | "cool-grey" | "peach" | "green";
 }
 
 export const DEFAULT_PROJECTOR_CONFIG: ProjectorDisplayConfig = {
@@ -29,6 +30,7 @@ export const DEFAULT_PROJECTOR_CONFIG: ProjectorDisplayConfig = {
   highContrastSubtitles: true,
   overscanInsetPercent: 5,
   lowMemoryFootprint: true,
+  wallColorTint: "white",
 };
 
 const PROJECTOR_KEYWORDS = [
@@ -41,6 +43,10 @@ const PROJECTOR_KEYWORDS = [
   "xgimi",
   "nebula",
   "dangbei",
+  "magcubic",
+  "hy300",
+  "hy320",
+  "toptro",
   "projector",
 ];
 
@@ -51,6 +57,14 @@ export function isBudgetProjectorDevice(userAgent = typeof navigator !== "undefi
   if (!userAgent) return false;
   const lower = userAgent.toLowerCase();
   return PROJECTOR_KEYWORDS.some((kw) => lower.includes(kw));
+}
+
+/**
+ * Helper to determine if projector mode should be actively applied.
+ */
+export function isProjectorModeActive(settings?: { projectorModeEnabled?: boolean }): boolean {
+  if (settings?.projectorModeEnabled) return true;
+  return isBudgetProjectorDevice();
 }
 
 /**
@@ -77,6 +91,28 @@ export function getProjectorMpvProperties(config: Partial<ProjectorDisplayConfig
 }
 
 /**
+ * Returns CSS filter string for HTML5 video element on projectors.
+ */
+export function getProjectorCssFilter(config: Partial<ProjectorDisplayConfig> = {}): string {
+  const cfg = { ...DEFAULT_PROJECTOR_CONFIG, ...config };
+  if (!cfg.enabled) return "";
+
+  const contrastMult = 1 + cfg.contrastBoost / 40; // e.g. 8 -> 1.20
+  const brightnessMult = 1 + cfg.gammaLift / 50;  // e.g. 2 -> 1.04
+  let tintFilter = "";
+
+  if (cfg.wallColorTint === "ivory") {
+    tintFilter = "hue-rotate(-5deg) saturate(1.05)";
+  } else if (cfg.wallColorTint === "cool-grey") {
+    tintFilter = "brightness(1.08) saturate(1.12)";
+  } else if (cfg.wallColorTint === "peach") {
+    tintFilter = "hue-rotate(6deg) saturate(1.04)";
+  }
+
+  return `contrast(${contrastMult.toFixed(2)}) brightness(${brightnessMult.toFixed(2)}) saturate(1.08) ${tintFilter}`.trim();
+}
+
+/**
  * Generates CSS safe-area inset styles to compensate for physical keystone distortion.
  */
 export function getProjectorKeystoneInsets(insetPercent = 5): {
@@ -91,5 +127,26 @@ export function getProjectorKeystoneInsets(insetPercent = 5): {
     paddingBottom: `${safe}vh`,
     paddingLeft: `${safe}vw`,
     paddingRight: `${safe}vw`,
+  };
+}
+
+/**
+ * Returns memory-optimized Hls.js buffer options for low-RAM (1GB - 2GB) projector chipsets.
+ */
+export function getProjectorHlsOptions(): {
+  maxBufferSize: number;
+  maxBufferLength: number;
+  maxMaxBufferLength: number;
+  backBufferLength: number;
+  enableWorker: boolean;
+  lowLatencyMode: boolean;
+} {
+  return {
+    maxBufferSize: 24 * 1024 * 1024, // 24 MB cache ceiling (prevents OOM kill)
+    maxBufferLength: 20,              // 20s forward buffer
+    maxMaxBufferLength: 40,
+    backBufferLength: 8,
+    enableWorker: true,
+    lowLatencyMode: false,
   };
 }

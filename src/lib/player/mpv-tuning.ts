@@ -2,6 +2,7 @@ import type { Settings } from "@/lib/settings";
 import { isMacDesktop } from "@/lib/platform";
 import { bufferMpvLines, bufferSizeFor } from "./buffer-profile";
 import { passthroughMpvLines } from "./passthrough";
+import { getProjectorMpvProperties, isProjectorModeActive } from "./projector-mode";
 
 const QUALITY_LINES: Record<Settings["mpvQuality"], string[]> = {
   balanced: [],
@@ -58,6 +59,17 @@ export function compileMpvOptions(s: Settings, opts?: { anime4k?: boolean }): st
   // the judder 24 fps film shows on a 60 Hz panel. mpv cannot change the OS refresh rate.
   if (s.mpvDisplaySync) lines.push("video-sync=display-resample");
   if (s.mpvDownmixStereo) lines.push("audio-channels=stereo");
+  if (isProjectorModeActive(s)) {
+    const projProps = getProjectorMpvProperties({
+      enabled: true,
+      contrastBoost: s.projectorContrastBoost,
+      gammaLift: s.projectorGammaLift,
+      highContrastSubtitles: s.projectorHighContrastSubs,
+    });
+    for (const [k, v] of Object.entries(projProps)) {
+      lines.push(`${k}=${v}`);
+    }
+  }
   if (s.audioDevice && s.audioDevice !== "auto") lines.push(`audio-device=${s.audioDevice}`);
   if (s.playerDisplayPanel === "oled" && s.playerHdrToSdr) lines.push("target-contrast=inf");
   for (const [k, v] of Object.entries(s.mpvTweaks ?? {})) {

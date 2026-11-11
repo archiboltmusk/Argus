@@ -56,6 +56,11 @@ import {
 } from "@/lib/stremio-server";
 import { playbackStartupProfile } from "@/lib/player/startup-profile";
 import { isWeb } from "@/lib/platform";
+import {
+  getProjectorCssFilter,
+  getProjectorKeystoneInsets,
+  isProjectorModeActive,
+} from "@/lib/player/projector-mode";
 import { usePauseOnInactive } from "./player/hooks/use-pause-on-inactive";
 import { spoilerMaskFor } from "@/lib/spoilers";
 import { usePlayerWatched } from "./player/hooks/use-player-watched";
@@ -648,6 +653,29 @@ function NativePlayerView({ src }: { src: PlayerSrc }) {
     onClose: () => void closePlayer(),
   });
   const shrinkEndScreen = endScreen.open && endScreen.mode === "shrink";
+  const projActive = isProjectorModeActive(settings);
+  const keystoneInsets = useMemo(
+    () => (projActive ? getProjectorKeystoneInsets(settings.projectorKeystoneOverscan) : null),
+    [projActive, settings.projectorKeystoneOverscan],
+  );
+  const projFilter = useMemo(
+    () =>
+      projActive && engine === "html5"
+        ? getProjectorCssFilter({
+            enabled: true,
+            contrastBoost: settings.projectorContrastBoost,
+            gammaLift: settings.projectorGammaLift,
+            wallColorTint: settings.projectorWallColorTint,
+          })
+        : undefined,
+    [
+      projActive,
+      engine,
+      settings.projectorContrastBoost,
+      settings.projectorGammaLift,
+      settings.projectorWallColorTint,
+    ],
+  );
   // When the full end screen is up after mpv finished, it closes the player itself.
   const endScreenFullRef = useRef(false);
   endScreenFullRef.current = endScreen.open && endScreen.mode === "full";
@@ -1748,6 +1776,12 @@ function NativePlayerView({ src }: { src: PlayerSrc }) {
           height: shrinkEndScreen ? "calc(clamp(340px, 18vw, 560px) * 0.5625)" : "100%",
           borderRadius: shrinkEndScreen ? 14 : 0,
           overflow: shrinkEndScreen ? "hidden" : undefined,
+          paddingTop: !shrinkEndScreen && keystoneInsets ? keystoneInsets.paddingTop : undefined,
+          paddingBottom: !shrinkEndScreen && keystoneInsets ? keystoneInsets.paddingBottom : undefined,
+          paddingLeft: !shrinkEndScreen && keystoneInsets ? keystoneInsets.paddingLeft : undefined,
+          paddingRight: !shrinkEndScreen && keystoneInsets ? keystoneInsets.paddingRight : undefined,
+          filter: projFilter || undefined,
+          boxSizing: "border-box",
           transition:
             "left 340ms cubic-bezier(0.22,1,0.36,1), bottom 340ms cubic-bezier(0.22,1,0.36,1), width 340ms cubic-bezier(0.22,1,0.36,1), height 340ms cubic-bezier(0.22,1,0.36,1)",
         }}

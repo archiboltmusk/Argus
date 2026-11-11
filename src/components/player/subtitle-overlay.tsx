@@ -1,6 +1,7 @@
 import { memo, useEffect, useMemo, useRef, useState } from "react";
 import { useActiveKid } from "@/lib/profiles";
 import { useSettings } from "@/lib/settings";
+import { isProjectorModeActive } from "@/lib/player/projector-mode";
 import { HoverWordLine } from "./subtitle-word-hover";
 
 type Props = {
@@ -43,12 +44,19 @@ export const SubtitleOverlay = memo(function SubtitleOverlay({
         : clamp(settings.subFontSize, 16, 120),
     [kid, settings.subFontSize],
   );
+  const isProjector = isProjectorModeActive(settings);
+  const projectorHighContrast = isProjector && settings.projectorHighContrastSubs;
   const fontSize = useMemo(() => Math.round(baseFont * responsive), [baseFont, responsive]);
-  const marginY = useMemo(() => clamp(settings.subMarginY, 0, 100), [settings.subMarginY]);
-  const fontColor = settings.subFontColor || "#FFFFFF";
+  const marginY = useMemo(
+    () => (projectorHighContrast ? Math.max(24, clamp(settings.subMarginY, 0, 100)) : clamp(settings.subMarginY, 0, 100)),
+    [projectorHighContrast, settings.subMarginY],
+  );
+  const fontColor = projectorHighContrast && (!settings.subFontColor || settings.subFontColor === "#FFFFFF")
+    ? "#FFF8E7"
+    : settings.subFontColor || "#FFFFFF";
   const align = settings.subAlignX || "center";
   const family = useMemo(() => fontFamilyFor(settings.subFontFamily), [settings.subFontFamily]);
-  const style = kid ? "shadow" : (settings.subStyle ?? "shadow");
+  const style = projectorHighContrast ? "outline" : kid ? "shadow" : (settings.subStyle ?? "shadow");
   const lines = useMemo(() => text.split("\n"), [text]);
 
   const justify =
@@ -57,8 +65,11 @@ export const SubtitleOverlay = memo(function SubtitleOverlay({
     align === "left" ? "items-start" : align === "right" ? "items-end" : "items-center";
 
   const borderSize = useMemo(
-    () => Math.max(0.5, Math.round((clamp(settings.subBorderSize, 1, 6) || 2) * responsive * 2) / 2),
-    [settings.subBorderSize, responsive],
+    () => {
+      const computed = Math.max(0.5, Math.round((clamp(settings.subBorderSize, 1, 6) || 2) * responsive * 2) / 2);
+      return projectorHighContrast ? Math.max(3.5, computed) : computed;
+    },
+    [settings.subBorderSize, responsive, projectorHighContrast],
   );
   const borderColor = settings.subBorderColor || "#000000";
 

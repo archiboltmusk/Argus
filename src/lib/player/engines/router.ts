@@ -3,6 +3,7 @@ import {
   getRecommendedPlayerEngine,
   isAndroidProjector,
   isAndroidTv,
+  isSmartProjector,
 } from "@/lib/platform";
 import type { PlayerBridge, PlayerEngine, PlayerPlatformEngine } from "../bridge";
 import { createHtml5Bridge } from "../html5";
@@ -76,7 +77,7 @@ export async function resolveAdaptivePlayerBridge(
     case "exoplayer":
       return {
         bridge: createExoPlayerBridge({
-          isProjector: isAndroidProjector(),
+          isProjector: isAndroidProjector() || isSmartProjector(),
           isTv: isAndroidTv(),
         }),
         engine: "html5",
