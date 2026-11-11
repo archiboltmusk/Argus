@@ -162,7 +162,7 @@ export interface CommunityBookRepo {
 export const COMMUNITY_BOOK_REPOS: CommunityBookRepo[] = [
   {
     name: "LNReader Official Community Scrapers",
-    url: "https://raw.githubusercontent.com/LNReader/lnreader-plugins/plugins/v2.0.0/.dist/plugins.min.json",
+    url: "https://raw.githubusercontent.com/LNReader/lnreader-plugins/plugins/v3.0.0/.dist/plugins.min.json",
     description: "Hundreds of community-maintained web novel, light novel, and fiction scrapers.",
     category: "Community Scrapers",
     kind: "plugin",

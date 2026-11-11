@@ -2,6 +2,7 @@ import { safeFetch } from "@/lib/safe-fetch";
 import { assertSafeUrl } from "@/lib/manga/plugins/host-http";
 import { PluginWorker } from "@/lib/manga/plugins/worker-host";
 import type { InstalledPlugin } from "@/lib/manga/plugins/types";
+import { isLNReaderSource, buildLNReaderSource } from "./lnreader-adapter";
 
 export type EBookPluginManifest = {
   id: string;
@@ -246,8 +247,13 @@ export async function installEBookPlugin(
   const target = assertSafeUrl(new URL(item.entry, repoUrl).href);
   const response = await safeFetch(target, { signal: AbortSignal.timeout(20_000) });
   if (!response.ok) throw new Error(`Extension HTTP ${response.status}`);
-  const source = await response.text();
+  let source = await response.text();
   if (source.length > 2 * 1024 * 1024) throw new Error("Extension is too large");
+
+  if (isLNReaderSource(source, repoUrl, item.entry)) {
+    source = buildLNReaderSource(source, item);
+  }
+
   const hash = Array.from(
     new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(source))),
   )

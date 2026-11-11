@@ -30,6 +30,7 @@ import {
   installedEBookPlugins,
   loadEBookExtensions,
   ebookRepoUrls,
+  normalizeEBookRepoUrl,
   removeEBookPlugin,
   removeEBookRepo,
   setEBookPluginEnabled,
@@ -1050,7 +1051,11 @@ function Extensions() {
                     ? hasAnnasArchive()
                     : repo.kind === "indic"
                       ? hasIndicLibrary()
-                      : ebookRepoUrls().includes(repo.url);
+                      : ebookRepoUrls().some(
+                          (u) =>
+                            u === repo.url ||
+                            normalizeEBookRepoUrl(u) === normalizeEBookRepoUrl(repo.url),
+                        );
             return (
               <div key={repo.url} className={`flex items-center justify-between p-3.5 ${CARD}`}>
                 <div className="min-w-0 flex-1 pr-2">
