@@ -306,8 +306,8 @@ export function usePickHandler({
       }
       markPlaybackTrace(playbackTraceId, "resolve-ready");
       const hasProxyHeaders = !!r.data.headers && Object.keys(r.data.headers).length > 0;
-      const isWebPlatform = typeof window !== "undefined" && !("__TAURI_INTERNALS__" in window);
-      if (intent !== "download" && hasProxyHeaders && isWebPlatform) {
+      const hasTauriRuntime = typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
+      if (intent !== "download" && hasProxyHeaders && hasTauriRuntime) {
         try {
           const proxied = await registerStreamProxy(r.data.url, r.data.headers);
           playUrl = proxied.url;

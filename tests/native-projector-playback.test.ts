@@ -274,3 +274,23 @@ test("Cross-OS Native Playback: Tizen webapis.avplay and Apple external player U
     else g.self = prevSelf;
   }
 });
+
+test("Web Browser Playback: proxy gate requires Tauri runtime and HTML5 bridge supports Safari HLS / FLV fallbacks", async () => {
+  const fs = await import("node:fs");
+  const pickerCode = fs.readFileSync(
+    new URL("../src/views/play-picker/use-pick-handler.ts", import.meta.url),
+    "utf8",
+  );
+  const switcherCode = fs.readFileSync(
+    new URL("../src/views/player/hooks/use-stream-switcher.ts", import.meta.url),
+    "utf8",
+  );
+  const html5Code = fs.readFileSync(
+    new URL("../src/lib/player/html5/bridge.ts", import.meta.url),
+    "utf8",
+  );
+  assert.ok(pickerCode.includes('hasProxyHeaders && hasTauriRuntime'));
+  assert.ok(switcherCode.includes('hasProxyHeaders && hasTauriRuntime'));
+  assert.ok(html5Code.includes("canNativeHls"));
+  assert.ok(html5Code.includes('isFlv ? "flv" : "mpegts"'));
+});

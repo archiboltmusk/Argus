@@ -782,8 +782,18 @@ export function createHtml5Bridge(): PlayerBridge {
       const lowerUrl = src.url.toLowerCase();
       const isHls =
         bare.endsWith(".m3u8") || lowerUrl.includes("m3u8") || lowerUrl.includes("/playlist/");
+      const isFlv = bare.endsWith(".flv");
       const isTs =
-        bare.endsWith(".ts") || (isLiveSrc && !isHls && !/\.(mp4|webm|mov|mkv|mpd)$/.test(bare));
+        bare.endsWith(".ts") ||
+        isFlv ||
+        (isLiveSrc && !isHls && !/\.(mp4|webm|mov|mkv|mpd)$/.test(bare));
+      const canNativeHls =
+        typeof video.canPlayType === "function" &&
+        Boolean(
+          video.canPlayType("application/vnd.apple.mpegurl") ||
+            video.canPlayType("application/x-mpegURL"),
+        );
+
       if (isHls && Hls.isSupported()) {
         const isProjOrTv = isSmartProjector() || isAndroidProjector() || isAndroidTv();
         const baseProjOpts = isProjOrTv ? getProjectorHlsOptions() : {};
@@ -816,16 +826,32 @@ export function createHtml5Bridge(): PlayerBridge {
             activeHls.recoverMediaError();
             return;
           }
+          // Safari / WebKit supports native HLS without CORS restrictions
+          if (!snap.firstFrameReady && canNativeHls && video) {
+            try {
+              activeHls.destroy();
+            } catch {}
+            hls = null;
+            video.src = src.url;
+            return;
+          }
           hlsFatal = data.type === Hls.ErrorTypes.NETWORK_ERROR ? "network" : "decode";
           refreshSnapshot();
         });
       } else if (isTs && mpegts.isSupported()) {
         tsPlayer = mpegts.createPlayer(
-          { type: "mpegts", url: src.url, isLive: isLiveSrc, cors: true },
+          { type: isFlv ? "flv" : "mpegts", url: src.url, isLive: isLiveSrc, cors: true },
           { enableWorker: true, liveBufferLatencyChasing: isLiveSrc, lazyLoadMaxDuration: 4 },
         );
         tsPlayer.attachMediaElement(video);
-        tsPlayer.on(mpegts.Events.ERROR, refreshSnapshot);
+        tsPlayer.on(mpegts.Events.ERROR, () => {
+          if (!snap.firstFrameReady && video && !video.src) {
+            teardownTs();
+            video.src = src.url;
+          } else {
+            refreshSnapshot();
+          }
+        });
         tsPlayer.load();
       } else {
         video.src = src.url;
@@ -941,7 +967,13 @@ export function createHtml5Bridge(): PlayerBridge {
           if (autoplayUnmuteTimer != null) clearTimeout(autoplayUnmuteTimer);
           autoplayUnmuteTimer = setTimeout(() => {
             autoplayUnmuteTimer = null;
-            if (v && !v.paused) v.muted = false;
+            if (!v || v.paused) return;
+            v.muted = false;
+            // Some browsers pause playback if unmuted without a user gesture; keep muted playback alive.
+            if (v.paused) {
+              v.muted = true;
+              void v.play().catch(() => {});
+            }
           }, 200);
         } catch {}
       }

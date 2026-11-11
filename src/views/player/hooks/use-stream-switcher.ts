@@ -116,7 +116,8 @@ export function useStreamSwitcher(params: {
       }
       let nextProxySessionId: string | null = null;
       const hasProxyHeaders = !!r.data.headers && Object.keys(r.data.headers).length > 0;
-      if (hasProxyHeaders) {
+      const hasTauriRuntime = typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
+      if (hasProxyHeaders && hasTauriRuntime) {
         try {
           const proxied = await registerStreamProxy(r.data.url, r.data.headers);
           playUrl = proxied.url;

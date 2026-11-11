@@ -133,7 +133,30 @@ export default defineConfig(({ mode }) => {
           },
         }
       : web
-        ? { build: { outDir: "dist-web", rollupOptions: { input: { main: "index.html" } as Record<string, string> } } }
+        ? {
+            build: {
+              outDir: "dist-web",
+              rollupOptions: {
+                input: { main: "index.html" } as Record<string, string>,
+                output: {
+                  manualChunks(id: string) {
+                    if (id.includes("node_modules/react/") || id.includes("node_modules/react-dom/")) {
+                      return "react-vendor";
+                    }
+                    if (id.includes("node_modules/hls.js") || id.includes("node_modules/mpegts.js")) {
+                      return "media-streams";
+                    }
+                    if (id.includes("node_modules/pdfmake") || id.includes("node_modules/html-to-pdfmake")) {
+                      return "pdf-export";
+                    }
+                    if (id.includes("node_modules/skinview3d")) {
+                      return "skinview3d";
+                    }
+                  },
+                },
+              },
+            },
+          }
         : {
             build: {
               rollupOptions: {
