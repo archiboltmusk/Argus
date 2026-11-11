@@ -173,4 +173,31 @@ export class CinemaLoreBot {
       knownMilestones: pastMilestones.map((m) => m.publicLoreUpdate),
     };
   }
+
+  /**
+   * Delegates question to local Ollama AI with anti-spoiler protection
+   */
+  public async askAICompanion(
+    question: string,
+    currentPlaybackSec: number,
+    filmTitle?: string,
+  ): Promise<LoreQueryResponse> {
+    const { queryOllamaCinemaCompanion } = await import("./ollama-client");
+    const visibleChars = Array.from(this.characters.values())
+      .filter((c) => c.firstAppearanceSec <= currentPlaybackSec)
+      .map((c) => c.name);
+
+    const result = await queryOllamaCinemaCompanion({
+      question,
+      filmTitle,
+      currentTimestampSec: currentPlaybackSec,
+      knownCharacters: visibleChars,
+    });
+
+    return {
+      answer: result.response,
+      isSpoilerShielded: true,
+      knownMilestones: visibleChars,
+    };
+  }
 }

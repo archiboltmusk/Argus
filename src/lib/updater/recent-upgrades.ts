@@ -15,10 +15,42 @@ export type UpgradeRelease = {
 
 export const RECENT_UPGRADES: UpgradeRelease[] = [
   {
+    version: "v3.17.0",
+    title: "Free Intelligence APIs & On-Device AI Companion",
+    date: "November 2026",
+    badge: "Latest",
+    highlights: [
+      {
+        icon: "bot",
+        title: "On-Device Ollama AI Cinema Companion",
+        description:
+          "Zero-cloud-cost local AI integration (localhost:11434) providing real-time, anti-spoiler film lore and scene breakdowns.",
+      },
+      {
+        icon: "audio",
+        title: "AcoustID Audio Fingerprinting (Shazam-Style)",
+        description:
+          "Free acoustic fingerprint identification to name any background track playing in media with MusicBrainz linkage.",
+      },
+      {
+        icon: "film",
+        title: "Watchmode Legal Streaming Availability",
+        description:
+          "Displays regional streaming availability badges (Netflix, Prime, Disney+, Max) for legal watching options.",
+      },
+      {
+        icon: "sparkles",
+        title: "AniList Public GraphQL Integration",
+        description:
+          "Comprehensive anime relationship trees, voice actors, Japanese kanji/romaji titles, and studio catalogs with zero API keys.",
+      },
+    ],
+  },
+  {
     version: "v3.16.1",
     title: "Touch & Mobile Gestures Engine with Glassmorphic HUD",
     date: "November 2026",
-    badge: "Latest",
+    badge: "Major",
     highlights: [
       {
         icon: "gesture",
