@@ -319,6 +319,10 @@ export const PlayerOverlayLayers = memo(function PlayerOverlayLayers(p: PlayerOv
         onClick={p.playPauseToggle}
         onDoubleClick={p.toggleFullscreen}
         onWheelVolume={p.onVolumeWheel}
+        seekTo={p.seekTo}
+        positionSec={p.snap.positionSec}
+        durationSec={p.snap.durationSec}
+        bridgeRef={p.bridgeRef}
       />
 
       {p.tenFoot ? (
