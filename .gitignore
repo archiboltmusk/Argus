@@ -146,3 +146,4 @@ gemini.key
 
 # Rotated dev-server logs: *.log covers dev.log but not its .prev rotation.
 dev.log*
+/supabase/.temp/

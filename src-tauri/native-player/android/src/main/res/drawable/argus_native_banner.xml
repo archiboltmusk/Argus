@@ -1,5 +1,6 @@
-<vector xmlns:android="http://schemas.android.com/apk/res/android"
-    android:width="320dp" android:height="180dp" android:viewportWidth="320" android:viewportHeight="180">
+<!-- TV launcher banner dimensions; this is wider than a toolbar icon by design. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android" xmlns:tools="http://schemas.android.com/tools"
+    android:width="320dp" android:height="180dp" android:viewportWidth="320" android:viewportHeight="180" tools:ignore="VectorRaster">
   <path android:fillColor="#111213" android:pathData="M0,0h320v180h-320z" />
   <path android:fillColor="#F4A25C" android:pathData="M72,90Q160,-10 248,90Q160,190 72,90z" />
   <path android:fillColor="#111213" android:pathData="M122,90a38,38 0,1 0,76 0a38,38 0,1 0,-76 0" />

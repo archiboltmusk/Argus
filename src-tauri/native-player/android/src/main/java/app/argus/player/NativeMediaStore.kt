@@ -12,8 +12,9 @@ data class NativeCatalog(val addon: NativeAddon, val type: String, val id: Strin
 data class NativeSource(val addon: String, val data: JSONObject)
 
 /** Device-owned media state. The earlier interface's storage is deliberately left untouched. */
-class NativeMediaStore(context: Context) {
-    private val prefs = context.getSharedPreferences("argus_native_media_v1", Context.MODE_PRIVATE)
+@android.annotation.SuppressLint("ApplySharedPref") // Sync must not begin before the offline journal is persisted.
+class NativeMediaStore(context: Context, scope: String = "", private val changed: () -> Unit = {}) {
+    private val prefs = context.getSharedPreferences("argus_native_media_v1" + scope, Context.MODE_PRIVATE)
     companion object {
         const val CINEMETA = "https://v3-cinemeta.strem.io/manifest.json"
         fun segment(value: String): String = URLEncoder.encode(value, "UTF-8").replace("+", "%20")
@@ -78,17 +79,21 @@ class NativeMediaStore(context: Context) {
             "This link does not contain a valid Stremio add-on."
         }
         val addon = NativeAddon(url, manifest)
-        synchronized(this) { saveAddons(installed().filter { it.url != url } + addon) }
+        synchronized(prefs) {
+            record("addon", url, JSONObject().put("url", url).put("manifest", manifest),
+                payload = "addons" to addonsJson(installed().filter { it.url != url } + addon))
+        }
         return addon
     }
 
-    private fun saveAddons(addons: List<NativeAddon>) {
-        prefs.edit().putString("addons", JSONArray(addons.map {
+    private fun addonsJson(addons: List<NativeAddon>): String = JSONArray(addons.map {
             JSONObject().put("url", it.url).put("manifest", it.manifest)
-        }).toString()).commit()
-    }
+        }).toString()
 
-    @Synchronized fun removeAddon(url: String) = saveAddons(installed().filter { it.url != url })
+    fun removeAddon(url: String): Unit = synchronized(prefs) {
+        record("addon", url, JSONObject().put("url", url), true,
+            "addons" to addonsJson(installed().filter { it.url != url }))
+    }
 
     fun catalogs(): List<NativeCatalog> = installed().flatMap { addon ->
         val catalogs = addon.manifest.optJSONArray("catalogs") ?: JSONArray()
@@ -121,7 +126,7 @@ class NativeMediaStore(context: Context) {
         for (base in bases.distinct()) {
             try {
                 val result = fetch(base.removeSuffix("/manifest.json") + "/meta/${segment(type)}/${segment(id)}.json").optJSONObject("meta")
-                if (result != null && result.optString("id").isNotBlank()) return result.put("type", type).put("_addon", base)
+                if (result != null && result.optString("id") == id) return result.put("type", type).put("_addon", base)
             } catch (_: Exception) { }
         }
         return meta
@@ -131,7 +136,12 @@ class NativeMediaStore(context: Context) {
         val resources = addon.manifest.optJSONArray("resources") ?: JSONArray()
         val supports = (0 until resources.length()).any { index ->
             val entry = resources.get(index)
-            entry == "stream" || (entry is JSONObject && entry.optString("name") == "stream")
+            val resource = entry as? JSONObject
+            val types = resource?.optJSONArray("types") ?: addon.manifest.optJSONArray("types")
+            val prefixes = resource?.optJSONArray("idPrefixes") ?: addon.manifest.optJSONArray("idPrefixes")
+            (entry == "stream" || resource?.optString("name") == "stream") &&
+                (types == null || types.length() == 0 || (0 until types.length()).any { types.optString(it) == type }) &&
+                (prefixes == null || prefixes.length() == 0 || (0 until prefixes.length()).any { id.startsWith(prefixes.optString(it)) })
         }
         if (!supports) return emptyList()
         val result = fetch(addon.url.removeSuffix("/manifest.json") + "/stream/${segment(type)}/${segment(id)}.json").optJSONArray("streams") ?: JSONArray()
@@ -140,26 +150,63 @@ class NativeMediaStore(context: Context) {
 
     private fun saved(key: String): JSONArray = JSONArray(prefs.getString(key, "[]"))
     fun library(): List<JSONObject> = saved("library").let { array -> (0 until array.length()).map { array.getJSONObject(it) } }
-    @Synchronized fun toggleLibrary(meta: JSONObject) {
+    fun toggleLibrary(meta: JSONObject): Unit = synchronized(prefs) {
         val items = library()
         val exists = items.any { it.optString("id") == meta.optString("id") && it.optString("type") == meta.optString("type") }
         val result = items.filterNot { it.optString("id") == meta.optString("id") && it.optString("type") == meta.optString("type") }
-        prefs.edit().putString("library", JSONArray(if (exists) result else result + savedMeta(meta)).toString()).commit()
+        record("library", meta.optString("type") + ":" + meta.optString("id"), savedMeta(meta), exists,
+            "library" to JSONArray(if (exists) result else result + savedMeta(meta)).toString())
     }
     fun inLibrary(meta: JSONObject) = library().any { it.optString("id") == meta.optString("id") && it.optString("type") == meta.optString("type") }
     fun history(): List<JSONObject> = saved("history").let { array -> (0 until array.length()).map { array.getJSONObject(it) } }
     fun resume(id: String): Double = history().firstOrNull { it.optString("videoId") == id }?.optDouble("position", 0.0) ?: 0.0
-    @Synchronized fun saveProgress(meta: JSONObject, videoId: String, position: Double, duration: Double) {
+    fun saveProgress(meta: JSONObject, videoId: String, position: Double, duration: Double): Unit = synchronized(prefs) {
         if (position < 1) return
         val other = history().filterNot { it.optString("videoId") == videoId }
-        val next = if (duration > 0 && position >= duration * 0.95 && duration - position < 30) other else listOf(JSONObject().put("meta", savedMeta(meta)).put("videoId", videoId).put("position", position).put("duration", duration)) + other
-        prefs.edit().putString("history", JSONArray(next.take(100)).toString()).apply()
+        val finished = duration > 0 && position >= duration * 0.95 && duration - position < 30
+        val entry = JSONObject().put("meta", savedMeta(meta)).put("videoId", videoId).put("position", position).put("duration", duration).put("updatedAt", System.currentTimeMillis())
+        val next = if (finished) other else listOf(entry) + other
+        record("history", videoId, entry, finished, "history" to JSONArray(next.take(100)).toString())
     }
+    private fun record(kind: String, id: String, value: JSONObject, removed: Boolean = false, payload: Pair<String, String>? = null): Unit = synchronized(prefs) {
+        val pending = JSONObject(prefs.getString("pending", "{}")!!)
+        val revision = prefs.getLong("revision", 0) + 1
+        pending.put("$kind:$id", JSONObject().put("kind", kind).put("id", id).put("value", value).put("removed", removed).put("rev", revision).put("at", System.currentTimeMillis()))
+        val edit = prefs.edit().putLong("revision", revision).putString("pending", pending.toString())
+        payload?.let { edit.putString(it.first, it.second) }
+        edit.commit()
+        changed()
+    }
+    fun pending(): JSONObject = synchronized(prefs) { JSONObject(prefs.getString("pending", "{}")!!) }
+    /** Apply an authoritative pull only after all writes were acknowledged. Newer local edits win. */
+    fun applyCloud(remote: JSONObject, sent: JSONObject): Unit = synchronized(prefs) {
+        val pending = pending()
+        sent.keys().asSequence().toList().forEach { key ->
+            if (pending.optJSONObject(key)?.optLong("rev") == sent.getJSONObject(key).optLong("rev")) pending.remove(key)
+        }
+        val edit = prefs.edit()
+        for (kind in listOf("library", "history", "addon")) {
+            val key = if (kind == "addon") "addons" else kind
+            val values = linkedMapOf<String, JSONObject>()
+            val rows = remote.getJSONArray(key)
+            for (i in 0 until rows.length()) {
+                val row = rows.getJSONObject(i)
+                val id = when (kind) { "library" -> row.optString("type") + ":" + row.getString("id"); "history" -> row.getString("videoId"); else -> row.getString("url") }
+                values[id] = row
+            }
+            pending.keys().asSequence().map { pending.getJSONObject(it) }.filter { it.getString("kind") == kind }.forEach { op ->
+                if (op.optBoolean("removed")) values.remove(op.getString("id")) else values[op.getString("id")] = op.getJSONObject("value")
+            }
+            edit.putString(key, JSONArray(values.values.toList()).toString())
+        }
+        check(edit.putString("pending", pending.toString()).putLong("lastSync", System.currentTimeMillis()).commit())
+    }
+    fun lastSync(): Long = prefs.getLong("lastSync", 0)
     fun audioLanguage(): String = prefs.getString("audioLanguage", "") ?: ""
     fun subtitleLanguage(): String = prefs.getString("subtitleLanguage", "") ?: ""
     fun languages(audio: String, subtitle: String) = prefs.edit().putString("audioLanguage", audio.trim()).putString("subtitleLanguage", subtitle.trim()).apply()
     private fun savedMeta(meta: JSONObject): JSONObject = JSONObject().apply {
-        for (key in listOf("id", "type", "name", "poster", "releaseInfo", "_addon", "description")) {
+        for (key in listOf("id", "type", "name", "poster", "background", "releaseInfo", "_addon", "description")) {
             if (meta.has(key)) put(key, if (key == "description") meta.optString(key).take(1500) else meta.get(key))
         }
     }

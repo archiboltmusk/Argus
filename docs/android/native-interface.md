@@ -24,14 +24,45 @@ provided with a stream are available in the native player.
 The earlier interface remains internal and can be opened explicitly from native
 Settings. It still requires a recent Android System WebView. Its data is retained;
 the native interface uses a separate `argus_native_media_v1` private preferences
-store. Existing cloud accounts, library data, and add-on configurations are not
-automatically imported or synchronized into the native store in this phase.
+store. Sessions and device-only data from the earlier interface are not silently
+transferred. Connecting Accounts pulls that provider's cloud data into a separate
+native account/profile store.
 
-The native launcher does not start the Rust torrent engine. Torrent-only sources
-show an explanatory message rather than pretending to play. Configure an add-on
-that supplies a playable link. Advanced desktop/Lab features remain in the
-previous interface. This is a native migration of the main media flow, not full
-feature parity with the previous interface.
+The native interface starts the existing Rust torrent engine only when a torrent
+source is selected. Metadata and peer transfer run off the UI thread; the loopback
+stream goes directly to Media3. A single worker bounds engine operations. Leaving
+playback stops the engine, and the dedicated temporary torrent cache is reset on
+the next session. Saved offline downloads use separate storage. Invalid hashes,
+missing files, unavailable peers and insufficient storage have recovery paths.
+
+Native Accounts supports Nuvio profiles (including PIN verification), Stremio,
+and the configured Argus Supabase project. Each provider/user/profile has its own
+local store and offline journal. Successful sync acknowledges only the revisions
+actually sent; newer edits and failed writes stay queued. Nuvio and Stremio use
+the same library/progress/add-on contracts as the Mac client. Supabase native
+media sync uses `argus_media_sync`, separately from the desktop's aggregate taste
+sync. Sessions use Android Keystore encryption; passwords are not persisted.
+Existing device-only and previous-interface data are retained when switching
+accounts. Sign in to pull cloud data; local stores are not silently uploaded into
+another account.
+
+Player More offers source switching, next-episode access for series, speed,
+picture fit, sleep timer, diagnostics, external players and supported offline
+downloads. Source changes retain position and selected track languages. Android
+DownloadManager handles direct HTTPS file downloads; completed files play from
+their local content URI. Live HLS/DASH and torrent background downloads are not
+offered. Download lists are isolated by account/profile and remain device-local.
+Big Picture is the default wide-screen layout, with an explicit compact-layout
+switch and narrower-screen navigation. Library pages and catalog/search poster
+counts are bounded to protect older devices' memory.
+
+Advanced desktop/Lab features remain in the previous interface. Chromecast/DLNA
+control, watch parties, external tracker integrations and full desktop feature
+parity are not claimed by this native preview.
+The native preview's interface is English; the Mac localization catalog has not
+yet been transferred. Android lint still checks compatibility and correctness;
+optional KTX/localization style advice and newer-version suggestions for the
+tested dependency pins are excluded from that gate.
 
 No user data is deleted by the launcher migration. Returning to the older APK or
 opening the previous interface leaves its original storage available. Retain the
@@ -67,6 +98,19 @@ cd src-tauri/gen/android
 ./gradlew :tauri-plugin-native-player:connectedDebugAndroidTest
 ```
 
+For account tests, start `scripts/android-cloud-fixture.py` and forward port 8770.
+Its synthetic Nuvio, Stremio and Supabase contracts exercise round trips, failed
+writes/retry, deletions, token refresh, PINs, account separation, in-flight edits
+and encrypted session persistence without real user credentials. The download
+test fetches Samplelib's public 5-second HTTPS test file and removes it afterward.
+
+For actual peer-transfer acceptance, build `tools/android-p2p-probe`, then run
+`scripts/android-torrent-fixture.py --seeder <probe-binary> --video <synthetic-mp4>`.
+Forward ports 8879 and 16881 and run `scripts/android-torrent-smoke.py`. It installs
+a local add-on, resolves a real torrent from a local seeder, renders it in the
+shipping application, pauses with the media key and checks saved resume state.
+Neither the fixture nor the smoke check needs public-media peers.
+
 The acceptance environment is Android 9/API 28, ARM64, with System WebView
 66.0.3359.158. Emulator success does not establish the Beem 470's exact firmware,
 ABI, or hardware-decoder behaviour; physical-device validation is separate.
@@ -86,3 +130,25 @@ The downloadable projector preview uses a dedicated persistent signing key.
 Older APKs signed with a different key cannot be updated in place. Back up/export
 their data before uninstalling; uninstalling removes application data. Keep the
 projector signing key outside Git and reuse it for subsequent projector releases.
+
+## Projector preview 3.17.3 validation
+
+ARM64 and ARMv7 universal release builds pass. On the same API 28 ARM64 emulator,
+eight component tests pass, covering tracks/rendering, malformed data, concurrent
+stores, magnet parsing, all three account contracts, PINs/retry/refresh/isolation,
+unavailable add-ons and offline downloads/playback. All ten full-app checks pass.
+The additional native player suite passes account screens, More actions, actual
+1.5× playback, fit/sleep/diagnostics, source-switch resume and phone/tablet layouts.
+Actual seeded torrent metadata/peer transfer, playback, pause and resume also pass
+in the shipping application. Subtitles move above visible player controls.
+
+Account tests use synthetic local providers, not real user credentials. The live
+Supabase migration is applied; RLS is enabled, the three account-only policies are
+verified, an attempted cross-account write is rejected in a rolled-back SQL proof,
+and the public REST endpoint rejects anonymous reads. Real Nuvio/Stremio user
+sign-in and physical projector decoder behaviour are not represented as tested.
+
+Android compatibility lint, Android Rust check, scoped repository checks and
+packaging tests pass. The Android Rust target retains the existing 112 warnings.
+The Linux build gate remains unavailable because its target is not installed on
+this Mac. No frontend TypeScript or Mac runtime paths are changed by this update.

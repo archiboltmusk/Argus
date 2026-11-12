@@ -7,6 +7,32 @@ import org.junit.Assert.*
 import org.junit.Test
 
 class NativeDataTest {
+    @Test fun recreatedStoresSerializeConcurrentLibraryEdits() {
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
+        val scope = "_concurrency_test"
+        val prefs = context.getSharedPreferences("argus_native_media_v1$scope", Context.MODE_PRIVATE)
+        prefs.edit().clear().commit()
+        val stores = listOf(NativeMediaStore(context, scope), NativeMediaStore(context, scope))
+        val meta = JSONObject().put("id", "same-title").put("type", "movie").put("name", "Test")
+        val workers = java.util.concurrent.Executors.newFixedThreadPool(2)
+        val start = java.util.concurrent.CountDownLatch(1)
+        try {
+            val jobs = stores.map { store -> workers.submit { start.await(); repeat(25) { store.toggleLibrary(meta) } } }
+            start.countDown()
+            jobs.forEach { it.get(10, java.util.concurrent.TimeUnit.SECONDS) }
+            assertFalse(stores[0].inLibrary(meta))
+            assertEquals(50L, stores[0].pending().getJSONObject("library:movie:same-title").getLong("rev"))
+        } finally { workers.shutdownNow(); prefs.edit().clear().commit() }
+    }
+    @Test fun magnetsKeepTrackersAndZeroFileIndexAndDecodeBase32Hashes() {
+        val original = JSONObject().put("url", "magnet:?xt=urn:btih:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA&tr=https%3A%2F%2Ftracker.example%2Fannounce&so=0")
+            .put("sources", org.json.JSONArray().put("tracker:udp://existing.example:80"))
+        val parsed = NativeTorrentBridge.normalized(original)
+        assertEquals("0".repeat(40), parsed.getString("infoHash"))
+        assertEquals(0, parsed.getInt("fileIdx"))
+        assertEquals("tracker:https://tracker.example/announce", parsed.getJSONArray("sources").getString(1))
+        assertEquals(1, original.getJSONArray("sources").length())
+    }
     @Test
     fun malformedCatalogRowsAreIgnoredAndHistoryStaysCompact() {
         val context = InstrumentationRegistry.getInstrumentation().targetContext

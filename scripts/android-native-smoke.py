@@ -37,7 +37,7 @@ def tree():
         time.sleep(0.3)
     raise AssertionError("Android did not return an accessibility hierarchy")
 
-def find(text=None, contains=None, cls=None, desc=None, timeout=25):
+def find(text=None, contains=None, cls=None, desc=None, timeout=25, scroll=False):
     deadline = time.monotonic() + timeout
     while time.monotonic() < deadline:
         try:
@@ -56,6 +56,8 @@ def find(text=None, contains=None, cls=None, desc=None, timeout=25):
             if desc is not None and node.get("content-desc", "").casefold() != desc.casefold():
                 continue
             return node
+        if scroll:
+            shell("input", "keyevent", "20")
         time.sleep(0.3)
     raise AssertionError(f"Missing native control: {text or contains or desc or cls}")
 
@@ -63,8 +65,8 @@ def tap(node):
     left, top, right, bottom = map(int, re.findall(r"\d+", node.get("bounds", "")))
     shell("input", "tap", str((left + right) // 2), str((top + bottom) // 2))
 
-def click(text=None, contains=None, desc=None):
-    tap(find(text=text, contains=contains, desc=desc))
+def click(text=None, contains=None, desc=None, scroll=False):
+    tap(find(text=text, contains=contains, desc=desc, scroll=scroll))
 
 def enter(node, value):
     tap(node)
@@ -118,14 +120,13 @@ for node, value in zip(fields, ("hi", "en")):
 click(text="Save playback preferences")
 find(text="Playback preferences saved")
 mark("native playback settings")
-click(text="Installed apps")
+click(text="Installed apps", scroll=True)
 find(text="Installed apps")
 mark("native installed-apps screen")
 
 click(text="Home")
 click(text="Browse movies")
-find(contains="Native Playback Test")
-shell("input", "keyevent", "23")
+click(contains="Native Playback Test", scroll=True)
 find(text="Choose source")
 root = tree()
 if any(n.get("text") == "Save to Library" for n in root.iter("node")):
@@ -135,6 +136,10 @@ shell("input", "keyevent", "23")
 find(contains="Playable HD")
 shell("input", "keyevent", "23")
 time.sleep(5)
+# Use a repeatable mid-file checkpoint even after many reruns of this fixture.
+shell("input", "keyevent", *(["89"] * 30))
+shell("input", "keyevent", "90")
+time.sleep(1)
 shell("input", "keyevent", "127")
 # Android 9's accessibility bridge intermittently omits SurfaceView windows.
 # Verify the real Android media-session state rather than a transient icon.
@@ -151,7 +156,7 @@ mark("catalog to details to native playback and pause")
 shell("input", "keyevent", "4")
 click(text="Library")
 find(contains="Native Playback Test")
-assert any(" · " in n.get("text", "") and "Native Playback Test" in n.get("text", "") for n in tree().iter("node")), "Resume history was not saved"
+assert any("Resume at" in n.get("content-desc", "") and "Native Playback Test" in n.get("content-desc", "") for n in tree().iter("node")), "Resume history was not saved"
 mark("library and resume history")
 
 click(text="Search")
@@ -170,10 +175,10 @@ click(text="Choose another source")
 find(contains="Playable HD")
 mark("series, episodes and failed-source recovery")
 
-click(contains="Torrent-only test source")
-find(text="Choose a direct stream")
+click(contains="Invalid torrent test source")
+find(text="Couldn't start torrent")
 click(text="Choose another source")
-mark("unsupported source has an actionable message")
+mark("invalid torrent has an actionable message")
 shell("am", "force-stop", "app.argus.desktop")
 shell("am", "start", "-W", "-n", "app.argus.desktop/app.argus.player.NativeTvActivity")
 find(contains="Resume at")

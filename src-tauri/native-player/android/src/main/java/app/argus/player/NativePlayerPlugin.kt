@@ -21,6 +21,7 @@ import androidx.media3.exoplayer.DefaultLoadControl
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 import androidx.media3.ui.PlayerView
 import androidx.media3.ui.DefaultTimeBar
+import androidx.media3.ui.CaptionStyleCompat
 import androidx.media3.common.MediaMetadata
 import androidx.media3.session.MediaSession
 import app.tauri.plugin.JSObject
@@ -66,12 +67,18 @@ class NativePlaybackSession(private val host: Activity) {
     private var firstFrame = false
     private var error: String? = null
     var onClosed: (() -> Unit)? = null
+    var onChooseSource: (() -> Unit)? = null
+    var onNextEpisode: (() -> Unit)? = null
+    var onEnded: (() -> Unit)? = null
+    var onDownload: (() -> Unit)? = null
+    var onExternal: (() -> Unit)? = null
+    private val timers = android.os.Handler(android.os.Looper.getMainLooper())
 
     fun open(args: LoadArgs, ready: () -> Unit, failed: (String) -> Unit) {
         host.runOnUiThread {
             try {
-                require(args.url.startsWith("https://") || args.url.startsWith("http://")) {
-                    "Native playback requires an HTTP or HTTPS stream"
+                require(args.url.startsWith("https://") || args.url.startsWith("http://") || args.url.startsWith("content://downloads/")) {
+                    "Native playback requires a stream or a saved Argus download"
                 }
                 release()
                 firstFrame = false
@@ -89,11 +96,13 @@ class NativePlaybackSession(private val host: Activity) {
                 p.trackSelectionParameters = p.trackSelectionParameters.buildUpon()
                     .setPreferredAudioLanguage(args.audioLanguage.takeIf { it.isNotBlank() })
                     .setPreferredTextLanguage(args.subtitleLanguage.takeIf { it.isNotBlank() })
+                    .setSelectUndeterminedTextLanguage(args.subtitleLanguage.equals("und", true))
                     .setTrackTypeDisabled(C.TRACK_TYPE_TEXT, args.subtitleLanguage.isBlank()).build()
                 p.setAudioAttributes(androidx.media3.common.AudioAttributes.DEFAULT, true)
                 p.setHandleAudioBecomingNoisy(true)
                 p.addListener(object : Player.Listener {
                     override fun onRenderedFirstFrame() { firstFrame = true }
+                    override fun onPlaybackStateChanged(state: Int) { if (state == Player.STATE_ENDED) onEnded?.invoke() }
                     override fun onPlayerError(e: PlaybackException) {
                         error = e.errorCodeName
                         dialog?.dismiss()
@@ -105,6 +114,10 @@ class NativePlaybackSession(private val host: Activity) {
                     setShowNextButton(false)
                     setShowPreviousButton(false)
                     controllerAutoShow = true
+                    val captions = host.getSystemService(android.content.Context.CAPTIONING_SERVICE) as? android.view.accessibility.CaptioningManager
+                    if (captions?.isEnabled != true) subtitleView?.setStyle(CaptionStyleCompat(
+                        Color.WHITE, Color.TRANSPARENT, Color.TRANSPARENT,
+                        CaptionStyleCompat.EDGE_TYPE_OUTLINE, Color.BLACK, null))
                 }
                 val d = Dialog(host, android.R.style.Theme_Black_NoTitleBar_Fullscreen)
                 dialog = d
@@ -120,8 +133,17 @@ class NativePlaybackSession(private val host: Activity) {
                     val padding = (24 * host.resources.displayMetrics.density).toInt()
                     setPadding(padding, padding, padding, padding)
                 }
-                frame.addView(titleView, FrameLayout.LayoutParams(-1, -2, Gravity.TOP))
-                view.setControllerVisibilityListener(PlayerView.ControllerVisibilityListener { titleView.visibility = it })
+                val heading = android.widget.LinearLayout(host).apply { gravity = Gravity.CENTER_VERTICAL }
+                heading.addView(titleView, android.widget.LinearLayout.LayoutParams(0, -2, 1f))
+                heading.addView(android.widget.Button(host).apply {
+                    text = "More"; contentDescription = "More playback options"
+                    setOnClickListener { more(view) }
+                }, android.widget.LinearLayout.LayoutParams(-2, -2))
+                frame.addView(heading, FrameLayout.LayoutParams(-1, -2, Gravity.TOP))
+                view.setControllerVisibilityListener(PlayerView.ControllerVisibilityListener {
+                    heading.visibility = it
+                    view.subtitleView?.setBottomPaddingFraction(if (it == View.VISIBLE) 0.22f else 0.08f)
+                })
                 (view.findViewById<View>(androidx.media3.ui.R.id.exo_progress) as? DefaultTimeBar)?.apply {
                     setPlayedColor(Color.rgb(244, 162, 92))
                     setScrubberColor(Color.rgb(244, 162, 92))
@@ -194,6 +216,7 @@ class NativePlaybackSession(private val host: Activity) {
             result.put("positionSec", (p?.currentPosition ?: 0) / 1000.0)
             result.put("durationSec", (p?.duration ?: 0).coerceAtLeast(0) / 1000.0)
             result.put("bufferedSec", (p?.bufferedPosition ?: 0) / 1000.0)
+            result.put("speed", p?.playbackParameters?.speed ?: 1f)
             result.put("buffering", p?.playbackState == Player.STATE_BUFFERING)
             result.put("firstFrameReady", firstFrame)
             result.put("videoWidth", p?.videoSize?.width ?: 0)
@@ -222,7 +245,45 @@ class NativePlaybackSession(private val host: Activity) {
     fun pause() { player?.pause() }
     fun close() { host.runOnUiThread { release() } }
 
+    private fun more(view: PlayerView) {
+        val p = player ?: return
+        val options = mutableListOf("Playback speed", "Picture fit", "Sleep timer", "Copy playback diagnostics")
+        if (onChooseSource != null) options.add("Choose another source")
+        if (onNextEpisode != null) options.add("Next episode")
+        if (onDownload != null) options.add("Download for offline")
+        if (onExternal != null) options.add("Open in another player")
+        android.app.AlertDialog.Builder(host).setTitle("Playback options").setItems(options.toTypedArray()) { _, which ->
+            when (options[which]) {
+                "Playback speed" -> {
+                    val speeds = floatArrayOf(0.5f, 0.75f, 1f, 1.25f, 1.5f, 2f)
+                    android.app.AlertDialog.Builder(host).setTitle("Playback speed")
+                        .setSingleChoiceItems(speeds.map { "${it}×" }.toTypedArray(), speeds.indexOfFirst { it == p.playbackParameters.speed }) { dialog, index ->
+                            p.setPlaybackSpeed(speeds[index]); dialog.dismiss()
+                        }.show()
+                }
+                "Picture fit" -> android.app.AlertDialog.Builder(host).setTitle("Picture fit")
+                    .setItems(arrayOf("Fit", "Fill", "Stretch")) { _, index -> view.resizeMode = intArrayOf(0, 4, 3)[index] }.show()
+                "Sleep timer" -> android.app.AlertDialog.Builder(host).setTitle("Sleep timer")
+                    .setItems(arrayOf("Off", "15 minutes", "30 minutes", "60 minutes")) { _, index ->
+                        timers.removeCallbacksAndMessages(null)
+                        if (index > 0) timers.postDelayed({ player?.pause() }, longArrayOf(0, 15, 30, 60)[index] * 60000)
+                    }.show()
+                "Copy playback diagnostics" -> snapshot { state ->
+                    // Snapshot contains no source URL, headers or account credentials.
+                    (host.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager)
+                        .setPrimaryClip(android.content.ClipData.newPlainText("Argus playback diagnostics", state.toString()))
+                    android.widget.Toast.makeText(host, "Playback diagnostics copied", android.widget.Toast.LENGTH_SHORT).show()
+                }
+                "Choose another source" -> onChooseSource?.invoke()
+                "Next episode" -> onNextEpisode?.invoke()
+                "Download for offline" -> onDownload?.invoke()
+                "Open in another player" -> onExternal?.invoke()
+            }
+        }.show()
+    }
+
     private fun release() {
+        timers.removeCallbacksAndMessages(null)
         dialog?.setOnDismissListener(null)
         dialog?.dismiss()
         dialog = null

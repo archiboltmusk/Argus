@@ -16,6 +16,12 @@ android {
         sourceCompatibility = JavaVersion.VERSION_1_8
         targetCompatibility = JavaVersion.VERSION_1_8
     }
+    lint {
+        // Compatibility remains checked. These are optional style/localization
+        // suggestions for the English preview and upgrade advice for pinned,
+        // emulator-verified dependencies, not correctness diagnostics.
+        disable += setOf("UseKtx", "SetTextI18n", "GradleDependency", "NewerVersionAvailable")
+    }
 }
 
 kotlin { compilerOptions { jvmTarget = JvmTarget.JVM_1_8 } }

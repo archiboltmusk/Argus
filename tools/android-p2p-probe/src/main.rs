@@ -57,7 +57,12 @@ async fn main() {
 async fn run() -> Result<(), String> {
     let mut args = std::env::args().skip(1);
     let magnet = match args.next() {
-        Some(m) if m.starts_with("magnet:") => m,
+        Some(m)
+            if m.starts_with("magnet:")
+                || (std::env::var_os("ARGUS_LOCAL_SEED").is_some() && Path::new(&m).is_file()) =>
+        {
+            m
+        }
         _ => {
             eprint!("{USAGE}");
             std::process::exit(2);
@@ -75,7 +80,10 @@ async fn run() -> Result<(), String> {
     // Exercises the real policy function rather than reimplementing it.
     let dir = p2p_android::engine_root(&root);
     std::fs::create_dir_all(&dir).map_err(|e| format!("create {}: {e}", dir.display()))?;
-    std::env::set_var("DHT_QUERIES_PER_SECOND", p2p_android::DHT_QUERIES_PER_SECOND);
+    std::env::set_var(
+        "DHT_QUERIES_PER_SECOND",
+        p2p_android::DHT_QUERIES_PER_SECOND,
+    );
 
     println!("[probe] storage   {}", dir.display());
     println!("[probe] dht qps   {}", p2p_android::DHT_QUERIES_PER_SECOND);
@@ -122,7 +130,19 @@ const DEFAULT_PORT: u16 = 11470;
 /// living-room routers and no inbound port. Seeing "tier 2" here is a pass, not
 /// a warning.
 async fn open_session(dir: &Path) -> Result<(Arc<Session>, u8), String> {
-    let ladder = [(true, true, true), (false, true, true), (false, true, false)];
+    if std::env::var_os("ARGUS_LOCAL_SEED").is_some() {
+        let mut opts = p2p_android::session_options(dir, false, false, false, HashSet::new());
+        opts.listen_port_range = Some(16881..16882);
+        return Session::new_with_opts(dir.to_path_buf(), opts)
+            .await
+            .map(|session| (session, 0))
+            .map_err(|error| error.to_string());
+    }
+    let ladder = [
+        (true, true, true),
+        (false, true, true),
+        (false, true, false),
+    ];
     let mut last = String::new();
     for (i, (full, dht, persist)) in ladder.into_iter().enumerate() {
         let opts = p2p_android::session_options(dir, full, dht, persist, HashSet::new());
@@ -147,7 +167,10 @@ async fn add(session: &Arc<Session>, magnet: &str) -> Result<Arc<ManagedTorrent>
     };
     let added = timeout(
         Duration::from_secs(90),
-        session.add_torrent(AddTorrent::from_url(magnet), Some(opts)),
+        session.add_torrent(
+            AddTorrent::from_cli_argument(magnet).map_err(|e| e.to_string())?,
+            Some(opts),
+        ),
     )
     .await
     .map_err(|_| "metadata timed out: no peers reached in 90s".to_string())?

@@ -58,12 +58,12 @@ class Handler(BaseHTTPRequestHandler):
         match = re.fullmatch(r"/meta/(movie|series)/[^/]+\.json", path)
         if match:
             return self.respond({"meta": meta(match[1])})
-        if re.fullmatch(r"/stream/(movie|series)/[^/]+\.json", path):
+        if re.fullmatch(r"/stream/(movie|series)/argus-native-[^/]+\.json", path):
             return self.respond({"streams": [
                 {"name": "Playable HD", "title": "Local video · English / Hindi · test subtitle", "url": base + "/native-test.mp4",
                  "subtitles": [{"id": "test-sub", "lang": "en", "title": "Test subtitle", "url": base + "/test.vtt"}]},
                 {"name": "Broken 4K test source", "url": base + "/broken-4k.mp4"},
-                {"name": "Torrent-only test source", "infoHash": "0" * 40, "fileIdx": 0}]})
+                {"name": "Invalid torrent test source", "infoHash": "invalid", "fileIdx": 0}]})
         if path == "/test.vtt":
             return self.respond(b"WEBVTT\n\n00:00:00.000 --> 00:02:00.000\nArgus native subtitle test\n", "text/vtt")
         if path == "/poster.png":

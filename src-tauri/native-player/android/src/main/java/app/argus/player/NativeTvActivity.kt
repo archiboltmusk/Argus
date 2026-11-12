@@ -28,6 +28,19 @@ import java.util.concurrent.Future
 /** Android's launcher is independent of Tauri and System WebView. */
 class NativeTvActivity : AppCompatActivity() {
     private lateinit var store: NativeMediaStore
+    private lateinit var cloud: NativeCloudAccount
+    private val syncWorker = Executors.newSingleThreadExecutor()
+    private var syncBusy = false
+    private var syncQueued = false
+    private var lastSyncAttempt = 0L
+    private var resolvingTorrent = false
+    private var restoreTracksFor: String? = null
+    private var restoreAudio = ""
+    private var restoreSubtitle = ""
+    private val bigPicture: Boolean get() = getSharedPreferences("argus_native_display", MODE_PRIVATE)
+        .getBoolean("bigPicture", resources.configuration.screenWidthDp >= 840 ||
+            resources.configuration.uiMode and android.content.res.Configuration.UI_MODE_TYPE_MASK == android.content.res.Configuration.UI_MODE_TYPE_TELEVISION)
+    private val horizontalPadding: Int get() = if (bigPicture) 28 else 12
     private lateinit var player: NativePlaybackSession
     private val posters = NativePosterLoader()
     private lateinit var root: LinearLayout
@@ -53,11 +66,13 @@ class NativeTvActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         WindowCompat.setDecorFitsSystemWindows(window, false)
         WindowInsetsControllerCompat(window, window.decorView).hide(WindowInsetsCompat.Type.systemBars())
-        store = NativeMediaStore(this)
+        cloud = NativeCloudAccount(this)
+        selectAccountStore()
         player = NativePlaybackSession(this)
         player.onClosed = {
             inPlayback = false
             saveProgress()
+            NativeTorrentBridge.stop(this)
             player.snapshot { snapshot ->
                 if (!snapshot.isNull("errorMessage")) {
                     AlertDialog.Builder(this).setTitle("Couldn't play this source")
@@ -68,12 +83,13 @@ class NativeTvActivity : AppCompatActivity() {
         }
         root = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            setPadding(dp(28), dp(18), dp(28), dp(18))
+            setPadding(dp(horizontalPadding), dp(18), dp(horizontalPadding), dp(18))
             setBackgroundColor(Color.rgb(17, 18, 19))
         }
         setContentView(root)
         val bar = LinearLayout(this).apply { gravity = Gravity.CENTER_VERTICAL }
-        bar.addView(label("ARGUS", 25).apply { setTypeface(null, Typeface.BOLD) }, LinearLayout.LayoutParams(dp(140), -2))
+        val wordmark = label("ARGUS", if (bigPicture) 25 else 22).apply { setTypeface(null, Typeface.BOLD) }
+        if (bigPicture) bar.addView(wordmark, LinearLayout.LayoutParams(dp(140), -2)) else root.addView(wordmark)
         for (name in listOf("Home", "Search", "Library", "Add-ons", "Settings")) {
             bar.addView(button(name) {
                 when (name) {
@@ -83,9 +99,9 @@ class NativeTvActivity : AppCompatActivity() {
                     "Add-ons" -> addons()
                     else -> settings()
                 }
-            }, LinearLayout.LayoutParams(0, dp(54), 1f).apply { marginEnd = dp(8) })
+            }, (if (bigPicture) LinearLayout.LayoutParams(0, dp(54), 1f) else LinearLayout.LayoutParams(-2, dp(50))).apply { marginEnd = dp(8) })
         }
-        root.addView(bar)
+        if (bigPicture) root.addView(bar) else root.addView(HorizontalScrollView(this).apply { isHorizontalScrollBarEnabled = false; addView(bar) })
         status = label("", 16).apply { setPadding(0, dp(10), 0, dp(10)) }
         root.addView(status)
         val scroll = ScrollView(this).apply { isFillViewport = true }
@@ -93,10 +109,12 @@ class NativeTvActivity : AppCompatActivity() {
         scroll.addView(body)
         root.addView(scroll, LinearLayout.LayoutParams(-1, 0, 1f))
         handler.post(progress)
+        scheduleSync()
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() { if (route != "Home") home() else finish() }
         })
-        if (savedInstanceState?.getString("meta") != null) detail(JSONObject(savedInstanceState.getString("meta")!!))
+        if (cloud.needsUnlock()) accounts()
+        else if (savedInstanceState?.getString("meta") != null) detail(JSONObject(savedInstanceState.getString("meta")!!))
         else home()
         handleIntent(intent)
     }
@@ -124,7 +142,7 @@ class NativeTvActivity : AppCompatActivity() {
                 MotionEvent.ACTION_UP -> {
                     val click = touching && event.x >= 0 && event.x < target.width && event.y >= 0 && event.y < target.height
                     touching = false
-                    if (click) { target.isPressed = false; target.performClick(); true } else false
+                    if (click) { target.isPressed = false; target.requestFocus(); target.performClick(); true } else false
                 }
                 else -> false
             }
@@ -167,7 +185,7 @@ class NativeTvActivity : AppCompatActivity() {
             } else if (!editing && (event.isPrintingKey || key == KeyEvent.KEYCODE_DEL)) true
             else false
         }
-        setOnClickListener {
+        activate(this) {
             editing = true
             isCursorVisible = true
             isLongClickable = true
@@ -178,6 +196,8 @@ class NativeTvActivity : AppCompatActivity() {
         body.addView(this, LinearLayout.LayoutParams(-1, dp(60)))
     }
     private fun begin(name: String): Int {
+        if (resolvingTorrent) NativeTorrentBridge.stop(this)
+        resolvingTorrent = false
         page++
         tasks.forEach { it.cancel(true) }
         tasks.clear()
@@ -208,16 +228,12 @@ class NativeTvActivity : AppCompatActivity() {
     private fun home() {
         val epoch = begin("Home")
         val history = store.history()
-        if (history.isNotEmpty()) {
-            body.addView(label("Continue watching", 24))
-            history.take(8).forEach { entry ->
-                addButton("${entry.getJSONObject("meta").optString("name")} · Resume at ${time(entry.optDouble("position"))}") {
-                    sources(entry.getJSONObject("meta"), entry.getString("videoId"))
-                }
-            }
-        }
+        continueRail(history)
         addButton("Browse movies") { browse("movie") }
         addButton("Browse series") { browse("series") }
+        store.catalogs().map { it.type }.distinct().filter { it == "tv" || it == "channel" }.forEach { type ->
+            addButton("Live TV · $type") { browse(type) }
+        }
         val catalogs = store.catalogs().filterNot { c ->
             val entries = c.addon.manifest.optJSONArray("catalogs")
             val entry = (0 until (entries?.length() ?: 0)).mapNotNull { entries!!.optJSONObject(it) }.firstOrNull { it.optString("id") == c.id && it.optString("type") == c.type }
@@ -243,8 +259,9 @@ class NativeTvActivity : AppCompatActivity() {
     }
     private fun defaultCatalog(epoch: Int) {
         status.text = "Connecting to Cinemeta…"
+        val target = store
         work(epoch) {
-            store.install(NativeMediaStore.CINEMETA)
+            target.install(NativeMediaStore.CINEMETA)
             ui(epoch) { home() }
         }
     }
@@ -262,6 +279,7 @@ class NativeTvActivity : AppCompatActivity() {
         retry.requestFocus()
         var completed = 0
         var count = 0
+        var displayed = 0
         catalogs.take(8).forEach { catalog ->
             work(epoch) {
                 val result = try { store.catalog(catalog, skip = skip) } catch (_: Exception) { emptyList() }
@@ -269,9 +287,11 @@ class NativeTvActivity : AppCompatActivity() {
                     completed++
                     if (result.isNotEmpty()) {
                         body.addView(label(catalog.name, 23))
-                        val first = cards(result.take(60))
+                        val visible = result.take(minOf(24, (60 - displayed).coerceAtLeast(0)))
+                        val first = cards(visible)
+                        displayed += visible.size
                         if (count == 0 && currentFocus == retry) first?.requestFocus()
-                        if (result.size >= 20) addButton("More from ${catalog.name}") { browse(type, catalog, skip + result.size) }
+                        if (result.size >= 20 || visible.isEmpty()) addButton("More from ${catalog.name}") { browse(type, catalog, if (visible.isEmpty()) 0 else skip + visible.size) }
                     }
                     count += result.size
                     status.text = if (completed == catalogs.take(8).size) {
@@ -284,11 +304,11 @@ class NativeTvActivity : AppCompatActivity() {
     private fun cards(items: List<JSONObject>, destination: LinearLayout = body): View? {
         var first: View? = null
         val columns = when {
-            resources.configuration.screenWidthDp >= 900 -> 6
+            bigPicture && resources.configuration.screenWidthDp >= 900 -> 5
             resources.configuration.screenWidthDp >= 600 -> 4
             else -> 2
         }
-        val width = (resources.configuration.screenWidthDp - 56 - columns * 10) / columns
+        val width = (resources.configuration.screenWidthDp - horizontalPadding * 2 - columns * 10) / columns
         items.chunked(columns).forEach { row ->
             val layout = LinearLayout(this)
             row.forEach { meta ->
@@ -307,7 +327,7 @@ class NativeTvActivity : AppCompatActivity() {
                     setImageResource(R.drawable.argus_native_banner)
                 }
                 tile.addView(image, LinearLayout.LayoutParams(-1, dp((width * 1.5).toInt())))
-                tile.addView(label(meta.optString("name", meta.optString("id")), 17).apply {
+                tile.addView(label(meta.optString("name", meta.optString("id")), if (bigPicture) 19 else 17).apply {
                     maxLines = 2
                     ellipsize = android.text.TextUtils.TruncateAt.END
                 })
@@ -360,7 +380,7 @@ class NativeTvActivity : AppCompatActivity() {
                 val focusResults = currentFocus == changeSearch || focusedTitle is String
                 matches.addAll(unique)
                 grid.removeAllViews()
-                val first = cards(matches.take(120), grid)
+                val first = cards(matches.take(60), grid)
                 if (focusResults) {
                     (focusedTitle?.let { grid.findViewWithTag<View>(it) } ?: first)?.requestFocus()
                 }
@@ -450,18 +470,36 @@ class NativeTvActivity : AppCompatActivity() {
     private fun play(meta: JSONObject, videoId: String, source: NativeSource) {
         val url = source.data.optString("url")
         if (!url.startsWith("http://") && !url.startsWith("https://")) {
-            AlertDialog.Builder(this).setTitle("Choose a direct stream")
-                .setMessage("This source needs a torrent or external playback service. Configure a service in your add-on and choose its playable link.")
+            if (source.data.optString("infoHash").isNotBlank() || url.startsWith("magnet:?", true)) {
+                if (resolvingTorrent) return
+                resolvingTorrent = true
+                val epoch = page
+                status.text = "Finding torrent peers… You can go back to cancel."
+                NativeTorrentBridge.resolve(this, source.data) { result -> ui(epoch) {
+                    resolvingTorrent = false
+                    result.fold({ resolved ->
+                        play(meta, videoId, NativeSource(source.addon, JSONObject(source.data.toString()).put("url", resolved).put("_nativeTorrent", true)))
+                    }, {
+                        NativeTorrentBridge.stop(this)
+                        status.text = "Torrent couldn't start. Try another source."
+                        AlertDialog.Builder(this).setTitle("Couldn't start torrent")
+                            .setMessage("No peers were reached, the file is unavailable, or storage is insufficient. Choose another source and retry.")
+                            .setPositiveButton("Choose another source", null).show()
+                    })
+                } }
+            } else AlertDialog.Builder(this).setTitle("Unsupported source")
+                .setMessage("Choose a direct stream or a torrent source with a valid info hash.")
                 .setPositiveButton("Choose another source", null).show()
             return
         }
         val args = LoadArgs().apply {
             this.url = url
             title = meta.optString("name")
-            projector = true
+            projector = bigPicture
             startAtSec = store.resume(videoId)
             audioLanguage = store.audioLanguage()
             subtitleLanguage = store.subtitleLanguage()
+            if (restoreTracksFor == videoId) { audioLanguage = restoreAudio; subtitleLanguage = restoreSubtitle }
             val requestHeaders = source.data.optJSONObject("behaviorHints")?.optJSONObject("proxyHeaders")?.optJSONObject("request")
             if (requestHeaders != null) headers = requestHeaders.keys().asSequence().mapNotNull { key ->
                 (requestHeaders.opt(key) as? String)?.let { key to it }
@@ -474,13 +512,62 @@ class NativeTvActivity : AppCompatActivity() {
         }
         playingMeta = meta
         playingVideo = videoId
+        player.onChooseSource = {
+            rememberTracks(videoId); saveProgress(); player.close(); sources(meta, videoId)
+        }
+        player.onNextEpisode = if (meta.optString("type") == "series") ({ nextEpisode(meta, videoId) }) else null
+        player.onEnded = {
+            saveProgress()
+            if (meta.optString("type") == "series") AlertDialog.Builder(this).setTitle("Episode finished")
+                .setPositiveButton("Next episode") { _, _ -> nextEpisode(meta, videoId) }
+                .setNegativeButton("Stay here", null).show()
+        }
+        player.onDownload = if (source.data.optString("infoHash").isBlank() && args.url.startsWith("https://") &&
+            !args.url.substringBefore('?').endsWith(".m3u8", true) && !args.url.substringBefore('?').endsWith(".mpd", true)) ({
+            try {
+                downloadStore().enqueue(args.title, args.url, args.headers)
+                Toast.makeText(this, "Download started. View it in Library → Downloads.", Toast.LENGTH_LONG).show()
+            } catch (_: Exception) { Toast.makeText(this, "Couldn't start download. Check storage and connection.", Toast.LENGTH_LONG).show() }
+        }) else null
+        player.onExternal = if (source.data.optString("infoHash").isBlank() && !source.data.optBoolean("_nativeTorrent")) ({
+            try {
+                val intent = Intent(Intent.ACTION_VIEW).setDataAndType(android.net.Uri.parse(args.url), "video/*")
+                if (args.headers.isNotEmpty()) intent.putExtra("headers", args.headers.flatMap { listOf(it.key, it.value) }.toTypedArray())
+                startActivity(Intent.createChooser(intent, "Play with"))
+            } catch (_: Exception) { Toast.makeText(this, "No compatible video player is installed.", Toast.LENGTH_LONG).show() }
+        }) else null
         player.open(args, { inPlayback = true }, { message ->
             inPlayback = false
             AlertDialog.Builder(this).setTitle("Couldn't start playback").setMessage(message).setPositiveButton("Choose another source", null).show()
         })
     }
+    private fun nextEpisode(meta: JSONObject, videoId: String) {
+        rememberTracks(videoId); saveProgress(); player.close()
+        val epoch = page
+        status.text = "Finding next episode…"
+        work(epoch) {
+            val full = store.detail(meta)
+            val videos = full.optJSONArray("videos")?.objects()?.sortedWith(compareBy({ it.optInt("season") }, { it.optInt("episode") })) ?: emptyList()
+            val current = videos.indexOfFirst { it.optString("id") == videoId }
+            val next = videos.getOrNull(if (current >= 0) current + 1 else videos.size)
+            ui(epoch) {
+                if (next != null) {
+                    if (restoreTracksFor == videoId) restoreTracksFor = next.getString("id")
+                    sources(full, next.getString("id"))
+                }
+                else { renderDetail(full); status.text = "No next episode is available." }
+            }
+        }
+    }
+    private fun rememberTracks(videoId: String) {
+        player.snapshot { state ->
+            fun selectedLanguage(key: String): String = state.optJSONArray(key)?.objects()?.firstOrNull { it.optBoolean("selected") }?.optString("lang")?.ifBlank { "und" } ?: ""
+            restoreTracksFor = videoId; restoreAudio = selectedLanguage("audioTracks"); restoreSubtitle = selectedLanguage("subtitleTracks")
+        }
+    }
     private fun saveProgress() {
         val meta = playingMeta ?: return
+        if (meta.optString("type") in listOf("channel", "tv")) return
         val video = playingVideo ?: return
         player.snapshot { snapshot ->
             if (snapshot.optBoolean("firstFrameReady")) {
@@ -488,15 +575,77 @@ class NativeTvActivity : AppCompatActivity() {
             }
         }
     }
-    private fun library() {
+    private fun library(offset: Int = 0) {
         begin("Library")
+        addButton("Downloads on this device") { downloads() }
+        continueRail(store.history())
+        body.addView(label("Saved library", 24))
         val items = store.library()
-        if (items.isEmpty()) body.addView(label("Save a title to keep it here.")) else cards(items)
+        if (items.isEmpty()) body.addView(label("Save a title to keep it here.")) else cards(items.drop(offset).take(24))
+        if (offset > 0) addButton("Previous library page") { library((offset - 24).coerceAtLeast(0)) }
+        if (items.size > offset + 24) addButton("Next library page") { library(offset + 24) }
+        focusContent()
+    }
+    private fun continueRail(history: List<JSONObject>) {
+        if (history.isEmpty()) return
+        body.addView(label("Continue watching", 24))
+        val row = LinearLayout(this)
+        history.take(8).forEach { entry ->
+            val meta = entry.getJSONObject("meta")
+            val width = if (bigPicture) 160 else 140
+            val tile = LinearLayout(this).apply {
+                orientation = LinearLayout.VERTICAL; setPadding(dp(6), dp(6), dp(6), dp(6))
+                isFocusable = true; isFocusableInTouchMode = true; isClickable = true; background = focusBackground()
+                contentDescription = "${meta.optString("name")} · Resume at ${time(entry.optDouble("position"))}"
+                activate(this) { sources(meta, entry.getString("videoId")) }
+            }
+            val image = ImageView(this).apply { scaleType = ImageView.ScaleType.CENTER_CROP; setImageResource(R.drawable.argus_native_banner) }
+            tile.addView(image, LinearLayout.LayoutParams(-1, dp(width * 9 / 16)))
+            posters.load(image, meta.optString("background").ifBlank { meta.optString("poster") })
+            tile.addView(label(meta.optString("name"), 18).apply { maxLines = 2; ellipsize = android.text.TextUtils.TruncateAt.END })
+            tile.addView(label("Resume at ${time(entry.optDouble("position"))}", 14))
+            tile.addView(ProgressBar(this, null, android.R.attr.progressBarStyleHorizontal).apply {
+                max = 1000
+                progress = if (entry.optDouble("duration") > 0) (entry.optDouble("position") / entry.optDouble("duration") * 1000).toInt().coerceIn(0, 1000) else 0
+                progressTintList = android.content.res.ColorStateList.valueOf(Color.rgb(244, 162, 92))
+            }, LinearLayout.LayoutParams(-1, dp(6)))
+            row.addView(tile, LinearLayout.LayoutParams(dp(width), -2).apply { marginEnd = dp(12) })
+        }
+        body.addView(HorizontalScrollView(this).apply { isFocusable = false; isHorizontalScrollBarEnabled = false; addView(row) })
+        if (history.size > 8) addButton("All continue watching") { continueHistory() }
+    }
+    private fun continueHistory(offset: Int = 0) {
+        begin("Continue watching")
         val history = store.history()
-        if (history.isNotEmpty()) body.addView(label("Continue watching", 24))
-        history.forEach { item -> addButton("${item.getJSONObject("meta").optString("name")} · ${time(item.optDouble("position"))}") {
-            sources(item.getJSONObject("meta"), item.getString("videoId"))
+        history.drop(offset).take(20).forEach { entry -> addButton("${entry.getJSONObject("meta").optString("name")} · Resume at ${time(entry.optDouble("position"))}") {
+            sources(entry.getJSONObject("meta"), entry.getString("videoId"))
         } }
+        if (offset > 0) addButton("Previous history page") { continueHistory((offset - 20).coerceAtLeast(0)) }
+        if (history.size > offset + 20) addButton("Next history page") { continueHistory(offset + 20) }
+        addButton("Back to library") { library() }
+        focusContent()
+    }
+    private fun downloadStore() = NativeDownloads(this, cloud.current()?.let { NativeCloudAccount.scope(it) } ?: "")
+    private fun downloads() {
+        begin("Downloads")
+        val downloads = downloadStore()
+        val items = downloads.items()
+        body.addView(label("Direct HTTPS video files can be saved here. Downloads wait on metered networks. Live streams and torrent streams aren't downloaded in the background."))
+        if (items.isEmpty()) body.addView(label("Choose Download for offline from the player's More menu."))
+        items.forEach { item -> addButton("${item.optString("title")} · ${item.optString("status")}") {
+            val choices = if (item.optBoolean("ready")) arrayOf("Play offline", "Delete download") else arrayOf("Cancel or remove download")
+            AlertDialog.Builder(this).setTitle(item.optString("title")).setItems(choices) { _, which ->
+                if (choices[which] == "Play offline") {
+                    playingMeta = null; playingVideo = null
+                    player.onChooseSource = null; player.onNextEpisode = null; player.onEnded = null; player.onDownload = null; player.onExternal = null
+                    val args = LoadArgs().apply { url = downloads.uri(item.getLong("id")).toString(); title = item.optString("title"); projector = bigPicture }
+                    player.open(args, { inPlayback = true }, { status.text = "Couldn't open the saved video." })
+                } else AlertDialog.Builder(this).setTitle("Delete this download?")
+                    .setPositiveButton("Delete") { _, _ -> downloads.remove(item.getLong("id")); downloads() }.setNegativeButton("Cancel", null).show()
+            }.show()
+        } }
+        addButton("Refresh downloads") { downloads() }
+        addButton("Back to library") { library() }
         focusContent()
     }
     private fun addons(suggested: String = "") {
@@ -507,20 +656,22 @@ class NativeTvActivity : AppCompatActivity() {
         field.imeOptions = android.view.inputmethod.EditorInfo.IME_ACTION_DONE
         addButton("Install add-on") {
             val value = field.text.toString()
+            val target = store
             status.text = "Checking add-on…"
             work(epoch) {
-                try { store.install(value); ui(epoch) { addons(); status.text = "Add-on installed" } }
+                try { target.install(value); ui(epoch) { addons(); status.text = "Add-on installed" } }
                 catch (_: Exception) { ui(epoch) { status.text = "Couldn't install. Check the manifest link and connection, then retry." } }
             }
         }
         addButton("Add Cinemeta catalog") { defaultCatalog(epoch) }
         body.addView(label("Installed", 24))
         store.installed().forEach { addon ->
-            addButton("${addon.manifest.optString("name")} · Manage") {
+            val target = store
+            addButton("${addon.manifest.optString("name")}${if (addon.manifest.optBoolean("_unavailable")) " · Unavailable" else ""} · Manage") {
                 AlertDialog.Builder(this).setTitle(addon.manifest.optString("name"))
                     .setItems(arrayOf("Refresh", "Remove")) { _, which ->
                         if (which == 1) { store.removeAddon(addon.url); addons() }
-                        else work(epoch) { store.install(addon.url); ui(epoch) { addons() } }
+                        else work(epoch) { target.install(addon.url); ui(epoch) { addons() } }
                     }.setNegativeButton("Cancel", null).show()
             }
         }
@@ -536,7 +687,12 @@ class NativeTvActivity : AppCompatActivity() {
             store.languages(audio.text.toString(), subtitle.text.toString())
             status.text = "Playback preferences saved"
         }
-        body.addView(label("Your native library and resume history are saved on this device. The previous interface's data is retained separately."))
+        addButton("Accounts and sync") { accounts() }
+        addButton(if (bigPicture) "Use compact layout" else "Use Big Picture layout") {
+            getSharedPreferences("argus_native_display", MODE_PRIVATE).edit().putBoolean("bigPicture", !bigPicture).apply()
+            recreate()
+        }
+        body.addView(label("Your library is available offline. Connected accounts sync their own library, progress and add-ons. The previous interface's local data is retained separately."))
         addButton("Installed apps") { installedApps() }
         addButton("Open previous interface") {
             AlertDialog.Builder(this).setTitle("Previous interface")
@@ -546,6 +702,102 @@ class NativeTvActivity : AppCompatActivity() {
                     catch (_: Exception) { status.text = "The previous interface isn't available in this build." }
                 }.setNegativeButton("Stay here", null).show()
         }
+        focusContent()
+    }
+    private fun selectAccountStore() {
+        playingMeta = null; playingVideo = null; inPlayback = false
+        restoreTracksFor = null
+        if (::player.isInitialized) player.close()
+        val account = cloud.current()
+        store = NativeMediaStore(this, account?.let { NativeCloudAccount.scope(it) } ?: "") { scheduleSync() }
+    }
+    private fun scheduleSync() {
+        handler.post {
+            if (isDestroyed || syncQueued || cloud.current() == null) return@post
+            syncQueued = true
+            val interval = if (store.pending().length() == 0) 60000 else 30000
+            handler.postDelayed({ syncQueued = false; syncAccount() }, (lastSyncAttempt + interval - System.currentTimeMillis()).coerceAtLeast(1000))
+        }
+    }
+    private fun syncAccount() {
+        val account = cloud.current() ?: return
+        if (syncBusy || isDestroyed) return
+        syncBusy = true; lastSyncAttempt = System.currentTimeMillis()
+        val target = store
+        if (route == "Accounts") status.text = "Syncing…"
+        syncWorker.execute {
+            val outcome = runCatching { NativeAccountSync(cloud).sync(account, target) }
+            runOnUiThread {
+                syncBusy = false
+                if (!isDestroyed && cloud.current()?.getString("key") == account.getString("key")) {
+                    if (route == "Accounts") status.text = outcome.fold({ "Library, progress and add-ons synced" }, {
+                        (it as? CloudFailure)?.message ?: "Couldn't sync. Your local changes are saved; check the connection and retry."
+                    })
+                    if (outcome.isFailure) lastSyncAttempt = System.currentTimeMillis() + 30000
+                }
+                if (!isDestroyed) scheduleSync()
+            }
+        }
+    }
+    private fun accounts() {
+        begin("Accounts")
+        val current = cloud.current()
+        body.addView(label(current?.let { "${it.getString("provider")} · ${it.optString("name")}" }
+            ?: if (cloud.needsUnlock()) "Unlock your saved profile to continue" else "Using this device without an account", 24))
+        body.addView(label("Each account and profile keeps its own library, progress and add-ons. Titles, progress and configured add-on links sync only to the selected provider. Passwords aren't saved."))
+        if (current != null) {
+            addButton("Sync now") { syncAccount() }
+            if (store.lastSync() > 0) body.addView(label("Last synced: " + java.text.DateFormat.getDateTimeInstance().format(java.util.Date(store.lastSync()))))
+            addButton("Use device library") { cloud.useGuest(); selectAccountStore(); accounts() }
+            addButton("Sign out of this account") { cloud.forget(current); selectAccountStore(); accounts() }
+        }
+        cloud.accounts().forEach { account ->
+            addButton("${account.getString("provider")} · ${account.optString("email")} · ${account.optString("name")}") {
+                fun activate() { cloud.activate(account); selectAccountStore(); accounts(); scheduleSync() }
+                if (account.optBoolean("pin")) {
+                    val pin = EditText(this).apply { inputType = 18; hint = "Profile PIN" }
+                    AlertDialog.Builder(this).setTitle("Unlock profile").setView(pin).setNegativeButton("Cancel", null)
+                        .setPositiveButton("Unlock") { _, _ ->
+                            val value = pin.text.toString(); pin.text.clear()
+                            val epoch = page
+                            work(epoch) { cloud.unlock(account, value); ui(epoch) { activate() } }
+                        }.show()
+                } else activate()
+            }
+        }
+        val savedAccounts = cloud.accounts().distinctBy { it.getString("provider") + ":" + it.getString("id") }
+        if (savedAccounts.isNotEmpty()) addButton("Manage saved accounts") {
+            AlertDialog.Builder(this).setTitle("Sign out of an account")
+                .setItems(savedAccounts.map { "${it.getString("provider")} · ${it.optString("email")}" }.toTypedArray()) { _, index ->
+                    cloud.forget(savedAccounts[index]); selectAccountStore(); accounts()
+                }.setNegativeButton("Cancel", null).show()
+        }
+        for (provider in listOf("Nuvio", "Stremio", "Argus Supabase")) addButton("Sign in to $provider") { signIn(provider) }
+        focusContent()
+    }
+    private fun signIn(provider: String) {
+        val epoch = begin("Sign in")
+        body.addView(label("Sign in to $provider", 24))
+        val email = input("Email")
+        email.inputType = android.text.InputType.TYPE_CLASS_TEXT or android.text.InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS
+        val password = input("Password")
+        password.inputType = android.text.InputType.TYPE_CLASS_TEXT or android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD
+        password.isSaveEnabled = false
+        addButton("Sign in") {
+            val address = email.text.toString(); val secret = password.text.toString(); password.text.clear()
+            status.text = "Signing in…"
+            work(epoch) {
+                try {
+                    val profiles = cloud.signIn(provider, address, secret)
+                    ui(epoch) {
+                        val unlocked = profiles.firstOrNull { !it.optBoolean("pin") }
+                        if (unlocked != null) { cloud.activate(unlocked); selectAccountStore() }
+                        accounts(); scheduleSync()
+                    }
+                } catch (_: Exception) { ui(epoch) { status.text = "Couldn't sign in. Check your email, password and connection." } }
+            }
+        }
+        addButton("Back to accounts") { accounts() }
         focusContent()
     }
     @Suppress("DEPRECATION") // Keep package queries compatible with API 24 projectors.
@@ -581,8 +833,10 @@ class NativeTvActivity : AppCompatActivity() {
         handler.removeCallbacksAndMessages(null)
         tasks.forEach { it.cancel(true) }
         io.shutdownNow()
+        syncWorker.shutdownNow()
         posters.close()
         player.close()
+        NativeTorrentBridge.stop(this)
         super.onDestroy()
     }
     private fun time(seconds: Double): String = "%d:%02d".format(seconds.toInt() / 60, seconds.toInt() % 60)
