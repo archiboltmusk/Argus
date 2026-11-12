@@ -853,6 +853,105 @@ fn build_magnet(hash: &str) -> String {
     format!("magnet:?xt=urn:btih:{hash}")
 }
 
+/// Android Views use the existing session and stream server without a Tauri app.
+#[cfg(target_os = "android")]
+pub(crate) async fn projector_request(
+    dir: &std::path::Path,
+    request: serde_json::Value,
+) -> Result<serde_json::Value, String> {
+    use serde_json::json;
+    if request["action"] == "stop" {
+        stop_async().await;
+        return Ok(json!({"stopped": true}));
+    }
+    let hash = request["infoHash"].as_str().unwrap_or("");
+    if hash.len() != 40 || !hash.bytes().all(|b| b.is_ascii_hexdigit()) {
+        return Err("This source has an invalid torrent hash.".into());
+    }
+    if !request["fileIdx"].is_null() && request["fileIdx"].as_u64().is_none() {
+        return Err("This source has an invalid file index.".into());
+    }
+    let file_idx = request["fileIdx"]
+        .as_u64()
+        .map(|i| usize::try_from(i).map_err(|_| "Invalid file index"))
+        .transpose()?;
+    let session = {
+        let _transition = lifecycle().lock().await;
+        let change = lifecycle().request(true);
+        lifecycle().enable(change);
+        if let Some(session) = current_session() {
+            session
+        } else {
+            // Remove this dedicated, disposable cache before a fresh session;
+            // it never contains the user's downloads or library.
+            if !dir.is_absolute()
+                || dir.file_name().and_then(|name| name.to_str()) != Some("native-torrents")
+            {
+                return Err("Invalid projector cache directory".into());
+            }
+            if dir.exists() {
+                std::fs::remove_dir_all(dir)
+                    .map_err(|_| "Cannot reset the temporary torrent cache")?;
+            }
+            std::fs::create_dir_all(dir).map_err(|_| "Cannot create torrent cache")?;
+            let session = new_session(dir, false, true, false, lifecycle().token()?).await?;
+            let listener = TcpListener::bind((std::net::Ipv4Addr::LOCALHOST, 0))
+                .await
+                .map_err(|_| "Cannot open torrent stream server")?;
+            let port = listener
+                .local_addr()
+                .map_err(|_| "Cannot read stream port")?
+                .port();
+            let router = stream_route::router(session.clone());
+            let cancellation = session.cancellation_token().clone();
+            let server = tokio::spawn(async move {
+                let _ = axum::serve(listener, router)
+                    .with_graceful_shutdown(cancellation.cancelled_owned())
+                    .await;
+            });
+            let mut state = engine().lock().unwrap();
+            state.session = Some(session.clone());
+            state.port = Some(port);
+            state.ready = true;
+            state.server = Some(server);
+            session
+        }
+    };
+    pause_all_torrents(&session).await;
+    let trackers = request["sources"]
+        .as_array()
+        .into_iter()
+        .flatten()
+        .filter_map(|v| v.as_str())
+        .filter_map(|s| {
+            s.strip_prefix("tracker:").or_else(|| {
+                (s.starts_with("http://") || s.starts_with("https://") || s.starts_with("udp://"))
+                    .then_some(s)
+            })
+        })
+        .take(32)
+        .map(String::from)
+        .collect();
+    let (hash, files) = ensure_added(&session, hash, trackers, file_idx).await?;
+    let selected = match file_idx {
+        Some(index) => files.iter().find(|file| file.idx == index),
+        None => files
+            .iter()
+            .filter(|file| {
+                let name = file.name.to_lowercase();
+                [".mp4", ".mkv", ".webm", ".avi", ".m4v", ".ts"]
+                    .iter()
+                    .any(|ext| name.ends_with(ext))
+            })
+            .max_by_key(|file| file.length),
+    }
+    .ok_or("No playable video file was found in this torrent.")?;
+    Ok(
+        json!({"url": format!("http://127.0.0.1:{}/stream/{hash}/{}", current_port().ok_or("Torrent engine stopped")?, selected.idx),
+        "fileIdx": selected.idx, "name": selected.name, "length": selected.length}),
+    )
+}
+
 pub(crate) async fn ensure_added(
     session: &Arc<Session>,
     hash: &str,

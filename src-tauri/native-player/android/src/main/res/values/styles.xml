@@ -1,0 +1,8 @@
+<resources>
+  <style name="Theme.Argus.Native" parent="Theme.AppCompat.NoActionBar">
+    <item name="android:windowBackground">#111213</item>
+    <item name="android:colorAccent">#F4A25C</item>
+    <item name="android:windowLightStatusBar">false</item>
+    <item name="android:fontFamily">sans</item>
+  </style>
+</resources>

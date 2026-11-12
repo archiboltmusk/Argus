@@ -10,8 +10,8 @@
 //
 // What Android gets: the librqbit torrent engine and its localhost stream
 // server, the proxy, the LAN web server, settings, and the fetch bridge. What
-// it does not get, and why, is listed in the handoff: no mpv, so no on-demand
-// native playback path (the webview plays it), and no ffmpeg sidecar, so no
+// it does not get, and why, is listed in the handoff: no mpv (Android uses
+// the Media3 native-player plugin), and no ffmpeg sidecar, so no
 // thumbnails, transcode, DVR, subtitle extract, autosync or trailers.
 
 use crate::{
@@ -66,7 +66,10 @@ pub fn run() {
             stream_proxy::ProxyState::placeholder()
         });
 
-    tauri::Builder::default()
+    let builder = tauri::Builder::default();
+    #[cfg(target_os = "android")]
+    let builder = builder.plugin(tauri_plugin_native_player::init());
+    builder
         .plugin(tauri_plugin_opener::Builder::new().open_js_links_on_click(false).build())
         .plugin(tauri_plugin_os::init())
         .plugin(tauri_plugin_shell::init())
@@ -77,6 +80,12 @@ pub fn run() {
         .manage(proxy_state)
         .manage(download::DownloadState::new())
         .setup(|app| {
+            eprintln!(
+                "[argus::android] bundled entries: tv={}, main={}, dev={}",
+                app.asset_resolver().get("index-tv.html".into()).is_some(),
+                app.asset_resolver().get("index.html".into()).is_some(),
+                cfg!(dev),
+            );
             if let Err(error) = crash_report::initialize(app.handle()) {
                 eprintln!("[argus::crash-report] initialization failed: {error}");
             }

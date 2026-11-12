@@ -1,0 +1,6 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+  <uses-permission android:name="android.permission.INTERNET" />
+  <application android:usesCleartextTraffic="true" android:theme="@style/Theme.AppCompat">
+    <activity android:name="app.argus.player.PlaybackTestActivity" android:exported="false" />
+  </application>
+</manifest>

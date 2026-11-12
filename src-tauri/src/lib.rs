@@ -44,6 +44,8 @@ mod subtitle_credentials;
 mod temp_prune;
 mod thumb_cache;
 mod torrent_engine;
+#[cfg(target_os = "android")]
+mod projector_bridge;
 mod transcode;
 mod web_server;
 

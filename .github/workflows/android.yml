@@ -48,7 +48,7 @@ jobs:
       - name: Install NDK
         run: |
           yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses >/dev/null || true
-          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --install "ndk;${NDK_VERSION}" "platforms;android-35" "build-tools;35.0.0"
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --install "ndk;${NDK_VERSION}" "platforms;android-36" "platforms;android-37.0" "build-tools;35.0.0"
           echo "ANDROID_NDK_HOME=$ANDROID_HOME/ndk/${NDK_VERSION}" >> "$GITHUB_ENV"
           echo "NDK_HOME=$ANDROID_HOME/ndk/${NDK_VERSION}" >> "$GITHUB_ENV"
       - uses: dtolnay/rust-toolchain@stable
@@ -71,10 +71,11 @@ jobs:
       - run: pnpm tauri android init --ci
       # Cleartext to the local torrent engine and the Android TV launcher entry.
       - run: node scripts/android-patch-manifest.mjs
+      - run: node --test tests/android-native-launcher.test.mjs
       - name: Build release APKs (arm64, armv7, and universal)
         run: |
-          pnpm tauri android build --apk -t aarch64 -t armv7 --split-per-abi --ci --ignore-version-mismatches
-          pnpm tauri android build --apk -t aarch64 -t armv7 --ci --ignore-version-mismatches
+          pnpm tauri android build --apk -t aarch64 -t armv7 --config src-tauri/tauri.android.conf.json --split-per-abi --ci --ignore-version-mismatches
+          pnpm tauri android build --apk -t aarch64 -t armv7 --config src-tauri/tauri.android.conf.json --ci --ignore-version-mismatches
       # Release APKs come out unsigned and cannot be installed. Sign with the
       # ANDROID_KEYSTORE_* secrets when set so updates over an older install
       # work; otherwise fall back to a throwaway key (fresh installs only).
@@ -94,7 +95,7 @@ jobs:
         run: |
           set -euo pipefail
           BT="$ANDROID_HOME/build-tools/35.0.0"
-          
+
           if [ -n "$KEYSTORE_B64" ]; then
             echo "$KEYSTORE_B64" | base64 -d > "$RUNNER_TEMP/release.jks"
             STORE_PASS="$KEYSTORE_PASSWORD"; ALIAS="$KEY_ALIAS"

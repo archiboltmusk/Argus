@@ -1,0 +1,7 @@
+{
+  "identifier": "android-player",
+  "description": "Native Android playback for the main Argus window",
+  "platforms": ["android"],
+  "windows": ["main"],
+  "permissions": ["native-player:allow-request"]
+}

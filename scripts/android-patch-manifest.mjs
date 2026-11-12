@@ -2,10 +2,17 @@
 // `tauri android init` generates (src-tauri/gen/ is gitignored scaffolding).
 //   - network security config: cleartext HTTP to the on-device torrent engine
 //     (see docs/android/network_security_config.xml for why release needs it)
-//   - Android TV: leanback launcher entry and non-required touchscreen/leanback features
-//   - Deep linking: native intent-filters for argus://, nuvio://, and stremio://
+//   - Android TV: native launcher and optional device features
+//   - Preserve the previous interface and native Media3/LibVLC bridge internally
 // Fails loudly when the template changes shape so a release never ships unpatched.
-import { copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
+import {
+  copyFileSync,
+  existsSync,
+  mkdirSync,
+  readdirSync,
+  readFileSync,
+  writeFileSync,
+} from "node:fs";
 import { dirname, join } from "node:path";
 
 const app = join("src-tauri", "gen", "android", "app", "src", "main");
@@ -27,7 +34,10 @@ copyFileSync(
 
 if (!xml.includes("networkSecurityConfig")) {
   must(/<application\b/.test(xml), "no <application> tag in AndroidManifest.xml");
-  xml = xml.replace(/<application\b/, '<application\n        android:networkSecurityConfig="@xml/network_security_config"');
+  xml = xml.replace(
+    /<application\b/,
+    '<application\n        android:networkSecurityConfig="@xml/network_security_config"',
+  );
 }
 
 // Budget Android 9/11 projectors (1GB RAM) cap per-app memory aggressively unless largeHeap is enabled.
@@ -41,45 +51,21 @@ if (!xml.includes("android:hardwareAccelerated")) {
   xml = xml.replace(/<application\b/, '<application\n        android:hardwareAccelerated="true"');
 }
 
-if (!xml.includes("LEANBACK_LAUNCHER")) {
-  const launcher = /(\s*)<category android:name="android\.intent\.category\.LAUNCHER"\s*\/>/;
-  must(launcher.test(xml), "no LAUNCHER category in AndroidManifest.xml");
-  xml = xml.replace(
-    launcher,
-    (m, indent) => `${m}${indent}<category android:name="android.intent.category.LEANBACK_LAUNCHER" />`,
-  );
-}
-
-// Android Home replacement launcher must live in its own separate intent-filter.
-// Mixing HOME with LAUNCHER / LEANBACK_LAUNCHER in a single filter corrupts task affinity
-// and breaks standard app launch on Android TV / Projector firmwares.
-if (!xml.includes("android.intent.category.HOME")) {
-  const homeFilter =
-    '      <intent-filter>\n' +
-    '        <action android:name="android.intent.action.MAIN" />\n' +
-    '        <category android:name="android.intent.category.HOME" />\n' +
-    '        <category android:name="android.intent.category.DEFAULT" />\n' +
-    '      </intent-filter>\n';
-  const activityClose = /<\/activity>/;
-  must(activityClose.test(xml), "no </activity> in AndroidManifest.xml");
-  xml = xml.replace(activityClose, `${homeFilter}    </activity>`);
-}
-
 if (!xml.includes("<queries>")) {
   const queries =
-    '    <queries>\n' +
-    '      <intent>\n' +
+    "    <queries>\n" +
+    "      <intent>\n" +
     '        <action android:name="android.intent.action.MAIN" />\n' +
     '        <category android:name="android.intent.category.LEANBACK_LAUNCHER" />\n' +
-    '      </intent>\n' +
-    '      <intent>\n' +
+    "      </intent>\n" +
+    "      <intent>\n" +
     '        <action android:name="android.intent.action.MAIN" />\n' +
     '        <category android:name="android.intent.category.LAUNCHER" />\n' +
-    '      </intent>\n' +
-    '      <intent>\n' +
+    "      </intent>\n" +
+    "      <intent>\n" +
     '        <action android:name="android.media.tv.action.VIEW_INPUTS" />\n' +
-    '      </intent>\n' +
-    '    </queries>\n';
+    "      </intent>\n" +
+    "    </queries>\n";
   xml = xml.replace(/(\s*)<application\b/, (m) => `\n${queries}${m.replace(/^\n/, "")}`);
 }
 
@@ -103,25 +89,9 @@ if (!xml.includes("android:banner")) {
   xml = xml.replace(/<activity\b/, '<activity\n            android:banner="@mipmap/ic_launcher"');
 }
 
-if (!xml.includes('android:scheme="argus"')) {
-  const deepLinkFilter =
-    '      <intent-filter>\n' +
-    '        <action android:name="android.intent.action.VIEW" />\n' +
-    '        <category android:name="android.intent.category.DEFAULT" />\n' +
-    '        <category android:name="android.intent.category.BROWSABLE" />\n' +
-    '        <data android:scheme="argus" />\n' +
-    '        <data android:scheme="nuvio" />\n' +
-    '        <data android:scheme="stremio" />\n' +
-    '      </intent-filter>\n';
-  const activityClose = /<\/activity>/;
-  if (activityClose.test(xml)) {
-    xml = xml.replace(activityClose, `${deepLinkFilter}    </activity>`);
-  }
-}
-
 if (!xml.includes("ArgusNativePlayerActivity")) {
   const playerActivity =
-    '      <activity\n' +
+    "      <activity\n" +
     '          android:name=".ArgusNativePlayerActivity"\n' +
     '          android:configChanges="orientation|screenSize|smallestScreenSize|screenLayout|keyboard|keyboardHidden|navigation|uiMode"\n' +
     '          android:theme="@style/Theme.AppCompat.NoActionBar"\n' +
@@ -131,6 +101,16 @@ if (!xml.includes("ArgusNativePlayerActivity")) {
   xml = xml.replace(/<\/application>/, `${playerActivity}    </application>`);
 }
 
+// The native library owns launcher/Home/add-on intents. Do not expose two
+// launchers or initialize WebView when Android starts the app.
+xml = xml.replace(/<activity\b[^>]*>[\s\S]*?<\/activity>/g, (activity) => {
+  if (!/android:name="\.MainActivity"/.test(activity.slice(0, activity.indexOf(">"))))
+    return activity;
+  return activity
+    .replace('android:exported="true"', 'android:exported="false"')
+    .replace(/<intent-filter>[\s\S]*?<\/intent-filter>/g, "");
+});
+must(/android:name="\.MainActivity"/.test(xml), "no MainActivity in generated manifest");
 writeFileSync(manifestPath, xml);
 console.log("[android-patch] patched", manifestPath);
 
@@ -213,11 +193,11 @@ if (!appGradle.includes("media3-exoplayer")) {
 
 if (!appGradle.includes("libc++_shared.so")) {
   const packagingBlock =
-    '    packaging {\n' +
-    '        jniLibs {\n' +
+    "    packaging {\n" +
+    "        jniLibs {\n" +
     '            pickFirsts.add("**/libc++_shared.so")\n' +
-    '        }\n' +
-    '    }\n';
+    "        }\n" +
+    "    }\n";
   must(/android\s*\{/.test(appGradle), "no android block in app/build.gradle.kts");
   appGradle = appGradle.replace(/android\s*\{/, `android {\n${packagingBlock}`);
 }

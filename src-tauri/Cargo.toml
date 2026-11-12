@@ -20,6 +20,10 @@ asr-whisper = ["dep:whisper-rs"]
 chromaprint = []
 games = ["dep:leveldb-sys", "dep:unrar_sys", "dep:argus-udfread", "dep:hadris-iso"]
 
+[target.'cfg(target_os = "android")'.dependencies]
+tauri-plugin-native-player = { path = "native-player" }
+jni = "0.21"
+
 [dependencies]
 anyhow = "1"
 tauri = { version = "2.12.0", features = ["protocol-asset", "tray-icon", "image-png", "image-ico"] }
