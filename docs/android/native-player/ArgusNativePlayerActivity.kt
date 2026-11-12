@@ -44,6 +44,7 @@ import org.json.JSONObject
 import org.videolan.libvlc.LibVLC
 import org.videolan.libvlc.Media
 import org.videolan.libvlc.MediaPlayer
+import org.videolan.libvlc.interfaces.IMedia
 import org.videolan.libvlc.util.VLCVideoLayout
 import java.lang.ref.WeakReference
 import java.util.Locale
@@ -618,7 +619,7 @@ class ArgusNativePlayerActivity : AppCompatActivity() {
 
         if (subtitleUrl.isNotBlank()) {
             try {
-                mp.addSlave(Media.Slave.Type.Subtitle, Uri.parse(subtitleUrl), true)
+                mp.addSlave(IMedia.Slave.Type.Subtitle, Uri.parse(subtitleUrl), true)
             } catch (_: Throwable) {
             }
         }
@@ -810,7 +811,7 @@ class ArgusNativePlayerActivity : AppCompatActivity() {
         if (activeEngine == "libvlc") {
             uiHandler.post {
                 try {
-                    vlcPlayer?.addSlave(Media.Slave.Type.Subtitle, Uri.parse(url), true)
+                    vlcPlayer?.addSlave(IMedia.Slave.Type.Subtitle, Uri.parse(url), true)
                 } catch (_: Throwable) {
                 }
             }

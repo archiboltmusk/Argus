@@ -221,6 +221,7 @@ dependencies = [
  "tauri-plugin-dialog",
  "tauri-plugin-fs",
  "tauri-plugin-http",
+ "tauri-plugin-native-player",
  "tauri-plugin-notification",
  "tauri-plugin-opener",
  "tauri-plugin-os",
@@ -7598,6 +7599,15 @@ dependencies = [
  "tokio",
  "url",
  "urlpattern 0.3.0",
+]
+
+[[package]]
+name = "tauri-plugin-native-player"
+version = "0.1.0"
+dependencies = [
+ "serde_json",
+ "tauri",
+ "tauri-plugin",
 ]
 
 [[package]]
