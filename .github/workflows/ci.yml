@@ -210,7 +210,8 @@ jobs:
           fi
           # Built from the bundled, codesigned app so updates carry libmpv too.
           # Max gzip level: the updater only reads tar.gz and the bundle is ~150 MB.
-          tar -cf - -C dist-dmg Argus.app | gzip -9 > "Argus-${{ matrix.arch }}.app.tar.gz"
+          COPYFILE_DISABLE=1 tar --no-xattrs -cf - -C dist-dmg Argus.app | gzip -9 > "Argus-${{ matrix.arch }}.app.tar.gz"
+          node scripts/macos-verify-artifact.mjs "Argus-${{ matrix.arch }}.app.tar.gz"
           pnpm tauri signer sign "$PWD/Argus-${{ matrix.arch }}.app.tar.gz"
           VERSION=$(node -p 'require("./src-tauri/tauri.conf.json").version')
           SIG=$(cat "Argus-${{ matrix.arch }}.app.tar.gz.sig")
