@@ -14,7 +14,13 @@ import {
   History,
 } from "lucide-react";
 import { useT } from "@/lib/i18n";
-import { RECENT_UPGRADES, type UpgradeRelease, type UpgradeHighlight } from "@/lib/updater/recent-upgrades";
+import {
+  RECENT_UPGRADES,
+  type UpgradeRelease,
+  type UpgradeHighlight,
+} from "@/lib/updater/recent-upgrades";
+import { currentVersion } from "@/lib/updater/versions";
+import { useUpdate } from "@/lib/updater/use-update";
 import { Section } from "./shared";
 
 function HighlightIcon({ icon }: { icon: UpgradeHighlight["icon"] }) {
@@ -54,9 +60,7 @@ function ReleaseCard({
         onClick={() => setExpanded(!expanded)}
       >
         <div className="flex flex-wrap items-center gap-2.5">
-          <span className="font-mono text-[14px] font-bold text-ink">
-            {release.version}
-          </span>
+          <span className="font-mono text-[14px] font-bold text-ink">{release.version}</span>
           {release.badge && (
             <span
               className={`rounded-full px-2 py-0.5 text-[11px] font-semibold tracking-wide uppercase ${
@@ -72,9 +76,7 @@ function ReleaseCard({
               {release.badge}
             </span>
           )}
-          <span className="text-[13.5px] font-medium text-ink-muted">
-            {release.title}
-          </span>
+          <span className="text-[13.5px] font-medium text-ink-muted">{release.title}</span>
         </div>
         <div className="flex items-center gap-2">
           <span className="text-[12px] text-ink-subtle">{release.date}</span>
@@ -108,6 +110,7 @@ function ReleaseCard({
 export function WhatsNewSection() {
   const t = useT();
   const [showAll, setShowAll] = useState(false);
+  const update = useUpdate();
 
   const displayedReleases = showAll ? RECENT_UPGRADES : RECENT_UPGRADES.slice(0, 4);
 
@@ -125,25 +128,21 @@ export function WhatsNewSection() {
               <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-emerald-500" />
             </span>
             <span className="font-semibold text-emerald-300">
-              {t("Current Build: {ver}", { ver: RECENT_UPGRADES[0].version })}
+              {t("Current Build: {ver}", { ver: currentVersion })}
             </span>
-            <span className="text-ink-muted">·</span>
-            <span className="text-ink-muted">{RECENT_UPGRADES[0].title}</span>
           </div>
-          <div className="flex items-center gap-1.5 font-medium text-emerald-400 text-[12px]">
-            <CheckCircle2 size={14} />
-            <span>{t("Up to date")}</span>
-          </div>
+          {update.status === "uptodate" && (
+            <div className="flex items-center gap-1.5 font-medium text-emerald-400 text-[12px]">
+              <CheckCircle2 size={14} />
+              <span>{t("Up to date")}</span>
+            </div>
+          )}
         </div>
 
         {/* Release Cards */}
         <div className="space-y-2.5">
           {displayedReleases.map((release, idx) => (
-            <ReleaseCard
-              key={release.version}
-              release={release}
-              defaultExpanded={idx === 0}
-            />
+            <ReleaseCard key={release.version} release={release} defaultExpanded={idx === 0} />
           ))}
         </div>
 

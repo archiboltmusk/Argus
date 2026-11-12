@@ -169,6 +169,8 @@ jobs:
           if [[ "${{ github.ref }}" == refs/tags/v* ]]; then
             TAG="${{ github.ref_name }}"
           fi
+          RELEASE_FLAGS=(--latest=false)
+          if [ "$TAG" = "beta" ]; then RELEASE_FLAGS+=(--prerelease); fi
           gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1 || \
-            gh release create "$TAG" --title "Argus $TAG" --notes "Argus Automated Build" --repo "$GITHUB_REPOSITORY" || true
+            gh release create "$TAG" --title "Argus $TAG" --notes "Argus Automated Build" --repo "$GITHUB_REPOSITORY" "${RELEASE_FLAGS[@]}" || true
           gh release upload "$TAG" Argus-*.apk --repo "$GITHUB_REPOSITORY" --clobber || true
