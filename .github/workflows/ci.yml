@@ -172,25 +172,12 @@ jobs:
       # so every main build is newer than the last for the updater.
       # The updater public key comes from the TAURI_UPDATER_PUBKEY repo variable
       # so the keypair can be rotated without a code change.
-      - name: Set beta version and updater key
+      - name: Set release version and updater key
         if: github.event_name != 'pull_request'
         env:
           PUBKEY: ${{ vars.TAURI_UPDATER_PUBKEY }}
-        run: |
-          if [ -z "$PUBKEY" ]; then
-            echo "::warning::TAURI_UPDATER_PUBKEY is not set; skipping updater pubkey stamp"
-          fi
-          node -e '
-            const f = "src-tauri/tauri.conf.json";
-            const c = JSON.parse(require("fs").readFileSync(f, "utf8"));
-            const [maj, min] = c.version.split(".");
-            c.version = `${maj}.${min}.${process.env.GITHUB_RUN_NUMBER}`;
-            if (process.env.PUBKEY && process.env.PUBKEY.trim()) {
-              c.plugins.updater.pubkey = process.env.PUBKEY.trim();
-            }
-            require("fs").writeFileSync(f, JSON.stringify(c, null, 2));
-            console.log("version", c.version);
-          '
+          ARGUS_VERSION: ${{ inputs.release_tag || (startsWith(github.ref, 'refs/tags/v') && github.ref_name) || '' }}
+        run: node scripts/ci-set-beta-version.mjs
       # Unsigned until an Apple Developer ID is added as a repo secret.
       - if: github.event_name != 'pull_request' || needs.changes.outputs.bundle == 'true'
         run: pnpm tauri build --target ${{ matrix.target }} --bundles app --features asr-whisper,chromaprint ${{ steps.macos-libraries.outputs.config }} --ignore-version-mismatches
@@ -263,6 +250,7 @@ jobs:
     permissions:
       contents: write
     steps:
+      - uses: actions/checkout@v6
       - uses: actions/download-artifact@v8
         with:
           name: Argus-macOS-aarch64
@@ -280,13 +268,19 @@ jobs:
             VERSION=$(jq -r .version latest.json 2>/dev/null || echo "3.17.1")
             TAG="v$VERSION"
           fi
+          test "$TAG" = "v$(jq -r .version latest.json)" || { echo "::error::Release tag and update version differ"; exit 1; }
           echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+      - name: Validate updater feed before publishing
+        run: |
+          node scripts/validate-update-manifest.mjs latest.json "$(jq -r .version latest.json)" darwin-aarch64
       - uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ steps.rtag.outputs.tag }}
           name: Argus ${{ steps.rtag.outputs.tag }}
           prerelease: false
-          make_latest: true
+          draft: true
+          make_latest: false
+          fail_on_unmatched_files: true
           files: |
             Argus-aarch64.dmg
             Argus-aarch64.app.tar.gz
@@ -294,3 +288,21 @@ jobs:
           generate_release_notes: true
           body: |
             Apple Silicon (M1 or newer), macOS 11+. Unsigned build: on first launch, right-click Argus.app → Open, or run `xattr -dr com.apple.quarantine /Applications/Argus.app`.
+      - name: Publish verified update release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          TAG: ${{ steps.rtag.outputs.tag }}
+        run: gh release edit "$TAG" --repo "$REPO" --draft=false --latest=true
+      - name: Refresh legacy Mac update feed
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          TAG: ${{ steps.rtag.outputs.tag }}
+        run: |
+          set -euo pipefail
+          LATEST=$(gh release view --repo "$REPO" --json tagName --jq .tagName)
+          if [ "$LATEST" = "$TAG" ]; then
+            gh release view beta --repo "$REPO" >/dev/null 2>&1 || gh release create beta --repo "$REPO" --prerelease --latest=false --title "Argus beta" --notes "Legacy updater compatibility feed."
+            gh release upload beta latest.json --repo "$REPO" --clobber
+          fi
