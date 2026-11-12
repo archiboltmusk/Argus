@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { ExternalLink, Play, Tv, Video, X } from "lucide-react";
 import { openUrl } from "@/lib/window";
 import type { SportsGame } from "@/lib/sports/espn";
@@ -47,6 +48,15 @@ export function MatchHighlights({ game }: { game: SportsGame }) {
 
     return () => controller.abort();
   }, [game.id, game.state, game.home.name, game.away.name, game.league, game.startMs]);
+
+  useEffect(() => {
+    if (!activeVideo) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setActiveVideo(null);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [activeVideo]);
 
   // If no videos yet, construct a smart search fallback
   const fallbackSearchQuery = `${game.away.name} vs ${game.home.name} highlights ${league?.labelEn || game.league}`;
@@ -138,41 +148,46 @@ export function MatchHighlights({ game }: { game: SportsGame }) {
       )}
 
       {/* Embedded Video Modal */}
-      {activeVideo && (
-        <div
-          role="dialog"
-          aria-modal="true"
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm"
-          onClick={() => setActiveVideo(null)}
-        >
+      {activeVideo &&
+        createPortal(
           <div
-            className="relative w-full max-w-4xl overflow-hidden rounded-2xl bg-canvas shadow-2xl"
-            onClick={(e) => e.stopPropagation()}
+            role="dialog"
+            aria-modal="true"
+            className="fixed inset-0 z-[200] flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm"
+            onClick={(e) => {
+              if (e.target === e.currentTarget) setActiveVideo(null);
+            }}
           >
-            <div className="flex items-center justify-between border-b border-edge-soft p-3">
-              <span className="truncate text-xs font-bold text-ink pe-4">
-                {activeVideo.title}
-              </span>
-              <button
-                type="button"
-                onClick={() => setActiveVideo(null)}
-                className="flex h-7 w-7 items-center justify-center rounded-full bg-elevated text-ink hover:bg-elevated/80"
-              >
-                <X size={15} />
-              </button>
+            <div
+              className="relative w-full max-w-4xl overflow-hidden rounded-2xl bg-canvas shadow-2xl"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-center justify-between border-b border-edge-soft p-3">
+                <span className="truncate text-xs font-bold text-ink pe-4">
+                  {activeVideo.title}
+                </span>
+                <button
+                  type="button"
+                  aria-label="Close"
+                  onClick={() => setActiveVideo(null)}
+                  className="flex h-7 w-7 items-center justify-center rounded-full bg-elevated text-ink hover:bg-elevated/80"
+                >
+                  <X size={15} />
+                </button>
+              </div>
+              <div className="relative aspect-video w-full bg-black">
+                <iframe
+                  src={`https://www.youtube-nocookie.com/embed/${activeVideo.id}?autoplay=1&rel=0`}
+                  title={activeVideo.title}
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                  className="h-full w-full border-0"
+                />
+              </div>
             </div>
-            <div className="relative aspect-video w-full bg-black">
-              <iframe
-                src={`https://www.youtube-nocookie.com/embed/${activeVideo.id}?autoplay=1&rel=0`}
-                title={activeVideo.title}
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                allowFullScreen
-                className="h-full w-full border-0"
-              />
-            </div>
-          </div>
-        </div>
-      )}
+          </div>,
+          document.body,
+        )}
     </section>
   );
 }

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { createPortal } from "react-dom";
 import { Columns, LayoutTemplate, Volume2, VolumeX, X, Tv } from "lucide-react";
 import type { SportsGame } from "@/lib/sports/espn";
 
@@ -23,11 +24,11 @@ export function SportsDualWatch({
   const [activeAudioSlot, setActiveAudioSlot] = useState<1 | 2>(1);
   const [slot2, setSlot2] = useState<DualStreamSlot | null>(secondaryStream ?? null);
 
-  return (
+  return createPortal(
     <div
       role="dialog"
       aria-modal="true"
-      className="fixed inset-0 z-50 flex flex-col bg-canvas text-ink"
+      className="fixed inset-0 z-[200] flex flex-col bg-canvas text-ink"
     >
       {/* Top Bar */}
       <header className="flex h-12 shrink-0 items-center justify-between border-b border-edge px-4 bg-surface/90">
@@ -222,6 +223,7 @@ export function SportsDualWatch({
           ))}
         </footer>
       )}
-    </div>
+    </div>,
+    document.body,
   );
 }

@@ -100,6 +100,18 @@ async function fixture(remembered = true) {
       loadLangAudioDelay: () => 0,
       saveLangAudioDelay: () => {},
     },
+    "@/lib/player/bluetooth-latency-profiler": {
+      resolveBluetoothAudioDelaySec: () => 0,
+    },
+    "@/lib/player/vintage-cinema-shaders": {
+      getVintagePresetMpvArgs: () => [],
+    },
+    "@/lib/player/indic-dubbing-overlay": {
+      IndicDubbingEngine: { getInstance: () => ({ setConfig: () => {} }) },
+    },
+    "@/lib/player/synthetic-chapters": {
+      synthesizeChapters: () => [],
+    },
   };
   const source = readFileSync(
     new URL("../src/views/player/hooks/use-track-autoload.ts", import.meta.url),

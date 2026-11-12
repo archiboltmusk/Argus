@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { createPortal } from "react-dom";
 import { X, Search, Sparkles, BookOpen, Check, Copy } from "lucide-react";
 import { searchKnowledgeBaseForTerm, type GlanceSearchResult } from "@/lib/player/argus-glance";
 
@@ -26,7 +27,7 @@ export function ArgusGlanceModal({
     setTimeout(() => setCopied(false), 2000);
   };
 
-  return (
+  return createPortal(
     <div
       className="fixed inset-0 z-[150] flex items-center justify-center bg-black/80 backdrop-blur-md p-4 animate-in fade-in duration-150"
       onClick={onClose}
@@ -128,6 +129,7 @@ export function ArgusGlanceModal({
           )}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }

@@ -8,6 +8,10 @@ import { publishSubtitleSearch } from "@/components/player/subtitle-menu/subtitl
 import { publishSubtitleContext } from "@/components/player/subtitle-menu/subtitle-context-store";
 import { readPlayerPrefs, writePlayerPrefs, type PerShowPrefs } from "@/lib/player-prefs";
 import { loadLangAudioDelay, saveLangAudioDelay } from "@/lib/player/audio-night-mode";
+import { resolveBluetoothAudioDelaySec } from "@/lib/player/bluetooth-latency-profiler";
+import { getVintagePresetMpvArgs } from "@/lib/player/vintage-cinema-shaders";
+import { IndicDubbingEngine } from "@/lib/player/indic-dubbing-overlay";
+import { synthesizeChapters } from "@/lib/player/synthetic-chapters";
 import { playbackSourceKey, readActualPlaybackFor } from "@/lib/playback-history";
 import { playbackAudioChoice, selectPlaybackAudio, pickBestAudioTrack } from "@/lib/player/audio-choice";
 import { tmdbImdbId } from "@/lib/providers/tmdb";
@@ -771,17 +775,44 @@ export function useTrackAutoload(params: {
     bridgeRef.current?.setAudioDevice?.(settings.audioDevice);
   }, [engine, settings.audioDevice, bridgeRef]);
   useEffect(() => {
+    const nightHour = new Date().getHours();
+    const nightCinemaActive =
+      settings.nightCinemaMode || (settings.nightCinemaAutoWindow && nightHour >= 0 && nightHour < 5);
+    const nightOn = settings.audioNightMode || nightCinemaActive || settings.nightDialogueBooster;
+    IndicDubbingEngine.getInstance().setConfig(
+      settings.indicDubbingOverlay,
+      settings.indicDubbingLanguage,
+    );
+    if (settings.nextEpisodePreBuffer && snap.durationSec > 0 && snap.positionSec > snap.durationSec * 0.85) {
+      document.documentElement.dataset.nextEpisodePrebuffer = "ready";
+    }
     if (engine !== "mpv") return;
     bridgeRef.current?.setAudioNormalize(settings.audioNormalize);
     bridgeRef.current?.setAudioProfile?.(settings.audioProfile);
     bridgeRef.current?.setAudioEqualizer?.(settings.audioEqualizerBands, settings.audioEqualizerEnabled);
-    bridgeRef.current?.setAudioEqualizer?.(settings.audioEqualizerBands, settings.audioEqualizerEnabled);
+    bridgeRef.current?.setAudioNightMode?.(nightOn);
+    bridgeRef.current?.setRegionalDialogueEq?.(settings.regionalDialogueEq);
+    if (settings.vintageCinemaShaders) {
+      const props: Record<string, string> = {};
+      for (const p of getVintagePresetMpvArgs(settings.vintageCinemaPresetId)) {
+        props[p.name] = p.value;
+      }
+      bridgeRef.current?.setShaderProps?.(props);
+    }
   }, [
     engine,
     settings.audioNormalize,
     settings.audioProfile,
     settings.audioEqualizerBands,
     settings.audioEqualizerEnabled,
+    settings.audioNightMode,
+    settings.nightCinemaMode,
+    settings.nightCinemaAutoWindow,
+    settings.regionalDialogueEq,
+    settings.vintageCinemaShaders,
+    settings.vintageCinemaPresetId,
+    settings.indicDubbingOverlay,
+    settings.indicDubbingLanguage,
     bridgeRef,
   ]);
   useEffect(() => {
@@ -930,8 +961,19 @@ export function useTrackAutoload(params: {
 
   // mpv keeps audio-delay across files, so every load sets it explicitly: the
   // remembered value for this title plus the output-latency offset.
-  const audioOffsetSec = settings.audioOutputLatencyMs / 1000;
+  const btDelaySec = settings.bluetoothLatencyProfiler
+    ? resolveBluetoothAudioDelaySec(settings.bluetoothHeadphoneModel || settings.audioDevice)
+    : 0;
+  const audioOffsetSec = settings.audioOutputLatencyMs / 1000 + btDelaySec;
   const appliedAudioDelayRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    if (!settings.syntheticChapters || snap.chapters.length > 0 || snap.durationSec <= 300) return;
+    const chapters = synthesizeChapters({ durationSec: snap.durationSec });
+    if (chapters.length > 0) {
+      window.dispatchEvent(new CustomEvent("argus:synthetic-chapters", { detail: { chapters } }));
+    }
+  }, [settings.syntheticChapters, snap.chapters.length, snap.durationSec]);
   useEffect(() => {
     const curAudio = snap.audioTracks.find((t) => t.selected);
     const langDelay = curAudio?.lang ? loadLangAudioDelay(curAudio.lang) : 0;

@@ -136,12 +136,18 @@ test("buildLNReaderSource adapts real-world ArNovel LNReader plugin script in st
     entry: "https://raw.githubusercontent.com/lnreader/lnreader-plugins/plugins/v3.0.0/.js/src/plugins/arabic/ArNovel[madara].js",
   };
 
-  const res = await fetch(manifest.entry);
-  if (!res.ok) {
-    // Skip if offline
+  let realSource = "";
+  try {
+    const res = await fetch(manifest.entry);
+    if (!res.ok) {
+      // Skip if offline
+      return;
+    }
+    realSource = await res.text();
+  } catch {
+    // Skip if offline / DNS unavailable
     return;
   }
-  const realSource = await res.text();
 
   assert.ok(isLNReaderSource(realSource, undefined, manifest.entry));
   const adapted = buildLNReaderSource(realSource, manifest);
@@ -189,9 +195,15 @@ test("buildLNReaderSource supports plugins requiring @libs/filterInputs and @lib
     entry: "https://raw.githubusercontent.com/lnreader/lnreader-plugins/plugins/v3.0.0/.js/src/plugins/arabic/azorafly.js",
   };
 
-  const res = await fetch(manifest.entry);
-  if (!res.ok) return;
-  const realSource = await res.text();
+  let realSource = "";
+  try {
+    const res = await fetch(manifest.entry);
+    if (!res.ok) return;
+    realSource = await res.text();
+  } catch {
+    // Skip if offline / DNS unavailable
+    return;
+  }
 
   assert.ok(isLNReaderSource(realSource, undefined, manifest.entry));
   const adapted = buildLNReaderSource(realSource, manifest);

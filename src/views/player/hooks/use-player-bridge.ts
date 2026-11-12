@@ -19,8 +19,9 @@ import { isLinuxDesktop, isMacDesktop, isWindowsDesktop } from "@/lib/platform";
 import { isAndroidNativePlayerAvailable } from "@/lib/player/engines/exoplayer-bridge";
 import { isLivePlaybackSrc } from "@/lib/player/live-src";
 import { readEmbedRect } from "@/lib/player/embed-rect";
-import { svpEnsureRunning, svpStatus } from "@/lib/svp";
+import { svpApply, svpEnsureRunning, svpStatus } from "@/lib/svp";
 import { isSvpActiveForMedia } from "@/lib/player/svp-policy";
+import { getAudioOnlyMpvArgs } from "@/lib/player/audio-only-mode";
 import { pickBridge } from "../player-utils";
 
 function snapChangedIgnoringClock(a: PlayerSnapshot, b: PlayerSnapshot): boolean {
@@ -136,8 +137,13 @@ export function usePlayerBridge(params: {
   const svpPending = svpRequested && svpRuntimeReady === null;
   const svpOn = svpRequested && svpRuntimeReady === true;
   useEffect(() => {
-    if (svpOn) void svpEnsureRunning().catch(() => {});
-  }, [svpOn]);
+    if (svpOn) {
+      void svpEnsureRunning().catch(() => {});
+      if (settings.svpTargetFps) {
+        void svpApply(settings.svpTargetFps).catch(() => {});
+      }
+    }
+  }, [svpOn, settings.svpTargetFps]);
   const isLiveLike = isLivePlaybackSrc(src);
   const externalMpv =
     settings.playerExternalMpv && (isWindowsDesktop() || isMacDesktop() || isLinuxDesktop());
@@ -146,7 +152,7 @@ export function usePlayerBridge(params: {
     : isLiveLike && !src.notWebReady && !isAndroidNativePlayerAvailable()
       ? "html5"
       : settings.playerEngine;
-  const bridgeKey = `${chosenEngine}|${anime4kOn}|${embedActive}|${anime4kOn ? settings.playerAnime4kShaders.join(",") : ""}|${generalShaderKey(settings)}|${svpOn}|${svpOn ? settings.svpVpyPath : ""}|${externalMpv ? `ext:${settings.playerExternalMpvPath}:${settings.playerExternalMpvArgs}` : ""}`;
+  const bridgeKey = `${chosenEngine}|${anime4kOn}|${embedActive}|${anime4kOn ? settings.playerAnime4kShaders.join(",") : ""}|${generalShaderKey(settings)}|${svpOn}|${svpOn ? settings.svpVpyPath : ""}|${settings.audioOnlyStreamMode ? "ao" : ""}|${settings.turboStreamer4k ? "turbo" : ""}|${externalMpv ? `ext:${settings.playerExternalMpvPath}:${settings.playerExternalMpvArgs}` : ""}`;
   const [bridgeReady, setBridgeReady] = useState(false);
   useEffect(() => {
     if (svpPending || anime4kPending) return;
@@ -159,6 +165,16 @@ export function usePlayerBridge(params: {
     (async () => {
       const want = chosenEngine;
       const getEmbedRect = () => readEmbedRect(videoMountRef.current);
+      const indiaMpvFlags = [
+        ...(settings.audioOnlyStreamMode
+          ? getAudioOnlyMpvArgs(true).map((a) => a.replace(/^--/, ""))
+          : []),
+        ...(settings.turboStreamer4k
+          ? ["demuxer-max-bytes=2048MiB", "demuxer-readahead-secs=3600"]
+          : settings.adaptiveBufferPrefetch
+            ? ["cache-secs=300", "demuxer-readahead-secs=300"]
+            : []),
+      ].join("\n");
       const { bridge: choose, engine: chosen } = await pickBridge(want, src.notWebReady === true, {
         anime4k: anime4kOn,
         hdrToSdr: settings.playerHdrToSdr,
@@ -182,7 +198,11 @@ export function usePlayerBridge(params: {
             : null,
         separateCoverTaskbar: settings.playerSeparateCoverTaskbar,
         cacheDir: settings.playbackCacheDir,
-        extraOptions: [mergeMpvOptions(settings, svpOn, { anime4k: anime4kOn }), shaderCompanionOptions(settings)]
+        extraOptions: [
+          mergeMpvOptions(settings, svpOn, { anime4k: anime4kOn }),
+          shaderCompanionOptions(settings),
+          indiaMpvFlags,
+        ]
           .filter(Boolean)
           .join("\n"),
         getEmbedRect,

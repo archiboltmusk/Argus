@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
+import { createPortal } from "react-dom";
 import { Cloud } from "lucide-react";
 import { SFX } from "@/lib/sfx";
 import { useSettings } from "@/lib/settings";
@@ -542,7 +543,7 @@ export function BpProjectorLauncher() {
       )}
 
       {/* Modal 3: Add Custom TV App Dialog */}
-      {showAddApp && (
+      {showAddApp && createPortal(
         <div
           className="fixed inset-0 z-[9920] bg-black/80 backdrop-blur-md flex items-center justify-center p-6 select-none"
           onClick={() => setShowAddApp(false)}
@@ -594,7 +595,8 @@ export function BpProjectorLauncher() {
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body,
       )}
 
       {/* Modal 4: TV / Projector Cloud Account & Link */}

@@ -87,7 +87,7 @@ export function MalPanel() {
           />
 
           <ToggleRow
-            label={t("Sync watch progress")}
+            label={t("Sync MyAnimeList watch progress")}
             sub={t("Finishing an anime episode updates your MyAnimeList progress. Forward only: it never lowers a count you already have.")}
             value={settings.malAutoSync}
             onChange={(v) => update({ malAutoSync: v })}

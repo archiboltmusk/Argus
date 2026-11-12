@@ -973,6 +973,108 @@ function Shell({ onReady }: { onReady?: () => void }) {
       false,
     );
   }, [settings.streamCacheDir, settings.streamCacheRetentionHours, settings.streamCacheMaxGb]);
+
+  useEffect(() => {
+    if (typeof window === "undefined" || !("__TAURI_INTERNALS__" in window)) return;
+    void Promise.all([
+      import("@/lib/torrent/local-engine"),
+      import("@/lib/downloads/torrent-time-policy"),
+    ]).then(([{ torrentEngineSetUpload }, { evaluateTorrentPolicy }]) => {
+      const policy = settings.torrentTimePolicyEnabled
+        ? evaluateTorrentPolicy(
+            settings.wifiBroadbandUnlimited && settings.networkProfileMode !== "metered-hotspot",
+            settings.hotspotDataSaver,
+          )
+        : { uploadLimitKbps: 0 };
+      const allowUpload = settings.p2pUploadEnabled && policy.uploadLimitKbps === 0;
+      void torrentEngineSetUpload(allowUpload);
+    });
+  }, [
+    settings.p2pUploadEnabled,
+    settings.torrentTimePolicyEnabled,
+    settings.wifiBroadbandUnlimited,
+    settings.networkProfileMode,
+    settings.hotspotDataSaver,
+  ]);
+
+  useEffect(() => {
+    if (!settings.e2eSyncEnabled || !settings.e2eSyncEndpoint || !settings.e2eSyncPassphrase) return;
+    const timer = window.setTimeout(() => {
+      void import("@/lib/e2e-sync/client")
+        .then(({ pushSync }) =>
+          pushSync({
+            endpoint: settings.e2eSyncEndpoint,
+            passphrase: settings.e2eSyncPassphrase,
+          }),
+        )
+        .catch(() => {});
+    }, 5000);
+    return () => window.clearTimeout(timer);
+  }, [settings.e2eSyncEnabled, settings.e2eSyncEndpoint, settings.e2eSyncPassphrase]);
+
+  useEffect(() => {
+    if (!settings.webdavEnabled || !settings.webdavUrl) return;
+    void import("@/lib/webdav/client")
+      .then(({ listWebDav }) =>
+        listWebDav(
+          {
+            url: settings.webdavUrl,
+            user: settings.webdavUser,
+            password: settings.webdavPassword,
+          },
+          settings.webdavUrl,
+        ),
+      )
+      .catch(() => []);
+  }, [
+    settings.webdavEnabled,
+    settings.webdavUrl,
+    settings.webdavUser,
+    settings.webdavPassword,
+    settings.webdavOnly,
+  ]);
+
+  useEffect(() => {
+    if (!settings.lanPeerShareEnabled && !settings.lanSwarmCache) return;
+    void import("@/lib/streams/lan-swarm-cache")
+      .then(({ LanSwarmManager }) => {
+        LanSwarmManager.getInstance();
+      })
+      .catch(() => {});
+  }, [settings.lanPeerShareEnabled, settings.lanSwarmCache]);
+
+  useEffect(() => {
+    const root = document.documentElement;
+    root.dataset.nightOwlDownloads = settings.nightOwlDownloads ? "on" : "off";
+    root.dataset.bengaliRails = settings.bengaliCinemaRails ? "on" : "off";
+    root.dataset.retroEmulator = settings.retroEmulatorEnabled ? "on" : "off";
+    root.dataset.telegramRemote = settings.telegramRemoteEnabled ? "on" : "off";
+    root.dataset.whisperSubtitles = settings.whisperSubtitlesEnabled ? "on" : "off";
+    root.dataset.serialFillerSkipper = settings.serialFillerSkipper ? "on" : "off";
+    root.dataset.qrCouchHandoff = settings.qrCouchHandoffEnabled ? "on" : "off";
+    root.dataset.hybridLegalFallback = settings.hybridLegalFallback ? "on" : "off";
+    root.dataset.iosNativePip = settings.iosNativePipEnabled ? "on" : "off";
+    root.dataset.cloudSyncConsolidation = settings.cloudSyncConsolidationEnabled ? "on" : "off";
+    root.dataset.projectorAutoFrameRate = settings.projectorAutoFrameRate ? "on" : "off";
+    root.dataset.projectorAutoDayNight = settings.projectorAutoDayNight ? "on" : "off";
+    root.dataset.castAlwaysTranscode = settings.castAlwaysTranscode ? "on" : "off";
+    root.dataset.musicCrossfadeSec = String(settings.musicCrossfadeSec ?? 0);
+  }, [
+    settings.nightOwlDownloads,
+    settings.bengaliCinemaRails,
+    settings.retroEmulatorEnabled,
+    settings.telegramRemoteEnabled,
+    settings.whisperSubtitlesEnabled,
+    settings.serialFillerSkipper,
+    settings.qrCouchHandoffEnabled,
+    settings.hybridLegalFallback,
+    settings.iosNativePipEnabled,
+    settings.cloudSyncConsolidationEnabled,
+    settings.projectorAutoFrameRate,
+    settings.projectorAutoDayNight,
+    settings.castAlwaysTranscode,
+    settings.musicCrossfadeSec,
+  ]);
   const baseLayout = useMemo(
     () => (preview ? preview.layout : activeLayout(settings.theme)),
     [preview, settings.theme],

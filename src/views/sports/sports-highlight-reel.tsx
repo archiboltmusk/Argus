@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { Play, Sparkles } from "lucide-react";
 import type { SportsGame } from "@/lib/sports/espn";
 import { hubLeague } from "@/lib/sports/hub-data";
@@ -17,6 +18,15 @@ export function SportsHighlightReel({
   const { settings } = useSettings();
   const hideScores = settings.sportsHideScores;
   const [selectedHighlightGame, setSelectedHighlightGame] = useState<SportsGame | null>(null);
+
+  useEffect(() => {
+    if (!selectedHighlightGame) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setSelectedHighlightGame(null);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [selectedHighlightGame]);
 
   // Filter completed matches with valid teams
   const finished = games
@@ -115,21 +125,25 @@ export function SportsHighlightReel({
         })}
       </div>
 
-      {selectedHighlightGame && (
-        <div
-          role="dialog"
-          aria-modal="true"
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-md"
-          onClick={() => setSelectedHighlightGame(null)}
-        >
+      {selectedHighlightGame &&
+        createPortal(
           <div
-            className="w-full max-w-3xl"
-            onClick={(e) => e.stopPropagation()}
+            role="dialog"
+            aria-modal="true"
+            className="fixed inset-0 z-[200] flex items-center justify-center bg-black/80 p-4 backdrop-blur-md"
+            onClick={(e) => {
+              if (e.target === e.currentTarget) setSelectedHighlightGame(null);
+            }}
           >
-            <MatchHighlights game={selectedHighlightGame} />
-          </div>
-        </div>
-      )}
+            <div
+              className="w-full max-w-3xl"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <MatchHighlights game={selectedHighlightGame} />
+            </div>
+          </div>,
+          document.body,
+        )}
     </section>
   );
 }

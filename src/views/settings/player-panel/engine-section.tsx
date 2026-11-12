@@ -184,6 +184,12 @@ export function PlayerEnginePanel() {
           >
             <span className="text-[15px] text-ink-muted">{t("Automatic")}</span>
           </SettingRow>
+          <ToggleRow
+            label={t("Always re-encode when casting")}
+            sub={t("Forces ffmpeg transcoding when casting to Chromecast or DLNA devices for maximum compatibility.")}
+            value={settings.castAlwaysTranscode}
+            onChange={(v) => update({ castAlwaysTranscode: v })}
+          />
         </SettingGroup>
       )}
 

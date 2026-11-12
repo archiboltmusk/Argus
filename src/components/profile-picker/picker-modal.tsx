@@ -510,7 +510,11 @@ function ListView({
   const t = useT();
   const { settings } = useSettings();
   const isPrimary = isStremioActivePrimary(activeProfile, profiles);
-  const canAdd = !activeKid && (isPrimary || getSecondaryPrivileges(settings, false).canAddProfiles);
+  const canAdd =
+    !activeKid &&
+    (isPrimary ||
+      (settings.secondaryPrivileges?.canAddProfiles ??
+        getSecondaryPrivileges(settings, false).canAddProfiles));
   const selecting = selectingId != null;
   return (
     <div className="flex flex-col items-center gap-10">
@@ -636,7 +640,9 @@ function NuvioListView({
   const isPrimary = nuvioActiveIndex === 1;
   const canAdd =
     !activeKid &&
-    (isPrimary || getSecondaryPrivileges(settings, true).canAddProfiles) &&
+    (isPrimary ||
+      (settings.nuvioSecondaryPrivileges?.canAddProfiles ??
+        getSecondaryPrivileges(settings, true).canAddProfiles)) &&
     nuvioProfiles.length < 6;
   return (
     <div className="flex flex-col items-center gap-10">

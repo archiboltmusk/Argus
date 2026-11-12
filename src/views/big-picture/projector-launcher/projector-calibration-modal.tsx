@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { createPortal } from "react-dom";
 import { useSettings } from "@/lib/settings";
 import { SFX } from "@/lib/sfx";
 import {
@@ -44,7 +45,7 @@ export function ProjectorCalibrationModal({
     update({ projectorKeystoneOverscan: Math.max(0, Math.min(12, val)) });
   };
 
-  return (
+  return createPortal(
     <div
       className="fixed inset-0 z-[9900] bg-black/80 backdrop-blur-md flex items-center justify-center p-6 select-none"
       onClick={onClose}
@@ -270,6 +271,7 @@ export function ProjectorCalibrationModal({
           </div>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }

@@ -114,12 +114,14 @@ export function Topbar({ connecting = false }: { connecting?: boolean } = {}) {
   const dragProps = IS_TAURI && !fullscreen ? { "data-tauri-drag-region": true } : {};
   const hybridBar =
     IS_TAURI && !settings.useNativeTitleBar && settings.hybridTitleBar && !fullscreen;
+  const isTransparentBar =
+    settings.topbarAppearance === "transparent" || settings.transparentTopBar;
   return (
     <header
-      data-cleannav={settings.topbarAppearance === "transparent" ? "on" : undefined}
+      data-cleannav={isTransparentBar ? "on" : undefined}
       className={`pointer-events-none fixed inset-x-0 top-0 ${topKind === "picker" || connecting ? "z-[130]" : "z-[55]"} h-20`}
     >
-      {!inSettings && settings.topbarScrollBlur && settings.topbarAppearance !== "transparent" && (
+      {!inSettings && settings.topbarScrollBlur && !isTransparentBar && (
         <div
           aria-hidden
           className="pointer-events-none absolute inset-0 transition-opacity duration-[350ms] ease-out"

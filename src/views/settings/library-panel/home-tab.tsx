@@ -327,6 +327,30 @@ export function HomeTab() {
             value={settings.smoothScroll}
             onChange={(v) => update({ smoothScroll: v })}
           />
+          <ToggleRow
+            label={t("Library hero banner")}
+            sub={t("Displays a featured hero banner at the top of your Library view.")}
+            value={settings.libraryHero}
+            onChange={(v) => update({ libraryHero: v })}
+          />
+          <ToggleRow
+            label={t("Show Wrapped button")}
+            sub={t("Shows the year-in-review Wrapped shortcut in navigation.")}
+            value={settings.wrappedButton}
+            onChange={(v) => update({ wrappedButton: v })}
+          />
+          <ToggleRow
+            label={t("Enable Manga reader")}
+            sub={t("Shows the Manga section and reader tools in Argus.")}
+            value={settings.mangaEnabled}
+            onChange={(v) => update({ mangaEnabled: v })}
+          />
+          <ToggleRow
+            label={t("Week starts on Monday")}
+            sub={t("Starts the release calendar week on Monday instead of Sunday.")}
+            value={settings.weekStartsMonday}
+            onChange={(v) => update({ weekStartsMonday: v })}
+          />
         </SettingGroup>
       </Section>
 

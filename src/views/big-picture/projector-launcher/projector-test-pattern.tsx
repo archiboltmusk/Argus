@@ -1,4 +1,5 @@
 import { useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 import { SFX } from "@/lib/sfx";
 import { playFocusAcousticPing } from "@/lib/projector/projector-afr";
 
@@ -27,7 +28,7 @@ export function ProjectorTestPattern({ onClose }: ProjectorTestPatternProps) {
     return () => window.removeEventListener("keydown", handleKeyDown, { capture: true });
   }, [onClose]);
 
-  return (
+  return createPortal(
     <div
       ref={containerRef}
       className="fixed inset-0 z-[9999] bg-black text-white flex flex-col items-center justify-center select-none overflow-hidden cursor-pointer"
@@ -146,6 +147,7 @@ export function ProjectorTestPattern({ onClose }: ProjectorTestPatternProps) {
           Done (Exit)
         </button>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }

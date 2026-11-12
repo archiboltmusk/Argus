@@ -172,6 +172,33 @@ export function DetailTab() {
             value={settings.episodeArcGroups}
             onChange={(v) => update({ episodeArcGroups: v })}
           />
+          <SettingRow
+            label={t("Episode list layout")}
+            desc={t("Default layout for episode lists on show detail pages.")}
+          >
+            <Segmented
+              value={settings.episodeLayout}
+              options={[
+                { value: "list", label: t("List") },
+                { value: "strip", label: t("Strip") },
+                { value: "grid", label: t("Grid") },
+              ]}
+              onChange={(v) => update({ episodeLayout: v as typeof settings.episodeLayout })}
+            />
+          </SettingRow>
+          <SettingRow
+            label={t("Episode sort order")}
+            desc={t("Whether episodes list from oldest to newest or newest first.")}
+          >
+            <Segmented
+              value={settings.episodeSort}
+              options={[
+                { value: "oldest", label: t("Oldest first") },
+                { value: "newest", label: t("Newest first") },
+              ]}
+              onChange={(v) => update({ episodeSort: v as typeof settings.episodeSort })}
+            />
+          </SettingRow>
         </SettingGroup>
       </Section>
     </>

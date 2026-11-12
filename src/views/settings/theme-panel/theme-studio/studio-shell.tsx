@@ -1,3 +1,4 @@
+import { createPortal } from "react-dom";
 import { useT } from "@/lib/i18n";
 import { type PanelPosition } from "./hooks/use-panel-drag";
 import { SUITE_CHROME_LIGHT as STABLE_CHROME } from "./suite-theme";
@@ -8,15 +9,17 @@ export function StudioShell({
   cardRef,
   position,
   dragging,
+  onClose: _onClose,
   children,
 }: {
   cardRef: React.RefObject<HTMLDivElement | null>;
   position: PanelPosition;
   dragging: boolean;
+  onClose?: () => void;
   children: React.ReactNode;
 }) {
   const t = useT();
-  return (
+  return createPortal(
     <div className="pointer-events-none fixed inset-0 z-[210]">
       <div
         ref={cardRef}
@@ -28,6 +31,7 @@ export function StudioShell({
       >
         {children}
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }

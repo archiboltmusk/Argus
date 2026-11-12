@@ -1,3 +1,4 @@
+import { createPortal } from "react-dom";
 import { useLocalBackCapability } from "@/lib/use-local-back-capability";
 import {
   ArrowUp,
@@ -2681,7 +2682,7 @@ function EBookInformation({ ebook }: { ebook: EBook }) {
           <p className="mt-3 text-[14px] text-ink-subtle">{t("No adaptations found.")}</p>
         )}
       </div>
-      {adaptationChoices && (
+      {adaptationChoices && createPortal(
         <div
           className="fixed inset-0 z-[200] flex items-center justify-center bg-black/70 p-6 backdrop-blur-md"
           role="presentation"
@@ -2744,7 +2745,8 @@ function EBookInformation({ ebook }: { ebook: EBook }) {
               ))}
             </div>
           </div>
-        </div>
+        </div>,
+        document.body,
       )}
     </section>
   );

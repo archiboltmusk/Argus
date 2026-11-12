@@ -268,6 +268,16 @@ export async function searchAll(
   if (!trimmed) {
     return { query: "", topMatch: null, people: [], movies: [], series: [], liveTv: [], anime: [], manga: [], music: [], ebooks: [], sports: [], characters: [], addonGroups: [], addons: [], intent: null };
   }
+  const stored = loadStoredSettings();
+  if (stored.openAccessIndex) {
+    void import("@/lib/open-access").then((m) => m.searchOpenAccess(trimmed)).catch(() => []);
+  }
+  if (stored.archiveCatalogEnabled) {
+    void import("@/lib/archive-org").then((m) => m.searchArchive(trimmed)).catch(() => []);
+  }
+  if (stored.phoneticSearchEnabled && !key) {
+    return { query: trimmed, topMatch: null, people: [], movies: [], series: [], liveTv: [], anime: [], manga: [], music: [], ebooks: [], sports: [], characters: [], addonGroups: [], addons: [], intent: detectIntent(trimmed) };
+  }
   if (!key) {
     return { query: trimmed, topMatch: null, people: [], movies: [], series: [], liveTv: [], anime: [], manga: [], music: [], ebooks: [], sports: [], characters: [], addonGroups: [], addons: [], intent: detectIntent(trimmed) };
   }

@@ -65,6 +65,16 @@ export function BigPicturePanel() {
             onChange={(v) => update({ bpCardLayout: v as "poster" | "landscape" })}
           />
         </SettingRow>
+        <SettingRow wide label={t("Big Picture player controls")}>
+          <Segmented
+            value={settings.bigPicturePlayerUi}
+            options={[
+              { value: "tenFoot", label: t("Ten-foot TV") },
+              { value: "desktop", label: t("Desktop") },
+            ]}
+            onChange={(v) => update({ bigPicturePlayerUi: v as typeof settings.bigPicturePlayerUi })}
+          />
+        </SettingRow>
       </Section>
 
       <Section title={t("Picture")}>
@@ -73,6 +83,12 @@ export function BigPicturePanel() {
           sub={t("Animate backdrop art on Big Picture screens.")}
           value={settings.bigPictureMosaic}
           onChange={(v) => update({ bigPictureMosaic: v })}
+        />
+        <ToggleRow
+          label={t("Backdrop zoom effect")}
+          sub={t("Subtle slow zoom motion on featured backdrops in Big Picture.")}
+          value={settings.bigPictureBackdropZoom}
+          onChange={(v) => update({ bigPictureBackdropZoom: v })}
         />
         <SettingRow wide label={t("Edge margin")}>
           <Segmented

@@ -180,6 +180,27 @@ export function BasicsPanel() {
 
       <SportsAccessRow />
 
+      <Section title={t("Quick preferences")} subtitle={t("Startup, sync, and sports display options.")}>
+        <SRow
+          title={t("Skip profile screen on launch")}
+          description={t("Opens directly into your last active profile instead of asking who is watching.")}
+          onClick={() => update({ skipProfileScreen: !settings.skipProfileScreen })}
+          trailing={<Picked on={settings.skipProfileScreen} />}
+        />
+        <SRow
+          title={t("Unified cloud sync consolidation")}
+          description={t("Consolidates watch progress, watchlist, and settings into a single cloud sync pass.")}
+          onClick={() => update({ cloudSyncConsolidationEnabled: !settings.cloudSyncConsolidationEnabled })}
+          trailing={<Picked on={settings.cloudSyncConsolidationEnabled} />}
+        />
+        <SRow
+          title={t("Show sports odds")}
+          description={t("Displays betting lines and match odds on sports hub cards when available.")}
+          onClick={() => update({ sportsShowOdds: !settings.sportsShowOdds })}
+          trailing={<Picked on={settings.sportsShowOdds} />}
+        />
+      </Section>
+
       <Section title={t("Make it yours")} subtitle={t("Colors, posters, fonts and wallpaper.")}>
         <SRow
           title={t("Theme and appearance")}

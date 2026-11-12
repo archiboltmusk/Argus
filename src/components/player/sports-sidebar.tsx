@@ -40,9 +40,23 @@ export function SportsSidebar({ open, onClose, preferredGame }: SportsSidebarPro
   const liveGames = useMemo(() => currentLiveGames(liveHub.games), [liveHub.games]);
 
   const [selectedGameId, setSelectedGameId] = useState<string | null>(null);
-  const [selectedRadioId, setSelectedRadioId] = useState<string>("air-sports");
+  const defaultRadioForLang =
+    settings.preferredCommentaryLanguage === "bengali"
+      ? "air-bangla"
+      : settings.preferredCommentaryLanguage === "hindi"
+        ? "sports-flashes-hindi"
+        : settings.preferredCommentaryLanguage === "english"
+          ? "bbc-tms"
+          : "air-sports";
+  const [selectedRadioId, setSelectedRadioId] = useState<string>(defaultRadioForLang);
   const [isPlayingRadio, setIsPlayingRadio] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  useEffect(() => {
+    if (audioRef.current) {
+      audioRef.current.volume = settings.cricketDugoutMixer ? 0.75 : 1.0;
+    }
+  }, [settings.cricketDugoutMixer, isPlayingRadio]);
 
   const selectedRadio = useMemo(
     () =>
@@ -308,7 +322,12 @@ export function SportsSidebar({ open, onClose, preferredGame }: SportsSidebarPro
           )}
 
           {/* Live Indian Cricket Radio Commentary Overlay */}
-          <div className="rounded-xl border border-edge-soft/80 bg-surface/80 p-3.5 space-y-2.5">
+          {settings.multiCommentarySwitcher && (
+          <div
+            data-cricket-alerts={settings.cricketLiveAlerts ? "on" : "off"}
+            data-cricket-highlights={settings.cricketHighlightReel ? "on" : "off"}
+            className="rounded-xl border border-edge-soft/80 bg-surface/80 p-3.5 space-y-2.5"
+          >
             <div className="flex items-center justify-between">
               <span className="text-xs font-bold uppercase tracking-wider text-ink flex items-center gap-1.5">
                 <Radio size={14} className="text-accent" /> {t("Live Radio Commentary")}
@@ -403,6 +422,7 @@ export function SportsSidebar({ open, onClose, preferredGame }: SportsSidebarPro
               </div>
             </div>
           </div>
+          )}
 
           {/* Quick Tactical Pitch Map & Wagon Wheel summary */}
           {isCricket && (

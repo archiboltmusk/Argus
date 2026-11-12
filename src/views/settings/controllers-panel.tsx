@@ -170,6 +170,28 @@ export function ControllersPanel() {
               resetTo={DEFAULT.controllerInitialDelayMs}
               onChange={(v) => update({ controllerInitialDelayMs: v })}
             />
+            <SliderRow
+              label={t("Controller cursor speed")}
+              sub={t("How fast the virtual pointer moves when using an analog stick.")}
+              min={400}
+              max={1600}
+              step={100}
+              value={settings.controllerCursorSpeed}
+              display={String(settings.controllerCursorSpeed)}
+              resetTo={DEFAULT.controllerCursorSpeed}
+              onChange={(v) => update({ controllerCursorSpeed: v })}
+            />
+            <SliderRow
+              label={t("On-screen keyboard size")}
+              sub={t("Scale of the controller-friendly on-screen keyboard.")}
+              min={75}
+              max={130}
+              step={5}
+              value={settings.controllerKeyboardSize}
+              display={`${settings.controllerKeyboardSize}%`}
+              resetTo={DEFAULT.controllerKeyboardSize}
+              onChange={(v) => update({ controllerKeyboardSize: v })}
+            />
           </Section>
         </>
       )}

@@ -394,8 +394,23 @@ export function SettingsProvider({
   }, [settings.useNativeTitleBar]);
 
   useEffect(() => {
+    document.documentElement.dataset.advancedSettings = settings.advancedSettings ? "on" : "off";
+  }, [settings.advancedSettings]);
+
+  useEffect(() => {
+    if (settings.theme.preset !== "custom" && !settings.customCss && settings.navCustomizationOwn) {
+      setSettings((s) =>
+        s.navCustomizationOwn
+          ? { ...s, navCustomization: s.navCustomizationOwn, navCustomizationOwn: null }
+          : s,
+      );
+    }
+  }, [settings.theme.preset, settings.customCss, settings.navCustomizationOwn]);
+
+  useEffect(() => {
+    document.documentElement.dataset.appIconPreset = settings.customAppIconPreset || "";
     void applyAppIcon(settings.customAppIcon);
-  }, [settings.customAppIcon]);
+  }, [settings.customAppIcon, settings.customAppIconPreset]);
 
   useEffect(() => {
     if (!settingsReady || !("__TAURI_INTERNALS__" in window)) return;

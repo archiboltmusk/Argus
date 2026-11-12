@@ -419,6 +419,54 @@ export function TogetherRelayPanel({
             >
               <StatusValue tone="success">{t("Active")}</StatusValue>
             </SettingRow>
+            <SettingRow
+              label={t("Share cursors in Watch Together")}
+              desc={t("Shows live pointer cursors of other participants inside the Watch Together room.")}
+            >
+              <button
+                type="button"
+                onClick={() => update({ togetherShareCursors: !settings.togetherShareCursors })}
+                className={ROW_ACTION}
+              >
+                {settings.togetherShareCursors ? t("On") : t("Off")}
+              </button>
+            </SettingRow>
+            <SettingRow
+              label={t("Allow guests to pick media")}
+              desc={t("Lets room guests choose the next title or stream without host approval.")}
+            >
+              <button
+                type="button"
+                onClick={() => update({ togetherGuestsPick: !settings.togetherGuestsPick })}
+                className={ROW_ACTION}
+              >
+                {settings.togetherGuestsPick ? t("On") : t("Off")}
+              </button>
+            </SettingRow>
+            <SettingRow
+              label={t("Chat reactions & extras")}
+              desc={t("Enables emoji reactions and extended chat cards inside Watch Together.")}
+            >
+              <button
+                type="button"
+                onClick={() => update({ togetherChatExtras: !settings.togetherChatExtras })}
+                className={ROW_ACTION}
+              >
+                {settings.togetherChatExtras ? t("On") : t("Off")}
+              </button>
+            </SettingRow>
+            <SettingRow
+              label={t("Share watch presence")}
+              desc={t("Shares what you are currently watching with your connected friends.")}
+            >
+              <button
+                type="button"
+                onClick={() => update({ shareWatchPresence: !settings.shareWatchPresence })}
+                className={ROW_ACTION}
+              >
+                {settings.shareWatchPresence ? t("On") : t("Off")}
+              </button>
+            </SettingRow>
           </SettingGroup>
 
           <SettingGroup label={t("Health")}>

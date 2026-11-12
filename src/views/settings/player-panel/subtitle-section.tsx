@@ -255,7 +255,7 @@ export function SubtitleStylePanel() {
       <SettingGroup label={t("Text")}>
         <SettingRow
           wide
-          label={t("Size")}
+          label={t("Subtitle size")}
           desc={t("How large subtitles are drawn on the video, at any window size.")}
         >
           <div className={SLIDER_WRAP}>
@@ -266,7 +266,7 @@ export function SubtitleStylePanel() {
               step={1}
               value={settings.subFontSize}
               onChange={(e) => update({ subFontSize: parseInt(e.target.value, 10) })}
-              aria-label={t("Size")}
+              aria-label={t("Subtitle size")}
               className="argus-slider h-11 min-w-0 flex-1"
               style={fillStyle(settings.subFontSize, 16, 120)}
             />
@@ -280,6 +280,42 @@ export function SubtitleStylePanel() {
           sub={t("Renders subtitles in a heavier weight. Turn off to use your font's normal weight.")}
           value={settings.subBold}
           onChange={(v) => update({ subBold: v })}
+        />
+
+        <SettingRow
+          label={t("Line spacing")}
+          desc={t("Adjusts letter and line breathing room on multi-line subtitles.")}
+        >
+          <Segmented
+            value={String(settings.subLineSpacing ?? 0)}
+            options={[
+              { value: "-1", label: t("Compact") },
+              { value: "0", label: t("Normal") },
+              { value: "1", label: t("Relaxed") },
+            ]}
+            onChange={(v) => update({ subLineSpacing: Number(v) })}
+          />
+        </SettingRow>
+
+        <ToggleRow
+          label={t("Dual subtitles")}
+          sub={t("Displays a second subtitle language simultaneously for language learning or bilingual viewing.")}
+          value={settings.dualSubtitlesEnabled}
+          onChange={(v) => update({ dualSubtitlesEnabled: v })}
+        />
+
+        <ToggleRow
+          label={t("Night dialogue booster")}
+          sub={t("Clarifies quiet spoken dialogue and keeps subtitle cues crisp during late-night sessions.")}
+          value={settings.nightDialogueBooster}
+          onChange={(v) => update({ nightDialogueBooster: v })}
+        />
+
+        <ToggleRow
+          label={t("Speaker diarization colors")}
+          sub={t("Uses subtle distinct colors when multiple speakers are labeled in a subtitle track.")}
+          value={settings.speakerDiarizationColors}
+          onChange={(v) => update({ speakerDiarizationColors: v })}
         />
 
         <SettingRow

@@ -3,6 +3,7 @@ import type { PlayerSnapshot, PlayerBridge } from "@/lib/player/bridge";
 import type { PlayerSrc } from "@/lib/view";
 import type { DebridStore } from "@/lib/debrid/types";
 import type { ScoredStream } from "@/lib/streams/types";
+import { useSettings } from "@/lib/settings";
 import { isLocalUrl } from "@/lib/player/local-url";
 import { peekPickerCache } from "@/lib/picker-cache";
 import { prepareCachedDebridStreams } from "@/lib/debrid/playback-preparation";
@@ -42,6 +43,8 @@ export function useStallFallback(params: {
     inRoom = false,
     bridgeRef,
   } = params;
+  const { settings } = useSettings();
+  const mirrorFailoverOn = autoSwitchEnabled && settings.streamMirrorFailover;
 
   const [stallOffer, setStallOffer] = useState<StallOffer | null>(null);
   const dismissedUntilRef = useRef<number>(0);
@@ -170,7 +173,7 @@ export function useStallFallback(params: {
         // If circuit breaker is tripped, offer manual switch without auto countdown so it doesn't loop
         // Offer switch only if stalled, with a 5-second grace countdown so the viewer
         // has ample time to hit "Stay on current" if desired, rather than abruptly aborting playback.
-        const canAutoSwitch = autoSwitchEnabled && nextStream && !circuitBreakerTripped;
+        const canAutoSwitch = mirrorFailoverOn && nextStream && !circuitBreakerTripped;
 
         const currentAddonName = src.streamRef?.addonName || undefined;
         const nextAddonName = nextStream?.addonName || undefined;

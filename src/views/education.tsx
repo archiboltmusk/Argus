@@ -1,4 +1,5 @@
 import { useState, useMemo, useCallback, useRef, type ChangeEvent } from "react";
+import { createPortal } from "react-dom";
 import {
   GraduationCap,
   FolderPlus,
@@ -756,8 +757,8 @@ export function EducationView() {
       </div>
 
       {/* Modals & Overlays */}
-      {showQBankManager && (
-        <div className="fixed inset-0 z-[120] flex items-center justify-center bg-canvas/80 backdrop-blur-md p-4">
+      {showQBankManager && createPortal(
+        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-canvas/80 backdrop-blur-md p-4">
           <QBankManager
             onStartPackDrill={(pack, filterLevel) => {
               let qs = pack.questions;
@@ -773,11 +774,12 @@ export function EducationView() {
             }}
             onClose={() => setShowQBankManager(false)}
           />
-        </div>
+        </div>,
+        document.body,
       )}
 
-      {showQBank && (
-        <div className="fixed inset-0 z-[120] flex items-center justify-center bg-canvas/80 backdrop-blur-md p-4">
+      {showQBank && createPortal(
+        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-canvas/80 backdrop-blur-md p-4">
           <QBankRunner
             questions={activeDrillQuestions}
             onClose={() => {
@@ -785,7 +787,8 @@ export function EducationView() {
               setActiveDrillQuestions(undefined);
             }}
           />
-        </div>
+        </div>,
+        document.body,
       )}
 
       {showWateringDeck && (
@@ -884,8 +887,8 @@ function NotesDrawer({
     setTimeout(() => setDownloadedAnki(false), 2000);
   };
 
-  return (
-    <div className="fixed inset-0 z-[100] flex justify-end bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+  return createPortal(
+    <div className="fixed inset-0 z-[200] flex justify-end bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
       <div className="relative flex h-full w-full max-w-md flex-col bg-surface border-s border-edge shadow-2xl animate-in slide-in-from-end duration-300">
         {/* Drawer Header */}
         <div className="flex flex-col gap-3 p-6 border-b border-edge">
@@ -1022,6 +1025,7 @@ function NotesDrawer({
           )}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }

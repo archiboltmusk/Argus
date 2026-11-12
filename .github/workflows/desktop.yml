@@ -108,8 +108,8 @@ jobs:
         run: |
           set -euo pipefail
           EXTRA=""
-          # Signed updater artifacts (the NSIS setup .exe + .sig) only off PRs.
-          if [ "${{ github.event_name }}" != "pull_request" ]; then
+          # Signed updater artifacts (the NSIS setup .exe + .sig) only off PRs when signing key is configured.
+          if [ "${{ github.event_name }}" != "pull_request" ] && [ -n "${TAURI_SIGNING_PRIVATE_KEY:-}" ]; then
             EXTRA="--config src-tauri/tauri.updater.conf.json"
           fi
           pnpm tauri build --bundles nsis,msi $EXTRA --ignore-version-mismatches
@@ -188,7 +188,7 @@ jobs:
         run: |
           set -euo pipefail
           EXTRA=""
-          if [ "${{ github.event_name }}" != "pull_request" ]; then
+          if [ "${{ github.event_name }}" != "pull_request" ] && [ -n "${TAURI_SIGNING_PRIVATE_KEY:-}" ]; then
             EXTRA="--config src-tauri/tauri.updater.conf.json"
           fi
           pnpm tauri build --bundles appimage,deb $EXTRA --ignore-version-mismatches

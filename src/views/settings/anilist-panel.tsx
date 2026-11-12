@@ -55,7 +55,7 @@ export function AnilistPanel() {
 
           <SettingGroup label={t("Tracking what you watch")}>
             <ToggleRow
-              label={t("Sync watch progress")}
+              label={t("Sync AniList watch progress")}
               sub={t("Finishing an anime episode updates your AniList progress. Forward only: it never lowers a count you already have.")}
               value={settings.anilistAutoSync}
               onChange={(v) => update({ anilistAutoSync: v })}

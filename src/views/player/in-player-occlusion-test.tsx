@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { Eye, EyeOff, X, ArrowRight } from "lucide-react";
 import type { StudyNote, OcclusionBox } from "@/lib/education/types";
 
@@ -43,7 +44,7 @@ export function InPlayerOcclusionTest({
     }
   };
 
-  return (
+  return createPortal(
     <div className="fixed inset-0 z-[125] flex items-center justify-center bg-black/80 backdrop-blur-md p-4 animate-in fade-in select-none">
       <div className="relative w-full max-w-[780px] bg-surface rounded-2xl border border-edge shadow-2xl p-5 flex flex-col gap-4 text-ink">
         {/* Header */}
@@ -136,6 +137,7 @@ export function InPlayerOcclusionTest({
           </div>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }

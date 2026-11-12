@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import {
   AudioLines, Check, Disc3, Headphones, Layers, Mic2,
   Radio, ShieldCheck, Volume2, X, Zap
@@ -81,7 +82,7 @@ export function MusicStudioModal({
     }
   };
 
-  return (
+  return createPortal(
     <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/70 backdrop-blur-md p-4 animate-in fade-in duration-200">
       <div className="relative flex flex-col w-full max-w-4xl max-h-[90vh] rounded-3xl border border-white/10 bg-surface shadow-2xl overflow-hidden text-ink">
         {/* Modal Header */}
@@ -487,6 +488,7 @@ export function MusicStudioModal({
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }

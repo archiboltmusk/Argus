@@ -31,7 +31,14 @@ export function getBatteryLevel(): number | null {
   return batteryLevel;
 }
 
+import { loadStoredSettings } from "@/lib/settings/load";
+
 export function shouldConserveBatteryPower(): boolean {
+  const s = loadStoredSettings();
+  if (s.batteryPowerSaveMode === false && s.networkProfileMode === "unlimited-broadband") {
+    return false;
+  }
+  if (s.networkProfileMode === "metered-hotspot") return true;
   // Conserve power if on battery with < 40% charge
   if (!isBatteryPowered) return false;
   if (batteryLevel != null && batteryLevel < 0.4) return true;

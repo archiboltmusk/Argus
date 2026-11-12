@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { invoke } from "@tauri-apps/api/core";
 import { GraduationCap, Copy, Check, X, Camera, Eye, Zap } from "lucide-react";
 import { useT } from "@/lib/i18n";
@@ -115,7 +116,7 @@ export function StudyNotesModal({
 
   if (!open) return null;
 
-  return (
+  return createPortal(
     <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/75 backdrop-blur-md p-4 animate-in fade-in duration-200">
       <div className="relative w-full max-w-[620px] rounded-2xl bg-surface p-6 shadow-2xl border border-edge flex flex-col gap-4 text-ink">
         {/* Header */}
@@ -258,6 +259,7 @@ export function StudyNotesModal({
           </div>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }

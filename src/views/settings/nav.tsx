@@ -1178,26 +1178,6 @@ const SETTINGS_OPTIONS: SettingsOption[] = [
     ],
   },
   {
-    label: "Player controls in Big Picture",
-    section: "hotkeys",
-    tab: "behaviour",
-    anchorTitle: "Big Picture",
-    keywords: [
-      "big picture player",
-      "ten foot player",
-      "tenfoot controls",
-      "normal player in big picture",
-      "desktop player ui",
-      "use the normal player",
-      "same player as desktop",
-      "big picture controls too big",
-      "couch player",
-      "remote controls",
-      "player ui",
-      "playback controls size",
-    ],
-  },
-  {
     label: "Use plugins",
     section: "plugins",
     tab: "plugins",
@@ -3355,7 +3335,7 @@ const SETTINGS_OPTIONS: SettingsOption[] = [
   {
     label: "Synced addons",
     section: "account",
-    tab: "stremio",
+    tab: "nuvio",
     anchorTitle: "Synced addons",
     keywords: ["synced addons", "addons", "stremio addons", "installed addons"],
   },
@@ -3503,8 +3483,9 @@ const SETTINGS_OPTIONS: SettingsOption[] = [
   },
   {
     label: "Picture in picture style",
-    section: "basics",
-    anchorTitle: "Picture in picture style",
+    section: "player",
+    tab: "play",
+    anchorTitle: "Picture in picture",
     keywords: [
       "pip",
       "picture in picture",
@@ -5445,7 +5426,7 @@ const SETTINGS_OPTIONS: SettingsOption[] = [
     label: "Subtitle size",
     section: "subtitles",
     tab: "look",
-    anchorTitle: "Subtitle style",
+    anchorTitle: "Text",
     keywords: ["size", "font size", "bigger subtitles", "text size", "small subtitles"],
   },
   {
@@ -5507,7 +5488,7 @@ const SETTINGS_OPTIONS: SettingsOption[] = [
     label: "Hide sound effects and speaker names",
     section: "subtitles",
     tab: "look",
-    anchorTitle: "Sound descriptions",
+    anchorTitle: "Sound descriptions & Accessibility",
     keywords: [
       "sdh",
       "sound effects in subtitles",
@@ -5729,7 +5710,7 @@ const SETTINGS_OPTIONS: SettingsOption[] = [
     label: "Embed mpv inside Argus window",
     section: "player",
     tab: "engine",
-    anchorTitle: "Engine",
+    anchorTitle: "mpv window",
     keywords: [
       "embedded mpv",
       "separate window",
@@ -5742,7 +5723,7 @@ const SETTINGS_OPTIONS: SettingsOption[] = [
     label: "Separate window display",
     section: "player",
     tab: "engine",
-    anchorTitle: "Engine",
+    anchorTitle: "mpv window",
     keywords: [
       "separate window monitor",
       "mpv display",
@@ -5756,7 +5737,7 @@ const SETTINGS_OPTIONS: SettingsOption[] = [
     label: "Cover the taskbar",
     section: "player",
     tab: "engine",
-    anchorTitle: "Engine",
+    anchorTitle: "mpv window",
     keywords: [
       "taskbar",
       "full screen",
@@ -6696,9 +6677,9 @@ const SETTINGS_OPTIONS: SettingsOption[] = [
   },
   {
     label: "Close player",
-    section: "hotkeys",
-    tab: "keys",
-    anchorTitle: "Player",
+    section: "player",
+    tab: "upnext",
+    anchorTitle: "More like this at the end",
     keywords: ["escape", "exit playback", "quit player", "back out"],
   },
   {
@@ -8114,7 +8095,7 @@ const SETTINGS_OPTIONS: SettingsOption[] = [
   {
     label: "Sign in to Argus",
     section: "account",
-    tab: "argus",
+    tab: "profiles",
     anchorTitle: "Argus account",
     keywords: [
       "sign in",
@@ -8128,7 +8109,7 @@ const SETTINGS_OPTIONS: SettingsOption[] = [
   {
     label: "Create Argus account",
     section: "account",
-    tab: "argus",
+    tab: "profiles",
     anchorTitle: "Argus account",
     keywords: [
       "create account",
@@ -8142,7 +8123,7 @@ const SETTINGS_OPTIONS: SettingsOption[] = [
   {
     label: "Claim your handle",
     section: "account",
-    tab: "argus",
+    tab: "profiles",
     anchorTitle: "Argus account",
     keywords: [
       "handle",
@@ -8157,7 +8138,7 @@ const SETTINGS_OPTIONS: SettingsOption[] = [
   {
     label: "Reset password (recovery key)",
     section: "account",
-    tab: "argus",
+    tab: "profiles",
     anchorTitle: "Argus account",
     keywords: [
       "forgot password",
@@ -8171,14 +8152,14 @@ const SETTINGS_OPTIONS: SettingsOption[] = [
   {
     label: "Sign out of Argus account",
     section: "account",
-    tab: "argus",
+    tab: "profiles",
     anchorTitle: "Argus account",
     keywords: ["sign out", "logout", "log off", "argus account", "disconnect"],
   },
   {
     label: "Verified status",
     section: "account",
-    tab: "argus",
+    tab: "profiles",
     anchorTitle: "Argus account",
     keywords: ["verified", "verification", "verified badge", "checkmark", "ownership"],
   },
@@ -10221,7 +10202,7 @@ const SETTINGS_OPTIONS: SettingsOption[] = [
     label: "Always re-encode when casting",
     section: "player",
     tab: "engine",
-    anchorTitle: "Player engine",
+    anchorTitle: "Casting",
     keywords: ["cast", "chromecast", "re-encode", "transcode", "casting wont play"],
   },
   {
@@ -10240,10 +10221,15 @@ const SETTINGS_OPTIONS: SettingsOption[] = [
   },
   {
     label: "Show the Big Picture button",
-    section: "hotkeys",
-    tab: "behaviour",
-    anchorTitle: "Big Picture",
+    section: "bigPicture",
+    anchorTitle: "Interface",
     keywords: ["big picture button", "tv mode button", "hide big picture", "ten foot"],
+  },
+  {
+    label: "Broadband & Data Efficiency Policy",
+    section: "india",
+    anchorTitle: "Broadband & Data Efficiency Policy",
+    keywords: ["india", "jio", "airtel", "data saver", "hotspot", "cricket", "bengali", "regional"],
   },
   {
     label: "Keep controlling Argus in the background",

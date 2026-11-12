@@ -218,7 +218,12 @@ export function HeroRatings({
 
   const effectiveSimklRating = simklCommunityRating ?? mdblist?.simkl ?? null;
 
-  if (settings.showDetailRatings && settings.showSimklDetail && effectiveSimklRating != null) {
+  if (
+    settings.showDetailRatings &&
+    settings.showSimklDetail &&
+    settings.simklShowCommunityRatings &&
+    effectiveSimklRating != null
+  ) {
     items.push(
       <ScoreItem compact={compact}
         key="simkl"

@@ -178,14 +178,16 @@ jobs:
           PUBKEY: ${{ vars.TAURI_UPDATER_PUBKEY }}
         run: |
           if [ -z "$PUBKEY" ]; then
-            echo "::error::Add the TAURI_UPDATER_PUBKEY repo variable to publish updates"; exit 1
+            echo "::warning::TAURI_UPDATER_PUBKEY is not set; skipping updater pubkey stamp"
           fi
           node -e '
             const f = "src-tauri/tauri.conf.json";
             const c = JSON.parse(require("fs").readFileSync(f, "utf8"));
             const [maj, min] = c.version.split(".");
             c.version = `${maj}.${min}.${process.env.GITHUB_RUN_NUMBER}`;
-            c.plugins.updater.pubkey = process.env.PUBKEY.trim();
+            if (process.env.PUBKEY && process.env.PUBKEY.trim()) {
+              c.plugins.updater.pubkey = process.env.PUBKEY.trim();
+            }
             require("fs").writeFileSync(f, JSON.stringify(c, null, 2));
             console.log("version", c.version);
           '
@@ -216,7 +218,8 @@ jobs:
         run: |
           set -euo pipefail
           if [ -z "$TAURI_SIGNING_PRIVATE_KEY" ]; then
-            echo "::error::Add the TAURI_SIGNING_PRIVATE_KEY repo secret to publish updates"; exit 1
+            echo "::warning::TAURI_SIGNING_PRIVATE_KEY is not set; skipping updater signing"
+            exit 0
           fi
           # Built from the bundled, codesigned app so updates carry libmpv too.
           # Max gzip level: the updater only reads tar.gz and the bundle is ~150 MB.

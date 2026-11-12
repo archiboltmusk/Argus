@@ -1,4 +1,5 @@
 import { useEffect, useState, useRef } from "react";
+import { createPortal } from "react-dom";
 import QRCode from "qrcode";
 import { Check, Cloud, Loader2, LogIn, QrCode, Smartphone, Sparkles, X } from "lucide-react";
 import { QR_DARK, QR_LIGHT } from "@/lib/tv-handoff/handoff-qr";
@@ -152,7 +153,7 @@ export function BpCloudLinkModal({ onClose }: { onClose: () => void }) {
     }
   };
 
-  return (
+  return createPortal(
     <div
       className="fixed inset-0 z-[9950] flex items-center justify-center bg-black/85 backdrop-blur-md p-6 select-none animate-in fade-in duration-200 motion-reduce:animate-none"
       onClick={onClose}
@@ -400,6 +401,7 @@ export function BpCloudLinkModal({ onClose }: { onClose: () => void }) {
           </>
         )}
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }

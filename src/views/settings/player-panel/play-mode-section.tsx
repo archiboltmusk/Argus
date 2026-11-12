@@ -150,6 +150,61 @@ export function PlayModePanel() {
           value={settings.ambientGlow}
           onChange={(v) => update({ ambientGlow: v })}
         />
+        <SettingRow
+          label={t("Default playback speed")}
+          desc={t("Starting playback speed when a new movie or episode opens.")}
+        >
+          <Segmented
+            value={String(settings.defaultPlaybackSpeed ?? 1)}
+            options={[
+              { value: "0.75", label: "0.75x" },
+              { value: "1", label: "1x" },
+              { value: "1.25", label: "1.25x" },
+              { value: "1.5", label: "1.5x" },
+              { value: "2", label: "2x" },
+            ]}
+            onChange={(v) => update({ defaultPlaybackSpeed: Number(v) })}
+          />
+        </SettingRow>
+        <ToggleRow
+          label={t("Binge mode")}
+          sub={t("Automatically advances through episodes with minimal interruption.")}
+          value={settings.bingeMode}
+          onChange={(v) => update({ bingeMode: v })}
+        />
+        <ToggleRow
+          label={t("Pre-buffer next episode")}
+          sub={t("Quietly warms up the next episode before credits roll for instant transitions.")}
+          value={settings.nextEpisodePreBuffer}
+          onChange={(v) => update({ nextEpisodePreBuffer: v })}
+        />
+        <ToggleRow
+          label={t("Original audio autopilot")}
+          sub={t("Prefer the title's original spoken language track automatically.")}
+          value={settings.originalAudioAutopilot}
+          onChange={(v) => update({ originalAudioAutopilot: v })}
+        />
+        <SettingRow
+          label={t("Data saver mode")}
+          desc={t("Caps streaming quality and background preloading on limited connections.")}
+        >
+          <Segmented
+            value={settings.dataSaverMode}
+            options={[
+              { value: "off", label: t("Off") },
+              { value: "budget", label: t("Budget") },
+              { value: "balanced", label: t("Balanced") },
+              { value: "high", label: t("High") },
+            ]}
+            onChange={(v) => update({ dataSaverMode: v as typeof settings.dataSaverMode })}
+          />
+        </SettingRow>
+        <ToggleRow
+          label={t("Native picture in picture")}
+          sub={t("Use the platform's native floating PiP window when available.")}
+          value={settings.iosNativePipEnabled}
+          onChange={(v) => update({ iosNativePipEnabled: v })}
+        />
       </SettingGroup>
 
       <SettingGroup label={t("Resume")}>
@@ -295,6 +350,48 @@ export function PlayModePanel() {
               )}
               value={settings.projectorHighContrastSubs}
               onChange={(v) => update({ projectorHighContrastSubs: v })}
+            />
+            <SettingRow
+              label={t("Projector picture profile")}
+              desc={t("Selects color and luminance tuning for your projection environment.")}
+            >
+              <Segmented
+                value={settings.projectorPictureProfile}
+                options={[
+                  { value: "cinema", label: t("Cinema") },
+                  { value: "daylight", label: t("Daylight") },
+                  { value: "eco", label: t("Eco") },
+                  { value: "night", label: t("Night") },
+                ]}
+                onChange={(v) => update({ projectorPictureProfile: v as typeof settings.projectorPictureProfile })}
+              />
+            </SettingRow>
+            <SettingRow
+              label={t("Projector gamma lift")}
+              desc={t("Lifts dark shadow detail so dim scenes remain legible on matte walls.")}
+            >
+              <Segmented
+                value={String(settings.projectorGammaLift)}
+                options={[
+                  { value: "0", label: t("Off") },
+                  { value: "1", label: "+1" },
+                  { value: "2", label: "+2" },
+                  { value: "4", label: "+4" },
+                ]}
+                onChange={(v) => update({ projectorGammaLift: Number(v) })}
+              />
+            </SettingRow>
+            <ToggleRow
+              label={t("Projector auto frame rate")}
+              sub={t("Matches display refresh rate to the video's native frame rate when supported.")}
+              value={settings.projectorAutoFrameRate}
+              onChange={(v) => update({ projectorAutoFrameRate: v })}
+            />
+            <ToggleRow
+              label={t("Projector auto day/night profile")}
+              sub={t("Automatically switches between daylight and cinema profiles by time of day.")}
+              value={settings.projectorAutoDayNight}
+              onChange={(v) => update({ projectorAutoDayNight: v })}
             />
           </Nested>
         )}

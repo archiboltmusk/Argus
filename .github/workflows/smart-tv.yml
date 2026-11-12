@@ -35,6 +35,7 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm run setup:fonts
+      - run: pnpm run build:tv
       - name: Package Smart TV Builds
         run: pnpm run package:smart-tv
       - name: Verify outputs

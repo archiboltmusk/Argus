@@ -118,6 +118,29 @@ export function AudioTab() {
         value={settings.audioNightMode}
         onChange={(v) => update({ audioNightMode: v })}
       />
+      <ToggleRow
+        label={t("Audio equalizer")}
+        sub={t("Enables the custom 10-band equalizer curve during playback.")}
+        value={settings.audioEqualizerEnabled}
+        onChange={(v) => update({ audioEqualizerEnabled: v })}
+      />
+      <SettingRow
+        wide
+        label={t("Music crossfade")}
+        desc={t("Smoothly blends between consecutive tracks in the music player.")}
+      >
+        <Segmented
+          value={String(settings.musicCrossfadeSec)}
+          options={[
+            { value: "0", label: t("Off") },
+            { value: "2", label: "2 s" },
+            { value: "4", label: "4 s" },
+            { value: "6", label: "6 s" },
+            { value: "8", label: "8 s" },
+          ]}
+          onChange={(v) => update({ musicCrossfadeSec: Number(v) })}
+        />
+      </SettingRow>
       <SettingRow
         wide
         label={t("Wireless output delay")}

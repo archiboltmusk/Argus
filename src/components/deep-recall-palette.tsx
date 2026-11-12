@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 import { Search, Zap, FileText, ArrowRight, Sparkles, X } from "lucide-react";
 import { deepRecallSearch, type DeepRecallResult } from "@/lib/education/deep-recall";
 
@@ -53,7 +54,7 @@ export function DeepRecallPalette({
 
   if (!open) return null;
 
-  return (
+  return createPortal(
     <div
       className="fixed inset-0 z-[200] flex items-start justify-center pt-24 bg-black/75 backdrop-blur-md animate-in fade-in duration-150 p-4"
       onClick={onClose}
@@ -141,6 +142,7 @@ export function DeepRecallPalette({
           )}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }

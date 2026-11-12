@@ -30,7 +30,10 @@ test("non-browser-ready file URLs are not mistaken for live MPEG-TS", () => {
   const end = source.indexOf("      if (isHls && Hls.isSupported())", start);
   const classify = new Function(
     "src",
-    "let isLiveSrc;" + assignment + source.slice(start, end) + ";return {isLiveSrc,isTs,isHls};",
+    "const video = { canPlayType: () => '' }; let isLiveSrc;" +
+      assignment +
+      source.slice(start, end) +
+      ";return {isLiveSrc,isTs,isHls};",
   );
   assert.deepEqual(
     classify({ url: "https://files.example/download/fixture", notWebReady: true, isLive: false }),

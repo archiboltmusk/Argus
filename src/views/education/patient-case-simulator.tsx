@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { createPortal } from "react-dom";
 import {
   Activity,
   Heart,
@@ -70,8 +71,8 @@ export function PatientCaseSimulator({ onClose }: { onClose: () => void }) {
     return "text-emerald-400 font-medium";
   };
 
-  return (
-    <div className="fixed inset-0 z-50 flex flex-col bg-canvas text-ink backdrop-blur-md overflow-hidden select-none">
+  return createPortal(
+    <div className="fixed inset-0 z-[200] flex flex-col bg-canvas text-ink backdrop-blur-md overflow-hidden select-none">
       {/* Top Navigation & Case Selector */}
       <header className="flex items-center justify-between border-b border-edge bg-surface/90 px-6 py-3">
         <div className="flex items-center gap-3">
@@ -339,6 +340,7 @@ export function PatientCaseSimulator({ onClose }: { onClose: () => void }) {
           </div>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }

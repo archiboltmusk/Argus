@@ -27,7 +27,7 @@ console.log("=== Argus Universal Smart TV Packager ===");
 
 if (!fs.existsSync(distDir) || !fs.existsSync(path.join(distDir, "index-tv.html"))) {
   console.log("dist/index-tv.html not found. Building TV assets first (pnpm build:tv)...");
-  execSync("npm run build:tv", { cwd: root, stdio: "inherit" });
+  execSync("pnpm run build:tv", { cwd: root, stdio: "inherit" });
 }
 
 fs.mkdirSync(outDir, { recursive: true });

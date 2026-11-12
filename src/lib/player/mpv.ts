@@ -310,15 +310,20 @@ export function createMpvBridge(mpvOptions?: MpvOptions): PlayerBridge {
   let snap: PlayerSnapshot = initialPlayerSnapshot();
   let profileAf = "";
   let equalizerAf = "";
+  let nightModeEnabled = false;
+  let regionalDialogueEqEnabled = false;
   let hdrToSdr = mpvOptions?.hdrToSdr ?? true;
   const applyAudioFilters = () => {
     const parts: string[] = [];
-    if (isNightShieldEnabled()) {
+    if (isNightShieldEnabled() || nightModeEnabled) {
       parts.push("lavfi=[highpass=f=45]");
       parts.push("lavfi=[equalizer=f=2200:width_type=q:w=1.2:g=4.5]");
       parts.push("dynaudnorm=f=400:g=31:p=0.92:m=3.5:b=1");
     } else if (snap.audioNormalize) {
       parts.push("dynaudnorm=f=500:g=31:p=0.9:m=4:b=1");
+    }
+    if (regionalDialogueEqEnabled) {
+      parts.push("lavfi=[highpass=f=85,equalizer=f=2800:width_type=q:w=1.1:g=4.0]");
     }
     if (profileAf) parts.push(profileAf);
     if (equalizerAf) parts.push(equalizerAf);
@@ -1567,6 +1572,14 @@ export function createMpvBridge(mpvOptions?: MpvOptions): PlayerBridge {
     },
     setAudioEqualizer(bands, enabled) {
       equalizerAf = enabled ? buildMpvEqualizerAf(bands) : "";
+      applyAudioFilters();
+    },
+    setAudioNightMode(on) {
+      nightModeEnabled = on;
+      applyAudioFilters();
+    },
+    setRegionalDialogueEq(on) {
+      regionalDialogueEqEnabled = on;
       applyAudioFilters();
     },
     setHdrToSdr(on, oled) {

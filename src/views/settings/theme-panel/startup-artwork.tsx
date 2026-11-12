@@ -52,7 +52,7 @@ function ArtworkSetting({role}: {role:ArtworkRole}) {
 
 export function StartupArtworkSettings() {
   const t = useT();
-  return <Section title={t('artwork.title')} subtitle={t('artwork.hint')}>
+  return <Section title={t("artwork.title")} subtitle={t("artwork.hint")}>
     <ArtworkSetting role="loading" />
     <ArtworkSetting role="launch" />
     <p className="mt-3 text-[12px] leading-relaxed text-ink-subtle">{t('artwork.local')}</p>

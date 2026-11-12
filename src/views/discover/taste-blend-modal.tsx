@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { createPortal } from "react-dom";
 import { Heart, Sparkles, X, Film } from "lucide-react";
 import { useProfiles } from "@/lib/profiles";
 import type { Meta } from "@/lib/cinemeta";
@@ -29,8 +30,8 @@ export function TasteBlendModal({ onClose, onSelectMeta, candidatePool }: TasteB
     return computeTasteBlend(activeProfile, itemsA, partnerProfile, itemsB, candidatePool);
   }, [activeProfile, partnerProfile, candidatePool]);
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4 animate-in fade-in motion-reduce:animate-none">
+  return createPortal(
+    <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/80 backdrop-blur-md p-4 animate-in fade-in motion-reduce:animate-none">
       <div className="relative flex max-h-[90vh] w-full max-w-2xl flex-col overflow-hidden rounded-3xl bg-zinc-950 border border-white/10 shadow-2xl">
         {/* Header */}
         <div className="flex items-center justify-between border-b border-white/10 px-6 py-4">
@@ -183,6 +184,7 @@ export function TasteBlendModal({ onClose, onSelectMeta, candidatePool }: TasteB
           )}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }

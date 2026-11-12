@@ -702,7 +702,7 @@ main[data-kids="on"]::-webkit-scrollbar-thumb:hover {
     transform: scale(0.98, 0.97);
   }
   to {
-    transform: scale(1, 1);
+    transform: none;
   }
 }
 
@@ -732,7 +732,7 @@ main[data-kids="on"]::-webkit-scrollbar-thumb:hover {
     transform: translateY(0.6px);
   }
   to {
-    transform: translateY(0);
+    transform: none;
   }
 }
 
@@ -1594,7 +1594,7 @@ main[data-kids="on"]::-webkit-scrollbar-thumb:hover {
     transform: scaleX(1.04);
   }
   100% {
-    transform: scaleX(1);
+    transform: none;
   }
 }
 
@@ -2231,7 +2231,7 @@ main[data-kids="on"]::-webkit-scrollbar-thumb:hover {
 .argus-settings-nav-icon.is-active,
 [data-active] .argus-settings-nav-icon,
 .group:hover .argus-settings-nav-icon {
-  animation: argus-gear-spin 1.6s var(--ease-out) both;
+  animation: argus-gear-spin 1.6s var(--ease-out);
 }
 
 [data-active] .argus-settings-nav-icon {
@@ -7180,7 +7180,7 @@ button.hset-rail-me:hover,
   }
   to {
     opacity: 1;
-    transform: scale(1, 1);
+    transform: none;
   }
 }
 

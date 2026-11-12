@@ -46,14 +46,23 @@ export const SubtitleOverlay = memo(function SubtitleOverlay({
   );
   const isProjector = isProjectorModeActive(settings);
   const projectorHighContrast = isProjector && settings.projectorHighContrastSubs;
+  const letterboxDodge = settings.letterboxSubtitleDodging === true;
   const fontSize = useMemo(() => Math.round(baseFont * responsive), [baseFont, responsive]);
   const marginY = useMemo(
-    () => (projectorHighContrast ? Math.max(24, clamp(settings.subMarginY, 0, 100)) : clamp(settings.subMarginY, 0, 100)),
-    [projectorHighContrast, settings.subMarginY],
+    () =>
+      projectorHighContrast
+        ? Math.max(24, clamp(settings.subMarginY, 0, 100))
+        : letterboxDodge
+          ? Math.max(2, clamp(settings.subMarginY, 0, 100) - 4)
+          : clamp(settings.subMarginY, 0, 100),
+    [projectorHighContrast, letterboxDodge, settings.subMarginY],
   );
-  const fontColor = projectorHighContrast && (!settings.subFontColor || settings.subFontColor === "#FFFFFF")
-    ? "#FFF8E7"
-    : settings.subFontColor || "#FFFFFF";
+  const fontColor =
+    projectorHighContrast && (!settings.subFontColor || settings.subFontColor === "#FFFFFF")
+      ? "#FFF8E7"
+      : letterboxDodge && (!settings.subFontColor || settings.subFontColor === "#FFFFFF")
+        ? "#FFD180"
+        : settings.subFontColor || "#FFFFFF";
   const align = settings.subAlignX || "center";
   const family = useMemo(() => fontFamilyFor(settings.subFontFamily), [settings.subFontFamily]);
   const style = projectorHighContrast ? "outline" : kid ? "shadow" : (settings.subStyle ?? "shadow");
@@ -84,11 +93,14 @@ export const SubtitleOverlay = memo(function SubtitleOverlay({
     return undefined;
   }, [style, borderColor, borderSize, settings.subShadowBlur]);
 
+  const nightBooster = settings.nightDialogueBooster === true;
+  const baseFontColor =
+    nightBooster && fontColor === "#FFFFFF" ? "#FFFDF5" : fontColor;
   const baseTextStyle: React.CSSProperties = useMemo(
     () => ({
-      color: fontColor,
+      color: baseFontColor,
       fontFamily: family,
-      fontWeight: kid || settings.subBold ? 700 : 400,
+      fontWeight: kid || settings.subBold || nightBooster ? 700 : 400,
       fontSize: `${fontSize}px`,
       lineHeight: 1.2,
       letterSpacing: `${(-0.005 + (settings.subLineSpacing ?? 0) * 0.06).toFixed(3)}em`,
@@ -97,10 +109,11 @@ export const SubtitleOverlay = memo(function SubtitleOverlay({
       ...(textShadow ? { textShadow } : {}),
     }),
     [
-      fontColor,
+      baseFontColor,
       family,
       kid,
       settings.subBold,
+      nightBooster,
       fontSize,
       settings.subLineSpacing,
       align,
@@ -134,7 +147,8 @@ export const SubtitleOverlay = memo(function SubtitleOverlay({
     () => ({ ...baseTextStyle, fontSize: `${Math.round(fontSize * secondScale)}px` }),
     [baseTextStyle, fontSize, secondScale],
   );
-  const secondBlock = secondaryText ? (
+  const showDual = Boolean(secondaryText && (settings.dualSubtitlesEnabled || settings.secondarySubLang));
+  const secondBlock = showDual ? (
     <div className="max-w-[80%]" style={boxStyle}>
       <div style={secondTextStyle}>
         {secondaryText.split("\n").map((line, i) => (
@@ -144,7 +158,7 @@ export const SubtitleOverlay = memo(function SubtitleOverlay({
     </div>
   ) : null;
 
-  if (!text && !secondaryText) return null;
+  if (!text && !showDual) return null;
 
   return (
     <>
@@ -170,13 +184,21 @@ export const SubtitleOverlay = memo(function SubtitleOverlay({
         {text && (
           <div className="max-w-[80%]" style={boxStyle}>
             <div style={baseTextStyle}>
-              {lines.map((line, i) =>
-                settings.subWordHover && !kid ? (
+              {lines.map((line, i) => {
+                const speakerTint =
+                  settings.speakerDiarizationColors && (/^- /.test(line) || /^[A-Z][a-zA-Z0-9 ]{1,18}:/.test(line))
+                    ? i % 2 === 0
+                      ? "#A5F3FC"
+                      : "#FDE68A"
+                    : undefined;
+                return settings.subWordHover && !kid ? (
                   <HoverWordLine key={i} line={line} lang={settings.subWordHoverLang} />
                 ) : (
-                  <div key={i}>{line}</div>
-                ),
-              )}
+                  <div key={i} style={speakerTint ? { color: speakerTint } : undefined}>
+                    {line}
+                  </div>
+                );
+              })}
             </div>
           </div>
         )}

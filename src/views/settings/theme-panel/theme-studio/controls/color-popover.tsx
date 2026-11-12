@@ -59,7 +59,7 @@ export function ColorPopover({
       setOpen(false);
     };
     const onKey = (e: KeyboardEvent) => {
-      if (!isBackKey(e)) return;
+      if (e.key !== "Escape" && !isBackKey(e)) return;
       if (document.querySelector("[data-search-editing]")) return;
       e.preventDefault();
       e.stopPropagation();

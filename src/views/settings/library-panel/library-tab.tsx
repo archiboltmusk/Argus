@@ -64,6 +64,12 @@ export function LibraryTab() {
           value={settings.hideContent.adult}
           onChange={(v) => pushHideContent("adult", v)}
         />
+        <ToggleRow
+          label={t("Show adult addons")}
+          sub={t("Allows adult-tagged community addons to appear in the Addons directory.")}
+          value={settings.showAdultAddons}
+          onChange={(v) => update({ showAdultAddons: v })}
+        />
       </Section>
 
       <Section
@@ -89,6 +95,45 @@ export function LibraryTab() {
             value={settings.playFromArchives}
             onChange={(v) => update({ playFromArchives: v })}
           />
+          <SettingRow
+            label={t("Local playback mode")}
+            desc={t("What happens when you press Play on a title that also has a local file.")}
+          >
+            <div className="flex flex-wrap gap-2">
+              {(["ask", "local", "stream"] as const).map((mode) => (
+                <button
+                  key={mode}
+                  type="button"
+                  onClick={() => update({ localPlaybackMode: mode })}
+                  className={`h-9 rounded-lg px-3 text-[13px] font-medium transition-colors ${settings.localPlaybackMode === mode ? "bg-accent text-canvas" : "bg-elevated text-ink-muted hover:text-ink"}`}
+                >
+                  {mode === "ask" ? t("Ask") : mode === "local" ? t("Play local") : t("Stream")}
+                </button>
+              ))}
+            </div>
+          </SettingRow>
+          <SettingRow
+            label={t("Local folder scan mode")}
+            desc={t("Default metadata matching mode when scanning a new local folder.")}
+          >
+            <div className="flex flex-wrap gap-2">
+              {([
+                { value: null, label: t("Ask each time") },
+                { value: "tmdb", label: "TMDB" },
+                { value: "nfo", label: "Kodi .nfo" },
+                { value: "courses", label: t("Courses") },
+              ] as const).map((opt) => (
+                <button
+                  key={String(opt.value)}
+                  type="button"
+                  onClick={() => update({ localScanMode: opt.value })}
+                  className={`h-9 rounded-lg px-3 text-[13px] font-medium transition-colors ${settings.localScanMode === opt.value ? "bg-accent text-canvas" : "bg-elevated text-ink-muted hover:text-ink"}`}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+          </SettingRow>
           <SettingRow
             icon={<HardDrive size={18} strokeWidth={2} />}
             label={t("Minimum file size")}

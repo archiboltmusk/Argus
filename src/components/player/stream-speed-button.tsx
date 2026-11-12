@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Gauge, Loader2 } from "lucide-react";
 import { useT } from "@/lib/i18n";
+import { useSettings } from "@/lib/settings";
 import {
   gradeSpeed,
   probeStreamSpeed,
@@ -33,6 +34,7 @@ export function StreamSpeedButton({
   className?: string;
 }) {
   const t = useT();
+  const { settings } = useSettings();
   const url = stream.url;
   const cachedHit = url ? getCachedProbeSpeed(url) : null;
   const [state, setState] = useState<"idle" | "running" | SpeedProbeResult>(cachedHit ?? "idle");
@@ -46,7 +48,7 @@ export function StreamSpeedButton({
     }
   }, [url]);
 
-  if (!url || !/^https?:/i.test(url)) return null;
+  if (!settings.streamSpeedTest || !url || !/^https?:/i.test(url)) return null;
 
   const run = async (e: React.MouseEvent) => {
     e.stopPropagation();

@@ -63,6 +63,12 @@ export function SeekBarPanel() {
         value={settings.seekPreviewEnabled}
         onChange={(v) => update({ seekPreviewEnabled: v })}
       />
+      <ToggleRow
+        label={t("Show chapter markers on seek bar")}
+        sub={t("Displays chapter ticks and tooltips along the player timeline.")}
+        value={settings.seekBarChapters}
+        onChange={(v) => update({ seekBarChapters: v })}
+      />
 
       <Preview settings={settings} />
 
