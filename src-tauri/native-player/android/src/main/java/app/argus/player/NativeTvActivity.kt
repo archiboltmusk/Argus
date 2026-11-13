@@ -139,7 +139,20 @@ class NativeTvActivity : AppCompatActivity() {
         addState(intArrayOf(android.R.attr.state_pressed), background(Color.rgb(42, 46, 58)))
         addState(intArrayOf(), background(Color.rgb(18, 20, 26)))
     }
+    private fun clipRounded(view: ImageView, radiusDp: Int = 12): ImageView = view.apply {
+        clipToOutline = true
+        outlineProvider = object : android.view.ViewOutlineProvider() {
+            override fun getOutline(v: View, outline: android.graphics.Outline) {
+                outline.setRoundRect(0, 0, v.width, v.height, dp(radiusDp).toFloat())
+            }
+        }
+    }
+
     private fun activate(view: View, action: () -> Unit) {
+        view.setOnFocusChangeListener { v, hasFocus ->
+            val s = if (hasFocus) 1.035f else 1f
+            v.animate().scaleX(s).scaleY(s).setDuration(160).start()
+        }
         view.setOnClickListener { action() }
         var touching = false
         view.setOnTouchListener { target, event ->
@@ -329,16 +342,16 @@ class NativeTvActivity : AppCompatActivity() {
                     background = focusBackground()
                     activate(this) { detail(meta) }
                 }
-                val image = ImageView(this).apply {
+                val image = clipRounded(ImageView(this).apply {
                     scaleType = ImageView.ScaleType.CENTER_CROP
                     setImageResource(R.drawable.argus_native_banner)
-                }
+                })
                 tile.addView(image, LinearLayout.LayoutParams(-1, dp((width * 1.5).toInt())))
                 tile.addView(label(meta.optString("name", meta.optString("id")), if (bigPicture) 19 else 17).apply {
                     maxLines = 2
                     ellipsize = android.text.TextUtils.TruncateAt.END
                 })
-                tile.addView(label(meta.optString("releaseInfo", meta.optString("year")), 14).apply { setTextColor(Color.LTGRAY) })
+                tile.addView(label(meta.optString("releaseInfo", meta.optString("year")), 14).apply { setTextColor(Color.rgb(165, 168, 178)) })
                 posters.load(image, meta.optString("poster"))
                 if (first == null) first = tile
                 layout.addView(tile, LinearLayout.LayoutParams(0, -2, 1f).apply { marginEnd = dp(10); bottomMargin = dp(12) })
@@ -606,7 +619,7 @@ class NativeTvActivity : AppCompatActivity() {
                 contentDescription = "${meta.optString("name")} · Resume at ${time(entry.optDouble("position"))}"
                 activate(this) { sources(meta, entry.getString("videoId")) }
             }
-            val image = ImageView(this).apply { scaleType = ImageView.ScaleType.CENTER_CROP; setImageResource(R.drawable.argus_native_banner) }
+            val image = clipRounded(ImageView(this).apply { scaleType = ImageView.ScaleType.CENTER_CROP; setImageResource(R.drawable.argus_native_banner) })
             tile.addView(image, LinearLayout.LayoutParams(-1, dp(width * 9 / 16)))
             posters.load(image, meta.optString("background").ifBlank { meta.optString("poster") })
             tile.addView(label(meta.optString("name"), 18).apply { maxLines = 2; ellipsize = android.text.TextUtils.TruncateAt.END })
@@ -614,7 +627,7 @@ class NativeTvActivity : AppCompatActivity() {
             tile.addView(ProgressBar(this, null, android.R.attr.progressBarStyleHorizontal).apply {
                 max = 1000
                 progress = if (entry.optDouble("duration") > 0) (entry.optDouble("position") / entry.optDouble("duration") * 1000).toInt().coerceIn(0, 1000) else 0
-                progressTintList = android.content.res.ColorStateList.valueOf(Color.rgb(244, 162, 92))
+                progressTintList = android.content.res.ColorStateList.valueOf(Color.rgb(235, 175, 108))
             }, LinearLayout.LayoutParams(-1, dp(6)))
             row.addView(tile, LinearLayout.LayoutParams(dp(width), -2).apply { marginEnd = dp(12) })
         }
