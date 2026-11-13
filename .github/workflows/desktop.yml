@@ -1,15 +1,13 @@
 name: Desktop
 
-# Windows and Linux builds, separate from the CI run so the macOS .dmg and
-# updater feed publish without waiting for them. Starts once CI has published
-# the Mac build, stamps that build's version, and adds its entries to latest.json.
+# Called by CI after the verified Mac package has been staged as a draft.
+# Promote one complete desktop release only after every platform succeeds.
 on:
-  workflow_run:
-    workflows: [CI]
-    types: [completed]
-    branches: [main]
-  push:
-    tags: ["v*"]
+  workflow_call:
+    inputs:
+      target_tag:
+        required: true
+        type: string
   pull_request:
     paths:
       - ".github/workflows/desktop.yml"
@@ -19,9 +17,8 @@ on:
   workflow_dispatch:
     inputs:
       target_tag:
-        description: "Release tag to publish to (e.g. v3.17.1)"
-        required: false
-        default: ""
+        description: "Verified draft or existing release tag (for example v3.17.5)"
+        required: true
 
 concurrency:
   group: desktop-${{ github.event_name == 'pull_request' && github.ref || 'main' }}
@@ -35,9 +32,8 @@ jobs:
   version:
     name: Resolve target release version
     permissions:
-      contents: read
+      contents: write
       actions: read
-    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
     timeout-minutes: 5
     outputs:
@@ -47,49 +43,20 @@ jobs:
     steps:
       - uses: actions/checkout@v6
         with:
-          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+          ref: ${{ github.sha }}
       - id: v
         env:
           GH_TOKEN: ${{ github.token }}
           REPO: ${{ github.repository }}
-          CI_RUN: ${{ github.event.workflow_run.id }}
-          CI_SHA: ${{ github.event.workflow_run.head_sha }}
         run: |
           set -euo pipefail
           if [ "${{ github.event_name }}" = "pull_request" ]; then exit 0; fi
           echo "publish=false" >> "$GITHUB_OUTPUT"
-          if [ -n "$CI_RUN" ]; then
-            PUBLISHED=$(gh api "repos/$REPO/actions/runs/$CI_RUN/jobs?per_page=100" --jq '[.jobs[] | select(.name == "Publish release" and .conclusion == "success")] | length')
-            if [ "$PUBLISHED" = "0" ]; then
-              echo "CI did not publish a Mac update; skipping desktop release."
-              exit 0
-            fi
-          fi
-          if [ -n "${{ inputs.target_tag }}" ]; then
-            TAG="${{ inputs.target_tag }}"
-          elif [[ "${{ github.ref }}" == refs/tags/v* ]]; then
-            TAG="${{ github.ref_name }}"
-          else
-            TAG=$(gh release view --repo "$REPO" --json tagName -q .tagName 2>/dev/null || echo "")
-            if [ -z "$TAG" ] || [ "$TAG" = "null" ] || [ "$TAG" = "beta" ]; then
-              echo "::error::No stable updater release is available"; exit 1
-            fi
-          fi
+          TAG="${{ inputs.target_tag }}"
+          [[ "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo "::error::An explicit stable version tag is required"; exit 1; }
           VERSION="${TAG#v}"
-          if [ -n "$CI_SHA" ]; then
-            RELEASE_SHA=$(gh api "repos/$REPO/commits/$TAG" --jq .sha)
-            if [ "$RELEASE_SHA" != "$CI_SHA" ]; then
-              echo "A newer release superseded this CI run; skipping stale desktop publication."
-              exit 0
-            fi
-          fi
-          if gh release download "$TAG" --repo "$REPO" -p latest.json -O latest.json 2>/dev/null; then
-            if jq -e ".platforms[\"darwin-aarch64\"]" latest.json >/dev/null 2>&1; then
-              node scripts/validate-update-manifest.mjs latest.json "$VERSION" darwin-aarch64
-            fi
-          else
-            jq -n --arg v "$VERSION" --arg d "$(date -u +%Y-%m-%dT%H:%M:%SZ)"               "{version: \$v, notes: (\"Argus v\" + \$v), pub_date: \$d, platforms: {}}" > latest.json
-          fi
+          gh release download "$TAG" --repo "$REPO" -p latest.json -O latest.json
+          node scripts/validate-update-manifest.mjs latest.json "$VERSION" darwin-aarch64
           echo "publish=true" >> "$GITHUB_OUTPUT"
           echo "tag=$TAG" >> "$GITHUB_OUTPUT"
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
@@ -116,7 +83,7 @@ jobs:
     steps:
       - uses: actions/checkout@v6
         with:
-          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+          ref: ${{ github.sha }}
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
         with:
@@ -207,7 +174,7 @@ jobs:
     steps:
       - uses: actions/checkout@v6
         with:
-          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+          ref: ${{ github.sha }}
       - name: Install system packages
         run: |
           sudo apt-get update
@@ -285,7 +252,7 @@ jobs:
   publish-desktop:
     name: Publish Windows and Linux release
     needs: [version, windows, linux]
-    if: ${{ !cancelled() && github.event_name != 'pull_request' && (needs.windows.result == 'success' || needs.linux.result == 'success') }}
+    if: ${{ !cancelled() && github.event_name != 'pull_request' && needs.windows.result == 'success' && needs.linux.result == 'success' }}
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
@@ -293,7 +260,7 @@ jobs:
     steps:
       - uses: actions/checkout@v6
         with:
-          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+          ref: ${{ github.sha }}
       - uses: actions/download-artifact@v8
         if: needs.windows.result == 'success'
         with:
@@ -312,16 +279,8 @@ jobs:
         run: |
           set -euo pipefail
           BASE="https://github.com/$REPO/releases/download/$TAG"
-          if ! gh release view "$TAG" --repo "$REPO" >/dev/null 2>&1; then
-            gh release create "$TAG" --title "Argus $TAG" --notes "Argus Automated Release $TAG" --repo "$REPO" || gh release view "$TAG" --repo "$REPO" >/dev/null 2>&1
-          fi
-          if gh release download "$TAG" --repo "$REPO" -p latest.json -O latest.json 2>/dev/null; then
-            if jq -e ".platforms[\"darwin-aarch64\"]" latest.json >/dev/null 2>&1; then
-              node scripts/validate-update-manifest.mjs latest.json "${{ needs.version.outputs.version }}" darwin-aarch64
-            fi
-          else
-            jq -n --arg v "${{ needs.version.outputs.version }}" --arg d "$(date -u +%Y-%m-%dT%H:%M:%SZ)"               "{version: \$v, notes: (\"Argus \" + \$v), pub_date: \$d, platforms: {}}" > latest.json
-          fi
+          gh release download "$TAG" --repo "$REPO" -p latest.json -O latest.json
+          node scripts/validate-update-manifest.mjs latest.json "${{ needs.version.outputs.version }}" darwin-aarch64
           FILES=()
           if [ -d win ]; then
             if [ -f win/Argus-windows-x64-setup.exe.sig ]; then
@@ -338,9 +297,7 @@ jobs:
             FILES+=(linux/Argus-linux-x64.AppImage linux/Argus-linux-x64.deb)
           fi
           [ ${#FILES[@]} -gt 0 ] || { echo "::error::No signed Windows/Linux bundle to publish"; exit 1; }
-          if jq -e ".platforms[\"darwin-aarch64\"]" latest.json >/dev/null 2>&1; then
-            node scripts/validate-update-manifest.mjs latest.json "${{ needs.version.outputs.version }}" darwin-aarch64
-          fi
+          node scripts/validate-update-manifest.mjs latest.json "${{ needs.version.outputs.version }}" darwin-aarch64 windows-x86_64 linux-x86_64
           cat latest.json
           gh release upload "$TAG" "${FILES[@]}" --repo "$REPO" --clobber
           gh release upload "$TAG" latest.json --repo "$REPO" --clobber
@@ -349,6 +306,12 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: node scripts/publish-release-page.mjs "${{ needs.version.outputs.tag }}" "${{ github.repository }}"
+      - name: Publish complete verified release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          TAG: ${{ needs.version.outputs.tag }}
+        run: gh release edit "$TAG" --repo "$REPO" --draft=false --latest=true
       - name: Refresh legacy Mac update feed
         env:
           GH_TOKEN: ${{ github.token }}
