@@ -156,11 +156,11 @@ export function BpProjectorLauncher() {
   };
 
   const chipCls =
-    "px-4 py-2.5 rounded-full bg-white/[0.07] hover:bg-white/[0.14] border border-white/12 text-white/90 text-[13px] font-semibold tracking-tight flex items-center gap-2 backdrop-blur-xl transition-all duration-200 hover:scale-[1.03] active:scale-[0.98] focus:outline-none focus:ring-2 focus:ring-white/90 focus:bg-white/[0.16]";
+    "px-4 py-2.5 rounded-full bg-white/[0.07] hover:bg-white/[0.14] border border-white/12 text-white/90 text-[13px] font-semibold tracking-tight flex items-center gap-2 argus-vibrancy-rail transition-all duration-[380ms] ease-[cubic-bezier(0.22,1.18,0.36,1)] hover:scale-[1.03] active:scale-[0.98] focus:outline-none focus:ring-2 focus:ring-white/90 focus:bg-white/[0.16]";
 
   return (
     <div
-      className="relative h-full w-full text-[#f4f4f6] select-none overflow-x-hidden overflow-y-auto scrollbar-none pt-[calc(var(--bp-page-top,84px)+18px)] px-[var(--bp-gutter,48px)] pb-36 bg-transparent"
+      className="relative h-full w-full text-[#f4f4f6] select-none overflow-x-hidden overflow-y-auto scrollbar-none pt-[calc(var(--bp-page-top,84px)+18px)] px-[var(--bp-gutter,48px)] pb-36 bg-[radial-gradient(120%_80%_at_10%_-10%,rgba(255,255,255,0.06),transparent_55%),#07080b]"
       style={{
         paddingLeft: `calc(var(--bp-gutter,48px) + ${settings.projectorKeystoneOverscan ?? 5}vw)`,
         paddingRight: `calc(var(--bp-gutter,48px) + ${settings.projectorKeystoneOverscan ?? 5}vw)`,

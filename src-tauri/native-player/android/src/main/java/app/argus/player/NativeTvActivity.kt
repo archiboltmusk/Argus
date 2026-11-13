@@ -84,7 +84,10 @@ class NativeTvActivity : AppCompatActivity() {
         root = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(dp(horizontalPadding), dp(18), dp(horizontalPadding), dp(18))
-            setBackgroundColor(Color.rgb(17, 18, 19))
+            background = GradientDrawable(
+                GradientDrawable.Orientation.TOP_BOTTOM,
+                intArrayOf(Color.rgb(15, 17, 24), Color.rgb(7, 8, 11)),
+            )
         }
         setContentView(root)
         val bar = LinearLayout(this).apply { gravity = Gravity.CENTER_VERTICAL }
@@ -126,11 +129,15 @@ class NativeTvActivity : AppCompatActivity() {
         setTextColor(Color.rgb(244, 245, 247))
         setPadding(0, dp(5), 0, dp(5))
     }
-    private fun background(color: Int) = GradientDrawable().apply { setColor(color); cornerRadius = dp(10).toFloat() }
+    private fun background(color: Int) = GradientDrawable().apply {
+        setColor(color)
+        cornerRadius = dp(14).toFloat()
+        setStroke(dp(1), Color.argb(28, 255, 255, 255))
+    }
     private fun focusBackground() = StateListDrawable().apply {
-        addState(intArrayOf(android.R.attr.state_focused), background(Color.rgb(50, 51, 53)).apply { setStroke(dp(2), Color.rgb(244, 162, 92)) })
-        addState(intArrayOf(android.R.attr.state_pressed), background(Color.rgb(50, 51, 53)))
-        addState(intArrayOf(), background(Color.rgb(25, 27, 28)))
+        addState(intArrayOf(android.R.attr.state_focused), background(Color.rgb(34, 38, 48)).apply { setStroke(dp(2), Color.rgb(255, 255, 255)) })
+        addState(intArrayOf(android.R.attr.state_pressed), background(Color.rgb(42, 46, 58)))
+        addState(intArrayOf(), background(Color.rgb(18, 20, 26)))
     }
     private fun activate(view: View, action: () -> Unit) {
         view.setOnClickListener { action() }
