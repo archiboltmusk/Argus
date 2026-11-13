@@ -1,3 +1,4 @@
+import { MusicArtwork } from "@/components/music/music-artwork";
 import { MusicHeroMedia } from "./music-hero-media";
 import { useHeroLayers } from "./use-hero-layers";
 import { MusicArtistLink } from "@/components/music/music-artist-link";
@@ -169,7 +170,7 @@ export function MusicHomeHero({
         }}
       >
         {backdrops.map((layer) => (
-          <img key={layer.id} className="music-feature-backdrop" src={layer.src} alt="" />
+          <MusicArtwork key={layer.id} className="music-feature-backdrop" src={layer.src} alt="" />
         ))}
         <div className="music-home-feature-copy">
           <div key={feature?.id ?? "intro"} className="music-home-feature-swap">
@@ -286,7 +287,7 @@ export function MusicHomeHero({
                   aria-pressed={item.id === feature?.id}
                   onClick={() => setSelectedId(item.id)}
                 >
-                  {item.artwork && <img src={item.artwork} alt="" />}
+                  <MusicArtwork src={item.artwork} alt="" />
                   <span>
                     <strong>{item.title}</strong>
                   </span>

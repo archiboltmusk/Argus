@@ -146,7 +146,7 @@ export function updateAvailable(s: UpdateState): boolean {
   return s.status === "available" || s.status === "downloading" || s.status === "downloaded";
 }
 
-const BETA_HEADERS = { headers: { "x-argus-channel": "beta" } };
+const BETA_HEADERS = { timeout: 15_000, headers: { "x-argus-channel": "beta" } };
 
 function currentRequest(request: number, channel: UpdateChannel): boolean {
   return request === revision && channel === selectedUpdateChannel();
@@ -365,7 +365,7 @@ export async function checkForUpdate(manual = false): Promise<void> {
     }
     const wantBeta = selected === "beta";
     let beta = wantBeta;
-    candidate = (await check(wantBeta ? BETA_HEADERS : undefined)) as UpdateHandle | null;
+    candidate = (await check(wantBeta ? BETA_HEADERS : { timeout: 15_000 })) as UpdateHandle | null;
     if (!currentRequest(request, selected)) return;
     if (!candidate && !wantBeta && !readChannelPreference() && (await runningPrerelease())) {
       if (!currentRequest(request, selected)) return;
@@ -377,7 +377,7 @@ export async function checkForUpdate(manual = false): Promise<void> {
     // the newer of the two, so a beta install is never left behind a stable release. The
     // stable check is optional, so a failure there keeps the beta result.
     if (wantBeta) {
-      const stable = (await check().catch(() => null)) as UpdateHandle | null;
+      const stable = (await check({ timeout: 15_000 }).catch(() => null)) as UpdateHandle | null;
       if (!currentRequest(request, selected)) {
         if (stable) void stable.close().catch(() => {});
         return;

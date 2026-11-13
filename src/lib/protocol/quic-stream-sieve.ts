@@ -13,7 +13,7 @@
  *    immediately while background indexers continue streaming without UI freezes.
  */
 
-import { sha256 } from "@noble/hashes/sha256";
+import { sha256 } from "@noble/hashes/sha2.js";
 
 export interface StreamCandidate {
   id: string;
@@ -152,9 +152,7 @@ export class StreamSieveHeap {
    * Returns sorted snapshot of all currently sifted streams.
    */
   public getSortedStreams(): StreamCandidate[] {
-    return [...this.heap]
-      .sort((a, b) => b.score - a.score)
-      .map((item) => item.stream);
+    return [...this.heap].sort((a, b) => b.score - a.score).map((item) => item.stream);
   }
 
   public get size(): number {

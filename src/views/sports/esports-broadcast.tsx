@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react";
-import { Play, Twitch, Youtube } from "lucide-react";
+import { Play } from "lucide-react";
+import { Twitch, Youtube } from "@/components/icons/brand-icons";
 import { useView } from "@/lib/view";
 import { officialBroadcastSource, type EsportsStream } from "@/lib/sports/esports-streams";
 

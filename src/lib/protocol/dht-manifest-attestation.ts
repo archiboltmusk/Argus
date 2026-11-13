@@ -15,8 +15,8 @@
  *    Nostr relays, local LAN mesh, or HTTPS fallback.
  */
 
-import { sha256 } from "@noble/hashes/sha256";
-import { bytesToHex } from "@noble/hashes/utils";
+import { sha256 } from "@noble/hashes/sha2.js";
+import { bytesToHex } from "@noble/hashes/utils.js";
 
 export interface AttestedAddonManifest {
   version: 2;
@@ -93,12 +93,7 @@ export async function verifyAttestedManifest(
       ["verify"],
     );
 
-    const isValid = await crypto.subtle.verify(
-      { name: "Ed25519" },
-      cryptoKey,
-      sigBytes,
-      dataBytes,
-    );
+    const isValid = await crypto.subtle.verify({ name: "Ed25519" }, cryptoKey, sigBytes, dataBytes);
 
     if (!isValid) {
       return { verified: false, error: "Cryptographic signature mismatch: manifest was modified." };

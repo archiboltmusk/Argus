@@ -1,5 +1,15 @@
 import { useRef, useState } from "react";
-import { Bold, Clapperboard, Eye, Image as ImageIcon, Link2, Loader2, Pencil, Send, Youtube } from "lucide-react";
+import {
+  Bold,
+  Clapperboard,
+  Eye,
+  Image as ImageIcon,
+  Link2,
+  Loader2,
+  Pencil,
+  Send,
+} from "lucide-react";
+import { Youtube } from "@/components/icons/brand-icons";
 import { useT } from "@/lib/i18n";
 import { useAutosize } from "@/lib/use-autosize";
 import { createGroupPost, type GroupPost } from "@/lib/social/group-posts";
@@ -138,11 +148,14 @@ export function PostCompose({
               title={preview ? t("Edit") : t("Preview")}
               className="ms-auto flex h-8 items-center gap-1.5 rounded-sm px-2.5 text-[12px] font-semibold text-ink-subtle transition-colors hover:bg-elevated hover:text-ink"
             >
-              {preview ? <Pencil size={13} /> : <Eye size={14} />} {preview ? t("Edit") : t("Preview")}
+              {preview ? <Pencil size={13} /> : <Eye size={14} />}{" "}
+              {preview ? t("Edit") : t("Preview")}
             </button>
           </div>
         )}
-        {embed && <EmbedPrompt kind={embed} onInsert={insertEmbed} onClose={() => setEmbed(null)} />}
+        {embed && (
+          <EmbedPrompt kind={embed} onInsert={insertEmbed} onClose={() => setEmbed(null)} />
+        )}
         {picking && <MediaPicker onInsert={insertEmbed} onClose={() => setPicking(false)} />}
         {error && <p className="text-[12.5px] text-danger">{error}</p>}
         {(trimmed || busy) && (
@@ -150,14 +163,22 @@ export function PostCompose({
             <span className="me-auto text-[11.5px] text-ink-subtle">
               {t("BBCode works: [b] [url] [img] [youtube] [video] [quote]")}
             </span>
-            <span className={`text-[11.5px] tabular-nums ${left < 100 ? "text-danger" : "text-ink-subtle"}`}>{left}</span>
+            <span
+              className={`text-[11.5px] tabular-nums ${left < 100 ? "text-danger" : "text-ink-subtle"}`}
+            >
+              {left}
+            </span>
             <button
               type="button"
               onClick={() => void send()}
               disabled={!trimmed || busy}
               className="flex h-9 items-center gap-2 rounded-full bg-ink px-4 text-[12.5px] font-semibold text-canvas transition-[opacity,transform] hover:opacity-90 active:scale-[0.97] disabled:opacity-40"
             >
-              {busy ? <Loader2 size={14} className="animate-spin" /> : <Send size={13} strokeWidth={2.4} />}
+              {busy ? (
+                <Loader2 size={14} className="animate-spin" />
+              ) : (
+                <Send size={13} strokeWidth={2.4} />
+              )}
               {t("Post")}
             </button>
           </div>

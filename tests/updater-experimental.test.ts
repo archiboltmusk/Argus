@@ -553,7 +553,9 @@ test("existing stable and beta preferences retain their native request headers",
     await h.updater.checkForUpdate();
     assert.deepEqual(
       h.calls.headers,
-      beta ? [{ headers: { "x-argus-channel": "beta" } }, undefined] : [undefined],
+      beta
+        ? [{ timeout: 15_000, headers: { "x-argus-channel": "beta" } }, { timeout: 15_000 }]
+        : [{ timeout: 15_000 }],
     );
     assert.equal(h.updater.useUpdate().channel, beta ? "beta" : "stable");
   }
@@ -619,7 +621,7 @@ test("explicit stable exit never invokes the legacy inferred-beta fallback", asy
   h.updater.setExperimentalUpdates(false);
   h.config.nativeMissing = true;
   await h.updater.checkForUpdate();
-  assert.deepEqual(h.calls.headers, [undefined]);
+  assert.deepEqual(h.calls.headers, [{ timeout: 15_000 }]);
   assert.equal(h.calls.fetchHeaders.length, 0);
 });
 
@@ -628,7 +630,10 @@ test("legacy prerelease inference still checks beta when no explicit channel exi
   h.config.nativeMissing = true;
   h.config.raw = { version: "0.9.20" };
   await h.updater.checkForUpdate();
-  assert.deepEqual(h.calls.headers, [undefined, { headers: { "x-argus-channel": "beta" } }]);
+  assert.deepEqual(h.calls.headers, [
+    { timeout: 15_000 },
+    { timeout: 15_000, headers: { "x-argus-channel": "beta" } },
+  ]);
 });
 
 test("background checks keep a verified download ready until install or channel change", async () => {

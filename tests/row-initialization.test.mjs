@@ -101,7 +101,12 @@ test("row initialization consumes observer width and passes the known page scrol
       for (const frame of pending) frame(0);
       await Promise.resolve();
     });
-    assert.equal(document.querySelector(".argus-row-track").style.gridAutoColumns, "150.015625px");
+    assert.ok(
+      Math.abs(
+        parseFloat(document.querySelector(".argus-row-track").style.gridAutoColumns) - 150.015625,
+      ) < 0.001,
+      "observer width determines the column size within CSS serialization precision",
+    );
     assert.equal(layoutReads, 0);
     frames.clear();
     await React.act(async () => {

@@ -1,7 +1,7 @@
 import { evictLocalPrefix, idbCacheGet, idbCacheSet } from "@/lib/idb-cache";
 import type { KnownForEntry } from "./rankings";
 import { safeFetch } from "./safe-fetch";
-import { ARGUS_API_BASE } from "./config/endpoints";
+import { ARGUS_API_BASE, ARGUS_HOSTED, HARBOR_FALLBACK_BASE } from "./config/endpoints";
 
 export type RankSource =
   | "argus"
@@ -117,7 +117,18 @@ export const ARGUS_RANK_WEIGHTS: ScoreComponents = {
   roles: 0.12,
 };
 
-const FEED_BASE = `${ARGUS_API_BASE}/rank`;
+// Standalone builds use the same public provider as the other hosted metadata feeds.
+export const RANK_FEED_PROVIDER = ARGUS_HOSTED ? null : "Harbor";
+const FEED_BASE = `${ARGUS_HOSTED ? ARGUS_API_BASE : HARBOR_FALLBACK_BASE}/rank`;
+const RANK_SOURCES: RankSource[] = [
+  "argus",
+  "trending",
+  "rising",
+  "contenders",
+  "tmdb",
+  "imdb",
+  "consensus",
+];
 const STALE_MS = 6 * 60 * 60 * 1000;
 const MANIFEST_KEY = "argus.rank.manifest.v1";
 
@@ -132,7 +143,8 @@ function snapshotKey(source: RankSource, dept: PeopleDept, country: string | nul
 }
 
 function listUrl(source: RankSource, dept: PeopleDept, country: string | null): string {
-  return `${FEED_BASE}/${source}-${dept.toLowerCase()}-${country ?? "all"}.json`;
+  const feedSource = !ARGUS_HOSTED && source === "argus" ? "harbor" : source;
+  return `${FEED_BASE}/${feedSource}-${dept.toLowerCase()}-${country ?? "all"}.json`;
 }
 
 function buildResult(source: RankSource, raw: unknown): RankListResult | null {
@@ -176,7 +188,14 @@ export async function fetchRankManifest(): Promise<RankManifest | null> {
       const res = await safeFetch(`${FEED_BASE}/manifest.json`, { cache: "no-cache" });
       if (!res.ok) return cached;
       const j = (await res.json()) as RankManifest;
-      if (!j?.sources || !Array.isArray(j.departments)) return cached;
+      if (!Array.isArray(j?.sources) || !Array.isArray(j.departments)) return cached;
+      j.sources = [
+        ...new Set(
+          j.sources
+            .map((source: string) => (!ARGUS_HOSTED && source === "harbor" ? "argus" : source))
+            .filter((source): source is RankSource => RANK_SOURCES.includes(source as RankSource)),
+        ),
+      ];
       manifestMem = { at: Date.now(), manifest: j };
       try {
         localStorage.setItem(MANIFEST_KEY, JSON.stringify(manifestMem));

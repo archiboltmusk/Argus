@@ -12,8 +12,8 @@
  *    without ever observing the user's master API key.
  */
 
-import { sha256 } from "@noble/hashes/sha256";
-import { bytesToHex } from "@noble/hashes/utils";
+import { sha256 } from "@noble/hashes/sha2.js";
+import { bytesToHex } from "@noble/hashes/utils.js";
 
 export interface BlindDebridTicket {
   ticketId: string;
@@ -48,10 +48,7 @@ export function createBlindTicket(
 /**
  * Verifies a blind ticket without revealing the master key.
  */
-export function verifyBlindTicket(
-  ticket: BlindDebridTicket,
-  masterApiKey: string,
-): boolean {
+export function verifyBlindTicket(ticket: BlindDebridTicket, masterApiKey: string): boolean {
   if (Date.now() / 1000 > ticket.expiresAt) return false;
 
   const payload = `${ticket.provider}:${ticket.infoHash.toLowerCase()}:${ticket.expiresAt}:${masterApiKey}`;
@@ -63,7 +60,11 @@ export function verifyBlindTicket(
 /**
  * Sanitizes an addon manifest URL by stripping out exposed plaintext API keys and replacing them with a secure local binding.
  */
-export function sanitizeAddonUrl(rawUrl: string): { sanitizedUrl: string; extractedKey: string | null; provider: string | null } {
+export function sanitizeAddonUrl(rawUrl: string): {
+  sanitizedUrl: string;
+  extractedKey: string | null;
+  provider: string | null;
+} {
   let extractedKey: string | null = null;
   let provider: string | null = null;
 
