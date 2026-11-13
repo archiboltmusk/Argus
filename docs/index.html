@@ -1373,6 +1373,9 @@
               if (asset) {
                 a.href = asset.browser_download_url;
                 a.textContent = `${text.split(" (")[0]} (${(asset.size / 1048576).toFixed(1)} MB)`;
+              } else if (platform) {
+                a.href = `https://github.com/${repo}/releases`;
+                a.textContent = `${text.split(" (")[0]} · Other releases`;
               }
             });
             document.getElementById('gh-tag').textContent = release.tag_name;
@@ -1386,7 +1389,8 @@
             if (recommended) {
               const link = document.getElementById('recommended-download');
               link.href = recommended.browser_download_url;
-              link.textContent = `Download ${release.tag_name} · ${platform === 'mac' ? 'Mac (Apple Silicon)' : platform}`;
+              const labels = { mac: 'Mac (Apple Silicon)', windows: 'Windows x64', linux: 'Linux x64', android: 'Android phone/tablet', projector: 'Android TV/projector', ios: 'iPhone/iPad' };
+              link.textContent = `Download ${release.tag_name} · ${labels[platform]}`;
             }
           }
         }

@@ -47,8 +47,14 @@ function fixture(fail = false, neverReady = false) {
     setSubtitleTrack(id: string | null) {
       calls.push(["subtitle", id]);
     },
-    async addSubtitle(url: string) {
-      calls.push(["external", url]);
+    async addSubtitle(
+      url: string,
+      _lang: string,
+      _title: string,
+      _select: boolean,
+      metadata: unknown,
+    ) {
+      calls.push(["external", url, metadata]);
       return true;
     },
     setRate(v: number) {
@@ -176,4 +182,29 @@ test("language aliases still preserve Hindi audio and English subtitles", async 
     ["audio", "20"],
     ["subtitle", "40"],
   ]);
+});
+
+test("external local subtitles keep their file and trust metadata instead of matching an embedded language", async () => {
+  const f = fixture();
+  const snapshot = {
+    ...before,
+    subtitleTracks: [
+      {
+        ...before.subtitleTracks[0],
+        external: true,
+        url: "file:///fixture/test.srt",
+        localTrusted: true,
+      },
+    ],
+  };
+  await transitionStream(
+    f.bridge,
+    { url: "upgrade" },
+    { url: "original" },
+    snapshot,
+    new AbortController().signal,
+  );
+  const external = f.calls.find(([kind]) => kind === "external");
+  assert.equal(external?.[1], "file:///fixture/test.srt");
+  assert.equal(external?.[2].localTrusted, true);
 });

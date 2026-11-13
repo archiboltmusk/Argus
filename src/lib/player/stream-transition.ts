@@ -2,13 +2,10 @@ import { normalizeLang } from "@/lib/subtitles/language";
 import type { PlayerBridge, PlayerSnapshot, PlayerSource, TrackInfo } from "./bridge";
 
 function matchingTrack(old: TrackInfo, tracks: TrackInfo[]): TrackInfo | undefined {
+  const url = old.originalUrl || old.url;
+  if (url) return tracks.find((track) => (track.originalUrl || track.url) === url);
   // IDs belong to a file, so match meaning before considering any new file's ID.
   return (
-    tracks.find(
-      (track) =>
-        (old.originalUrl || old.url) &&
-        (track.originalUrl || track.url) === (old.originalUrl || old.url),
-    ) ??
     tracks.find(
       (track) =>
         normalizeLang(track.lang) === normalizeLang(old.lang) &&
@@ -97,6 +94,8 @@ async function restoreSelection(
         {
           downloadAuth: subtitle.downloadAuth,
           format: subtitle.format,
+          localTrusted: subtitle.localTrusted,
+          providerDerived: subtitle.providerDerived,
         },
         "manual",
       );
