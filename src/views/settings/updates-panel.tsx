@@ -28,7 +28,7 @@ export function UpdatesPanel() {
         <Section
           title={t("Updates")}
           subtitle={t(
-            "Argus checks arguscommunity.site for new versions and installs them in place. Nothing installs until you choose to, and a dismissed update never nags you again.",
+            "Check for new versions and install them here. Updates preserve your settings and library, and save a recovery backup before installation. Nothing installs until you choose to.",
           )}
         >
           <UpdatesRow />

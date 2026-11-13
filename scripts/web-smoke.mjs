@@ -12,25 +12,39 @@ const browser = await chromium.launch();
 const page = await browser.newPage();
 const errors = [];
 const failed = [];
+let collecting = true;
 page.on("pageerror", (e) => errors.push(e.message));
 page.on("requestfailed", (r) => {
-  if (new URL(r.url()).origin === new URL(url).origin) failed.push(r.url());
+  if (collecting && new URL(r.url()).origin === new URL(url).origin)
+    failed.push(`${r.url()} (${r.failure()?.errorText ?? "unknown"})`);
 });
 await page.goto(url, { waitUntil: "load" });
 let rendered = true;
 try {
-  await page.waitForFunction(() => (document.getElementById("root")?.childElementCount ?? 0) > 0, null, {
-    timeout: 30000,
-  });
+  await page.waitForFunction(
+    () => (document.getElementById("root")?.childElementCount ?? 0) > 0,
+    null,
+    {
+      timeout: 30000,
+    },
+  );
 } catch {
   rendered = false;
 }
 await page.screenshot({ path: "web-smoke.png" });
+// Closing Chromium aborts speculative imports; these are not application failures.
+collecting = false;
 await browser.close();
 console.log("page errors:", errors.length ? errors : "none");
 console.log("failed same-origin requests:", failed.length ? failed : "none");
-if (!rendered || failed.length) {
-  console.error(rendered ? "same-origin requests failed" : "#root never rendered");
+if (!rendered || failed.length || errors.length) {
+  console.error(
+    !rendered
+      ? "#root never rendered"
+      : errors.length
+        ? "uncaught application error"
+        : "same-origin requests failed",
+  );
   process.exit(1);
 }
 console.log("web smoke ok");

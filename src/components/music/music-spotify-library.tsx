@@ -1,3 +1,4 @@
+import { MusicArtwork } from "@/components/music/music-artwork";
 import { MusicPlaylistToolbar } from "@/components/music/music-playlist-toolbar";
 import { usePlaylistFilters } from "@/lib/music/use-playlist-filters";
 import { LibraryTrackList } from "@/components/music/music-library-parts";
@@ -89,9 +90,11 @@ export function MusicSpotifyLibrary({
   onFocusedRef.current = onFocused;
   const selectedId = selected?.id;
   const player = useMusicPlayback();
-  const collection = usePlaylistFilters(selectedId ?? kind, page?.tracks, { addedAt: page?.trackAddedAt, recentFirst: kind === "liked" && !selected });
+  const collection = usePlaylistFilters(selectedId ?? kind, page?.tracks, {
+    addedAt: page?.trackAddedAt,
+    recentFirst: kind === "liked" && !selected,
+  });
   const filteringCollection = collection.active || collection.filters.sort !== "default";
-
 
   const more = useRef<HTMLButtonElement | null>(null);
   const read = useCallback(
@@ -162,7 +165,15 @@ export function MusicSpotifyLibrary({
   }, [page?.nextOffset, loading, working, read, failure, filteringCollection]);
 
   useEffect(() => {
-    if (active && filteringCollection && page?.nextOffset != null && !loading && !working && !failure) void read(page.nextOffset, true);
+    if (
+      active &&
+      filteringCollection &&
+      page?.nextOffset != null &&
+      !loading &&
+      !working &&
+      !failure
+    )
+      void read(page.nextOffset, true);
   }, [active, filteringCollection, page?.nextOffset, loading, working, failure, read]);
 
   useEffect(() => {
@@ -300,9 +311,11 @@ export function MusicSpotifyLibrary({
   const title = selected?.name ?? t("music.spotifyLibrary.title");
   const play = (track: MusicTrack, queue: MusicTrack[]) => {
     registerMusicQueueOrigin(queue, {
-      kind: "spotify", id: selected?.id ?? "spotify:liked",
+      kind: "spotify",
+      id: selected?.id ?? "spotify:liked",
       name: selected?.name ?? t("music.spotifyLibrary.liked"),
-      collection: selected ? "playlist" : "liked", nextOffset: page?.nextOffset ?? null,
+      collection: selected ? "playlist" : "liked",
+      nextOffset: page?.nextOffset ?? null,
     });
     openSourcePicker(track, queue);
   };
@@ -561,7 +574,7 @@ export function MusicSpotifyLibrary({
                   >
                     <span className="music-spotify-cover">
                       {playlist.artwork[0] ? (
-                        <img src={playlist.artwork[0]} alt="" loading="lazy" />
+                        <MusicArtwork src={playlist.artwork[0]} alt="" loading="lazy" />
                       ) : (
                         <ListMusic size={24} />
                       )}
@@ -580,10 +593,20 @@ export function MusicSpotifyLibrary({
           ) : (
             <>
               <MusicPlaylistToolbar controller={collection} loading={loading} />
-              <LibraryTrackList title="" subtitle="" showControls={false} tracks={collection.tracks} view={collection.filters.view}
-                likedIds={player.likedIds} selectedPlaylist={null} onPlay={play}
+              <LibraryTrackList
+                title=""
+                subtitle=""
+                showControls={false}
+                tracks={collection.tracks}
+                view={collection.filters.view}
+                likedIds={player.likedIds}
+                selectedPlaylist={null}
+                onPlay={play}
                 onRemove={selected?.editable ? removeTrack : undefined}
-                emptyCopy={t(collection.active ? "music.searchEmpty" : "music.spotifyLibrary.empty")} />
+                emptyCopy={t(
+                  collection.active ? "music.searchEmpty" : "music.spotifyLibrary.empty",
+                )}
+              />
             </>
           )}
           {loading && (

@@ -1,3 +1,4 @@
+import { MusicArtwork } from "@/components/music/music-artwork";
 import { useState } from "react";
 import { ListMusic } from "@/components/icons/music-icons";
 import { posterPlate } from "@/components/poster";
@@ -65,7 +66,7 @@ function MosaicTile({ src, seed, span }: { src: string; seed: string; span: bool
         <span aria-hidden="true" className="argus-shimmer absolute inset-0" />
       )}
       {state !== "failed" && resolved && (
-        <img
+        <MusicArtwork
           key={resolved}
           src={resolved}
           alt=""

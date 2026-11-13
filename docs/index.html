@@ -1021,7 +1021,12 @@
     </section>
 
     <!-- Pick Your Screen -->
-    <section id="screens">
+    <div class="container" style="padding:24px 0" aria-label="Downloads">
+    <a id="recommended-download" class="btn btn-white" href="https://github.com/archiboltmusk/Argus/releases/latest">Choose your download</a>
+    <a class="btn btn-ghost" href="https://github.com/archiboltmusk/Argus/releases">Preview releases &amp; other devices</a>
+  </div>
+
+  <section id="screens">
       <div class="container">
         <div class="sec-head">
           <div class="sec-kicker">Pick your screen</div>
@@ -1300,6 +1305,7 @@
     </div>
   </footer>
 
+  <script src="downloads.js"></script>
   <script>
     function switchScreen(id, btn) {
       document.querySelectorAll('.screen-card').forEach(el => el.classList.remove('active'));
@@ -1350,7 +1356,7 @@
       try {
         const [r1, r2] = await Promise.all([
           fetch(`https://api.github.com/repos/${repo}`),
-          fetch(`https://api.github.com/repos/${repo}/releases?per_page=3`)
+          fetch(`https://api.github.com/repos/${repo}/releases/latest`)
         ]);
         if (r1.ok) {
           const d = await r1.json();
@@ -1358,29 +1364,30 @@
           if (typeof d.forks_count === 'number') document.getElementById('gh-forks').textContent = d.forks_count;
         }
         if (r2.ok) {
-          const rels = await r2.json();
-          if (Array.isArray(rels) && rels.length) {
-            const assets = rels.flatMap(r => r.assets || []);
-            const matchAsset = (re) => assets.find(a => re.test(a.name));
+          const release = await r2.json();
+          if (!release.draft && !release.prerelease && /^v\d+\.\d+\.\d+$/.test(release.tag_name)) {
             document.querySelectorAll("#screens .dl-row a").forEach(a => {
-              const t = a.textContent || "";
-              let hit = null;
-              if (t.includes("macOS")) hit = matchAsset(/\.dmg$/i);
-              else if (t.includes("Windows")) hit = matchAsset(/\.(msi|exe)$/i);
-              else if (t.includes("Linux")) hit = matchAsset(/\.(AppImage|deb)$/i);
-              else if (t.includes("Projector")) hit = matchAsset(/projector.*\.apk$/i) || matchAsset(/\.apk$/i);
-              else if (t.includes("Android")) hit = matchAsset(/\.apk$/i);
-              else if (t.includes("iOS")) hit = matchAsset(/\.ipa$/i);
-              if (hit) {
-                a.href = hit.browser_download_url;
-                a.textContent = `${t.split(" (")[0]} (${(hit.size / 1048576).toFixed(1)} MB)`;
+              const text = a.textContent || "";
+              const platform = text.includes("macOS") ? "mac" : text.includes("Windows") ? "windows" : text.includes("Linux") ? "linux" : text.includes("Projector") ? "projector" : text.includes("Android") ? "android" : text.includes("iOS") ? "ios" : null;
+              const asset = ArgusDownloads.selectAsset(release, platform);
+              if (asset) {
+                a.href = asset.browser_download_url;
+                a.textContent = `${text.split(" (")[0]} (${(asset.size / 1048576).toFixed(1)} MB)`;
               }
             });
-            document.getElementById('gh-tag').textContent = rels[0].tag_name;
-            document.getElementById('rel-list').innerHTML = rels.map(r => {
-              const dt = r.published_at ? new Date(r.published_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '';
-              return `<a href="${r.html_url}" target="_blank" rel="noopener" class="rel-row"><div><div class="rel-tag">${r.tag_name}</div><div class="rel-sub">${r.name || r.tag_name}${dt ? ' · ' + dt : ''}</div></div><span style="font-size:0.8rem;color:var(--text-secondary);">Download →</span></a>`;
-            }).join('');
+            document.getElementById('gh-tag').textContent = release.tag_name;
+            const row = document.createElement('a');
+            row.className = 'rel-row'; row.href = release.html_url;
+            row.target = '_blank'; row.rel = 'noopener';
+            row.textContent = `${release.name || release.tag_name} — Stable release →`;
+            document.getElementById('rel-list').replaceChildren(row);
+            const platform = ArgusDownloads.detectPlatform(navigator.userAgent);
+            const recommended = ArgusDownloads.selectAsset(release, platform);
+            if (recommended) {
+              const link = document.getElementById('recommended-download');
+              link.href = recommended.browser_download_url;
+              link.textContent = `Download ${release.tag_name} · ${platform === 'mac' ? 'Mac (Apple Silicon)' : platform}`;
+            }
           }
         }
       } catch (_) {}

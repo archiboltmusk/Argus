@@ -52,9 +52,9 @@ test("non-browser-ready file URLs are not mistaken for live MPEG-TS", () => {
 
 test("an in-place stream switch declares liveness for the stream it loads", () => {
   const source = read("src/views/player/hooks/use-stream-switcher.ts");
-  const start = source.indexOf("await b.load({");
-  assert.ok(start > 0, "the switcher must load through the bridge");
-  const load = source.slice(start, source.indexOf("});", start));
+  const start = source.indexOf("await transitionStream(");
+  assert.ok(start > 0, "the switcher must use the recoverable bridge transition");
+  const load = source.slice(start, source.indexOf("startupProfile:", start));
   // The bridge no longer infers live from notWebReady, so every load path has to
   // say it. The switcher classifies the incoming stream the way the picker does.
   assert.match(load, /isLive: isLivePlaybackSrc\(/);
