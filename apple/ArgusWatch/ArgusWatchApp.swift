@@ -33,46 +33,61 @@ final class ArgusWatchRemoteStore: ObservableObject {
 @main
 struct ArgusWatchApp: App {
     @StateObject private var store = ArgusWatchRemoteStore()
+    private let harborAccent = Color(red: 0.92, green: 0.69, blue: 0.42)
 
     var body: some Scene {
         WindowGroup {
-            VStack(spacing: 12) {
-                Text(store.title)
-                    .font(.headline)
-                    .lineLimit(1)
+            TabView {
+                VStack(spacing: 10) {
+                    Text(store.title)
+                        .font(.headline)
+                        .lineLimit(1)
 
-                HStack(spacing: 14) {
-                    Button { Task { await store.send("seek-back") } } label: {
-                        Image(systemName: "gobackward.15")
+                    HStack(spacing: 12) {
+                        Button { Task { await store.send("seek-back") } } label: {
+                            Image(systemName: "gobackward.15")
+                        }
+                        Button { Task { await store.send("playpause") } } label: {
+                            Image(systemName: store.playing ? "pause.fill" : "play.fill")
+                        }
+                        .tint(harborAccent)
+                        Button { Task { await store.send("seek-fwd") } } label: {
+                            Image(systemName: "goforward.15")
+                        }
                     }
-                    Button { Task { await store.send("playpause") } } label: {
-                        Image(systemName: store.playing ? "pause.fill" : "play.fill")
+
+                    HStack(spacing: 16) {
+                        Button { Task { await store.send("previous") } } label: {
+                            Image(systemName: "backward.fill")
+                        }
+                        Button { Task { await store.send("next") } } label: {
+                            Image(systemName: "forward.fill")
+                        }
                     }
-                    .tint(Color(red: 0.92, green: 0.69, blue: 0.42))
-                    Button { Task { await store.send("seek-fwd") } } label: {
-                        Image(systemName: "goforward.15")
-                    }
+
+                    ProgressView(value: store.volume, total: 100)
+                        .tint(harborAccent)
+                    Text("Volume \(Int(store.volume))%")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                }
+                .padding()
+                .focusable()
+                .digitalCrownRotation($store.volume, from: 0, through: 100, by: 2, sensitivity: .medium)
+                .onChange(of: store.volume) { next in
+                    Task { await store.setVolume(next) }
                 }
 
-                HStack(spacing: 18) {
-                    Button { Task { await store.send("previous") } } label: {
-                        Image(systemName: "backward.fill")
-                    }
-                    Button { Task { await store.send("next") } } label: {
-                        Image(systemName: "forward.fill")
-                    }
+                VStack(spacing: 10) {
+                    Text("Quick Actions")
+                        .font(.headline)
+                    Button("Mute / Unmute") { Task { await store.setVolume(store.volume > 0 ? 0 : 70) } }
+                        .tint(harborAccent)
+                    Button("Stop Playback") { Task { await store.send("stop") } }
                 }
-
-                Text("Volume \(Int(store.volume))%")
-                    .font(.caption2)
-                    .foregroundStyle(.secondary)
+                .padding()
             }
-            .padding()
-            .focusable()
-            .digitalCrownRotation($store.volume, from: 0, through: 100, by: 2, sensitivity: .medium)
-            .onChange(of: store.volume) { next in
-                Task { await store.setVolume(next) }
-            }
+            .tabViewStyle(.page)
         }
     }
 }

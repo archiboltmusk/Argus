@@ -365,7 +365,7 @@ pub async fn web_serve_start(app: AppHandle) -> Result<u16, String> {
         .route("/api/remote", get(remote_ws_handler))
         .route("/api/remote/command", axum::routing::post(remote_http_command))
         .route("/api/remote/volume", axum::routing::post(remote_http_volume))
-        .route("/api/remote/library", get(remote_http_library))
+        .route("/api/remote/library", get(remote_http_library).post(remote_http_library_post))
         .route("/manga-img", get(manga_img_proxy))
         .fallback(serve_http)
         .with_state(state);
@@ -461,6 +461,26 @@ async fn remote_http_volume(
     axum::http::StatusCode::OK
 }
 
+static REMOTE_LIBRARY: std::sync::OnceLock<std::sync::Mutex<Vec<serde_json::Value>>> =
+    std::sync::OnceLock::new();
+
+fn remote_library_store() -> &'static std::sync::Mutex<Vec<serde_json::Value>> {
+    REMOTE_LIBRARY.get_or_init(|| std::sync::Mutex::new(Vec::new()))
+}
+
 async fn remote_http_library() -> axum::Json<serde_json::Value> {
-    axum::Json(serde_json::json!([]))
+    let items = remote_library_store()
+        .lock()
+        .map(|g| g.clone())
+        .unwrap_or_default();
+    axum::Json(serde_json::Value::Array(items))
+}
+
+async fn remote_http_library_post(
+    axum::Json(items): axum::Json<Vec<serde_json::Value>>,
+) -> axum::http::StatusCode {
+    if let Ok(mut guard) = remote_library_store().lock() {
+        *guard = items;
+    }
+    axum::http::StatusCode::OK
 }

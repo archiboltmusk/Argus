@@ -202,6 +202,13 @@ int main(int argc, char * argv[]) {
       `xcrun --sdk watchos swiftc -parse-as-library -target arm64-apple-watchos9.0 -o "${execPath}" "${watchSwift}"`,
       { stdio: "inherit" },
     );
+  } else if (platform === "visionos" && fs.existsSync(path.resolve("apple/ArgusVision/ArgusVisionApp.swift"))) {
+    const visSwift = path.resolve("apple/ArgusVision/ArgusVisionApp.swift");
+    console.log(`[package-apple-app] Compiling SwiftUI ArgusVision binary from ${visSwift}`);
+    execSync(
+      `xcrun --sdk xros swiftc -parse-as-library -target arm64-apple-xros1.0 -o "${execPath}" "${visSwift}"`,
+      { stdio: "inherit" },
+    );
   } else if (platform === "tvos") {
     const objcSrc = `
 #import <UIKit/UIKit.h>
