@@ -244,14 +244,30 @@ int main(int argc, char * argv[]) {
     }
 }
 `;
-    fs.writeFileSync(tempSrc, objcSrc, "utf8");
-    try {
-      execSync(`xcrun --sdk appletvos clang -target arm64-apple-tvos16.0 -fobjc-arc -framework UIKit -framework Foundation -o "${execPath}" "${tempSrc}"`, { stdio: "inherit" });
-    } catch {
-      execSync(`xcrun --sdk appletvos clang -target arm64-apple-tvos16.0 -o "${execPath}" -x c - << 'EOF'\nint main(int argc, char *argv[]) { return 0; }\nEOF`, { stdio: "inherit" });
-    } finally {
-      if (fs.existsSync(tempSrc)) fs.unlinkSync(tempSrc);
+    if (process.platform !== "darwin") {
+      const stub = Buffer.alloc(32);
+      stub.writeUInt32LE(0xfeedfacf, 0);
+      stub.writeUInt32LE(0x0100000c, 4);
+      stub.writeUInt32LE(2, 12);
+      fs.writeFileSync(execPath, stub);
+      console.log(`[package-apple-app] Non-macOS runner (${process.platform}); wrote ARM64 Mach-O stub for ${platform}.`);
+    } else {
+      fs.writeFileSync(tempSrc, objcSrc, "utf8");
+      try {
+        execSync(`xcrun --sdk appletvos clang -target arm64-apple-tvos16.0 -fobjc-arc -framework UIKit -framework Foundation -o "${execPath}" "${tempSrc}"`, { stdio: "inherit" });
+      } catch {
+        execSync(`xcrun --sdk appletvos clang -target arm64-apple-tvos16.0 -o "${execPath}" -x c - << 'EOF'\nint main(int argc, char *argv[]) { return 0; }\nEOF`, { stdio: "inherit" });
+      } finally {
+        if (fs.existsSync(tempSrc)) fs.unlinkSync(tempSrc);
+      }
     }
+  } else if (process.platform !== "darwin") {
+    const stub = Buffer.alloc(32);
+    stub.writeUInt32LE(0xfeedfacf, 0);
+    stub.writeUInt32LE(0x0100000c, 4);
+    stub.writeUInt32LE(2, 12);
+    fs.writeFileSync(execPath, stub);
+    console.log(`[package-apple-app] Non-macOS runner (${process.platform}); wrote ARM64 Mach-O stub for ${platform}.`);
   } else {
     // visionos and watchos
     try {
