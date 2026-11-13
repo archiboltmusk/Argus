@@ -67,13 +67,18 @@ export function RepoCard({ url, onRemove }: { url: string; onRemove: () => void 
     null,
   );
   const [tick, setTick] = useState(0);
+  const [latencyMs, setLatencyMs] = useState<number | null>(null);
 
   useEffect(() => {
     let cancelled = false;
+    const t0 = typeof performance !== "undefined" ? performance.now() : Date.now();
+    setLatencyMs(null);
     setState("loading");
     browseRepo(url)
       .then((r) => {
         if (cancelled) return;
+        const dt = Math.round((typeof performance !== "undefined" ? performance.now() : Date.now()) - t0);
+        setLatencyMs(dt);
         setRepo(r);
         setState("ready");
       })
@@ -131,9 +136,28 @@ export function RepoCard({ url, onRemove }: { url: string; onRemove: () => void 
           <PackageOpen size={18} />
         </span>
         <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-          <span className="truncate text-[15.5px] font-semibold text-ink">
-            {repo?.name ?? repoHost(url)}
-          </span>
+          <div className="flex items-center gap-2">
+            <span className="truncate text-[15.5px] font-semibold text-ink">
+              {repo?.name ?? repoHost(url)}
+            </span>
+            {state === "ready" && latencyMs != null && (
+              <span
+                className={`shrink-0 rounded-full px-2 py-0.5 text-[11px] font-semibold tabular-nums ring-1 ${
+                  latencyMs > 1800
+                    ? "bg-amber-500/15 text-amber-300 ring-amber-500/30"
+                    : "bg-emerald-500/15 text-emerald-300 ring-emerald-500/30"
+                }`}
+              >
+                {latencyMs > 1800 ? t("Slow") : t("Online")} ·{" "}
+                {latencyMs >= 1000 ? `${(latencyMs / 1000).toFixed(1)}s` : `${latencyMs}ms`}
+              </span>
+            )}
+            {state === "error" && (
+              <span className="shrink-0 rounded-full bg-danger/15 px-2 py-0.5 text-[11px] font-semibold text-danger ring-1 ring-danger/30">
+                {t("Offline")}
+              </span>
+            )}
+          </div>
           <span className="truncate text-[12.5px] text-ink-subtle">{repoHost(url)}</span>
         </div>
         {state === "error" && (
