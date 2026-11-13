@@ -2,11 +2,14 @@ import type {
   PlayerBridge,
   PlayerCapabilities,
   PlayerSeekPrecision,
-  PlayerSnapshot,
   PlayerSource,
 } from "../bridge";
-import { initialPlayerSnapshot } from "../bridge";
 import { createHtml5Bridge } from "../html5";
+
+interface AppleWebKitVideoElement extends HTMLVideoElement {
+  webkitSupportsPresentationMode?: (mode: string) => boolean;
+  webkitSetPresentationMode?: (mode: string) => void;
+}
 
 /**
  * Builds an Apple ecosystem external-player URL handoff (VLC Mobile, Infuse, Outplayer)
@@ -33,25 +36,25 @@ export function buildAppleExternalPlayerUrl(
 
 /**
  * AVPlayer Bridge: Apple Ecosystem (iOS, iPadOS, tvOS, visionOS, macOS native)
- * Harnesses VideoToolbox, Apple AVKit, AirPlay 2, Spatial Audio, and Picture-in-Picture.
+ * Harnesses VideoToolbox, Apple AVKit, AirPlay 2, Spatial Audio, and WebKit PiP.
  */
-export function createAvPlayerBridge(): PlayerBridge {
+export function createAvPlayerBridge(_options?: {
+  platform?: string;
+  notWebReady?: boolean;
+}): PlayerBridge {
   const fallback = createHtml5Bridge();
-  let snap: PlayerSnapshot = initialPlayerSnapshot();
-  const listeners = new Set<(s: PlayerSnapshot) => void>();
   let attachedHost: HTMLElement | null = null;
 
+  const getVideo = (): AppleWebKitVideoElement | null =>
+    (attachedHost?.querySelector("video") as AppleWebKitVideoElement | null) ?? null;
+
   const configureAppleVideoAttributes = () => {
-    const video = attachedHost?.querySelector("video");
+    const video = getVideo();
     if (!video) return;
     video.playsInline = true;
+    video.disableRemotePlayback = false;
     video.setAttribute("webkit-playsinline", "true");
     video.setAttribute("x-webkit-airplay", "allow");
-  };
-
-  const emit = () => {
-    const copy = { ...snap };
-    listeners.forEach((l) => l(copy));
   };
 
   const capabilities: PlayerCapabilities = {
@@ -79,9 +82,6 @@ export function createAvPlayerBridge(): PlayerBridge {
     async load(src: PlayerSource) {
       await fallback.load(src);
       queueMicrotask(configureAppleVideoAttributes);
-      snap = initialPlayerSnapshot();
-      snap.status = "loading";
-      emit();
     },
     play(options) {
       return fallback.play(options);
@@ -164,10 +164,20 @@ export function createAvPlayerBridge(): PlayerBridge {
     setAbLoop(a, b) {
       fallback.setAbLoop(a, b);
     },
-    requestPiP() {
+    async requestPiP() {
+      const video = getVideo();
+      if (video?.webkitSupportsPresentationMode?.("picture-in-picture") && video.webkitSetPresentationMode) {
+        video.webkitSetPresentationMode("picture-in-picture");
+        return;
+      }
       return fallback.requestPiP();
     },
-    exitPiP() {
+    async exitPiP() {
+      const video = getVideo();
+      if (video?.webkitSupportsPresentationMode?.("inline") && video.webkitSetPresentationMode) {
+        video.webkitSetPresentationMode("inline");
+        return;
+      }
       return fallback.exitPiP();
     },
     requestFullscreen() {
@@ -180,18 +190,10 @@ export function createAvPlayerBridge(): PlayerBridge {
       return capabilities;
     },
     subscribe(listener) {
-      listeners.add(listener);
-      const unsubFallback = fallback.subscribe((s) => {
-        snap = s;
-        listener(s);
-      });
-      return () => {
-        listeners.delete(listener);
-        unsubFallback();
-      };
+      return fallback.subscribe(listener);
     },
     destroy() {
-      listeners.clear();
+      attachedHost = null;
       fallback.destroy();
     },
   };
