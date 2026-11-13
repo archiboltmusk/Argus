@@ -506,7 +506,7 @@ export function App({ onReady }: { onReady?: () => void }) {
                                                       <Profiled id="startup.watchlist-sync">
                                                         <WatchlistSync />
                                                       </Profiled>
-                                                      {isMobilePlatform() || isRemoteRoute() ? (
+                                                      {(isRemoteRoute() || (typeof window !== "undefined" && new URLSearchParams(window.location.search).get("mobile") === "1")) ? (
                                                         <>
                                                           <Suspense fallback={null}>
                                                             <MobileShell />

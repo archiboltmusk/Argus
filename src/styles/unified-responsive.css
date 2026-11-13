@@ -1,0 +1,41 @@
+/* Unified Responsive UI across Desktop, Tablet, Phone, TV & Projector */
+html,
+body,
+#root {
+  max-width: 100%;
+  overflow-x: clip;
+  -webkit-tap-highlight-color: transparent;
+}
+
+@supports (padding: env(safe-area-inset-top)) {
+  body {
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+  }
+}
+
+@media (pointer: coarse) {
+  button,
+  [role="button"],
+  [role="tab"],
+  a[href] {
+    touch-action: manipulation;
+  }
+
+  nav button,
+  nav a,
+  [role="tablist"] [role="tab"] {
+    min-height: 44px;
+    min-width: 44px;
+  }
+}
+
+@media (max-width: 768px) {
+  [role="dialog"],
+  [aria-modal="true"] {
+    max-width: calc(100vw - 24px);
+    max-height: calc(100dvh - 32px);
+  }
+}
