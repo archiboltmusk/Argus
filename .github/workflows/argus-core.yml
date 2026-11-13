@@ -15,7 +15,7 @@ permissions:
 
 concurrency:
   group: argus-core-${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ !startsWith(github.ref, 'refs/tags/') }}
 
 jobs:
   test:

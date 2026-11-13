@@ -40,6 +40,16 @@ jobs:
         run: pnpm run package:smart-tv
       - name: Verify outputs
         run: ls -lh dist-smart-tv/
+      - name: Smoke-check Smart TV manifests
+        run: |
+          python3 -c '
+          import glob, json, xml.etree.ElementTree as ET
+          for f in glob.glob("smart-tv/**/*.json", recursive=True):
+              json.load(open(f))
+          for f in glob.glob("smart-tv/**/*.xml", recursive=True):
+              ET.parse(f)
+          print("All Smart TV manifests valid")
+          '
       - uses: actions/upload-artifact@v7
         with:
           name: Argus-Smart-TV-Packages
@@ -77,8 +87,9 @@ jobs:
           fi
           RELEASE_FLAGS=(--latest=false)
           if [ "$TAG" = "beta" ]; then RELEASE_FLAGS+=(--prerelease); fi
-          gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1 || \
-            gh release create "$TAG" --title "Argus $TAG" --notes "Argus Automated Build" --repo "$GITHUB_REPOSITORY" "${RELEASE_FLAGS[@]}" || true
+          if ! gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release create "$TAG" --title "Argus $TAG" --notes "Argus Automated Build" --repo "$GITHUB_REPOSITORY" "${RELEASE_FLAGS[@]}" || gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1
+          fi
           gh release upload "$TAG" \
             Argus-Samsung-Tizen.wgt \
             Argus-Samsung-TheFreestyle.wgt \

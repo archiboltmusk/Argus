@@ -4,6 +4,13 @@ import { uninstallPlugin } from "./lifecycle";
 import { removeMangayomiRecordsByRepo } from "../sources/mangayomi";
 import type { PluginRepo } from "./types";
 
+const DEFAULT_MANGA_REPOS = [
+  "https://kodjodevf.github.io/mangayomi-extensions/index.json",
+  "https://github.com/keiyoushi/extensions/raw/repo/index.pb",
+  "https://raw.githubusercontent.com/hamad0original-lgtm/harbor-manga-repo/main/repo.json",
+];
+const SEED_KEY = "argus.manga.repos.seeded.v1";
+
 let urls: string[] | null = null;
 const listeners = new Set<() => void>();
 
@@ -23,7 +30,20 @@ export function repoUrlsSync(): string[] {
 }
 
 export async function loadRepos(): Promise<string[]> {
-  urls = await loadRepoUrls();
+  let saved = await loadRepoUrls();
+  const seeded = typeof localStorage !== "undefined" && localStorage.getItem(SEED_KEY) === "1";
+  if (!seeded) {
+    for (const u of DEFAULT_MANGA_REPOS) {
+      if (!saved.includes(u)) {
+        await saveRepoUrl(u).catch(() => {});
+      }
+    }
+    if (typeof localStorage !== "undefined") {
+      localStorage.setItem(SEED_KEY, "1");
+    }
+    saved = await loadRepoUrls();
+  }
+  urls = saved;
   notify();
   return urls;
 }

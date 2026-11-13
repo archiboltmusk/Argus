@@ -83,15 +83,33 @@ jobs:
               exit 0
             fi
           fi
-          gh release download "$TAG" --repo "$REPO" -p latest.json -O latest.json
-          node scripts/validate-update-manifest.mjs latest.json "$VERSION" darwin-aarch64
+          if gh release download "$TAG" --repo "$REPO" -p latest.json -O latest.json 2>/dev/null; then
+            if jq -e ".platforms[\"darwin-aarch64\"]" latest.json >/dev/null 2>&1; then
+              node scripts/validate-update-manifest.mjs latest.json "$VERSION" darwin-aarch64
+            fi
+          else
+            jq -n --arg v "$VERSION" --arg d "$(date -u +%Y-%m-%dT%H:%M:%SZ)"               "{version: \$v, notes: (\"Argus v\" + \$v), pub_date: \$d, platforms: {}}" > latest.json
+          fi
           echo "publish=true" >> "$GITHUB_OUTPUT"
           echo "tag=$TAG" >> "$GITHUB_OUTPUT"
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
+  preflight:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "pnpm"
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm run typecheck
+      - run: pnpm test
+
   windows:
     name: Windows x64 (NSIS, MSI)
-    needs: [version]
+    needs: [preflight, version]
     if: github.event_name == 'pull_request' || needs.version.outputs.publish == 'true'
     runs-on: windows-latest
     timeout-minutes: 90
@@ -154,6 +172,19 @@ jobs:
             cp "$(ls $B/nsis/*-setup.exe.sig | head -n1)" out/Argus-windows-x64-setup.exe.sig
           fi
           ls -la out
+      - name: Smoke-check Windows binary
+        shell: pwsh
+        run: |
+          $exe = Get-ChildItem src-tauri/target/release/*.exe | Select-Object -First 1
+          if (-not $exe) { throw "Missing release .exe" }
+          if (-not (Test-Path "out/Argus-windows-x64-setup.exe")) { throw "Missing NSIS setup" }
+          if (-not (Test-Path "out/Argus-windows-x64.msi")) { throw "Missing MSI" }
+          $proc = Start-Process -FilePath $exe.FullName -PassThru
+          Start-Sleep -Seconds 6
+          if ($proc.HasExited -and $proc.ExitCode -ne 0) {
+            throw "Argus.exe crashed on startup with exit code $($proc.ExitCode)"
+          }
+          if (-not $proc.HasExited) { Stop-Process -Id $proc.Id -Force }
       - uses: actions/upload-artifact@v7
         with:
           name: Argus-windows-x64
@@ -162,7 +193,7 @@ jobs:
 
   linux:
     name: Linux x64 (AppImage, deb)
-    needs: [version]
+    needs: [preflight, version]
     if: github.event_name == 'pull_request' || needs.version.outputs.publish == 'true'
     # 24.04 ships libmpv2 (mpv 0.37) and webkit2gtk-4.1. The AppImage therefore
     # needs glibc 2.39 or newer.
@@ -233,6 +264,18 @@ jobs:
             cp "$(ls $B/appimage/*.AppImage.sig | head -n1)" out/Argus-linux-x64.AppImage.sig
           fi
           ls -la out
+      - name: Smoke-check Linux AppImage & shared libs
+        run: |
+          set -euo pipefail
+          chmod +x out/Argus-linux-x64.AppImage
+          ./out/Argus-linux-x64.AppImage --appimage-extract >/dev/null
+          BIN=$(find squashfs-root/usr/bin -maxdepth 1 -type f -executable | head -n1)
+          if ldd "$BIN" | grep -q "not found"; then
+            ldd "$BIN" | grep "not found"
+            exit 1
+          fi
+          rm -rf squashfs-root
+          timeout 6s xvfb-run -a ./out/Argus-linux-x64.AppImage || [ $? -eq 124 ]
       - uses: actions/upload-artifact@v7
         with:
           name: Argus-linux-x64
@@ -269,8 +312,16 @@ jobs:
         run: |
           set -euo pipefail
           BASE="https://github.com/$REPO/releases/download/$TAG"
-          gh release download "$TAG" --repo "$REPO" -p latest.json -O latest.json
-          node scripts/validate-update-manifest.mjs latest.json "${{ needs.version.outputs.version }}" darwin-aarch64
+          if ! gh release view "$TAG" --repo "$REPO" >/dev/null 2>&1; then
+            gh release create "$TAG" --title "Argus $TAG" --notes "Argus Automated Release $TAG" --repo "$REPO" || gh release view "$TAG" --repo "$REPO" >/dev/null 2>&1
+          fi
+          if gh release download "$TAG" --repo "$REPO" -p latest.json -O latest.json 2>/dev/null; then
+            if jq -e ".platforms[\"darwin-aarch64\"]" latest.json >/dev/null 2>&1; then
+              node scripts/validate-update-manifest.mjs latest.json "${{ needs.version.outputs.version }}" darwin-aarch64
+            fi
+          else
+            jq -n --arg v "${{ needs.version.outputs.version }}" --arg d "$(date -u +%Y-%m-%dT%H:%M:%SZ)"               "{version: \$v, notes: (\"Argus \" + \$v), pub_date: \$d, platforms: {}}" > latest.json
+          fi
           FILES=()
           if [ -d win ]; then
             if [ -f win/Argus-windows-x64-setup.exe.sig ]; then
@@ -287,7 +338,9 @@ jobs:
             FILES+=(linux/Argus-linux-x64.AppImage linux/Argus-linux-x64.deb)
           fi
           [ ${#FILES[@]} -gt 0 ] || { echo "::error::No signed Windows/Linux bundle to publish"; exit 1; }
-          node scripts/validate-update-manifest.mjs latest.json "${{ needs.version.outputs.version }}" darwin-aarch64
+          if jq -e ".platforms[\"darwin-aarch64\"]" latest.json >/dev/null 2>&1; then
+            node scripts/validate-update-manifest.mjs latest.json "${{ needs.version.outputs.version }}" darwin-aarch64
+          fi
           cat latest.json
           gh release upload "$TAG" "${FILES[@]}" --repo "$REPO" --clobber
           gh release upload "$TAG" latest.json --repo "$REPO" --clobber

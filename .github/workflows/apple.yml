@@ -25,7 +25,7 @@ env:
 jobs:
   ios:
     name: Build iOS & iPadOS IPA
-    runs-on: macos-15
+    runs-on: macos-latest
     timeout-minutes: 60
     steps:
       - uses: actions/checkout@v6
@@ -84,6 +84,15 @@ jobs:
           node scripts/package-apple-app.mjs --platform ios --app-dir "$RUNNER_TEMP/Payload/Argus.app" --dist-dir dist --version 3.0.0
           (cd "$RUNNER_TEMP" && zip -r -9 Argus-iOS-iPadOS.ipa Payload)
           cp "$RUNNER_TEMP/Argus-iOS-iPadOS.ipa" "$GITHUB_WORKSPACE/Argus-iOS-iPadOS.ipa"
+      - name: Smoke-check IPA payload (Argus-iOS-iPadOS.ipa)
+        run: |
+          set -euo pipefail
+          TMP=$(mktemp -d)
+          unzip -q "$GITHUB_WORKSPACE/Argus-iOS-iPadOS.ipa" -d "$TMP"
+          PLIST=$(find "$TMP/Payload" -maxdepth 2 -name Info.plist | head -n1)
+          [ -n "$PLIST" ] || { echo "::error::Missing Info.plist in Argus-iOS-iPadOS.ipa"; exit 1; }
+          plutil -lint "$PLIST"
+          rm -rf "$TMP"
       - uses: actions/upload-artifact@v7
         with:
           name: Argus-iOS-iPadOS-IPA
@@ -92,7 +101,7 @@ jobs:
 
   tvos:
     name: Build Apple TV (tvOS) IPA
-    runs-on: macos-15
+    runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
       - uses: actions/checkout@v6
@@ -116,6 +125,15 @@ jobs:
           node scripts/package-apple-app.mjs --platform tvos --app-dir "$RUNNER_TEMP/Payload/ArgusTV.app" --dist-dir dist --version 3.0.0
           (cd "$RUNNER_TEMP" && zip -r -9 Argus-AppleTV-tvOS.ipa Payload)
           cp "$RUNNER_TEMP/Argus-AppleTV-tvOS.ipa" "$GITHUB_WORKSPACE/Argus-AppleTV-tvOS.ipa"
+      - name: Smoke-check IPA payload (Argus-AppleTV-tvOS.ipa)
+        run: |
+          set -euo pipefail
+          TMP=$(mktemp -d)
+          unzip -q "$GITHUB_WORKSPACE/Argus-AppleTV-tvOS.ipa" -d "$TMP"
+          PLIST=$(find "$TMP/Payload" -maxdepth 2 -name Info.plist | head -n1)
+          [ -n "$PLIST" ] || { echo "::error::Missing Info.plist in Argus-AppleTV-tvOS.ipa"; exit 1; }
+          python3 -c 'import plistlib,sys; plistlib.load(open(sys.argv[1], "rb"))' "$PLIST"
+          rm -rf "$TMP"
       - uses: actions/upload-artifact@v7
         with:
           name: Argus-AppleTV-tvOS-IPA
@@ -124,7 +142,7 @@ jobs:
 
   visionos:
     name: Build Apple Vision Pro (visionOS) IPA
-    runs-on: macos-15
+    runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
       - uses: actions/checkout@v6
@@ -148,6 +166,15 @@ jobs:
           node scripts/package-apple-app.mjs --platform visionos --app-dir "$RUNNER_TEMP/Payload/ArgusVision.app" --dist-dir dist --version 3.0.0
           (cd "$RUNNER_TEMP" && zip -r -9 Argus-VisionPro-visionOS.ipa Payload)
           cp "$RUNNER_TEMP/Argus-VisionPro-visionOS.ipa" "$GITHUB_WORKSPACE/Argus-VisionPro-visionOS.ipa"
+      - name: Smoke-check IPA payload (Argus-VisionPro-visionOS.ipa)
+        run: |
+          set -euo pipefail
+          TMP=$(mktemp -d)
+          unzip -q "$GITHUB_WORKSPACE/Argus-VisionPro-visionOS.ipa" -d "$TMP"
+          PLIST=$(find "$TMP/Payload" -maxdepth 2 -name Info.plist | head -n1)
+          [ -n "$PLIST" ] || { echo "::error::Missing Info.plist in Argus-VisionPro-visionOS.ipa"; exit 1; }
+          python3 -c 'import plistlib,sys; plistlib.load(open(sys.argv[1], "rb"))' "$PLIST"
+          rm -rf "$TMP"
       - uses: actions/upload-artifact@v7
         with:
           name: Argus-VisionPro-visionOS-IPA
@@ -156,7 +183,7 @@ jobs:
 
   watchos:
     name: Build Apple Watch (watchOS) IPA
-    runs-on: macos-15
+    runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
       - uses: actions/checkout@v6
@@ -180,6 +207,15 @@ jobs:
           node scripts/package-apple-app.mjs --platform watchos --app-dir "$RUNNER_TEMP/Payload/ArgusWatch.app" --dist-dir dist --version 3.0.0
           (cd "$RUNNER_TEMP" && zip -r -9 Argus-AppleWatch-watchOS.ipa Payload)
           cp "$RUNNER_TEMP/Argus-AppleWatch-watchOS.ipa" "$GITHUB_WORKSPACE/Argus-AppleWatch-watchOS.ipa"
+      - name: Smoke-check IPA payload (Argus-AppleWatch-watchOS.ipa)
+        run: |
+          set -euo pipefail
+          TMP=$(mktemp -d)
+          unzip -q "$GITHUB_WORKSPACE/Argus-AppleWatch-watchOS.ipa" -d "$TMP"
+          PLIST=$(find "$TMP/Payload" -maxdepth 2 -name Info.plist | head -n1)
+          [ -n "$PLIST" ] || { echo "::error::Missing Info.plist in Argus-AppleWatch-watchOS.ipa"; exit 1; }
+          python3 -c 'import plistlib,sys; plistlib.load(open(sys.argv[1], "rb"))' "$PLIST"
+          rm -rf "$TMP"
       - uses: actions/upload-artifact@v7
         with:
           name: Argus-AppleWatch-watchOS-IPA
@@ -220,11 +256,12 @@ jobs:
           fi
           RELEASE_FLAGS=(--latest=false)
           if [ "$TAG" = "beta" ]; then RELEASE_FLAGS+=(--prerelease); fi
-          gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1 || \
-            gh release create "$TAG" --title "Argus $TAG" --notes "Argus Automated Build" --repo "$GITHUB_REPOSITORY" "${RELEASE_FLAGS[@]}" || true
+          if ! gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release create "$TAG" --title "Argus $TAG" --notes "Argus Automated Build" --repo "$GITHUB_REPOSITORY" "${RELEASE_FLAGS[@]}" || gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1
+          fi
           for ipa in *.ipa; do
             if [ -f "$ipa" ]; then
               echo "Uploading $ipa to $TAG..."
-              gh release upload "$TAG" "$ipa" --repo "$GITHUB_REPOSITORY" --clobber || true
+              gh release upload "$TAG" "$ipa" --repo "$GITHUB_REPOSITORY" --clobber
             fi
           done

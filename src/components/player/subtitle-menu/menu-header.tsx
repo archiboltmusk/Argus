@@ -1,7 +1,8 @@
-import { X } from "lucide-react";
+import { Languages, X } from "lucide-react";
 import { UiIcon } from "@/components/ui-icon";
 import type { TrackInfo } from "@/lib/player/bridge";
 import { useT } from "@/lib/i18n";
+import { useSettings } from "@/lib/settings";
 import { useAutoSyncHandle } from "@/components/player/autosync/autosync-store";
 import { HoverTooltip } from "@/components/hover-tooltip";
 import { SubtitleFpsControl } from "./subtitle-fps-control";
@@ -21,7 +22,9 @@ type Props = {
 
 export function MenuHeader(p: Props) {
   const tr = useT();
+  const { settings, update } = useSettings();
   const autoSync = useAutoSyncHandle();
+  const dualOn = settings.dualSubtitlesEnabled === true;
 
   const autoSyncOn =
     autoSync?.status === "analyzing" ||
@@ -52,6 +55,20 @@ export function MenuHeader(p: Props) {
           track={p.selectedTrack}
           hasSecondary={p.hasSecondary}
         />
+
+        <HoverTooltip label={tr("Dual subtitles")} side="bottom" align="end">
+          <button
+            type="button"
+            onClick={() => update({ dualSubtitlesEnabled: !dualOn })}
+            aria-label={tr("Dual subtitles")}
+            aria-pressed={dualOn}
+            className={`flex h-9 w-9 items-center justify-center rounded-full transition-colors hover:bg-raised ${
+              dualOn ? "bg-raised text-ink" : "text-ink-muted hover:text-ink"
+            }`}
+          >
+            <Languages size={17} strokeWidth={2} />
+          </button>
+        </HoverTooltip>
 
         {p.onOpenStyleBar && (
           <HoverTooltip label={tr("Subtitle appearance")} side="bottom" align="end">
