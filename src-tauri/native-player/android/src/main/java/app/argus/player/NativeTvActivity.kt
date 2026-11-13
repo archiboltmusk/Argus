@@ -90,9 +90,15 @@ class NativeTvActivity : AppCompatActivity() {
             )
         }
         setContentView(root)
-        val bar = LinearLayout(this).apply { gravity = Gravity.CENTER_VERTICAL }
-        val wordmark = label("ARGUS", if (bigPicture) 25 else 22).apply { setTypeface(null, Typeface.BOLD) }
-        if (bigPicture) bar.addView(wordmark, LinearLayout.LayoutParams(dp(140), -2)) else root.addView(wordmark)
+        val bar = LinearLayout(this).apply {
+            gravity = Gravity.CENTER_VERTICAL
+            setPadding(0, 0, 0, dp(10))
+        }
+        val wordmark = label("ARGUS", if (bigPicture) 22 else 20).apply {
+            setTypeface(null, Typeface.BOLD)
+            letterSpacing = 0.06f
+        }
+        if (bigPicture) bar.addView(wordmark, LinearLayout.LayoutParams(dp(130), -2)) else root.addView(wordmark)
         for (name in listOf("Home", "Search", "Library", "Add-ons", "Settings")) {
             bar.addView(button(name) {
                 when (name) {
@@ -102,7 +108,17 @@ class NativeTvActivity : AppCompatActivity() {
                     "Add-ons" -> addons()
                     else -> settings()
                 }
-            }, (if (bigPicture) LinearLayout.LayoutParams(0, dp(54), 1f) else LinearLayout.LayoutParams(-2, dp(50))).apply { marginEnd = dp(8) })
+            }, LinearLayout.LayoutParams(-2, dp(44)).apply { marginEnd = dp(8) })
+        }
+        if (bigPicture) {
+            bar.addView(View(this), LinearLayout.LayoutParams(0, 1, 1f))
+            bar.addView(TextClock(this).apply {
+                format12Hour = "h:mm a"
+                format24Hour = "HH:mm"
+                textSize = 15f
+                setTextColor(Color.argb(215, 244, 244, 246))
+                typeface = Typeface.create("sans-serif-medium", Typeface.NORMAL)
+            })
         }
         if (bigPicture) root.addView(bar) else root.addView(HorizontalScrollView(this).apply { isHorizontalScrollBarEnabled = false; addView(bar) })
         status = label("", 16).apply { setPadding(0, dp(10), 0, dp(10)) }
@@ -248,29 +264,175 @@ class NativeTvActivity : AppCompatActivity() {
         first(body)?.requestFocus()
     }
 
+    private fun heroSpotlight(meta: JSONObject) {
+        val height = dp(if (bigPicture) 230 else 170)
+        val hero = FrameLayout(this).apply {
+            isFocusable = true
+            isFocusableInTouchMode = true
+            isClickable = true
+            clipToOutline = true
+            outlineProvider = object : android.view.ViewOutlineProvider() {
+                override fun getOutline(view: View, outline: android.graphics.Outline) {
+                    outline.setRoundRect(0, 0, view.width, view.height, dp(18).toFloat())
+                }
+            }
+            attachFocusScale(this)
+            activate(this) { detail(meta) }
+        }
+        val art = ImageView(this).apply {
+            scaleType = ImageView.ScaleType.CENTER_CROP
+            setImageResource(R.drawable.argus_native_banner)
+        }
+        posters.load(art, meta.optString("background").ifBlank { meta.optString("poster") })
+        hero.addView(art, FrameLayout.LayoutParams(-1, -1))
+        val scrim = View(this).apply {
+            background = GradientDrawable(
+                GradientDrawable.Orientation.LEFT_RIGHT,
+                intArrayOf(Color.argb(245, 5, 5, 7), Color.argb(190, 5, 5, 7), Color.argb(45, 5, 5, 7)),
+            )
+        }
+        hero.addView(scrim, FrameLayout.LayoutParams(-1, -1))
+        val overlay = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            gravity = Gravity.BOTTOM
+            setPadding(dp(26), dp(20), dp(26), dp(22))
+        }
+        overlay.addView(TextView(this).apply {
+            text = meta.optString("name", meta.optString("id"))
+            textSize = if (bigPicture) 28f else 22f
+            setTypeface(null, Typeface.BOLD)
+            setTextColor(Color.WHITE)
+            maxLines = 1
+            ellipsize = android.text.TextUtils.TruncateAt.END
+        })
+        val metaRow = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            setPadding(0, dp(6), 0, dp(6))
+        }
+        val rating = meta.optString("imdbRating")
+        if (rating.isNotBlank()) {
+            metaRow.addView(TextView(this).apply {
+                text = "IMDb $rating"
+                textSize = 11.5f
+                setTypeface(null, Typeface.BOLD)
+                setTextColor(Color.BLACK)
+                setPadding(dp(7), dp(2), dp(7), dp(2))
+                background = background(Color.rgb(245, 197, 24), 6)
+            }, LinearLayout.LayoutParams(-2, -2).apply { marginEnd = dp(10) })
+        }
+        val sub = listOf(meta.optString("releaseInfo", meta.optString("year")), meta.optString("runtime"))
+            .filter { it.isNotBlank() }.joinToString(" · ")
+        if (sub.isNotBlank()) {
+            metaRow.addView(TextView(this).apply {
+                text = sub
+                textSize = 13f
+                setTextColor(Color.argb(200, 244, 244, 246))
+            })
+        }
+        overlay.addView(metaRow)
+        val desc = meta.optString("description")
+        if (desc.isNotBlank()) {
+            overlay.addView(TextView(this).apply {
+                text = desc
+                textSize = 13f
+                maxLines = 2
+                ellipsize = android.text.TextUtils.TruncateAt.END
+                setTextColor(Color.argb(175, 244, 244, 246))
+            }, LinearLayout.LayoutParams(dp(if (bigPicture) 460 else 280), -2))
+        }
+        hero.addView(overlay, FrameLayout.LayoutParams(-1, -1))
+        body.addView(hero, LinearLayout.LayoutParams(-1, height).apply { bottomMargin = dp(18) })
+    }
+
+    private fun homeRail(items: List<JSONObject>, destination: LinearLayout) {
+        val row = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
+        val w = dp(if (bigPicture) 156 else 128)
+        items.forEach { meta ->
+            val tile = LinearLayout(this).apply {
+                tag = meta.optString("type") + ":" + meta.optString("id")
+                orientation = LinearLayout.VERTICAL
+                setPadding(dp(6), dp(6), dp(6), dp(8))
+                isFocusable = true
+                isFocusableInTouchMode = true
+                isClickable = true
+                background = focusBackground(14)
+                attachFocusScale(this)
+                activate(this) { detail(meta) }
+            }
+            val image = ImageView(this).apply {
+                scaleType = ImageView.ScaleType.CENTER_CROP
+                setImageResource(R.drawable.argus_native_banner)
+                clipToOutline = true
+                outlineProvider = object : android.view.ViewOutlineProvider() {
+                    override fun getOutline(view: View, outline: android.graphics.Outline) {
+                        outline.setRoundRect(0, 0, view.width, view.height, dp(10).toFloat())
+                    }
+                }
+            }
+            tile.addView(image, LinearLayout.LayoutParams(-1, dp(if (bigPicture) 216 else 180)).apply { bottomMargin = dp(6) })
+            tile.addView(label(meta.optString("name", meta.optString("id")), 15).apply {
+                maxLines = 1
+                ellipsize = android.text.TextUtils.TruncateAt.END
+            })
+            posters.load(image, meta.optString("poster"))
+            row.addView(tile, LinearLayout.LayoutParams(w, -2).apply { marginEnd = dp(12) })
+        }
+        destination.addView(HorizontalScrollView(this).apply {
+            isFocusable = false
+            isHorizontalScrollBarEnabled = false
+            addView(row)
+        }, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(16) })
+    }
+
     private fun home() {
         val epoch = begin("Home")
         val history = store.history()
+        val heroSlot = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
+        body.addView(heroSlot)
+        val firstHistoryMeta = history.firstOrNull()?.optJSONObject("meta")
+        if (firstHistoryMeta != null) heroSpotlight(firstHistoryMeta)
         continueRail(history)
-        addButton("Browse movies") { browse("movie") }
-        addButton("Browse series") { browse("series") }
+
+        val quickRow = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; setPadding(0, dp(4), 0, dp(12)) }
+        quickRow.addView(button("Movies") { browse("movie") }, LinearLayout.LayoutParams(-2, dp(44)).apply { marginEnd = dp(10) })
+        quickRow.addView(button("Series") { browse("series") }, LinearLayout.LayoutParams(-2, dp(44)).apply { marginEnd = dp(10) })
         store.catalogs().map { it.type }.distinct().filter { it == "tv" || it == "channel" }.forEach { type ->
-            addButton("Live TV · $type") { browse(type) }
+            quickRow.addView(button("Live TV · $type") { browse(type) }, LinearLayout.LayoutParams(-2, dp(44)).apply { marginEnd = dp(10) })
         }
+        body.addView(HorizontalScrollView(this).apply { isFocusable = false; isHorizontalScrollBarEnabled = false; addView(quickRow) })
+
         val catalogs = store.catalogs().filterNot { c ->
             val entries = c.addon.manifest.optJSONArray("catalogs")
             val entry = (0 until (entries?.length() ?: 0)).mapNotNull { entries!!.optJSONObject(it) }.firstOrNull { it.optString("id") == c.id && it.optString("type") == c.type }
             val extras = entry?.optJSONArray("extra")
             (0 until (extras?.length() ?: 0)).any { extras!!.optJSONObject(it)?.let { extra -> extra.optString("name") == "search" && extra.optBoolean("isRequired") } == true }
         }
+        var heroSeeded = firstHistoryMeta != null
         catalogs.take(4).forEach { c ->
             val section = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
             body.addView(section)
-            section.addView(label("${c.name} · ${c.type}", 23))
-            section.addView(button("Browse ${c.name}") { browse(c.type, c) })
+            val hdr = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL }
+            hdr.addView(label(c.name, 20).apply { setTypeface(null, Typeface.BOLD) }, LinearLayout.LayoutParams(0, -2, 1f))
+            hdr.addView(button("See all") { browse(c.type, c) })
+            section.addView(hdr, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(8) })
             work(epoch) {
-                val preview = try { store.catalog(c).take(6) } catch (_: Exception) { emptyList() }
-                ui(epoch) { cards(preview, section) }
+                val preview = try { store.catalog(c).take(10) } catch (_: Exception) { emptyList() }
+                ui(epoch) {
+                    if (!heroSeeded && preview.isNotEmpty()) {
+                        heroSeeded = true
+                        heroSlot.removeAllViews()
+                        val oldBody = body
+                        // render hero inside heroSlot directly
+                        preview.firstOrNull()?.let { m ->
+                            val prev = body
+                            body = heroSlot
+                            heroSpotlight(m)
+                            body = prev
+                        }
+                    }
+                    homeRail(preview, section)
+                }
             }
         }
         if (store.installed().isEmpty()) {
@@ -618,28 +780,68 @@ class NativeTvActivity : AppCompatActivity() {
     }
     private fun continueRail(history: List<JSONObject>) {
         if (history.isEmpty()) return
-        body.addView(label("Continue watching", 24))
-        val row = LinearLayout(this)
+        body.addView(label("Jump back in", 21).apply { setTypeface(null, Typeface.BOLD) })
+        val row = LinearLayout(this).apply { setPadding(0, dp(4), 0, dp(8)) }
         history.take(8).forEach { entry ->
             val meta = entry.getJSONObject("meta")
-            val width = if (bigPicture) 160 else 140
-            val tile = LinearLayout(this).apply {
-                orientation = LinearLayout.VERTICAL; setPadding(dp(6), dp(6), dp(6), dp(6))
-                isFocusable = true; isFocusableInTouchMode = true; isClickable = true; background = focusBackground()
+            val width = if (bigPicture) 252 else 196
+            val card = FrameLayout(this).apply {
+                isFocusable = true
+                isFocusableInTouchMode = true
+                isClickable = true
+                setPadding(dp(3), dp(3), dp(3), dp(3))
+                background = focusBackground(14)
+                attachFocusScale(this)
                 contentDescription = "${meta.optString("name")} · Resume at ${time(entry.optDouble("position"))}"
                 activate(this) { sources(meta, entry.getString("videoId")) }
             }
-            val image = ImageView(this).apply { scaleType = ImageView.ScaleType.CENTER_CROP; setImageResource(R.drawable.argus_native_banner) }
-            tile.addView(image, LinearLayout.LayoutParams(-1, dp(width * 9 / 16)))
+            val inner = FrameLayout(this).apply {
+                clipToOutline = true
+                outlineProvider = object : android.view.ViewOutlineProvider() {
+                    override fun getOutline(view: View, outline: android.graphics.Outline) {
+                        outline.setRoundRect(0, 0, view.width, view.height, dp(12).toFloat())
+                    }
+                }
+            }
+            val image = ImageView(this).apply {
+                scaleType = ImageView.ScaleType.CENTER_CROP
+                setImageResource(R.drawable.argus_native_banner)
+            }
             posters.load(image, meta.optString("background").ifBlank { meta.optString("poster") })
-            tile.addView(label(meta.optString("name"), 18).apply { maxLines = 2; ellipsize = android.text.TextUtils.TruncateAt.END })
-            tile.addView(label("Resume at ${time(entry.optDouble("position"))}", 14))
-            tile.addView(ProgressBar(this, null, android.R.attr.progressBarStyleHorizontal).apply {
+            inner.addView(image, FrameLayout.LayoutParams(-1, -1))
+            inner.addView(View(this).apply {
+                background = GradientDrawable(
+                    GradientDrawable.Orientation.TOP_BOTTOM,
+                    intArrayOf(Color.TRANSPARENT, Color.argb(215, 5, 5, 7)),
+                )
+            }, FrameLayout.LayoutParams(-1, -1))
+            val info = LinearLayout(this).apply {
+                orientation = LinearLayout.VERTICAL
+                gravity = Gravity.BOTTOM
+                setPadding(dp(12), dp(8), dp(12), dp(10))
+            }
+            info.addView(TextView(this).apply {
+                text = meta.optString("name")
+                textSize = 14f
+                setTypeface(null, Typeface.BOLD)
+                setTextColor(Color.WHITE)
+                maxLines = 1
+                ellipsize = android.text.TextUtils.TruncateAt.END
+            })
+            info.addView(TextView(this).apply {
+                text = "▶ ${time(entry.optDouble("position"))}"
+                textSize = 11.5f
+                setTextColor(Color.argb(210, 244, 244, 246))
+            })
+            inner.addView(info, FrameLayout.LayoutParams(-1, -1))
+            inner.addView(ProgressBar(this, null, android.R.attr.progressBarStyleHorizontal).apply {
                 max = 1000
                 progress = if (entry.optDouble("duration") > 0) (entry.optDouble("position") / entry.optDouble("duration") * 1000).toInt().coerceIn(0, 1000) else 0
-                progressTintList = android.content.res.ColorStateList.valueOf(Color.rgb(244, 162, 92))
-            }, LinearLayout.LayoutParams(-1, dp(6)))
-            row.addView(tile, LinearLayout.LayoutParams(dp(width), -2).apply { marginEnd = dp(12) })
+                progressTintList = android.content.res.ColorStateList.valueOf(Color.WHITE)
+                progressBackgroundTintList = android.content.res.ColorStateList.valueOf(Color.argb(70, 255, 255, 255))
+            }, FrameLayout.LayoutParams(-1, dp(3), Gravity.BOTTOM))
+            card.addView(inner, FrameLayout.LayoutParams(-1, dp(width * 9 / 16)))
+            row.addView(card, LinearLayout.LayoutParams(dp(width), -2).apply { marginEnd = dp(14) })
         }
         body.addView(HorizontalScrollView(this).apply { isFocusable = false; isHorizontalScrollBarEnabled = false; addView(row) })
         if (history.size > 8) addButton("All continue watching") { continueHistory() }
