@@ -96,6 +96,7 @@ export function MangaReader({
   const [failed, setFailed] = useState(false);
   const [reloadTick, setReloadTick] = useState(0);
   const [prefs, setPrefs] = useState<ReaderPrefs>(() => loadPrefs(prefsKey));
+  const [pencilHoverSide, setPencilHoverSide] = useState<"prev" | "next" | null>(null);
   const [currentPage, setCurrentPage] = useState(0);
   const [pagesHidden, setPagesHidden] = useState(false);
   const [exitLocalSeq, setExitLocalSeq] = useState(0);
@@ -1060,6 +1061,25 @@ export function MangaReader({
           <div
             className="flex min-h-full items-start justify-center px-4 py-3"
             style={double ? { gap: `${prefs.doubleGap}px` } : undefined}
+            onDoubleClick={(e) => {
+              if ((e.target as HTMLElement).closest("button, a, [role='button']")) return;
+              patchPrefs({ mode: double ? "paged" : "double" });
+            }}
+            onPointerMove={(e) => {
+              if (e.pointerType !== "pen") {
+                if (pencilHoverSide) setPencilHoverSide(null);
+                return;
+              }
+              const x =
+                (e.clientX - e.currentTarget.getBoundingClientRect().left) /
+                e.currentTarget.clientWidth;
+              const side =
+                x < 0.18 ? (rtl ? "next" : "prev") : x > 0.82 ? (rtl ? "prev" : "next") : null;
+              if (side !== pencilHoverSide) setPencilHoverSide(side);
+            }}
+            onPointerLeave={() => {
+              if (pencilHoverSide) setPencilHoverSide(null);
+            }}
             onClick={(e) => {
               const t = e.target as HTMLElement;
               if (t.closest("button, a, [role='button']")) return;
@@ -1071,6 +1091,11 @@ export function MangaReader({
               else toggleChrome();
             }}
           >
+            {pencilHoverSide && (
+              <div className="pointer-events-none fixed bottom-20 left-1/2 z-40 -translate-x-1/2 rounded-full border border-white/15 bg-black/75 px-3.5 py-1 text-xs font-medium text-white backdrop-blur-xl">
+                {pencilHoverSide === "next" ? "Peek: Next page →" : "← Peek: Previous page"}
+              </div>
+            )}
             {complete ? (
               <div className="flex min-h-[80vh] items-center justify-center">{completeCard}</div>
             ) : double ? (

@@ -2,6 +2,8 @@ import { isMusicLiked } from "@/lib/music/liked";
 import { artistCreditParts } from "@/lib/music/search-artists";
 import { MusicArtistLink } from "./music-artist-link";
 import { HoverTooltip } from "@/components/hover-tooltip";
+import { Clock, Gauge } from "lucide-react";
+import { recordReplayPlay, type SleepTimerMode } from "@/lib/music/music-extras";
 import { MusicListeningDetails } from "./music-listening-details";
 import { useRecordingProfile } from "@/lib/music/use-recording-profile";
 import type { MusicArtistRef, MusicTrack } from "@/lib/music/types";
@@ -132,6 +134,10 @@ export function MusicNowPlaying({
     return () => window.clearTimeout(id);
   }, [searchExit]);
   const [karaoke, setKaraoke] = useState(false);
+  const [sleepTimer, setSleepTimer] = useState<SleepTimerMode>("off");
+  const [speedRate, setSpeedRate] = useState(1);
+  const lastTrackIdRef = useRef<string | null>(null);
+
   const [lyrics, setLyrics] = useState<LyricLine[]>([]);
   const [lyricsState, setLyricsState] = useState<"loading" | "ready" | "empty">("loading");
   const [hasLyrics, setHasLyrics] = useState<boolean | null>(null);
@@ -139,6 +145,41 @@ export function MusicNowPlaying({
   const [outputs, setOutputs] = useState<Array<{ name: string; description: string }>>([]);
   const current = player.current;
   const { profile: recording, display } = useRecordingProfile(current);
+
+  useEffect(() => {
+    const id = display?.id ?? null;
+    if (id && id !== lastTrackIdRef.current) {
+      if (lastTrackIdRef.current !== null && sleepTimer === "track") {
+        document.querySelectorAll("audio").forEach((el) => el.pause());
+        setSleepTimer("off");
+      }
+      lastTrackIdRef.current = id;
+      recordReplayPlay(display);
+    }
+  }, [display?.id, sleepTimer]);
+
+  useEffect(() => {
+    if (typeof sleepTimer !== "number") return;
+    const id = window.setTimeout(() => {
+      document.querySelectorAll("audio").forEach((el) => el.pause());
+      setSleepTimer("off");
+    }, sleepTimer * 60_000);
+    return () => window.clearTimeout(id);
+  }, [sleepTimer]);
+
+  const cycleSleepTimer = () => {
+    const order: SleepTimerMode[] = ["off", "track", 15, 30, 60];
+    setSleepTimer(order[(order.indexOf(sleepTimer) + 1) % order.length]);
+  };
+
+  const cycleSpeed = () => {
+    const speeds = [1, 1.15, 1.25, 1.5, 0.85];
+    const next = speeds[(speeds.indexOf(speedRate) + 1) % speeds.length];
+    setSpeedRate(next);
+    document.querySelectorAll("audio").forEach((el) => {
+      el.playbackRate = next;
+    });
+  };
   const speaker = getMusicSpeakerState();
   const meter = useMusicAudioMeter(
     current,
@@ -767,6 +808,20 @@ export function MusicNowPlaying({
                   <Speaker size={17} aria-hidden="true" />
                 )}
                 <span>{output ?? t("music.now.output")}</span>
+              </button>
+              <button type="button" onClick={cycleSleepTimer} title={t("Sleep timer")}>
+                <Clock size={17} aria-hidden="true" />
+                <span>
+                  {sleepTimer === "off"
+                    ? t("Timer")
+                    : sleepTimer === "track"
+                      ? t("1 track")
+                      : `${sleepTimer}m`}
+                </span>
+              </button>
+              <button type="button" onClick={cycleSpeed} title={t("Playback speed")}>
+                <Gauge size={17} aria-hidden="true" />
+                <span>{speedRate}×</span>
               </button>
               <button type="button" onClick={onAudio}>
                 <SlidersHorizontal size={17} aria-hidden="true" />

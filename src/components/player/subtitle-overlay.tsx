@@ -1,8 +1,9 @@
 import { memo, useEffect, useMemo, useRef, useState } from "react";
+import { useSubtitleLiftCover } from "@/lib/player/controls-inset";
 import { useActiveKid } from "@/lib/profiles";
 import { useSettings } from "@/lib/settings";
-import { isProjectorModeActive } from "@/lib/player/projector-mode";
-import { HoverWordLine } from "./subtitle-word-hover";
+
+const LIFT_GAP_PX = 12;
 
 type Props = {
   text: string;
@@ -17,16 +18,18 @@ export const SubtitleOverlay = memo(function SubtitleOverlay({
   startSec,
   scale = 1,
   secondaryText = "",
-  elevateForHud = false,
 }: Props) {
   const { settings } = useSettings();
   const kid = useActiveKid();
   const wrapRef = useRef<HTMLDivElement>(null);
   const [boxH, setBoxH] = useState(0);
+  const [hostGap, setHostGap] = useState(0);
   useEffect(() => {
     const measure = () => {
       const host = wrapRef.current?.offsetParent as HTMLElement | null;
-      if (host && host.clientHeight > 0) setBoxH(host.clientHeight);
+      if (!host || host.clientHeight <= 0) return;
+      setBoxH(host.clientHeight);
+      setHostGap(Math.max(0, window.innerHeight - host.getBoundingClientRect().bottom));
     };
     measure();
     window.addEventListener("resize", measure);
@@ -44,23 +47,26 @@ export const SubtitleOverlay = memo(function SubtitleOverlay({
         : clamp(settings.subFontSize, 16, 120),
     [kid, settings.subFontSize],
   );
-  const isProjector = isProjectorModeActive(settings);
-  const projectorHighContrast = isProjector && settings.projectorHighContrastSubs;
-  const letterboxDodge = settings.letterboxSubtitleDodging === true;
   const fontSize = useMemo(() => Math.round(baseFont * responsive), [baseFont, responsive]);
-  const marginY = useMemo(
-    () =>
-      projectorHighContrast
-        ? Math.max(24, clamp(settings.subMarginY, 0, 100))
-        : letterboxDodge
-          ? Math.max(2, clamp(settings.subMarginY, 0, 100) - 4)
-          : clamp(settings.subMarginY, 0, 100),
-    [projectorHighContrast, letterboxDodge, settings.subMarginY],
-  );
+  const marginY = useMemo(() => clamp(settings.subMarginY, 0, 100), [settings.subMarginY]);
+  const cover = useSubtitleLiftCover(settings.subLiftAboveControls, marginY);
+  const hostH = boxH > 0 ? boxH : window.innerHeight;
+  const lift =
+    cover > 0
+      ? Math.max(
+          0,
+          Math.round(
+            cover * window.innerHeight -
+              hostGap +
+              LIFT_GAP_PX * responsive -
+              (marginY / 100) * hostH,
+          ),
+        )
+      : 0;
   const fontColor = settings.subFontColor || "#FFFFFF";
   const align = settings.subAlignX || "center";
   const family = useMemo(() => fontFamilyFor(settings.subFontFamily), [settings.subFontFamily]);
-  const style = projectorHighContrast ? "outline" : kid ? "shadow" : (settings.subStyle ?? "shadow");
+  const style = kid ? "shadow" : (settings.subStyle ?? "shadow");
   const lines = useMemo(() => text.split("\n"), [text]);
 
   const justify =
@@ -69,11 +75,9 @@ export const SubtitleOverlay = memo(function SubtitleOverlay({
     align === "left" ? "items-start" : align === "right" ? "items-end" : "items-center";
 
   const borderSize = useMemo(
-    () => {
-      const computed = Math.max(0.5, Math.round((clamp(settings.subBorderSize, 1, 6) || 2) * responsive * 2) / 2);
-      return projectorHighContrast ? Math.max(3.5, computed) : computed;
-    },
-    [settings.subBorderSize, responsive, projectorHighContrast],
+    () =>
+      Math.max(0.5, Math.round((clamp(settings.subBorderSize, 1, 6) || 2) * responsive * 2) / 2),
+    [settings.subBorderSize, responsive],
   );
   const borderColor = settings.subBorderColor || "#000000";
 
@@ -81,21 +85,16 @@ export const SubtitleOverlay = memo(function SubtitleOverlay({
     if (style === "outline") {
       return buildOutline(borderColor, borderSize);
     } else if (style === "shadow") {
-      const blur = clamp(settings.subShadowBlur ?? 0, 0, 12);
-      if (blur > 0) return `0 1px ${blur}px rgba(0,0,0,0.95), 0 2px ${blur * 2}px rgba(0,0,0,0.7)`;
       return "0 1px 2px rgba(0,0,0,0.95), 0 2px 6px rgba(0,0,0,0.85), 0 0 18px rgba(0,0,0,0.55)";
     }
     return undefined;
-  }, [style, borderColor, borderSize, settings.subShadowBlur]);
+  }, [style, borderColor, borderSize]);
 
-  const nightBooster = settings.nightDialogueBooster === true;
-  const baseFontColor =
-    nightBooster && fontColor === "#FFFFFF" ? "#FFFDF5" : fontColor;
   const baseTextStyle: React.CSSProperties = useMemo(
     () => ({
-      color: baseFontColor,
+      color: fontColor,
       fontFamily: family,
-      fontWeight: kid || settings.subBold || nightBooster ? 700 : 400,
+      fontWeight: kid || settings.subBold ? 700 : 400,
       fontSize: `${fontSize}px`,
       lineHeight: 1.2,
       letterSpacing: `${(-0.005 + (settings.subLineSpacing ?? 0) * 0.06).toFixed(3)}em`,
@@ -104,11 +103,10 @@ export const SubtitleOverlay = memo(function SubtitleOverlay({
       ...(textShadow ? { textShadow } : {}),
     }),
     [
-      baseFontColor,
+      fontColor,
       family,
       kid,
       settings.subBold,
-      nightBooster,
       fontSize,
       settings.subLineSpacing,
       align,
@@ -142,8 +140,7 @@ export const SubtitleOverlay = memo(function SubtitleOverlay({
     () => ({ ...baseTextStyle, fontSize: `${Math.round(fontSize * secondScale)}px` }),
     [baseTextStyle, fontSize, secondScale],
   );
-  const showDual = Boolean(secondaryText && (settings.dualSubtitlesEnabled || settings.secondarySubLang));
-  const secondBlock = showDual ? (
+  const secondBlock = secondaryText ? (
     <div className="max-w-[80%]" style={boxStyle}>
       <div style={secondTextStyle}>
         {secondaryText.split("\n").map((line, i) => (
@@ -153,7 +150,7 @@ export const SubtitleOverlay = memo(function SubtitleOverlay({
     </div>
   ) : null;
 
-  if (!text && !showDual) return null;
+  if (!text && !secondaryText) return null;
 
   return (
     <>
@@ -168,32 +165,16 @@ export const SubtitleOverlay = memo(function SubtitleOverlay({
       <div
         key={startSec}
         ref={wrapRef}
-        className={`pointer-events-none absolute inset-x-0 z-10 flex flex-col gap-1.5 ${alignItems} px-[6%] transition-transform duration-200 ease-out`}
-        style={{
-          bottom: `${marginY}%`,
-          opacity,
-          transform: elevateForHud ? "translate3d(0, -5.5rem, 0)" : "translate3d(0, 0, 0)",
-        }}
+        className={`pointer-events-none absolute inset-x-0 z-10 flex flex-col gap-1.5 ${alignItems} px-[6%] transition-transform duration-300 ease-out motion-reduce:transition-none`}
+        style={{ bottom: `${marginY}%`, opacity, transform: `translateY(${-lift}px)` }}
       >
         {secondBlock && !secondTop && secondBlock}
         {text && (
           <div className="max-w-[80%]" style={boxStyle}>
             <div style={baseTextStyle}>
-              {lines.map((line, i) => {
-                const speakerTint =
-                  settings.speakerDiarizationColors && (/^- /.test(line) || /^[A-Z][a-zA-Z0-9 ]{1,18}:/.test(line))
-                    ? i % 2 === 0
-                      ? "#A5F3FC"
-                      : "#FDE68A"
-                    : undefined;
-                return settings.subWordHover && !kid ? (
-                  <HoverWordLine key={i} line={line} lang={settings.subWordHoverLang} />
-                ) : (
-                  <div key={i} style={speakerTint ? { color: speakerTint } : undefined}>
-                    {line}
-                  </div>
-                );
-              })}
+              {lines.map((line, i) => (
+                <div key={i}>{line}</div>
+              ))}
             </div>
           </div>
         )}
@@ -204,7 +185,7 @@ export const SubtitleOverlay = memo(function SubtitleOverlay({
 
 function fontFamilyFor(family: string | undefined): string {
   if (family?.startsWith("custom:")) {
-    return `"argus-font-${family.slice("custom:".length)}", "Inter", system-ui, sans-serif`;
+    return `"harbor-font-${family.slice("custom:".length)}", "Inter", system-ui, sans-serif`;
   }
   switch (family) {
     case "system":

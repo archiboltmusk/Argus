@@ -233,6 +233,7 @@ objc2-app-kit = { version = "0.3", features = [
 objc2-web-kit = { version = "0.3", features = ["WKWebView"] }
 core-foundation = "0.10"
 core-video = "0.4"
+souvlaki = { version = "0.8", default-features = false }
 
 # librqbit enables governor's quanta default clock while librespot 0.8 hardcodes
 # MonotonicClock in its rate limiter. The vendored patch uses DefaultClock so

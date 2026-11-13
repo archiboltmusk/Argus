@@ -43,7 +43,7 @@ export function Sidebar() {
         aria-hidden={chromeHidden}
         data-argus-sidebar
         data-collapsed={collapsed ? "true" : "false"}
-        className={`relative z-[60] flex w-[72px] shrink-0 flex-col border-e border-edge-soft bg-canvas transition-[opacity,transform,width] duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+        className={`relative z-[60] flex w-[72px] shrink-0 flex-col border-e border-edge-soft bg-canvas/80 argus-vibrancy-rail transition-[opacity,transform,width] duration-[380ms] ease-[cubic-bezier(0.22,1.18,0.36,1)] ${
           collapsed ? "" : "lg:w-60"
         } ${
           chromeHidden

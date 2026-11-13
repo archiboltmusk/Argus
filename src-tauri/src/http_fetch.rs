@@ -944,9 +944,10 @@ fn cross_origin_redirect_forwards_body(cross_origin: bool, body: &Option<Vec<u8>
 #[cfg(test)]
 mod tests {
     use super::{
-        apply_redirect_method, cross_origin_redirect_forwards_body, host_is_blocked_literal,
-        is_https_downgrade, is_public_network_ip, same_origin, solver_host_allowed, strip_headers,
-        validate_target,
+        apply_redirect_method, apply_strict_limits, cross_origin_redirect_forwards_body,
+        host_is_blocked_literal, is_https_downgrade, is_public_network_ip, same_origin,
+        solver_host_allowed, validate_strict_url, validate_target, ArgusFetchArgs,
+        STRICT_MAX_BODY_BYTES, STRICT_MAX_RESPONSE_BYTES, STRICT_MAX_TIMEOUT_MS,
     };
 
     #[test]

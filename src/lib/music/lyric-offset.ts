@@ -3,7 +3,7 @@ import type { MusicTrack } from "./types";
 
 const KEY = "argus.music.lyric-offset.v1";
 const LIMIT = 200;
-export const LYRIC_OFFSET_STEP = 0.25;
+export const LYRIC_OFFSET_STEP = 0.1;
 export const LYRIC_OFFSET_LIMIT = 8;
 
 export function lyricOffsetKey(track: MusicTrack | null | undefined): string {

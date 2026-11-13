@@ -164,6 +164,14 @@ pub fn headroom(filters: &[PeqFilter], strength: f64) -> f64 {
     }
 }
 
+pub fn karaoke_vocal_cut_filter(enabled: bool) -> &'static str {
+    if enabled {
+        "stereotools=mlev=0.08:slev=1.0:balance_in=0"
+    } else {
+        ""
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -199,5 +207,10 @@ mod tests {
             ..Default::default()
         };
         assert!((response(&[low.coefficients(48000.0, 1.0)], 20.0, 48000.0) - 6.0).abs() < 0.1);
+    }
+    #[test]
+    fn karaoke_filter_toggles_cleanly() {
+        assert!(karaoke_vocal_cut_filter(true).contains("stereotools="));
+        assert_eq!(karaoke_vocal_cut_filter(false), "");
     }
 }
