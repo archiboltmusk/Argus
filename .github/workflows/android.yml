@@ -184,3 +184,34 @@ jobs:
             gh release create "$TAG" --title "Argus $TAG" --notes "Argus Automated Build" --repo "$GITHUB_REPOSITORY" "${RELEASE_FLAGS[@]}" || gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1
           fi
           gh release upload "$TAG" Argus-*.apk --repo "$GITHUB_REPOSITORY" --clobber
+
+  emulator-smoke:
+    needs: apk
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: Argus-android-packages
+          path: apks
+      - name: Boot Android TV emulator & verify APK launch
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 33
+          target: google_apis
+          arch: x86_64
+          profile: tv_1080p
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim
+          script: |
+            set -euo pipefail
+            APK=$(ls apks/Argus-*.apk | head -n1)
+            adb install -r "$APK"
+            PKG=$(aapt2 dump badging "$APK" 2>/dev/null | sed -n "s/.*package: name='\([^']*\)'.*/\1/p" | head -n1 || echo "app.argus.desktop")
+            adb logcat -c
+            adb shell monkey -p "$PKG" -c android.intent.category.LAUNCHER 1 || true
+            sleep 8
+            if adb logcat -d | grep -E "FATAL EXCEPTION|UnsatisfiedLinkError"; then
+              echo "::error::Android runtime crash detected in logcat"
+              exit 1
+            fi
