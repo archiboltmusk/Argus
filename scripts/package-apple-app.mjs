@@ -238,6 +238,9 @@ int main(int argc, char * argv[]) {
   fs.chmodSync(execPath, 0o755);
 }
 
+const buildOutput = execSync(`xcrun vtool -show-build "${execPath}"`, { encoding: "utf8" });
+validateAppleBuildOutput(buildOutput, platform);
+
 console.log(
   `[package-apple-app] Verification complete for ${conf.displayName} (${platform}): Info.plist and executable exist.`,
 );

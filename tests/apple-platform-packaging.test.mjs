@@ -17,7 +17,7 @@ test("Apple compiler jobs stay on Mac and previews cannot attach to stable relea
   const workflow = readFileSync(new URL("../.github/workflows/apple.yml", import.meta.url), "utf8");
   for (const platform of ["ios", "tvos", "visionos", "watchos"]) {
     const section = workflow.slice(workflow.indexOf(`  ${platform}:`)).split(/\n  [a-z]+:/)[0];
-    assert.match(section, /runs-on: macos-15/);
+    assert.match(section, /runs-on: macos-latest/);
   }
   assert.match(workflow, /TAG="beta"/);
   assert.doesNotMatch(workflow, /TAG="\$\{\{ github.ref_name/);
