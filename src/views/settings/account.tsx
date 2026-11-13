@@ -14,6 +14,7 @@ import { StremioImportCard } from "./account/stremio-import-card";
 import { SyncedAddonsCard } from "./account/synced-addons-card";
 import { ARGUS_HOSTED } from "@/lib/config/endpoints";
 import { ArgusAccountPanel } from "@/views/account/argus-account-panel";
+import { ArgusAccountSuiteCard } from "@/views/account/argus-account-suite-card";
 import { SupabaseSyncPanel } from "@/views/account/supabase-sync-panel";
 import { SUPABASE } from "@/lib/config/supabase";
 
@@ -152,8 +153,8 @@ export function AccountStub() {
         {tab === "provider" && <AccountProviderPanel />}
         {tab === "you" && <IdentityTab />}
         {tab === "profiles" && <ProfilesTab />}
-        {tab === "argus" && ARGUS_HOSTED && <ArgusAccountPanel />}
-        {tab === "cloud" && SUPABASE && <SupabaseSyncPanel />}
+        {tab === "argus" && (<>{ARGUS_HOSTED && <ArgusAccountPanel />}<ArgusAccountSuiteCard /></>)}
+        {tab === "cloud" && (<>{SUPABASE && <SupabaseSyncPanel />}<ArgusAccountSuiteCard /></>)}
         {tab === "stremio" && <StremioTab />}
         {tab === "nuvio" && <NuvioTab />}
       </div>
