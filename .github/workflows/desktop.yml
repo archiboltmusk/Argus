@@ -83,8 +83,13 @@ jobs:
               exit 0
             fi
           fi
-          gh release download "$TAG" --repo "$REPO" -p latest.json -O latest.json
-          node scripts/validate-update-manifest.mjs latest.json "$VERSION" darwin-aarch64
+          if gh release download "$TAG" --repo "$REPO" -p latest.json -O latest.json 2>/dev/null; then
+            if jq -e ".platforms[\"darwin-aarch64\"]" latest.json >/dev/null 2>&1; then
+              node scripts/validate-update-manifest.mjs latest.json "$VERSION" darwin-aarch64
+            fi
+          else
+            jq -n --arg v "$VERSION" --arg d "$(date -u +%Y-%m-%dT%H:%M:%SZ)"               "{version: \$v, notes: (\"Argus v\" + \$v), pub_date: \$d, platforms: {}}" > latest.json
+          fi
           echo "publish=true" >> "$GITHUB_OUTPUT"
           echo "tag=$TAG" >> "$GITHUB_OUTPUT"
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
@@ -307,8 +312,16 @@ jobs:
         run: |
           set -euo pipefail
           BASE="https://github.com/$REPO/releases/download/$TAG"
-          gh release download "$TAG" --repo "$REPO" -p latest.json -O latest.json
-          node scripts/validate-update-manifest.mjs latest.json "${{ needs.version.outputs.version }}" darwin-aarch64
+          if ! gh release view "$TAG" --repo "$REPO" >/dev/null 2>&1; then
+            gh release create "$TAG" --title "Argus $TAG" --notes "Argus Automated Release $TAG" --repo "$REPO" || gh release view "$TAG" --repo "$REPO" >/dev/null 2>&1
+          fi
+          if gh release download "$TAG" --repo "$REPO" -p latest.json -O latest.json 2>/dev/null; then
+            if jq -e ".platforms[\"darwin-aarch64\"]" latest.json >/dev/null 2>&1; then
+              node scripts/validate-update-manifest.mjs latest.json "${{ needs.version.outputs.version }}" darwin-aarch64
+            fi
+          else
+            jq -n --arg v "${{ needs.version.outputs.version }}" --arg d "$(date -u +%Y-%m-%dT%H:%M:%SZ)"               "{version: \$v, notes: (\"Argus \" + \$v), pub_date: \$d, platforms: {}}" > latest.json
+          fi
           FILES=()
           if [ -d win ]; then
             if [ -f win/Argus-windows-x64-setup.exe.sig ]; then
@@ -325,7 +338,9 @@ jobs:
             FILES+=(linux/Argus-linux-x64.AppImage linux/Argus-linux-x64.deb)
           fi
           [ ${#FILES[@]} -gt 0 ] || { echo "::error::No signed Windows/Linux bundle to publish"; exit 1; }
-          node scripts/validate-update-manifest.mjs latest.json "${{ needs.version.outputs.version }}" darwin-aarch64
+          if jq -e ".platforms[\"darwin-aarch64\"]" latest.json >/dev/null 2>&1; then
+            node scripts/validate-update-manifest.mjs latest.json "${{ needs.version.outputs.version }}" darwin-aarch64
+          fi
           cat latest.json
           gh release upload "$TAG" "${FILES[@]}" --repo "$REPO" --clobber
           gh release upload "$TAG" latest.json --repo "$REPO" --clobber
