@@ -27,6 +27,12 @@ export const COMMUNITY_MANGA_REPOS: CommunityMangaRepoPreset[] = [
     description: "Standard community index used across mobile and desktop manga readers.",
     badge: "Global Community",
   },
+  {
+    name: "Harbor Manga Plugin Repo",
+    url: "https://raw.githubusercontent.com/hamad0original-lgtm/harbor-manga-repo/main/repo.json",
+    description: "Curated zero-server manga plugins built for Argus and Harbor.",
+    badge: "Harbor Curated",
+  },
 ];
 
 function SectionLabel({ children }: { children: ReactNode }) {
@@ -102,6 +108,20 @@ export function ExtensionsSection() {
     }
   };
 
+  const handleAddAllPresets = async () => {
+    setPresetBusy("__all__");
+    setError(null);
+    try {
+      for (const preset of COMMUNITY_MANGA_REPOS) {
+        if (!urls.includes(preset.url)) {
+          await addRepo(preset.url).catch(() => {});
+        }
+      }
+    } finally {
+      setPresetBusy(null);
+    }
+  };
+
   const add = async () => {
     let value = url.trim();
     if (!/^https?:\/\/.+/i.test(value)) {
@@ -137,7 +157,15 @@ export function ExtensionsSection() {
 
       {/* 1-Click Community Repository Cards */}
       <div className="flex flex-col gap-2.5">
-        <div className="flex items-center gap-2 px-1 text-[13px] font-semibold text-ink-muted">
+        <div className="flex items-center justify-between gap-2 px-1 text-[13px] font-semibold text-ink-muted">
+          <button
+            type="button"
+            disabled={presetBusy !== null}
+            onClick={() => void handleAddAllPresets()}
+            className="order-last rounded-full bg-raised px-3 py-1 text-[12px] font-semibold text-accent ring-1 ring-edge-soft transition hover:opacity-90 disabled:opacity-50"
+          >
+            {presetBusy === "__all__" ? t("Adding all...") : t("Add all")}
+          </button>
           <Sparkles size={15} className="text-accent" />
           <span>{t("Verified Community Repositories (1-Click)")}</span>
         </div>
