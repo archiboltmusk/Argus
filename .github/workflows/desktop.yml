@@ -89,9 +89,22 @@ jobs:
           echo "tag=$TAG" >> "$GITHUB_OUTPUT"
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
+  preflight:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "pnpm"
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm run typecheck
+      - run: pnpm test
+
   windows:
     name: Windows x64 (NSIS, MSI)
-    needs: [version]
+    needs: [preflight, version]
     if: github.event_name == 'pull_request' || needs.version.outputs.publish == 'true'
     runs-on: windows-latest
     timeout-minutes: 90
@@ -162,7 +175,7 @@ jobs:
 
   linux:
     name: Linux x64 (AppImage, deb)
-    needs: [version]
+    needs: [preflight, version]
     if: github.event_name == 'pull_request' || needs.version.outputs.publish == 'true'
     # 24.04 ships libmpv2 (mpv 0.37) and webkit2gtk-4.1. The AppImage therefore
     # needs glibc 2.39 or newer.

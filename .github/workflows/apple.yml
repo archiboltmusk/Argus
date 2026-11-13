@@ -220,11 +220,12 @@ jobs:
           fi
           RELEASE_FLAGS=(--latest=false)
           if [ "$TAG" = "beta" ]; then RELEASE_FLAGS+=(--prerelease); fi
-          gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1 || \
-            gh release create "$TAG" --title "Argus $TAG" --notes "Argus Automated Build" --repo "$GITHUB_REPOSITORY" "${RELEASE_FLAGS[@]}" || true
+          if ! gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release create "$TAG" --title "Argus $TAG" --notes "Argus Automated Build" --repo "$GITHUB_REPOSITORY" "${RELEASE_FLAGS[@]}" || gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1
+          fi
           for ipa in *.ipa; do
             if [ -f "$ipa" ]; then
               echo "Uploading $ipa to $TAG..."
-              gh release upload "$TAG" "$ipa" --repo "$GITHUB_REPOSITORY" --clobber || true
+              gh release upload "$TAG" "$ipa" --repo "$GITHUB_REPOSITORY" --clobber
             fi
           done
