@@ -12,8 +12,8 @@ import {
   Quote,
   Strikethrough,
   Underline,
-  Youtube,
 } from "lucide-react";
+import { Youtube } from "@/components/icons/brand-icons";
 import { renderBbcode } from "@/lib/social/bbcode";
 import { EmbedPrompt, type EmbedKind } from "@/components/embed-prompt";
 import { useT } from "@/lib/i18n";

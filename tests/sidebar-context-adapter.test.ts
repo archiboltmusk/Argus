@@ -438,8 +438,8 @@ test("remote Select and Back preserve the real image viewer and a menu above it"
     Object.defineProperty(shown, "offsetWidth", { value: 800 });
     await h.remote("right");
     assert.equal(
-      shown.style.transform,
-      "translate(-40px, 0px) scale(1.25)",
+      shown.style.transform.replace(/, 0px\)/g, ")"),
+      "translate(-40px) scale(1.25)",
       "arrows remain owned by viewer pan",
     );
     await render(true);

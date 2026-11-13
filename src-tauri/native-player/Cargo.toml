@@ -2,6 +2,7 @@
 name = "tauri-plugin-native-player"
 version = "0.1.0"
 edition = "2021"
+build = "build.rs"
 links = "tauri-plugin-native-player"
 
 [dependencies]

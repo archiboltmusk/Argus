@@ -15,8 +15,8 @@
  *    and Idempotent: A ∪ A = A.
  */
 
-import { sha256 } from "@noble/hashes/sha256";
-import { bytesToHex } from "@noble/hashes/utils";
+import { sha256 } from "@noble/hashes/sha2.js";
+import { bytesToHex } from "@noble/hashes/utils.js";
 
 export interface VectorClock {
   [deviceId: string]: number; // Device ID -> Monotonic Lamport Sequence
@@ -136,13 +136,9 @@ export function computeMerkleRoot(nodes: Array<CrdtNode<unknown>>): string {
  */
 export async function deriveSyncKey(passphrase: string, salt: string): Promise<CryptoKey> {
   const enc = new TextEncoder();
-  const baseKey = await crypto.subtle.importKey(
-    "raw",
-    enc.encode(passphrase),
-    "PBKDF2",
-    false,
-    ["deriveKey"],
-  );
+  const baseKey = await crypto.subtle.importKey("raw", enc.encode(passphrase), "PBKDF2", false, [
+    "deriveKey",
+  ]);
 
   return crypto.subtle.deriveKey(
     {

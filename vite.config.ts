@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { execSync } from "node:child_process";
-import { defineConfig, type ViteDevServer, type HttpProxy } from "vite";
+import { defineConfig, type ViteDevServer, type HttpProxy, type Plugin } from "vite";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 import pkg from "./package.json" with { type: "json" };
@@ -23,28 +23,48 @@ function silenceMediapipeSourcemap() {
   };
 }
 
-function servePublicMediapipe() {
+function servePublicMediapipe(): Plugin {
+  const runtime = `${process.cwd()}/node_modules/@mediapipe/tasks-vision/wasm`;
+  const files = [
+    "vision_wasm_internal.js",
+    "vision_wasm_internal.wasm",
+    "vision_wasm_module_internal.js",
+    "vision_wasm_module_internal.wasm",
+  ];
   return {
     name: "serve-public-mediapipe",
-    apply: "serve" as const,
     configureServer(server: ViteDevServer) {
       server.middlewares.use((req, res, next) => {
         const path = (req.url ?? "").split("?")[0];
-        if (!path.startsWith("/mp-wasm/") || path.includes("..") || !path.endsWith(".js")) {
+        const file = path.startsWith("/mp-wasm/") ? path.slice("/mp-wasm/".length) : "";
+        if (!files.includes(file)) {
           next();
           return;
         }
         let body: Buffer;
         try {
-          body = readFileSync(`${server.config.root}/public${path}`);
+          body = readFileSync(`${runtime}/${file}`);
         } catch {
           next();
           return;
         }
-        res.setHeader("Content-Type", "text/javascript; charset=utf-8");
+        res.setHeader(
+          "Content-Type",
+          file.endsWith(".wasm") ? "application/wasm" : "text/javascript; charset=utf-8",
+        );
         res.setHeader("Cache-Control", "no-cache");
         res.end(body);
       });
+    },
+    generateBundle() {
+      // Keep the locally bundled runtime in lockstep with the installed SDK.
+      // Tracked public copies can otherwise silently belong to an older release.
+      for (const file of files)
+        this.emitFile({
+          type: "asset",
+          fileName: `mp-wasm/${file}`,
+          source: readFileSync(`${runtime}/${file}`),
+        });
     },
   };
 }
@@ -54,7 +74,10 @@ function androidLegacyCssPlugin() {
     name: "android-legacy-css-compat",
     apply: "build" as const,
     enforce: "post" as const,
-    generateBundle(_options: unknown, bundle: Record<string, { type: string; source?: string | Uint8Array }>) {
+    generateBundle(
+      _options: unknown,
+      bundle: Record<string, { type: string; source?: string | Uint8Array }>,
+    ) {
       for (const [fileName, item] of Object.entries(bundle)) {
         if (fileName.endsWith(".css") && item.type === "asset" && typeof item.source === "string") {
           item.source = lowerAndroidCss(item.source);
@@ -80,7 +103,7 @@ export default defineConfig(({ mode }) => {
       ...(android ? [androidLegacyCssPlugin()] : []),
     ],
     clearScreen: false,
-    base: web ? (process.env.ARGUS_WEB_BASE || "./") : "./",
+    base: web ? process.env.ARGUS_WEB_BASE || "./" : "./",
     define: {
       __APP_VERSION__: JSON.stringify(pkg.version),
       __IS_BETA_BUILD__: JSON.stringify(process.env.ARGUS_CHANNEL !== "stable"),
@@ -115,13 +138,19 @@ export default defineConfig(({ mode }) => {
               input: { tv: "index-tv.html", main: "index.html" } as Record<string, string>,
               output: {
                 manualChunks(id: string) {
-                  if (id.includes("node_modules/react/") || id.includes("node_modules/react-dom/")) {
+                  if (
+                    id.includes("node_modules/react/") ||
+                    id.includes("node_modules/react-dom/")
+                  ) {
                     return "react-vendor";
                   }
                   if (id.includes("node_modules/hls.js") || id.includes("node_modules/mpegts.js")) {
                     return "media-streams";
                   }
-                  if (id.includes("node_modules/pdfmake") || id.includes("node_modules/html-to-pdfmake")) {
+                  if (
+                    id.includes("node_modules/pdfmake") ||
+                    id.includes("node_modules/html-to-pdfmake")
+                  ) {
                     return "pdf-export";
                   }
                   if (id.includes("node_modules/skinview3d")) {
@@ -140,13 +169,22 @@ export default defineConfig(({ mode }) => {
                 input: { main: "index.html" } as Record<string, string>,
                 output: {
                   manualChunks(id: string) {
-                    if (id.includes("node_modules/react/") || id.includes("node_modules/react-dom/")) {
+                    if (
+                      id.includes("node_modules/react/") ||
+                      id.includes("node_modules/react-dom/")
+                    ) {
                       return "react-vendor";
                     }
-                    if (id.includes("node_modules/hls.js") || id.includes("node_modules/mpegts.js")) {
+                    if (
+                      id.includes("node_modules/hls.js") ||
+                      id.includes("node_modules/mpegts.js")
+                    ) {
                       return "media-streams";
                     }
-                    if (id.includes("node_modules/pdfmake") || id.includes("node_modules/html-to-pdfmake")) {
+                    if (
+                      id.includes("node_modules/pdfmake") ||
+                      id.includes("node_modules/html-to-pdfmake")
+                    ) {
                       return "pdf-export";
                     }
                     if (id.includes("node_modules/skinview3d")) {
