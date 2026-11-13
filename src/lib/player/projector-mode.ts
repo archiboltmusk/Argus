@@ -160,3 +160,56 @@ export function getProjectorHlsOptions(): {
     lowLatencyMode: false,
   };
 }
+
+export type AudioOutputProfileId =
+  | "hdmi-beem470"
+  | "bluetooth-tribit"
+  | "airpods-pro-2"
+  | "mac-speakers";
+
+export interface AudioOutputDelayProfile {
+  id: AudioOutputProfileId;
+  label: string;
+  delayMs: number;
+}
+
+export const AUDIO_OUTPUT_PROFILES: Record<AudioOutputProfileId, AudioOutputDelayProfile> = {
+  "hdmi-beem470": { id: "hdmi-beem470", label: "Portronics Beem 470 (HDMI)", delayMs: 0 },
+  "bluetooth-tribit": { id: "bluetooth-tribit", label: "Tribit XSound Go (Bluetooth)", delayMs: -180 },
+  "airpods-pro-2": { id: "airpods-pro-2", label: "AirPods Pro 2 (AAC)", delayMs: -120 },
+  "mac-speakers": { id: "mac-speakers", label: "MacBook Air Speakers", delayMs: 0 },
+};
+
+const AUDIO_DELAY_KEY = "argus.audio.output.delays.v1";
+
+export function detectAudioOutputProfile(deviceLabel = ""): AudioOutputProfileId {
+  const lower = deviceLabel.toLowerCase();
+  if (lower.includes("airpods")) return "airpods-pro-2";
+  if (lower.includes("tribit") || lower.includes("xsound") || lower.includes("bluetooth")) {
+    return "bluetooth-tribit";
+  }
+  if (lower.includes("beem") || lower.includes("hdmi") || isExternalHdmiDisplay()) {
+    return "hdmi-beem470";
+  }
+  return "mac-speakers";
+}
+
+export function readSavedAudioOutputDelay(profileId: AudioOutputProfileId): number {
+  try {
+    const raw = localStorage.getItem(AUDIO_DELAY_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw) as Partial<Record<AudioOutputProfileId, number>>;
+      if (typeof parsed[profileId] === "number") return parsed[profileId]!;
+    }
+  } catch {}
+  return AUDIO_OUTPUT_PROFILES[profileId].delayMs;
+}
+
+export function saveAudioOutputDelay(profileId: AudioOutputProfileId, delayMs: number): void {
+  try {
+    const raw = localStorage.getItem(AUDIO_DELAY_KEY);
+    const parsed = raw ? (JSON.parse(raw) as Record<string, number>) : {};
+    parsed[profileId] = Math.max(-1000, Math.min(1000, Math.round(delayMs)));
+    localStorage.setItem(AUDIO_DELAY_KEY, JSON.stringify(parsed));
+  } catch {}
+}

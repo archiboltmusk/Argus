@@ -7976,3 +7976,18 @@ button.hset-rail-me:hover,
 .animate-picker-scrim {
   animation: argus-fade-in 240ms ease-out both;
 }
+
+:root {
+  --argus-spring: cubic-bezier(0.22, 1.18, 0.36, 1);
+  --argus-ease-apple: cubic-bezier(0.25, 0.1, 0.25, 1);
+}
+
+.argus-spring {
+  transition-timing-function: var(--argus-spring);
+  transition-duration: 380ms;
+}
+
+.argus-vibrancy-rail {
+  -webkit-backdrop-filter: saturate(180%) blur(28px);
+  backdrop-filter: saturate(180%) blur(28px);
+}

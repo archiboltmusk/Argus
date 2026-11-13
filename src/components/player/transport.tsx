@@ -1,4 +1,5 @@
 import { Settings2 } from "lucide-react";
+import { useReportPlayerControlsInset } from "@/lib/player/controls-inset";
 import { isLivePlaybackSrc } from "@/lib/player/live-src";
 import { Fragment, useEffect, useRef, useState } from "react";
 import type { PlayerCapabilities, PlayerSnapshot } from "@/lib/player/bridge";
@@ -233,6 +234,7 @@ export function Transport({
     ro.observe(el);
     return () => ro.disconnect();
   }, [pipMode]);
+  useReportPlayerControlsInset(controlsRef, visible && !pipMode && !isStremioLayout && !kid);
   if (isStremioLayout && !pipMode) {
     return (
       <TransportStremio

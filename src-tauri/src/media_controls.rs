@@ -686,12 +686,118 @@ mod linux {
     }
 }
 
+#[cfg(target_os = "macos")]
+mod mac {
+    use souvlaki::{
+        MediaControlEvent, MediaControls, MediaMetadata, MediaPlayback, MediaPosition,
+        PlatformConfig,
+    };
+    use std::cell::RefCell;
+    use std::sync::OnceLock;
+    use std::time::Duration;
+    use tauri::{AppHandle, Emitter};
+
+    static APP_HANDLE: OnceLock<AppHandle> = OnceLock::new();
+
+    thread_local! {
+        static CONTROLS: RefCell<Option<MediaControls>> = const { RefCell::new(None) };
+    }
+
+    pub fn init(app: &AppHandle) {
+        let _ = APP_HANDLE.set(app.clone());
+        let app_clone = app.clone();
+        let _ = app.run_on_main_thread(move || {
+            CONTROLS.with(|cell| {
+                if cell.borrow().is_some() {
+                    return;
+                }
+                let config = PlatformConfig {
+                    dbus_name: "argus",
+                    display_name: "Argus",
+                    hwnd: None,
+                };
+                if let Ok(mut controls) = MediaControls::new(config) {
+                    let handle = app_clone.clone();
+                    let _ = controls.attach(move |event: MediaControlEvent| {
+                        let key = match event {
+                            MediaControlEvent::Play => "play",
+                            MediaControlEvent::Pause => "pause",
+                            MediaControlEvent::Toggle => "playpause",
+                            MediaControlEvent::Next => "next",
+                            MediaControlEvent::Previous => "previous",
+                            MediaControlEvent::Stop => "stop",
+                            _ => return,
+                        };
+                        let _ = handle.emit("argus://media-key", key);
+                    });
+                    *cell.borrow_mut() = Some(controls);
+                }
+            });
+        });
+    }
+
+    pub fn update(
+        playing: bool,
+        title: String,
+        subtitle: String,
+        art_url: Option<String>,
+        duration_sec: Option<f64>,
+        position_sec: Option<f64>,
+    ) {
+        let Some(app) = APP_HANDLE.get() else {
+            return;
+        };
+        let _ = app.run_on_main_thread(move || {
+            CONTROLS.with(|cell| {
+                let mut guard = cell.borrow_mut();
+                let Some(controls) = guard.as_mut() else {
+                    return;
+                };
+                let duration = duration_sec
+                    .filter(|d| d.is_finite() && *d > 0.0)
+                    .map(Duration::from_secs_f64);
+                let progress = position_sec
+                    .filter(|p| p.is_finite() && *p >= 0.0)
+                    .map(|p| MediaPosition(Duration::from_secs_f64(p)));
+                let _ = controls.set_metadata(MediaMetadata {
+                    title: (!title.is_empty()).then_some(title.as_str()),
+                    artist: (!subtitle.is_empty()).then_some(subtitle.as_str()),
+                    album: None,
+                    cover_url: art_url.as_deref(),
+                    duration,
+                });
+                let playback = if playing {
+                    MediaPlayback::Playing { progress }
+                } else {
+                    MediaPlayback::Paused { progress }
+                };
+                let _ = controls.set_playback(playback);
+            });
+        });
+    }
+
+    pub fn clear() {
+        let Some(app) = APP_HANDLE.get() else {
+            return;
+        };
+        let _ = app.run_on_main_thread(move || {
+            CONTROLS.with(|cell| {
+                if let Some(controls) = cell.borrow_mut().as_mut() {
+                    let _ = controls.set_playback(MediaPlayback::Stopped);
+                }
+            });
+        });
+    }
+}
+
 pub fn ensure_started_on_setup(app: &tauri::AppHandle) {
     #[cfg(windows)]
     win::init(app);
     #[cfg(target_os = "linux")]
     linux::init(app);
-    #[cfg(not(any(windows, target_os = "linux")))]
+    #[cfg(target_os = "macos")]
+    mac::init(app);
+    #[cfg(not(any(windows, target_os = "linux", target_os = "macos")))]
     let _ = app;
 }
 
@@ -721,7 +827,12 @@ pub fn media_controls_update(
         position_sec,
         volume,
     );
-    #[cfg(not(any(windows, target_os = "linux")))]
+    #[cfg(target_os = "macos")]
+    {
+        let _ = volume;
+        mac::update(playing, title, subtitle, art_url, duration_sec, position_sec);
+    }
+    #[cfg(not(any(windows, target_os = "linux", target_os = "macos")))]
     let _ = (
         playing,
         title,
@@ -763,4 +874,6 @@ pub fn media_controls_clear() {
     win::clear();
     #[cfg(target_os = "linux")]
     linux::clear();
+    #[cfg(target_os = "macos")]
+    mac::clear();
 }

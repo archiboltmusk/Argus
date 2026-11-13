@@ -3,7 +3,7 @@ import type { MusicTrack } from "./types";
 
 const KEY = "argus.music.lyric-offset.v1";
 const LIMIT = 200;
-export const LYRIC_OFFSET_STEP = 0.25;
+export const LYRIC_OFFSET_STEP = 0.1;
 export const LYRIC_OFFSET_LIMIT = 8;
 
 export function lyricOffsetKey(track: MusicTrack | null | undefined): string {
@@ -14,7 +14,8 @@ export function lyricOffsetKey(track: MusicTrack | null | undefined): string {
 export function clampLyricOffset(seconds: number): number {
   if (!Number.isFinite(seconds)) return 0;
   const bounded = Math.max(-LYRIC_OFFSET_LIMIT, Math.min(LYRIC_OFFSET_LIMIT, seconds));
-  return Math.round(bounded / LYRIC_OFFSET_STEP) * LYRIC_OFFSET_STEP;
+  const snapped = Math.round(bounded / LYRIC_OFFSET_STEP) * LYRIC_OFFSET_STEP;
+  return Math.round(snapped * 1000) / 1000 || 0;
 }
 
 export function parseOffsets(raw: string | null): Record<string, number> {
