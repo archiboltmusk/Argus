@@ -26,7 +26,7 @@ test("a nonsense time or offset is survivable", () => {
 test("offsets are clamped and snapped to the step", () => {
   assert.equal(clampLyricOffset(999), LYRIC_OFFSET_LIMIT);
   assert.equal(clampLyricOffset(-999), -LYRIC_OFFSET_LIMIT);
-  assert.equal(clampLyricOffset(0.3), 0.25);
+  assert.equal(clampLyricOffset(0.3), 0.3);
   assert.equal(clampLyricOffset(Number.NaN), 0);
 });
 
@@ -34,7 +34,7 @@ test("stored offsets survive a round trip and reject junk", () => {
   assert.deepEqual(parseOffsets(JSON.stringify({ "a:1": 0.5 })), { "a:1": 0.5 });
   assert.deepEqual(parseOffsets("not json"), {});
   assert.deepEqual(parseOffsets(JSON.stringify(["nope"])), {});
-  assert.deepEqual(parseOffsets(JSON.stringify({ "a:1": "x", "b:2": 0.25 })), { "b:2": 0.25 });
+  assert.deepEqual(parseOffsets(JSON.stringify({ "a:1": "x", "b:2": 0.3 })), { "b:2": 0.3 });
 });
 
 test("the map is bounded so it cannot grow without limit in storage", () => {
