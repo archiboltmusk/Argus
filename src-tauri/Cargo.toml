@@ -243,3 +243,9 @@ souvlaki = { version = "0.8", default-features = false }
 librespot-core = { path = "vendor/librespot-core" }
 # Expose cached connected-seeder counts until librqbit provides them upstream.
 librqbit = { path = "vendor/librqbit" }
+
+[profile.release]
+lto = "thin"
+codegen-units = 1
+opt-level = 3
+strip = "symbols"

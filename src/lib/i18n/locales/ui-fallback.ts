@@ -1,48 +1,40 @@
 // Newly introduced UI copy remains usable until each locale provides an override.
 const uiFallback: Record<string, string> = {
+  "Update backups": "Update backups",
+  "Having trouble after an update? Back up your setup with the controls below, then download an earlier installer.": "Having trouble after an update? Back up your setup with the controls below, then download an earlier installer.",
+  "Hide earlier builds": "Hide earlier builds",
+  "Browse earlier builds": "Browse earlier builds",
+  "Use the backup controls below to save or restore your setup.": "Use the backup controls below to save or restore your setup.",
+  "Couldn't load earlier builds. Check your connection and try again.": "Couldn't load earlier builds. Check your connection and try again.",
+  "Check for new versions and install them here. Updates preserve your settings and library, and save a recovery backup before installation. Nothing installs until you choose to.": "Check for new versions and install them here. Updates preserve your settings and library, and save a recovery backup before installation. Nothing installs until you choose to.",
+  "The update channel changed. Check for updates again.": "The update channel changed. Check for updates again.",
   "1 track": "1 track",
   "Vocal cut (Karaoke)": "Vocal cut (Karaoke)",
   "Vocal Cut: On": "Vocal Cut: On",
   "Vocal Cut": "Vocal Cut",
-  "Update backups": "Update backups",
-  "Having trouble after an update? Back up your setup with the controls below, then download an earlier installer.":
-    "Having trouble after an update? Back up your setup with the controls below, then download an earlier installer.",
-  "Hide earlier builds": "Hide earlier builds",
-  "Browse earlier builds": "Browse earlier builds",
-  "Use the backup controls below to save or restore your setup.":
-    "Use the backup controls below to save or restore your setup.",
-  "Couldn't load earlier builds. Check your connection and try again.":
-    "Couldn't load earlier builds. Check your connection and try again.",
-  "Check for new versions and install them here. Updates preserve your settings and library, and save a recovery backup before installation. Nothing installs until you choose to.":
-    "Check for new versions and install them here. Updates preserve your settings and library, and save a recovery backup before installation. Nothing installs until you choose to.",
-  "The update channel changed. Check for updates again.":
-    "The update channel changed. Check for updates again.",
   "Enter a passphrase (at least 4 characters).": "Enter a passphrase (at least 4 characters).",
   "Encrypted vault saved locally (AES-GCM 256).": "Encrypted vault saved locally (AES-GCM 256).",
   "Could not encrypt vault.": "Could not encrypt vault.",
   "Vault unlocked and keys restored.": "Vault unlocked and keys restored.",
   "Wrong passphrase or no vault found.": "Wrong passphrase or no vault found.",
   "Argus Account Suite": "Argus Account Suite",
-  "Pair TVs & projectors, encrypt API keys locally, hand off playback, manage active devices, and keep rolling setup snapshots.":
-    "Pair TVs & projectors, encrypt API keys locally, hand off playback, manage active devices, and keep rolling setup snapshots.",
+  "Pair TVs & projectors, encrypt API keys locally, hand off playback, manage active devices, and keep rolling setup snapshots.": "Pair TVs & projectors, encrypt API keys locally, hand off playback, manage active devices, and keep rolling setup snapshots.",
   "TV & Projector Pairing": "TV & Projector Pairing",
-  Approved: "Approved",
-  Waiting: "Waiting",
-  "Generate a 6-digit pairing code or approve one from another screen.":
-    "Generate a 6-digit pairing code or approve one from another screen.",
+  "Approved": "Approved",
+  "Waiting": "Waiting",
+  "Generate a 6-digit pairing code or approve one from another screen.": "Generate a 6-digit pairing code or approve one from another screen.",
   "Generate Code": "Generate Code",
-  Approve: "Approve",
+  "Approve": "Approve",
   "Zero-Knowledge Key Vault": "Zero-Knowledge Key Vault",
-  "Encrypts TMDB, Trakt, and Debrid tokens on-device with AES-GCM.":
-    "Encrypts TMDB, Trakt, and Debrid tokens on-device with AES-GCM.",
+  "Encrypts TMDB, Trakt, and Debrid tokens on-device with AES-GCM.": "Encrypts TMDB, Trakt, and Debrid tokens on-device with AES-GCM.",
   "Vault passphrase": "Vault passphrase",
   "Encrypt & Save": "Encrypt & Save",
-  Unlock: "Unlock",
+  "Unlock": "Unlock",
   "Cross-Device Handoff": "Cross-Device Handoff",
   "No active handoff queued.": "No active handoff queued.",
   "Queue Handoff": "Queue Handoff",
   "Connected Devices": "Connected Devices",
-  Revoke: "Revoke",
+  "Revoke": "Revoke",
   "Rolling Setup Snapshots (Last 5)": "Rolling Setup Snapshots (Last 5)",
   "Save Snapshot": "Save Snapshot",
   "Adding all...": "Adding all...",
@@ -51,126 +43,88 @@ const uiFallback: Record<string, string> = {
   "Quick preferences": "Quick preferences",
   "Startup, sync, and sports display options.": "Startup, sync, and sports display options.",
   "Skip profile screen on launch": "Skip profile screen on launch",
-  "Opens directly into your last active profile instead of asking who is watching.":
-    "Opens directly into your last active profile instead of asking who is watching.",
+  "Opens directly into your last active profile instead of asking who is watching.": "Opens directly into your last active profile instead of asking who is watching.",
   "Unified cloud sync consolidation": "Unified cloud sync consolidation",
-  "Consolidates watch progress, watchlist, and settings into a single cloud sync pass.":
-    "Consolidates watch progress, watchlist, and settings into a single cloud sync pass.",
+  "Consolidates watch progress, watchlist, and settings into a single cloud sync pass.": "Consolidates watch progress, watchlist, and settings into a single cloud sync pass.",
   "Show sports odds": "Show sports odds",
-  "Displays betting lines and match odds on sports hub cards when available.":
-    "Displays betting lines and match odds on sports hub cards when available.",
+  "Displays betting lines and match odds on sports hub cards when available.": "Displays betting lines and match odds on sports hub cards when available.",
   "Big Picture player controls": "Big Picture player controls",
   "Ten-foot TV": "Ten-foot TV",
   "Backdrop zoom effect": "Backdrop zoom effect",
-  "Subtle slow zoom motion on featured backdrops in Big Picture.":
-    "Subtle slow zoom motion on featured backdrops in Big Picture.",
+  "Subtle slow zoom motion on featured backdrops in Big Picture.": "Subtle slow zoom motion on featured backdrops in Big Picture.",
   "Controller cursor speed": "Controller cursor speed",
-  "How fast the virtual pointer moves when using an analog stick.":
-    "How fast the virtual pointer moves when using an analog stick.",
+  "How fast the virtual pointer moves when using an analog stick.": "How fast the virtual pointer moves when using an analog stick.",
   "On-screen keyboard size": "On-screen keyboard size",
-  "Scale of the controller-friendly on-screen keyboard.":
-    "Scale of the controller-friendly on-screen keyboard.",
+  "Scale of the controller-friendly on-screen keyboard.": "Scale of the controller-friendly on-screen keyboard.",
   "Episode list layout": "Episode list layout",
-  "Default layout for episode lists on show detail pages.":
-    "Default layout for episode lists on show detail pages.",
-  Strip: "Strip",
+  "Default layout for episode lists on show detail pages.": "Default layout for episode lists on show detail pages.",
+  "Strip": "Strip",
   "Episode sort order": "Episode sort order",
-  "Whether episodes list from oldest to newest or newest first.":
-    "Whether episodes list from oldest to newest or newest first.",
+  "Whether episodes list from oldest to newest or newest first.": "Whether episodes list from oldest to newest or newest first.",
   "Library hero banner": "Library hero banner",
-  "Displays a featured hero banner at the top of your Library view.":
-    "Displays a featured hero banner at the top of your Library view.",
+  "Displays a featured hero banner at the top of your Library view.": "Displays a featured hero banner at the top of your Library view.",
   "Show Wrapped button": "Show Wrapped button",
-  "Shows the year-in-review Wrapped shortcut in navigation.":
-    "Shows the year-in-review Wrapped shortcut in navigation.",
+  "Shows the year-in-review Wrapped shortcut in navigation.": "Shows the year-in-review Wrapped shortcut in navigation.",
   "Enable Manga reader": "Enable Manga reader",
-  "Shows the Manga section and reader tools in Argus.":
-    "Shows the Manga section and reader tools in Argus.",
+  "Shows the Manga section and reader tools in Argus.": "Shows the Manga section and reader tools in Argus.",
   "Week starts on Monday": "Week starts on Monday",
-  "Starts the release calendar week on Monday instead of Sunday.":
-    "Starts the release calendar week on Monday instead of Sunday.",
-  "Allows adult-tagged community addons to appear in the Addons directory.":
-    "Allows adult-tagged community addons to appear in the Addons directory.",
+  "Starts the release calendar week on Monday instead of Sunday.": "Starts the release calendar week on Monday instead of Sunday.",
+  "Allows adult-tagged community addons to appear in the Addons directory.": "Allows adult-tagged community addons to appear in the Addons directory.",
   "Local playback mode": "Local playback mode",
-  "What happens when you press Play on a title that also has a local file.":
-    "What happens when you press Play on a title that also has a local file.",
+  "What happens when you press Play on a title that also has a local file.": "What happens when you press Play on a title that also has a local file.",
   "Local folder scan mode": "Local folder scan mode",
-  "Default metadata matching mode when scanning a new local folder.":
-    "Default metadata matching mode when scanning a new local folder.",
-  Courses: "Courses",
-  "Forces ffmpeg transcoding when casting to Chromecast or DLNA devices for maximum compatibility.":
-    "Forces ffmpeg transcoding when casting to Chromecast or DLNA devices for maximum compatibility.",
+  "Default metadata matching mode when scanning a new local folder.": "Default metadata matching mode when scanning a new local folder.",
+  "Courses": "Courses",
+  "Forces ffmpeg transcoding when casting to Chromecast or DLNA devices for maximum compatibility.": "Forces ffmpeg transcoding when casting to Chromecast or DLNA devices for maximum compatibility.",
   "Default playback speed": "Default playback speed",
-  "Starting playback speed when a new movie or episode opens.":
-    "Starting playback speed when a new movie or episode opens.",
+  "Starting playback speed when a new movie or episode opens.": "Starting playback speed when a new movie or episode opens.",
   "Binge mode": "Binge mode",
-  "Automatically advances through episodes with minimal interruption.":
-    "Automatically advances through episodes with minimal interruption.",
+  "Automatically advances through episodes with minimal interruption.": "Automatically advances through episodes with minimal interruption.",
   "Pre-buffer next episode": "Pre-buffer next episode",
-  "Quietly warms up the next episode before credits roll for instant transitions.":
-    "Quietly warms up the next episode before credits roll for instant transitions.",
+  "Quietly warms up the next episode before credits roll for instant transitions.": "Quietly warms up the next episode before credits roll for instant transitions.",
   "Original audio autopilot": "Original audio autopilot",
-  "Prefer the title's original spoken language track automatically.":
-    "Prefer the title's original spoken language track automatically.",
+  "Prefer the title's original spoken language track automatically.": "Prefer the title's original spoken language track automatically.",
   "Data saver mode": "Data saver mode",
-  "Caps streaming quality and background preloading on limited connections.":
-    "Caps streaming quality and background preloading on limited connections.",
+  "Caps streaming quality and background preloading on limited connections.": "Caps streaming quality and background preloading on limited connections.",
   "Native picture in picture": "Native picture in picture",
-  "Use the platform's native floating PiP window when available.":
-    "Use the platform's native floating PiP window when available.",
+  "Use the platform's native floating PiP window when available.": "Use the platform's native floating PiP window when available.",
   "Projector picture profile": "Projector picture profile",
-  "Selects color and luminance tuning for your projection environment.":
-    "Selects color and luminance tuning for your projection environment.",
-  Daylight: "Daylight",
-  Eco: "Eco",
-  Night: "Night",
+  "Selects color and luminance tuning for your projection environment.": "Selects color and luminance tuning for your projection environment.",
+  "Daylight": "Daylight",
+  "Eco": "Eco",
+  "Night": "Night",
   "Projector gamma lift": "Projector gamma lift",
-  "Lifts dark shadow detail so dim scenes remain legible on matte walls.":
-    "Lifts dark shadow detail so dim scenes remain legible on matte walls.",
+  "Lifts dark shadow detail so dim scenes remain legible on matte walls.": "Lifts dark shadow detail so dim scenes remain legible on matte walls.",
   "Projector auto frame rate": "Projector auto frame rate",
-  "Matches display refresh rate to the video's native frame rate when supported.":
-    "Matches display refresh rate to the video's native frame rate when supported.",
+  "Matches display refresh rate to the video's native frame rate when supported.": "Matches display refresh rate to the video's native frame rate when supported.",
   "Projector auto day/night profile": "Projector auto day/night profile",
-  "Automatically switches between daylight and cinema profiles by time of day.":
-    "Automatically switches between daylight and cinema profiles by time of day.",
+  "Automatically switches between daylight and cinema profiles by time of day.": "Automatically switches between daylight and cinema profiles by time of day.",
   "Show chapter markers on seek bar": "Show chapter markers on seek bar",
-  "Displays chapter ticks and tooltips along the player timeline.":
-    "Displays chapter ticks and tooltips along the player timeline.",
-  "Adjusts letter and line breathing room on multi-line subtitles.":
-    "Adjusts letter and line breathing room on multi-line subtitles.",
-  Relaxed: "Relaxed",
-  "Displays a second subtitle language simultaneously for language learning or bilingual viewing.":
-    "Displays a second subtitle language simultaneously for language learning or bilingual viewing.",
+  "Displays chapter ticks and tooltips along the player timeline.": "Displays chapter ticks and tooltips along the player timeline.",
+  "Adjusts letter and line breathing room on multi-line subtitles.": "Adjusts letter and line breathing room on multi-line subtitles.",
+  "Relaxed": "Relaxed",
+  "Displays a second subtitle language simultaneously for language learning or bilingual viewing.": "Displays a second subtitle language simultaneously for language learning or bilingual viewing.",
   "Night dialogue booster": "Night dialogue booster",
-  "Clarifies quiet spoken dialogue and keeps subtitle cues crisp during late-night sessions.":
-    "Clarifies quiet spoken dialogue and keeps subtitle cues crisp during late-night sessions.",
+  "Clarifies quiet spoken dialogue and keeps subtitle cues crisp during late-night sessions.": "Clarifies quiet spoken dialogue and keeps subtitle cues crisp during late-night sessions.",
   "Speaker diarization colors": "Speaker diarization colors",
-  "Uses subtle distinct colors when multiple speakers are labeled in a subtitle track.":
-    "Uses subtle distinct colors when multiple speakers are labeled in a subtitle track.",
+  "Uses subtle distinct colors when multiple speakers are labeled in a subtitle track.": "Uses subtle distinct colors when multiple speakers are labeled in a subtitle track.",
   "Audio equalizer": "Audio equalizer",
-  "Enables the custom 10-band equalizer curve during playback.":
-    "Enables the custom 10-band equalizer curve during playback.",
+  "Enables the custom 10-band equalizer curve during playback.": "Enables the custom 10-band equalizer curve during playback.",
   "Music crossfade": "Music crossfade",
-  "Smoothly blends between consecutive tracks in the music player.":
-    "Smoothly blends between consecutive tracks in the music player.",
+  "Smoothly blends between consecutive tracks in the music player.": "Smoothly blends between consecutive tracks in the music player.",
   "Share cursors in Watch Together": "Share cursors in Watch Together",
-  "Shows live pointer cursors of other participants inside the Watch Together room.":
-    "Shows live pointer cursors of other participants inside the Watch Together room.",
+  "Shows live pointer cursors of other participants inside the Watch Together room.": "Shows live pointer cursors of other participants inside the Watch Together room.",
   "Allow guests to pick media": "Allow guests to pick media",
-  "Lets room guests choose the next title or stream without host approval.":
-    "Lets room guests choose the next title or stream without host approval.",
+  "Lets room guests choose the next title or stream without host approval.": "Lets room guests choose the next title or stream without host approval.",
   "Chat reactions & extras": "Chat reactions & extras",
-  "Enables emoji reactions and extended chat cards inside Watch Together.":
-    "Enables emoji reactions and extended chat cards inside Watch Together.",
+  "Enables emoji reactions and extended chat cards inside Watch Together.": "Enables emoji reactions and extended chat cards inside Watch Together.",
   "Share watch presence": "Share watch presence",
-  "Shares what you are currently watching with your connected friends.":
-    "Shares what you are currently watching with your connected friends.",
+  "Shares what you are currently watching with your connected friends.": "Shares what you are currently watching with your connected friends.",
   "Sync AniList watch progress": "Sync AniList watch progress",
   "Sync MyAnimeList watch progress": "Sync MyAnimeList watch progress",
   "Offset indicator position": "Offset indicator position",
   "Offset indicator size": "Offset indicator size",
-  "Sorry, couldn't connect to local AI companion. Please ensure Ollama is running.":
-    "Sorry, couldn't connect to local AI companion. Please ensure Ollama is running.",
+  "Sorry, couldn't connect to local AI companion. Please ensure Ollama is running.": "Sorry, couldn't connect to local AI companion. Please ensure Ollama is running.",
   "Explain this scene without spoilers": "Explain this scene without spoilers",
   "Who is currently on screen?": "Who is currently on screen?",
   "Recap what happened so far": "Recap what happened so far",
@@ -184,43 +138,34 @@ const uiFallback: Record<string, string> = {
   "Refresh AI status": "Refresh AI status",
   "Close (Esc)": "Close (Esc)",
   "Ask about this exact moment": "Ask about this exact moment",
-  "Argus Cinema Companion uses local on-device AI to explain lore, characters, and plot without spoiling what lies ahead.":
-    "Argus Cinema Companion uses local on-device AI to explain lore, characters, and plot without spoiling what lies ahead.",
+  "Argus Cinema Companion uses local on-device AI to explain lore, characters, and plot without spoiling what lies ahead.": "Argus Cinema Companion uses local on-device AI to explain lore, characters, and plot without spoiling what lies ahead.",
   "Connect Local Ollama": "Connect Local Ollama",
-  "Run this in your terminal for 100% free, private AI:":
-    "Run this in your terminal for 100% free, private AI:",
+  "Run this in your terminal for 100% free, private AI:": "Run this in your terminal for 100% free, private AI:",
   "Copy command": "Copy command",
   "Cinema AI": "Cinema AI",
   "Analyzing scene context safely...": "Analyzing scene context safely...",
   "Ask anything about this scene...": "Ask anything about this scene...",
   "Send question": "Send question",
   "What's New in Argus": "What's New in Argus",
-  "Overview of recent upgrades, new features, and performance enhancements.":
-    "Overview of recent upgrades, new features, and performance enhancements.",
+  "Overview of recent upgrades, new features, and performance enhancements.": "Overview of recent upgrades, new features, and performance enhancements.",
   "Current Build: {ver}": "Current Build: {ver}",
   "Show fewer releases": "Show fewer releases",
   "View earlier updates ({count} more)": "View earlier updates ({count} more)",
   "Infinite 'For You' Video Reels": "Infinite 'For You' Video Reels",
-  "Full-bleed cinematic previews, auto-advancing hooks, and one-touch streaming.":
-    "Full-bleed cinematic previews, auto-advancing hooks, and one-touch streaming.",
+  "Full-bleed cinematic previews, auto-advancing hooks, and one-touch streaming.": "Full-bleed cinematic previews, auto-advancing hooks, and one-touch streaming.",
   "Launch Feed": "Launch Feed",
   "Movie Night Taste Blend": "Movie Night Taste Blend",
-  "Merge two profiles to calculate joint cinematic synergy and zero-conflict picks.":
-    "Merge two profiles to calculate joint cinematic synergy and zero-conflict picks.",
+  "Merge two profiles to calculate joint cinematic synergy and zero-conflict picks.": "Merge two profiles to calculate joint cinematic synergy and zero-conflict picks.",
   "Blend Profiles": "Blend Profiles",
   "For You Video Reels": "For You Video Reels",
-  "TikTok and Instagram-grade full-screen trailer feed.":
-    "TikTok and Instagram-grade full-screen trailer feed.",
+  "TikTok and Instagram-grade full-screen trailer feed.": "TikTok and Instagram-grade full-screen trailer feed.",
   "Taste Blend": "Taste Blend",
-  "Spotify-grade co-watching compatibility and zero-conflict movie night picks.":
-    "Spotify-grade co-watching compatibility and zero-conflict movie night picks.",
+  "Spotify-grade co-watching compatibility and zero-conflict movie night picks.": "Spotify-grade co-watching compatibility and zero-conflict movie night picks.",
   "Sign in failed": "Sign in failed",
   "Connect Cloud Account & Sync": "Connect Cloud Account & Sync",
-  "Log in once to access your Continue Watching, Library, and Addons on any device.":
-    "Log in once to access your Continue Watching, Library, and Addons on any device.",
+  "Log in once to access your Continue Watching, Library, and Addons on any device.": "Log in once to access your Continue Watching, Library, and Addons on any device.",
   "Account Connected Successfully!": "Account Connected Successfully!",
-  "Syncing all your profiles, continue watching, and streaming addons...":
-    "Syncing all your profiles, continue watching, and streaming addons...",
+  "Syncing all your profiles, continue watching, and streaming addons...": "Syncing all your profiles, continue watching, and streaming addons...",
   "Fast QR / Code Link": "Fast QR / Code Link",
   "Nuvio Email Login": "Nuvio Email Login",
   "Stremio Login": "Stremio Login",
@@ -242,73 +187,58 @@ const uiFallback: Record<string, string> = {
   "Last synced {time}": "Last synced {time}",
   "Cloud Sync Active": "Cloud Sync Active",
   "Sync Now": "Sync Now",
-  "Watch progress, library & addons stay in sync everywhere":
-    "Watch progress, library & addons stay in sync everywhere",
+  "Watch progress, library & addons stay in sync everywhere": "Watch progress, library & addons stay in sync everywhere",
   "Sync Across All Your Devices": "Sync Across All Your Devices",
-  "Sign in with your account so your Continue Watching, Library, and Addons follow you seamlessly between this iPhone, your Android Projector, and Mac.":
-    "Sign in with your account so your Continue Watching, Library, and Addons follow you seamlessly between this iPhone, your Android Projector, and Mac.",
+  "Sign in with your account so your Continue Watching, Library, and Addons follow you seamlessly between this iPhone, your Android Projector, and Mac.": "Sign in with your account so your Continue Watching, Library, and Addons follow you seamlessly between this iPhone, your Android Projector, and Mac.",
   "Nuvio Sign In": "Nuvio Sign In",
   "Stremio Sign In": "Stremio Sign In",
   "Live EN": "Live EN",
-  Whisper: "Whisper",
+  "Whisper": "Whisper",
   "Stop live subtitle transcription": "Stop live subtitle transcription",
   "Translating speech to English": "Translating speech to English",
   "Live Whisper transcription": "Live Whisper transcription",
-  "Toggle English translation for anime & foreign movies":
-    "Toggle English translation for anime & foreign movies",
+  "Toggle English translation for anime & foreign movies": "Toggle English translation for anime & foreign movies",
   "EN Trans": "EN Trans",
-  Verbatim: "Verbatim",
-  "Generate continuous offline subtitles with Whisper ASR":
-    "Generate continuous offline subtitles with Whisper ASR",
+  "Verbatim": "Verbatim",
+  "Generate continuous offline subtitles with Whisper ASR": "Generate continuous offline subtitles with Whisper ASR",
   "Watch on this device": "Watch on this device",
-  "Stream using Outplayer, Infuse, VLC, or in-app":
-    "Stream using Outplayer, Infuse, VLC, or in-app",
+  "Stream using Outplayer, Infuse, VLC, or in-app": "Stream using Outplayer, Infuse, VLC, or in-app",
   "Media Player on iOS": "Media Player on iOS",
   "Debrid & Streaming Accounts": "Debrid & Streaming Accounts",
   "Card layout": "Card layout",
   "Poster (2:3)": "Poster (2:3)",
   "Landscape (16:9)": "Landscape (16:9)",
   "Night mode (Dynamic Range Compression)": "Night mode (Dynamic Range Compression)",
-  "Softens loud explosive spikes and boosts quiet whisper dialogue frequencies for comfortable late-night viewing.":
-    "Softens loud explosive spikes and boosts quiet whisper dialogue frequencies for comfortable late-night viewing.",
+  "Softens loud explosive spikes and boosts quiet whisper dialogue frequencies for comfortable late-night viewing.": "Softens loud explosive spikes and boosts quiet whisper dialogue frequencies for comfortable late-night viewing.",
   "Zero-wait binge preloading": "Zero-wait binge preloading",
-  "Pre-resolves top stream candidates for the next episode in the background during credits so playback starts instantly with 0 buffering delay.":
-    "Pre-resolves top stream candidates for the next episode in the background during credits so playback starts instantly with 0 buffering delay.",
+  "Pre-resolves top stream candidates for the next episode in the background during credits so playback starts instantly with 0 buffering delay.": "Pre-resolves top stream candidates for the next episode in the background during credits so playback starts instantly with 0 buffering delay.",
   "Projector Android Launcher as default home": "Projector Android Launcher as default home",
-  "Launches the Google Home style 10-foot Projector Launcher on startup, featuring quick source switcher (HDMI 1/2, AV, USB), projector focus & keystone test pattern, wall color compensation, and installed TV apps.":
-    "Launches the Google Home style 10-foot Projector Launcher on startup, featuring quick source switcher (HDMI 1/2, AV, USB), projector focus & keystone test pattern, wall color compensation, and installed TV apps.",
+  "Launches the Google Home style 10-foot Projector Launcher on startup, featuring quick source switcher (HDMI 1/2, AV, USB), projector focus & keystone test pattern, wall color compensation, and installed TV apps.": "Launches the Google Home style 10-foot Projector Launcher on startup, featuring quick source switcher (HDMI 1/2, AV, USB), projector focus & keystone test pattern, wall color compensation, and installed TV apps.",
   "Phone Remote": "Phone Remote",
-  "Scan with your phone camera to control playback, timeline scrub, and volume.":
-    "Scan with your phone camera to control playback, timeline scrub, and volume.",
+  "Scan with your phone camera to control playback, timeline scrub, and volume.": "Scan with your phone camera to control playback, timeline scrub, and volume.",
   "Get free key": "Get free key",
-  "Historical EWMA throughput measured for this host":
-    "Historical EWMA throughput measured for this host",
+  "Historical EWMA throughput measured for this host": "Historical EWMA throughput measured for this host",
   "Skip silence": "Skip silence",
-  "Play random unwatched episode (Shift-click for any)":
-    "Play random unwatched episode (Shift-click for any)",
+  "Play random unwatched episode (Shift-click for any)": "Play random unwatched episode (Shift-click for any)",
   "Prioritizing unwatched episodes": "Prioritizing unwatched episodes",
   "Popular Community Repositories": "Popular Community Repositories",
   "Could not install this repository": "Could not install this repository",
   "Mihon / Tachiyomi Repository": "Mihon / Tachiyomi Repository",
-  Supported: "Supported",
-  "Import all manga sources from this repository into Argus. Scrapers are mapped to your catalog and synchronized automatically with your local engine.":
-    "Import all manga sources from this repository into Argus. Scrapers are mapped to your catalog and synchronized automatically with your local engine.",
+  "Supported": "Supported",
+  "Import all manga sources from this repository into Argus. Scrapers are mapped to your catalog and synchronized automatically with your local engine.": "Import all manga sources from this repository into Argus. Scrapers are mapped to your catalog and synchronized automatically with your local engine.",
   "Successfully imported {n} sources": "Successfully imported {n} sources",
-  "Extensions synced with local daemon on port 4567.":
-    "Extensions synced with local daemon on port 4567.",
+  "Extensions synced with local daemon on port 4567.": "Extensions synced with local daemon on port 4567.",
   "Importing {done} of {total}...": "Importing {done} of {total}...",
   "Import {n} Mihon sources": "Import {n} Mihon sources",
   "Import Mihon sources": "Import Mihon sources",
   "Universal In-App Extensions": "Universal In-App Extensions",
-  "Argus runs manga extensions natively inside isolated web workers. You do not need Java, Docker, or an external Suwayomi server. Install verified community repositories below to stream and read manga natively across all devices.":
-    "Argus runs manga extensions natively inside isolated web workers. You do not need Java, Docker, or an external Suwayomi server. Install verified community repositories below to stream and read manga natively across all devices.",
+  "Argus runs manga extensions natively inside isolated web workers. You do not need Java, Docker, or an external Suwayomi server. Install verified community repositories below to stream and read manga natively across all devices.": "Argus runs manga extensions natively inside isolated web workers. You do not need Java, Docker, or an external Suwayomi server. Install verified community repositories below to stream and read manga natively across all devices.",
   "Could not add repository": "Could not add repository",
   "Extensions (Zero-Server)": "Extensions (Zero-Server)",
   "Verified Community Repositories (1-Click)": "Verified Community Repositories (1-Click)",
   "1-Click Install": "1-Click Install",
   "Add Custom Repository URL": "Add Custom Repository URL",
-  "No repositories installed yet. Click 1-Click Install above to add community scrapers.":
-    "No repositories installed yet. Click 1-Click Install above to add community scrapers.",
+  "No repositories installed yet. Click 1-Click Install above to add community scrapers.": "No repositories installed yet. Click 1-Click Install above to add community scrapers.",
   "Select Suwayomi Folder or App": "Select Suwayomi Folder or App",
   "Select Suwayomi App Bundle or Binary": "Select Suwayomi App Bundle or Binary",
   "Optional Local Server": "Optional Local Server",
@@ -316,8 +246,7 @@ const uiFallback: Record<string, string> = {
   "Locate Suwayomi folder manually": "Locate Suwayomi folder manually",
   "Locate Folder": "Locate Folder",
   "Save & Start": "Save & Start",
-  "No server required! Use Universal In-App Extensions below for zero-server reading.":
-    "No server required! Use Universal In-App Extensions below for zero-server reading.",
+  "No server required! Use Universal In-App Extensions below for zero-server reading.": "No server required! Use Universal In-App Extensions below for zero-server reading.",
   "Switch to working source ({addon})": "Switch to working source ({addon})",
   "A faster source is ready": "A faster source is ready",
   "Stream stalled · searching better addon": "Stream stalled · searching better addon",
@@ -325,55 +254,41 @@ const uiFallback: Record<string, string> = {
   "healthy source": "healthy source",
   "Auto-swapping to faster source in {sec}s…": "Auto-swapping to faster source in {sec}s…",
   "Verified healthy cached stream ready.": "Verified healthy cached stream ready.",
-  "Looking across all installed addons for working links…":
-    "Looking across all installed addons for working links…",
+  "Looking across all installed addons for working links…": "Looking across all installed addons for working links…",
   "Swap now ({sec}s)": "Swap now ({sec}s)",
   "Keep waiting": "Keep waiting",
   "Cloud sync": "Cloud sync",
-  "If a stream has stopped making progress, quietly try the next compatible source. You can turn this off at any time.":
-    "If a stream has stopped making progress, quietly try the next compatible source. You can turn this off at any time.",
+  "If a stream has stopped making progress, quietly try the next compatible source. You can turn this off at any time.": "If a stream has stopped making progress, quietly try the next compatible source. You can turn this off at any time.",
   "Connection mode": "Connection mode",
-  "Automatic protects mobile and data-saver connections. Choose a mode only when Argus cannot identify your network correctly.":
-    "Automatic protects mobile and data-saver connections. Choose a mode only when Argus cannot identify your network correctly.",
-  Travel: "Travel",
+  "Automatic protects mobile and data-saver connections. Choose a mode only when Argus cannot identify your network correctly.": "Automatic protects mobile and data-saver connections. Choose a mode only when Argus cannot identify your network correctly.",
+  "Travel": "Travel",
   "Projector & Big Screen": "Projector & Big Screen",
   "Projector display optimization": "Projector display optimization",
-  "Tuned for LED projectors (Portronics Beem, Wanbo, Egate) and home cinema beams. Boosts midtone contrast, enhances gamma, and activates fast deband to eliminate washed-out projection on walls.":
-    "Tuned for LED projectors (Portronics Beem, Wanbo, Egate) and home cinema beams. Boosts midtone contrast, enhances gamma, and activates fast deband to eliminate washed-out projection on walls.",
+  "Tuned for LED projectors (Portronics Beem, Wanbo, Egate) and home cinema beams. Boosts midtone contrast, enhances gamma, and activates fast deband to eliminate washed-out projection on walls.": "Tuned for LED projectors (Portronics Beem, Wanbo, Egate) and home cinema beams. Boosts midtone contrast, enhances gamma, and activates fast deband to eliminate washed-out projection on walls.",
   "Midtone contrast boost": "Midtone contrast boost",
-  "Compensates for ambient light and low ANSI lumens projection.":
-    "Compensates for ambient light and low ANSI lumens projection.",
+  "Compensates for ambient light and low ANSI lumens projection.": "Compensates for ambient light and low ANSI lumens projection.",
   "+4 dB": "+4 dB",
   "+8 dB (Recommended)": "+8 dB (Recommended)",
   "+12 dB (Daylight)": "+12 dB (Daylight)",
   "Keystone edge overscan safe-area": "Keystone edge overscan safe-area",
-  "Shrinks picture margins slightly (0-10%) so physical keystone distortion does not crop video or subtitles.":
-    "Shrinks picture margins slightly (0-10%) so physical keystone distortion does not crop video or subtitles.",
+  "Shrinks picture margins slightly (0-10%) so physical keystone distortion does not crop video or subtitles.": "Shrinks picture margins slightly (0-10%) so physical keystone distortion does not crop video or subtitles.",
   "None (0%)": "None (0%)",
   "5% (Standard)": "5% (Standard)",
   "8% (High keystone)": "8% (High keystone)",
   "Wall high-contrast amber subtitles": "Wall high-contrast amber subtitles",
-  "Renders subtitles with a bold outline and anti-glare warm cream/amber tone to prevent projector light leakage from washing out text.":
-    "Renders subtitles with a bold outline and anti-glare warm cream/amber tone to prevent projector light leakage from washing out text.",
-  "Free, beautifully typeset public domain editions":
-    "Free, beautifully typeset public domain editions",
-  "Tagore, Sarat Chandra, Bankim, Satyajit Ray & NDLI classics":
-    "Tagore, Sarat Chandra, Bankim, Satyajit Ray & NDLI classics",
-  "35M+ books, papers, LibGen mirrors & open repositories":
-    "35M+ books, papers, LibGen mirrors & open repositories",
+  "Renders subtitles with a bold outline and anti-glare warm cream/amber tone to prevent projector light leakage from washing out text.": "Renders subtitles with a bold outline and anti-glare warm cream/amber tone to prevent projector light leakage from washing out text.",
+  "Free, beautifully typeset public domain editions": "Free, beautifully typeset public domain editions",
+  "Tagore, Sarat Chandra, Bankim, Satyajit Ray & NDLI classics": "Tagore, Sarat Chandra, Bankim, Satyajit Ray & NDLI classics",
+  "35M+ books, papers, LibGen mirrors & open repositories": "35M+ books, papers, LibGen mirrors & open repositories",
   "Calibre & Self-Hosted Mesh": "Calibre & Self-Hosted Mesh",
-  "Auto-detects Calibre (8080), Calibre-Web (8083), and Kavita (5000)":
-    "Auto-detects Calibre (8080), Calibre-Web (8083), and Kavita (5000)",
+  "Auto-detects Calibre (8080), Calibre-Web (8083), and Kavita (5000)": "Auto-detects Calibre (8080), Calibre-Web (8083), and Kavita (5000)",
   "Rescan local network": "Rescan local network",
-  "No running Calibre/Kavita servers found on standard local ports.":
-    "No running Calibre/Kavita servers found on standard local ports.",
+  "No running Calibre/Kavita servers found on standard local ports.": "No running Calibre/Kavita servers found on standard local ports.",
   "Starting...": "Starting...",
   "Refresh status": "Refresh status",
   "Local Suwayomi Engine": "Local Suwayomi Engine",
-  "Zero-friction background daemon. Starts automatically with Argus so manga is ready instantly.":
-    "Zero-friction background daemon. Starts automatically with Argus so manga is ready instantly.",
-  "Auto-start Suwayomi daemon when Argus launches":
-    "Auto-start Suwayomi daemon when Argus launches",
+  "Zero-friction background daemon. Starts automatically with Argus so manga is ready instantly.": "Zero-friction background daemon. Starts automatically with Argus so manga is ready instantly.",
+  "Auto-start Suwayomi daemon when Argus launches": "Auto-start Suwayomi daemon when Argus launches",
   "Start Server": "Start Server",
   "Stop Server": "Stop Server",
   "Online (4567)": "Online (4567)",
@@ -389,20 +304,16 @@ const uiFallback: Record<string, string> = {
   "Listen Live": "Listen Live",
   "No live match telemetry active.": "No live match telemetry active.",
   "Knowledge without gates. Your curriculum.": "Knowledge without gates. Your curriculum.",
-  "Democratizing education with clinical vignette simulations, high-yield university lecture series, and active recall spaced repetition.":
-    "Democratizing education with clinical vignette simulations, high-yield university lecture series, and active recall spaced repetition.",
+  "Democratizing education with clinical vignette simulations, high-yield university lecture series, and active recall spaced repetition.": "Democratizing education with clinical vignette simulations, high-yield university lecture series, and active recall spaced repetition.",
   "Daily Active Recall Spaced Repetition Session": "Daily Active Recall Spaced Repetition Session",
-  "Launch High-Yield Clinical Vignette QBank Drill":
-    "Launch High-Yield Clinical Vignette QBank Drill",
+  "Launch High-Yield Clinical Vignette QBank Drill": "Launch High-Yield Clinical Vignette QBank Drill",
   "More Educational Tools": "More Educational Tools",
   "Manage QBank Packs": "Manage QBank Packs",
   "Configure Feeds": "Configure Feeds",
   "Education sub-navigation": "Education sub-navigation",
-  "Sequential video lecture libraries indexed from your local drives.":
-    "Sequential video lecture libraries indexed from your local drives.",
+  "Sequential video lecture libraries indexed from your local drives.": "Sequential video lecture libraries indexed from your local drives.",
   "Curated University & Faculty Series": "Curated University & Faculty Series",
-  "Comprehensive masterclasses from open universities and medical faculties.":
-    "Comprehensive masterclasses from open universities and medical faculties.",
+  "Comprehensive masterclasses from open universities and medical faculties.": "Comprehensive masterclasses from open universities and medical faculties.",
   "Filter by topic or university…": "Filter by topic or university…",
   "Captured Study Notes": "Captured Study Notes",
   "Saved!": "Saved!",
@@ -412,177 +323,115 @@ const uiFallback: Record<string, string> = {
   "Live sports scores & cricket telemetry": "Live sports scores & cricket telemetry",
   "Off (Original Audio)": "Off (Original Audio)",
   "Broadband & Data Efficiency Policy": "Broadband & Data Efficiency Policy",
-  "Configures bandwidth policies for uncapped home broadband versus daily metered mobile hotspots.":
-    "Configures bandwidth policies for uncapped home broadband versus daily metered mobile hotspots.",
+  "Configures bandwidth policies for uncapped home broadband versus daily metered mobile hotspots.": "Configures bandwidth policies for uncapped home broadband versus daily metered mobile hotspots.",
   "Wi-Fi Broadband is Always Unlimited": "Wi-Fi Broadband is Always Unlimited",
-  "Wi-Fi and Ethernet connections are 100% unmetered and uncapped: enables maximum 4K Remux / Dolby Vision fidelity, 24/7 unthrottled seeding, and suppresses budget warnings.":
-    "Wi-Fi and Ethernet connections are 100% unmetered and uncapped: enables maximum 4K Remux / Dolby Vision fidelity, 24/7 unthrottled seeding, and suppresses budget warnings.",
-  "Unlimited Broadband Active: Zero Bitrate Caps & Uncapped Speeds":
-    "Unlimited Broadband Active: Zero Bitrate Caps & Uncapped Speeds",
+  "Wi-Fi and Ethernet connections are 100% unmetered and uncapped: enables maximum 4K Remux / Dolby Vision fidelity, 24/7 unthrottled seeding, and suppresses budget warnings.": "Wi-Fi and Ethernet connections are 100% unmetered and uncapped: enables maximum 4K Remux / Dolby Vision fidelity, 24/7 unthrottled seeding, and suppresses budget warnings.",
+  "Unlimited Broadband Active: Zero Bitrate Caps & Uncapped Speeds": "Unlimited Broadband Active: Zero Bitrate Caps & Uncapped Speeds",
   "4K HDR Ready": "4K HDR Ready",
-  "Multi-Chunk Turbo Streamer (Zero-Wait 4K Seeking)":
-    "Multi-Chunk Turbo Streamer (Zero-Wait 4K Seeking)",
-  "Leverages unlimited broadband with a 4GB demuxer cache and 3600s forward readahead for instant (<200ms) seeks in massive 40GB–80GB Remux releases.":
-    "Leverages unlimited broadband with a 4GB demuxer cache and 3600s forward readahead for instant (<200ms) seeks in massive 40GB–80GB Remux releases.",
-  "Jio / Airtel Hotspot Data Saver (Metered Tethering)":
-    "Jio / Airtel Hotspot Data Saver (Metered Tethering)",
-  "Engages only when tethering on a mobile hotspot: prioritizes HEVC/AV1 micro-encodes and displays a live quota odometer in the player.":
-    "Engages only when tethering on a mobile hotspot: prioritizes HEVC/AV1 micro-encodes and displays a live quota odometer in the player.",
+  "Multi-Chunk Turbo Streamer (Zero-Wait 4K Seeking)": "Multi-Chunk Turbo Streamer (Zero-Wait 4K Seeking)",
+  "Leverages unlimited broadband with a 4GB demuxer cache and 3600s forward readahead for instant (<200ms) seeks in massive 40GB–80GB Remux releases.": "Leverages unlimited broadband with a 4GB demuxer cache and 3600s forward readahead for instant (<200ms) seeks in massive 40GB–80GB Remux releases.",
+  "Jio / Airtel Hotspot Data Saver (Metered Tethering)": "Jio / Airtel Hotspot Data Saver (Metered Tethering)",
+  "Engages only when tethering on a mobile hotspot: prioritizes HEVC/AV1 micro-encodes and displays a live quota odometer in the player.": "Engages only when tethering on a mobile hotspot: prioritizes HEVC/AV1 micro-encodes and displays a live quota odometer in the player.",
   "Daily Mobile Hotspot Budget": "Daily Mobile Hotspot Budget",
   "Audio-Only Stream Mode (--vid=no)": "Audio-Only Stream Mode (--vid=no)",
-  "Strips video decoding to reduce bandwidth footprint to ~25 MB / hour for cricket commentary, concerts, podcasts, or extreme data saving.":
-    "Strips video decoding to reduce bandwidth footprint to ~25 MB / hour for cricket commentary, concerts, podcasts, or extreme data saving.",
-  "Smart Daytime-Leech / Midnight-Seed Torrent Policy":
-    "Smart Daytime-Leech / Midnight-Seed Torrent Policy",
-  "Keeps torrent seeding uncapped 24/7 on unlimited Wi-Fi, but throttles background upload to 1 KB/s during the daytime on mobile hotspots to save daily quota.":
-    "Keeps torrent seeding uncapped 24/7 on unlimited Wi-Fi, but throttles background upload to 1 KB/s during the daytime on mobile hotspots to save daily quota.",
+  "Strips video decoding to reduce bandwidth footprint to ~25 MB / hour for cricket commentary, concerts, podcasts, or extreme data saving.": "Strips video decoding to reduce bandwidth footprint to ~25 MB / hour for cricket commentary, concerts, podcasts, or extreme data saving.",
+  "Smart Daytime-Leech / Midnight-Seed Torrent Policy": "Smart Daytime-Leech / Midnight-Seed Torrent Policy",
+  "Keeps torrent seeding uncapped 24/7 on unlimited Wi-Fi, but throttles background upload to 1 KB/s during the daytime on mobile hotspots to save daily quota.": "Keeps torrent seeding uncapped 24/7 on unlimited Wi-Fi, but throttles background upload to 1 KB/s during the daytime on mobile hotspots to save daily quota.",
   "Regional Audio & Dual-Language Dubs": "Regional Audio & Dual-Language Dubs",
-  "Automatically detects and prioritizes Indian regional language tracks without manual switching on every title.":
-    "Automatically detects and prioritizes Indian regional language tracks without manual switching on every title.",
+  "Automatically detects and prioritizes Indian regional language tracks without manual switching on every title.": "Automatically detects and prioritizes Indian regional language tracks without manual switching on every title.",
   "Preferred Indian Language": "Preferred Indian Language",
-  "When an Indian film or international release includes multi-audio, Argus will switch directly to this dialect.":
-    "When an Indian film or international release includes multi-audio, Argus will switch directly to this dialect.",
+  "When an Indian film or international release includes multi-audio, Argus will switch directly to this dialect.": "When an Indian film or international release includes multi-audio, Argus will switch directly to this dialect.",
   "Auto-Switch to Regional Dub": "Auto-Switch to Regional Dub",
-  "Automatically activates dubbed audio when watching foreign films or South Indian blockbusters with multi-audio tracks.":
-    "Automatically activates dubbed audio when watching foreign films or South Indian blockbusters with multi-audio tracks.",
+  "Automatically activates dubbed audio when watching foreign films or South Indian blockbusters with multi-audio tracks.": "Automatically activates dubbed audio when watching foreign films or South Indian blockbusters with multi-audio tracks.",
   "Bengal & Vintage Cinema Restoration Suite": "Bengal & Vintage Cinema Restoration Suite",
-  "Neural restoration shaders and curation tailored for Purulia, West Bengal, and classic Indian cinema.":
-    "Neural restoration shaders and curation tailored for Purulia, West Bengal, and classic Indian cinema.",
-  "Vintage Cinema AI Shader Suite (Satyajit Ray & Golden Era Tollywood)":
-    "Vintage Cinema AI Shader Suite (Satyajit Ray & Golden Era Tollywood)",
-  "Reconstructs 35mm silver-gelatin contrast, debands vintage DVD transfers, and sharpens micro-contours without plastic digital smoothing.":
-    "Reconstructs 35mm silver-gelatin contrast, debands vintage DVD transfers, and sharpens micro-contours without plastic digital smoothing.",
+  "Neural restoration shaders and curation tailored for Purulia, West Bengal, and classic Indian cinema.": "Neural restoration shaders and curation tailored for Purulia, West Bengal, and classic Indian cinema.",
+  "Vintage Cinema AI Shader Suite (Satyajit Ray & Golden Era Tollywood)": "Vintage Cinema AI Shader Suite (Satyajit Ray & Golden Era Tollywood)",
+  "Reconstructs 35mm silver-gelatin contrast, debands vintage DVD transfers, and sharpens micro-contours without plastic digital smoothing.": "Reconstructs 35mm silver-gelatin contrast, debands vintage DVD transfers, and sharpens micro-contours without plastic digital smoothing.",
   "Film Restoration Profile": "Film Restoration Profile",
   "Tollywood & Bengali Detective Universe Rails": "Tollywood & Bengali Detective Universe Rails",
-  "Surfaces curated Feluda, Byomkesh Bakshi, Satyajit Ray classics, and modern Hoichoi/SVF thrillers directly on Home and Movies views.":
-    "Surfaces curated Feluda, Byomkesh Bakshi, Satyajit Ray classics, and modern Hoichoi/SVF thrillers directly on Home and Movies views.",
-  "Bengali & Hindi Phonetic Transliteration Search":
-    "Bengali & Hindi Phonetic Transliteration Search",
-  "Enables intelligent transliteration: searching Romanized titles ('Sonar Kella', 'Bhooter Bhabishyat') automatically resolves to native Bengali & Hindi titles.":
-    "Enables intelligent transliteration: searching Romanized titles ('Sonar Kella', 'Bhooter Bhabishyat') automatically resolves to native Bengali & Hindi titles.",
+  "Surfaces curated Feluda, Byomkesh Bakshi, Satyajit Ray classics, and modern Hoichoi/SVF thrillers directly on Home and Movies views.": "Surfaces curated Feluda, Byomkesh Bakshi, Satyajit Ray classics, and modern Hoichoi/SVF thrillers directly on Home and Movies views.",
+  "Bengali & Hindi Phonetic Transliteration Search": "Bengali & Hindi Phonetic Transliteration Search",
+  "Enables intelligent transliteration: searching Romanized titles ('Sonar Kella', 'Bhooter Bhabishyat') automatically resolves to native Bengali & Hindi titles.": "Enables intelligent transliteration: searching Romanized titles ('Sonar Kella', 'Bhooter Bhabishyat') automatically resolves to native Bengali & Hindi titles.",
   "Indian Cinema Dialogue Clarity EQ": "Indian Cinema Dialogue Clarity EQ",
-  "Custom 10-band DSP profile that amplifies center-channel speech frequencies while taming explosive bass rumbles and loud song interludes.":
-    "Custom 10-band DSP profile that amplifies center-channel speech frequencies while taming explosive bass rumbles and loud song interludes.",
+  "Custom 10-band DSP profile that amplifies center-channel speech frequencies while taming explosive bass rumbles and loud song interludes.": "Custom 10-band DSP profile that amplifies center-channel speech frequencies while taming explosive bass rumbles and loud song interludes.",
   "Indian Serial Recap & Dramatic Filler Skipper": "Indian Serial Recap & Dramatic Filler Skipper",
-  "Automatically detects and skips 4-minute recaps of yesterday's episode and prolonged multi-angle slow-motion dramatic reaction shots in daily soaps.":
-    "Automatically detects and skips 4-minute recaps of yesterday's episode and prolonged multi-angle slow-motion dramatic reaction shots in daily soaps.",
+  "Automatically detects and skips 4-minute recaps of yesterday's episode and prolonged multi-angle slow-motion dramatic reaction shots in daily soaps.": "Automatically detects and skips 4-minute recaps of yesterday's episode and prolonged multi-angle slow-motion dramatic reaction shots in daily soaps.",
   "Offline Regional Subtitles (Whisper Embedded)": "Offline Regional Subtitles (Whisper Embedded)",
-  "Uses on-device neural transcription to generate offline subtitles for rare Bengali, Hindi, and regional classics lacking subtitle files online.":
-    "Uses on-device neural transcription to generate offline subtitles for rare Bengali, Hindi, and regional classics lacking subtitle files online.",
+  "Uses on-device neural transcription to generate offline subtitles for rare Bengali, Hindi, and regional classics lacking subtitle files online.": "Uses on-device neural transcription to generate offline subtitles for rare Bengali, Hindi, and regional classics lacking subtitle files online.",
   "Cricket Commentary & Multi-Language Switcher": "Cricket Commentary & Multi-Language Switcher",
-  "Seamlessly toggle between Bangla, Hindi, and English commentary feeds on the same live broadcast.":
-    "Seamlessly toggle between Bangla, Hindi, and English commentary feeds on the same live broadcast.",
-  "Multi-Commentary Instant Audio Switcher (Bangla / Hindi / English)":
-    "Multi-Commentary Instant Audio Switcher (Bangla / Hindi / English)",
-  "Enables 1-click toggling between Akashvani Kolkata (বাংলা), Sports Flashes (हिंदी), and official broadcast TV audio with auto-delay lipsync.":
-    "Enables 1-click toggling between Akashvani Kolkata (বাংলা), Sports Flashes (हिंदी), and official broadcast TV audio with auto-delay lipsync.",
+  "Seamlessly toggle between Bangla, Hindi, and English commentary feeds on the same live broadcast.": "Seamlessly toggle between Bangla, Hindi, and English commentary feeds on the same live broadcast.",
+  "Multi-Commentary Instant Audio Switcher (Bangla / Hindi / English)": "Multi-Commentary Instant Audio Switcher (Bangla / Hindi / English)",
+  "Enables 1-click toggling between Akashvani Kolkata (বাংলা), Sports Flashes (हिंदी), and official broadcast TV audio with auto-delay lipsync.": "Enables 1-click toggling between Akashvani Kolkata (বাংলা), Sports Flashes (हिंदी), and official broadcast TV audio with auto-delay lipsync.",
   "Default Commentary Language": "Default Commentary Language",
   "Default Cricket Commentary Delay": "Default Cricket Commentary Delay",
-  "Default time offset to align live radio audio with broadcast video streams. Can also be adjusted live in the Sports Sidebar.":
-    "Default time offset to align live radio audio with broadcast video streams. Can also be adjusted live in the Sports Sidebar.",
+  "Default time offset to align live radio audio with broadcast video streams. Can also be adjusted live in the Sports Sidebar.": "Default time offset to align live radio audio with broadcast video streams. Can also be adjusted live in the Sports Sidebar.",
   "Smart Cricket Highlight Reel Markers": "Smart Cricket Highlight Reel Markers",
-  "Synthesizes live ball-by-ball milestone telemetry (wickets, 6s, 4s, 50s, 100s) into chapter markers on the player seekbar for instant event jumping.":
-    "Synthesizes live ball-by-ball milestone telemetry (wickets, 6s, 4s, 50s, 100s) into chapter markers on the player seekbar for instant event jumping.",
+  "Synthesizes live ball-by-ball milestone telemetry (wickets, 6s, 4s, 50s, 100s) into chapter markers on the player seekbar for instant event jumping.": "Synthesizes live ball-by-ball milestone telemetry (wickets, 6s, 4s, 50s, 100s) into chapter markers on the player seekbar for instant event jumping.",
   "Ball-by-Ball Live Desktop Alerts": "Ball-by-Ball Live Desktop Alerts",
-  "Dispatches lightweight native desktop toasts for wickets, sixes, fours, and centuries when Argus is minimized in the background.":
-    "Dispatches lightweight native desktop toasts for wickets, sixes, fours, and centuries when Argus is minimized in the background.",
+  "Dispatches lightweight native desktop toasts for wickets, sixes, fours, and centuries when Argus is minimized in the background.": "Dispatches lightweight native desktop toasts for wickets, sixes, fours, and centuries when Argus is minimized in the background.",
   "Dugout Dual-Audio Channel Mixer": "Dugout Dual-Audio Channel Mixer",
-  "Preserves ambient stadium crowd noise while overlaying regional radio commentary with custom audio balance.":
-    "Preserves ambient stadium crowd noise while overlaying regional radio commentary with custom audio balance.",
+  "Preserves ambient stadium crowd noise while overlaying regional radio commentary with custom audio balance.": "Preserves ambient stadium crowd noise while overlaying regional radio commentary with custom audio balance.",
   "Night-Owl Cinema & Audio Tamer": "Night-Owl Cinema & Audio Tamer",
-  "Late-night quiet watching: suppresses explosive commercial/gunshot spikes and dims subtitles.":
-    "Late-night quiet watching: suppresses explosive commercial/gunshot spikes and dims subtitles.",
-  "Night-Owl Cinema Mode (Dynamic Explosion & Ad Ducking)":
-    "Night-Owl Cinema Mode (Dynamic Explosion & Ad Ducking)",
-  "Applies dynamic range compression (DRC) to clamp loud movie explosions and blasted TV commercials while boosting dialogue whispers (+5 dB @ 2.5 kHz).":
-    "Applies dynamic range compression (DRC) to clamp loud movie explosions and blasted TV commercials while boosting dialogue whispers (+5 dB @ 2.5 kHz).",
-  "Auto-Engage Night Mode During Late Hours (00:00 - 05:00 IST)":
-    "Auto-Engage Night Mode During Late Hours (00:00 - 05:00 IST)",
-  "Automatically activates ad-ducking and tints subtitles to a soft warm amber (#FFD7A0 at 75% opacity) during midnight hours to prevent eye strain in dark rooms.":
-    "Automatically activates ad-ducking and tints subtitles to a soft warm amber (#FFD7A0 at 75% opacity) during midnight hours to prevent eye strain in dark rooms.",
+  "Late-night quiet watching: suppresses explosive commercial/gunshot spikes and dims subtitles.": "Late-night quiet watching: suppresses explosive commercial/gunshot spikes and dims subtitles.",
+  "Night-Owl Cinema Mode (Dynamic Explosion & Ad Ducking)": "Night-Owl Cinema Mode (Dynamic Explosion & Ad Ducking)",
+  "Applies dynamic range compression (DRC) to clamp loud movie explosions and blasted TV commercials while boosting dialogue whispers (+5 dB @ 2.5 kHz).": "Applies dynamic range compression (DRC) to clamp loud movie explosions and blasted TV commercials while boosting dialogue whispers (+5 dB @ 2.5 kHz).",
+  "Auto-Engage Night Mode During Late Hours (00:00 - 05:00 IST)": "Auto-Engage Night Mode During Late Hours (00:00 - 05:00 IST)",
+  "Automatically activates ad-ducking and tints subtitles to a soft warm amber (#FFD7A0 at 75% opacity) during midnight hours to prevent eye strain in dark rooms.": "Automatically activates ad-ducking and tints subtitles to a soft warm amber (#FFD7A0 at 75% opacity) during midnight hours to prevent eye strain in dark rooms.",
   "Infrastructure & Outage Resilience": "Infrastructure & Outage Resilience",
-  "Protects playback progress and download queues against sudden power blackouts and voltage fluctuations.":
-    "Protects playback progress and download queues against sudden power blackouts and voltage fluctuations.",
+  "Protects playback progress and download queues against sudden power blackouts and voltage fluctuations.": "Protects playback progress and download queues against sudden power blackouts and voltage fluctuations.",
   "Power-Cut & Sudden Blackout Snapshot Vault": "Power-Cut & Sudden Blackout Snapshot Vault",
-  "Atomically journals stream URL, millisecond timestamp, audio track, and playlist queue every 5 seconds. Offers instant 1-click restore after unexpected power cuts.":
-    "Atomically journals stream URL, millisecond timestamp, audio track, and playlist queue every 5 seconds. Offers instant 1-click restore after unexpected power cuts.",
+  "Atomically journals stream URL, millisecond timestamp, audio track, and playlist queue every 5 seconds. Offers instant 1-click restore after unexpected power cuts.": "Atomically journals stream URL, millisecond timestamp, audio track, and playlist queue every 5 seconds. Offers instant 1-click restore after unexpected power cuts.",
   "Multi-CDN Stream Stitcher & Mirror Failover": "Multi-CDN Stream Stitcher & Mirror Failover",
-  "Seamlessly switches to alternate Debrid / CDN edge mirrors without resetting player position if local ISP routing experiences packet loss or gateway timeouts.":
-    "Seamlessly switches to alternate Debrid / CDN edge mirrors without resetting player position if local ISP routing experiences packet loss or gateway timeouts.",
+  "Seamlessly switches to alternate Debrid / CDN edge mirrors without resetting player position if local ISP routing experiences packet loss or gateway timeouts.": "Seamlessly switches to alternate Debrid / CDN edge mirrors without resetting player position if local ISP routing experiences packet loss or gateway timeouts.",
   "Local LAN Peer-Share (Hostel / Campus Mesh)": "Local LAN Peer-Share (Hostel / Campus Mesh)",
-  "Streams or transfers downloaded game archives and 4K media across local Wi-Fi at 1 Gbps LAN speeds without consuming external ISP data.":
-    "Streams or transfers downloaded game archives and 4K media across local Wi-Fi at 1 Gbps LAN speeds without consuming external ISP data.",
+  "Streams or transfers downloaded game archives and 4K media across local Wi-Fi at 1 Gbps LAN speeds without consuming external ISP data.": "Streams or transfers downloaded game archives and 4K media across local Wi-Fi at 1 Gbps LAN speeds without consuming external ISP data.",
   "Peak-Hour Cellular Traffic Prefetching": "Peak-Hour Cellular Traffic Prefetching",
-  "Aggressively pre-buffers 3 to 5 minutes of stream data ahead during clean bursts between 7:00 PM and 11:00 PM IST to counter cell tower congestion.":
-    "Aggressively pre-buffers 3 to 5 minutes of stream data ahead during clean bursts between 7:00 PM and 11:00 PM IST to counter cell tower congestion.",
+  "Aggressively pre-buffers 3 to 5 minutes of stream data ahead during clean bursts between 7:00 PM and 11:00 PM IST to counter cell tower congestion.": "Aggressively pre-buffers 3 to 5 minutes of stream data ahead during clean bursts between 7:00 PM and 11:00 PM IST to counter cell tower congestion.",
   "Telegram Remote Download Dispatcher": "Telegram Remote Download Dispatcher",
-  "Allows queueing downloads remotely by sending magnet or media links to your personal Telegram bot.":
-    "Allows queueing downloads remotely by sending magnet or media links to your personal Telegram bot.",
+  "Allows queueing downloads remotely by sending magnet or media links to your personal Telegram bot.": "Allows queueing downloads remotely by sending magnet or media links to your personal Telegram bot.",
   "Hardware, Earbuds & Device Handoff": "Hardware, Earbuds & Device Handoff",
-  "Bluetooth audio latency compensation, local QR streaming handoff, and battery optimization.":
-    "Bluetooth audio latency compensation, local QR streaming handoff, and battery optimization.",
+  "Bluetooth audio latency compensation, local QR streaming handoff, and battery optimization.": "Bluetooth audio latency compensation, local QR streaming handoff, and battery optimization.",
   "Bluetooth Earbuds Lipsync Auto-Profiler": "Bluetooth Earbuds Lipsync Auto-Profiler",
-  "Applies calibrated negative audio delay offset (-160ms to -240ms) for boAt Airdopes, Noise Buds, Boult Audio, and Realme earphones to eliminate dialogue lag.":
-    "Applies calibrated negative audio delay offset (-160ms to -240ms) for boAt Airdopes, Noise Buds, Boult Audio, and Realme earphones to eliminate dialogue lag.",
+  "Applies calibrated negative audio delay offset (-160ms to -240ms) for boAt Airdopes, Noise Buds, Boult Audio, and Realme earphones to eliminate dialogue lag.": "Applies calibrated negative audio delay offset (-160ms to -240ms) for boAt Airdopes, Noise Buds, Boult Audio, and Realme earphones to eliminate dialogue lag.",
   "Zero-Install QR Couch Handoff": "Zero-Install QR Couch Handoff",
-  "Displays a local LAN QR code inside the player: scan with your phone camera to take over stream playback at the exact second without installing any mobile app.":
-    "Displays a local LAN QR code inside the player: scan with your phone camera to take over stream playback at the exact second without installing any mobile app.",
+  "Displays a local LAN QR code inside the player: scan with your phone camera to take over stream playback at the exact second without installing any mobile app.": "Displays a local LAN QR code inside the player: scan with your phone camera to take over stream playback at the exact second without installing any mobile app.",
   "Battery & Thermal Power-Saver Optimizer": "Battery & Thermal Power-Saver Optimizer",
-  "Automatically switches to high-efficiency hardware decoding profiles and throttles heavy shaders when running on laptop battery power.":
-    "Automatically switches to high-efficiency hardware decoding profiles and throttles heavy shaders when running on laptop battery power.",
+  "Automatically switches to high-efficiency hardware decoding profiles and throttles heavy shaders when running on laptop battery power.": "Automatically switches to high-efficiency hardware decoding profiles and throttles heavy shaders when running on laptop battery power.",
   "Embedded WebAssembly Retro Gaming Engine": "Embedded WebAssembly Retro Gaming Engine",
-  "Enables 1-click playable emulation for GBA, SNES, PS1, and PSP classics directly inside Argus with zero external emulator configuration.":
-    "Enables 1-click playable emulation for GBA, SNES, PS1, and PSP classics directly inside Argus with zero external emulator configuration.",
+  "Enables 1-click playable emulation for GBA, SNES, PS1, and PSP classics directly inside Argus with zero external emulator configuration.": "Enables 1-click playable emulation for GBA, SNES, PS1, and PSP classics directly inside Argus with zero external emulator configuration.",
   "Night-Owl Unlimited Data Scheduler": "Night-Owl Unlimited Data Scheduler",
-  "Tailored for Indian telcos offering free, uncapped high-speed data between 12:00 AM and 6:00 AM (e.g. Vi Binge All Night, Airtel/Jio off-peak).":
-    "Tailored for Indian telcos offering free, uncapped high-speed data between 12:00 AM and 6:00 AM (e.g. Vi Binge All Night, Airtel/Jio off-peak).",
+  "Tailored for Indian telcos offering free, uncapped high-speed data between 12:00 AM and 6:00 AM (e.g. Vi Binge All Night, Airtel/Jio off-peak).": "Tailored for Indian telcos offering free, uncapped high-speed data between 12:00 AM and 6:00 AM (e.g. Vi Binge All Night, Airtel/Jio off-peak).",
   "Schedule Downloads for Midnight Window": "Schedule Downloads for Midnight Window",
-  "Queues media downloads during the day and automatically executes them between 12:00 AM and 6:00 AM when mobile hotspot tethering is active.":
-    "Queues media downloads during the day and automatically executes them between 12:00 AM and 6:00 AM when mobile hotspot tethering is active.",
+  "Queues media downloads during the day and automatically executes them between 12:00 AM and 6:00 AM when mobile hotspot tethering is active.": "Queues media downloads during the day and automatically executes them between 12:00 AM and 6:00 AM when mobile hotspot tethering is active.",
   "Indian OTT Availability Badges": "Indian OTT Availability Badges",
-  "Shows official streaming home in India (JioHotstar, SonyLIV, FanCode, Hoichoi, ZEE5) directly on match and title cards.":
-    "Shows official streaming home in India (JioHotstar, SonyLIV, FanCode, Hoichoi, ZEE5) directly on match and title cards.",
+  "Shows official streaming home in India (JioHotstar, SonyLIV, FanCode, Hoichoi, ZEE5) directly on match and title cards.": "Shows official streaming home in India (JioHotstar, SonyLIV, FanCode, Hoichoi, ZEE5) directly on match and title cards.",
   "Display Indian Streaming Rights Badges": "Display Indian Streaming Rights Badges",
-  "Displays official broadcaster badges and one-click launch links on sports match cards and movie detail pages.":
-    "Displays official broadcaster badges and one-click launch links on sports match cards and movie detail pages.",
+  "Displays official broadcaster badges and one-click launch links on sports match cards and movie detail pages.": "Displays official broadcaster badges and one-click launch links on sports match cards and movie detail pages.",
   "Next-Gen Playback, AI Voice & P2P Swarm Suite": "Next-Gen Playback, AI Voice & P2P Swarm Suite",
-  "Neural voice clarification, local subnet P2P streaming cache, face/letterbox subtitle dodging, and automatic chaptering.":
-    "Neural voice clarification, local subnet P2P streaming cache, face/letterbox subtitle dodging, and automatic chaptering.",
+  "Neural voice clarification, local subnet P2P streaming cache, face/letterbox subtitle dodging, and automatic chaptering.": "Neural voice clarification, local subnet P2P streaming cache, face/letterbox subtitle dodging, and automatic chaptering.",
   "Neural Voice Clarifier (AI Dialogue Lift)": "Neural Voice Clarifier (AI Dialogue Lift)",
-  "Isolates center-channel speech frequencies (+6dB @ 2.5kHz–3.5kHz) and cuts optical audio hiss for classic Ray cinema, 90s Tollywood, and compact single-speaker projectors (Portronics Beem 470).":
-    "Isolates center-channel speech frequencies (+6dB @ 2.5kHz–3.5kHz) and cuts optical audio hiss for classic Ray cinema, 90s Tollywood, and compact single-speaker projectors (Portronics Beem 470).",
+  "Isolates center-channel speech frequencies (+6dB @ 2.5kHz–3.5kHz) and cuts optical audio hiss for classic Ray cinema, 90s Tollywood, and compact single-speaker projectors (Portronics Beem 470).": "Isolates center-channel speech frequencies (+6dB @ 2.5kHz–3.5kHz) and cuts optical audio hiss for classic Ray cinema, 90s Tollywood, and compact single-speaker projectors (Portronics Beem 470).",
   "Acoustic Clarifier Profile": "Acoustic Clarifier Profile",
-  "Local LAN P2P Swarm Cache (Multi-Screen Bandwidth Saver)":
-    "Local LAN P2P Swarm Cache (Multi-Screen Bandwidth Saver)",
-  "Shares buffered 4K video pieces across Smart TVs, laptops, and mobiles on the home Wi-Fi at 800+ Mbps LAN speeds, preventing redundant Debrid/WAN downloads.":
-    "Shares buffered 4K video pieces across Smart TVs, laptops, and mobiles on the home Wi-Fi at 800+ Mbps LAN speeds, preventing redundant Debrid/WAN downloads.",
+  "Local LAN P2P Swarm Cache (Multi-Screen Bandwidth Saver)": "Local LAN P2P Swarm Cache (Multi-Screen Bandwidth Saver)",
+  "Shares buffered 4K video pieces across Smart TVs, laptops, and mobiles on the home Wi-Fi at 800+ Mbps LAN speeds, preventing redundant Debrid/WAN downloads.": "Shares buffered 4K video pieces across Smart TVs, laptops, and mobiles on the home Wi-Fi at 800+ Mbps LAN speeds, preventing redundant Debrid/WAN downloads.",
   "Face & Letterbox-Aware Subtitle Dodging": "Face & Letterbox-Aware Subtitle Dodging",
-  "Places subtitles in lower letterbox bars with warm amber (#FFD180) to eliminate projector light bleed; dynamically dodges actor faces on full-bleed 16:9 streams.":
-    "Places subtitles in lower letterbox bars with warm amber (#FFD180) to eliminate projector light bleed; dynamically dodges actor faces on full-bleed 16:9 streams.",
+  "Places subtitles in lower letterbox bars with warm amber (#FFD180) to eliminate projector light bleed; dynamically dodges actor faces on full-bleed 16:9 streams.": "Places subtitles in lower letterbox bars with warm amber (#FFD180) to eliminate projector light bleed; dynamically dodges actor faces on full-bleed 16:9 streams.",
   "Automatic Scene & Song Chapter Synthesizer": "Automatic Scene & Song Chapter Synthesizer",
-  "Synthesizes instant seekbar jump markers for Indian cinema and catalog titles lacking MKV chapters: Prologue, Title Song, Intermission, Climax, and End Credits.":
-    "Synthesizes instant seekbar jump markers for Indian cinema and catalog titles lacking MKV chapters: Prologue, Title Song, Intermission, Climax, and End Credits.",
-  "Hybrid Debrid + Official Free Legal Streaming Fallback":
-    "Hybrid Debrid + Official Free Legal Streaming Fallback",
-  "Checks verified studio YouTube channels (SVF Cinema, Angel Digital, Zee Bangla) when torrent seeders are dead or poor quality, routing pristine 1080p feeds seamlessly.":
-    "Checks verified studio YouTube channels (SVF Cinema, Angel Digital, Zee Bangla) when torrent seeders are dead or poor quality, routing pristine 1080p feeds seamlessly.",
+  "Synthesizes instant seekbar jump markers for Indian cinema and catalog titles lacking MKV chapters: Prologue, Title Song, Intermission, Climax, and End Credits.": "Synthesizes instant seekbar jump markers for Indian cinema and catalog titles lacking MKV chapters: Prologue, Title Song, Intermission, Climax, and End Credits.",
+  "Hybrid Debrid + Official Free Legal Streaming Fallback": "Hybrid Debrid + Official Free Legal Streaming Fallback",
+  "Checks verified studio YouTube channels (SVF Cinema, Angel Digital, Zee Bangla) when torrent seeders are dead or poor quality, routing pristine 1080p feeds seamlessly.": "Checks verified studio YouTube channels (SVF Cinema, Angel Digital, Zee Bangla) when torrent seeders are dead or poor quality, routing pristine 1080p feeds seamlessly.",
   "Edge Zero-Shot Indic Dubbing Overlay": "Edge Zero-Shot Indic Dubbing Overlay",
-  "Generates real-time neural speech dubbing for world cinema and foreign festival films with automated 15% soundtrack ducking.":
-    "Generates real-time neural speech dubbing for world cinema and foreign festival films with automated 15% soundtrack ducking.",
+  "Generates real-time neural speech dubbing for world cinema and foreign festival films with automated 15% soundtrack ducking.": "Generates real-time neural speech dubbing for world cinema and foreign festival films with automated 15% soundtrack ducking.",
   "Dubbing Target Language": "Dubbing Target Language",
   "Anti-Spoiler Mode (Hide match results)": "Anti-Spoiler Mode (Hide match results)",
-  "Blurs live and final scores, winner badges, and timelines across the sports hub so you can enjoy replays spoiler-free.":
-    "Blurs live and final scores, winner badges, and timelines across the sports hub so you can enjoy replays spoiler-free.",
+  "Blurs live and final scores, winner badges, and timelines across the sports hub so you can enjoy replays spoiler-free.": "Blurs live and final scores, winner badges, and timelines across the sports hub so you can enjoy replays spoiler-free.",
   "Match Highlights & Recaps": "Match Highlights & Recaps",
   "Official recaps & key moments": "Official recaps & key moments",
-  "Catch up on official broadcasts, game reviews, and completed match recaps.":
-    "Catch up on official broadcasts, game reviews, and completed match recaps.",
+  "Catch up on official broadcasts, game reviews, and completed match recaps.": "Catch up on official broadcasts, game reviews, and completed match recaps.",
   "Watch Recap": "Watch Recap",
   "Multi-View": "Multi-View",
-  "Anti-spoiler active (scores hidden). Click to show.":
-    "Anti-spoiler active (scores hidden). Click to show.",
-  "Anti-spoiler off (scores visible). Click to hide.":
-    "Anti-spoiler off (scores visible). Click to hide.",
+  "Anti-spoiler active (scores hidden). Click to show.": "Anti-spoiler active (scores hidden). Click to show.",
+  "Anti-spoiler off (scores visible). Click to hide.": "Anti-spoiler off (scores visible). Click to hide.",
   "Scores Hidden": "Scores Hidden",
   "Anti-Spoiler": "Anti-Spoiler",
   "Audio out of sync": "Audio out of sync",
@@ -599,27 +448,24 @@ const uiFallback: Record<string, string> = {
   "Saved searches": "Saved searches",
   "Remove from saved searches": "Remove from saved searches",
   "Save search": "Save search",
-  "Analyze add-on health, remove redundancies, and optimize configuration":
-    "Analyze add-on health, remove redundancies, and optimize configuration",
-  Optimize: "Optimize",
-  Healthy: "Healthy",
-  Degraded: "Degraded",
-  Failing: "Failing",
+  "Analyze add-on health, remove redundancies, and optimize configuration": "Analyze add-on health, remove redundancies, and optimize configuration",
+  "Optimize": "Optimize",
+  "Healthy": "Healthy",
+  "Degraded": "Degraded",
+  "Failing": "Failing",
   "Needs data": "Needs data",
   "Recommend: Pause": "Recommend: Pause",
   "Recommend: Inspect": "Recommend: Inspect",
   "High failure rate or unresponsive endpoint": "High failure rate or unresponsive endpoint",
   "Intermittent timeouts (>40% failure rate)": "Intermittent timeouts (>40% failure rate)",
   "Slow response time (~{ms}ms)": "Slow response time (~{ms}ms)",
-  "Redundant with faster installed stream providers":
-    "Redundant with faster installed stream providers",
+  "Redundant with faster installed stream providers": "Redundant with faster installed stream providers",
   "Add-on Optimizer": "Add-on Optimizer",
   "Optimize Your Installed Add-ons": "Optimize Your Installed Add-ons",
   "Configuration Overview": "Configuration Overview",
   "Actionable Recommendations": "Actionable Recommendations",
   "Auditing add-on telemetry & redundancy…": "Auditing add-on telemetry & redundancy…",
-  "Checking failure streaks, response latency, and stream overlap.":
-    "Checking failure streaks, response latency, and stream overlap.",
+  "Checking failure streaks, response latency, and stream overlap.": "Checking failure streaks, response latency, and stream overlap.",
   "Healthy Add-ons": "Healthy Add-ons",
   "Degraded / Slow": "Degraded / Slow",
   "needs attention": "needs attention",
@@ -629,97 +475,78 @@ const uiFallback: Record<string, string> = {
   "Streams: {n} active": "Streams: {n} active",
   "Subtitles: {n} active": "Subtitles: {n} active",
   "Catalogs: {n} active": "Catalogs: {n} active",
-  "No subtitle provider enabled. Consider enabling OpenSubtitles or Wyzie in Subtitle sources.":
-    "No subtitle provider enabled. Consider enabling OpenSubtitles or Wyzie in Subtitle sources.",
+  "No subtitle provider enabled. Consider enabling OpenSubtitles or Wyzie in Subtitle sources.": "No subtitle provider enabled. Consider enabling OpenSubtitles or Wyzie in Subtitle sources.",
   "Add-on Health & Redundancy Audit": "Add-on Health & Redundancy Audit",
   "Score: {n}%": "Score: {n}%",
   "Setup Is Fully Optimized": "Setup Is Fully Optimized",
-  "All your active add-ons are responding normally with low latency and balanced coverage. No action required.":
-    "All your active add-ons are responding normally with low latency and balanced coverage. No action required.",
-  "Argus identified {n} optimization recommendations based on recent response latencies, failure rates, and provider redundancy.":
-    "Argus identified {n} optimization recommendations based on recent response latencies, failure rates, and provider redundancy.",
+  "All your active add-ons are responding normally with low latency and balanced coverage. No action required.": "All your active add-ons are responding normally with low latency and balanced coverage. No action required.",
+  "Argus identified {n} optimization recommendations based on recent response latencies, failure rates, and provider redundancy.": "Argus identified {n} optimization recommendations based on recent response latencies, failure rates, and provider redundancy.",
   "Reliability: {n}%": "Reliability: {n}%",
   "Reliability: unverified": "Reliability: unverified",
   "Pause now": "Pause now",
   "Optimizations applied successfully.": "Optimizations applied successfully.",
-  "Changes only take effect with your confirmation.":
-    "Changes only take effect with your confirmation.",
+  "Changes only take effect with your confirmation.": "Changes only take effect with your confirmation.",
   "Apply Recommendations": "Apply Recommendations",
   "games.catalog.decentralizedNote": "games.catalog.decentralizedNote",
   "games.freeRadar.title": "games.freeRadar.title",
-  "This source links to a webpage rather than a direct video stream. Pick another source.":
-    "This source links to a webpage rather than a direct video stream. Pick another source.",
+  "This source links to a webpage rather than a direct video stream. Pick another source.": "This source links to a webpage rather than a direct video stream. Pick another source.",
   "Verified working": "Verified working",
   "Connection health & diagnostics": "Connection health & diagnostics",
-  "Monitor uptime, response latency, and reachability across your installed addons, Debrid providers, and local media servers in one place.":
-    "Monitor uptime, response latency, and reachability across your installed addons, Debrid providers, and local media servers in one place.",
+  "Monitor uptime, response latency, and reachability across your installed addons, Debrid providers, and local media servers in one place.": "Monitor uptime, response latency, and reachability across your installed addons, Debrid providers, and local media servers in one place.",
   "{n} connection(s) require attention": "{n} connection(s) require attention",
   "All configured connections are operational": "All configured connections are operational",
-  "{addons} addons · {debrids} debrid accounts · {servers} media servers":
-    "{addons} addons · {debrids} debrid accounts · {servers} media servers",
+  "{addons} addons · {debrids} debrid accounts · {servers} media servers": "{addons} addons · {debrids} debrid accounts · {servers} media servers",
   "Testing connections…": "Testing connections…",
   "Test all connections": "Test all connections",
   "Installed addons ({n})": "Installed addons ({n})",
   "Manage addons": "Manage addons",
   "No addons installed yet.": "No addons installed yet.",
   "Debrid & streaming accounts": "Debrid & streaming accounts",
-  "No Debrid services monitored via AIOStatus yet. Configure tokens in Streaming sources.":
-    "No Debrid services monitored via AIOStatus yet. Configure tokens in Streaming sources.",
+  "No Debrid services monitored via AIOStatus yet. Configure tokens in Streaming sources.": "No Debrid services monitored via AIOStatus yet. Configure tokens in Streaming sources.",
   "Media servers ({n})": "Media servers ({n})",
-  "No home media servers (Plex, Jellyfin, Emby) configured yet.":
-    "No home media servers (Plex, Jellyfin, Emby) configured yet.",
+  "No home media servers (Plex, Jellyfin, Emby) configured yet.": "No home media servers (Plex, Jellyfin, Emby) configured yet.",
   "Slow / Degraded": "Slow / Degraded",
-  Operational: "Operational",
-  score: "score",
+  "Operational": "Operational",
+  "score": "score",
   "Test addon latency": "Test addon latency",
   "Expiring soon ({n}d left)": "Expiring soon ({n}d left)",
   "Active ({n}d left)": "Active ({n}d left)",
-  Warning: "Warning",
+  "Warning": "Warning",
   "Probe server connection": "Probe server connection",
   "Whisper Speech Model (Mac Metal)": "Whisper Speech Model (Mac Metal)",
-  URL: "URL",
+  "URL": "URL",
   "Streaming server URL": "Streaming server URL",
   "Remove {url}": "Remove {url}",
   "New streaming server URL": "New streaming server URL",
   "Add URL": "Add URL",
   "Remote URL": "Remote URL",
-  "Shareable streaming endpoint for other devices on your network.":
-    "Shareable streaming endpoint for other devices on your network.",
+  "Shareable streaming endpoint for other devices on your network.": "Shareable streaming endpoint for other devices on your network.",
   "Copy remote URL": "Copy remote URL",
   "Streaming HTTPS endpoint": "Streaming HTTPS endpoint",
-  "Network interface used to serve HTTPS streams on your local network.":
-    "Network interface used to serve HTTPS streams on your local network.",
+  "Network interface used to serve HTTPS streams on your local network.": "Network interface used to serve HTTPS streams on your local network.",
   "Cache size": "Cache size",
-  "Maximum disk space allocated to temporary streaming cache files.":
-    "Maximum disk space allocated to temporary streaming cache files.",
+  "Maximum disk space allocated to temporary streaming cache files.": "Maximum disk space allocated to temporary streaming cache files.",
   "Caching drive": "Caching drive",
-  "Directory where active peer-to-peer stream cache data is stored.":
-    "Directory where active peer-to-peer stream cache data is stored.",
+  "Directory where active peer-to-peer stream cache data is stored.": "Directory where active peer-to-peer stream cache data is stored.",
   "Choose folder…": "Choose folder…",
   "Torrent profile": "Torrent profile",
-  "Connection limits and peer discovery aggressiveness for BitTorrent streams.":
-    "Connection limits and peer discovery aggressiveness for BitTorrent streams.",
+  "Connection limits and peer discovery aggressiveness for BitTorrent streams.": "Connection limits and peer discovery aggressiveness for BitTorrent streams.",
   "Transcode profile": "Transcode profile",
-  "Hardware acceleration backend used when transcoding streams.":
-    "Hardware acceleration backend used when transcoding streams.",
+  "Hardware acceleration backend used when transcoding streams.": "Hardware acceleration backend used when transcoding streams.",
   "App Version": "App Version",
   "Build Version": "Build Version",
   "Server Version": "Server Version",
   "Shell Version": "Shell Version",
   "Sound descriptions & Accessibility": "Sound descriptions & Accessibility",
   "Prefer accessible subtitles (SDH)": "Prefer accessible subtitles (SDH)",
-  "Prioritizes subtitles for the deaf or hard of hearing (SDH) with speaker tags and environmental sound descriptions when auto-selecting subtitles.":
-    "Prioritizes subtitles for the deaf or hard of hearing (SDH) with speaker tags and environmental sound descriptions when auto-selecting subtitles.",
+  "Prioritizes subtitles for the deaf or hard of hearing (SDH) with speaker tags and environmental sound descriptions when auto-selecting subtitles.": "Prioritizes subtitles for the deaf or hard of hearing (SDH) with speaker tags and environmental sound descriptions when auto-selecting subtitles.",
   "No stream URL available to extract audio.": "No stream URL available to extract audio.",
   "Transcribing audio with local Whisper…": "Transcribing audio with local Whisper…",
-  "No speech detected or Whisper transcription returned empty.":
-    "No speech detected or Whisper transcription returned empty.",
-  "Could not mount generated subtitles into the player.":
-    "Could not mount generated subtitles into the player.",
+  "No speech detected or Whisper transcription returned empty.": "No speech detected or Whisper transcription returned empty.",
+  "Could not mount generated subtitles into the player.": "Could not mount generated subtitles into the player.",
   "Whisper transcription failed.": "Whisper transcription failed.",
-  "Generate subtitles offline with local Whisper ASR on Mac Metal":
-    "Generate subtitles offline with local Whisper ASR on Mac Metal",
-  Generate: "Generate",
+  "Generate subtitles offline with local Whisper ASR on Mac Metal": "Generate subtitles offline with local Whisper ASR on Mac Metal",
+  "Generate": "Generate",
   "One view of every stream": "One view of every stream",
   "Mark as correct working link": "Mark as correct working link",
   "Unmark correct link": "Unmark correct link",
@@ -729,14 +556,13 @@ const uiFallback: Record<string, string> = {
     "Automatically filters out uncached peer-to-peer torrents that report 0 seeders so you only see active, working streams.",
   "Preset: Prowlarr": "Preset: Prowlarr",
   "Preset: Jackett": "Preset: Jackett",
-  "Indexer URL (e.g. Prowlarr or Jackett Torznab URL)":
-    "Indexer URL (e.g. Prowlarr or Jackett Torznab URL)",
+  "Indexer URL (e.g. Prowlarr or Jackett Torznab URL)": "Indexer URL (e.g. Prowlarr or Jackett Torznab URL)",
   "3D Spatial Audio": "3D Spatial Audio",
   "Whisper Vocal Isolate": "Whisper Vocal Isolate",
   "Dialogue Auto-Ducking": "Dialogue Auto-Ducking",
   "10-Band EQ": "10-Band EQ",
   "10-Band Graphic Equalizer": "10-Band Graphic Equalizer",
-  Bypassed: "Bypassed",
+  "Bypassed": "Bypassed",
   "Clinical Case Simulator": "Clinical Case Simulator",
   "Smart resume 5-second rewind": "Smart resume 5-second rewind",
   "Automatically rewinds 5 seconds when resuming playback (past 15 seconds) so you can catch up on dialogue and context effortlessly, matching Netflix and Apple TV+.":
@@ -744,10 +570,10 @@ const uiFallback: Record<string, string> = {
   "Audio & action timeline heatmap": "Audio & action timeline heatmap",
   "Subtly renders an energy heatmap over the timeline to highlight high-intensity action and dialogue scenes.":
     "Subtly renders an energy heatmap over the timeline to highlight high-intensity action and dialogue scenes.",
-  'Heads-up: a few addons (like AIOStatus) don\'t pre-fill from the URL. If the form loads blank, paste the existing manifest URL into their "Import from URL" field to restore your settings.':
-    'Heads-up: a few addons (like AIOStatus) don\'t pre-fill from the URL. If the form loads blank, paste the existing manifest URL into their "Import from URL" field to restore your settings.',
-  'Posters, logos, and title art load in the first available language from this list. "Original" uses the title\'s own language. Needs a TMDB key.':
-    'Posters, logos, and title art load in the first available language from this list. "Original" uses the title\'s own language. Needs a TMDB key.',
+  "Heads-up: a few addons (like AIOStatus) don't pre-fill from the URL. If the form loads blank, paste the existing manifest URL into their \"Import from URL\" field to restore your settings.":
+    "Heads-up: a few addons (like AIOStatus) don't pre-fill from the URL. If the form loads blank, paste the existing manifest URL into their \"Import from URL\" field to restore your settings.",
+  "Posters, logos, and title art load in the first available language from this list. \"Original\" uses the title's own language. Needs a TMDB key.":
+    "Posters, logos, and title art load in the first available language from this list. \"Original\" uses the title's own language. Needs a TMDB key.",
   "Buffer runway": "Buffer runway",
   "CDN download": "CDN download",
   "Optimal cap ({mbps}M) active": "Optimal cap ({mbps}M) active",
@@ -761,19 +587,18 @@ const uiFallback: Record<string, string> = {
   "Upgrade stream": "Upgrade stream",
   "Keep current": "Keep current",
   "Suggest higher quality streams when found": "Suggest higher quality streams when found",
-  "If slower addons or debrid sources finish resolving a better quality release (4K UHD, HDR, Dolby Atmos, or Remux) while watching, suggest switching with one click.":
-    "If slower addons or debrid sources finish resolving a better quality release (4K UHD, HDR, Dolby Atmos, or Remux) while watching, suggest switching with one click.",
-  Feeds: "Feeds",
+  "If slower addons or debrid sources finish resolving a better quality release (4K UHD, HDR, Dolby Atmos, or Remux) while watching, suggest switching with one click.": "If slower addons or debrid sources finish resolving a better quality release (4K UHD, HDR, Dolby Atmos, or Remux) while watching, suggest switching with one click.",
+  "Feeds": "Feeds",
   "Share LAN": "Share LAN",
   "Configure in Streaming Settings": "Configure in Streaming Settings",
-  Subscribed: "Subscribed",
+  "Subscribed": "Subscribed",
   "Import .json / .json.gz": "Import .json / .json.gz",
   "Import JSON": "Import JSON",
   "Saved JSON!": "Saved JSON!",
-  JSON: "JSON",
+  "JSON": "JSON",
   "Saved Anki!": "Saved Anki!",
-  Anki: "Anki",
-  Markdown: "Markdown",
+  "Anki": "Anki",
+  "Markdown": "Markdown",
   "Downloaded Anki Deck!": "Downloaded Anki Deck!",
   "Export Anki Deck": "Export Anki Deck",
   "Copy Markdown": "Copy Markdown",
@@ -787,41 +612,36 @@ const uiFallback: Record<string, string> = {
   "Captured frame": "Captured frame",
   "Capturing frame…": "Capturing frame…",
   "Notes & Key Takeaways (Markdown supported)": "Notes & Key Takeaways (Markdown supported)",
-  "e.g. Action potential threshold is -55mV; voltage-gated Na+ channels open rapidly…":
-    "e.g. Action potential threshold is -55mV; voltage-gated Na+ channels open rapidly…",
+  "e.g. Action potential threshold is -55mV; voltage-gated Na+ channels open rapidly…": "e.g. Action potential threshold is -55mV; voltage-gated Na+ channels open rapidly…",
   "Copy as Markdown for Obsidian or Anki": "Copy as Markdown for Obsidian or Anki",
   "Copy for Obsidian / Anki": "Copy for Obsidian / Anki",
   "Save Note": "Save Note",
-  Education: "Education",
+  "Education": "Education",
   "Education Hub": "Education Hub",
   "nav.education": "Education",
   "Free & Open": "Free & Open",
-  "Democratizing education with high-yield medical, engineering, and competitive exam masterclasses.":
-    "Democratizing education with high-yield medical, engineering, and competitive exam masterclasses.",
+  "Democratizing education with high-yield medical, engineering, and competitive exam masterclasses.": "Democratizing education with high-yield medical, engineering, and competitive exam masterclasses.",
   "Scan Local Course": "Scan Local Course",
   "Lecture RSS / Feeds": "Lecture RSS / Feeds",
   "My Study Notes": "My Study Notes",
   "My Local Courses": "My Local Courses",
-  "Sequential video lecture libraries scanned from your local drives.":
-    "Sequential video lecture libraries scanned from your local drives.",
-  lessons: "lessons",
+  "Sequential video lecture libraries scanned from your local drives.": "Sequential video lecture libraries scanned from your local drives.",
+  "lessons": "lessons",
   "Resume Course": "Resume Course",
   "Stream over LAN to Stremio or TV": "Stream over LAN to Stremio or TV",
   "URL Copied!": "URL Copied!",
   "Copy Feed": "Copy Feed",
   "Share to LAN": "Share to LAN",
   "Subscribed Channels & Playlists": "Subscribed Channels & Playlists",
-  "RSS feeds and YouTube playlist feeds synced into your player.":
-    "RSS feeds and YouTube playlist feeds synced into your player.",
+  "RSS feeds and YouTube playlist feeds synced into your player.": "RSS feeds and YouTube playlist feeds synced into your player.",
   "Curated Coaching-Alternative Catalogs": "Curated Coaching-Alternative Catalogs",
-  "Comprehensive courses from world-class universities and open medical faculties.":
-    "Comprehensive courses from world-class universities and open medical faculties.",
+  "Comprehensive courses from world-class universities and open medical faculties.": "Comprehensive courses from world-class universities and open medical faculties.",
   "Filter by subject or topic…": "Filter by subject or topic…",
   "Medical (NEET-PG/MBBS)": "Medical (NEET-PG/MBBS)",
   "Engineering & CS": "Engineering & CS",
-  Sciences: "Sciences",
+  "Sciences": "Sciences",
   "Civil Services": "Civil Services",
-  Lectures: "Lectures",
+  "Lectures": "Lectures",
   "Feed Subscribed": "Feed Subscribed",
   "Add to Library": "Add to Library",
   "Study Notes & Revisions": "Study Notes & Revisions",
@@ -829,8 +649,7 @@ const uiFallback: Record<string, string> = {
   "Copied Markdown!": "Copied Markdown!",
   "Export to Obsidian / Anki": "Export to Obsidian / Anki",
   "No study notes captured yet.": "No study notes captured yet.",
-  "Press 'N' while watching any lecture to freeze the frame and create a timestamped note.":
-    "Press 'N' while watching any lecture to freeze the frame and create a timestamped note.",
+  "Press 'N' while watching any lecture to freeze the frame and create a timestamped note.": "Press 'N' while watching any lecture to freeze the frame and create a timestamped note.",
   "Delete note": "Delete note",
   "Removes bracketed descriptions like [door creaks] and speaker labels like JOHN: while subtitles play, so a release that only ships an SDH track still reads as plain dialogue. It also removes other bracketed text, so an occasional on-screen sign or lyric may go with it. Skipped on forced tracks, picture-based tracks, and any language that does not use the Latin alphabet.":
     "Removes bracketed descriptions like [door creaks] and speaker labels like JOHN: while subtitles play, so a release that only ships an SDH track still reads as plain dialogue. It also removes other bracketed text, so an occasional on-screen sign or lyric may go with it. Skipped on forced tracks, picture-based tracks, and any language that does not use the Latin alphabet.",
@@ -2003,15 +1822,13 @@ const uiFallback: Record<string, string> = {
     "Ten-foot uses large controls built for a remote across the room. Desktop keeps the same player you use in the normal window, which is quicker with a mouse and keyboard.",
   "Ten-foot": "Ten-foot",
   Desktop: "Desktop",
-  '"Add to PMDB" saves to your default list. Browsing another list does not change it.':
-    '"Add to PMDB" saves to your default list. Browsing another list does not change it.',
+  "\"Add to PMDB\" saves to your default list. Browsing another list does not change it.": "\"Add to PMDB\" saves to your default list. Browsing another list does not change it.",
   ".m3u": ".m3u",
   "1 title from {name}": "1 title from {name}",
   "48 fps": "48 fps",
   "6 cloud profiles": "6 cloud profiles",
   "60 fps": "60 fps",
-  "A browser tab opened on AniList. Approve Argus there, then copy the token it shows and paste it below.":
-    "A browser tab opened on AniList. Approve Argus there, then copy the token it shows and paste it below.",
+  "A browser tab opened on AniList. Approve Argus there, then copy the token it shows and paste it below.": "A browser tab opened on AniList. Approve Argus there, then copy the token it shows and paste it below.",
   "API Key": "API Key",
   "API key (optional)": "API key (optional)",
   "API key, sent as X-API-Key (optional)": "API key, sent as X-API-Key (optional)",
@@ -2020,127 +1837,88 @@ const uiFallback: Record<string, string> = {
   "Account & Connection": "Account & Connection",
   "Account Provider": "Account Provider",
   "Account provider": "Account provider",
-  "Account provider settings allow switching between Stremio and Nuvio. This action is restricted to the primary profile.":
-    "Account provider settings allow switching between Stremio and Nuvio. This action is restricted to the primary profile.",
-  AcoustID: "AcoustID",
+  "Account provider settings allow switching between Stremio and Nuvio. This action is restricted to the primary profile.": "Account provider settings allow switching between Stremio and Nuvio. This action is restricted to the primary profile.",
+  "AcoustID": "AcoustID",
   "AcoustID application API key": "AcoustID application API key",
   "AcoustID identifies files": "AcoustID identifies files",
   "AcoustID · identify a file": "AcoustID · identify a file",
-  "Act automatically if nothing is chosen before time runs out.":
-    "Act automatically if nothing is chosen before time runs out.",
+  "Act automatically if nothing is chosen before time runs out.": "Act automatically if nothing is chosen before time runs out.",
   "Add NZB links to TorBox": "Add NZB links to TorBox",
-  "Add a Real-Debrid, AllDebrid or Debrid-Link key in Streaming Sources to browse your cloud here.":
-    "Add a Real-Debrid, AllDebrid or Debrid-Link key in Streaming Sources to browse your cloud here.",
-  "Add an MDBList or Trakt list to start filling this group.":
-    "Add an MDBList or Trakt list to start filling this group.",
+  "Add a Real-Debrid, AllDebrid or Debrid-Link key in Streaming Sources to browse your cloud here.": "Add a Real-Debrid, AllDebrid or Debrid-Link key in Streaming Sources to browse your cloud here.",
+  "Add an MDBList or Trakt list to start filling this group.": "Add an MDBList or Trakt list to start filling this group.",
   "Add catalog": "Add catalog",
   "Add feed": "Add feed",
   "Add indexer": "Add indexer",
-  "Add more of your own accounts for a service. If the main account is out of quota, rate limited, expired or the service is down, Argus tries the next account for that service. Keys stay on this device.":
-    "Add more of your own accounts for a service. If the main account is out of quota, rate limited, expired or the service is down, Argus tries the next account for that service. Keys stay on this device.",
-  "Add or remove optional features — extensions, games, and the Music, eBook and Manga tabs. Changing them opens Argus Setup.":
-    "Add or remove optional features — extensions, games, and the Music, eBook and Manga tabs. Changing them opens Argus Setup.",
+  "Add more of your own accounts for a service. If the main account is out of quota, rate limited, expired or the service is down, Argus tries the next account for that service. Keys stay on this device.": "Add more of your own accounts for a service. If the main account is out of quota, rate limited, expired or the service is down, Argus tries the next account for that service. Keys stay on this device.",
+  "Add or remove optional features — extensions, games, and the Music, eBook and Manga tabs. Changing them opens Argus Setup.": "Add or remove optional features — extensions, games, and the Music, eBook and Manga tabs. Changing them opens Argus Setup.",
   "Add repository": "Add repository",
-  "Add the address of an OPDS feed, such as Calibre-Web, Kavita or Audiobookshelf.":
-    "Add the address of an OPDS feed, such as Calibre-Web, Kavita or Audiobookshelf.",
+  "Add the address of an OPDS feed, such as Calibre-Web, Kavita or Audiobookshelf.": "Add the address of an OPDS feed, such as Calibre-Web, Kavita or Audiobookshelf.",
   "Add to": "Add to",
   "Add to Home": "Add to Home",
   "Add to PMDB": "Add to PMDB",
   "Add to my profile": "Add to my profile",
   "Add to page": "Add to page",
   "Add to {list} on PMDB": "Add to {list} on PMDB",
-  "Add your own Torznab or Newznab endpoints (Jackett, Prowlarr, a Usenet indexer). Argus ships none and only searches the ones you add.":
-    "Add your own Torznab or Newznab endpoints (Jackett, Prowlarr, a Usenet indexer). Argus ships none and only searches the ones you add.",
+  "Add your own Torznab or Newznab endpoints (Jackett, Prowlarr, a Usenet indexer). Argus ships none and only searches the ones you add.": "Add your own Torznab or Newznab endpoints (Jackett, Prowlarr, a Usenet indexer). Argus ships none and only searches the ones you add.",
   "Add {title} to {list} on PMDB": "Add {title} to {list} on PMDB",
   "Added 1 new title from your folders": "Added 1 new title from your folders",
-  "Added {a} addons, {w} saved titles and {p} watch positions.":
-    "Added {a} addons, {w} saved titles and {p} watch positions.",
+  "Added {a} addons, {w} saved titles and {p} watch positions.": "Added {a} addons, {w} saved titles and {p} watch positions.",
   "Added {name}": "Added {name}",
   "Added {n} new titles from your folders": "Added {n} new titles from your folders",
   "Addon directories": "Addon directories",
   "Addon health": "Addon health",
-  "Addon links can contain debrid keys. They are copied as they are and never shown or logged.":
-    "Addon links can contain debrid keys. They are copied as they are and never shown or logged.",
-  "Adds a Play from archive button to the Local tab. Argus unpacks the biggest video from a .zip, .rar, .7z or .tar file you pick into its cache, plays it, and clears old unpacked videos after three days. Password-protected archives are not supported.":
-    "Adds a Play from archive button to the Local tab. Argus unpacks the biggest video from a .zip, .rar, .7z or .tar file you pick into its cache, plays it, and clears old unpacked videos after three days. Password-protected archives are not supported.",
-  "Adds a Test speed button to direct-link sources. It downloads the first 1.5 MB to show latency and throughput before you commit to a stream. Off by default because it contacts the source.":
-    "Adds a Test speed button to direct-link sources. It downloads the first 1.5 MB to show latency and throughput before you commit to a stream. Off by default because it contacts the source.",
-  "Adds a browser for openly licensed video from archive.org.":
-    "Adds a browser for openly licensed video from archive.org.",
-  "Adds a button to the installed addon list that asks each addon for a public-domain film and reports pass, slow or fail with the reason. Only runs when you press it.":
-    "Adds a button to the installed addon list that asks each addon for a public-domain film and reports pass, slow or fail with the reason. Only runs when you press it.",
-  "Adds a list of feeds you can browse and play from.":
-    "Adds a list of feeds you can browse and play from.",
-  "Adds your WebDAV server as a place to pick videos from.":
-    "Adds your WebDAV server as a place to pick videos from.",
+  "Addon links can contain debrid keys. They are copied as they are and never shown or logged.": "Addon links can contain debrid keys. They are copied as they are and never shown or logged.",
+  "Adds a Play from archive button to the Local tab. Argus unpacks the biggest video from a .zip, .rar, .7z or .tar file you pick into its cache, plays it, and clears old unpacked videos after three days. Password-protected archives are not supported.": "Adds a Play from archive button to the Local tab. Argus unpacks the biggest video from a .zip, .rar, .7z or .tar file you pick into its cache, plays it, and clears old unpacked videos after three days. Password-protected archives are not supported.",
+  "Adds a Test speed button to direct-link sources. It downloads the first 1.5 MB to show latency and throughput before you commit to a stream. Off by default because it contacts the source.": "Adds a Test speed button to direct-link sources. It downloads the first 1.5 MB to show latency and throughput before you commit to a stream. Off by default because it contacts the source.",
+  "Adds a browser for openly licensed video from archive.org.": "Adds a browser for openly licensed video from archive.org.",
+  "Adds a button to the installed addon list that asks each addon for a public-domain film and reports pass, slow or fail with the reason. Only runs when you press it.": "Adds a button to the installed addon list that asks each addon for a public-domain film and reports pass, slow or fail with the reason. Only runs when you press it.",
+  "Adds a list of feeds you can browse and play from.": "Adds a list of feeds you can browse and play from.",
+  "Adds your WebDAV server as a place to pick videos from.": "Adds your WebDAV server as a place to pick videos from.",
   "Advanced settings": "Advanced settings",
   "Advanced styling": "Advanced styling",
   "All Universes": "All Universes",
   "All plugins": "All plugins",
-  "All your Stremio addons are already installed.":
-    "All your Stremio addons are already installed.",
+  "All your Stremio addons are already installed.": "All your Stremio addons are already installed.",
   "All {count} downloads for this series": "All {count} downloads for this series",
   "Allow adding new profiles": "Allow adding new profiles",
-  "Allow configuring startup defaults & background":
-    "Allow configuring startup defaults & background",
+  "Allow configuring startup defaults & background": "Allow configuring startup defaults & background",
   "Allow managing Argus account": "Allow managing Argus account",
   "Allow managing Stremio & Nuvio account": "Allow managing Stremio & Nuvio account",
-  "Allow signing out of Stremio & Nuvio from menu":
-    "Allow signing out of Stremio & Nuvio from menu",
+  "Allow signing out of Stremio & Nuvio from menu": "Allow signing out of Stremio & Nuvio from menu",
   "Allow switching account provider": "Allow switching account provider",
-  "Allows secondary profiles to access the Account Provider tab and switch between Stremio and Nuvio modes.":
-    "Allows secondary profiles to access the Account Provider tab and switch between Stremio and Nuvio modes.",
-  "Allows secondary profiles to access the Argus account tab to view sync status and manage cloud credentials.":
-    "Allows secondary profiles to access the Argus account tab to view sync status and manage cloud credentials.",
-  "Allows secondary profiles to access the Stremio or Nuvio account tab to view credentials, profile mapping, install links, and synced addons.":
-    "Allows secondary profiles to access the Stremio or Nuvio account tab to view credentials, profile mapping, install links, and synced addons.",
-  "Allows secondary profiles to configure the default startup profile ('Start as'), prompt interval, and Who's watching background.":
-    "Allows secondary profiles to configure the default startup profile ('Start as'), prompt interval, and Who's watching background.",
-  "Allows secondary profiles to disconnect or log out of the root Stremio or Nuvio account from the top-right profile dropdown.":
-    "Allows secondary profiles to disconnect or log out of the root Stremio or Nuvio account from the top-right profile dropdown.",
+  "Allows secondary profiles to access the Account Provider tab and switch between Stremio and Nuvio modes.": "Allows secondary profiles to access the Account Provider tab and switch between Stremio and Nuvio modes.",
+  "Allows secondary profiles to access the Argus account tab to view sync status and manage cloud credentials.": "Allows secondary profiles to access the Argus account tab to view sync status and manage cloud credentials.",
+  "Allows secondary profiles to access the Stremio or Nuvio account tab to view credentials, profile mapping, install links, and synced addons.": "Allows secondary profiles to access the Stremio or Nuvio account tab to view credentials, profile mapping, install links, and synced addons.",
+  "Allows secondary profiles to configure the default startup profile ('Start as'), prompt interval, and Who's watching background.": "Allows secondary profiles to configure the default startup profile ('Start as'), prompt interval, and Who's watching background.",
+  "Allows secondary profiles to disconnect or log out of the root Stremio or Nuvio account from the top-right profile dropdown.": "Allows secondary profiles to disconnect or log out of the root Stremio or Nuvio account from the top-right profile dropdown.",
   "Already in my profile": "Already in my profile",
   "Ambient Edge Glow": "Ambient Edge Glow",
-  Ambilight: "Ambilight",
+  "Ambilight": "Ambilight",
   "An update is already in progress.": "An update is already in progress.",
-  Android: "Android",
+  "Android": "Android",
   "AniList Developer Settings": "AniList Developer Settings",
   "Anyone can switch into this profile": "Anyone can switch into this profile",
   "App Type:": "App Type:",
-  "Approve Argus in your browser, then return here. If Argus does not open automatically, copy the redirected URL (containing ?code=...) or code from your browser and paste it below.":
-    "Approve Argus in your browser, then return here. If Argus does not open automatically, copy the redirected URL (containing ?code=...) or code from your browser and paste it below.",
-  "Argus Setup isn't on this PC. Continuing downloads the full installer again and opens it, where you can change which features are installed.":
-    "Argus Setup isn't on this PC. Continuing downloads the full installer again and opens it, where you can change which features are installed.",
-  "Argus Setup {version} is already on this PC from your last update. Open it to change which features are installed; nothing changes unless you finish the installer.":
-    "Argus Setup {version} is already on this PC from your last update. Open it to change which features are installed; nothing changes unless you finish the installer.",
-  "Argus could not reach your music sources while searching for {query}.":
-    "Argus could not reach your music sources while searching for {query}.",
-  "Argus could not start the runtime that Android extensions need. Reinstall Argus, or install Java 17 or newer, then try again.":
-    "Argus could not start the runtime that Android extensions need. Reinstall Argus, or install Java 17 or newer, then try again.",
-  "Argus didn't start cleanly several times, so it is running in safe mode: background jobs are paused.":
-    "Argus didn't start cleanly several times, so it is running in safe mode: background jobs are paused.",
-  "Argus keeps your progress in sync while it plays. Close mpv to come back here.":
-    "Argus keeps your progress in sync while it plays. Close mpv to come back here.",
+  "Approve Argus in your browser, then return here. If Argus does not open automatically, copy the redirected URL (containing ?code=...) or code from your browser and paste it below.": "Approve Argus in your browser, then return here. If Argus does not open automatically, copy the redirected URL (containing ?code=...) or code from your browser and paste it below.",
+  "Argus Setup isn't on this PC. Continuing downloads the full installer again and opens it, where you can change which features are installed.": "Argus Setup isn't on this PC. Continuing downloads the full installer again and opens it, where you can change which features are installed.",
+  "Argus Setup {version} is already on this PC from your last update. Open it to change which features are installed; nothing changes unless you finish the installer.": "Argus Setup {version} is already on this PC from your last update. Open it to change which features are installed; nothing changes unless you finish the installer.",
+  "Argus could not reach your music sources while searching for {query}.": "Argus could not reach your music sources while searching for {query}.",
+  "Argus could not start the runtime that Android extensions need. Reinstall Argus, or install Java 17 or newer, then try again.": "Argus could not start the runtime that Android extensions need. Reinstall Argus, or install Java 17 or newer, then try again.",
+  "Argus didn't start cleanly several times, so it is running in safe mode: background jobs are paused.": "Argus didn't start cleanly several times, so it is running in safe mode: background jobs are paused.",
+  "Argus keeps your progress in sync while it plays. Close mpv to come back here.": "Argus keeps your progress in sync while it plays. Close mpv to come back here.",
   "Argus local profiles": "Argus local profiles",
-  "Argus master cloud account management is restricted to the primary profile.":
-    "Argus master cloud account management is restricted to the primary profile.",
-  "Argus pulls addons configured in your Nuvio profile.":
-    "Argus pulls addons configured in your Nuvio profile.",
-  "Argus remembers, on this device only, which installed addons answer and which fail. Nothing is sent anywhere.":
-    "Argus remembers, on this device only, which installed addons answer and which fail. Nothing is sent anywhere.",
-  "Argus ships with no streaming sources. You are responsible for the addons and sources you add and for following the laws where you live.":
-    "Argus ships with no streaming sources. You are responsible for the addons and sources you add and for following the laws where you live.",
-  "Argus will check your account and remove this collection there if it exists, then remove the local collection. Other account collections are preserved.":
-    "Argus will check your account and remove this collection there if it exists, then remove the local collection. Other account collections are preserved.",
-  "Argus will scrobble your playback progress and sync watch history with PublicMetaDB.":
-    "Argus will scrobble your playback progress and sync watch history with PublicMetaDB.",
+  "Argus master cloud account management is restricted to the primary profile.": "Argus master cloud account management is restricted to the primary profile.",
+  "Argus pulls addons configured in your Nuvio profile.": "Argus pulls addons configured in your Nuvio profile.",
+  "Argus remembers, on this device only, which installed addons answer and which fail. Nothing is sent anywhere.": "Argus remembers, on this device only, which installed addons answer and which fail. Nothing is sent anywhere.",
+  "Argus ships with no streaming sources. You are responsible for the addons and sources you add and for following the laws where you live.": "Argus ships with no streaming sources. You are responsible for the addons and sources you add and for following the laws where you live.",
+  "Argus will check your account and remove this collection there if it exists, then remove the local collection. Other account collections are preserved.": "Argus will check your account and remove this collection there if it exists, then remove the local collection. Other account collections are preserved.",
+  "Argus will scrobble your playback progress and sync watch history with PublicMetaDB.": "Argus will scrobble your playback progress and sync watch history with PublicMetaDB.",
   "Arrange the plugin tab": "Arrange the plugin tab",
-  "Ask every installed addon for a public-domain film and report pass, slow or fail":
-    "Ask every installed addon for a public-domain film and report pass, slow or fail",
+  "Ask every installed addon for a public-domain film and report pass, slow or fail": "Ask every installed addon for a public-domain film and report pass, slow or fail",
   "Audio Enhancement": "Audio Enhancement",
   "Audio and video": "Audio and video",
   "Automatic downloads enabled": "Automatic downloads enabled",
-  "Automatically save resume points and mark completed items in PublicMetaDB as you watch.":
-    "Automatically save resume points and mark completed items in PublicMetaDB as you watch.",
+  "Automatically save resume points and mark completed items in PublicMetaDB as you watch.": "Automatically save resume points and mark completed items in PublicMetaDB as you watch.",
   "Autoplay trailer resolution": "Autoplay trailer resolution",
   "Average speed (mph)": "Average speed (mph)",
   "Back to My Groups": "Back to My Groups",
@@ -2148,30 +1926,24 @@ const uiFallback: Record<string, string> = {
   "Backdrop mosaic": "Backdrop mosaic",
   "Backdrop zoom": "Backdrop zoom",
   "Backup accounts": "Backup accounts",
-  "Badge the resolutions a plugin's listing names, best first, and count the rest. Shown only when the plugin provides it.":
-    "Badge the resolutions a plugin's listing names, best first, and count the rest. Shown only when the plugin provides it.",
+  "Badge the resolutions a plugin's listing names, best first, and count the rest. Shown only when the plugin provides it.": "Badge the resolutions a plugin's listing names, best first, and count the rest. Shown only when the plugin provides it.",
   "Banned and Challenged": "Banned and Challenged",
   "Based on": "Based on",
   "Bass Boost": "Bass Boost",
   "Below hero": "Below hero",
   "Best link": "Best link",
-  Binge: "Binge",
-  "Binge Mode: auto-skips recaps & intros, continuous marathon playback":
-    "Binge Mode: auto-skips recaps & intros, continuous marathon playback",
+  "Binge": "Binge",
+  "Binge Mode: auto-skips recaps & intros, continuous marathon playback": "Binge Mode: auto-skips recaps & intros, continuous marathon playback",
   "Bitstream passthrough": "Bitstream passthrough",
-  "Books behind the films and series everyone knows":
-    "Books behind the films and series everyone knows",
+  "Books behind the films and series everyone knows": "Books behind the films and series everyone knows",
   "Books someone tried to pull from a shelf": "Books someone tried to pull from a shelf",
-  "Boosts vocal presence and speech frequencies while leveling loud action scenes.":
-    "Boosts vocal presence and speech frequencies while leveling loud action scenes.",
+  "Boosts vocal presence and speech frequencies while leveling loud action scenes.": "Boosts vocal presence and speech frequencies while leveling loud action scenes.",
   "Born today": "Born today",
-  "Browse and play video from a WebDAV server: a NAS, a debrid service's WebDAV, or your own. Argus sends the login only to this server.":
-    "Browse and play video from a WebDAV server: a NAS, a debrid service's WebDAV, or your own. Argus sends the login only to this server.",
+  "Browse and play video from a WebDAV server: a NAS, a debrid service's WebDAV, or your own. Argus sends the login only to this server.": "Browse and play video from a WebDAV server: a NAS, a debrid service's WebDAV, or your own. Argus sends the login only to this server.",
   "Browse by Country": "Browse by Country",
-  "By default, secondary profiles can only customize their own profile and preferences. You can grant secondary profiles permission to perform administrative actions below.":
-    "By default, secondary profiles can only customize their own profile and preferences. You can grant secondary profiles permission to perform administrative actions below.",
-  Camera: "Camera",
-  Cameras: "Cameras",
+  "By default, secondary profiles can only customize their own profile and preferences. You can grant secondary profiles permission to perform administrative actions below.": "By default, secondary profiles can only customize their own profile and preferences. You can grant secondary profiles permission to perform administrative actions below.",
+  "Camera": "Camera",
+  "Cameras": "Cameras",
   "Can reach": "Can reach",
   "Cancel {count} downloads": "Cancel {count} downloads",
   "Cancelling…": "Cancelling…",
@@ -2179,27 +1951,19 @@ const uiFallback: Record<string, string> = {
   "Card title size": "Card title size",
   "Catalog URL": "Catalog URL",
   "Change PIN": "Change PIN",
-  "Changes apply to your computer instantly, and stay in sync both ways.":
-    "Changes apply to your computer instantly, and stay in sync both ways.",
+  "Changes apply to your computer instantly, and stay in sync both ways.": "Changes apply to your computer instantly, and stay in sync both ways.",
   "Chapter hidden": "Chapter hidden",
-  "Check addon replies against the Stremio protocol":
-    "Check addon replies against the Stremio protocol",
+  "Check addon replies against the Stremio protocol": "Check addon replies against the Stremio protocol",
   "Check addons in the background": "Check addons in the background",
   "Checking file…": "Checking file…",
   "Checking watched status…": "Checking watched status…",
-  "Checks the best few direct links as soon as results arrive, so the first pick starts without a probe delay and dead links are skipped.":
-    "Checks the best few direct links as soon as results arrive, so the first pick starts without a probe delay and dead links are skipped.",
-  "Checks the folders already in your library when you open it and adds anything new it finds. Titles you already have are left alone, including any you corrected with Identify.":
-    "Checks the folders already in your library when you open it and adds anything new it finds. Titles you already have are left alone, including any you corrected with Identify.",
-  "Choose a PNG, JPEG, or WebP image under 10 MB.":
-    "Choose a PNG, JPEG, or WebP image under 10 MB.",
-  "Choose a download source again; this item's source cannot be recovered.":
-    "Choose a download source again; this item's source cannot be recovered.",
-  "Choose a profile to switch. You can edit your own profile's details and settings.":
-    "Choose a profile to switch. You can edit your own profile's details and settings.",
+  "Checks the best few direct links as soon as results arrive, so the first pick starts without a probe delay and dead links are skipped.": "Checks the best few direct links as soon as results arrive, so the first pick starts without a probe delay and dead links are skipped.",
+  "Checks the folders already in your library when you open it and adds anything new it finds. Titles you already have are left alone, including any you corrected with Identify.": "Checks the folders already in your library when you open it and adds anything new it finds. Titles you already have are left alone, including any you corrected with Identify.",
+  "Choose a PNG, JPEG, or WebP image under 10 MB.": "Choose a PNG, JPEG, or WebP image under 10 MB.",
+  "Choose a download source again; this item's source cannot be recovered.": "Choose a download source again; this item's source cannot be recovered.",
+  "Choose a profile to switch. You can edit your own profile's details and settings.": "Choose a profile to switch. You can edit your own profile's details and settings.",
   "Choose a source to download this movie.": "Choose a source to download this movie.",
-  "Choose an episode or season, then choose a source.":
-    "Choose an episode or season, then choose a source.",
+  "Choose an episode or season, then choose a source.": "Choose an episode or season, then choose a source.",
   "Choose episode": "Choose episode",
   "Choose file…": "Choose file…",
   "Choose source for this episode": "Choose source for this episode",
@@ -2207,27 +1971,21 @@ const uiFallback: Record<string, string> = {
   "Choose version": "Choose version",
   "Choose version to download": "Choose version to download",
   "Choose what to import": "Choose what to import",
-  "Choose which Nuvio profile slot (1–6) syncs with this Argus profile.":
-    "Choose which Nuvio profile slot (1–6) syncs with this Argus profile.",
-  "Choose which streaming service powers your active identity, profiles, watch progress, and addons.":
-    "Choose which streaming service powers your active identity, profiles, watch progress, and addons.",
+  "Choose which Nuvio profile slot (1–6) syncs with this Argus profile.": "Choose which Nuvio profile slot (1–6) syncs with this Argus profile.",
+  "Choose which streaming service powers your active identity, profiles, watch progress, and addons.": "Choose which streaming service powers your active identity, profiles, watch progress, and addons.",
   "Cinema release": "Cinema release",
   "Clear Stremio watch history for this title?": "Clear Stremio watch history for this title?",
   "Clear Stremio watch history for this title…": "Clear Stremio watch history for this title…",
-  "Clear the music presence a few seconds after pausing instead of leaving 'Paused' visible. It comes back when playback resumes.":
-    "Clear the music presence a few seconds after pausing instead of leaving 'Paused' visible. It comes back when playback resumes.",
+  "Clear the music presence a few seconds after pausing instead of leaving 'Paused' visible. It comes back when playback resumes.": "Clear the music presence a few seconds after pausing instead of leaving 'Paused' visible. It comes back when playback resumes.",
   "Clear title history": "Clear title history",
   "Client ID (leave blank for default)": "Client ID (leave blank for default)",
   "Client Secret (optional, for Web app type)": "Client Secret (optional, for Web app type)",
-  "Close the player, or start whichever recommendation is focused.":
-    "Close the player, or start whichever recommendation is focused.",
+  "Close the player, or start whichever recommendation is focused.": "Close the player, or start whichever recommendation is focused.",
   "Closing in {n}s": "Closing in {n}s",
   "Cloud PIN protection": "Cloud PIN protection",
-  "Comma-separated host names, for example pixeldrain.com. Direct links from these hosts get a bonus. You can also pin a host from the source list.":
-    "Comma-separated host names, for example pixeldrain.com. Direct links from these hosts get a bonus. You can also pin a host from the source list.",
-  "Comma-separated, for example FLUX, NTb, QxR. These get a bonus when Argus picks the top stream.":
-    "Comma-separated, for example FLUX, NTb, QxR. These get a bonus when Argus picks the top stream.",
-  Comment: "Comment",
+  "Comma-separated host names, for example pixeldrain.com. Direct links from these hosts get a bonus. You can also pin a host from the source list.": "Comma-separated host names, for example pixeldrain.com. Direct links from these hosts get a bonus. You can also pin a host from the source list.",
+  "Comma-separated, for example FLUX, NTb, QxR. These get a bonus when Argus picks the top stream.": "Comma-separated, for example FLUX, NTb, QxR. These get a bonus when Argus picks the top stream.",
+  "Comment": "Comment",
   "Comment deleted": "Comment deleted",
   "Community addon directories": "Community addon directories",
   "Confirm cancellation": "Confirm cancellation",
@@ -2236,15 +1994,12 @@ const uiFallback: Record<string, string> = {
   "Connect PublicMetaDB": "Connect PublicMetaDB",
   "Connect Stremio": "Connect Stremio",
   "Connect a debrid service": "Connect a debrid service",
-  "Connect your Nuvio account first. Your installed addons sync from there.":
-    "Connect your Nuvio account first. Your installed addons sync from there.",
-  "Connect your Nuvio account to sync watch progress, profile slots, and addons.":
-    "Connect your Nuvio account to sync watch progress, profile slots, and addons.",
+  "Connect your Nuvio account first. Your installed addons sync from there.": "Connect your Nuvio account first. Your installed addons sync from there.",
+  "Connect your Nuvio account to sync watch progress, profile slots, and addons.": "Connect your Nuvio account to sync watch progress, profile slots, and addons.",
   "Connected as {email}": "Connected as {email}",
   "Connected to Nuvio": "Connected to Nuvio",
   "Connection failed": "Connection failed",
-  "Connection failed. Check your network or API key":
-    "Connection failed. Check your network or API key",
+  "Connection failed. Check your network or API key": "Connection failed. Check your network or API key",
   "Connection verified": "Connection verified",
   "Content advisory on title page": "Content advisory on title page",
   "Continue last watched": "Continue last watched",
@@ -2258,8 +2013,7 @@ const uiFallback: Record<string, string> = {
   "Copy selected text": "Copy selected text",
   "Copy share link": "Copy share link",
   "Copy username": "Copy username",
-  "Copy your addons, saved library and watch positions into Argus without staying signed in.":
-    "Copy your addons, saved library and watch positions into Argus without staying signed in.",
+  "Copy your addons, saved library and watch positions into Argus without staying signed in.": "Copy your addons, saved library and watch positions into Argus without staying signed in.",
   "Costume Design": "Costume Design",
   "Could not check watched status: {providers}": "Could not check watched status: {providers}",
   "Could not clear watch history.": "Could not clear watch history.",
@@ -2268,8 +2022,7 @@ const uiFallback: Record<string, string> = {
   "Could not copy image.": "Could not copy image.",
   "Could not copy the link.": "Could not copy the link.",
   "Could not copy to the clipboard.": "Could not copy to the clipboard.",
-  "Could not copy. Select and copy the text manually.":
-    "Could not copy. Select and copy the text manually.",
+  "Could not copy. Select and copy the text manually.": "Could not copy. Select and copy the text manually.",
   "Could not delete collection.": "Could not delete collection.",
   "Could not install: {error}": "Could not install: {error}",
   "Could not load episodes. Try again.": "Could not load episodes. Try again.",
@@ -2280,26 +2033,21 @@ const uiFallback: Record<string, string> = {
   "Could not publish the collection.": "Could not publish the collection.",
   "Could not read this archive.": "Could not read this archive.",
   "Could not read this image.": "Could not read this image.",
-  "Could not save automatic download settings. Your previous settings were kept.":
-    "Could not save automatic download settings. Your previous settings were kept.",
+  "Could not save automatic download settings. Your previous settings were kept.": "Could not save automatic download settings. Your previous settings were kept.",
   "Could not save image.": "Could not save image.",
-  "Could not save the change. Check available storage and try again.":
-    "Could not save the change. Check available storage and try again.",
-  Countdown: "Countdown",
+  "Could not save the change. Check available storage and try again.": "Could not save the change. Check available storage and try again.",
+  "Countdown": "Countdown",
   "Countdown length": "Countdown length",
   "Courses / Other": "Courses / Other",
   "Crash-loop protection": "Crash-loop protection",
-  "Create a group, choose its artwork, and organize MDBList and Trakt lists inside it.":
-    "Create a group, choose its artwork, and organize MDBList and Trakt lists inside it.",
+  "Create a group, choose its artwork, and organize MDBList and Trakt lists inside it.": "Create a group, choose its artwork, and organize MDBList and Trakt lists inside it.",
   "Create your first manga list": "Create your first manga list",
-  Credits: "Credits",
+  "Credits": "Credits",
   "Crime and Mystery Essentials": "Crime and Mystery Essentials",
-  "Ctrl+Shift+X by default. Change it in the hotkey editor.":
-    "Ctrl+Shift+X by default. Change it in the hotkey editor.",
+  "Ctrl+Shift+X by default. Change it in the hotkey editor.": "Ctrl+Shift+X by default. Change it in the hotkey editor.",
   "Custom lead time": "Custom lead time",
   "Debrid cloud": "Debrid cloud",
-  "Default drifts through backdrops from what's trending. Eye opens and closes over a calm backdrop. Custom plays your own videos, GIFs, or images.":
-    "Default drifts through backdrops from what's trending. Eye opens and closes over a calm backdrop. Custom plays your own videos, GIFs, or images.",
+  "Default drifts through backdrops from what's trending. Eye opens and closes over a calm backdrop. Custom plays your own videos, GIFs, or images.": "Default drifts through backdrops from what's trending. Eye opens and closes over a calm backdrop. Custom plays your own videos, GIFs, or images.",
   "Default list": "Default list",
   "Delete collection": "Delete collection",
   "Delete file": "Delete file",
@@ -2307,49 +2055,41 @@ const uiFallback: Record<string, string> = {
   "Delete local copy only": "Delete local copy only",
   "Delete post": "Delete post",
   "Delete post…": "Delete post…",
-  "Delete the comment by @{handle}? This cannot be undone.":
-    "Delete the comment by @{handle}? This cannot be undone.",
+  "Delete the comment by @{handle}? This cannot be undone.": "Delete the comment by @{handle}? This cannot be undone.",
   "Delete this comment? This cannot be undone.": "Delete this comment? This cannot be undone.",
-  "Delete this group? The original lists on MDBList and Trakt will not be changed.":
-    "Delete this group? The original lists on MDBList and Trakt will not be changed.",
+  "Delete this group? The original lists on MDBList and Trakt will not be changed.": "Delete this group? The original lists on MDBList and Trakt will not be changed.",
   "Delete this post from the group?": "Delete this post from the group?",
   "Deleting…": "Deleting…",
   "Deletion is in progress.": "Deletion is in progress.",
-  "Demote HDR and Dolby Vision files your screen or player cannot show properly.":
-    "Demote HDR and Dolby Vision files your screen or player cannot show properly.",
+  "Demote HDR and Dolby Vision files your screen or player cannot show properly.": "Demote HDR and Dolby Vision files your screen or player cannot show properly.",
   "Demote links that fail fast": "Demote links that fail fast",
-  Detached: "Detached",
-  "Detect repeated failed launches and offer safe mode.":
-    "Detect repeated failed launches and offer safe mode.",
-  Digital: "Digital",
+  "Detached": "Detached",
+  "Detect repeated failed launches and offer safe mode.": "Detect repeated failed launches and offer safe mode.",
+  "Digital": "Digital",
   "Digital release": "Digital release",
   "Disable automatic downloads": "Disable automatic downloads",
   "Disable automatic downloads for {title}": "Disable automatic downloads for {title}",
   "Disconnect Nuvio": "Disconnect Nuvio",
   "Disconnect PublicMetaDB?": "Disconnect PublicMetaDB?",
   "Discussed on": "Discussed on",
-  "Displays the '+ Add profile' button in Settings and 'Who's watching' for secondary profiles.":
-    "Displays the '+ Add profile' button in Settings and 'Who's watching' for secondary profiles.",
-  "Distance kept free at the left and right edges on the mpv engine.":
-    "Distance kept free at the left and right edges on the mpv engine.",
+  "Displays the '+ Add profile' button in Settings and 'Who's watching' for secondary profiles.": "Displays the '+ Add profile' button in Settings and 'Who's watching' for secondary profiles.",
+  "Distance kept free at the left and right edges on the mpv engine.": "Distance kept free at the left and right edges on the mpv engine.",
   "DoesTheDogDie API key": "DoesTheDogDie API key",
-  "Doubling is the cleanest: a 24fps film becomes an exact 48, so every frame is evenly spaced. Fixed 60 divides 24 unevenly and is the usual cause of shimmering or torn motion.":
-    "Doubling is the cleanest: a 24fps film becomes an exact 48, so every frame is evenly spaced. Fixed 60 divides 24 unevenly and is the usual cause of shimmering or torn motion.",
+  "Doubling is the cleanest: a 24fps film becomes an exact 48, so every frame is evenly spaced. Fixed 60 divides 24 unevenly and is the usual cause of shimmering or torn motion.": "Doubling is the cleanest: a 24fps film becomes an exact 48, so every frame is evenly spaced. Fixed 60 divides 24 unevenly and is the usual cause of shimmering or torn motion.",
   "Download actions for {title}": "Download actions for {title}",
   "Download and open": "Download and open",
   "Download chapters": "Download chapters",
   "Download is unavailable.": "Download is unavailable.",
-  "Download the first 1.5 MB of this link to measure latency and speed.":
-    "Download the first 1.5 MB of this link to measure latency and speed.",
+  "Download the first 1.5 MB of this link to measure latency and speed.": "Download the first 1.5 MB of this link to measure latency and speed.",
   "Download this version": "Download this version",
   "Downloading {pct} percent": "Downloading {pct} percent",
-  Dystopias: "Dystopias",
+  "Dystopias": "Dystopias",
   "EPUB and PDF reader.": "EPUB and PDF reader.",
   "Edit group": "Edit group",
   "Edit list": "Edit list",
   "Edit post": "Edit post",
-  Editing: "Editing",
-  Editions: "Editions",
+  "Editing": "Editing",
+  "Editions": "Editions",
   "Enable panic hotkey": "Enable panic hotkey",
   "Enabled for newly released episodes": "Enabled for newly released episodes",
   "Encrypted sync": "Encrypted sync",
@@ -2366,76 +2106,56 @@ const uiFallback: Record<string, string> = {
   "Episode information is unavailable.": "Episode information is unavailable.",
   "Essay by {name}": "Essay by {name}",
   "Essay from the Library": "Essay from the Library",
-  "Every few hours, ask each installed addon for a public-domain film to see whether it still works. Off by default because it contacts your addons.":
-    "Every few hours, ask each installed addon for a public-domain film to see whether it still works. Off by default because it contacts your addons.",
-  "Every row is hidden. Use Arrange to bring one back.":
-    "Every row is hidden. Use Arrange to bring one back.",
+  "Every few hours, ask each installed addon for a public-domain film to see whether it still works. Off by default because it contacts your addons.": "Every few hours, ask each installed addon for a public-domain film to see whether it still works. Off by default because it contacts your addons.",
+  "Every row is hidden. Use Arrange to bring one back.": "Every row is hidden. Use Arrange to bring one back.",
   "Export diagnostics": "Export diagnostics",
   "External player": "External player",
-  "Extra command line options passed to mpv. Optional.":
-    "Extra command line options passed to mpv. Optional.",
-  "Extra delay for Bluetooth or AirPlay speakers whose sound arrives late. Added to every title. Start at 0 and raise it until lips match.":
-    "Extra delay for Bluetooth or AirPlay speakers whose sound arrives late. Added to every title. Start at 0 and raise it until lips match.",
-  Eye: "Eye",
+  "Extra command line options passed to mpv. Optional.": "Extra command line options passed to mpv. Optional.",
+  "Extra delay for Bluetooth or AirPlay speakers whose sound arrives late. Added to every title. Start at 0 and raise it until lips match.": "Extra delay for Bluetooth or AirPlay speakers whose sound arrives late. Added to every title. Start at 0 and raise it until lips match.",
+  "Eye": "Eye",
   "Fall back to backup accounts": "Fall back to backup accounts",
   "Feed URL": "Feed URL",
   "File unavailable": "File unavailable",
   "Film Registry": "Film Registry",
   "Film stock": "Film stock",
   "Filter plugins...": "Filter plugins...",
-  Finish: "Finish",
-  "Folder URL on your server, e.g. https://dav.example.com/argus/":
-    "Folder URL on your server, e.g. https://dav.example.com/argus/",
-  "Free key, stored only on this device. Register an application at":
-    "Free key, stored only on this device. Register an application at",
-  "Free. Identifies audio and video files against MusicBrainz.":
-    "Free. Identifies audio and video files against MusicBrainz.",
+  "Finish": "Finish",
+  "Folder URL on your server, e.g. https://dav.example.com/argus/": "Folder URL on your server, e.g. https://dav.example.com/argus/",
+  "Free key, stored only on this device. Register an application at": "Free key, stored only on this device. Register an application at",
+  "Free. Identifies audio and video files against MusicBrainz.": "Free. Identifies audio and video files against MusicBrainz.",
   "Friend removed": "Friend removed",
-  "From the New York Times critics' list of the century so far":
-    "From the New York Times critics' list of the century so far",
-  "Full length fiction by women writing in English":
-    "Full length fiction by women writing in English",
+  "From the New York Times critics' list of the century so far": "From the New York Times critics' list of the century so far",
+  "Full length fiction by women writing in English": "Full length fiction by women writing in English",
   "Full score": "Full score",
   "Futures nobody would choose to live in": "Futures nobody would choose to live in",
-  "Game library, launchers, emulation and downloads you add yourself.":
-    "Game library, launchers, emulation and downloads you add yourself.",
+  "Game library, launchers, emulation and downloads you add yourself.": "Game library, launchers, emulation and downloads you add yourself.",
   "Get an API key": "Get an API key",
   "Go incognito now": "Go incognito now",
   "Go to": "Go to",
   "Group artwork": "Group artwork",
   "Group artwork preview": "Group artwork preview",
   "Group name": "Group name",
-  "Group the manga you love. Reading now, backlog, all-time favorites.":
-    "Group the manga you love. Reading now, backlog, all-time favorites.",
-  Halloween: "Halloween",
+  "Group the manga you love. Reading now, backlog, all-time favorites.": "Group the manga you love. Reading now, backlog, all-time favorites.",
+  "Halloween": "Halloween",
   "Hands-free auto-scroll": "Hands-free auto-scroll",
-  "Hidden strips scroll numbered pages with the same sync.":
-    "Hidden strips scroll numbered pages with the same sync.",
+  "Hidden strips scroll numbered pages with the same sync.": "Hidden strips scroll numbered pages with the same sync.",
   "Hide 18+": "Hide 18+",
   "Hide key": "Hide key",
   "Hide music after pausing": "Hide music after pausing",
   "Hide pages": "Hide pages",
-  "Hide the banner, keep it small in the top-right corner of the hero, or show the full banner below the hero.":
-    "Hide the banner, keep it small in the top-right corner of the hero, or show the full banner below the hero.",
-  "Hold Space or the left mouse button (or a finger on touch screens) on the video to play faster. Release to go back to your normal speed.":
-    "Hold Space or the left mouse button (or a finger on touch screens) on the video to play faster. Release to go back to your normal speed.",
+  "Hide the banner, keep it small in the top-right corner of the hero, or show the full banner below the hero.": "Hide the banner, keep it small in the top-right corner of the hero, or show the full banner below the hero.",
+  "Hold Space or the left mouse button (or a finger on touch screens) on the video to play faster. Release to go back to your normal speed.": "Hold Space or the left mouse button (or a finger on touch screens) on the video to play faster. Release to go back to your normal speed.",
   "Hold speed": "Hold speed",
   "Hold to speed up": "Hold to speed up",
   "Horizontal strip": "Horizontal strip",
-  "Hover a word in the subtitles to see its definition and pronunciation. Works with Argus's own subtitle display, not picture-based or styled subtitles drawn by mpv. Sends the hovered word to dictionaryapi.dev and Wiktionary.":
-    "Hover a word in the subtitles to see its definition and pronunciation. Works with Argus's own subtitle display, not picture-based or styled subtitles drawn by mpv. Sends the hovered word to dictionaryapi.dev and Wiktionary.",
+  "Hover a word in the subtitles to see its definition and pronunciation. Works with Argus's own subtitle display, not picture-based or styled subtitles drawn by mpv. Sends the hovered word to dictionaryapi.dev and Wiktionary.": "Hover a word in the subtitles to see its definition and pronunciation. Works with Argus's own subtitle display, not picture-based or styled subtitles drawn by mpv. Sends the hovered word to dictionaryapi.dev and Wiktionary.",
   "How Account Provider works:": "How Account Provider works:",
-  "How long Argus waits before acting on the countdown.":
-    "How long Argus waits before acting on the countdown.",
-  "How often Argus re-reads this library automatically.":
-    "How often Argus re-reads this library automatically.",
+  "How long Argus waits before acting on the countdown.": "How long Argus waits before acting on the countdown.",
+  "How often Argus re-reads this library automatically.": "How often Argus re-reads this library automatically.",
   "Identify a file": "Identify a file",
-  "If Argus fails to start cleanly three times in a row it enters safe mode and pauses background jobs. To go back to an earlier build, use Version history.":
-    "If Argus fails to start cleanly three times in a row it enters safe mode and pauses background jobs. To go back to an earlier build, use Version history.",
-  "If you back out of a stream within 20 seconds twice, Argus ranks it lower next time. Stored on this device only.":
-    "If you back out of a stream within 20 seconds twice, Argus ranks it lower next time. Stored on this device only.",
-  "If you were going to send something, send it to Stremio above, or to one of the charities below. They all do more good with it.":
-    "If you were going to send something, send it to Stremio above, or to one of the charities below. They all do more good with it.",
+  "If Argus fails to start cleanly three times in a row it enters safe mode and pauses background jobs. To go back to an earlier build, use Version history.": "If Argus fails to start cleanly three times in a row it enters safe mode and pauses background jobs. To go back to an earlier build, use Version history.",
+  "If you back out of a stream within 20 seconds twice, Argus ranks it lower next time. Stored on this device only.": "If you back out of a stream within 20 seconds twice, Argus ranks it lower next time. Stored on this device only.",
+  "If you were going to send something, send it to Stremio above, or to one of the charities below. They all do more good with it.": "If you were going to send something, send it to Stremio above, or to one of the charities below. They all do more good with it.",
   "Image copied": "Image copied",
   "Image saved": "Image saved",
   "Image viewer": "Image viewer",
@@ -2448,65 +2168,49 @@ const uiFallback: Record<string, string> = {
   "In {h}h {m}m": "In {h}h {m}m",
   "In {n} days": "In {n} days",
   "In {n} min": "In {n} min",
-  "Include PublicMetaDB resume points on Argus's Home Continue Watching rail.":
-    "Include PublicMetaDB resume points on Argus's Home Continue Watching rail.",
-  Incognito: "Incognito",
+  "Include PublicMetaDB resume points on Argus's Home Continue Watching rail.": "Include PublicMetaDB resume points on Argus's Home Continue Watching rail.",
+  "Incognito": "Incognito",
   "Incognito is off.": "Incognito is off.",
   "Incognito is on. Nothing is being tracked.": "Incognito is on. Nothing is being tracked.",
   "Independent of Trakt and any account.": "Independent of Trakt and any account.",
-  "Indexer URL, e.g. http://localhost:9117/api/v2.0/indexers/all/results/torznab/":
-    "Indexer URL, e.g. http://localhost:9117/api/v2.0/indexers/all/results/torznab/",
+  "Indexer URL, e.g. http://localhost:9117/api/v2.0/indexers/all/results/torznab/": "Indexer URL, e.g. http://localhost:9117/api/v2.0/indexers/all/results/torznab/",
   "Inducted {year}": "Inducted {year}",
-  "Install a plugin that offers rows of its own and they show up here as poster rails.":
-    "Install a plugin that offers rows of its own and they show up here as poster rails.",
+  "Install a plugin that offers rows of its own and they show up here as poster rails.": "Install a plugin that offers rows of its own and they show up here as poster rails.",
   "Install anyway": "Install anyway",
   "Install cancelled.": "Install cancelled.",
   "Internet Archive": "Internet Archive",
   "Internet Archive (open license)": "Internet Archive (open license)",
   "Internet Archive catalog": "Internet Archive catalog",
-  "Invalid API key or unable to reach PublicMetaDB":
-    "Invalid API key or unable to reach PublicMetaDB",
+  "Invalid API key or unable to reach PublicMetaDB": "Invalid API key or unable to reach PublicMetaDB",
   "Isolated continue watching": "Isolated continue watching",
-  "Keep a local search index of the repositories below. Off by default.":
-    "Keep a local search index of the repositories below. Off by default.",
+  "Keep a local search index of the repositories below. Off by default.": "Keep a local search index of the repositories below. Off by default.",
   "Keep folders up to date": "Keep folders up to date",
-  "Keeps decoded frames in graphics memory instead of copying them back, which lowers heat and battery use on laptops. On a Mac this switches from VideoToolbox copy mode to direct mode. Turn it off if you see a black picture, green frames or stutter. Applies to the next video you play.":
-    "Keeps decoded frames in graphics memory instead of copying them back, which lowers heat and battery use on laptops. On a Mac this switches from VideoToolbox copy mode to direct mode. Turn it off if you see a black picture, green frames or stutter. Applies to the next video you play.",
-  "Keeps the sync fix you made with Alt+Z / Alt+X (50 ms steps) for that title next time you play it.":
-    "Keeps the sync fix you made with Alt+Z / Alt+X (50 ms steps) for that title next time you play it.",
-  "Keeps your settings, profiles and library in sync between devices through a server you run (any WebDAV or PUT/GET file host). Everything is encrypted on this device with your passphrase; the server only sees ciphertext. Argus hosts nothing.":
-    "Keeps your settings, profiles and library in sync between devices through a server you run (any WebDAV or PUT/GET file host). Everything is encrypted on this device with your passphrase; the server only sees ciphertext. Argus hosts nothing.",
-  Leader: "Leader",
+  "Keeps decoded frames in graphics memory instead of copying them back, which lowers heat and battery use on laptops. On a Mac this switches from VideoToolbox copy mode to direct mode. Turn it off if you see a black picture, green frames or stutter. Applies to the next video you play.": "Keeps decoded frames in graphics memory instead of copying them back, which lowers heat and battery use on laptops. On a Mac this switches from VideoToolbox copy mode to direct mode. Turn it off if you see a black picture, green frames or stutter. Applies to the next video you play.",
+  "Keeps the sync fix you made with Alt+Z / Alt+X (50 ms steps) for that title next time you play it.": "Keeps the sync fix you made with Alt+Z / Alt+X (50 ms steps) for that title next time you play it.",
+  "Keeps your settings, profiles and library in sync between devices through a server you run (any WebDAV or PUT/GET file host). Everything is encrypted on this device with your passphrase; the server only sees ciphertext. Argus hosts nothing.": "Keeps your settings, profiles and library in sync between devices through a server you run (any WebDAV or PUT/GET file host). Everything is encrypted on this device with your passphrase; the server only sees ciphertext. Argus hosts nothing.",
+  "Leader": "Leader",
   "Leave safe mode": "Leave safe mode",
   "Leave the image empty to use the Argus logo.": "Leave the image empty to use the Argus logo.",
-  "Lecture series and courses from RSS video podcasts and official YouTube channel or playlist feeds (youtube.com/feeds/videos.xml). Nothing is added for you.":
-    "Lecture series and courses from RSS video podcasts and official YouTube channel or playlist feeds (youtube.com/feeds/videos.xml). Nothing is added for you.",
-  "Lectures, courses and films the Internet Archive lists under a Creative Commons or public-domain license. Argus never hosts or caches anything.":
-    "Lectures, courses and films the Internet Archive lists under a Creative Commons or public-domain license. Argus never hosts or caches anything.",
-  Lens: "Lens",
-  Lenses: "Lenses",
-  "Let Android extensions, which stand up rows of their own, be asked from Home, Discover, Catalogs, search and the Play button too. A plugin with no rows of its own has nowhere else to be found, so it is asked either way.":
-    "Let Android extensions, which stand up rows of their own, be asked from Home, Discover, Catalogs, search and the Play button too. A plugin with no rows of its own has nowhere else to be found, so it is asked either way.",
-  "Let auto-download and the next-episode prefetch ask plugins too. Off keeps plugins out of background work.":
-    "Let auto-download and the next-episode prefetch ask plugins too. Off keeps plugins out of background work.",
-  Like: "Like",
-  "Link this Argus profile ({name}) to a specific Nuvio cloud profile slot. Watch progress and Continue Watching will remain isolated to this profile.":
-    "Link this Argus profile ({name}) to a specific Nuvio cloud profile slot. Watch progress and Continue Watching will remain isolated to this profile.",
+  "Lecture series and courses from RSS video podcasts and official YouTube channel or playlist feeds (youtube.com/feeds/videos.xml). Nothing is added for you.": "Lecture series and courses from RSS video podcasts and official YouTube channel or playlist feeds (youtube.com/feeds/videos.xml). Nothing is added for you.",
+  "Lectures, courses and films the Internet Archive lists under a Creative Commons or public-domain license. Argus never hosts or caches anything.": "Lectures, courses and films the Internet Archive lists under a Creative Commons or public-domain license. Argus never hosts or caches anything.",
+  "Lens": "Lens",
+  "Lenses": "Lenses",
+  "Let Android extensions, which stand up rows of their own, be asked from Home, Discover, Catalogs, search and the Play button too. A plugin with no rows of its own has nowhere else to be found, so it is asked either way.": "Let Android extensions, which stand up rows of their own, be asked from Home, Discover, Catalogs, search and the Play button too. A plugin with no rows of its own has nowhere else to be found, so it is asked either way.",
+  "Let auto-download and the next-episode prefetch ask plugins too. Off keeps plugins out of background work.": "Let auto-download and the next-episode prefetch ask plugins too. Off keeps plugins out of background work.",
+  "Like": "Like",
+  "Link this Argus profile ({name}) to a specific Nuvio cloud profile slot. Watch progress and Continue Watching will remain isolated to this profile.": "Link this Argus profile ({name}) to a specific Nuvio cloud profile slot. Watch progress and Continue Watching will remain isolated to this profile.",
   "Living room": "Living room",
   "Living-room mode": "Living-room mode",
   "Loaders and the bits between screens.": "Loaders and the bits between screens.",
   "Loading episodes…": "Loading episodes…",
   "Loading image…": "Loading image…",
-  "Local music library, queue, playlists and lyrics.":
-    "Local music library, queue, playlists and lyrics.",
+  "Local music library, queue, playlists and lyrics.": "Local music library, queue, playlists and lyrics.",
   "Local profile": "Local profile",
   "Local video": "Local video",
-  "Local-only deletion removes this collection from this device. Any copy in your Argus account remains unchanged; its current status has not been verified.":
-    "Local-only deletion removes this collection from this device. Any copy in your Argus account remains unchanged; its current status has not been verified.",
+  "Local-only deletion removes this collection from this device. Any copy in your Argus account remains unchanged; its current status has not been verified.": "Local-only deletion removes this collection from this device. Any copy in your Argus account remains unchanged; its current status has not been verified.",
   "Look up words on hover": "Look up words on hover",
   "Looking up…": "Looking up…",
-  "Looks up other names for a title (TMDB, TVmaze, AniList) so differently named releases still match.":
-    "Looks up other names for a title (TMDB, TVmaze, AniList) so differently named releases still match.",
+  "Looks up other names for a title (TMDB, TVmaze, AniList) so differently named releases still match.": "Looks up other names for a title (TMDB, TVmaze, AniList) so differently named releases still match.",
   "MAL API Config": "MAL API Config",
   "MDBList or Trakt list URL": "MDBList or Trakt list URL",
   "Make primary": "Make primary",
@@ -2525,22 +2229,18 @@ const uiFallback: Record<string, string> = {
   "Mark {count} episodes up to here": "Mark {count} episodes up to here",
   "Match alternate and regional titles": "Match alternate and regional titles",
   "Match display": "Match display",
-  "Match list only; bracket structure is not available for this title.":
-    "Match list only; bracket structure is not available for this title.",
+  "Match list only; bracket structure is not available for this title.": "Match list only; bracket structure is not available for this title.",
   "Match playback to the display": "Match playback to the display",
   "Match your display and player": "Match your display and player",
-  "Matches by exact file hash first, then lines subtitles up with the audio using drift correction and on-device speech sync. Works from downloaded subtitles when offline.":
-    "Matches by exact file hash first, then lines subtitles up with the audio using drift correction and on-device speech sync. Works from downloaded subtitles when offline.",
+  "Matches by exact file hash first, then lines subtitles up with the audio using drift correction and on-device speech sync. Works from downloaded subtitles when offline.": "Matches by exact file hash first, then lines subtitles up with the audio using drift correction and on-device speech sync. Works from downloaded subtitles when offline.",
   "Missing AcoustID key": "Missing AcoustID key",
   "Modify installation": "Modify installation",
-  Modules: "Modules",
+  "Modules": "Modules",
   "Mood and natural-language library search": "Mood and natural-language library search",
   "More like this at the end": "More like this at the end",
-  "Movie and TV show titles beneath poster cards.":
-    "Movie and TV show titles beneath poster cards.",
+  "Movie and TV show titles beneath poster cards.": "Movie and TV show titles beneath poster cards.",
   "My Groups": "My Groups",
-  "Names files like Show (Year)/Season 01/Show - S01E02 - Title.mkv and Movie (Year)/Movie (Year).mkv so a media server finds them without renaming. Replaces the folder option above.":
-    "Names files like Show (Year)/Season 01/Show - S01E02 - Title.mkv and Movie (Year)/Movie (Year).mkv so a media server finds them without renaming. Replaces the folder option above.",
+  "Names files like Show (Year)/Season 01/Show - S01E02 - Title.mkv and Movie (Year)/Movie (Year).mkv so a media server finds them without renaming. Replaces the folder option above.": "Names files like Show (Year)/Season 01/Show - S01E02 - Title.mkv and Movie (Year)/Movie (Year).mkv so a media server finds them without renaming. Replaces the folder option above.",
   "National Book Award Winners": "National Book Award Winners",
   "New group": "New group",
   "Next stream available: {stream}": "Next stream available: {stream}",
@@ -2550,54 +2250,42 @@ const uiFallback: Record<string, string> = {
   "No audio track in that language.": "No audio track in that language.",
   "No completed downloads found.": "No completed downloads found.",
   "No connected music source has {query}.": "No connected music source has {query}.",
-  "No connected music source has {query}. Argus also searched {alternatives} and found nothing.":
-    "No connected music source has {query}. Argus also searched {alternatives} and found nothing.",
+  "No connected music source has {query}. Argus also searched {alternatives} and found nothing.": "No connected music source has {query}. Argus also searched {alternatives} and found nothing.",
   "No definition found for “{word}”.": "No definition found for “{word}”.",
   "No destinations found": "No destinations found",
-  "No downloads are currently eligible for this action.":
-    "No downloads are currently eligible for this action.",
-  "No episodes available from this title’s providers.":
-    "No episodes available from this title’s providers.",
-  "No online matching. Each folder becomes a course and its files play in order of their number (01, 02, 03…).":
-    "No online matching. Each folder becomes a course and its files play in order of their number (01, 02, 03…).",
+  "No downloads are currently eligible for this action.": "No downloads are currently eligible for this action.",
+  "No episodes available from this title’s providers.": "No episodes available from this title’s providers.",
+  "No online matching. Each folder becomes a course and its files play in order of their number (01, 02, 03…).": "No online matching. Each folder becomes a course and its files play in order of their number (01, 02, 03…).",
   "No plugin catalogs yet": "No plugin catalogs yet",
   "No plugin has any rows to arrange.": "No plugin has any rows to arrange.",
   "No plugin has anything for that title.": "No plugin has anything for that title.",
-  "No source has {query}. Showing results for {fallback}.":
-    "No source has {query}. Showing results for {fallback}.",
+  "No source has {query}. Showing results for {fallback}.": "No source has {query}. Showing results for {fallback}.",
   "No synopsis yet.": "No synopsis yet.",
   "No videos here.": "No videos here.",
   "Nobel Laureates in Literature": "Nobel Laureates in Literature",
-  Normalize: "Normalize",
-  Normalized: "Normalized",
+  "Normalize": "Normalize",
+  "Normalized": "Normalized",
   "Not on TMDB? Keep as “{title}”": "Not on TMDB? Keep as “{title}”",
   "Not released": "Not released",
   "Not responding": "Not responding",
   "Nothing is changed in your Stremio account.": "Nothing is changed in your Stremio account.",
-  Nuvio: "Nuvio",
+  "Nuvio": "Nuvio",
   "Nuvio Account ID": "Nuvio Account ID",
   "Nuvio account": "Nuvio account",
-  "Nuvio account credentials, profile slot mapping, and cloud addons are restricted to the primary profile.":
-    "Nuvio account credentials, profile slot mapping, and cloud addons are restricted to the primary profile.",
+  "Nuvio account credentials, profile slot mapping, and cloud addons are restricted to the primary profile.": "Nuvio account credentials, profile slot mapping, and cloud addons are restricted to the primary profile.",
   "Nuvio addons": "Nuvio addons",
   "Nuvio collection": "Nuvio collection",
-  "Nuvio supports up to 6 cloud profiles with isolated continue watching, synced addons, and PIN locks.":
-    "Nuvio supports up to 6 cloud profiles with isolated continue watching, synced addons, and PIN locks.",
-  "OAI-PMH address, e.g. https://export.arxiv.org/oai2?set=cs":
-    "OAI-PMH address, e.g. https://export.arxiv.org/oai2?set=cs",
+  "Nuvio supports up to 6 cloud profiles with isolated continue watching, synced addons, and PIN locks.": "Nuvio supports up to 6 cloud profiles with isolated continue watching, synced addons, and PIN locks.",
+  "OAI-PMH address, e.g. https://export.arxiv.org/oai2?set=cs": "OAI-PMH address, e.g. https://export.arxiv.org/oai2?set=cs",
   "OPDS catalog": "OPDS catalog",
-  "Off by default: uploads are held to a trickle. Turn on to upload at full speed. Takes effect after the P2P engine restarts.":
-    "Off by default: uploads are held to a trickle. Turn on to upload at full speed. Takes effect after the P2P engine restarts.",
+  "Off by default: uploads are held to a trickle. Turn on to upload at full speed. Takes effect after the P2P engine restarts.": "Off by default: uploads are held to a trickle. Turn on to upload at full speed. Takes effect after the P2P engine restarts.",
   "One episode · Apple Podcasts": "One episode · Apple Podcasts",
-  "One key pauses Trakt, Simkl and other scrobbling, stops saving progress, hides Continue Watching and clears temporary files. It lasts until you turn it off or restart Argus.":
-    "One key pauses Trakt, Simkl and other scrobbling, stops saving progress, hides Continue Watching and clears temporary files. It lasts until you turn it off or restart Argus.",
+  "One key pauses Trakt, Simkl and other scrobbling, stops saving progress, hides Continue Watching and clears temporary files. It lasts until you turn it off or restart Argus.": "One key pauses Trakt, Simkl and other scrobbling, stops saving progress, hides Continue Watching and clears temporary files. It lasts until you turn it off or restart Argus.",
   "One key per line, tried top to bottom.": "One key per line, tried top to bottom.",
   "One other screen version": "One other screen version",
   "Only the primary profile can create profiles.": "Only the primary profile can create profiles.",
-  "Only the ticked formats are sent as-is. The rest are decoded normally.":
-    "Only the ticked formats are sent as-is. The rest are decoded normally.",
-  "Only your saved copy is deleted. The original remains available.":
-    "Only your saved copy is deleted. The original remains available.",
+  "Only the ticked formats are sent as-is. The rest are decoded normally.": "Only the ticked formats are sent as-is. The rest are decoded normally.",
+  "Only your saved copy is deleted. The original remains available.": "Only your saved copy is deleted. The original remains available.",
   "Open Argus Setup": "Open Argus Setup",
   "Open author profile": "Open author profile",
   "Open collection": "Open collection",
@@ -2606,8 +2294,7 @@ const uiFallback: Record<string, string> = {
   "Open image link": "Open image link",
   "Open in Apple Podcasts": "Open in Apple Podcasts",
   "Open in VLC": "Open in VLC",
-  "Open in VLC needs VLC installed. If nothing happens, copy the link into VLC's Open Network Stream.":
-    "Open in VLC needs VLC installed. If nothing happens, copy the link into VLC's Open Network Stream.",
+  "Open in VLC needs VLC installed. If nothing happens, copy the link into VLC's Open Network Stream.": "Open in VLC needs VLC installed. If nothing happens, copy the link into VLC's Open Network Stream.",
   "Open link": "Open link",
   "Open list": "Open list",
   "Open my profile": "Open my profile",
@@ -2616,12 +2303,9 @@ const uiFallback: Record<string, string> = {
   "Open-access index": "Open-access index",
   "Open-access search": "Open-access search",
   "Opening playback…": "Opening playback…",
-  "Openly licensed or public-domain libraries. Nothing is added until you tap one.":
-    "Openly licensed or public-domain libraries. Nothing is added until you tap one.",
-  "Opens nuvio.tv/link in your browser. Enter code or approve online.":
-    "Opens nuvio.tv/link in your browser. Enter code or approve online.",
-  "Opens videos in your installed mpv with your own mpv.conf, scripts and keys. Argus follows it to save your progress and mark episodes watched.":
-    "Opens videos in your installed mpv with your own mpv.conf, scripts and keys. Argus follows it to save your progress and mark episodes watched.",
+  "Openly licensed or public-domain libraries. Nothing is added until you tap one.": "Openly licensed or public-domain libraries. Nothing is added until you tap one.",
+  "Opens nuvio.tv/link in your browser. Enter code or approve online.": "Opens nuvio.tv/link in your browser. Enter code or approve online.",
+  "Opens videos in your installed mpv with your own mpv.conf, scripts and keys. Argus follows it to save your progress and mark episodes watched.": "Opens videos in your installed mpv with your own mpv.conf, scripts and keys. Argus follows it to save your progress and mark episodes watched.",
   "PIN Protection": "PIN Protection",
   "PIN is active": "PIN is active",
   "PIN off • no tab locks": "PIN off • no tab locks",
@@ -2630,29 +2314,22 @@ const uiFallback: Record<string, string> = {
   "Page tone & contrast": "Page tone & contrast",
   "Page {number}": "Page {number}",
   "Panic / incognito": "Panic / incognito",
-  "Passphrase (8+ characters, the same on every device)":
-    "Passphrase (8+ characters, the same on every device)",
+  "Passphrase (8+ characters, the same on every device)": "Passphrase (8+ characters, the same on every device)",
   "Passthrough formats": "Passthrough formats",
   "Password (optional)": "Password (optional)",
   "Paste the code or redirected URL (?code=...)": "Paste the code or redirected URL (?code=...)",
-  "Paste the manifest link of a repository you trust. Argus reads its own plugin repositories, provider-script repositories and Android extension repositories as they are, and installs nothing until you choose to.":
-    "Paste the manifest link of a repository you trust. Argus reads its own plugin repositories, provider-script repositories and Android extension repositories as they are, and installs nothing until you choose to.",
+  "Paste the manifest link of a repository you trust. Argus reads its own plugin repositories, provider-script repositories and Android extension repositories as they are, and installs nothing until you choose to.": "Paste the manifest link of a repository you trust. Argus reads its own plugin repositories, provider-script repositories and Android extension repositories as they are, and installs nothing until you choose to.",
   "Paste the token from AniList": "Paste the token from AniList",
-  "Paste this link into Stremio on another device on the same network. Anyone with the link can watch these lessons while Argus is open. Stop sharing to revoke it.":
-    "Paste this link into Stremio on another device on the same network. Anyone with the link can watch these lessons while Argus is open. Stop sharing to revoke it.",
-  "Pause or resume every plugin at once, without removing anything. The switch below decides where they are asked.":
-    "Pause or resume every plugin at once, without removing anything. The switch below decides where they are asked.",
+  "Paste this link into Stremio on another device on the same network. Anyone with the link can watch these lessons while Argus is open. Stop sharing to revoke it.": "Paste this link into Stremio on another device on the same network. Anyone with the link can watch these lessons while Argus is open. Stop sharing to revoke it.",
+  "Pause or resume every plugin at once, without removing anything. The switch below decides where they are asked.": "Pause or resume every plugin at once, without removing anything. The switch below decides where they are asked.",
   "Pause {count} downloads": "Pause {count} downloads",
   "Paused on PublicMetaDB": "Paused on PublicMetaDB",
-  "Pauses background syncing and downloads until you turn it off.":
-    "Pauses background syncing and downloads until you turn it off.",
-  Period: "Period",
+  "Pauses background syncing and downloads until you turn it off.": "Pauses background syncing and downloads until you turn it off.",
+  "Period": "Period",
   "Phone layout (restart to apply)": "Phone layout (restart to apply)",
   "Pick a 4-digit PIN to lock this profile.": "Pick a 4-digit PIN to lock this profile.",
-  "Pick a preset above, or add a filter to start shaping the sound.":
-    "Pick a preset above, or add a filter to start shaping the sound.",
-  "Pick an audio or video file to name the song in it. Needs the key above.":
-    "Pick an audio or video file to name the song in it. Needs the key above.",
+  "Pick a preset above, or add a filter to start shaping the sound.": "Pick a preset above, or add a filter to start shaping the sound.",
+  "Pick an audio or video file to name the song in it. Needs the key above.": "Pick an audio or video file to name the song in it. Needs the key above.",
   "Picture in picture": "Picture in picture",
   "Picture in picture style": "Picture in picture style",
   "Pin channel": "Pin channel",
@@ -2667,61 +2344,48 @@ const uiFallback: Record<string, string> = {
   "Play videos from archives": "Play videos from archives",
   "Playback finished": "Playback finished",
   "Playback is unavailable.": "Playback is unavailable.",
-  "Playback scrobbling and resume point sync with PublicMetaDB will stop for this profile.":
-    "Playback scrobbling and resume point sync with PublicMetaDB will stop for this profile.",
+  "Playback scrobbling and resume point sync with PublicMetaDB will stop for this profile.": "Playback scrobbling and resume point sync with PublicMetaDB will stop for this profile.",
   "Playback stalled": "Playback stalled",
   "Playing in your mpv": "Playing in your mpv",
   "Please enter your PublicMetaDB API key": "Please enter your PublicMetaDB API key",
   "Plex and Kodi naming": "Plex and Kodi naming",
-  "Plugins are disabled for this installation. Use Modify installation in Settings to enable them.":
-    "Plugins are disabled for this installation. Use Modify installation in Settings to enable them.",
-  "Plugins look for streams on sites Argus does not know about. Everything here was installed by you, from repositories you chose.":
-    "Plugins look for streams on sites Argus does not know about. Everything here was installed by you, from repositories you chose.",
+  "Plugins are disabled for this installation. Use Modify installation in Settings to enable them.": "Plugins are disabled for this installation. Use Modify installation in Settings to enable them.",
+  "Plugins look for streams on sites Argus does not know about. Everything here was installed by you, from repositories you chose.": "Plugins look for streams on sites Argus does not know about. Everything here was installed by you, from repositories you chose.",
   "Post deleted": "Post deleted",
   "Poster thumbnails": "Poster thumbnails",
   "Prefer links from this host": "Prefer links from this host",
   "Prefer smooth, trusted releases": "Prefer smooth, trusted releases",
   "Preferred hosts": "Preferred hosts",
-  "Preferred language for anime titles shown on cards, in the picker, and in your Discord presence.":
-    "Preferred language for anime titles shown on cards, in the picker, and in your Discord presence.",
+  "Preferred language for anime titles shown on cards, in the picker, and in your Discord presence.": "Preferred language for anime titles shown on cards, in the picker, and in your Discord presence.",
   "Preferred release groups": "Preferred release groups",
-  "Press the profile hotkey to jump to the next profile. Profiles with a PIN still ask for it before opening.":
-    "Press the profile hotkey to jump to the next profile. Profiles with a PIN still ask for it before opening.",
-  Private: "Private",
+  "Press the profile hotkey to jump to the next profile. Profiles with a PIN still ask for it before opening.": "Press the profile hotkey to jump to the next profile. Profiles with a PIN still ask for it before opening.",
+  "Private": "Private",
   "Privileges for secondary profiles": "Privileges for secondary profiles",
   "Prize pool": "Prize pool",
   "Production Design": "Production Design",
-  "Profile linked to publicmetadb.com/u/{username}":
-    "Profile linked to publicmetadb.com/u/{username}",
+  "Profile linked to publicmetadb.com/u/{username}": "Profile linked to publicmetadb.com/u/{username}",
   "Profile mapping": "Profile mapping",
-  "Profile name is synced directly with your Nuvio account.":
-    "Profile name is synced directly with your Nuvio account.",
-  "Protect this Nuvio profile across all your devices with a 4-digit PIN.":
-    "Protect this Nuvio profile across all your devices with a 4-digit PIN.",
+  "Profile name is synced directly with your Nuvio account.": "Profile name is synced directly with your Nuvio account.",
+  "Protect this Nuvio profile across all your devices with a 4-digit PIN.": "Protect this Nuvio profile across all your devices with a 4-digit PIN.",
   "PublicMetaDB list": "PublicMetaDB list",
   "PublicMetaDB progress": "PublicMetaDB progress",
   "PublicMetaDB username": "PublicMetaDB username",
   "Pulled from your Nuvio account.": "Pulled from your Nuvio account.",
-  "Pulls what you have part-watched on PublicMetaDB into the row, marked with the PublicMetaDB logo. Requires a connected PublicMetaDB account.":
-    "Pulls what you have part-watched on PublicMetaDB into the row, marked with the PublicMetaDB logo. Requires a connected PublicMetaDB account.",
+  "Pulls what you have part-watched on PublicMetaDB into the row, marked with the PublicMetaDB logo. Requires a connected PublicMetaDB account.": "Pulls what you have part-watched on PublicMetaDB into the row, marked with the PublicMetaDB logo. Requires a connected PublicMetaDB account.",
   "Quick profile switch": "Quick profile switch",
   "Race time": "Race time",
-  "Rank releases with a bitrate that plays cleanly (4K 14-30 Mbps, 1080p 4-8 Mbps), boost your preferred groups and hosts, and demote regional dubs that replace the original speech.":
-    "Rank releases with a bitrate that plays cleanly (4K 14-30 Mbps, 1080p 4-8 Mbps), boost your preferred groups and hosts, and demote regional dubs that replace the original speech.",
-  "Raw mpv overrides applied to styled subtitles, such as Fontname=Arial,Outline=3,Spacing=1. Invalid entries are ignored. Mpv engine only.":
-    "Raw mpv overrides applied to styled subtitles, such as Fontname=Arial,Outline=3,Spacing=1. Invalid entries are ignored. Mpv engine only.",
+  "Rank releases with a bitrate that plays cleanly (4K 14-30 Mbps, 1080p 4-8 Mbps), boost your preferred groups and hosts, and demote regional dubs that replace the original speech.": "Rank releases with a bitrate that plays cleanly (4K 14-30 Mbps, 1080p 4-8 Mbps), boost your preferred groups and hosts, and demote regional dubs that replace the original speech.",
+  "Raw mpv overrides applied to styled subtitles, such as Fontname=Arial,Outline=3,Spacing=1. Invalid entries are ignored. Mpv engine only.": "Raw mpv overrides applied to styled subtitles, such as Fontname=Arial,Outline=3,Spacing=1. Invalid entries are ignored. Mpv engine only.",
   "Reactions and shared notes": "Reactions and shared notes",
-  "Reactions, bold and italic text, and time-coded notes that mark the seek bar. Others on older versions just see plain text.":
-    "Reactions, bold and italic text, and time-coded notes that mark the seek bar. Others on older versions just see plain text.",
+  "Reactions, bold and italic text, and time-coded notes that mark the seek bar. Others on older versions just see plain text.": "Reactions, bold and italic text, and time-coded notes that mark the seek bar. Others on older versions just see plain text.",
   "Read It Before You Watch It": "Read It Before You Watch It",
   "Read chapter": "Read chapter",
   "Read it": "Read it",
   "Read {title}": "Read {title}",
-  Readers: "Readers",
+  "Readers": "Readers",
   "Reading direction": "Reading direction",
   "Reading on phone": "Reading on phone",
-  "Record whether each addon answered your requests. Addons that keep failing get a short wait instead of slowing every play, and show a status in the addon list.":
-    "Record whether each addon answered your requests. Addons that keep failing get a short wait instead of slowing every play, and show a status in the addon list.",
+  "Record whether each addon answered your requests. Addons that keep failing get a short wait instead of slowing every play, and show a status in the addon list.": "Record whether each addon answered your requests. Addons that keep failing get a short wait instead of slowing every play, and show a status in the addon list.",
   "Redirect URI:": "Redirect URI:",
   "Redirect URL:": "Redirect URL:",
   "Refresh PublicMetaDB lists": "Refresh PublicMetaDB lists",
@@ -2731,31 +2395,23 @@ const uiFallback: Record<string, string> = {
   "Remember audio delay per title": "Remember audio delay per title",
   "Remove PIN": "Remove PIN",
   "Remove friend…": "Remove friend…",
-  'Remove from "{name}"': 'Remove from "{name}"',
+  "Remove from \"{name}\"": "Remove from \"{name}\"",
   "Remove from downloads": "Remove from downloads",
   "Remove from library; keep file": "Remove from library; keep file",
   "Remove from {list} on PMDB": "Remove from {list} on PMDB",
   "Remove profile PIN": "Remove profile PIN",
-  "Remove {count} PDF print records from Downloads? Argus did not save these PDF files.":
-    "Remove {count} PDF print records from Downloads? Argus did not save these PDF files.",
-  "Remove {count} entries from library; keep files":
-    "Remove {count} entries from library; keep files",
+  "Remove {count} PDF print records from Downloads? Argus did not save these PDF files.": "Remove {count} PDF print records from Downloads? Argus did not save these PDF files.",
+  "Remove {count} entries from library; keep files": "Remove {count} entries from library; keep files",
   "Remove {title} from {list} on PMDB": "Remove {title} from {list} on PMDB",
-  "Removed on this device. Stremio synchronization is pending.":
-    "Removed on this device. Stremio synchronization is pending.",
-  "Reopen playing broadcasts after changing this setting.":
-    "Reopen playing broadcasts after changing this setting.",
+  "Removed on this device. Stremio synchronization is pending.": "Removed on this device. Stremio synchronization is pending.",
+  "Reopen playing broadcasts after changing this setting.": "Reopen playing broadcasts after changing this setting.",
   "Required when switching to this profile": "Required when switching to this profile",
   "Reset to Nuvio avatar": "Reset to Nuvio avatar",
-  Resize: "Resize",
-  "Resize row headings, titles under poster cards, and the player title independently. You can also lead the player title with the series name instead of the episode.":
-    "Resize row headings, titles under poster cards, and the player title independently. You can also lead the player title with the series name instead of the episode.",
-  "Resize shrinks the Argus window itself, so the app goes with it. Detached moves the video into its own floating window and hands Argus back to you, so you can keep browsing while it plays.":
-    "Resize shrinks the Argus window itself, so the app goes with it. Detached moves the video into its own floating window and hands Argus back to you, so you can keep browsing while it plays.",
-  "Resized cover cache, kept 30 days up to size limits. Rebuilds as you browse.":
-    "Resized cover cache, kept 30 days up to size limits. Rebuilds as you browse.",
-  "Resolution for trailers that play automatically on Home and detail pages. Higher resolutions may take longer to start.":
-    "Resolution for trailers that play automatically on Home and detail pages. Higher resolutions may take longer to start.",
+  "Resize": "Resize",
+  "Resize row headings, titles under poster cards, and the player title independently. You can also lead the player title with the series name instead of the episode.": "Resize row headings, titles under poster cards, and the player title independently. You can also lead the player title with the series name instead of the episode.",
+  "Resize shrinks the Argus window itself, so the app goes with it. Detached moves the video into its own floating window and hands Argus back to you, so you can keep browsing while it plays.": "Resize shrinks the Argus window itself, so the app goes with it. Detached moves the video into its own floating window and hands Argus back to you, so you can keep browsing while it plays.",
+  "Resized cover cache, kept 30 days up to size limits. Rebuilds as you browse.": "Resized cover cache, kept 30 days up to size limits. Rebuilds as you browse.",
+  "Resolution for trailers that play automatically on Home and detail pages. Higher resolutions may take longer to start.": "Resolution for trailers that play automatically on Home and detail pages. Higher resolutions may take longer to start.",
   "Restore from server": "Restore from server",
   "Restored. Reload Argus to apply.": "Restored. Reload Argus to apply.",
   "Results for {q}": "Results for {q}",
@@ -2764,8 +2420,7 @@ const uiFallback: Record<string, string> = {
   "Retry account check": "Retry account check",
   "Retry {count} downloads": "Retry {count} downloads",
   "Return to playback": "Return to playback",
-  "Runs every plugin Argus stood down. One that answers comes back; the others stay paused.":
-    "Runs every plugin Argus stood down. One that answers comes back; the others stay paused.",
+  "Runs every plugin Argus stood down. One that answers comes back; the others stay paused.": "Runs every plugin Argus stood down. One that answers comes back; the others stay paused.",
   "Safe mode": "Safe mode",
   "Same source": "Same source",
   "Sample Open Feeds (Tap to Add)": "Sample Open Feeds (Tap to Add)",
@@ -2773,43 +2428,35 @@ const uiFallback: Record<string, string> = {
   "Save image": "Save image",
   "Save image…": "Save image…",
   "Saved library ({n})": "Saved library ({n})",
-  "Scan with your phone camera, or type the address below.":
-    "Scan with your phone camera, or type the address below.",
+  "Scan with your phone camera, or type the address below.": "Scan with your phone camera, or type the address below.",
   "Scrobble playback progress": "Scrobble playback progress",
-  "Search Library and Watchlist with phrases like “funny 90s” or “something scary”. Runs on this device with no model or network.":
-    "Search Library and Watchlist with phrases like “funny 90s” or “something scary”. Runs on this device with no model or network.",
-  "Search archive.org for public-domain films when you open a movie. Titles and years must match exactly.":
-    "Search archive.org for public-domain films when you open a movie. Titles and years must match exactly.",
+  "Search Library and Watchlist with phrases like “funny 90s” or “something scary”. Runs on this device with no model or network.": "Search Library and Watchlist with phrases like “funny 90s” or “something scary”. Runs on this device with no model or network.",
+  "Search archive.org for public-domain films when you open a movie. Titles and years must match exactly.": "Search archive.org for public-domain films when you open a movie. Titles and years must match exactly.",
   "Search audio language": "Search audio language",
   "Search cloud downloads": "Search cloud downloads",
   "Search destinations": "Search destinations",
   "Search lectures, e.g. anatomy, calculus": "Search lectures, e.g. anatomy, calculus",
   "Search the index": "Search the index",
-  "Search the metadata of open-access repositories you add (OAI-PMH, such as arXiv or PubMed Central). Argus ships none, stores titles and abstracts only, and opens results in your browser.":
-    "Search the metadata of open-access repositories you add (OAI-PMH, such as arXiv or PubMed Central). Argus ships none, stores titles and abstracts only, and opens results in your browser.",
+  "Search the metadata of open-access repositories you add (OAI-PMH, such as arXiv or PubMed Central). Argus ships none, stores titles and abstracts only, and opens results in your browser.": "Search the metadata of open-access repositories you add (OAI-PMH, such as arXiv or PubMed Central). Argus ships none, stores titles and abstracts only, and opens results in your browser.",
   "Search the plugins for a title": "Search the plugins for a title",
   "Searching streams": "Searching streams",
-  Seconds: "Seconds",
+  "Seconds": "Seconds",
   "Seen all {total} films": "Seen all {total} films",
   "Seen {n} of {total} films": "Seen {n} of {total} films",
   "Select Nuvio": "Select Nuvio",
   "Select Stremio": "Select Stremio",
   "Select profile to transfer primary to:": "Select profile to transfer primary to:",
-  Selected: "Selected",
-  "Selecting a provider shifts your profiles, watch history, and addons into that provider's ecosystem. Both accounts remain authenticated so you can switch between them at any time without losing data.":
-    "Selecting a provider shifts your profiles, watch history, and addons into that provider's ecosystem. Both accounts remain authenticated so you can switch between them at any time without losing data.",
+  "Selected": "Selected",
+  "Selecting a provider shifts your profiles, watch history, and addons into that provider's ecosystem. Both accounts remain authenticated so you can switch between them at any time without losing data.": "Selecting a provider shifts your profiles, watch history, and addons into that provider's ecosystem. Both accounts remain authenticated so you can switch between them at any time without losing data.",
   "Self-heal": "Self-heal",
-  "Send Dolby Digital, Dolby Digital Plus (Atmos), TrueHD and DTS to an AV receiver over HDMI or optical without decoding. Volume boost, the normalizer and sound profiles cannot change a bitstream, and passthrough needs an output device that accepts it. Leave off for speakers or headphones.":
-    "Send Dolby Digital, Dolby Digital Plus (Atmos), TrueHD and DTS to an AV receiver over HDMI or optical without decoding. Volume boost, the normalizer and sound profiles cannot change a bitstream, and passthrough needs an output device that accepts it. Leave off for speakers or headphones.",
-  "Server URL, e.g. https://dav.example.com/media/":
-    "Server URL, e.g. https://dav.example.com/media/",
+  "Send Dolby Digital, Dolby Digital Plus (Atmos), TrueHD and DTS to an AV receiver over HDMI or optical without decoding. Volume boost, the normalizer and sound profiles cannot change a bitstream, and passthrough needs an output device that accepts it. Leave off for speakers or headphones.": "Send Dolby Digital, Dolby Digital Plus (Atmos), TrueHD and DTS to an AV receiver over HDMI or optical without decoding. Volume boost, the normalizer and sound profiles cannot change a bitstream, and passthrough needs an output device that accepts it. Leave off for speakers or headphones.",
+  "Server URL, e.g. https://dav.example.com/media/": "Server URL, e.g. https://dav.example.com/media/",
   "Set as default": "Set as default",
   "Set new PIN": "Set new PIN",
   "Set up Live TV to watch these events.": "Set up Live TV to watch these events.",
   "Set username": "Set username",
-  "Set your username to link directly to your public profile.":
-    "Set your username to link directly to your public profile.",
-  Setting: "Setting",
+  "Set your username to link directly to your public profile.": "Set your username to link directly to your public profile.",
+  "Setting": "Setting",
   "Shadow blur": "Shadow blur",
   "Share as Stremio addon": "Share as Stremio addon",
   "Share back to peers (seeding)": "Share back to peers (seeding)",
@@ -2820,238 +2467,172 @@ const uiFallback: Record<string, string> = {
   "Shares {n} crew": "Shares {n} crew",
   "Sharing {name} on your network": "Sharing {name} on your network",
   "Shot on": "Shot on",
-  ShotOnWhat: "ShotOnWhat",
+  "ShotOnWhat": "ShotOnWhat",
   "Show Test speed on sources": "Show Test speed on sources",
   "Show a Test all addons button": "Show a Test all addons button",
-  "Show addons from public directories in the addon store. Off by default; Argus lists no sources of its own. Reopen the addon store after changing.":
-    "Show addons from public directories in the addon store. Off by default; Argus lists no sources of its own. Reopen the addon store after changing.",
-  "Show an Add NZB box in the TorBox library. TorBox downloads the NZB from your own Usenet account; Argus bundles no indexer or provider.":
-    "Show an Add NZB box in the TorBox library. TorBox downloads the NZB from your own Usenet account; Argus bundles no indexer or provider.",
+  "Show addons from public directories in the addon store. Off by default; Argus lists no sources of its own. Reopen the addon store after changing.": "Show addons from public directories in the addon store. Off by default; Argus lists no sources of its own. Reopen the addon store after changing.",
+  "Show an Add NZB box in the TorBox library. TorBox downloads the NZB from your own Usenet account; Argus bundles no indexer or provider.": "Show an Add NZB box in the TorBox library. TorBox downloads the NZB from your own Usenet account; Argus bundles no indexer or provider.",
   "Show chapter marks on seekbar": "Show chapter marks on seekbar",
-  "Show community-voted warnings such as jump scares or animal harm on the title page. DoesTheDogDie does not give timestamps, so these are per title. Needs your own free API key from doesthedogdie.com; Argus sends the title name to their site.":
-    "Show community-voted warnings such as jump scares or animal harm on the title page. DoesTheDogDie does not give timestamps, so these are per title. Needs your own free API key from doesthedogdie.com; Argus sends the title name to their site.",
+  "Show community-voted warnings such as jump scares or animal harm on the title page. DoesTheDogDie does not give timestamps, so these are per title. Needs your own free API key from doesthedogdie.com; Argus sends the title name to their site.": "Show community-voted warnings such as jump scares or animal harm on the title page. DoesTheDogDie does not give timestamps, so these are per title. Needs your own free API key from doesthedogdie.com; Argus sends the title name to their site.",
   "Show in Continue Watching": "Show in Continue Watching",
   "Show key": "Show key",
   "Show languages on plugin posters": "Show languages on plugin posters",
   "Show more chapters ({n} remaining)": "Show more chapters ({n} remaining)",
   "Show quality on plugin posters": "Show quality on plugin posters",
-  "Show recommendations when a movie, series finale or anime film finishes. At the end the card fills the screen; before the end the film shrinks to a corner and keeps playing behind it.":
-    "Show recommendations when a movie, series finale or anime film finishes. At the end the card fills the screen; before the end the film shrinks to a corner and keeps playing behind it.",
-  "Show the age rating and the IMDb parental guide categories (violence, profanity, substances, frightening scenes and more) with severity on a movie or show page, before you press play.":
-    "Show the age rating and the IMDb parental guide categories (violence, profanity, substances, frightening scenes and more) with severity on a movie or show page, before you press play.",
+  "Show recommendations when a movie, series finale or anime film finishes. At the end the card fills the screen; before the end the film shrinks to a corner and keeps playing behind it.": "Show recommendations when a movie, series finale or anime film finishes. At the end the card fills the screen; before the end the film shrinks to a corner and keeps playing behind it.",
+  "Show the age rating and the IMDb parental guide categories (violence, profanity, substances, frightening scenes and more) with severity on a movie or show page, before you press play.": "Show the age rating and the IMDb parental guide categories (violence, profanity, substances, frightening scenes and more) with severity on a movie or show page, before you press play.",
   "Show {n} spoiler warnings": "Show {n} spoiler warnings",
-  "Showing {shown} of {total} from the last snapshot.":
-    "Showing {shown} of {total} from the last snapshot.",
+  "Showing {shown} of {total} from the last snapshot.": "Showing {shown} of {total} from the last snapshot.",
   "Side margin": "Side margin",
   "Sign in and reopen the share dialog.": "Sign in and reopen the share dialog.",
-  "Sign in or link via nuvio.tv/link to sync profiles, watchlist, and addons.":
-    "Sign in or link via nuvio.tv/link to sync profiles, watchlist, and addons.",
-  "Sign in to Argus to add items to your profile.":
-    "Sign in to Argus to add items to your profile.",
+  "Sign in or link via nuvio.tv/link to sync profiles, watchlist, and addons.": "Sign in or link via nuvio.tv/link to sync profiles, watchlist, and addons.",
+  "Sign in to Argus to add items to your profile.": "Sign in to Argus to add items to your profile.",
   "Sign in to Argus to open your profile.": "Sign in to Argus to open your profile.",
   "Sign in to Nuvio": "Sign in to Nuvio",
   "Sign in with Nuvio": "Sign in with Nuvio",
   "Sign out of Nuvio": "Sign out of Nuvio",
-  Signature: "Signature",
+  "Signature": "Signature",
   "Signature works by winners of the Nobel Prize": "Signature works by winners of the Nobel Prize",
-  "Signs in once to read your addons and library, then signs out. Your password is not saved.":
-    "Signs in once to read your addons and library, then signs out. Your password is not saved.",
+  "Signs in once to read your addons and library, then signs out. Your password is not saved.": "Signs in once to read your addons and library, then signs out. Your password is not saved.",
   "Single cloud account": "Single cloud account",
-  Slow: "Slow",
+  "Slow": "Slow",
   "Small - Top Right": "Small - Top Right",
   "Smart subtitles": "Smart subtitles",
   "Smoothed frame rate": "Smoothed frame rate",
   "Snapshot {date}": "Snapshot {date}",
-  "Softens the shadow behind subtitles. 0 keeps the default look.":
-    "Softens the shadow behind subtitles. 0 keeps the default look.",
-  "Some plugins name a listing after everything it carries, so its languages are in the title. Argus reads them back out and badges the poster. Shown only when the plugin provides it.":
-    "Some plugins name a listing after everything it carries, so its languages are in the title. Argus reads them back out and badges the poster. Shown only when the plugin provides it.",
-  Soundtrack: "Soundtrack",
+  "Softens the shadow behind subtitles. 0 keeps the default look.": "Softens the shadow behind subtitles. 0 keeps the default look.",
+  "Some plugins name a listing after everything it carries, so its languages are in the title. Argus reads them back out and badges the poster. Shown only when the plugin provides it.": "Some plugins name a listing after everything it carries, so its languages are in the title. Argus reads them back out and badges the poster. Shown only when the plugin provides it.",
+  "Soundtrack": "Soundtrack",
   "Sources unavailable": "Sources unavailable",
   "Speech Clarity": "Speech Clarity",
   "Speech clarity": "Speech clarity",
   "Speed and search": "Speed and search",
   "Speed step": "Speed step",
-  "Spin-offs, Sequels & Side Stories in this Universe":
-    "Spin-offs, Sequels & Side Stories in this Universe",
+  "Spin-offs, Sequels & Side Stories in this Universe": "Spin-offs, Sequels & Side Stories in this Universe",
   "Spine {n}": "Spine {n}",
   "Spooktober banner": "Spooktober banner",
   "Star any manga and it takes over this screen.": "Star any manga and it takes over this screen.",
   "Start reading": "Start reading",
-  "Starts in the remote-friendly Big Picture interface with keyboard, remote and gamepad focus navigation. Control it from your phone with Remote in Account.":
-    "Starts in the remote-friendly Big Picture interface with keyboard, remote and gamepad focus navigation. Control it from your phone with Remote in Account.",
+  "Starts in the remote-friendly Big Picture interface with keyboard, remote and gamepad focus navigation. Control it from your phone with Remote in Account.": "Starts in the remote-friendly Big Picture interface with keyboard, remote and gamepad focus navigation. Control it from your phone with Remote in Account.",
   "Stay on current": "Stay on current",
   "Stop sharing": "Stop sharing",
   "Stopped after {n} failures.": "Stopped after {n} failures.",
-  "Stops syncing with your Nuvio account on this device.":
-    "Stops syncing with your Nuvio account on this device.",
+  "Stops syncing with your Nuvio account on this device.": "Stops syncing with your Nuvio account on this device.",
   "Stream connection stalled. Pick another?": "Stream connection stalled. Pick another?",
   "Stream speed test": "Stream speed test",
   "Stremio Addon Protocol": "Stremio Addon Protocol",
-  "Stremio account credentials, install links, and synced addons are restricted to the primary profile.":
-    "Stremio account credentials, install links, and synced addons are restricted to the primary profile.",
+  "Stremio account credentials, install links, and synced addons are restricted to the primary profile.": "Stremio account credentials, install links, and synced addons are restricted to the primary profile.",
   "Strip preview": "Strip preview",
   "Subtitle language": "Subtitle language",
-  "Support Stremio, or give to any charity below, and the badge lands on your profile.":
-    "Support Stremio, or give to any charity below, and the badge lands on your profile.",
+  "Support Stremio, or give to any charity below, and the badge lands on your profile.": "Support Stremio, or give to any charity below, and the badge lands on your profile.",
   "Swipe sideways": "Swipe sideways",
   "Switch now": "Switch now",
-  "Switching to next stream ({stream}) in {s}s...":
-    "Switching to next stream ({stream}) in {s}s...",
+  "Switching to next stream ({stream}) in {s}s...": "Switching to next stream ({stream}) in {s}s...",
   "Sync again to continue.": "Sync again to continue.",
   "Sync profiles now": "Sync profiles now",
   "Sync with Nuvio Profile": "Sync with Nuvio Profile",
   "Synced to Nuvio Cloud": "Synced to Nuvio Cloud",
   "Syncing...": "Syncing...",
-  "Syncs video to your screen's refresh rate to reduce judder in 24 fps films. Argus cannot change the screen's refresh rate itself. Applies to the next video you play.":
-    "Syncs video to your screen's refresh rate to reduce judder in 24 fps films. Argus cannot change the screen's refresh rate itself. Applies to the next video you play.",
+  "Syncs video to your screen's refresh rate to reduce judder in 24 fps films. Argus cannot change the screen's refresh rate itself. Applies to the next video you play.": "Syncs video to your screen's refresh rate to reduce judder in 24 fps films. Argus cannot change the screen's refresh rate itself. Applies to the next video you play.",
   "Tap sides to turn": "Tap sides to turn",
-  "Tap the heart on any movie, show, or character to save it here. Manga lives in the manga Library.":
-    "Tap the heart on any movie, show, or character to save it here. Manga lives in the manga Library.",
-  Television: "Television",
+  "Tap the heart on any movie, show, or character to save it here. Manga lives in the manga Library.": "Tap the heart on any movie, show, or character to save it here. Manga lives in the manga Library.",
+  "Television": "Television",
   "Temporary seasonal settings for Spooktober.": "Temporary seasonal settings for Spooktober.",
   "Test Connection": "Test Connection",
   "Test all addons": "Test all addons",
   "Test speed": "Test speed",
-  "Test that your stored API key is still valid and reachable.":
-    "Test that your stored API key is still valid and reachable.",
+  "Test that your stored API key is still valid and reachable.": "Test that your stored API key is still valid and reachable.",
   "Test this addon again": "Test this addon again",
   "Test {name} again": "Test {name} again",
   "Testing...": "Testing...",
-  "That is an app link, not a web address. Open the repository in a browser and paste the https link to its JSON file.":
-    "That is an app link, not a web address. Open the repository in a browser and paste the https link to its JSON file.",
-  "The American award for the year's best writing":
-    "The American award for the year's best writing",
-  "The Big Picture opener and the eye that opens while Argus installs.":
-    "The Big Picture opener and the eye that opens while Argus installs.",
-  "The Lord of the Rings: The Fellowship of the Ring":
-    "The Lord of the Rings: The Fellowship of the Ring",
+  "That is an app link, not a web address. Open the repository in a browser and paste the https link to its JSON file.": "That is an app link, not a web address. Open the repository in a browser and paste the https link to its JSON file.",
+  "The American award for the year's best writing": "The American award for the year's best writing",
+  "The Big Picture opener and the eye that opens while Argus installs.": "The Big Picture opener and the eye that opens while Argus installs.",
+  "The Lord of the Rings: The Fellowship of the Ring": "The Lord of the Rings: The Fellowship of the Ring",
   "The Times: Best Books of the 21st Century": "The Times: Best Books of the 21st Century",
-  "The account or theme changed. Reopen the comment menu.":
-    "The account or theme changed. Reopen the comment menu.",
+  "The account or theme changed. Reopen the comment menu.": "The account or theme changed. Reopen the comment menu.",
   "The action could not be completed.": "The action could not be completed.",
-  "The active profile changed. Open the menu again.":
-    "The active profile changed. Open the menu again.",
-  "The address and login are kept in Argus's secret store and are sent only to this server, never to download links on other sites.":
-    "The address and login are kept in Argus's secret store and are sent only to this server, never to download links on other sites.",
+  "The active profile changed. Open the menu again.": "The active profile changed. Open the menu again.",
+  "The address and login are kept in Argus's secret store and are sent only to this server, never to download links on other sites.": "The address and login are kept in Argus's secret store and are sent only to this server, never to download links on other sites.",
   "The canon": "The canon",
   "The cases that set the genre": "The cases that set the genre",
-  "The country's biggest names, ranked across their whole careers":
-    "The country's biggest names, ranked across their whole careers",
-  "The directors from {name}, ranked across their whole careers":
-    "The directors from {name}, ranked across their whole careers",
-  "The films that carried {name} beyond its own borders":
-    "The films that carried {name} beyond its own borders",
+  "The country's biggest names, ranked across their whole careers": "The country's biggest names, ranked across their whole careers",
+  "The directors from {name}, ranked across their whole careers": "The directors from {name}, ranked across their whole careers",
+  "The films that carried {name} beyond its own borders": "The films that carried {name} beyond its own borders",
   "The friend request is no longer available.": "The friend request is no longer available.",
-  "The language of the words you are looking up. Definitions are in English.":
-    "The language of the words you are looking up. Definitions are in English.",
-  "The mpv program to open. Leave empty to use mpv from your PATH.":
-    "The mpv program to open. Leave empty to use mpv from your PATH.",
-  "The plugin's signature does not match its author's key.":
-    "The plugin's signature does not match its author's key.",
-  "The post deletion could not be confirmed. Refresh its current state.":
-    "The post deletion could not be confirmed. Refresh its current state.",
-  "The relationship changed. Open the menu again.":
-    "The relationship changed. Open the menu again.",
-  "The relationship update could not be confirmed. Refresh its current state.":
-    "The relationship update could not be confirmed. Refresh its current state.",
-  "The series that carried {name} beyond its own borders":
-    "The series that carried {name} beyond its own borders",
-  "The service refused the request, so there was nothing for the plugin to return.":
-    "The service refused the request, so there was nothing for the plugin to return.",
-  "The stored plugin no longer matches the checksum taken at install. It was switched off.":
-    "The stored plugin no longer matches the checksum taken at install. It was switched off.",
-  "The taskbar button becomes the cover of the track you are listening to, and goes back to your Argus icon when music stops. The thumbnail preview always shows the cover either way.":
-    "The taskbar button becomes the cover of the track you are listening to, and goes back to your Argus icon when music stops. The thumbnail preview always shows the cover either way.",
-  "The update service has no installer available right now. Try again later.":
-    "The update service has no installer available right now. Try again later.",
-  "Third-party community plugin: runs in sandbox with restricted network access. Install anyway?":
-    "Third-party community plugin: runs in sandbox with restricted network access. Install anyway?",
-  "This Continue Watching entry is no longer available.":
-    "This Continue Watching entry is no longer available.",
+  "The language of the words you are looking up. Definitions are in English.": "The language of the words you are looking up. Definitions are in English.",
+  "The mpv program to open. Leave empty to use mpv from your PATH.": "The mpv program to open. Leave empty to use mpv from your PATH.",
+  "The plugin's signature does not match its author's key.": "The plugin's signature does not match its author's key.",
+  "The post deletion could not be confirmed. Refresh its current state.": "The post deletion could not be confirmed. Refresh its current state.",
+  "The relationship changed. Open the menu again.": "The relationship changed. Open the menu again.",
+  "The relationship update could not be confirmed. Refresh its current state.": "The relationship update could not be confirmed. Refresh its current state.",
+  "The series that carried {name} beyond its own borders": "The series that carried {name} beyond its own borders",
+  "The service refused the request, so there was nothing for the plugin to return.": "The service refused the request, so there was nothing for the plugin to return.",
+  "The stored plugin no longer matches the checksum taken at install. It was switched off.": "The stored plugin no longer matches the checksum taken at install. It was switched off.",
+  "The taskbar button becomes the cover of the track you are listening to, and goes back to your Argus icon when music stops. The thumbnail preview always shows the cover either way.": "The taskbar button becomes the cover of the track you are listening to, and goes back to your Argus icon when music stops. The thumbnail preview always shows the cover either way.",
+  "The update service has no installer available right now. Try again later.": "The update service has no installer available right now. Try again later.",
+  "Third-party community plugin: runs in sandbox with restricted network access. Install anyway?": "Third-party community plugin: runs in sandbox with restricted network access. Install anyway?",
+  "This Continue Watching entry is no longer available.": "This Continue Watching entry is no longer available.",
   "This PublicMetaDB list is empty.": "This PublicMetaDB list is empty.",
   "This action is already running.": "This action is already running.",
   "This action is no longer available.": "This action is no longer available.",
-  "This arranges the All plugins page. A single plugin still lists its own rows as it reports them.":
-    "This arranges the All plugins page. A single plugin still lists its own rows as it reports them.",
-  "This clears playback progress and watched status for all of “{title}” in Stremio, including every episode. Your watchlist membership and Trakt history are preserved.":
-    "This clears playback progress and watched status for all of “{title}” in Stremio, including every episode. Your watchlist membership and Trakt history are preserved.",
+  "This arranges the All plugins page. A single plugin still lists its own rows as it reports them.": "This arranges the All plugins page. A single plugin still lists its own rows as it reports them.",
+  "This clears playback progress and watched status for all of “{title}” in Stremio, including every episode. Your watchlist membership and Trakt history are preserved.": "This clears playback progress and watched status for all of “{title}” in Stremio, including every episode. Your watchlist membership and Trakt history are preserved.",
   "This comment cannot be deleted.": "This comment cannot be deleted.",
   "This destination is full.": "This destination is full.",
-  "This does not look like a plugin repository. Argus reads its own plugin manifests, provider-script manifests and Android extension repositories.":
-    "This does not look like a plugin repository. Argus reads its own plugin manifests, provider-script manifests and Android extension repositories.",
+  "This does not look like a plugin repository. Argus reads its own plugin manifests, provider-script manifests and Android extension repositories.": "This does not look like a plugin repository. Argus reads its own plugin manifests, provider-script manifests and Android extension repositories.",
   "This download is a book, not a video.": "This download is a book, not a video.",
   "This episode has not aired yet.": "This episode has not aired yet.",
   "This image could not be decoded.": "This image could not be decoded.",
-  "This image is too large. Choose a smaller image.":
-    "This image is too large. Choose a smaller image.",
-  "This kind of extension can only be installed in the desktop app.":
-    "This kind of extension can only be installed in the desktop app.",
+  "This image is too large. Choose a smaller image.": "This image is too large. Choose a smaller image.",
+  "This kind of extension can only be installed in the desktop app.": "This kind of extension can only be installed in the desktop app.",
   "This list is already in this group.": "This list is already in this group.",
   "This list is empty.": "This list is empty.",
-  "This server connection is no longer available.":
-    "This server connection is no longer available.",
+  "This server connection is no longer available.": "This server connection is no longer available.",
   "This server episode is no longer available.": "This server episode is no longer available.",
   "This server item is no longer available.": "This server item is no longer available.",
-  "This source is served over plain http, which a browser blocks on an https page. Pick an https source or use the desktop app.":
-    "This source is served over plain http, which a browser blocks on an https page. Pick an https source or use the desktop app.",
+  "This source is served over plain http, which a browser blocks on an https page. Pick an https source or use the desktop app.": "This source is served over plain http, which a browser blocks on an https page. Pick an https source or use the desktop app.",
   "Three or more of the same crew": "Three or more of the same crew",
   "Title matching": "Title matching",
-  "To access administrative account settings, switch to the primary profile or have the primary profile enable permissions in Settings > Profiles > Privileges for secondary profiles.":
-    "To access administrative account settings, switch to the primary profile or have the primary profile enable permissions in Settings > Profiles > Privileges for secondary profiles.",
+  "To access administrative account settings, switch to the primary profile or have the primary profile enable permissions in Settings > Profiles > Privileges for secondary profiles.": "To access administrative account settings, switch to the primary profile or have the primary profile enable permissions in Settings > Profiles > Privileges for secondary profiles.",
   "Too slow to measure": "Too slow to measure",
   "Top ten films of {year}": "Top ten films of {year}",
-  "Torrents can't play in a browser. Use the Argus desktop app, or add a debrid service so sources arrive as direct links.":
-    "Torrents can't play in a browser. Use the Argus desktop app, or add a debrid service so sources arrive as direct links.",
+  "Torrents can't play in a browser. Use the Argus desktop app, or add a debrid service so sources arrive as direct links.": "Torrents can't play in a browser. Use the Argus desktop app, or add a debrid service so sources arrive as direct links.",
   "Track addon reliability": "Track addon reliability",
-  "Track your watch history and sync playback resume points with PublicMetaDB. Generate an API key from your PublicMetaDB profile settings to connect.":
-    "Track your watch history and sync playback resume points with PublicMetaDB. Generate an API key from your PublicMetaDB profile settings to connect.",
+  "Track your watch history and sync playback resume points with PublicMetaDB. Generate an API key from your PublicMetaDB profile settings to connect.": "Track your watch history and sync playback resume points with PublicMetaDB. Generate an API key from your PublicMetaDB profile settings to connect.",
   "Tracking & Scrobble": "Tracking & Scrobble",
-  "Tracking is paused. Click to turn incognito off.":
-    "Tracking is paused. Click to turn incognito off.",
+  "Tracking is paused. Click to turn incognito off.": "Tracking is paused. Click to turn incognito off.",
   "Transfer to {name}": "Transfer to {name}",
   "Transferring…": "Transferring…",
   "Trigger warnings from DoesTheDogDie": "Trigger warnings from DoesTheDogDie",
-  "Tune which source Argus puts first. Nothing here adds sources.":
-    "Tune which source Argus puts first. Nothing here adds sources.",
+  "Tune which source Argus puts first. Nothing here adds sources.": "Tune which source Argus puts first. Nothing here adds sources.",
   "Turn off incognito": "Turn off incognito",
   "Turn on SVP above to choose the frame rate.": "Turn on SVP above to choose the frame rate.",
-  "Turn whole areas of Argus on or off. Argus ships no game, ROM or streaming sources; Games only manages what you add yourself.":
-    "Turn whole areas of Argus on or off. Argus ships no game, ROM or streaming sources; Games only manages what you add yourself.",
-  "Turns off peer-to-peer so everything plays from servers you choose. Same as disabling P2P entirely.":
-    "Turns off peer-to-peer so everything plays from servers you choose. Same as disabling P2P entirely.",
-  "Twentieth century books that never left the shelf":
-    "Twentieth century books that never left the shelf",
-  "Type an exact time up to 30 minutes. Minutes alone count as 00 seconds; seconds alone count as 0 minutes.":
-    "Type an exact time up to 30 minutes. Minutes alone count as 00 seconds; seconds alone count as 0 minutes.",
+  "Turn whole areas of Argus on or off. Argus ships no game, ROM or streaming sources; Games only manages what you add yourself.": "Turn whole areas of Argus on or off. Argus ships no game, ROM or streaming sources; Games only manages what you add yourself.",
+  "Turns off peer-to-peer so everything plays from servers you choose. Same as disabling P2P entirely.": "Turns off peer-to-peer so everything plays from servers you choose. Same as disabling P2P entirely.",
+  "Twentieth century books that never left the shelf": "Twentieth century books that never left the shelf",
+  "Type an exact time up to 30 minutes. Minutes alone count as 00 seconds; seconds alone count as 0 minutes.": "Type an exact time up to 30 minutes. Minutes alone count as 00 seconds; seconds alone count as 0 minutes.",
   "Unavailable list": "Unavailable list",
-  "Unique identifier for your Nuvio cloud account.":
-    "Unique identifier for your Nuvio cloud account.",
-  Unlike: "Unlike",
+  "Unique identifier for your Nuvio cloud account.": "Unique identifier for your Nuvio cloud account.",
+  "Unlike": "Unlike",
   "Unpacking the video…": "Unpacking the video…",
   "Unpin this host": "Unpin this host",
-  Unreliable: "Unreliable",
-  Unsigned: "Unsigned",
+  "Unreliable": "Unreliable",
+  "Unsigned": "Unsigned",
   "Upload now": "Upload now",
   "Uploaded.": "Uploaded.",
-  "Uploading shares data with other peers and can expose your IP address. Only enable it for content you have the right to share.":
-    "Uploading shares data with other peers and can expose your IP address. Only enable it for content you have the right to share.",
-  "Use Identify a file in Settings, or switch to AudD or Gemini for live playback.":
-    "Use Identify a file in Settings, or switch to AudD or Gemini for live playback.",
-  "Use Nuvio's cloud backend. Sync up to 6 cloud profiles, server-side PIN locks, per-profile continue watching, and inherited primary addons.":
-    "Use Nuvio's cloud backend. Sync up to 6 cloud profiles, server-side PIN locks, per-profile continue watching, and inherited primary addons.",
-  "Use Stremio's cloud backend. Your library, installed streaming addons, and official watch history stay synced with your Stremio account.":
-    "Use Stremio's cloud backend. Your library, installed streaming addons, and official watch history stay synced with your Stremio account.",
+  "Uploading shares data with other peers and can expose your IP address. Only enable it for content you have the right to share.": "Uploading shares data with other peers and can expose your IP address. Only enable it for content you have the right to share.",
+  "Use Identify a file in Settings, or switch to AudD or Gemini for live playback.": "Use Identify a file in Settings, or switch to AudD or Gemini for live playback.",
+  "Use Nuvio's cloud backend. Sync up to 6 cloud profiles, server-side PIN locks, per-profile continue watching, and inherited primary addons.": "Use Nuvio's cloud backend. Sync up to 6 cloud profiles, server-side PIN locks, per-profile continue watching, and inherited primary addons.",
+  "Use Stremio's cloud backend. Your library, installed streaming addons, and official watch history stay synced with your Stremio account.": "Use Stremio's cloud backend. Your library, installed streaming addons, and official watch history stay synced with your Stremio account.",
   "Use an HTTPS image URL or upload an image.": "Use an HTTPS image URL or upload an image.",
   "Use custom AniList Client ID": "Use custom AniList Client ID",
   "Use custom MyAnimeList Client ID": "Use custom MyAnimeList Client ID",
   "Use my source order": "Use my source order",
   "Use plugins outside the Plugins page": "Use plugins outside the Plugins page",
   "Use primary addons": "Use primary addons",
-  "Use the album art as the app icon while music plays":
-    "Use the album art as the app icon while music plays",
-  "Use the primary profile's configured addons and streaming sources.":
-    "Use the primary profile's configured addons and streaming sources.",
+  "Use the album art as the app icon while music plays": "Use the album art as the app icon while music plays",
+  "Use the primary profile's configured addons and streaming sources.": "Use the primary profile's configured addons and streaming sources.",
   "Username (optional)": "Username (optional)",
   "Verify connection": "Verify connection",
   "Verify current PIN": "Verify current PIN",
@@ -3067,30 +2648,23 @@ const uiFallback: Record<string, string> = {
   "Want to read": "Want to read",
   "Watch positions ({n})": "Watch positions ({n})",
   "Watched status unavailable": "Watched status unavailable",
-  WebDAV: "WebDAV",
+  "WebDAV": "WebDAV",
   "WebDAV and direct links only": "WebDAV and direct links only",
   "WebDAV browser": "WebDAV browser",
-  "When a title is in a non-Latin script, also show its English name on the detail page. Needs alternate-title matching.":
-    "When a title is in a non-Latin script, also show its English name on the detail page. Needs alternate-title matching.",
-  "When addons are checked in the background, also mark one as failing if its reply breaks the protocol, such as a stream with no source.":
-    "When addons are checked in the background, also mark one as failing if its reply breaks the protocol, such as a stream with no source.",
+  "When a title is in a non-Latin script, also show its English name on the detail page. Needs alternate-title matching.": "When a title is in a non-Latin script, also show its English name on the detail page. Needs alternate-title matching.",
+  "When addons are checked in the background, also mark one as failing if its reply breaks the protocol, such as a stream with no source.": "When addons are checked in the background, also mark one as failing if its reply breaks the protocol, such as a stream with no source.",
   "When the countdown ends": "When the countdown ends",
-  "When two subtitles match equally well, prefer the source higher in your list. Exact file matches and language still win first.":
-    "When two subtitles match equally well, prefer the source higher in your list. Exact file matches and language still win first.",
+  "When two subtitles match equally well, prefer the source higher in your list. Exact file matches and language still win first.": "When two subtitles match equally well, prefer the source higher in your list. Exact file matches and language still win first.",
   "Wireless output delay": "Wireless output delay",
   "Women's Prize for Fiction": "Women's Prize for Fiction",
   "Word lookup": "Word lookup",
-  "Works on whole files, not live playback clips.":
-    "Works on whole files, not live playback clips.",
+  "Works on whole files, not live playback clips.": "Works on whole files, not live playback clips.",
   "You just finished": "You just finished",
-  "You no longer have permission to delete this comment.":
-    "You no longer have permission to delete this comment.",
+  "You no longer have permission to delete this comment.": "You no longer have permission to delete this comment.",
   "Your MyAnimeList": "Your MyAnimeList",
-  "Your default PublicMetaDB list is unavailable. Select a list and set it as default.":
-    "Your default PublicMetaDB list is unavailable. Select a list and set it as default.",
+  "Your default PublicMetaDB list is unavailable. Select a list and set it as default.": "Your default PublicMetaDB list is unavailable. Select a list and set it as default.",
   "Your favorites and manga lists": "Your favorites and manga lists",
-  'Your first "Add to PMDB" will create a private watchlist.':
-    'Your first "Add to PMDB" will create a private watchlist.',
+  "Your first \"Add to PMDB\" will create a private watchlist.": "Your first \"Add to PMDB\" will create a private watchlist.",
   "Your indexers": "Your indexers",
   "Zero-copy video (experimental)": "Zero-copy video (experimental)",
   "Zero-wait playback": "Zero-wait playback",
@@ -3743,18 +3317,16 @@ const uiFallback: Record<string, string> = {
   "music.spotifySetup.pairWaiting": "music.spotifySetup.pairWaiting",
   "music.xxl.subtitle": "music.xxl.subtitle",
   "music.xxl.title": "music.xxl.title",
-  records: "records",
-  sec: "sec",
-  source: "source",
+  "records": "records",
+  "sec": "sec",
+  "source": "source",
   "{count} downloads. Partial files are kept.": "{count} downloads. Partial files are kept.",
   "{count} files · {scope}": "{count} files · {scope}",
   "{count} print records; no saved PDF files.": "{count} print records; no saved PDF files.",
-  "{done} completed, {failed} failed, {skipped} changed or unavailable.":
-    "{done} completed, {failed} failed, {skipped} changed or unavailable.",
+  "{done} completed, {failed} failed, {skipped} changed or unavailable.": "{done} completed, {failed} failed, {skipped} changed or unavailable.",
   "{label} · Up Next": "{label} · Up Next",
   "{name} backup keys": "{name} backup keys",
-  "{n} addons could not be reached and were skipped. Add them again from Streaming sources.":
-    "{n} addons could not be reached and were skipped. Add them again from Streaming sources.",
+  "{n} addons could not be reached and were skipped. Add them again from Streaming sources.": "{n} addons could not be reached and were skipped. Add them again from Streaming sources.",
   "{n} completed downloads": "{n} completed downloads",
   "{n} entries": "{n} entries",
   "{n} episodes · Apple Podcasts": "{n} episodes · Apple Podcasts",
@@ -3770,8 +3342,7 @@ const uiFallback: Record<string, string> = {
   "{size} across {n} files": "{size} across {n} files",
   "{visible} visible downloads of {all} total": "{visible} visible downloads of {all} total",
   "{visible} visible of {all} downloads": "{visible} visible of {all} downloads",
-  "{watched} of {total} released episodes known watched":
-    "{watched} of {total} released episodes known watched",
+  "{watched} of {total} released episodes known watched": "{watched} of {total} released episodes known watched",
 };
 
 export default uiFallback;
