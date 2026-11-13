@@ -117,7 +117,7 @@ class NativePlaybackSession(private val host: Activity) {
                     val captions = host.getSystemService(android.content.Context.CAPTIONING_SERVICE) as? android.view.accessibility.CaptioningManager
                     if (captions?.isEnabled != true) subtitleView?.setStyle(CaptionStyleCompat(
                         Color.WHITE, Color.TRANSPARENT, Color.TRANSPARENT,
-                        CaptionStyleCompat.EDGE_TYPE_OUTLINE, Color.BLACK, null))
+                        CaptionStyleCompat.EDGE_TYPE_DROP_SHADOW, Color.BLACK, android.graphics.Typeface.SANS_SERIF))
                 }
                 val d = Dialog(host, android.R.style.Theme_Black_NoTitleBar_Fullscreen)
                 dialog = d
