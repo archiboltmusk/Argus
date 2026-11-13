@@ -101,7 +101,7 @@ jobs:
 
   tvos:
     name: Build Apple TV (tvOS) IPA
-    runs-on: ubuntu-latest
+    runs-on: macos-latest
     timeout-minutes: 60
     steps:
       - uses: actions/checkout@v6
@@ -142,7 +142,7 @@ jobs:
 
   visionos:
     name: Build Apple Vision Pro (visionOS) IPA
-    runs-on: ubuntu-latest
+    runs-on: macos-latest
     timeout-minutes: 60
     steps:
       - uses: actions/checkout@v6
