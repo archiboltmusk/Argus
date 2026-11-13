@@ -160,7 +160,7 @@ export function BpProjectorLauncher() {
 
   return (
     <div
-      className="relative h-full w-full text-[#f4f4f6] select-none overflow-x-hidden overflow-y-auto scrollbar-none pt-[calc(var(--bp-page-top,84px)+18px)] px-[var(--bp-gutter,48px)] pb-36 bg-[radial-gradient(120%_80%_at_10%_-10%,rgba(255,255,255,0.06),transparent_55%),#07080b]"
+      className="relative h-full w-full text-ink select-none overflow-x-hidden overflow-y-auto scrollbar-none pt-[calc(var(--bp-page-top,84px)+18px)] px-[var(--bp-gutter,48px)] pb-36 bg-[radial-gradient(120%_80%_at_10%_-10%,color-mix(in_oklab,var(--color-ink)_6%,transparent),transparent_55%),var(--bp-void,var(--color-canvas))]"
       style={{
         paddingLeft: `calc(var(--bp-gutter,48px) + ${settings.projectorKeystoneOverscan ?? 5}vw)`,
         paddingRight: `calc(var(--bp-gutter,48px) + ${settings.projectorKeystoneOverscan ?? 5}vw)`,
@@ -212,7 +212,7 @@ export function BpProjectorLauncher() {
             data-bp-chip
             data-bp-restore-key="proj-cinema-hub"
             onClick={() => resetBigPictureToHome()}
-            className="px-5 py-2.5 rounded-full bg-[#f4f4f6] hover:bg-white text-[#07080c] text-[13px] font-bold tracking-tight flex items-center gap-2 transition-all duration-200 hover:scale-[1.03] active:scale-[0.98] shadow-lg focus:outline-none focus:ring-2 focus:ring-white"
+            className="px-5 py-2.5 rounded-full bg-ink hover:opacity-95 text-canvas text-[13px] font-bold tracking-tight flex items-center gap-2 transition-all duration-200 hover:scale-[1.03] active:scale-[0.98] shadow-lg focus:outline-none focus:ring-2 focus:ring-white"
           >
             <Home size={15} strokeWidth={2.3} />
             <span>Argus Home</span>

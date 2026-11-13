@@ -86,7 +86,7 @@ class NativeTvActivity : AppCompatActivity() {
             setPadding(dp(horizontalPadding), dp(18), dp(horizontalPadding), dp(18))
             background = GradientDrawable(
                 GradientDrawable.Orientation.TOP_BOTTOM,
-                intArrayOf(Color.rgb(15, 17, 24), Color.rgb(7, 8, 11)),
+                intArrayOf(Color.rgb(28, 30, 35), Color.rgb(18, 19, 23)),
             )
         }
         setContentView(root)
@@ -135,7 +135,7 @@ class NativeTvActivity : AppCompatActivity() {
         setStroke(dp(1), Color.argb(28, 255, 255, 255))
     }
     private fun focusBackground() = StateListDrawable().apply {
-        addState(intArrayOf(android.R.attr.state_focused), background(Color.rgb(34, 38, 48)).apply { setStroke(dp(2), Color.rgb(255, 255, 255)) })
+        addState(intArrayOf(android.R.attr.state_focused), background(Color.rgb(42, 44, 52)).apply { setStroke(dp(2), Color.rgb(235, 175, 108)) })
         addState(intArrayOf(android.R.attr.state_pressed), background(Color.rgb(42, 46, 58)))
         addState(intArrayOf(), background(Color.rgb(18, 20, 26)))
     }
