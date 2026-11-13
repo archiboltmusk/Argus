@@ -6,7 +6,7 @@ import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { execFileSync } from "node:child_process";
 
-test("Android scaffolding retains the old activity internally and patches idempotently", () => {
+test("Android scaffolding keeps MainActivity for phones, adds NativePlayer internally, and patches idempotently", () => {
   const root = dirname(dirname(fileURLToPath(import.meta.url)));
   const folder = mkdtempSync(join(tmpdir(), "argus-native-manifest-"));
   try {
@@ -50,12 +50,14 @@ test("Android scaffolding retains the old activity internally and patches idempo
       cwd: folder,
     });
     assert.equal(readFileSync(manifest, "utf8"), once);
-    assert.match(once, /android:name="\.MainActivity" android:exported="false"/);
-    const previousActivity = once.match(
+    assert.match(once, /android:name="\.MainActivity" android:exported="true"/);
+    const mainActivity = once.match(
       /<activity\b[^>]*android:name="\.MainActivity"[^>]*>[\s\S]*?<\/activity>/,
     )?.[0];
-    assert.ok(previousActivity);
-    assert.doesNotMatch(previousActivity, /<intent-filter>/);
+    assert.ok(mainActivity);
+    assert.match(mainActivity, /android\.intent\.category\.LAUNCHER/);
+    assert.doesNotMatch(mainActivity, /android\.intent\.category\.LEANBACK_LAUNCHER/);
+    assert.match(once, /android:name="\.ArgusNativePlayerActivity"[\s\S]*?android:exported="false"/);
     assert.match(once, /android:name="KEEP"/);
     const native = readFileSync(
       join(root, "src-tauri/native-player/android/src/main/AndroidManifest.xml"),
