@@ -351,9 +351,10 @@ export async function downloadBackup(selected?: BackupSectionKey[]): Promise<boo
  * types, which hides `.harbx` files in the Linux file chooser, so restoring must
  * use the native dialog with an extension filter.
  */
-export async function pickBackupFile(): Promise<string | null> {
+export async function pickBackupFile(defaultPath?: string): Promise<string | null> {
   const { open } = await import("@tauri-apps/plugin-dialog");
   const path = await open({
+    ...(defaultPath ? { defaultPath } : {}),
     multiple: false,
     directory: false,
     filters: [{ name: "Argus backup", extensions: ["harbx", "json"] }],

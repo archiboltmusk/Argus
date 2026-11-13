@@ -1,5 +1,11 @@
 // Newly introduced UI copy remains usable until each locale provides an override.
 const uiFallback: Record<string, string> = {
+  "Update backups": "Update backups",
+  "Having trouble after an update? Back up your setup with the controls below, then download an earlier installer.": "Having trouble after an update? Back up your setup with the controls below, then download an earlier installer.",
+  "Hide earlier builds": "Hide earlier builds",
+  "Browse earlier builds": "Browse earlier builds",
+  "Use the backup controls below to save or restore your setup.": "Use the backup controls below to save or restore your setup.",
+  "Couldn't load earlier builds. Check your connection and try again.": "Couldn't load earlier builds. Check your connection and try again.",
   "Check for new versions and install them here. Updates preserve your settings and library, and save a recovery backup before installation. Nothing installs until you choose to.": "Check for new versions and install them here. Updates preserve your settings and library, and save a recovery backup before installation. Nothing installs until you choose to.",
   "The update channel changed. Check for updates again.": "The update channel changed. Check for updates again.",
   "Enter a passphrase (at least 4 characters).": "Enter a passphrase (at least 4 characters).",

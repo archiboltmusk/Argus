@@ -97,3 +97,19 @@ test("a file that cannot be read surfaces the failure", async () => {
 
   await assert.rejects(() => backup.pickBackupFile(), /ENOENT/);
 });
+
+test("update recovery opens the existing backup picker in its saved recovery directory", async () => {
+  let options: { defaultPath?: string } = {};
+  const backup = loadBackup({
+    "@tauri-apps/plugin-dialog": {
+      open: async (value: typeof options) => {
+        options = value;
+        return "/recovery/profile.harbx";
+      },
+    },
+    "@tauri-apps/plugin-fs": { readTextFile: async () => '{"format":"argus-backup"}' },
+  });
+  const value = await backup.pickBackupFile("/recovery");
+  assert.equal(options.defaultPath, "/recovery");
+  assert.equal(value, '{"format":"argus-backup"}');
+});

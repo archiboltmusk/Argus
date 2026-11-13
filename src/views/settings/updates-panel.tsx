@@ -34,7 +34,6 @@ export function UpdatesPanel() {
           <UpdatesRow />
           <BetaChannelRow />
           <ModifyInstallationRow />
-          {!experimentalInstalled && <RollbackRow />}
           <BuildFeedback />
         </Section>
       )}
@@ -47,6 +46,7 @@ export function UpdatesPanel() {
           "Export your entire Argus setup to a single file, then restore it on a new computer or keep it as a backup. Everything is included except your Stremio sign-in.",
         )}
       >
+        {isTauri && !experimentalInstalled && <RollbackRow />}
         <SettingsRecoverRow />
         <BackupRow />
       </Section>

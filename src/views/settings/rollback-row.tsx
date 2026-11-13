@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { History } from "./icons";
 import { IS_BETA_BUILD } from "@/lib/build-info";
 import { useT } from "@/lib/i18n";
@@ -15,9 +16,8 @@ const RELEASES_URL = "https://github.com/archiboltmusk/Argus/releases";
 export function RollbackRow() {
   const t = useT();
   const { settings } = useSettings();
-  const { state, reload } = useVersionHistory(settings.betaUpdates);
-
-  if (!settings.betaUpdates) return null;
+  const [expanded, setExpanded] = useState(false);
+  const { state, reload } = useVersionHistory(expanded);
 
   return (
     <SettingRow
@@ -32,25 +32,34 @@ export function RollbackRow() {
         </span>
       }
       desc={t(
-        "On a beta that's giving you trouble? Pick an earlier build below and run its installer over your current copy. Your library, settings, and downloads all stay put.",
+        "Having trouble after an update? Back up your setup with the controls below, then download an earlier installer.",
       )}
     >
       <div className="flex w-full min-w-0 flex-col gap-3">
-        <div className="w-full min-w-0 rounded-[10px] border border-edge-soft">
-          {state.status === "loading" ? (
-            <HistorySkeleton />
-          ) : state.status === "error" ? (
-            <HistoryError onRetry={reload} />
-          ) : (
-            <VersionList versions={state.versions} />
-          )}
-        </div>
+        <SButton onClick={() => setExpanded((value) => !value)}>
+          {expanded ? t("Hide earlier builds") : t("Browse earlier builds")}
+        </SButton>
+        {expanded && (
+          <div className="w-full min-w-0 rounded-[10px] border border-edge-soft">
+            {state.status === "loading" ? (
+              <HistorySkeleton />
+            ) : state.status === "error" ? (
+              <HistoryError onRetry={reload} />
+            ) : (
+              <VersionList
+                versions={state.versions.filter(
+                  (entry) => settings.betaUpdates || entry.channel !== "beta",
+                )}
+              />
+            )}
+          </div>
+        )}
 
-        <p className={`max-w-[70ch] ${ROW_DESC}`}>
-          {t(
-            "While beta updates are on, Argus offers the newest build again on its next check. Turn beta updates off above to stay on an earlier one.",
-          )}
-        </p>
+        {expanded && (
+          <p className={`max-w-[70ch] ${ROW_DESC}`}>
+            {t("Use the backup controls below to save or restore your setup.")}
+          </p>
+        )}
       </div>
     </SettingRow>
   );
@@ -102,7 +111,7 @@ function HistoryError({ onRetry }: { onRetry: () => void }) {
   return (
     <div className="flex flex-col items-start gap-3 px-4 py-4">
       <p className={`max-w-[66ch] ${ROW_DESC}`}>
-        {t("Couldn't reach arguscommunity.site to load earlier builds. Check your connection and try again.")}
+        {t("Couldn't load earlier builds. Check your connection and try again.")}
       </p>
       <div className="flex flex-wrap items-center gap-2.5">
         <SButton onClick={onRetry}>{t("Try again")}</SButton>
@@ -113,7 +122,9 @@ function HistoryError({ onRetry }: { onRetry: () => void }) {
 }
 
 function withCurrent(versions: VersionEntry[]): VersionEntry[] {
-  const list = versions.filter((v) => v && typeof v.version === "string");
+  const list = versions.filter(
+    (v) => v && typeof v.version === "string" && compareVersions(v.version, currentVersion) <= 0,
+  );
   if (!list.some((v) => v.version === currentVersion)) {
     list.push({ version: currentVersion });
   }
