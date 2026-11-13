@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
     inputs:
       release_tag:
-        description: "Publish the .dmg as a pre-release with this tag (e.g. v0.1.0). Leave empty to just build."
+        description: "Stable version to publish (for example v3.17.3). Leave empty for an automatic build version."
         required: false
         default: ""
 
@@ -288,7 +288,11 @@ jobs:
             latest.json
           generate_release_notes: true
           body: |
-            Apple Silicon (M1 or newer), macOS 11+. Unsigned build: on first launch, right-click Argus.app → Open, or run `xattr -dr com.apple.quarantine /Applications/Argus.app`.
+            Download the installer for your device below.
+      - name: Prepare download-first release page
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: node scripts/publish-release-page.mjs "${{ steps.rtag.outputs.tag }}" "${{ github.repository }}"
       - name: Publish verified update release
         env:
           GH_TOKEN: ${{ github.token }}

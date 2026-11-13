@@ -291,6 +291,11 @@ jobs:
           cat latest.json
           gh release upload "$TAG" "${FILES[@]}" --repo "$REPO" --clobber
           gh release upload "$TAG" latest.json --repo "$REPO" --clobber
+      - name: Refresh download links for completed platforms
+        if: hashFiles('scripts/publish-release-page.mjs') != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: node scripts/publish-release-page.mjs "${{ needs.version.outputs.tag }}" "${{ github.repository }}"
       - name: Refresh legacy Mac update feed
         env:
           GH_TOKEN: ${{ github.token }}
