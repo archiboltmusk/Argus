@@ -83,8 +83,11 @@ class NativeTvActivity : AppCompatActivity() {
         }
         root = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            setPadding(dp(horizontalPadding), dp(18), dp(horizontalPadding), dp(18))
-            setBackgroundColor(Color.rgb(17, 18, 19))
+            setPadding(dp(horizontalPadding), dp(20), dp(horizontalPadding), dp(20))
+            background = GradientDrawable(
+                GradientDrawable.Orientation.TOP_BOTTOM,
+                intArrayOf(Color.rgb(11, 13, 20), Color.rgb(5, 5, 7)),
+            )
         }
         setContentView(root)
         val bar = LinearLayout(this).apply { gravity = Gravity.CENTER_VERTICAL }
@@ -126,11 +129,29 @@ class NativeTvActivity : AppCompatActivity() {
         setTextColor(Color.rgb(244, 245, 247))
         setPadding(0, dp(5), 0, dp(5))
     }
-    private fun background(color: Int) = GradientDrawable().apply { setColor(color); cornerRadius = dp(10).toFloat() }
-    private fun focusBackground() = StateListDrawable().apply {
-        addState(intArrayOf(android.R.attr.state_focused), background(Color.rgb(50, 51, 53)).apply { setStroke(dp(2), Color.rgb(244, 162, 92)) })
-        addState(intArrayOf(android.R.attr.state_pressed), background(Color.rgb(50, 51, 53)))
-        addState(intArrayOf(), background(Color.rgb(25, 27, 28)))
+    private fun background(color: Int, radiusDp: Int = 16) = GradientDrawable().apply {
+        setColor(color)
+        cornerRadius = dp(radiusDp).toFloat()
+    }
+    private fun attachFocusScale(v: View) {
+        v.setOnFocusChangeListener { target, hasFocus ->
+            target.animate()
+                .scaleX(if (hasFocus) 1.04f else 1f)
+                .scaleY(if (hasFocus) 1.04f else 1f)
+                .setDuration(140)
+                .start()
+        }
+    }
+    private fun focusBackground(radiusDp: Int = 16) = StateListDrawable().apply {
+        addState(
+            intArrayOf(android.R.attr.state_focused),
+            background(Color.argb(38, 255, 255, 255), radiusDp).apply { setStroke(dp(2), Color.rgb(244, 244, 246)) },
+        )
+        addState(intArrayOf(android.R.attr.state_pressed), background(Color.argb(46, 255, 255, 255), radiusDp))
+        addState(
+            intArrayOf(),
+            background(Color.argb(14, 255, 255, 255), radiusDp).apply { setStroke(dp(1), Color.argb(22, 255, 255, 255)) },
+        )
     }
     private fun activate(view: View, action: () -> Unit) {
         view.setOnClickListener { action() }
@@ -150,15 +171,17 @@ class NativeTvActivity : AppCompatActivity() {
     }
     private fun button(value: String, action: () -> Unit): Button = Button(this).apply {
         text = value
-        textSize = 17f
+        textSize = 16f
         isAllCaps = false
-        setTextColor(Color.WHITE)
-        gravity = Gravity.CENTER_VERTICAL
-        setPadding(dp(18), dp(10), dp(18), dp(10))
-        minHeight = dp(52)
+        typeface = Typeface.create("sans-serif-medium", Typeface.NORMAL)
+        setTextColor(Color.rgb(244, 244, 246))
+        gravity = Gravity.CENTER
+        setPadding(dp(20), dp(10), dp(20), dp(10))
+        minHeight = dp(48)
         isFocusable = true
         isFocusableInTouchMode = true
-        background = focusBackground()
+        background = focusBackground(999)
+        attachFocusScale(this)
         activate(this, action)
     }
     private fun addButton(text: String, action: () -> Unit): Button = button(text, action).also {
@@ -315,18 +338,25 @@ class NativeTvActivity : AppCompatActivity() {
                 val tile = LinearLayout(this).apply {
                     tag = meta.optString("type") + ":" + meta.optString("id")
                     orientation = LinearLayout.VERTICAL
-                    setPadding(dp(4), dp(4), dp(4), dp(4))
+                    setPadding(dp(8), dp(8), dp(8), dp(10))
                     isFocusable = true
                     isFocusableInTouchMode = true
                     isClickable = true
-                    background = focusBackground()
+                    background = focusBackground(16)
+                    attachFocusScale(this)
                     activate(this) { detail(meta) }
                 }
                 val image = ImageView(this).apply {
                     scaleType = ImageView.ScaleType.CENTER_CROP
                     setImageResource(R.drawable.argus_native_banner)
+                    clipToOutline = true
+                    outlineProvider = object : android.view.ViewOutlineProvider() {
+                        override fun getOutline(view: View, outline: android.graphics.Outline) {
+                            outline.setRoundRect(0, 0, view.width, view.height, dp(12).toFloat())
+                        }
+                    }
                 }
-                tile.addView(image, LinearLayout.LayoutParams(-1, dp((width * 1.5).toInt())))
+                tile.addView(image, LinearLayout.LayoutParams(-1, dp((width * 1.5).toInt())).apply { bottomMargin = dp(6) })
                 tile.addView(label(meta.optString("name", meta.optString("id")), if (bigPicture) 19 else 17).apply {
                     maxLines = 2
                     ellipsize = android.text.TextUtils.TruncateAt.END
