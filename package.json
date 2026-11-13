@@ -79,7 +79,7 @@
     "hls.js": "^1.7.4",
     "html-to-pdfmake": "2.5.36",
     "lottie-web": "^5.13.0",
-    "lucide-react": "^0.460.0",
+    "lucide-react": "^1.70.0",
     "mpegts.js": "^1.8.2",
     "onnxruntime-web": "1.31.1",
     "parse-torrent-title": "^3.0.1",
