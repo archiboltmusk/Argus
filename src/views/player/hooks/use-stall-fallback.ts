@@ -10,10 +10,7 @@ import { prepareCachedDebridStreams } from "@/lib/debrid/playback-preparation";
 import { prewarmCandidateStream } from "@/lib/streams/prewarm-candidate";
 import { recordHostFailure, recordHostThroughput } from "@/lib/streams/host-health";
 import { markStreamDead, SOFT_STALL_TTL_MS } from "@/lib/dead-streams";
-import {
-  evaluateStallStatus,
-  findNextFallbackStream,
-} from "@/lib/player/stall-fallback";
+import { evaluateStallStatus, findNextFallbackStream } from "@/lib/player/stall-fallback";
 
 export type StallOffer = {
   nextStream: ScoredStream | null;
@@ -31,6 +28,7 @@ export function useStallFallback(params: {
   onSwitchStream: (stream: ScoredStream) => Promise<void>;
   openSwitcher: () => void;
   inRoom?: boolean;
+  sourceSwitching?: boolean;
   bridgeRef?: React.RefObject<PlayerBridge | null>;
 }) {
   const {
@@ -41,6 +39,7 @@ export function useStallFallback(params: {
     onSwitchStream,
     openSwitcher,
     inRoom = false,
+    sourceSwitching = false,
     bridgeRef,
   } = params;
   const { settings } = useSettings();
@@ -99,7 +98,9 @@ export function useStallFallback(params: {
       lastProgressAtRef.current = Date.now();
       setStallOffer(null);
     }
-    const progressAdvance = delta > 0.05 || (snap.lastDecodedFrameAt && snap.lastDecodedFrameAt > lastProgressAtRef.current);
+    const progressAdvance =
+      delta > 0.05 ||
+      (snap.lastDecodedFrameAt && snap.lastDecodedFrameAt > lastProgressAtRef.current);
     const bufferHealthy = snap.bufferedSec >= 0.5;
 
     if (progressAdvance) {
@@ -135,7 +136,13 @@ export function useStallFallback(params: {
 
   // Periodic stall evaluator (runs every 500ms while active)
   useEffect(() => {
-    const isLiveStream = src.isLive || /\.m3u8(\?|#|$)/i.test(src.url) || src.url.includes("/live/");
+    if (sourceSwitching) {
+      lastProgressAtRef.current = Date.now();
+      setStallOffer(null);
+      return;
+    }
+    const isLiveStream =
+      src.isLive || /\.m3u8(\?|#|$)/i.test(src.url) || src.url.includes("/live/");
     if (isLiveStream || inRoom || isLocalUrl(src.url)) return;
     if (snap.status === "paused" || snap.status === "ended") {
       lastProgressAtRef.current = Date.now();
@@ -145,7 +152,12 @@ export function useStallFallback(params: {
 
     const interval = window.setInterval(() => {
       const now = Date.now();
-      if (now < dismissedUntilRef.current || now < seekGraceUntilRef.current || switchingRef.current) return;
+      if (
+        now < dismissedUntilRef.current ||
+        now < seekGraceUntilRef.current ||
+        switchingRef.current
+      )
+        return;
 
       const stall = evaluateStallStatus({
         status: snap.status,
@@ -167,7 +179,9 @@ export function useStallFallback(params: {
 
         // Circuit Breaker Check: Check how many auto-swaps occurred in the last 60 seconds
         const oneMinuteAgo = now - 60_000;
-        autoSwapTimestampsRef.current = autoSwapTimestampsRef.current.filter((ts) => ts > oneMinuteAgo);
+        autoSwapTimestampsRef.current = autoSwapTimestampsRef.current.filter(
+          (ts) => ts > oneMinuteAgo,
+        );
         const circuitBreakerTripped = autoSwapTimestampsRef.current.length >= 3;
 
         // If circuit breaker is tripped, offer manual switch without auto countdown so it doesn't loop
@@ -215,11 +229,12 @@ export function useStallFallback(params: {
     debrids,
     autoSwitchEnabled,
     inRoom,
+    sourceSwitching,
   ]);
 
   // Countdown timer for auto-switch on timeout
   useEffect(() => {
-    if (!stallOffer || stallOffer.secondsLeft == null) return;
+    if (sourceSwitching || !stallOffer || stallOffer.secondsLeft == null) return;
 
     if (stallOffer.secondsLeft <= 0) {
       if (stallOffer.nextStream && !switchingRef.current) {
@@ -252,7 +267,7 @@ export function useStallFallback(params: {
     }, 1000);
 
     return () => window.clearTimeout(timer);
-  }, [stallOffer, onSwitchStream]);
+  }, [stallOffer, onSwitchStream, sourceSwitching]);
 
   const dismissOffer = useCallback(() => {
     setStallOffer(null);

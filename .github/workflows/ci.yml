@@ -8,9 +8,8 @@ on:
   workflow_dispatch:
     inputs:
       release_tag:
-        description: "Stable version to publish (for example v3.17.3). Leave empty for an automatic build version."
-        required: false
-        default: ""
+        description: "Stable version to publish (for example v3.17.5)"
+        required: true
 
 # PR runs cancel when a newer commit lands. Main runs are never cancelled:
 # GitHub keeps one running and one queued run per group, and a newer queued run
@@ -39,9 +38,11 @@ jobs:
         with:
           fetch-depth: 0
       - id: diff
+        env:
+          HEAD_MESSAGE: ${{ github.event.head_commit.message }}
         run: |
           IS_RELEASE=false
-          if [[ "${{ github.ref }}" == refs/tags/v* ]] || [ "${{ github.event_name }}" = "workflow_dispatch" ] || echo "${{ github.event.head_commit.message }}" | grep -qiE '\[(release|build-app)\]'; then
+          if [[ "${{ github.ref }}" == refs/tags/v* ]] || [ "${{ github.event_name }}" = "workflow_dispatch" ] || printf '%s\n' "$HEAD_MESSAGE" | grep -qiE '\[(release|build-app)\]'; then
             IS_RELEASE=true
           fi
 
@@ -241,11 +242,13 @@ jobs:
             latest.json
           if-no-files-found: ignore
 
-  # Publishes as soon as the .dmg and every check have passed.
+  # Stage a draft after Mac verification; the coordinated desktop job publishes all OSes together.
   publish:
-    name: Publish release
+    name: Stage verified release
+    outputs:
+      tag: ${{ steps.rtag.outputs.tag }}
     needs: [changes, core, ui, macos]
-    if: needs.changes.outputs.bundle == 'true'
+    if: needs.changes.outputs.bundle == 'true' && (startsWith(github.ref, 'refs/tags/v') || (github.event_name == 'workflow_dispatch' && inputs.release_tag != ''))
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
@@ -278,6 +281,7 @@ jobs:
         with:
           tag_name: ${{ steps.rtag.outputs.tag }}
           name: Argus ${{ steps.rtag.outputs.tag }}
+          target_commitish: ${{ github.sha }}
           prerelease: false
           draft: true
           make_latest: false
@@ -293,21 +297,14 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: node scripts/publish-release-page.mjs "${{ steps.rtag.outputs.tag }}" "${{ github.repository }}"
-      - name: Publish verified update release
-        env:
-          GH_TOKEN: ${{ github.token }}
-          REPO: ${{ github.repository }}
-          TAG: ${{ steps.rtag.outputs.tag }}
-        run: gh release edit "$TAG" --repo "$REPO" --draft=false --latest=true
-      - name: Refresh legacy Mac update feed
-        env:
-          GH_TOKEN: ${{ github.token }}
-          REPO: ${{ github.repository }}
-          TAG: ${{ steps.rtag.outputs.tag }}
-        run: |
-          set -euo pipefail
-          LATEST=$(gh release view --repo "$REPO" --json tagName --jq .tagName)
-          if [ "$LATEST" = "$TAG" ]; then
-            gh release view beta --repo "$REPO" >/dev/null 2>&1 || gh release create beta --repo "$REPO" --prerelease --latest=false --title "Argus beta" --notes "Legacy updater compatibility feed."
-            gh release upload beta latest.json --repo "$REPO" --clobber
-          fi
+
+  desktop:
+    name: Complete desktop release
+    needs: [publish]
+    permissions:
+      contents: write
+      actions: read
+    uses: ./.github/workflows/desktop.yml
+    secrets: inherit
+    with:
+      target_tag: ${{ needs.publish.outputs.tag }}

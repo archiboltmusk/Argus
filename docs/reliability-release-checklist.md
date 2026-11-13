@@ -4,7 +4,7 @@ Preserve existing features. Reuse the implementations below; release only after 
 
 | Upgrade | Implementation and acceptance |
 | --- | --- |
-| One release entry | Dispatch CI with one stable `release_tag`; Mac publication triggers matching Windows/Linux builds. Signed feeds must match the release version. |
+| One release entry | Dispatch CI with one stable `release_tag`; CI stages the verified Mac package, calls matching Windows/Linux builds, and promotes the draft only when all three signed platform entries are valid. Failed builds leave the previous stable feed in place. |
 | Clear downloads | `docs/downloads.js` selects an exact installer from one stable release. Never mix preview assets, phone/TV/watch packages or release versions. Release notes list uploaded installers only. |
 | Safer updates | Every native install saves a recovery backup. Signature, backup or channel-change failures prevent installation. Existing rollback and backup-import controls remain available. |
 | Playback health | Existing playback traces and copied diagnostics retain source-resolution, load and first-frame timings. Existing host health and stall reporting remain in use. |

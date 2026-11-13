@@ -2,6 +2,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { execSync } from "node:child_process";
+import { applePlatform, validateAppleBuildOutput } from "./apple-platforms.mjs";
 
 const args = process.argv.slice(2);
 function getArg(name, fallback = "") {
@@ -15,46 +16,10 @@ const appDir = path.resolve(getArg("app-dir"));
 const distDir = path.resolve(getArg("dist-dir", "dist"));
 const version = getArg("version", "3.0.0");
 
-const CONFIGS = {
-  ios: {
-    displayName: "Argus",
-    bundleId: "app.argus.mobile.ios",
-    execName: "Argus",
-    sdk: "iphoneos",
-    target: "arm64-apple-ios16.0",
-    minOs: "16.0",
-    frameworks: ["UIKit", "Foundation", "WebKit"],
-  },
-  tvos: {
-    displayName: "Argus TV",
-    bundleId: "app.argus.tvos",
-    execName: "ArgusTV",
-    sdk: "appletvos",
-    target: "arm64-apple-tvos16.0",
-    minOs: "16.0",
-    frameworks: ["UIKit", "Foundation"],
-  },
-  visionos: {
-    displayName: "Argus Vision",
-    bundleId: "app.argus.visionos",
-    execName: "ArgusVision",
-    sdk: "xros",
-    target: "arm64-apple-xros1.0",
-    minOs: "1.0",
-    frameworks: ["UIKit", "Foundation"],
-  },
-  watchos: {
-    displayName: "Argus Watch",
-    bundleId: "app.argus.watchos",
-    execName: "ArgusWatch",
-    sdk: "watchos",
-    target: "arm64-apple-watchos9.0",
-    minOs: "9.0",
-    frameworks: [],
-  },
-};
-
-const conf = CONFIGS[platform] || CONFIGS.ios;
+const conf = applePlatform(platform);
+if (process.platform !== "darwin")
+  throw new Error("Apple packaging requires macOS with Xcode and the target SDK installed.");
+execSync(`xcrun --sdk ${conf.sdk} --show-sdk-path`, { stdio: "inherit" });
 fs.mkdirSync(appDir, { recursive: true });
 
 // Clean up any invalid macOS Contents structure if accidentally copied
@@ -93,10 +58,10 @@ if (needsPlist) {
     platform === "tvos"
       ? "AppleTVOS"
       : platform === "visionos"
-      ? "XROS"
-      : platform === "watchos"
-      ? "WatchOS"
-      : "iPhoneOS";
+        ? "XROS"
+        : platform === "watchos"
+          ? "WatchOS"
+          : "iPhoneOS";
 
   const plistContent = `<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
@@ -126,8 +91,7 @@ if (needsPlist) {
     <string>${conf.minOs}</string>
     <key>UIDeviceFamily</key>
     <array>
-        <integer>1</integer>
-        <integer>2</integer>
+        ${conf.deviceFamily.map((family) => `<integer>${family}</integer>`).join("\n        ")}
     </array>
     <key>CFBundleSupportedPlatforms</key>
     <array>
@@ -166,7 +130,9 @@ if (!needsBinary) {
 }
 
 if (needsBinary) {
-  console.log(`[package-apple-app] Compiling native ARM64 Mach-O binary for ${platform} at ${execPath}`);
+  console.log(
+    `[package-apple-app] Compiling native ARM64 Mach-O binary for ${platform} at ${execPath}`,
+  );
   const tempSrc = path.join(appDir, "_temp_launcher.m");
 
   if (platform === "ios") {
@@ -213,10 +179,12 @@ int main(int argc, char * argv[]) {
 `;
     fs.writeFileSync(tempSrc, objcSrc, "utf8");
     try {
-      execSync(`xcrun --sdk iphoneos clang -target arm64-apple-ios16.0 -fobjc-arc -framework UIKit -framework Foundation -framework WebKit -o "${execPath}" "${tempSrc}"`, { stdio: "inherit" });
+      execSync(
+        `xcrun --sdk iphoneos clang -target arm64-apple-ios16.0 -fobjc-arc -framework UIKit -framework Foundation -framework WebKit -o "${execPath}" "${tempSrc}"`,
+        { stdio: "inherit" },
+      );
     } catch {
-      console.warn(`[package-apple-app] UIKit compile failed; compiling robust Mach-O bootstrap binary...`);
-      execSync(`xcrun --sdk iphoneos clang -target arm64-apple-ios16.0 -o "${execPath}" -x c - << 'EOF'\nint main(int argc, char *argv[]) { return 0; }\nEOF`, { stdio: "inherit" });
+      throw new Error("The iOS launcher failed to compile; refusing an empty replacement binary.");
     } finally {
       if (fs.existsSync(tempSrc)) fs.unlinkSync(tempSrc);
     }
@@ -244,48 +212,35 @@ int main(int argc, char * argv[]) {
     }
 }
 `;
-    if (process.platform !== "darwin") {
-      const stub = Buffer.alloc(32);
-      stub.writeUInt32LE(0xfeedfacf, 0);
-      stub.writeUInt32LE(0x0100000c, 4);
-      stub.writeUInt32LE(2, 12);
-      fs.writeFileSync(execPath, stub);
-      console.log(`[package-apple-app] Non-macOS runner (${process.platform}); wrote ARM64 Mach-O stub for ${platform}.`);
-    } else {
-      fs.writeFileSync(tempSrc, objcSrc, "utf8");
-      try {
-        execSync(`xcrun --sdk appletvos clang -target arm64-apple-tvos16.0 -fobjc-arc -framework UIKit -framework Foundation -o "${execPath}" "${tempSrc}"`, { stdio: "inherit" });
-      } catch {
-        execSync(`xcrun --sdk appletvos clang -target arm64-apple-tvos16.0 -o "${execPath}" -x c - << 'EOF'\nint main(int argc, char *argv[]) { return 0; }\nEOF`, { stdio: "inherit" });
-      } finally {
-        if (fs.existsSync(tempSrc)) fs.unlinkSync(tempSrc);
-      }
-    }
-  } else if (process.platform !== "darwin") {
-    const stub = Buffer.alloc(32);
-    stub.writeUInt32LE(0xfeedfacf, 0);
-    stub.writeUInt32LE(0x0100000c, 4);
-    stub.writeUInt32LE(2, 12);
-    fs.writeFileSync(execPath, stub);
-    console.log(`[package-apple-app] Non-macOS runner (${process.platform}); wrote ARM64 Mach-O stub for ${platform}.`);
-  } else {
-    // visionos and watchos
+    fs.writeFileSync(tempSrc, objcSrc, "utf8");
     try {
-      const sdk = platform === "watchos" ? "watchos" : platform === "visionos" ? "xros" : "iphoneos";
-      const target =
-        platform === "watchos"
-          ? "arm64-apple-watchos9.0"
-          : platform === "visionos"
-            ? "arm64-apple-xros1.0"
-            : "arm64-apple-ios16.0";
-      execSync(`xcrun --sdk ${sdk} clang -target ${target} -o "${execPath}" -x c - << 'EOF'\nint main(int argc, char *argv[]) { return 0; }\nEOF`, { stdio: "inherit" });
-    } catch (err) {
-      console.warn(`[package-apple-app] Primary compile failed for ${platform}; falling back to iphoneos target...`);
-      execSync(`xcrun --sdk iphoneos clang -target arm64-apple-ios16.0 -o "${execPath}" -x c - << 'EOF'\nint main(int argc, char *argv[]) { return 0; }\nEOF`, { stdio: "inherit" });
+      execSync(
+        `xcrun --sdk appletvos clang -target arm64-apple-tvos16.0 -fobjc-arc -framework UIKit -framework Foundation -o "${execPath}" "${tempSrc}"`,
+        { stdio: "inherit" },
+      );
+    } catch {
+      throw new Error("The tvOS launcher failed to compile; refusing an empty replacement binary.");
+    } finally {
+      if (fs.existsSync(tempSrc)) fs.unlinkSync(tempSrc);
     }
+  } else {
+    // These remain developer bootstraps until a native Watch/Vision UI is supplied.
+    // Compile only for the requested OS; an iPhone binary is not a valid fallback.
+    console.warn(
+      `[package-apple-app] ${platform} is a developer bootstrap, not a feature-complete native app.`,
+    );
+    execSync(
+      `xcrun --sdk ${conf.sdk} clang -target ${conf.target} -o "${execPath}" -x c - << 'EOF'\nint main(int argc, char *argv[]) { return 0; }\nEOF`,
+      { stdio: "inherit" },
+    );
   }
 
   fs.chmodSync(execPath, 0o755);
 }
 
-console.log(`[package-apple-app] Verification complete for ${conf.displayName} (${platform}): Info.plist and executable exist.`);
+const buildOutput = execSync(`xcrun vtool -show-build "${execPath}"`, { encoding: "utf8" });
+validateAppleBuildOutput(buildOutput, platform);
+
+console.log(
+  `[package-apple-app] Verification complete for ${conf.displayName} (${platform}): Info.plist and executable exist.`,
+);

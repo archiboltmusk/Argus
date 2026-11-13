@@ -462,9 +462,7 @@ function NativePlayerView({ src }: { src: PlayerSrc }) {
     src,
     snap,
     nextEp:
-      (settings.autoPlayNextEpisode || settings.bingeMode) && !queueOrSleepArmed
-        ? airedNext
-        : null,
+      (settings.autoPlayNextEpisode || settings.bingeMode) && !queueOrSleepArmed ? airedNext : null,
     canChangeEpisode,
     cancelled: autoNextCancelled,
     startedNearEndRef,
@@ -1155,7 +1153,9 @@ function NativePlayerView({ src }: { src: PlayerSrc }) {
       // Local files are found again by library entry id, which also carries the time.
       const local = src.url ? readLocalLibrary().find((e) => e.path === src.url) : undefined;
       if (local) return localDeepLink(local.id, positionSec, speed);
-      return src.meta.id.startsWith("local:") ? undefined : shareDeepLink(src.meta.type, src.meta.id);
+      return src.meta.id.startsWith("local:")
+        ? undefined
+        : shareDeepLink(src.meta.type, src.meta.id);
     },
     svpActive,
     drawMode,
@@ -1375,20 +1375,17 @@ function NativePlayerView({ src }: { src: PlayerSrc }) {
     snap,
     debrids,
     autoSwitchEnabled: settings.autoNextStreamOnStall,
+    sourceSwitching: !!swapResolvingKey,
     onSwitchStream,
     openSwitcher: () => setSwitcherOpen(true),
     inRoom,
     bridgeRef,
   });
-  const {
-    upgradeOffer,
-    acceptUpgrade,
-    dismissUpgrade,
-  } = useQualityUpgrade({
+  const { upgradeOffer, acceptUpgrade, dismissUpgrade } = useQualityUpgrade({
     src: activeMediaSrc,
     snap,
     debrids,
-    enabled: settings.suggestQualityUpgrade,
+    enabled: settings.suggestQualityUpgrade && !swapResolvingKey,
     onSwitchStream,
     inRoom,
   });
@@ -1779,9 +1776,11 @@ function NativePlayerView({ src }: { src: PlayerSrc }) {
           borderRadius: shrinkEndScreen ? 14 : 0,
           overflow: shrinkEndScreen ? "hidden" : undefined,
           paddingTop: !shrinkEndScreen && keystoneInsets ? keystoneInsets.paddingTop : undefined,
-          paddingBottom: !shrinkEndScreen && keystoneInsets ? keystoneInsets.paddingBottom : undefined,
+          paddingBottom:
+            !shrinkEndScreen && keystoneInsets ? keystoneInsets.paddingBottom : undefined,
           paddingLeft: !shrinkEndScreen && keystoneInsets ? keystoneInsets.paddingLeft : undefined,
-          paddingRight: !shrinkEndScreen && keystoneInsets ? keystoneInsets.paddingRight : undefined,
+          paddingRight:
+            !shrinkEndScreen && keystoneInsets ? keystoneInsets.paddingRight : undefined,
           filter: projFilter || undefined,
           boxSizing: "border-box",
           transition:

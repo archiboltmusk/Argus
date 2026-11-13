@@ -102,28 +102,41 @@ export function useStreamSwitcher(params: {
       swapAcRef.current?.abort();
       const ac = new AbortController();
       swapAcRef.current = ac;
+      const finish = () => {
+        if (swapAcRef.current === ac) setSwapResolvingKey(null);
+      };
       const hint = src.episode
         ? { season: src.episode.season ?? null, episode: src.episode.episode ?? null }
         : undefined;
-      const r = await resolveStream(stream, debrids, ac.signal, true, false, hint);
+      const r = await resolveStream(stream, debrids, ac.signal, true, false, hint).catch(
+        () => null,
+      );
       if (ac.signal.aborted) {
-        if (swapAcRef.current === ac) setSwapResolvingKey(null);
+        if (swapAcRef.current === ac) finish();
         return;
       }
-      if (!r.ok) {
-        console.warn(`[player] stream swap failed: ${r.code}`);
-        setSwapResolvingKey(null);
+      if (!r || !r.ok) {
+        markStreamDead(stream, "stream-resolution-failed", SOFT_STALL_TTL_MS);
+        console.warn(`[player] stream swap failed: ${r?.code ?? "resolver"}`);
+        finish();
         return;
       }
       let playUrl = r.data.url;
       if (r.via === "direct") {
-        playUrl = await resolvePlaybackRedirect({
+        const redirected = await resolvePlaybackRedirect({
           url: playUrl,
           headers: r.data.headers,
           signal: ac.signal,
-        });
+        }).catch(() => null);
+        if (!redirected || ac.signal.aborted) {
+          if (!ac.signal.aborted)
+            markStreamDead(stream, "stream-redirect-failed", SOFT_STALL_TTL_MS);
+          finish();
+          return;
+        }
+        playUrl = redirected;
         if (ac.signal.aborted) {
-          if (swapAcRef.current === ac) setSwapResolvingKey(null);
+          if (swapAcRef.current === ac) finish();
           return;
         }
       }
@@ -136,14 +149,14 @@ export function useStreamSwitcher(params: {
           playUrl = proxied.url;
           nextProxySessionId = proxied.sessionId;
         } catch {
-          setSwapResolvingKey(null);
+          finish();
           return;
         }
       }
       const b = bridgeRef.current;
       if (!b) {
         if (nextProxySessionId) void unregisterStreamProxy(nextProxySessionId).catch(() => {});
-        setSwapResolvingKey(null);
+        finish();
         return;
       }
       try {
@@ -183,7 +196,7 @@ export function useStreamSwitcher(params: {
         if (nextProxySessionId) void unregisterStreamProxy(nextProxySessionId).catch(() => {});
         if (!ac.signal.aborted) markStreamDead(stream, "stream-switch-failed", SOFT_STALL_TTL_MS);
         console.warn("[player] stream swap failed", e);
-        setSwapResolvingKey(null);
+        finish();
         return;
       }
       const previousProxySessionId = switchProxySessionRef.current;
@@ -247,7 +260,7 @@ export function useStreamSwitcher(params: {
           src.episode?.episode,
         );
       }
-      setSwapResolvingKey(null);
+      finish();
       setSwitcherOpen(false);
       setStreamCheckOpen(false);
     },
