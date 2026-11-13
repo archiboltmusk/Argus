@@ -1,15 +1,16 @@
 import { useCallback, useEffect, useRef, useState, type RefObject } from "react";
-import type { PlayerBridge, PlayerSnapshot } from "@/lib/player/bridge";
+import type { PlayerBridge, PlayerSnapshot, PlayerSource } from "@/lib/player/bridge";
 import { getPlaybackPosition } from "@/lib/player/playback-clock";
 import { isLivePlaybackSrc } from "@/lib/player/live-src";
 import { peekPickerCache, pinPickerCache, unpinPickerCache } from "@/lib/picker-cache";
 import { prepareCachedDebridStreams } from "@/lib/debrid/playback-preparation";
 import { readResumeMs } from "@/lib/resume";
-import { SHORT_PLAYBACK_SEC } from "@/lib/dead-streams";
+import { markStreamDead, SOFT_STALL_TTL_MS, SHORT_PLAYBACK_SEC } from "@/lib/dead-streams";
 import { savePlayback } from "@/lib/playback-history";
 import { resolveStream } from "@/lib/streams/resolve";
 import type { ScoredStream } from "@/lib/streams/types";
 import { registerStreamProxy, unregisterStreamProxy } from "@/lib/stream-proxy";
+import { transitionStream } from "@/lib/player/stream-transition";
 import { playbackStartupProfile } from "@/lib/player/startup-profile";
 import { resolvePlaybackRedirect } from "@/lib/streams/playback-redirect";
 import type { PlayerSrc } from "@/lib/view";
@@ -38,11 +39,23 @@ export function useStreamSwitcher(params: {
   const [switcherOpen, setSwitcherOpen] = useState(false);
   const [swapResolvingKey, setSwapResolvingKey] = useState<string | null>(null);
   const [liveUrl, setLiveUrl] = useState(src.url);
+  const liveSourceRef = useRef<PlayerSource>({
+    url: src.url,
+    notWebReady: src.notWebReady,
+    subtitles: src.subtitles,
+    isLive: src.isLive,
+  });
   const [liveHistoryUrl, setLiveHistoryUrl] = useState(src.historyUrl ?? src.url);
   const [liveStreamRef, setLiveStreamRef] = useState(src.streamRef);
   const swapAcRef = useRef<AbortController | null>(null);
   useEffect(() => {
     setLiveUrl(src.url);
+    liveSourceRef.current = {
+      url: src.url,
+      notWebReady: src.notWebReady,
+      subtitles: src.subtitles,
+      isLive: src.isLive,
+    };
     setLiveHistoryUrl(src.historyUrl ?? src.url);
     setLiveStreamRef(src.streamRef);
     swapAcRef.current?.abort();
@@ -139,20 +152,36 @@ export function useStreamSwitcher(params: {
           readResumeMs(src.meta.id, src.episode?.season, src.episode?.episode) / 1000;
         const curDur = snapRef.current.durationSec;
         const currentIsStub = curDur > 0 && curDur < SHORT_PLAYBACK_SEC;
-        const resumeAt = !currentIsStub && current > 5 ? current : savedSec;
-        await b.load({
-          url: playUrl,
-          subtitles: r.data.subtitles,
-          notWebReady: r.data.notWebReady,
-          // The bridge no longer infers liveness from notWebReady, so the swap has
-          // to classify the stream it is about to load the same way the picker does.
-          isLive: isLivePlaybackSrc({ meta: src.meta, streamRef: { addonId: stream.addonId } }),
-          startAtSec: resumeAt > 5 ? resumeAt : undefined,
-          startupProfile: playbackStartupProfile(stream),
-        });
-        await b.play({ reason: "stream-switch" }).catch(() => {});
+        const resumeAt = !currentIsStub && current >= 0 ? current : savedSec;
+        await transitionStream(
+          b,
+          {
+            url: playUrl,
+            subtitles: r.data.subtitles,
+            notWebReady: r.data.notWebReady,
+            // The bridge no longer infers liveness from notWebReady, so the swap has
+            // to classify the stream it is about to load the same way the picker does.
+            isLive: isLivePlaybackSrc({ meta: src.meta, streamRef: { addonId: stream.addonId } }),
+            startAtSec: resumeAt > 0 ? resumeAt : undefined,
+            startPaused: snapRef.current.status === "paused",
+            startupProfile: playbackStartupProfile(stream),
+          },
+          {
+            ...liveSourceRef.current,
+            url: liveUrl,
+            startAtSec: Math.max(0, current),
+            startPaused: snapRef.current.status === "paused",
+          },
+          snapRef.current,
+          ac.signal,
+        );
+        if (ac.signal.aborted) {
+          if (nextProxySessionId) void unregisterStreamProxy(nextProxySessionId).catch(() => {});
+          return;
+        }
       } catch (e) {
         if (nextProxySessionId) void unregisterStreamProxy(nextProxySessionId).catch(() => {});
+        if (!ac.signal.aborted) markStreamDead(stream, "stream-switch-failed", SOFT_STALL_TTL_MS);
         console.warn("[player] stream swap failed", e);
         setSwapResolvingKey(null);
         return;
@@ -162,6 +191,13 @@ export function useStreamSwitcher(params: {
       if (previousProxySessionId) {
         void unregisterStreamProxy(previousProxySessionId).catch(() => {});
       }
+      liveSourceRef.current = {
+        url: playUrl,
+        notWebReady: r.data.notWebReady,
+        subtitles: r.data.subtitles,
+        isLive: isLivePlaybackSrc({ meta: src.meta, streamRef: { addonId: stream.addonId } }),
+        startupProfile: playbackStartupProfile(stream),
+      };
       setLiveUrl(playUrl);
       setLiveHistoryUrl(r.data.url);
       setLiveStreamRef({
@@ -215,7 +251,7 @@ export function useStreamSwitcher(params: {
       setSwitcherOpen(false);
       setStreamCheckOpen(false);
     },
-    [debrids],
+    [debrids, liveUrl, src],
   );
 
   useEffect(

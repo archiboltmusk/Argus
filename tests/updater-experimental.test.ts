@@ -1092,3 +1092,22 @@ test("experimental settings live between updates and backup, with search pointin
     ),
   );
 });
+
+test("stable native updates save a recovery backup before installation", async () => {
+  const h = harness();
+  await h.updater.checkForUpdate(true);
+  await h.updater.downloadUpdate();
+  await h.updater.installUpdate();
+  assert.equal(h.calls.backup, 1);
+  assert.equal(h.calls.install, 1);
+});
+
+test("stable native updates cannot install if the recovery backup fails", async () => {
+  const h = harness();
+  await h.updater.checkForUpdate(true);
+  await h.updater.downloadUpdate();
+  h.config.backupFailure = true;
+  await h.updater.installUpdate();
+  assert.equal(h.calls.install, 0);
+  assert.equal(h.updater.useUpdate().status, "error");
+});

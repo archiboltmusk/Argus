@@ -28,13 +28,12 @@ export function UpdatesPanel() {
         <Section
           title={t("Updates")}
           subtitle={t(
-            "Argus checks arguscommunity.site for new versions and installs them in place. Nothing installs until you choose to, and a dismissed update never nags you again.",
+            "Check for new versions and install them here. Updates preserve your settings and library, and save a recovery backup before installation. Nothing installs until you choose to.",
           )}
         >
           <UpdatesRow />
           <BetaChannelRow />
           <ModifyInstallationRow />
-          {!experimentalInstalled && <RollbackRow />}
           <BuildFeedback />
         </Section>
       )}
@@ -47,6 +46,7 @@ export function UpdatesPanel() {
           "Export your entire Argus setup to a single file, then restore it on a new computer or keep it as a backup. Everything is included except your Stremio sign-in.",
         )}
       >
+        {isTauri && !experimentalInstalled && <RollbackRow />}
         <SettingsRecoverRow />
         <BackupRow />
       </Section>

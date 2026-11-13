@@ -64,17 +64,21 @@ export function BackupRow() {
     setRestoreError(false);
   };
 
-  const startRestore = () => {
+  const startRestore = (fromUpdate = false) => {
     setError(null);
     if (!IS_TAURI) {
       fileRef.current?.click();
       return;
     }
-    void pickBackupFile()
-      .then((text) => {
-        if (text !== null) applyBackupText(text);
-      })
-      .catch(() => setError("Could not read that file."));
+    void (async () => {
+      let folder: string | undefined;
+      if (fromUpdate) {
+        const { appDataDir, join } = await import("@tauri-apps/api/path");
+        folder = await join(await appDataDir(), "update-recovery");
+      }
+      const text = await pickBackupFile(folder);
+      if (text !== null) applyBackupText(text);
+    })().catch(() => setError("Could not read that file."));
   };
 
   const onFile = (e: ChangeEvent<HTMLInputElement>) => {
@@ -94,12 +98,14 @@ export function BackupRow() {
     if (!pending) return;
     setApplying(true);
     setRestoreError(false);
-    void applyBackup(pending).then(() => {
-      window.setTimeout(() => window.location.reload(), 280);
-    }).catch(() => {
-      setApplying(false);
-      setRestoreError(true);
-    });
+    void applyBackup(pending)
+      .then(() => {
+        window.setTimeout(() => window.location.reload(), 280);
+      })
+      .catch(() => {
+        setApplying(false);
+        setRestoreError(true);
+      });
   };
 
   return (
@@ -128,14 +134,17 @@ export function BackupRow() {
           "Choose a Argus backup and review what it contains before restoring. Your Stremio sign-in stays on this device.",
         )}
       >
-        <SButton onClick={startRestore}>
+        <SButton onClick={() => startRestore()}>
           <Upload size={16} strokeWidth={2.4} />
           {t("Restore")}
         </SButton>
+        {IS_TAURI && <SButton onClick={() => startRestore(true)}>{t("Update backups")}</SButton>}
       </SettingRow>
 
       {error && (
-        <p role="alert" className="max-w-[70ch] text-[15.5px] leading-[22px] text-danger">{t(error)}</p>
+        <p role="alert" className="max-w-[70ch] text-[15.5px] leading-[22px] text-danger">
+          {t(error)}
+        </p>
       )}
 
       <input
@@ -195,9 +204,7 @@ function ExportPicker({
       onClose={onCancel}
       title={t("What should the backup include?")}
       width={800}
-      sub={t(
-        "Choose the sections to save in one file. Your Stremio sign-in is excluded.",
-      )}
+      sub={t("Choose the sections to save in one file. Your Stremio sign-in is excluded.")}
       actions={
         <>
           <SButton onClick={onCancel}>{t("Cancel")}</SButton>
@@ -312,7 +319,13 @@ function RestoreConfirm({
         </>
       }
     >
-      {error && <p role="alert" className="text-[15px] text-danger">{t("Restore did not finish. Some settings may already have changed. Free some storage, then try again.")}</p>}
+      {error && (
+        <p role="alert" className="text-[15px] text-danger">
+          {t(
+            "Restore did not finish. Some settings may already have changed. Free some storage, then try again.",
+          )}
+        </p>
+      )}
       <div className="flex flex-wrap gap-2">
         {sections.map((key) => (
           <span

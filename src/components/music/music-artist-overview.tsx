@@ -1,3 +1,4 @@
+import { MusicArtwork } from "@/components/music/music-artwork";
 import { MusicArtistGalleryModal } from "./music-artist-gallery-modal";
 import { MusicLinkedBio } from "./music-linked-bio";
 import { useSettings } from "@/lib/settings";
@@ -120,7 +121,7 @@ export function MusicArtistStory({
             onClick={() => setGallery(true)}
             aria-label={t("music.artist.gallery", { name: profile.name })}
           >
-            <img src={image} alt={profile.name} loading="lazy" />
+            <MusicArtwork src={image} alt={profile.name} loading="lazy" />
             <span>{t("music.artist.about")}</span>
           </button>
         )}
@@ -195,7 +196,7 @@ export function MusicArtistStory({
               <button key={member.id} type="button" onClick={() => onOpen(member)}>
                 <span className="music-artist-member-art">
                   {memberArt[member.id] ? (
-                    <img
+                    <MusicArtwork
                       src={memberArt[member.id]}
                       alt=""
                       loading="lazy"
@@ -249,7 +250,7 @@ export function MusicArtistStory({
         className="music-home-text"
         onClick={() => openUrl(`https://musicbrainz.org/artist/${profile.id}`)}
       >
-        <img
+        <MusicArtwork
           src="https://icons.duckduckgo.com/ip3/musicbrainz.org.ico"
           alt=""
           width={15}

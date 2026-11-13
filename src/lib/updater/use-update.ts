@@ -625,9 +625,10 @@ export async function installUpdate(): Promise<void> {
   if (plan) {
     set({ status: "installing", error: null, installFailed: false });
     try {
+      await saveTransitionBackup();
+      if (!currentRequest(request, selected)) throw new Error("The update channel changed.");
       if (state.intent === "return-beta" || state.channel === "experimental") {
         if (plan.recoveryProtocol !== 1) throw new Error("A recoverable installer is required.");
-        await saveTransitionBackup();
         if (!currentRequest(request, selected)) throw new Error("The update channel changed.");
         if (state.channel === "experimental") {
           const probe = await probeHandoff();
@@ -658,14 +659,12 @@ export async function installUpdate(): Promise<void> {
       );
     } catch {
       clearPending();
-      if (state.intent === "return-beta" || state.channel === "experimental") {
-        set({
-          status: "error",
-          error: t("Couldn't save the recovery backup. Free some storage and try again."),
-          panelOpen: false,
-        });
-        return;
-      }
+      set({
+        status: "error",
+        error: t("Couldn't save the recovery backup. Free some storage and try again."),
+        panelOpen: true,
+      });
+      return;
     }
     try {
       await launchHandoff();
@@ -677,6 +676,25 @@ export async function installUpdate(): Promise<void> {
   }
   if (!handle) return;
   set({ status: "installing", error: null, installFailed: false });
+  try {
+    await saveTransitionBackup();
+  } catch {
+    set({
+      status: "error",
+      error: t("Couldn't save the recovery backup. Free some storage and try again."),
+      panelOpen: true,
+    });
+    return;
+  }
+  if (!currentRequest(request, selected)) {
+    clearPending();
+    set({
+      status: "error",
+      error: t("The update channel changed. Check for updates again."),
+      panelOpen: true,
+    });
+    return;
+  }
   try {
     try {
       localStorage.setItem(

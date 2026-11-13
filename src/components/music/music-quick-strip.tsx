@@ -1,3 +1,4 @@
+import { MusicArtwork } from "@/components/music/music-artwork";
 import { ListMusic } from "@/components/icons/music-icons";
 import { HoverTooltip } from "@/components/hover-tooltip";
 import { useT } from "@/lib/i18n";
@@ -43,7 +44,12 @@ export function MusicQuickStrip({ onLeave }: { onLeave: () => void }) {
             sublabel={track.artist}
             mark={
               track.artwork ? (
-                <img className="game-dock-tooltip-art" src={track.artwork} alt="" loading="lazy" />
+                <MusicArtwork
+                  className="game-dock-tooltip-art"
+                  src={track.artwork}
+                  alt=""
+                  loading="lazy"
+                />
               ) : (
                 <ListMusic size={32} />
               )
@@ -62,7 +68,7 @@ export function MusicQuickStrip({ onLeave }: { onLeave: () => void }) {
               }}
             >
               {track.artwork ? (
-                <img src={track.artwork} alt="" loading="lazy" draggable={false} />
+                <MusicArtwork src={track.artwork} alt="" loading="lazy" draggable={false} />
               ) : (
                 <ListMusic size={25} />
               )}
@@ -71,7 +77,11 @@ export function MusicQuickStrip({ onLeave }: { onLeave: () => void }) {
         </div>
       ))}
       {tracks.length === 0 && (
-        <HoverTooltip label={t("music.quick.empty")} sublabel={t("music.quick.emptyNote")} align="end">
+        <HoverTooltip
+          label={t("music.quick.empty")}
+          sublabel={t("music.quick.emptyNote")}
+          align="end"
+        >
           <button
             className="game-dock-empty"
             aria-label={t("music.quick.empty")}

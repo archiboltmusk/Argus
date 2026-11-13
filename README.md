@@ -2,6 +2,8 @@
 
 **One view of every stream you have.**
 
+**[Download the latest stable release](https://github.com/archiboltmusk/Argus/releases/latest)** · [Preview releases](https://github.com/archiboltmusk/Argus/releases)
+
 [![Release](https://img.shields.io/github/v/release/archiboltmusk/Argus?style=flat-square&color=blue)](https://github.com/archiboltmusk/Argus/releases)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg?style=flat-square)](LICENSE)
 [![CI Status](https://img.shields.io/github/actions/workflow/status/archiboltmusk/Argus/ci.yml?branch=main&style=flat-square&label=CI)](https://github.com/archiboltmusk/Argus/actions)

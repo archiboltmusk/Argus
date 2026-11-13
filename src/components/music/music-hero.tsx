@@ -1,3 +1,4 @@
+import { MusicArtwork } from "@/components/music/music-artwork";
 import { useMemo, useState } from "react";
 import { FolderOpen, Music2, Pause, Play, Radio, Server } from "@/components/icons/music-icons";
 import { Poster } from "@/components/poster";
@@ -88,7 +89,7 @@ function ArtworkWash({ artwork }: { artwork: string }) {
   if (!artwork || broken) return null;
   return (
     <span aria-hidden="true" className="pointer-events-none absolute inset-0">
-      <img
+      <MusicArtwork
         src={artwork}
         alt=""
         onError={() => setBroken(true)}
