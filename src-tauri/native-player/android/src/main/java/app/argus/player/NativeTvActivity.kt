@@ -713,6 +713,11 @@ class NativeTvActivity : AppCompatActivity() {
             recreate()
         }
         body.addView(label("Your library is available offline. Connected accounts sync their own library, progress and add-ons. The previous interface's local data is retained separately."))
+        addButton("Open Full Argus UI") {
+            runCatching {
+                startActivity(Intent().setClassName(packageName, "$packageName.MainActivity"))
+            }.onFailure { status.text = "Full UI unavailable on this build" }
+        }
         addButton("Installed apps") { installedApps() }
         addButton("Open previous interface") {
             AlertDialog.Builder(this).setTitle("Previous interface")

@@ -101,14 +101,11 @@ if (!xml.includes("ArgusNativePlayerActivity")) {
   xml = xml.replace(/<\/application>/, `${playerActivity}    </application>`);
 }
 
-// The native library owns launcher/Home/add-on intents. Do not expose two
-// launchers or initialize WebView when Android starts the app.
+// Phones/tablets launch .MainActivity (full React app); TV/Projectors use NativeTvActivity via LEANBACK_LAUNCHER.
 xml = xml.replace(/<activity\b[^>]*>[\s\S]*?<\/activity>/g, (activity) => {
   if (!/android:name="\.MainActivity"/.test(activity.slice(0, activity.indexOf(">"))))
     return activity;
-  return activity
-    .replace('android:exported="true"', 'android:exported="false"')
-    .replace(/<intent-filter>[\s\S]*?<\/intent-filter>/g, "");
+  return activity.replace('        <category android:name="android.intent.category.LEANBACK_LAUNCHER" />\n', "");
 });
 must(/android:name="\.MainActivity"/.test(xml), "no MainActivity in generated manifest");
 writeFileSync(manifestPath, xml);
