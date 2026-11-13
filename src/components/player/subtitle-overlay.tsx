@@ -57,12 +57,7 @@ export const SubtitleOverlay = memo(function SubtitleOverlay({
           : clamp(settings.subMarginY, 0, 100),
     [projectorHighContrast, letterboxDodge, settings.subMarginY],
   );
-  const fontColor =
-    projectorHighContrast && (!settings.subFontColor || settings.subFontColor === "#FFFFFF")
-      ? "#FFF8E7"
-      : letterboxDodge && (!settings.subFontColor || settings.subFontColor === "#FFFFFF")
-        ? "#FFD180"
-        : settings.subFontColor || "#FFFFFF";
+  const fontColor = settings.subFontColor || "#FFFFFF";
   const align = settings.subAlignX || "center";
   const family = useMemo(() => fontFamilyFor(settings.subFontFamily), [settings.subFontFamily]);
   const style = projectorHighContrast ? "outline" : kid ? "shadow" : (settings.subStyle ?? "shadow");
