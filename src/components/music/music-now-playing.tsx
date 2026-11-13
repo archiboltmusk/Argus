@@ -1,3 +1,4 @@
+import { invoke } from "@tauri-apps/api/core";
 import { isMusicLiked } from "@/lib/music/liked";
 import { artistCreditParts } from "@/lib/music/search-artists";
 import { MusicArtistLink } from "./music-artist-link";
@@ -170,6 +171,20 @@ export function MusicNowPlaying({
   const cycleSleepTimer = () => {
     const order: SleepTimerMode[] = ["off", "track", 15, 30, 60];
     setSleepTimer(order[(order.indexOf(sleepTimer) + 1) % order.length]);
+  };
+
+  const [vocalCut, setVocalCut] = useState(false);
+  const toggleVocalCut = () => {
+    const next = !vocalCut;
+    setVocalCut(next);
+    void invoke("music_fx_set", {
+      fx: {
+        kind: next ? "karaoke" : "off",
+        depth: 0.9,
+        beats: 0.5,
+        bpm: 120,
+      },
+    }).catch(() => {});
   };
 
   const cycleSpeed = () => {
@@ -822,6 +837,15 @@ export function MusicNowPlaying({
               <button type="button" onClick={cycleSpeed} title={t("Playback speed")}>
                 <Gauge size={17} aria-hidden="true" />
                 <span>{speedRate}×</span>
+              </button>
+              <button
+                type="button"
+                onClick={toggleVocalCut}
+                aria-pressed={vocalCut}
+                title={t("Vocal cut (Karaoke)")}
+              >
+                <AudioLines size={17} aria-hidden="true" />
+                <span>{vocalCut ? t("Vocal Cut: On") : t("Vocal Cut")}</span>
               </button>
               <button type="button" onClick={onAudio}>
                 <SlidersHorizontal size={17} aria-hidden="true" />

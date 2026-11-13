@@ -17,6 +17,7 @@ pub enum MusicFxKind {
     Delay,
     Spiral,
     Wide,
+    Karaoke,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
@@ -85,6 +86,17 @@ impl MusicFx {
                         "pan=stereo|c0={direct:.3}*c0-{cross:.3}*c1|c1={direct:.3}*c1-{cross:.3}*c0"
                     ),
                 ]
+            }
+            MusicFxKind::Karaoke => {
+                let filter = dsp::karaoke_vocal_cut_filter(true);
+                if filter.is_empty() {
+                    Vec::new()
+                } else {
+                    vec![
+                        "aformat=channel_layouts=stereo".to_string(),
+                        filter.to_string(),
+                    ]
+                }
             }
         }
     }

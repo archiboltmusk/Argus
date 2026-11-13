@@ -1,3 +1,4 @@
+import { useReportPlayerControlsInset } from "@/lib/player/controls-inset";
 import {
   useCallback,
   useEffect,
@@ -115,6 +116,7 @@ export function BpPlayerShell({
   });
 
   const up = phase === "up";
+  useReportPlayerControlsInset(chromeRef, mounted && phase !== "down");
 
   useEffect(() => setTick(phase !== "down"), [phase]);
 

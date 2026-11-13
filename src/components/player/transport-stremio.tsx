@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { useReportPlayerControlsInset } from "@/lib/player/controls-inset";
 import type { PlayerCapabilities, PlayerSnapshot } from "@/lib/player/bridge";
 import type { SubtitleAddHandler } from "@/lib/player/subtitle-load";
 import type { Meta } from "@/lib/cinemeta";
@@ -168,6 +169,7 @@ export function TransportStremio(p: TransportStremioProps) {
   const { openMeta, exitPlayer } = usePlayerNavigation();
   const castModalPlay = useCastModalPlay();
   const controlsRef = useRef<HTMLDivElement>(null);
+  useReportPlayerControlsInset(controlsRef, visible);
 
   useEffect(() => {
     onMenuOpenChange?.(
