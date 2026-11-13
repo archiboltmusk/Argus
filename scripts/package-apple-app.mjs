@@ -188,6 +188,20 @@ int main(int argc, char * argv[]) {
     } finally {
       if (fs.existsSync(tempSrc)) fs.unlinkSync(tempSrc);
     }
+  } else if (platform === "tvos" && fs.existsSync(path.resolve("apple/ArgusTV/ArgusTVApp.swift"))) {
+    const tvSwift = path.resolve("apple/ArgusTV/ArgusTVApp.swift");
+    console.log(`[package-apple-app] Compiling SwiftUI ArgusTV binary from ${tvSwift}`);
+    execSync(
+      `xcrun --sdk appletvos swiftc -parse-as-library -target arm64-apple-tvos16.0 -o "${execPath}" "${tvSwift}"`,
+      { stdio: "inherit" },
+    );
+  } else if (platform === "watchos" && fs.existsSync(path.resolve("apple/ArgusWatch/ArgusWatchApp.swift"))) {
+    const watchSwift = path.resolve("apple/ArgusWatch/ArgusWatchApp.swift");
+    console.log(`[package-apple-app] Compiling SwiftUI ArgusWatch binary from ${watchSwift}`);
+    execSync(
+      `xcrun --sdk watchos swiftc -parse-as-library -target arm64-apple-watchos9.0 -o "${execPath}" "${watchSwift}"`,
+      { stdio: "inherit" },
+    );
   } else if (platform === "tvos") {
     const objcSrc = `
 #import <UIKit/UIKit.h>

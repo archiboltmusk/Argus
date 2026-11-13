@@ -363,6 +363,9 @@ pub async fn web_serve_start(app: AppHandle) -> Result<u16, String> {
 
     let router = axum::Router::new()
         .route("/api/remote", get(remote_ws_handler))
+        .route("/api/remote/command", axum::routing::post(remote_http_command))
+        .route("/api/remote/volume", axum::routing::post(remote_http_volume))
+        .route("/api/remote/library", get(remote_http_library))
         .route("/manga-img", get(manga_img_proxy))
         .fallback(serve_http)
         .with_state(state);
@@ -426,4 +429,38 @@ pub async fn remote_ws_client_count() -> Result<usize, String> {
     };
     let count = state.clients.lock().await.len();
     Ok(count)
+}
+
+async fn remote_http_command(
+    axum::extract::State(state): axum::extract::State<ServeState>,
+    axum::extract::Query(q): axum::extract::Query<std::collections::HashMap<String, String>>,
+) -> axum::http::StatusCode {
+    use tauri::Emitter;
+    let Some(cmd) = q.get("cmd").map(|s| s.trim().to_string()).filter(|s| !s.is_empty()) else {
+        return axum::http::StatusCode::BAD_REQUEST;
+    };
+    let _ = state.app.emit("argus://media-key", cmd.as_str());
+    let payload = serde_json::json!({ "type": "command", "cmd": cmd }).to_string();
+    let _ = state.outbound.send(payload);
+    axum::http::StatusCode::OK
+}
+
+async fn remote_http_volume(
+    axum::extract::State(state): axum::extract::State<ServeState>,
+    axum::extract::Query(q): axum::extract::Query<std::collections::HashMap<String, String>>,
+) -> axum::http::StatusCode {
+    use tauri::Emitter;
+    let value = q
+        .get("value")
+        .and_then(|v| v.parse::<u8>().ok())
+        .unwrap_or(70)
+        .min(100);
+    let _ = state.app.emit("argus://remote-volume", value);
+    let payload = serde_json::json!({ "type": "volume", "value": value }).to_string();
+    let _ = state.outbound.send(payload);
+    axum::http::StatusCode::OK
+}
+
+async fn remote_http_library() -> axum::Json<serde_json::Value> {
+    axum::Json(serde_json::json!([]))
 }
