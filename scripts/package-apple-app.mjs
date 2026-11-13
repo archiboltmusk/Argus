@@ -38,8 +38,8 @@ const CONFIGS = {
     displayName: "Argus Vision",
     bundleId: "app.argus.visionos",
     execName: "ArgusVision",
-    sdk: "iphoneos",
-    target: "arm64-apple-ios16.0",
+    sdk: "xros",
+    target: "arm64-apple-xros1.0",
     minOs: "1.0",
     frameworks: ["UIKit", "Foundation"],
   },
@@ -271,8 +271,13 @@ int main(int argc, char * argv[]) {
   } else {
     // visionos and watchos
     try {
-      const sdk = platform === "watchos" ? "watchos" : "iphoneos";
-      const target = platform === "watchos" ? "arm64-apple-watchos9.0" : "arm64-apple-ios16.0";
+      const sdk = platform === "watchos" ? "watchos" : platform === "visionos" ? "xros" : "iphoneos";
+      const target =
+        platform === "watchos"
+          ? "arm64-apple-watchos9.0"
+          : platform === "visionos"
+            ? "arm64-apple-xros1.0"
+            : "arm64-apple-ios16.0";
       execSync(`xcrun --sdk ${sdk} clang -target ${target} -o "${execPath}" -x c - << 'EOF'\nint main(int argc, char *argv[]) { return 0; }\nEOF`, { stdio: "inherit" });
     } catch (err) {
       console.warn(`[package-apple-app] Primary compile failed for ${platform}; falling back to iphoneos target...`);
