@@ -1,5 +1,6 @@
 import {
   Suspense,
+  lazy,
   useCallback,
   useEffect,
   useMemo,
@@ -125,6 +126,9 @@ type BpSourcesTarget = {
   auto: boolean;
   applyPreference: boolean;
 };
+
+const BpReelsFeed = lazy(() => import("@/views/feed/reels-feed").then((m) => ({ default: m.ReelsFeed })));
+const BpTasteBlend = lazy(() => import("@/views/discover/taste-blend-modal").then((m) => ({ default: m.TasteBlendModal })));
 
 export function BigPictureShell() {
   const t = useT();
@@ -457,6 +461,8 @@ export function BigPictureShell() {
               {route.kind === "sports" && <BpSports />}
               {route.kind === "sports-event" && <BpSportsEvent game={route.game} />}
               {route.kind === "discover" && <BpDiscover onSelect={openDetail} />}
+              {route.kind === "reels" && <BpReelsFeed items={introPool} onSelectMeta={openDetail} onClose={popBigPicture} />}
+              {route.kind === "blend" && <BpTasteBlend candidatePool={introPool} onSelectMeta={openDetail} onClose={popBigPicture} />}
               {route.kind === "search" && <BpSearch onSelect={openDetail} />}
               {route.kind === "library" && <BpLibrary onSelect={openDetail} />}
               {route.kind === "detail" && (

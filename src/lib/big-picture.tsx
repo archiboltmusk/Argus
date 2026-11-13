@@ -13,6 +13,8 @@ export type BigPictureRoute =
   | { kind: "sports" }
   | { kind: "sports-event"; game: SportsGame }
   | { kind: "discover" }
+  | { kind: "reels" }
+  | { kind: "blend" }
   | { kind: "search" }
   | { kind: "library" }
   | { kind: "detail"; metaId: string }
