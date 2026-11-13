@@ -167,6 +167,19 @@ jobs:
             cp "$(ls $B/nsis/*-setup.exe.sig | head -n1)" out/Argus-windows-x64-setup.exe.sig
           fi
           ls -la out
+      - name: Smoke-check Windows binary
+        shell: pwsh
+        run: |
+          $exe = Get-ChildItem src-tauri/target/release/*.exe | Select-Object -First 1
+          if (-not $exe) { throw "Missing release .exe" }
+          if (-not (Test-Path "out/Argus-windows-x64-setup.exe")) { throw "Missing NSIS setup" }
+          if (-not (Test-Path "out/Argus-windows-x64.msi")) { throw "Missing MSI" }
+          $proc = Start-Process -FilePath $exe.FullName -PassThru
+          Start-Sleep -Seconds 6
+          if ($proc.HasExited -and $proc.ExitCode -ne 0) {
+            throw "Argus.exe crashed on startup with exit code $($proc.ExitCode)"
+          }
+          if (-not $proc.HasExited) { Stop-Process -Id $proc.Id -Force }
       - uses: actions/upload-artifact@v7
         with:
           name: Argus-windows-x64
@@ -246,6 +259,18 @@ jobs:
             cp "$(ls $B/appimage/*.AppImage.sig | head -n1)" out/Argus-linux-x64.AppImage.sig
           fi
           ls -la out
+      - name: Smoke-check Linux AppImage & shared libs
+        run: |
+          set -euo pipefail
+          chmod +x out/Argus-linux-x64.AppImage
+          ./out/Argus-linux-x64.AppImage --appimage-extract >/dev/null
+          BIN=$(find squashfs-root/usr/bin -maxdepth 1 -type f -executable | head -n1)
+          if ldd "$BIN" | grep -q "not found"; then
+            ldd "$BIN" | grep "not found"
+            exit 1
+          fi
+          rm -rf squashfs-root
+          timeout 6s xvfb-run -a ./out/Argus-linux-x64.AppImage || [ $? -eq 124 ]
       - uses: actions/upload-artifact@v7
         with:
           name: Argus-linux-x64

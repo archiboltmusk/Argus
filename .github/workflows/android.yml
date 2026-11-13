@@ -142,6 +142,15 @@ jobs:
           fi
 
           ls -la Argus-*.apk
+      - name: Smoke-check APK badging & ABIs
+        run: |
+          set -euo pipefail
+          AAPT2=$(find "${ANDROID_HOME:-$ANDROID_SDK_ROOT}/build-tools" -name aapt2 | sort -V | tail -n1)
+          for apk in Argus-*.apk; do
+            echo "Verifying $apk..."
+            [ -s "$apk" ] || { echo "::error::$apk is empty"; exit 1; }
+            "$AAPT2" dump badging "$apk" | grep -E "package:|launchable-activity:|native-code:"
+          done
       - uses: actions/upload-artifact@v7
         with:
           name: Argus-android-packages

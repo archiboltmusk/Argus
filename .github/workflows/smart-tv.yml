@@ -40,6 +40,16 @@ jobs:
         run: pnpm run package:smart-tv
       - name: Verify outputs
         run: ls -lh dist-smart-tv/
+      - name: Smoke-check Smart TV manifests
+        run: |
+          python3 -c '
+          import glob, json, xml.etree.ElementTree as ET
+          for f in glob.glob("smart-tv/**/*.json", recursive=True):
+              json.load(open(f))
+          for f in glob.glob("smart-tv/**/*.xml", recursive=True):
+              ET.parse(f)
+          print("All Smart TV manifests valid")
+          '
       - uses: actions/upload-artifact@v7
         with:
           name: Argus-Smart-TV-Packages
