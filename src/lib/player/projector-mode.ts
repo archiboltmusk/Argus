@@ -62,8 +62,18 @@ export function isBudgetProjectorDevice(userAgent = typeof navigator !== "undefi
 /**
  * Helper to determine if projector mode should be actively applied.
  */
-export function isProjectorModeActive(settings?: { projectorModeEnabled?: boolean }): boolean {
+export function isExternalHdmiDisplay(): boolean {
+  if (typeof window === "undefined" || typeof window.screen === "undefined") return false;
+  return (window.screen as Screen & { isExtended?: boolean }).isExtended === true;
+}
+
+export function isProjectorModeActive(settings?: {
+  projectorModeEnabled?: boolean;
+  projectorAutoHdmi?: boolean;
+}): boolean {
+  if (settings?.projectorModeEnabled === false) return false;
   if (settings?.projectorModeEnabled) return true;
+  if (settings?.projectorAutoHdmi !== false && isExternalHdmiDisplay()) return true;
   return isBudgetProjectorDevice();
 }
 
@@ -85,7 +95,7 @@ export function getProjectorMpvProperties(config: Partial<ProjectorDisplayConfig
     "sub-font-size": "36",
     "sub-bold": "yes",
     "sub-outline-size": "4",
-    "sub-color": "#FFF8E7", // warm high-visibility cream
+    "sub-color": "#FFFFFF", // warm high-visibility cream
     "sub-outline-color": "#000000",
   };
 }
