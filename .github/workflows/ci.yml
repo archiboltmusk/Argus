@@ -8,9 +8,8 @@ on:
   workflow_dispatch:
     inputs:
       release_tag:
-        description: "Stable version to publish (for example v3.17.3). Leave empty for an automatic build version."
-        required: false
-        default: ""
+        description: "Stable version to publish (for example v3.17.5)"
+        required: true
 
 # PR runs cancel when a newer commit lands. Main runs are never cancelled:
 # GitHub keeps one running and one queued run per group, and a newer queued run
@@ -249,7 +248,7 @@ jobs:
     outputs:
       tag: ${{ steps.rtag.outputs.tag }}
     needs: [changes, core, ui, macos]
-    if: needs.changes.outputs.bundle == 'true'
+    if: needs.changes.outputs.bundle == 'true' && (startsWith(github.ref, 'refs/tags/v') || (github.event_name == 'workflow_dispatch' && inputs.release_tag != ''))
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:

@@ -53,3 +53,9 @@ test("a missing or unsigned OS prevents promotion of the combined update feed", 
     );
   }
 });
+
+test("implicit build versions cannot replace the stable release", () => {
+  assert.match(ci, /release_tag:[\s\S]*?required: true/);
+  const stage = ci.slice(ci.indexOf("  publish:"));
+  assert.match(stage, /inputs.release_tag != ''/);
+});

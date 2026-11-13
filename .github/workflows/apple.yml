@@ -12,6 +12,7 @@ on:
       - "pnpm-lock.yaml"
       - ".github/workflows/apple.yml"
       - "scripts/package-apple-app.mjs"
+      - "scripts/apple-platforms.mjs"
   workflow_dispatch:
 
 concurrency:
@@ -25,7 +26,7 @@ env:
 jobs:
   ios:
     name: Build iOS & iPadOS IPA
-    runs-on: macos-latest
+    runs-on: macos-15
     timeout-minutes: 60
     steps:
       - uses: actions/checkout@v6
@@ -81,7 +82,7 @@ jobs:
             cd "$GITHUB_WORKSPACE"
           fi
 
-          node scripts/package-apple-app.mjs --platform ios --app-dir "$RUNNER_TEMP/Payload/Argus.app" --dist-dir dist --version 3.0.0
+          node scripts/package-apple-app.mjs --platform ios --app-dir "$RUNNER_TEMP/Payload/Argus.app" --dist-dir dist --version "$(node -p 'require("./package.json").version')"
           (cd "$RUNNER_TEMP" && zip -r -9 Argus-iOS-iPadOS.ipa Payload)
           cp "$RUNNER_TEMP/Argus-iOS-iPadOS.ipa" "$GITHUB_WORKSPACE/Argus-iOS-iPadOS.ipa"
       - name: Smoke-check IPA payload (Argus-iOS-iPadOS.ipa)
@@ -100,8 +101,10 @@ jobs:
           if-no-files-found: error
 
   tvos:
+    needs: [ios]
+    if: ${{ !cancelled() }}
     name: Build Apple TV (tvOS) IPA
-    runs-on: ubuntu-latest
+    runs-on: macos-15
     timeout-minutes: 60
     steps:
       - uses: actions/checkout@v6
@@ -122,7 +125,7 @@ jobs:
           set -euo pipefail
           rm -rf "$RUNNER_TEMP/Payload" "$RUNNER_TEMP/Argus-AppleTV-tvOS.ipa"
           mkdir -p "$RUNNER_TEMP/Payload/ArgusTV.app"
-          node scripts/package-apple-app.mjs --platform tvos --app-dir "$RUNNER_TEMP/Payload/ArgusTV.app" --dist-dir dist --version 3.0.0
+          node scripts/package-apple-app.mjs --platform tvos --app-dir "$RUNNER_TEMP/Payload/ArgusTV.app" --dist-dir dist --version "$(node -p 'require("./package.json").version')"
           (cd "$RUNNER_TEMP" && zip -r -9 Argus-AppleTV-tvOS.ipa Payload)
           cp "$RUNNER_TEMP/Argus-AppleTV-tvOS.ipa" "$GITHUB_WORKSPACE/Argus-AppleTV-tvOS.ipa"
       - name: Smoke-check IPA payload (Argus-AppleTV-tvOS.ipa)
@@ -141,8 +144,10 @@ jobs:
           if-no-files-found: error
 
   visionos:
+    needs: [tvos]
+    if: ${{ !cancelled() }}
     name: Build Apple Vision Pro (visionOS) IPA
-    runs-on: ubuntu-latest
+    runs-on: macos-15
     timeout-minutes: 60
     steps:
       - uses: actions/checkout@v6
@@ -163,7 +168,7 @@ jobs:
           set -euo pipefail
           rm -rf "$RUNNER_TEMP/Payload" "$RUNNER_TEMP/Argus-VisionPro-visionOS.ipa"
           mkdir -p "$RUNNER_TEMP/Payload/ArgusVision.app"
-          node scripts/package-apple-app.mjs --platform visionos --app-dir "$RUNNER_TEMP/Payload/ArgusVision.app" --dist-dir dist --version 3.0.0
+          node scripts/package-apple-app.mjs --platform visionos --app-dir "$RUNNER_TEMP/Payload/ArgusVision.app" --dist-dir dist --version "$(node -p 'require("./package.json").version')"
           (cd "$RUNNER_TEMP" && zip -r -9 Argus-VisionPro-visionOS.ipa Payload)
           cp "$RUNNER_TEMP/Argus-VisionPro-visionOS.ipa" "$GITHUB_WORKSPACE/Argus-VisionPro-visionOS.ipa"
       - name: Smoke-check IPA payload (Argus-VisionPro-visionOS.ipa)
@@ -182,8 +187,10 @@ jobs:
           if-no-files-found: error
 
   watchos:
+    needs: [visionos]
+    if: ${{ !cancelled() }}
     name: Build Apple Watch (watchOS) IPA
-    runs-on: ubuntu-latest
+    runs-on: macos-15
     timeout-minutes: 60
     steps:
       - uses: actions/checkout@v6
@@ -204,7 +211,7 @@ jobs:
           set -euo pipefail
           rm -rf "$RUNNER_TEMP/Payload" "$RUNNER_TEMP/Argus-AppleWatch-watchOS.ipa"
           mkdir -p "$RUNNER_TEMP/Payload/ArgusWatch.app"
-          node scripts/package-apple-app.mjs --platform watchos --app-dir "$RUNNER_TEMP/Payload/ArgusWatch.app" --dist-dir dist --version 3.0.0
+          node scripts/package-apple-app.mjs --platform watchos --app-dir "$RUNNER_TEMP/Payload/ArgusWatch.app" --dist-dir dist --version "$(node -p 'require("./package.json").version')"
           (cd "$RUNNER_TEMP" && zip -r -9 Argus-AppleWatch-watchOS.ipa Payload)
           cp "$RUNNER_TEMP/Argus-AppleWatch-watchOS.ipa" "$GITHUB_WORKSPACE/Argus-AppleWatch-watchOS.ipa"
       - name: Smoke-check IPA payload (Argus-AppleWatch-watchOS.ipa)
@@ -251,17 +258,16 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           TAG="beta"
-          if [[ "${{ github.ref }}" == refs/tags/v* ]]; then
-            TAG="${{ github.ref_name }}"
-          fi
           RELEASE_FLAGS=(--latest=false)
           if [ "$TAG" = "beta" ]; then RELEASE_FLAGS+=(--prerelease); fi
           if ! gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
-            gh release create "$TAG" --title "Argus $TAG" --notes "Argus Automated Build" --repo "$GITHUB_REPOSITORY" "${RELEASE_FLAGS[@]}" || gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1
+            gh release create "$TAG" --title "Argus $TAG" --notes "Experimental Apple developer packages. Watch, TV and Vision ports are not certified for full native feature parity." --repo "$GITHUB_REPOSITORY" "${RELEASE_FLAGS[@]}" || gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1
           fi
           for ipa in *.ipa; do
             if [ -f "$ipa" ]; then
               echo "Uploading $ipa to $TAG..."
-              gh release upload "$TAG" "$ipa" --repo "$GITHUB_REPOSITORY" --clobber
+              LABEL="Experimental iOS/iPadOS package"
+              if [ "$ipa" != "Argus-iOS-iPadOS.ipa" ]; then LABEL="Developer bootstrap - native UI not implemented"; fi
+              gh release upload "$TAG" "$ipa#$LABEL" --repo "$GITHUB_REPOSITORY" --clobber
             fi
           done
