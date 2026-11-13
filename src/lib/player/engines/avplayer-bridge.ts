@@ -11,6 +11,17 @@ interface AppleWebKitVideoElement extends HTMLVideoElement {
   webkitSetPresentationMode?: (mode: string) => void;
 }
 
+interface AppleNativeMessageHandler {
+  postMessage: (message: unknown) => void;
+}
+
+function getAppleNativeMpvHandler(): AppleNativeMessageHandler | null {
+  const g = globalThis as unknown as {
+    webkit?: { messageHandlers?: { ArgusNativePlayer?: AppleNativeMessageHandler } };
+  };
+  return g.webkit?.messageHandlers?.ArgusNativePlayer ?? null;
+}
+
 /**
  * Builds an Apple ecosystem external-player URL handoff (VLC Mobile, Infuse, Outplayer)
  * when an iOS/iPadOS/tvOS user wants raw non-WebKit formats (MKV/DTS-HD/TrueHD)
@@ -35,10 +46,11 @@ export function buildAppleExternalPlayerUrl(
 }
 
 /**
- * AVPlayer Bridge: Apple Ecosystem (iOS, iPadOS, tvOS, visionOS, macOS native)
- * Harnesses VideoToolbox, Apple AVKit, AirPlay 2, Spatial Audio, and WebKit PiP.
+ * AVPlayer + MPVKit Bridge: Apple Ecosystem (iOS, iPadOS, tvOS, visionOS, macOS native)
+ * Uses native MPVKit (WKWebView ArgusNativePlayer handler) when hosted in the native shell,
+ * and falls back to hardware AVPlayer / VideoToolbox with AirPlay 2 & WebKit PiP.
  */
-export function createAvPlayerBridge(_options?: {
+export function createAvPlayerBridge(options?: {
   platform?: string;
   notWebReady?: boolean;
 }): PlayerBridge {
@@ -80,28 +92,42 @@ export function createAvPlayerBridge(_options?: {
       fallback.detach();
     },
     async load(src: PlayerSource) {
+      const nativeHandler = getAppleNativeMpvHandler();
+      if (nativeHandler && options?.notWebReady) {
+        nativeHandler.postMessage({
+          action: "load",
+          platform: options.platform ?? "apple",
+          source: src,
+        });
+      }
       await fallback.load(src);
       queueMicrotask(configureAppleVideoAttributes);
     },
-    play(options) {
-      return fallback.play(options);
+    play(playOptions) {
+      getAppleNativeMpvHandler()?.postMessage({ action: "play", options: playOptions });
+      return fallback.play(playOptions);
     },
     pause(reason) {
+      getAppleNativeMpvHandler()?.postMessage({ action: "pause", reason });
       fallback.pause(reason);
     },
     seek(sec: number, precision?: PlayerSeekPrecision) {
+      getAppleNativeMpvHandler()?.postMessage({ action: "seek", sec, precision });
       fallback.seek(sec, precision);
     },
     frameStep(dir) {
       fallback.frameStep?.(dir);
     },
     setVolume(v: number) {
+      getAppleNativeMpvHandler()?.postMessage({ action: "setVolume", volume: v });
       fallback.setVolume(v);
     },
     setMuted(m: boolean) {
+      getAppleNativeMpvHandler()?.postMessage({ action: "setMuted", muted: m });
       fallback.setMuted(m);
     },
     setRate(r: number) {
+      getAppleNativeMpvHandler()?.postMessage({ action: "setRate", rate: r });
       fallback.setRate(r);
     },
     setAudioTrack(id: string) {
@@ -193,6 +219,7 @@ export function createAvPlayerBridge(_options?: {
       return fallback.subscribe(listener);
     },
     destroy() {
+      getAppleNativeMpvHandler()?.postMessage({ action: "destroy" });
       attachedHost = null;
       fallback.destroy();
     },

@@ -39,7 +39,7 @@ export interface PlayerEngineSelectionOptions {
  * Intelligent Cross-Platform Player Router
  * Automatically determines and loads the highest-performing video engine for each OS:
  *
- * - Apple (iOS, iPadOS, tvOS, visionOS): AVPlayer / AVKit (+ MPVKit native targets)
+ * - Apple (iOS, iPadOS, tvOS, visionOS): MPVKit native shell / AVPlayer fallback
  * - Android (Phone, Tablet, TV, Projector): Media3 ExoPlayer + LibVLC native fallback
  * - Samsung Smart TV (Tizen OS): Tizen AVPlay (`webapis.avplay`)
  * - LG Smart TV (webOS): webOS Media Pipeline (`com.webos.media`)
@@ -78,7 +78,6 @@ export async function resolveAdaptivePlayerBridge(
     return cachedProbe;
   };
 
-  // Non-web-ready formats (VC-1, DTS-HD, TrueHD, raw MKV) escalate to libmpv on desktop
   if (notWebReady && isDesktop) {
     const probe = await getMpvProbe();
     if (probe.available) {
