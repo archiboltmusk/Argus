@@ -4,6 +4,7 @@ import { useT } from "@/lib/i18n";
 import { useScrollMemory, useView } from "@/lib/view";
 import {
   fetchRankManifest,
+  RANK_FEED_PROVIDER,
   type ArgusRankExplanation,
   type PeopleDept,
   type PersonRankEntry,
@@ -104,7 +105,8 @@ export function PeopleView({ init }: { init: PeopleInit }) {
     () => (country ? countries.find((c) => c.iso === country) : undefined),
     [countries, country],
   );
-  const serverCountry = countryEntry?.file && countryEntry.code ? countryEntry.code.toLowerCase() : null;
+  const serverCountry =
+    countryEntry?.file && countryEntry.code ? countryEntry.code.toLowerCase() : null;
   const { status, people } = usePeopleRankings({
     source,
     dept,
@@ -126,7 +128,9 @@ export function PeopleView({ init }: { init: PeopleInit }) {
       return true;
     });
     if (genre) {
-      base = [...base].sort((a, b) => (b.genreScores?.[genre] ?? 0) - (a.genreScores?.[genre] ?? 0));
+      base = [...base].sort(
+        (a, b) => (b.genreScores?.[genre] ?? 0) - (a.genreScores?.[genre] ?? 0),
+      );
     }
     return base.map((p, i) => ({ ...p, rank: i + 1 }));
   }, [people, query, genre, country]);
@@ -144,7 +148,8 @@ export function PeopleView({ init }: { init: PeopleInit }) {
   const bands = useMemo(() => {
     const explained = source === "argus" ? (filtered as ArgusRankExplanation[]) : null;
     const rankedAll: Person[] = explained ? explained.filter((p) => p.score !== null) : filtered;
-    const body = heroShown && heroCandidate ? rankedAll.filter((p) => p.id !== heroCandidate.id) : rankedAll;
+    const body =
+      heroShown && heroCandidate ? rankedAll.filter((p) => p.id !== heroCandidate.id) : rankedAll;
     return presentBands(body.map((p) => p.rank));
   }, [filtered, source, heroShown, heroCandidate]);
 
@@ -182,6 +187,11 @@ export function PeopleView({ init }: { init: PeopleInit }) {
         </div>
 
         <div className="px-12">
+          {RANK_FEED_PROVIDER && (
+            <p className="pt-2 text-[12px] text-ink-subtle">
+              {t("Rankings provided by {provider}.", { provider: RANK_FEED_PROVIDER })}
+            </p>
+          )}
           <BornToday manifest={manifest} onOpenPerson={openPerson} />
         </div>
 
@@ -211,7 +221,9 @@ export function PeopleView({ init }: { init: PeopleInit }) {
         <div className="sticky bottom-0 z-30 px-12 pb-4 pt-3">
           <div
             className={`rounded-2xl px-5 transition-colors duration-250 ease-out motion-reduce:transition-none ${
-              solid ? "bg-canvas/95 shadow-[0_-8px_28px_-16px_rgba(0,0,0,0.55)] ring-1 ring-edge-soft backdrop-blur" : "bg-transparent"
+              solid
+                ? "bg-canvas/95 shadow-[0_-8px_28px_-16px_rgba(0,0,0,0.55)] ring-1 ring-edge-soft backdrop-blur"
+                : "bg-transparent"
             }`}
           >
             <PeopleFilterBar
@@ -224,7 +236,11 @@ export function PeopleView({ init }: { init: PeopleInit }) {
               query={query}
               onQuery={setQuery}
               countries={countries}
-              resultCount={query.trim() || genre || country ? { shown: filtered.length, total: people.length } : null}
+              resultCount={
+                query.trim() || genre || country
+                  ? { shown: filtered.length, total: people.length }
+                  : null
+              }
             />
           </div>
         </div>
