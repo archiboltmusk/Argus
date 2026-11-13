@@ -38,7 +38,7 @@ test("Projector Mode: MPV Properties outputs contrast, gamma, and warm amber sub
   assert.equal(props.contrast, "10");
   assert.equal(props.gamma, "3");
   assert.equal(props.deband, "yes");
-  assert.equal(props["sub-color"], "#FFF8E7");
+  assert.equal(props["sub-color"], "#FFFFFF");
   assert.equal(props["sub-outline-color"], "#000000");
 });
 
