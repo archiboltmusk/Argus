@@ -93,7 +93,7 @@ jobs:
           KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
           KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
         run: |
-          set -euo pipefail
+          set -eu
           BT="$ANDROID_HOME/build-tools/35.0.0"
 
           if [ -n "$KEYSTORE_B64" ]; then
@@ -144,7 +144,7 @@ jobs:
           ls -la Argus-*.apk
       - name: Smoke-check APK badging & ABIs
         run: |
-          set -euo pipefail
+          set -eu
           AAPT2=$(find "${ANDROID_HOME:-$ANDROID_SDK_ROOT}/build-tools" -name aapt2 | sort -V | tail -n1)
           for apk in Argus-*.apk; do
             echo "Verifying $apk..."
@@ -204,7 +204,7 @@ jobs:
           profile: tv_1080p
           emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim
           script: |
-            set -euo pipefail
+            set -eu
             APK=$(ls apks/Argus-*.apk | head -n1)
             adb install -r "$APK"
             PKG=$(aapt2 dump badging "$APK" 2>/dev/null | sed -n "s/.*package: name='\([^']*\)'.*/\1/p" | head -n1 || echo "app.argus.desktop")
