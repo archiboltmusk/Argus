@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Argus — Watch, read, and listen to your library, anywhere</title>
+  <meta name="description" content="A free, open-source media hub powered by Tauri 2, Rust, and libmpv for your desktop, phone, smart projector, and TV." />
+  <meta property="og:title" content="Argus — Watch, read, and listen to your library, anywhere" />
+  <meta property="og:description" content="Built for every screen you own. Native libmpv playback, Rust P2P engine, Manga Universe Hub, and seamless sync with Trakt, AniList, and MyAnimeList." />
+  <meta property="og:type" content="website" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #07080c;
+      --bg-elevated: #0e1017;
+      --bg-card: rgba(18, 21, 30, 0.78);
+      --border: rgba(255, 255, 255, 0.08);
+      --border-bright: rgba(255, 255, 255, 0.16);
+      --text: #f5f7ff;
+      --text-muted: #949bb0;
+      --text-subtle: #646b82;
+      --accent: #7c5cff;
+      --accent-glow: rgba(124, 92, 255, 0.28);
+      --accent-2: #38bdf8;
+      --radius-lg: 22px;
+      --radius-md: 14px;
+      --radius-sm: 10px;
+      --max-w: 1180px;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; background-color: var(--bg); color: var(--text); font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; -webkit-font-smoothing: antialiased; }
+    body { background: radial-gradient(circle at 18% 0%, rgba(124, 92, 255, 0.16), transparent 42%), radial-gradient(circle at 82% 8%, rgba(56, 189, 248, 0.11), transparent 38%), var(--bg); line-height: 1.6; overflow-x: hidden; }
+    a { color: inherit; text-decoration: none; }
+    .container { max-width: var(--max-w); margin: 0 auto; padding: 0 24px; }
+    .navbar { position: sticky; top: 0; z-index: 50; backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px); background: rgba(7, 8, 12, 0.78); border-bottom: 1px solid var(--border); }
+    .nav-inner { display: flex; align-items: center; justify-content: space-between; height: 68px; }
+    .brand { display: flex; align-items: center; gap: 11px; font-weight: 800; font-size: 1.2rem; letter-spacing: -0.03em; }
+    .brand-mark { width: 34px; height: 34px; border-radius: 10px; background: linear-gradient(135deg, var(--accent), var(--accent-2)); display: grid; place-items: center; box-shadow: 0 0 24px var(--accent-glow); }
+    .brand-mark svg { width: 19px; height: 19px; color: #fff; }
+    .nav-links { display: flex; align-items: center; gap: 28px; font-size: 0.92rem; color: var(--text-muted); font-weight: 500; }
+    .nav-links a:hover { color: var(--text); }
+    .nav-cta { display: flex; align-items: center; gap: 12px; }
+    .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 10px 18px; border-radius: 999px; font-weight: 600; font-size: 0.92rem; transition: all 0.18s ease; cursor: pointer; border: 1px solid transparent; }
+    .btn-primary { background: var(--text); color: #07080c; }
+    .btn-primary:hover { background: #dfe4ff; transform: translateY(-1px); box-shadow: 0 8px 26px rgba(255, 255, 255, 0.16); }
+    .btn-secondary { background: rgba(255, 255, 255, 0.06); color: var(--text); border-color: var(--border-bright); }
+    .btn-secondary:hover { background: rgba(255, 255, 255, 0.11); transform: translateY(-1px); }
+    .hero { padding: 84px 0 56px; text-align: center; }
+    .hero-eyebrow { display: inline-flex; align-items: center; gap: 8px; padding: 6px 14px; border-radius: 999px; background: rgba(124, 92, 255, 0.12); border: 1px solid rgba(124, 92, 255, 0.32); color: #c4b5fd; font-size: 0.82rem; font-weight: 600; margin-bottom: 24px; }
+    .hero h1 { font-size: clamp(2.5rem, 5.5vw, 4.4rem); font-weight: 800; letter-spacing: -0.04em; line-height: 1.07; max-width: 860px; margin: 0 auto 22px; background: linear-gradient(180deg, #ffffff 30%, #a5b0cc 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .hero p.lead { font-size: clamp(1.05rem, 1.8vw, 1.26rem); color: var(--text-muted); max-width: 720px; margin: 0 auto 32px; }
+    .hero-actions { display: flex; justify-content: center; flex-wrap: wrap; gap: 14px; margin-bottom: 18px; }
+    .hero-actions .btn { padding: 13px 26px; font-size: 0.98rem; }
+    .hero-subnote { font-size: 0.82rem; color: var(--text-subtle); margin-bottom: 48px; }
+    .showcase-wrap { position: relative; max-width: 1060px; margin: 0 auto 40px; }
+    .desktop-frame { background: linear-gradient(180deg, #131722 0%, #0b0d14 100%); border: 1px solid var(--border-bright); border-radius: var(--radius-lg); box-shadow: 0 30px 90px rgba(0, 0, 0, 0.75), 0 0 80px rgba(124, 92, 255, 0.14); overflow: hidden; text-align: left; }
+    .window-bar { display: flex; align-items: center; justify-content: space-between; padding: 12px 18px; background: rgba(255, 255, 255, 0.03); border-bottom: 1px solid var(--border); }
+    .window-dots { display: flex; gap: 7px; }
+    .window-dots span { width: 11px; height: 11px; border-radius: 50%; }
+    .window-dots span:nth-child(1) { background: #ef4444; }
+    .window-dots span:nth-child(2) { background: #f59e0b; }
+    .window-dots span:nth-child(3) { background: #10b981; }
+    .window-pill { font-family: 'JetBrains Mono', monospace; font-size: 0.74rem; color: var(--text-muted); background: rgba(255, 255, 255, 0.05); padding: 4px 12px; border-radius: 999px; border: 1px solid var(--border); }
+    .mock-body { display: grid; grid-template-columns: 200px 1fr; min-height: 410px; }
+    .mock-sidebar { border-right: 1px solid var(--border); padding: 18px 14px; display: flex; flex-direction: column; gap: 6px; background: rgba(0, 0, 0, 0.22); }
+    .mock-nav-item { padding: 8px 12px; border-radius: 8px; font-size: 0.83rem; color: var(--text-muted); display: flex; align-items: center; justify-content: space-between; }
+    .mock-nav-item.active { background: rgba(124, 92, 255, 0.18); color: var(--text); font-weight: 600; }
+    .mock-main { padding: 24px; display: flex; flex-direction: column; justify-content: space-between; background: linear-gradient(120deg, rgba(12, 14, 22, 0.92) 25%, rgba(124, 92, 255, 0.18) 100%); }
+    .mock-billboard { max-width: 520px; }
+    .mock-badge-row { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+    .mock-badge { font-size: 0.72rem; font-weight: 600; padding: 3px 9px; border-radius: 6px; background: rgba(255, 255, 255, 0.09); color: #e2e8f0; }
+    .mock-badge.hdr { background: rgba(245, 158, 11, 0.18); color: #fcd34d; border: 1px solid rgba(245, 158, 11, 0.35); }
+    .mock-badge.mpv { background: rgba(16, 185, 129, 0.16); color: #6ee7b7; border: 1px solid rgba(16, 185, 129, 0.35); }
+    .mock-billboard h3 { font-size: 1.85rem; font-weight: 800; letter-spacing: -0.03em; margin-bottom: 8px; }
+    .mock-billboard p { font-size: 0.87rem; color: var(--text-muted); margin-bottom: 18px; }
+    .mock-shelf-title { font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted); margin-bottom: 10px; font-weight: 700; }
+    .mock-cards { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+    .mock-card { background: rgba(255, 255, 255, 0.04); border: 1px solid var(--border); border-radius: 10px; padding: 12px; }
+    .mock-card-title { font-size: 0.82rem; font-weight: 600; margin-bottom: 4px; }
+    .mock-card-meta { font-size: 0.72rem; color: var(--text-muted); margin-bottom: 10px; }
+    .mock-progress { height: 4px; background: rgba(255, 255, 255, 0.1); border-radius: 999px; overflow: hidden; }
+    .mock-progress > div { height: 100%; background: linear-gradient(90deg, var(--accent), var(--accent-2)); }
+    .platform-strip { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin-top: 28px; }
+    .platform-chip { padding: 7px 15px; border-radius: 999px; background: rgba(255, 255, 255, 0.04); border: 1px solid var(--border); font-size: 0.82rem; color: var(--text-muted); font-weight: 500; }
+    section { padding: 84px 0; border-top: 1px solid var(--border); }
+    .section-head { max-width: 680px; margin-bottom: 44px; }
+    .section-kicker { color: #a78bfa; font-size: 0.82rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 10px; }
+    .section-head h2 { font-size: clamp(1.85rem, 3.6vw, 2.75rem); font-weight: 800; letter-spacing: -0.03em; line-height: 1.15; margin-bottom: 12px; }
+    .section-head p { color: var(--text-muted); font-size: 1.05rem; }
+    .screen-tabs { display: inline-flex; flex-wrap: wrap; gap: 6px; padding: 6px; background: var(--bg-elevated); border: 1px solid var(--border); border-radius: 999px; margin-bottom: 32px; }
+    .screen-tab { padding: 9px 20px; border-radius: 999px; font-size: 0.9rem; font-weight: 600; color: var(--text-muted); background: transparent; border: none; cursor: pointer; transition: all 0.16s ease; }
+    .screen-tab.active { background: var(--text); color: #07080c; }
+    .screen-panel { display: none; grid-template-columns: 1.1fr 0.9fr; gap: 28px; background: var(--bg-card); border: 1px solid var(--border-bright); border-radius: var(--radius-lg); padding: 36px; align-items: center; }
+    .screen-panel.active { display: grid; }
+    .screen-panel h3 { font-size: 1.65rem; font-weight: 800; margin-bottom: 12px; letter-spacing: -0.02em; }
+    .screen-panel p { color: var(--text-muted); margin-bottom: 24px; }
+    .dl-grid { display: flex; flex-wrap: wrap; gap: 12px; }
+    .spec-box { background: rgba(0, 0, 0, 0.35); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 22px; }
+    .spec-row { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid var(--border); font-size: 0.86rem; }
+    .spec-row:last-child { border-bottom: none; }
+    .spec-row span:first-child { color: var(--text-muted); }
+    .spec-row span:last-child { font-family: 'JetBrains Mono', monospace; color: var(--text); font-weight: 500; }
+    .bento-grid { display: grid; grid-template-columns: repeat(12, 1fr); gap: 20px; }
+    .bento-card { grid-column: span 6; background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 32px; display: flex; flex-direction: column; justify-content: space-between; transition: border-color 0.2s ease, transform 0.2s ease; }
+    .bento-card:hover { border-color: var(--border-bright); transform: translateY(-2px); }
+    .bento-card.wide { grid-column: span 7; }
+    .bento-card.narrow { grid-column: span 5; }
+    .bento-tag { display: inline-flex; align-items: center; gap: 6px; font-size: 0.76rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: #38bdf8; margin-bottom: 12px; }
+    .bento-card h3 { font-size: 1.4rem; font-weight: 700; margin-bottom: 10px; letter-spacing: -0.02em; }
+    .bento-card p { color: var(--text-muted); font-size: 0.95rem; margin-bottom: 20px; }
+    .pill-cluster { display: flex; flex-wrap: wrap; gap: 8px; margin-top: auto; }
+    .mini-pill { font-size: 0.78rem; font-weight: 600; padding: 5px 11px; border-radius: 8px; background: rgba(255, 255, 255, 0.05); border: 1px solid var(--border); color: #d1d5db; }
+    .integration-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; }
+    .integration-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 20px; }
+    .integration-card h4 { font-size: 1rem; font-weight: 700; margin-bottom: 6px; display: flex; align-items: center; justify-content: space-between; }
+    .integration-card p { font-size: 0.85rem; color: var(--text-muted); }
+    .status-dot { font-size: 0.7rem; padding: 2px 8px; border-radius: 999px; background: rgba(16, 185, 129, 0.15); color: #6ee7b7; border: 1px solid rgba(16, 185, 129, 0.3); }
+    .oss-layout { display: grid; grid-template-columns: 1fr 1.2fr; gap: 28px; }
+    .oss-stat-box { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 32px; }
+    .stat-numbers { display: flex; gap: 32px; margin: 24px 0; }
+    .stat-item strong { display: block; font-size: 2.2rem; font-weight: 800; letter-spacing: -0.03em; }
+    .stat-item span { font-size: 0.84rem; color: var(--text-muted); }
+    .release-list { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 28px; display: flex; flex-direction: column; gap: 12px; }
+    .release-item { display: flex; align-items: center; justify-content: space-between; padding: 14px 16px; background: rgba(255, 255, 255, 0.03); border: 1px solid var(--border); border-radius: var(--radius-sm); transition: background 0.15s ease; }
+    .release-item:hover { background: rgba(255, 255, 255, 0.06); }
+    .release-tag { font-family: 'JetBrains Mono', monospace; font-weight: 600; font-size: 0.9rem; color: #c4b5fd; }
+    .release-meta { font-size: 0.82rem; color: var(--text-muted); }
+    .legal-box { background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 36px; }
+    .legal-box h3 { font-size: 1.35rem; margin-bottom: 12px; }
+    .legal-box p { color: var(--text-muted); font-size: 0.92rem; margin-bottom: 12px; }
+    .legal-box p:last-child { margin-bottom: 0; }
+    footer { padding: 48px 0; border-top: 1px solid var(--border); color: var(--text-subtle); font-size: 0.86rem; }
+    .footer-inner { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 20px; }
+    .footer-links { display: flex; flex-wrap: wrap; gap: 22px; }
+    .footer-links a:hover { color: var(--text); }
+    @media (max-width: 900px) {
+      .mock-body { grid-template-columns: 1fr; }
+      .mock-sidebar { display: none; }
+      .mock-cards { grid-template-columns: repeat(2, 1fr); }
+      .screen-panel.active, .oss-layout { grid-template-columns: 1fr; }
+      .bento-card, .bento-card.wide, .bento-card.narrow { grid-column: span 12; }
+      .nav-links { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <header class="navbar">
+    <div class="container nav-inner">
+      <a href="#" class="brand">
+        <span class="brand-mark">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+        </span>
+        <span>Argus</span>
+      </a>
+      <nav class="nav-links">
+        <a href="#screens">Downloads</a>
+        <a href="#features">Features</a>
+        <a href="#ecosystem">Integrations</a>
+        <a href="#releases">Releases</a>
+        <a href="#disclaimer">Disclaimer</a>
+      </nav>
+      <div class="nav-cta">
+        <a href="https://github.com/archiboltmusk/Argus" target="_blank" rel="noopener" class="btn btn-secondary">GitHub</a>
+        <a href="#screens" class="btn btn-primary">Get Argus</a>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero" style="border-top: none;">
+      <div class="container">
+        <div class="hero-eyebrow"><span>⚡ Powered by Tauri 2, Rust &amp; Native libmpv</span></div>
+        <h1>Built for every screen you watch, read, and listen on.</h1>
+        <p class="lead">
+          A free, open-source media center for your desktop, phone, smart projector, and TV. Connect the sources you already use, and Argus turns them into a unified library with artwork, ratings, Whisper AI subtitle sync, manga universes, and your exact place saved on every screen.
+        </p>
+        <div class="hero-actions">
+          <a href="#screens" class="btn btn-primary">Get Argus</a>
+          <a href="https://github.com/archiboltmusk/Argus" target="_blank" rel="noopener" class="btn btn-secondary">Read the source</a>
+        </div>
+        <p class="hero-subnote">Free and open source on GitHub. Argus is a client-side media hub and does not host, store, or provide any media.</p>
+
+        <div class="showcase-wrap">
+          <div class="desktop-frame">
+            <div class="window-bar">
+              <div class="window-dots"><span></span><span></span><span></span></div>
+              <div class="window-pill">argus-core · libmpv GPU · librqbit P2P Active</div>
+              <div style="font-size: 0.75rem; color: var(--text-muted);">⌘K Search</div>
+            </div>
+            <div class="mock-body">
+              <aside class="mock-sidebar">
+                <div class="mock-nav-item active"><span>Home</span><span>●</span></div>
+                <div class="mock-nav-item"><span>Movies &amp; Shows</span></div>
+                <div class="mock-nav-item"><span>Anime</span></div>
+                <div class="mock-nav-item"><span>Manga &amp; Universes</span></div>
+                <div class="mock-nav-item"><span>Ebooks &amp; OPDS</span></div>
+                <div class="mock-nav-item"><span>Music &amp; DJ Deck</span></div>
+                <div class="mock-nav-item"><span>Watch Together</span></div>
+                <div class="mock-nav-item" style="margin-top: auto;"><span>Settings</span><span>⚙</span></div>
+              </aside>
+              <div class="mock-main">
+                <div class="mock-billboard">
+                  <div class="mock-badge-row">
+                    <span class="mock-badge hdr">4K HDR10+ · Tone-Mapped</span>
+                    <span class="mock-badge mpv">libmpv + Whisper SubSync</span>
+                    <span class="mock-badge">IntroDB Auto-Skip</span>
+                  </div>
+                  <h3>Signal Horizon</h3>
+                  <p>Instant stream scoring, speech-clarity dialogue boost, ambient cinema edge glow, and dynamic subtitle elevation that shifts smoothly out of the way when controls appear.</p>
+                  <div style="display: flex; gap: 10px; margin-bottom: 28px;">
+                    <span class="btn btn-primary" style="padding: 8px 16px; font-size: 0.82rem;">▶ Resume S02E04 · 18m left</span>
+                    <span class="btn btn-secondary" style="padding: 8px 16px; font-size: 0.82rem;">🎉 Watch Together</span>
+                  </div>
+                </div>
+                <div>
+                  <div class="mock-shelf-title">Continue Watching &amp; Reading Across Devices</div>
+                  <div class="mock-cards">
+                    <div class="mock-card"><div class="mock-card-title">Orbital Drift</div><div class="mock-card-meta">S01E08 · Trakt Synced</div><div class="mock-progress"><div style="width: 72%;"></div></div></div>
+                    <div class="mock-card"><div class="mock-card-title">Vagabond Universe</div><div class="mock-card-meta">Ch. 242 · AniList Synced</div><div class="mock-progress"><div style="width: 85%;"></div></div></div>
+                    <div class="mock-card"><div class="mock-card-title">Glass Citadel</div><div class="mock-card-meta">4K Remux · Real-Debrid</div><div class="mock-progress"><div style="width: 38%;"></div></div></div>
+                    <div class="mock-card"><div class="mock-card-title">Midnight Sessions</div><div class="mock-card-meta">FLAC · Dual DJ Deck</div><div class="mock-progress"><div style="width: 60%;"></div></div></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="platform-strip">
+            <span class="platform-chip">macOS (Apple Silicon &amp; Intel)</span>
+            <span class="platform-chip">Windows</span>
+            <span class="platform-chip">Linux</span>
+            <span class="platform-chip">Android &amp; Android TV</span>
+            <span class="platform-chip">Smart Projectors</span>
+            <span class="platform-chip">iOS &amp; iPadOS</span>
+            <span class="platform-chip">tvOS &amp; visionOS</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="screens">
+      <div class="container">
+        <div class="section-head">
+          <div class="section-kicker">Pick your screen</div>
+          <h2>Every build is tuned for the hardware it runs on.</h2>
+          <p>Not one sluggish web wrapper stretched across devices. Choose your platform and grab the latest build straight from GitHub Releases.</p>
+        </div>
+        <div class="screen-tabs" role="tablist">
+          <button class="screen-tab active" onclick="switchScreen('desktop', this)">Desktop</button>
+          <button class="screen-tab" onclick="switchScreen('mobile', this)">Phone &amp; Tablet</button>
+          <button class="screen-tab" onclick="switchScreen('tv', this)">TV &amp; Projector</button>
+          <button class="screen-tab" onclick="switchScreen('apple', this)">Apple Ecosystem</button>
+        </div>
+
+        <div id="panel-desktop" class="screen-panel active">
+          <div>
+            <h3>Argus for macOS, Windows &amp; Linux</h3>
+            <p>Built on Tauri 2 and Rust for a tiny memory footprint compared to Electron. Renders video directly through a native <code>libmpv</code> Metal/OpenGL context with SVP motion interpolation, picture-in-picture, and a built-in Rust <code>librqbit</code> torrent &amp; transcode engine.</p>
+            <div class="dl-grid">
+              <a href="https://github.com/archiboltmusk/Argus/releases/latest" target="_blank" rel="noopener" class="btn btn-primary">Download for macOS (.dmg)</a>
+              <a href="https://github.com/archiboltmusk/Argus/releases/latest" target="_blank" rel="noopener" class="btn btn-secondary">Windows (.msi / .exe)</a>
+              <a href="https://github.com/archiboltmusk/Argus/releases/latest" target="_blank" rel="noopener" class="btn btn-secondary">Linux (.AppImage / .deb)</a>
+            </div>
+          </div>
+          <div class="spec-box">
+            <div class="spec-row"><span>Core Engine</span><span>Tauri 2 + Rust (argus-core)</span></div>
+            <div class="spec-row"><span>Video Renderer</span><span>Native libmpv + VideoToolbox / NVENC</span></div>
+            <div class="spec-row"><span>P2P Engine</span><span>Embedded Rust librqbit + Axum</span></div>
+            <div class="spec-row"><span>Deep Links</span><span>argus:// · nuvio:// · stremio://</span></div>
+          </div>
+        </div>
+
+        <div id="panel-mobile" class="screen-panel">
+          <div>
+            <h3>Argus for Android, iPhone &amp; iPad</h3>
+            <p>Stream movies, read long-strip webtoons with 5-speed hands-free auto-scroll and E-Ink/Sepia page filters, and sync your watch and chapter progress automatically to Trakt, AniList, and MyAnimeList.</p>
+            <div class="dl-grid">
+              <a href="https://github.com/archiboltmusk/Argus/releases/latest" target="_blank" rel="noopener" class="btn btn-primary">Download Android APK</a>
+              <a href="https://github.com/archiboltmusk/Argus/releases/latest" target="_blank" rel="noopener" class="btn btn-secondary">Download iOS / iPadOS IPA</a>
+            </div>
+          </div>
+          <div class="spec-box">
+            <div class="spec-row"><span>Android Package</span><span>app.argus.desktop (ARM64 / v7)</span></div>
+            <div class="spec-row"><span>iOS / iPadOS</span><span>Signed Release IPA (AltStore / SideStore)</span></div>
+            <div class="spec-row"><span>Manga Preloader</span><span>Prefetches next chapter at 70%</span></div>
+            <div class="spec-row"><span>Offline Support</span><span>Local Library &amp; Video Archive</span></div>
+          </div>
+        </div>
+
+        <div id="panel-tv" class="screen-panel">
+          <div>
+            <h3>Argus for Android TV &amp; Smart Projectors</h3>
+            <p>Includes a dedicated native projector build tuned for 1080p and 4K Android smart projectors and Android TV boxes—featuring 10-foot D-pad spatial navigation, speech-clarity audio boost, and high-contrast OSD controls.</p>
+            <div class="dl-grid">
+              <a href="https://github.com/archiboltmusk/Argus/releases" target="_blank" rel="noopener" class="btn btn-primary">Get Projector &amp; TV APK</a>
+              <a href="https://github.com/archiboltmusk/Argus/releases" target="_blank" rel="noopener" class="btn btn-secondary">All Release Builds</a>
+            </div>
+          </div>
+          <div class="spec-box">
+            <div class="spec-row"><span>Projector Build</span><span>projector-v3.17.3-preview.1+</span></div>
+            <div class="spec-row"><span>Audio Profile</span><span>Speech-Clarity Center Boost</span></div>
+            <div class="spec-row"><span>Navigation</span><span>Full D-Pad &amp; Remote Hotkeys</span></div>
+            <div class="spec-row"><span>LAN Casting</span><span>DLNA + Multi-URL Remote Server</span></div>
+          </div>
+        </div>
+
+        <div id="panel-apple" class="screen-panel">
+          <div>
+            <h3>Argus across Apple TV, Vision Pro &amp; Mac</h3>
+            <p>Automated CI workflows build native packages across the entire Apple hardware lineup—bringing your synced watchlists, debrid streams, and media servers to macOS, iOS, iPadOS, tvOS, and visionOS.</p>
+            <div class="dl-grid">
+              <a href="https://github.com/archiboltmusk/Argus/releases/latest" target="_blank" rel="noopener" class="btn btn-primary">Apple Ecosystem Releases</a>
+              <a href="https://github.com/archiboltmusk/Argus/actions" target="_blank" rel="noopener" class="btn btn-secondary">View CI Build Matrix</a>
+            </div>
+          </div>
+          <div class="spec-box">
+            <div class="spec-row"><span>macOS Target</span><span>aarch64-apple-darwin + x86_64</span></div>
+            <div class="spec-row"><span>Living Room &amp; Spatial</span><span>tvOS IPA &amp; visionOS IPA</span></div>
+            <div class="spec-row"><span>Hardware Decode</span><span>Apple Silicon VideoToolbox</span></div>
+            <div class="spec-row"><span>PiP Support</span><span>Native macOS Picture-in-Picture</span></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="features">
+      <div class="container">
+        <div class="section-head">
+          <div class="section-kicker">What it is like to use</div>
+          <h2>Everything around your media, engineered in Rust.</h2>
+          <p>Argus plays the sources you connect and adds intelligent stream scoring, automated subtitle alignment, and a complete reading and listening studio.</p>
+        </div>
+        <div class="bento-grid">
+          <div class="bento-card wide">
+            <div>
+              <div class="bento-tag">Cinema-Grade Playback</div>
+              <h3>Powered by native libmpv &amp; Whisper AI SubSync</h3>
+              <p>Decodes 4K 10-bit HEVC, AV1, Dolby Vision, AC3, E-AC3, and TrueHD natively without browser codec limits. If a subtitle track is out of sync, built-in Whisper speech recognition and ±0.05s / ±0.25s voice-snap controls lock dialogue to the audio waveform in one click.</p>
+            </div>
+            <div class="pill-cluster">
+              <span class="mini-pill">Dynamic HUD Subtitle Elevation</span>
+              <span class="mini-pill">Cinema Edge Glow</span>
+              <span class="mini-pill">Speech-Clarity Audio Mode</span>
+              <span class="mini-pill">SVP Motion Interpolation</span>
+            </div>
+          </div>
+          <div class="bento-card narrow">
+            <div>
+              <div class="bento-tag">Binge Without Scrubbing</div>
+              <h3>Playback that gets out of the way</h3>
+              <p>Argus skips intros, recaps, and outros automatically via IntroDB, prefetches the next episode in the background, and probes stream bitrate and speed before you hit play.</p>
+            </div>
+            <div class="pill-cluster">
+              <span class="mini-pill">IntroDB Skip Pills</span>
+              <span class="mini-pill">Next-Episode Prefetch</span>
+              <span class="mini-pill">Chapter Scrub Tooltips</span>
+            </div>
+          </div>
+          <div class="bento-card narrow">
+            <div>
+              <div class="bento-tag">Built-in Rust Torrent Engine</div>
+              <h3>Configurable P2P &amp; Transcode Profiles</h3>
+              <p>Tune your local or remote streaming server with Soft, Fast, or Ultra Fast torrent profiles, custom drive caching (up to 100 GiB or Infinite), and hardware transcode profiles.</p>
+            </div>
+            <div class="pill-cluster">
+              <span class="mini-pill">librqbit Engine</span>
+              <span class="mini-pill">Global Magnet Drop</span>
+              <span class="mini-pill">LAN HTTPS Endpoint</span>
+            </div>
+          </div>
+          <div class="bento-card wide">
+            <div>
+              <div class="bento-tag">Beyond Video</div>
+              <h3>Manga Universe Hub, OPDS Ebooks, Music DJ Deck &amp; Watch Together</h3>
+              <p>Explore full manga universes (main series, anime adaptations, spin-offs, and side stories) with 70% next-chapter preloading, E-Ink/Sepia/Warm Night filters, and 5-speed webtoon auto-scroll. Switch to OPDS ebook catalogs, mix tracks on the dual-deck audio engine, or host a synchronized Watch Together room with live chat.</p>
+            </div>
+            <div class="pill-cluster">
+              <span class="mini-pill">MangaDex + Suwayomi + Mangayomi</span>
+              <span class="mini-pill">Universe Hub Explorer</span>
+              <span class="mini-pill">Dual-Deck Music Player</span>
+              <span class="mini-pill">Watch Together Relay</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="ecosystem">
+      <div class="container">
+        <div class="section-head">
+          <div class="section-kicker">It plugs into what you already use</div>
+          <h2>One library across every tracker, debrid service, and server.</h2>
+          <p>Connect your existing accounts once. Argus handles OAuth directly on your device—including serverless Implicit Grant for AniList and PKCE for MyAnimeList.</p>
+        </div>
+        <div class="integration-grid">
+          <div class="integration-card"><h4><span>Trakt &amp; Simkl</span><span class="status-dot">2-Way Sync</span></h4><p>Scrobble episodes, sync watchlists, and carry your resume timestamps across every screen.</p></div>
+          <div class="integration-card"><h4><span>AniList &amp; MyAnimeList</span><span class="status-dot">Auto Chapter Sync</span></h4><p>Direct client-side OAuth syncs anime episodes and completed manga chapters automatically.</p></div>
+          <div class="integration-card"><h4><span>Real-Debrid, AllDebrid &amp; TorBox</span><span class="status-dot">Instant 4K</span></h4><p>Native debrid resolution turns high-bitrate torrents into instant cached HTTPS streams.</p></div>
+          <div class="integration-card"><h4><span>Jellyfin, Emby &amp; WebDAV</span><span class="status-dot">Personal Cloud</span></h4><p>Browse and play directly from your self-hosted media servers, local folders, and DLNA shares.</p></div>
+          <div class="integration-card"><h4><span>Stremio &amp; Nuvio Addons</span><span class="status-dot">Protocol v3</span></h4><p>Full support for <code>argus://</code>, <code>nuvio://</code>, and <code>stremio://</code> manifests plus sandboxed JS plugins.</p></div>
+          <div class="integration-card"><h4><span>IntroDB &amp; TMDB</span><span class="status-dot">Rich Metadata</span></h4><p>High-res clearlogos, localized episode titles, cast links, and automatic intro/outro timestamps.</p></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="releases">
+      <div class="container">
+        <div class="section-head">
+          <div class="section-kicker">Made in the open</div>
+          <h2>Public on GitHub. Read it, build it, or send a patch.</h2>
+          <p>Every commit is tested and packaged across macOS, Windows, Linux, Android, and iOS via GitHub Actions.</p>
+        </div>
+        <div class="oss-layout">
+          <div class="oss-stat-box">
+            <h3>archiboltmusk/Argus</h3>
+            <p style="color: var(--text-muted); font-size: 0.94rem; margin-top: 8px;">Built with Rust, Tauri 2, React 19, TypeScript, and libmpv.</p>
+            <div class="stat-numbers">
+              <div class="stat-item"><strong id="gh-stars">★</strong><span>GitHub Stars</span></div>
+              <div class="stat-item"><strong id="gh-contributors">1+</strong><span>Contributors</span></div>
+              <div class="stat-item"><strong id="gh-latest-tag">v1.0.336</strong><span>Latest Tag</span></div>
+            </div>
+            <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+              <a href="https://github.com/archiboltmusk/Argus" target="_blank" rel="noopener" class="btn btn-primary">Open on GitHub</a>
+              <a href="https://github.com/archiboltmusk/Argus/releases" target="_blank" rel="noopener" class="btn btn-secondary">See every release</a>
+            </div>
+          </div>
+          <div class="release-list" id="release-feed">
+            <div style="font-size: 0.82rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-muted); margin-bottom: 4px;">Latest Releases</div>
+            <a href="https://github.com/archiboltmusk/Argus/releases" target="_blank" rel="noopener" class="release-item"><div><div class="release-tag">projector-v3.17.3-preview.1</div><div class="release-meta">Native Android Projector Preview Build</div></div><span class="btn btn-secondary" style="padding: 6px 14px; font-size: 0.78rem;">Release →</span></a>
+            <a href="https://github.com/archiboltmusk/Argus/releases" target="_blank" rel="noopener" class="release-item"><div><div class="release-tag">v1.0.336</div><div class="release-meta">Desktop, Mobile &amp; Apple Ecosystem Release</div></div><span class="btn btn-secondary" style="padding: 6px 14px; font-size: 0.78rem;">Release →</span></a>
+            <a href="https://github.com/archiboltmusk/Argus/releases" target="_blank" rel="noopener" class="release-item"><div><div class="release-tag">beta</div><div class="release-meta">Continuous Rolling Beta Channel</div></div><span class="btn btn-secondary" style="padding: 6px 14px; font-size: 0.78rem;">Release →</span></a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="disclaimer">
+      <div class="container">
+        <div class="legal-box">
+          <h3>What Argus is not.</h3>
+          <p>Argus is a client-side media player and library manager. It plays media from sources you connect—such as your own local files, a personal media server (Jellyfin, Emby, WebDAV), or user-installed addons—and is intended strictly for content you own or are otherwise authorized to access. It does not host, store, or distribute any media.</p>
+          <p>Argus is not affiliated with any third-party media server, addon, catalog, tracker, or content provider. Artwork and metadata in the application may be provided by TMDB, AniList, MyAnimeList, or user-configured extensions. This project uses the TMDB API but is not endorsed or certified by TMDB.</p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="container footer-inner">
+      <div><strong style="color: var(--text);">Argus</strong> · © 2026 Anupam Mahato (<a href="https://github.com/archiboltmusk" target="_blank" rel="noopener">@archiboltmusk</a>)</div>
+      <div class="footer-links">
+        <a href="https://github.com/archiboltmusk/Argus" target="_blank" rel="noopener">GitHub</a>
+        <a href="https://github.com/archiboltmusk/Argus/releases" target="_blank" rel="noopener">Releases</a>
+        <a href="https://github.com/archiboltmusk/Argus/actions" target="_blank" rel="noopener">Actions Status</a>
+        <a href="https://github.com/archiboltmusk/Argus/issues" target="_blank" rel="noopener">Issues</a>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    function switchScreen(panelId, btn) {
+      document.querySelectorAll('.screen-panel').forEach(el => el.classList.remove('active'));
+      document.querySelectorAll('.screen-tab').forEach(el => el.classList.remove('active'));
+      const target = document.getElementById('panel-' + panelId);
+      if (target) target.classList.add('active');
+      if (btn) btn.classList.add('active');
+    }
+    async function hydrateFromGitHub() {
+      const repo = 'archiboltmusk/Argus';
+      try {
+        const [repoRes, relRes] = await Promise.all([
+          fetch(`https://api.github.com/repos/${repo}`),
+          fetch(`https://api.github.com/repos/${repo}/releases?per_page=4`)
+        ]);
+        if (repoRes.ok) {
+          const info = await repoRes.json();
+          if (typeof info.stargazers_count === 'number') document.getElementById('gh-stars').textContent = info.stargazers_count;
+        }
+        if (relRes.ok) {
+          const releases = await relRes.json();
+          if (Array.isArray(releases) && releases.length > 0) {
+            document.getElementById('gh-latest-tag').textContent = releases[0].tag_name;
+            const feed = document.getElementById('release-feed');
+            const header = `<div style="font-size: 0.82rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-muted); margin-bottom: 4px;">Latest Releases</div>`;
+            const items = releases.slice(0, 3).map(r => {
+              const date = r.published_at ? new Date(r.published_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '';
+              return `<a href="${r.html_url}" target="_blank" rel="noopener" class="release-item"><div><div class="release-tag">${r.tag_name}</div><div class="release-meta">${r.name || r.tag_name}${date ? ' · ' + date : ''}</div></div><span class="btn btn-secondary" style="padding: 6px 14px; font-size: 0.78rem;">Download →</span></a>`;
+            }).join('');
+            feed.innerHTML = header + items;
+          }
+        }
+      } catch (_) {}
+    }
+    hydrateFromGitHub();
+  </script>
+</body>
+</html>
