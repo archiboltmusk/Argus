@@ -1360,6 +1360,22 @@
         if (r2.ok) {
           const rels = await r2.json();
           if (Array.isArray(rels) && rels.length) {
+            const assets = rels.flatMap(r => r.assets || []);
+            const matchAsset = (re) => assets.find(a => re.test(a.name));
+            document.querySelectorAll("#screens .dl-row a").forEach(a => {
+              const t = a.textContent || "";
+              let hit = null;
+              if (t.includes("macOS")) hit = matchAsset(/\.dmg$/i);
+              else if (t.includes("Windows")) hit = matchAsset(/\.(msi|exe)$/i);
+              else if (t.includes("Linux")) hit = matchAsset(/\.(AppImage|deb)$/i);
+              else if (t.includes("Projector")) hit = matchAsset(/projector.*\.apk$/i) || matchAsset(/\.apk$/i);
+              else if (t.includes("Android")) hit = matchAsset(/\.apk$/i);
+              else if (t.includes("iOS")) hit = matchAsset(/\.ipa$/i);
+              if (hit) {
+                a.href = hit.browser_download_url;
+                a.textContent = `${t.split(" (")[0]} (${(hit.size / 1048576).toFixed(1)} MB)`;
+              }
+            });
             document.getElementById('gh-tag').textContent = rels[0].tag_name;
             document.getElementById('rel-list').innerHTML = rels.map(r => {
               const dt = r.published_at ? new Date(r.published_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '';
