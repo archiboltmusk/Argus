@@ -818,9 +818,25 @@ export function createHtml5Bridge(): PlayerBridge {
         // Without this a manifest the browser can't fetch (CORS, 404, mixed
         // content) leaves the player on its loading spinner forever.
         let mediaRecovered = false;
+        let live5xxWindowStart = 0;
+        let live5xxTimer: number | null = null;
         const activeHls = hls;
         hls.on(Hls.Events.ERROR, (_evt, data) => {
           if (!data.fatal || hls !== activeHls) return;
+          const httpCode = (data.response as { code?: number } | undefined)?.code ?? 0;
+          if (isLiveSrc && data.type === Hls.ErrorTypes.NETWORK_ERROR && httpCode >= 500 && httpCode < 600) {
+            const now = Date.now();
+            if (!live5xxWindowStart) live5xxWindowStart = now;
+            if (now - live5xxWindowStart < 15_000) {
+              if (live5xxTimer != null) window.clearTimeout(live5xxTimer);
+              live5xxTimer = window.setTimeout(() => {
+                if (hls === activeHls) {
+                  try { activeHls.startLoad(); } catch {}
+                }
+              }, 1500);
+              return;
+            }
+          }
           if (data.type === Hls.ErrorTypes.MEDIA_ERROR && !mediaRecovered) {
             mediaRecovered = true;
             activeHls.recoverMediaError();

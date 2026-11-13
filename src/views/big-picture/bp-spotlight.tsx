@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import type { Meta } from "@/lib/cinemeta";
 import type { TmdbDetail } from "@/lib/providers/tmdb/tmdb-details";
 import { useProxiedImageSrc } from "@/lib/remote-image-proxy";
@@ -26,6 +26,61 @@ const COPY_W = "max-w-[min(40vw,470px)]";
 
 const TITLE =
   "line-clamp-2 font-display text-[clamp(36px,5.6vh,54px)] font-semibold leading-[1.12] tracking-[-0.02em] text-ink drop-shadow-[0_3px_16px_rgba(0,0,0,0.6)]";
+
+
+function AutoScrollOverview({ text, id, className }: { text: string; id: string; className: string }) {
+  const ref = useRef<HTMLParagraphElement>(null);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    el.scrollTop = 0;
+    let cancelled = false;
+    let raf = 0;
+    let pauseTimer: number | null = null;
+    const startTimer = window.setTimeout(() => {
+      const overflow = el.scrollHeight - el.clientHeight;
+      if (overflow <= 2 || cancelled) return;
+      let last = performance.now();
+      let dir = 1;
+      const step = (now: number) => {
+        if (cancelled) return;
+        const dt = Math.min(64, now - last);
+        last = now;
+        el.scrollTop += dir * (dt * 0.018);
+        if (dir === 1 && el.scrollTop >= overflow - 1) {
+          dir = -1;
+          pauseTimer = window.setTimeout(() => {
+            if (!cancelled) {
+              el.scrollTop = 0;
+              dir = 1;
+              last = performance.now();
+              raf = requestAnimationFrame(step);
+            }
+          }, 2000);
+          return;
+        }
+        raf = requestAnimationFrame(step);
+      };
+      raf = requestAnimationFrame(step);
+    }, 3000);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(startTimer);
+      if (pauseTimer != null) window.clearTimeout(pauseTimer);
+      cancelAnimationFrame(raf);
+    };
+  }, [id, text]);
+
+  return (
+    <p
+      ref={ref}
+      data-bp-hero-desc
+      className={`${className} max-h-[3.2em] overflow-hidden [mask-image:linear-gradient(180deg,#000_72%,transparent)]`}
+    >
+      {text}
+    </p>
+  );
+}
 
 export function BpSpotlight(_props: { phase?: BpPagePhase }) {
   // The copy is NOT settled. It updates on the frame focus lands.
@@ -157,12 +212,11 @@ export function BpSpotlight(_props: { phase?: BpPagePhase }) {
         </div>
 
         {overview && (
-          <p
-            data-bp-hero-desc
-            className={`mt-[18px] line-clamp-2 text-[clamp(16px,2vh,23px)] leading-[1.55] text-ink-muted ${COPY_W}`}
-          >
-            {overview}
-          </p>
+          <AutoScrollOverview
+            id={shown.meta.id}
+            text={overview}
+            className={`mt-[18px] text-[clamp(16px,2vh,23px)] leading-[1.55] text-ink-muted ${COPY_W}`}
+          />
         )}
       </div>
     </div>
