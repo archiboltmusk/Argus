@@ -150,8 +150,8 @@ export function AccountStub() {
   return (
     <>
       <div key={tab} className="argus-cascade flex flex-col gap-10">
-        {tab === "provider" && <AccountProviderPanel />}
-        {tab === "you" && <IdentityTab />}
+        {tab === "provider" && (<><AccountProviderPanel /><ArgusAccountSuiteCard /></>)}
+        {tab === "you" && (<><IdentityTab /><ArgusAccountSuiteCard /></>)}
         {tab === "profiles" && <ProfilesTab />}
         {tab === "argus" && (<>{ARGUS_HOSTED && <ArgusAccountPanel />}<ArgusAccountSuiteCard /></>)}
         {tab === "cloud" && (<>{SUPABASE && <SupabaseSyncPanel />}<ArgusAccountSuiteCard /></>)}
