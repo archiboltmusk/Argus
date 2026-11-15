@@ -1,5 +1,6 @@
+import { lazyView } from "@/lib/lazy-view";
 import { getCurrentWindow } from "@tauri-apps/api/window";
-import { StrictMode, useCallback, useEffect, useRef, useState } from "react";
+import { Suspense, StrictMode, useCallback, useEffect, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { App } from "@/App";
 import { hydrateCustomThemes } from "@/lib/custom-themes";
@@ -9,19 +10,25 @@ import { applyOsDataset } from "@/lib/platform";
 import { loadSecrets } from "@/lib/secret-store";
 import { initializeMusic } from "@/lib/music/player";
 import { initSubtitleCache } from "@/lib/subtitles/subtitle-cache";
-import { CaptionsApp } from "@/views/captions-app";
-import { DjDeckApp } from "@/views/dj-deck-app";
-import { ModalOverlayApp } from "@/views/modal-overlay-app";
-import { HdrOverlayApp } from "@/views/hdr-overlay-app";
 import { hdrOverlayEmitAction } from "@/lib/hdr-overlay";
-import { PipApp } from "@/views/pip";
-import { VideoPipApp } from "@/views/video-pip";
 import "@/lib/awards-history-eager";
 import "@/index.css";
 import "@/styles/unified-responsive.css";
 import "flag-icons/css/flag-icons.min.css";
 import { startTaskbarProgress } from "@/lib/download/taskbar-progress";
 import { completeBetaReturnPreferences } from "@/lib/updater/beta-return";
+
+const CaptionsApp = lazyView(() => import("@/views/captions-app").then(module => ({ default: module.CaptionsApp })));
+
+const DjDeckApp = lazyView(() => import("@/views/dj-deck-app").then(module => ({ default: module.DjDeckApp })));
+
+const ModalOverlayApp = lazyView(() => import("@/views/modal-overlay-app").then(module => ({ default: module.ModalOverlayApp })));
+
+const HdrOverlayApp = lazyView(() => import("@/views/hdr-overlay-app").then(module => ({ default: module.HdrOverlayApp })));
+
+const PipApp = lazyView(() => import("@/views/pip").then(module => ({ default: module.PipApp })));
+
+const VideoPipApp = lazyView(() => import("@/views/video-pip").then(module => ({ default: module.VideoPipApp })));
 
 let returnPreferencesReady = true;
 
@@ -248,6 +255,7 @@ async function mount() {
   if (!rootEl) return;
   createRoot(rootEl).render(
     <StrictMode>
+      <Suspense fallback={null}>
       {isHdrOverlay ? (
         <HdrOverlayApp />
       ) : isDjDeck ? (
@@ -264,6 +272,7 @@ async function mount() {
         <MainRoot />
       )}
       {(isModal || isPip || isVideoPip || isCaptions || isDjDeck) && <StartupReady />}
+      </Suspense>
     </StrictMode>,
   );
 }
