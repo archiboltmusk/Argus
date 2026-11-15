@@ -1,3 +1,4 @@
+import { EpisodeMappingSection } from "./episode-mapping-section";
 import { useT } from "@/lib/i18n";
 import { Section } from "../shared";
 import { DesktopOnlyBlock, isTauri } from "../player-panel/internals";
@@ -15,6 +16,7 @@ export function RepairTab() {
   return (
     <div className="flex flex-col gap-10">
       <ConnectionHealthSection />
+      <EpisodeMappingSection />
       <Section
         title={t("Stremio library repair")}
         subtitle={t(

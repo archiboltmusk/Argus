@@ -165,16 +165,8 @@ function StartupReady() {
   return null;
 }
 
-/**
- * Minimum time the boot splash stays up before the app is revealed.
- *
- * The seconds after mount are the heaviest in the app's life: the home feed loads dozens of rows
- * and every background runner starts at once. Revealing during that window shows the user raw
- * loading jank; holding the splash through it means the first frame they see is a settled one.
- * This is the one constant to tune — raise it to hide more of the load, lower it to reach content
- * sooner.
- */
-const MIN_BOOT_MS = 1800;
+// Reveal on the shell's readiness signal instead of imposing a fixed 1.8 s delay.
+const MIN_BOOT_MS = 0;
 
 function MainRoot() {
   const [appReady, setAppReady] = useState(false);
@@ -204,6 +196,9 @@ function MainRoot() {
   useEffect(() => {
     const dismissSplash = () => {
       revealRoot();
+      if (!performance.getEntriesByName("argus:startup:interactive").length) {
+        performance.mark("argus:startup:interactive");
+      }
       const boot = document.getElementById("argus-boot");
       if (boot) {
         boot.classList.add("gone");

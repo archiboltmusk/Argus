@@ -1,3 +1,4 @@
+import { applyEpisodeMappingOverrides, episodeMappingCacheKey } from "@/lib/episode-mapping-overrides";
 import { aniZipByKitsu } from "@/lib/providers/anizip";
 import {
   buildKitsuEpisodes,
@@ -34,7 +35,7 @@ export function fetchEntryEpisodes(kitsuId: number, settings: Settings): Promise
   const lang = tvdbLangFromIso1(settings.tmdbLanguage || settings.uiLanguage);
   const iso1 = settings.tmdbLanguage || settings.uiLanguage || "en";
   const localized = iso1.split("-")[0]?.toLowerCase() !== "en";
-  const cacheKey = `${kitsuId}:${iso1}:v2`;
+  const cacheKey = `${kitsuId}:${iso1}:v2:${episodeMappingCacheKey()}`;
   const cached = cache.get(cacheKey);
   if (cached && Date.now() - cached.at < ENTRY_CACHE_TTL_MS) return cached.promise;
   const p = (async () => {
@@ -99,6 +100,7 @@ export function fetchEntryEpisodes(kitsuId: number, settings: Settings): Promise
     // the addon labels the cour "season 1" — the window must land before the
     // TVDB merge or the cour's identity-less rows match franchise season 1.
     await applyAnidbSeasonWindow(eps, kitsuId);
+    applyEpisodeMappingOverrides(eps, kitsuId);
     mergeTvdbEpisodes(eps, tvdbRaw?.loc ?? null, {
       lang: localized ? iso1 : undefined,
       targetLang: iso1,

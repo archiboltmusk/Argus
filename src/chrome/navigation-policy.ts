@@ -98,3 +98,32 @@ export function resolveContextNavigation<T extends NavigationItem>(
     return [{ ...entry, item: label ? { ...entry.item, label } : entry.item }];
   });
 }
+
+/** Fresh installs and an explicit preset only; never migrate existing navigation. */
+export function focusedNavigation(): NavigationCustomization {
+  return {
+    order: ["home", "discover", "library", "settings"],
+    hidden: [
+      "catalogs",
+      "plugins",
+      "movies",
+      "shows",
+      "music",
+      "games",
+      "anime",
+      "manga",
+      "ebook",
+      "live",
+      "sports",
+      "vod",
+      "education",
+      "lifemaxxing",
+      "argus-lab",
+      "calendar",
+      "collections",
+      "downloads",
+      "addons",
+    ],
+    renamed: {},
+  };
+}

@@ -320,6 +320,7 @@ function normalizeLibraryRow(row: unknown): NuvioLibraryItem | null {
  */
 export async function pullNuvioLibrarySnapshot(
   slot: number,
+  options: { strict?: boolean } = {},
 ): Promise<NuvioLibraryItem[]> {
   if (!isNuvioSignedIn()) return readCachedNuvioLibrary(slot);
   const startingAccountId = getNuvioAccountId();
@@ -366,12 +367,16 @@ export async function pullNuvioLibrarySnapshot(
 
       if (!isCurrentAccount()) return [];
       if (!res.ok) {
+        if (options.strict && rpcSuccess) throw new Error("Nuvio library pagination failed");
         break;
       }
 
       const rows = (await res.json()) as unknown;
       if (!isCurrentAccount()) return [];
-      if (!Array.isArray(rows)) break;
+      if (!Array.isArray(rows)) {
+        if (options.strict) throw new Error("Nuvio library response is invalid");
+        break;
+      }
       rpcSuccess = true;
 
       for (const row of rows) {
@@ -397,6 +402,7 @@ export async function pullNuvioLibrarySnapshot(
           const rows = (await tableRes.json()) as unknown;
           if (!isCurrentAccount()) return [];
           if (Array.isArray(rows)) {
+            if (options.strict && rows.length >= 500) throw new Error("Nuvio library fallback may be truncated");
             collected.length = 0;
             for (const row of rows) {
               const item = normalizeLibraryRow(row);
@@ -414,6 +420,7 @@ export async function pullNuvioLibrarySnapshot(
 
     // If both failed, do NOT wipe local cache
     if (!rpcSuccess && collected.length === 0) {
+      if (options.strict) throw new Error("Nuvio library could not be refreshed");
       return readCachedNuvioLibrary(slot, startingAccountId);
     }
 
@@ -464,6 +471,7 @@ export async function pullNuvioLibrarySnapshot(
 
     return sanitized;
   } catch (err) {
+    if (options.strict) throw err;
     console.error("[nuvio-library] snapshot pull error", err);
     if (!isCurrentAccount()) return [];
     return readCachedNuvioLibrary(slot, startingAccountId);

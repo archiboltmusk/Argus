@@ -9,11 +9,11 @@
 [![CI Status](https://img.shields.io/github/actions/workflow/status/archiboltmusk/Argus/ci.yml?branch=main&style=flat-square&label=CI)](https://github.com/archiboltmusk/Argus/actions)
 
 In Greek myth, *Argus Panoptes* was the hundred-eyed giant who saw everything at once.
-Argus the app does the same for your media. It unifies Stremio-compatible addons, direct indexer scrapers (Prowlarr / Jackett Torznab), debrid clouds, Plex/Jellyfin servers, local libraries and IPTV playlists in one blazing-fast player with intelligent fallback and zero buffering.
+Argus the app does the same for your media. It unifies Stremio-compatible addons, direct indexer scrapers (Prowlarr / Jackett Torznab), debrid clouds, Plex/Jellyfin servers, local libraries and IPTV playlists in one blazing-fast player with stream ranking and bounded fallback recovery.
 
 Argus ships with **no content and no built-in sources**. You connect the addons, accounts, indexers, servers and playlists you already use and have rights to.
 
-Platforms: **Apple** (iOS, iPadOS, macOS, watchOS, tvOS, visionOS), **Android** (Google TV, Fire TV, Projectors, Mobile), **Smart TVs** (Samsung Tizen, LG webOS, Hisense VIDAA, Philips Titan OS, Panasonic, Roku), **Windows**, **Linux**, and **Web TV**.
+Build targets (availability varies by release; packaging does not establish device compatibility): **Apple** (iOS, iPadOS, macOS, watchOS, tvOS, visionOS), **Android** (Google TV, Fire TV, Projectors, Mobile), **Smart TVs** (Samsung Tizen, LG webOS, Hisense VIDAA, Philips Titan OS, Panasonic, Roku), **Windows**, **Linux**, and **Web TV**.
 
 ### Worldwide communities
 
@@ -28,13 +28,15 @@ unconnected. See [architecture and migration notes](docs/purulia-integration.md)
 
 ---
 
-## Supported Platforms & Download Matrix
+## Platform Build Targets & Download Matrix
+
+Only assets present in the selected stable release are downloadable. Targets below are not a device-tested compatibility guarantee. Generate a release-specific evidence matrix with `node scripts/platform-support.mjs release.json support.md device-evidence.json`; device evidence must match the exact release and link to a test report. No physical-device certification is claimed by CI alone.
 
 | Platform / Ecosystem | Target Devices | Build / Download Format | Install / Sideload Method |
 | --- | --- | --- | --- |
 | **Apple iOS** | iPhone (iOS 16.0+) | `Argus-iOS-iPadOS.ipa` | Sideload via AltStore / SideStore / Sideloadly / TrollStore |
 | **Apple iPadOS** | iPad, iPad Pro, iPad Air, iPad mini (iPadOS 16.0+) | `Argus-iOS-iPadOS.ipa` | Sideload via AltStore / SideStore / Sideloadly / TrollStore |
-| **Apple macOS** | Apple Silicon (M1–M4) & Intel Macs | `Argus-aarch64.dmg` | Mount and drag to `/Applications` |
+| **Apple macOS** | Apple Silicon; Intel builds are currently out of scope | `Argus-aarch64.dmg` | Mount and drag to `/Applications` |
 | **Apple watchOS** | Apple Watch Series 4+, SE, Ultra (watchOS 9.0+) | `Argus-AppleWatch-watchOS.ipa` | Sideload via Xcode / Apple Watch Companion |
 | **Apple tvOS** | Apple TV 4K & Apple TV HD (tvOS 17.0+) | `Argus-AppleTV-tvOS.ipa` | Sideload via Xcode (over Wi-Fi) or Apple Configurator |
 | **Apple visionOS** | Apple Vision Pro (visionOS 1.0+) | `Argus-VisionPro-visionOS.ipa` | Sideload via Xcode (over Wi-Fi) or Reality TestFlight |
@@ -90,7 +92,7 @@ Traditional streaming hubs break when an addon fails, streams stall, or links mi
 - **Auto-Filter 0-Seeder Torrents**: Toggle to automatically purge dead torrent links with 0 seeders from candidate lists.
 - **Title Disambiguation Engine**: Filters out mismatched shows or movies returned by third-party plugins.
 - **Direct Torznab Scrapers**: One-click local indexer integration for Prowlarr (`localhost:9696`) and Jackett (`localhost:9117`).
-- **Parallel Speed & Availability Probing**: Probes candidate links in the background before playback to ensure instantaneous start times.
+- **Parallel Speed & Availability Probing**: Probes candidate links in the background before playback to ensure measured start times.
 
 ### 🎬 Player & Audio Experience (libmpv Core)
 - **Smart Resume 5s Micro-Rewind**: Rewinds 5 seconds upon resume to restore conversation context without manual scrubbing.

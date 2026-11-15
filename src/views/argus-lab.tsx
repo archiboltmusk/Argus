@@ -21,6 +21,7 @@ import {
   saveLabState,
   type LabExperiment,
 } from "@/lib/argus-lab";
+import { PlaybackSessions } from "./lab/playback-sessions";
 import { TelemetryTab } from "./lab/telemetry-tab";
 import { AddonDirectoryTab } from "./lab/addon-directory-tab";
 import { EcosystemTab } from "./lab/ecosystem-tab";
@@ -132,6 +133,7 @@ export function ArgusLabView({ active = true }: { active?: boolean }) {
           </div>
         </header>
 
+        <PlaybackSessions />
         <div className="mb-8 grid grid-cols-1 gap-3 sm:grid-cols-3">
           {[
             { icon: ShieldCheck, label: "Your rules", value: Object.values(contract).filter(Boolean).length + " / 4 allowed", sub: "Local preference contract" },

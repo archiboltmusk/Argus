@@ -683,6 +683,8 @@ export function PlayPicker({
     autoActive,
     autoAttemptIdx,
     autoCandidatesLength: autoCandidates.length,
+    candidateCount: result?.picker.all.length ?? 0,
+    rejectedCount: result?.rejected.length ?? 0,
     autoFiredRef,
     setAutoAttemptIdx,
     setAutoExhausted,

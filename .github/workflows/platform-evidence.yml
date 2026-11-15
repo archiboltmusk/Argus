@@ -1,0 +1,30 @@
+name: Release platform evidence
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Published stable release tag
+        required: true
+permissions:
+  contents: read
+jobs:
+  evidence:
+    if: github.event_name == 'workflow_dispatch' || github.event.release.prerelease == false
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+      - name: Read exact release assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ inputs.tag || github.event.release.tag_name }}
+        run: gh api "repos/$GITHUB_REPOSITORY/releases/tags/$RELEASE_TAG" > release.json
+      - run: node scripts/platform-support.mjs release.json platform-support.md
+      - uses: actions/upload-artifact@v7
+        with:
+          name: platform-support
+          path: platform-support.md

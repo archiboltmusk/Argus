@@ -1,3 +1,4 @@
+import { applyEpisodeMappingOverrides } from "@/lib/episode-mapping-overrides";
 import type { Meta } from "@/lib/cinemeta";
 import { aniZipByKitsu } from "@/lib/providers/anizip";
 import {
@@ -475,6 +476,7 @@ export async function animeDetails(
   // the addon labels the cour "season 1" — the window must land before the
   // TVDB merge or the cour's identity-less rows match franchise season 1.
   await applyAnidbSeasonWindow(episodes, kitsuId);
+  applyEpisodeMappingOverrides(episodes, kitsuId);
   mergeTvdbEpisodes(episodes, tvdbEpsRaw?.loc ?? null, {
     lang: localized ? iso1 : undefined,
     targetLang: iso1,

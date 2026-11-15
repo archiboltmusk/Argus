@@ -300,19 +300,29 @@ export async function startNuvioWebAuth(
 /**
  * Fetches user profiles from Nuvio backend
  */
-export async function fetchNuvioProfiles(): Promise<NuvioProfile[]> {
+export async function fetchNuvioProfiles(options: { strict?: boolean } = {}): Promise<NuvioProfile[]> {
+  const startingAccountId = loadNuvioState().session?.user?.id;
   try {
     const res = await nuvioFetch("/rest/v1/profiles?order=profile_index.asc");
-    if (!res.ok) return [];
+    if (!res.ok) {
+      if (options.strict) throw new Error("Nuvio profiles could not be refreshed");
+      return [];
+    }
 
     const list = await res.json() as NuvioProfile[];
     if (Array.isArray(list)) {
       const state = loadNuvioState();
+      if (state.session?.user?.id !== startingAccountId) {
+        if (options.strict) throw new Error("Nuvio account changed during profile refresh");
+        return [];
+      }
       saveNuvioState({ ...state, profiles: list });
       return list;
     }
+    if (options.strict) throw new Error("Nuvio profiles response is invalid");
     return [];
   } catch (e) {
+    if (options.strict) throw e;
     console.warn("[nuvio] failed to fetch profiles", e);
     return [];
   }

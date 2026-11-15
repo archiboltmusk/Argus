@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
 import ts from "typescript";
+import * as episodeMappingOverrides from "../src/lib/episode-mapping-overrides.ts";
 import * as episodeBuild from "../src/lib/providers/anime-episode-build.ts";
 import * as placeholders from "../src/lib/providers/episode-placeholder.ts";
 import {
@@ -239,6 +240,7 @@ test("one-off and unknown ONA entries and existing extra types stay extras", () 
 
 test("opening Edgerunners pools its ONA sequel and fills all Season 2 titles without changing playback", async () => {
   const { fetchEntryEpisodes } = load("src/lib/providers/anime-franchise-episodes.ts", {
+    "@/lib/episode-mapping-overrides": episodeMappingOverrides,
     "@/lib/providers/anizip": { aniZipByKitsu: async () => mapping },
     "@/lib/providers/anime-episode-build": episodeBuild,
     "@/lib/providers/anime-episode-enrich": { enrichEpisodes: async () => {} },

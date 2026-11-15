@@ -53,6 +53,7 @@ export const DEFAULT_KID: KidConfig = { age: 7, curfewMinutes: null, parentPinHa
 // sync roster apply both purge, and a key that only one of them knows about is a leak
 // that outlives the profile.
 const PROFILE_KEY_PREFIXES = [
+  "argus.episode-mapping.v1.",
   "argus.games.sims.folder:",
   "argus.games.ffxiv.center:",
   "argus.games.eve.route:",
