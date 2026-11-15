@@ -41,6 +41,7 @@ try {
   });
   const context = await browser.newContext();
   const page = await context.newPage();
+  await page.route("**/argus-acceptance-fixture.webm", route => route.fulfill({ path: fixture, contentType: "video/webm" }));
   page.on("pageerror", (error) => errors.push(error.message));
   // Isolated fixture page, real application modules; never mount a test hook in the product.
   await page.route("**/__argus_acceptance", (route) =>
