@@ -116,12 +116,12 @@ export async function flushWriteQueue(): Promise<void> {
         continue;
       }
       if (queue.get(key) !== pending) continue;
-      const remoteSec = Math.floor((remote ? mtimeMs(remote) : 0) / 1000);
-      const queuedSec = Math.floor(mtimeMs(pending.item) / 1000);
+      const remoteTime = remote ? mtimeMs(remote) : 0;
+      const queuedTime = mtimeMs(pending.item);
       const drop = () => {
         if (queue.get(key) === pending) queue.delete(key);
       };
-      if (remoteSec >= queuedSec) {
+      if (remoteTime >= queuedTime) {
         drop();
         continue;
       }

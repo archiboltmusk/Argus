@@ -13,8 +13,6 @@ import { useProfiles } from "@/lib/profiles";
 import { exitWindowFullscreenOnPlayerClose } from "@/lib/fullscreen-state";
 import type { PartialSyncState } from "@/lib/together/provider";
 import { useView, type PlayerSrc, type PlayerStreamRef } from "@/lib/view";
-import { recordPlayOutcome } from "@/lib/streams/dead-links";
-import { loadStoredSettings } from "@/lib/settings/load";
 import { MAX_AUTORETRY_ATTEMPTS } from "../player-utils";
 
 const REMEMBER_MIN_SEC = 30;
@@ -65,9 +63,8 @@ export function usePlayerExit(params: {
   const closePlayer = useCallback(async () => {
     await captureExitSnapshot();
     const pos = getPlaybackPosition();
-    if (liveStreamRef?.infoHash && loadStoredSettings().deadLinkDemotion) {
-      recordPlayOutcome(liveStreamRef.infoHash, Number.isFinite(pos) ? pos : 0);
-    }
+    // Closing is not evidence of source failure, and position is not watch time.
+    // Explicit source reports retain responsibility for dead-link demotion.
     if (Number.isFinite(pos) && pos > 0) {
       saveResumeMs(
         src.meta.id, pos * 1000, season, episode,

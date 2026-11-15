@@ -99,3 +99,13 @@ test("acknowledged changes fail visibly if neither network nor storage can save 
   );
   assert.equal(h.values.size, 0);
 });
+
+test("a newer offline change wins within the same timestamp second", async () => {
+  const h = harness();
+  await h.api.cloudLibraryPut("account-a", item(5900, 200));
+  h.remote.set("account-a:tt123", item(5100, 100));
+  h.online();
+  await h.api.flushWriteQueue();
+  assert.equal(h.writes.length, 1);
+  assert.equal(h.remote.get("account-a:tt123").state.timeOffset, 200);
+});
