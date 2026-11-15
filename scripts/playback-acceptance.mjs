@@ -11,7 +11,7 @@ const { chromium } = require("playwright");
 const base = process.argv[2] ?? "http://127.0.0.1:1420";
 if (!["127.0.0.1", "localhost"].includes(new URL(base).hostname))
   throw new Error("Run against a local Vite development server only");
-const fixture = resolve("public/argus-acceptance-fixture.mp4");
+const fixture = resolve("public/argus-acceptance-fixture.webm");
 execFileSync("ffmpeg", [
   "-hide_banner",
   "-loglevel",
@@ -24,11 +24,11 @@ execFileSync("ffmpeg", [
   "-t",
   "12",
   "-c:v",
-  "libx264",
+  "libvpx",
   "-pix_fmt",
   "yuv420p",
-  "-movflags",
-  "+faststart",
+  "-deadline",
+  "realtime",
   fixture,
 ]);
 let browser;
@@ -67,16 +67,17 @@ try {
         const deadline = performance.now() + 10000;
         while (!predicate()) {
           if (performance.now() > deadline)
-            throw new Error(`Playback timed out: ${snapshot?.status}`);
+            throw new Error(`Playback timed out: ${snapshot?.status}: ${snapshot?.errorMessage ?? "no error detail"}`);
           await new Promise((resolve) => setTimeout(resolve, 25));
         }
       }
       const source = {
-        url: `${location.origin}/argus-acceptance-fixture.mp4`,
+        url: `${location.origin}/argus-acceptance-fixture.webm`,
         startAtSec: readResumeMs("acceptance-fixture") / 1000,
       };
       const start = performance.now();
       await bridge.load({ ...source, traceId: beginPlaybackTrace("direct") });
+      bridge.setMuted(true);
       await bridge.play({ reason: "acceptance" });
       await until(() => snapshot?.firstFrameReady && snapshot.status === "playing");
       const firstFrameMs = performance.now() - start;
@@ -125,7 +126,7 @@ try {
     JSON.stringify(
       {
         environment:
-          "Chromium HTML5 bridge; controlled local H.264 fixture; not native/device certification",
+          "Chromium HTML5 bridge; controlled local VP8 fixture; not native/device certification",
         journeys: results.length,
         p95FirstFrameMs: times[Math.ceil(times.length * 0.95) - 1],
         results,
