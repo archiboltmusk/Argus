@@ -1,8 +1,15 @@
+import { readActiveStremioAuthKey } from "@/lib/auth";
+import { sha256 } from "@noble/hashes/sha2.js";
+import { bytesToHex } from "@noble/hashes/utils.js";
 import { libraryGetOneStrict, libraryPut, type LibraryItem } from "@/lib/stremio";
 
 const KEY = "argus.stremio.write-queue.v1";
 
-type Pending = { authKey: string; item: LibraryItem };
+type Pending = { authRef: string; item: LibraryItem };
+
+function accountRef(authKey: string): string {
+  return bytesToHex(sha256(new TextEncoder().encode(authKey)));
+}
 
 const queue = new Map<string, Pending>();
 const activeWrites = new Map<string, symbol>();
@@ -10,7 +17,7 @@ let loaded = false;
 let started = false;
 
 function queueKey(authKey: string, id: string): string {
-  return JSON.stringify([authKey, id]);
+  return JSON.stringify([accountRef(authKey), id]);
 }
 
 function mtimeMs(item: LibraryItem): number {
@@ -27,10 +34,12 @@ function load(): void {
     const raw = JSON.parse(localStorage.getItem(KEY) ?? "[]");
     if (Array.isArray(raw)) {
       for (const p of raw) {
-        if (p && p.item && typeof p.item._id === "string" && typeof p.authKey === "string") {
-          queue.set(queueKey(p.authKey, p.item._id), p);
+        if (p && p.item && typeof p.item._id === "string" && (typeof p.authKey === "string" || typeof p.authRef === "string")) {
+          const authRef = typeof p.authRef === "string" ? p.authRef : accountRef(p.authKey);
+          queue.set(JSON.stringify([authRef, p.item._id]), { authRef, item: p.item });
         }
       }
+      persist();
     }
   } catch {}
 }
@@ -87,7 +96,7 @@ export async function cloudLibraryPut(
     }
     const existing = queue.get(key);
     if (!existing || mtimeMs(item) >= mtimeMs(existing.item)) {
-      queue.set(key, { authKey, item });
+      queue.set(key, { authRef: accountRef(authKey), item });
       try {
         persist(options.acknowledged);
       } catch (error) {
@@ -102,16 +111,19 @@ export async function cloudLibraryPut(
   }
 }
 
-export async function flushWriteQueue(): Promise<void> {
+export async function flushWriteQueue(authKey = readActiveStremioAuthKey()): Promise<void> {
   load();
+  if (!authKey) return;
+  const activeRef = accountRef(authKey);
   if (queue.size === 0) return;
   // Snapshot this pass: writes queued during an awaited request belong to the next pass.
   // eslint-disable-next-line unicorn/no-useless-spread
   for (const [key, pending] of [...queue.entries()]) {
+    if (pending.authRef !== activeRef) continue;
     try {
       let remote: LibraryItem | null;
       try {
-        remote = await libraryGetOneStrict(pending.authKey, pending.item._id);
+        remote = await libraryGetOneStrict(authKey, pending.item._id);
       } catch {
         continue;
       }
@@ -128,7 +140,7 @@ export async function flushWriteQueue(): Promise<void> {
       // Queued playback progress must preserve the current explicit bookmark state.
       const removed = remote ? remote.removed === true : true;
       const temp = removed || (remote ? remote.temp === true : true);
-      await libraryPut(pending.authKey, { ...pending.item, removed, temp });
+      await libraryPut(authKey, { ...pending.item, removed, temp });
       drop();
     } catch {}
   }

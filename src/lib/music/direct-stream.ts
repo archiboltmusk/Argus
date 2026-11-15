@@ -8,7 +8,7 @@ export function directMusicStream(input: string): MusicTrack {
     throw new Error("Use an HTTPS audio URL without embedded credentials or a fragment.");
   }
   return {
-    id: `direct:${url.href}`, connectorId: "direct", playbackUrl: url.href,
+    id: `direct:${crypto.randomUUID()}`, connectorId: "direct", playbackUrl: url.href,
     title: "Direct audio stream", artist: url.hostname, artwork: "",
     durationSeconds: 0, durationLabel: "", mediaKind: "audio",
   };

@@ -1,3 +1,5 @@
+import { sha256 } from "@noble/hashes/sha2.js";
+import { bytesToHex } from "@noble/hashes/utils.js";
 import assert from "node:assert/strict";
 import test from "node:test";
 import { readFileSync } from "node:fs";
@@ -7,12 +9,13 @@ function harness(values = new Map<string, string>()) {
   const source = readFileSync(
     new URL("../src/lib/stremio-write-queue.ts", import.meta.url),
     "utf8",
-  ).replace(/^import[^;]+;/, "");
+  ).replace(/^import[^;]+;/gm, "");
   let offline = true,
     storageFailed = false;
   const remote = new Map<string, any>();
   const writes: Array<{ account: string; item: any }> = [];
   const dependencies = {
+    sha256, bytesToHex, readActiveStremioAuthKey: () => "account-a",
     libraryGetOneStrict: async (account: string, id: string) => {
       if (offline) throw new Error("fixture offline");
       return remote.get(`${account}:${id}`) ?? null;
@@ -85,6 +88,8 @@ test("same title in two accounts keeps separate pending writes", async () => {
   await h.api.cloudLibraryPut("account-b", item(6000, 200));
   h.online();
   await h.api.flushWriteQueue();
+  assert.equal(h.writes.length, 1);
+  await h.api.flushWriteQueue("account-b");
   assert.equal(h.writes.length, 2);
   assert.equal(h.remote.get("account-a:tt123").state.timeOffset, 100);
   assert.equal(h.remote.get("account-b:tt123").state.timeOffset, 200);
@@ -108,4 +113,10 @@ test("a newer offline change wins within the same timestamp second", async () =>
   await h.api.flushWriteQueue();
   assert.equal(h.writes.length, 1);
   assert.equal(h.remote.get("account-a:tt123").state.timeOffset, 200);
+});
+
+test("persisted queue contains no authentication token", async () => {
+  const h = harness();
+  await h.api.cloudLibraryPut("sensitive-fixture-token", item(5000));
+  assert.equal([...h.values.values()].join("").includes("sensitive-fixture-token"), false);
 });

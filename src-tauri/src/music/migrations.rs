@@ -1,6 +1,6 @@
 use rusqlite::Connection;
 
-pub const LATEST_VERSION: i64 = 6;
+pub const LATEST_VERSION: i64 = 7;
 
 const CREATE_SCHEMA: &str = r#"
 CREATE TABLE IF NOT EXISTS music_tracks (
@@ -105,13 +105,16 @@ const PLAYLIST_DATES: &str = "CREATE TABLE playlist_track_dates (
   added_at TEXT NOT NULL,
   PRIMARY KEY (playlist_id, track_id)
 );";
-const STEPS: [(i64, &str); 6] = [
+const STEPS: [(i64, &str); 7] = [
     (1, CREATE_SCHEMA),
     (2, CREATE_CATALOG),
     (3, STREAM_METADATA),
     (4, MEDIA_KIND),
     (5, TRACK_LABELS),
     (6, PLAYLIST_DATES),
+    // Old remote cache entries may refer to a silent cross-provider substitute.
+    // Preserve local/direct endpoints, which are user-owned playback sources.
+    (7, "UPDATE music_tracks SET resolved_url = NULL, resolved_at = NULL, resolved_metadata = NULL WHERE connector NOT IN ('local', 'direct');"),
 ];
 
 pub fn run(connection: &mut Connection) -> Result<(), String> {

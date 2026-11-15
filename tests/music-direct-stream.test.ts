@@ -5,6 +5,8 @@ test("direct audio retains the explicit endpoint without inventing quality", () 
  const track = directMusicStream("https://fixture.invalid/radio?station=1");
  assert.equal(track.playbackUrl, "https://fixture.invalid/radio?station=1");
  assert.equal(track.connectorId, "direct");
+ assert.equal(track.id.includes("fixture.invalid"), false);
+ assert.equal(track.id.includes("station=1"), false);
  assert.equal(track.quality, undefined);
 });
 test("direct input rejects local protocols and embedded credentials", () => {
