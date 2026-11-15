@@ -15,6 +15,7 @@ import "@/lib/awards-history-eager";
 import "@/index.css";
 import "@/styles/unified-responsive.css";
 import "@/styles/studio.css";
+import "@/styles/music-studio.css";
 import "flag-icons/css/flag-icons.min.css";
 import { startTaskbarProgress } from "@/lib/download/taskbar-progress";
 import { completeBetaReturnPreferences } from "@/lib/updater/beta-return";

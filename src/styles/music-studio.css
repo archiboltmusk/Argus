@@ -1,0 +1,145 @@
+/* Shared music finish: existing themes still supply all colors and fonts. */
+html [data-music-view] {
+  --music-editorial-gap: clamp(24px, 4vw, 48px);
+  padding-bottom: calc(var(--argus-dock-gap, 76px) + 36px);
+}
+html [data-music-view] .music-page-mast {
+  padding-bottom: 24px;
+  gap: 20px;
+}
+html [data-music-view] :is(h1, .music-detail-title h1) {
+  font-size: clamp(30px, 4vw, 52px);
+  line-height: 1.08;
+  font-weight: 750;
+  letter-spacing: -0.045em;
+  text-wrap: balance;
+}
+html [data-music-view] .music-page-sections {
+  gap: 6px;
+  padding-bottom: 20px;
+}
+html [data-music-view] .music-page-sections button {
+  background: transparent;
+  border-radius: 999px;
+  padding-inline: 18px;
+}
+html [data-music-view] .music-page-sections button[aria-pressed="true"] {
+  color: var(--color-accent);
+  background: var(--color-accent-soft);
+}
+html [data-music-view] .music-home-feature {
+  border-radius: 20px;
+  border: 1px solid var(--color-edge-soft);
+  background: linear-gradient(125deg, var(--color-elevated), var(--color-surface));
+}
+html [data-music-view] .music-home-feature-copy {
+  padding: clamp(24px, 4vw, 48px);
+}
+html [data-music-view] .music-home-eyebrow {
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  font-size: 11px;
+  font-weight: 750;
+  color: var(--color-accent);
+}
+html[data-theme-preset="cool-grey"] [data-music-view] .music-home-primary {
+  background: var(--color-accent);
+  color: var(--color-canvas);
+  border-radius: 999px;
+  min-height: 44px;
+  padding-inline: 24px;
+  font-weight: 700;
+}
+html [data-music-view] .music-detail-track-list > .group {
+  border-radius: 10px;
+  min-height: 56px;
+  border-bottom-color: transparent;
+}
+html [data-music-view] .music-detail-track-list > .group:nth-child(even) {
+  background: var(--color-surface);
+}
+html [data-music-view] .music-detail-track-list > .group:focus-within {
+  background: var(--color-accent-soft);
+}
+html [data-music-dock] {
+  background: var(--color-surface);
+  border-top: 1px solid var(--color-edge-soft);
+  box-shadow: 0 -8px 32px rgb(0 0 0 / 0.1);
+}
+html [data-music-dock] .music-dock-icon {
+  border-radius: 50%;
+}
+html [data-music-dock] .music-dock-icon:hover {
+  background: var(--color-elevated);
+}
+/* The range input is visually transparent: indicate its keyboard focus on the rail. */
+html .music-dock-seek:focus-within {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 4px;
+  border-radius: 999px;
+}
+html .music-now-playing {
+  background: var(--color-canvas);
+}
+html [data-art-colors] .music-now-playing {
+  background:
+    radial-gradient(ellipse at 20% 30%, var(--music-art-wash), transparent 75%), var(--color-canvas);
+}
+html .music-now-artwork {
+  border-radius: 18px;
+  overflow: hidden;
+  box-shadow: 0 20px 60px rgb(0 0 0 / 0.28);
+}
+html .music-now-title {
+  font-weight: 750;
+  letter-spacing: -0.035em;
+}
+html .music-now-artist {
+  color: var(--color-ink-muted);
+}
+html .music-queue-panel {
+  border-radius: 20px;
+  box-shadow: 0 16px 64px rgb(0 0 0 / 0.3);
+}
+html .music-queue-header {
+  padding: 24px;
+}
+html .music-queue-track {
+  border-radius: 12px;
+  margin-block: 3px;
+}
+html .music-queue-track[aria-current="true"] {
+  background: var(--color-accent-soft);
+  box-shadow: inset 3px 0 var(--color-accent);
+}
+html .music-queue-track[aria-current="true"] .music-queue-track-copy strong {
+  color: var(--color-accent);
+}
+html .music-queue-track-copy strong {
+  font-size: 14px;
+}
+@media (max-width: 600px) {
+  html [data-music-view] .music-home-feature {
+    border-radius: 16px;
+  }
+  html .music-queue-panel {
+    border-radius: 16px;
+  }
+  html .music-now-artwork {
+    border-radius: 14px;
+  }
+  html .music-queue-actions button {
+    min-width: 44px;
+    min-height: 44px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  html :is(.music-now-playing, .music-queue-panel) {
+    animation: none;
+  }
+}
+@media (forced-colors: active) {
+  html .music-queue-track[aria-current="true"] {
+    outline: 2px solid Highlight;
+  }
+}
