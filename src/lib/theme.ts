@@ -124,23 +124,24 @@ export type FontPair = {
 export const THEME_PRESETS: Record<ThemePresetId, ThemePreset> = {
   "cool-grey": {
     id: "cool-grey",
-    name: "Argus default",
-    blurb: "What ships out of the box.",
+    name: "Argus Studio",
+    blurb: "Quiet surfaces, vivid artwork, and a warm rose accent.",
     previewImage: argusPreview,
-    swatch: ["#2c2e36", "#3a3d47", "#dcdde4"],
+    fontPair: "system",
+    swatch: ["#141416", "#242426", "#fa4865"],
     tokens: {
-      "--color-canvas": "oklch(0.18 0.004 260)",
-      "--color-surface": "oklch(0.22 0.004 260)",
-      "--color-elevated": "oklch(0.27 0.004 260)",
-      "--color-raised": "oklch(0.32 0.004 260)",
-      "--color-ink": "oklch(0.97 0.003 260)",
-      "--color-ink-muted": "oklch(0.72 0.003 260)",
-      "--color-ink-subtle": "oklch(0.50 0.003 260)",
-      "--color-edge": "oklch(0.36 0.004 260 / 0.55)",
-      "--color-edge-soft": "oklch(0.36 0.004 260 / 0.25)",
-      "--color-accent": "oklch(0.78 0.13 60)",
-      "--color-accent-soft": "oklch(0.78 0.13 60 / 0.18)",
-      "--color-danger": "oklch(0.55 0.18 25)",
+      "--color-canvas": "#141416",
+      "--color-surface": "#1c1c1f",
+      "--color-elevated": "#262629",
+      "--color-raised": "#323236",
+      "--color-ink": "#f5f5f7",
+      "--color-ink-muted": "#b9b9c1",
+      "--color-ink-subtle": "#9999a3",
+      "--color-edge": "rgb(255 255 255 / 0.15)",
+      "--color-edge-soft": "rgb(255 255 255 / 0.075)",
+      "--color-accent": "#fa4865",
+      "--color-accent-soft": "rgb(250 72 101 / 0.14)",
+      "--color-danger": "#ff6961",
     },
   },
   nord: {
@@ -2019,6 +2020,7 @@ export function applyTheme(theme: ThemeSettings): void {
   for (const [k, v] of Object.entries(tokens)) {
     root.style.setProperty(k, v);
   }
+  root.dataset.themePreset = theme.preset;
   root.dataset.themeMode = isLightColor(tokens["--color-canvas"]) ? "light" : "dark";
   // light-dark() is how album-art colours pick a readable lightness. Without a real
   // color-scheme it always resolves dark, so light themes got an invisible tint.
