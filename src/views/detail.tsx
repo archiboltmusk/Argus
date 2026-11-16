@@ -1,3 +1,4 @@
+import { useBundledAwardsVersion } from "@/lib/use-bundled-awards";
 import {
   useCallback,
   useEffect,
@@ -1312,10 +1313,11 @@ export function DetailView({
     () => orderByReason(shownSimilar, graphReasons),
     [shownSimilar, graphReasons],
   );
+  const awardsVersion = useBundledAwardsVersion();
   const liveAwards = useAwards(detail?.imdbId ?? undefined, meta.type === "series");
   const awards = useMemo(
     () => mergeBundledAwards(liveAwards, meta.name, releaseYearNum ?? undefined),
-    [liveAwards, meta.name, releaseYearNum],
+    [awardsVersion, liveAwards, meta.name, releaseYearNum],
   );
   const heroAwardSummary = pickHeroAwards(awardSummary(awards));
   const awardsInDescription = (settings.theme.preset as string) === "elegantfin";

@@ -11,7 +11,6 @@ import { loadSecrets } from "@/lib/secret-store";
 import { initializeMusic } from "@/lib/music/player";
 import { initSubtitleCache } from "@/lib/subtitles/subtitle-cache";
 import { hdrOverlayEmitAction } from "@/lib/hdr-overlay";
-import "@/lib/awards-history-eager";
 import "@/index.css";
 import "@/styles/unified-responsive.css";
 import "@/styles/studio.css";

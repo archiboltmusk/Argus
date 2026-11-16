@@ -1,3 +1,5 @@
+import * as queueHashes from "@noble/hashes/sha2.js";
+import * as queueHex from "@noble/hashes/utils.js";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
@@ -14,7 +16,7 @@ const load = (path, mocks = {}, storage) => {
   }).outputText;
   const exports = {};
   new Function("require", "exports", "localStorage", code)(
-    (id) => mocks[id] ?? {},
+    (id) => id === "@noble/hashes/sha2.js" ? queueHashes : id === "@noble/hashes/utils.js" ? queueHex : id === "@/lib/auth" ? { readActiveStremioAuthKey: () => "fixture" } : mocks[id] ?? {},
     exports,
     storage,
   );

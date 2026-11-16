@@ -1,3 +1,4 @@
+import { useBundledAwardsVersion } from "@/lib/use-bundled-awards";
 import { ArrowRight, Loader2 } from "lucide-react";
 import { Play } from "@/components/icons/play-filled";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
@@ -86,10 +87,11 @@ export function TitlePanel({
   const ratingSource: "imdb" | "tmdb" = imdbRating ? "imdb" : "tmdb";
   const tmdbRating = !anime && detail?.rating ? detail.rating : null;
 
+  const awardsVersion = useBundledAwardsVersion();
   const liveAwards = useAwards(imdbId ?? undefined, meta.type === "series");
   const awards = useMemo(
     () => mergeBundledAwards(liveAwards, title, year ? Number(year) : undefined),
-    [liveAwards, title, year],
+    [awardsVersion, liveAwards, title, year],
   );
   const awardSummaryItems = pickHeroAwards(awardSummary(awards), 3);
 

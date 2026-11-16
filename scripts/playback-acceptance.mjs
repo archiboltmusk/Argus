@@ -22,7 +22,7 @@ execFileSync("ffmpeg", [
   "-i",
   "testsrc2=size=320x180:rate=24",
   "-t",
-  "12",
+  "60",
   "-c:v",
   "libvpx",
   "-pix_fmt",

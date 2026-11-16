@@ -22,6 +22,7 @@ function api(options: { outage?: boolean; sparse?: boolean; metadataOnly?: boole
   const code = ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText;
   const mocks: Record<string, unknown> = {
     "./artist-authority": { resolveArtist: async (name: string) => remote({ canonical: options.outage ? null : { id: `${options.metadataOnly ? "musicbrainz" : "deezer"}:artist:${name}`, name, artwork: name + "-portrait.jpg" } }) },
+    "./listening-controls": { excludedFromTaste: () => false, tasteCacheRevision: () => "" },
     "./artist-popularity": { artistIdentityKey },
     "./artist-blocks": { filterBlockedTracks: (tracks: MusicTrack[]) => tracks.filter(track => track.artist !== blocked) },
     "./artist-genre-cache": { readArtistGenres: async () => new Map() },

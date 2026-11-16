@@ -109,7 +109,7 @@ jobs:
     name: macOS .dmg (${{ matrix.arch }})
     # Runs in parallel with the checks; publish waits for all of them.
     needs: [changes]
-    if: needs.changes.outputs.bundle == 'true'
+    if: needs.changes.outputs.bundle == 'true' || needs.changes.outputs.native == 'true'
     timeout-minutes: 60
     strategy:
       fail-fast: false
