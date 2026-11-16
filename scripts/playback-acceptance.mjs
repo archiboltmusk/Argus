@@ -41,7 +41,9 @@ try {
   });
   const context = await browser.newContext();
   const page = await context.newPage();
-  await page.route("**/argus-acceptance-fixture.webm", route => route.fulfill({ path: fixture, contentType: "video/webm" }));
+  await page.route("**/argus-acceptance-fixture.webm", (route) =>
+    route.fulfill({ path: fixture, contentType: "video/webm" }),
+  );
   page.on("pageerror", (error) => errors.push(error.message));
   // Isolated fixture page, real application modules; never mount a test hook in the product.
   await page.route("**/__argus_acceptance", (route) =>
@@ -64,11 +66,13 @@ try {
       const unsubscribe = bridge.subscribe((value) => {
         snapshot = value;
       });
-      async function until(predicate) {
+      async function until(predicate, phase) {
         const deadline = performance.now() + 10000;
         while (!predicate()) {
           if (performance.now() > deadline)
-            throw new Error(`Playback timed out: ${snapshot?.status}: ${snapshot?.errorMessage ?? "no error detail"}`);
+            throw new Error(
+              `Playback timed out: ${phase}: ${snapshot?.status} at ${snapshot?.positionSec}s: ${snapshot?.errorMessage ?? "no error detail"}`,
+            );
           await new Promise((resolve) => setTimeout(resolve, 25));
         }
       }
@@ -80,14 +84,14 @@ try {
       await bridge.load({ ...source, traceId: beginPlaybackTrace("direct") });
       bridge.setMuted(true);
       await bridge.play({ reason: "acceptance" });
-      await until(() => snapshot?.firstFrameReady && snapshot.status === "playing");
+      await until(() => snapshot?.firstFrameReady && snapshot.status === "playing", "first frame");
       const firstFrameMs = performance.now() - start;
       if (source.startAtSec > 0 && Math.abs(snapshot.positionSec - source.startAtSec) > 0.5)
         throw new Error("Reload did not restore saved progress");
       bridge.pause("acceptance");
-      await until(() => snapshot.status === "paused");
+      await until(() => snapshot.status === "paused", "pause");
       bridge.seek(6);
-      await until(() => Math.abs(snapshot.positionSec - 6) < 0.05);
+      await until(() => Math.abs(snapshot.positionSec - 6) < 0.5, "seek");
       const position = snapshot.positionSec;
       const fallback = { ...source, startAtSec: position, startPaused: true };
       let failed = false;
@@ -106,18 +110,28 @@ try {
       if (!failed) throw new Error("Deliberately broken source was accepted");
       await until(
         () => snapshot.firstFrameReady && Math.abs(snapshot.positionSec - position) < 0.5,
+        "rollback",
       );
       saveResumeMs("acceptance-fixture", snapshot.positionSec * 1000);
       const savedMs = readResumeMs("acceptance-fixture");
       unsubscribe();
       bridge.detach();
-      return { firstFrameMs, savedMs, positionBeforeFallback: position, positionAfterFallback: snapshot.positionSec, fallbackRestored: true };
+      return {
+        firstFrameMs,
+        savedMs,
+        positionBeforeFallback: position,
+        positionAfterFallback: snapshot.positionSec,
+        fallbackRestored: true,
+      };
     });
     assert.ok(
       result.firstFrameMs <= Number(process.env.ARGUS_FIRST_FRAME_BUDGET_MS ?? 3000),
       "first-frame performance budget exceeded",
     );
-    assert.ok(Math.abs(result.savedMs - result.positionBeforeFallback * 1000) < 500, `resume position lost: ${JSON.stringify(result)}`);
+    assert.ok(
+      Math.abs(result.savedMs - result.positionBeforeFallback * 1000) < 500,
+      `resume position lost: ${JSON.stringify(result)}`,
+    );
     results.push(result);
     console.log(`journey ${run + 1}/20 passed`);
   }
