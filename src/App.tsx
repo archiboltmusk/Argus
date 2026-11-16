@@ -1089,7 +1089,8 @@ function Shell({ onReady }: { onReady?: () => void }) {
   useViewPreloader(settings.tmdbKey);
 
   useEffect(() => {
-    if (topKind === "home") return;
+    // Navigation is interactive after this commit; remote home rows can fill
+    // their existing skeletons without keeping the entire shell inert.
     onReady?.();
   }, [onReady, topKind]);
 

@@ -19,7 +19,13 @@ type HostStore = Record<string, HostMetric>;
 let inMemoryStore: HostStore | null = null;
 
 function loadStore(): HostStore {
-  if (inMemoryStore) return inMemoryStore;
+  if (inMemoryStore) {
+    const now = Date.now();
+    for (const [host, metric] of Object.entries(inMemoryStore)) {
+      if (!Number.isFinite(metric.updatedAt) || now - metric.updatedAt >= HOST_TTL_MS) delete inMemoryStore[host];
+    }
+    return inMemoryStore;
+  }
   try {
     const raw = typeof localStorage !== "undefined" ? localStorage.getItem(STORAGE_KEY) : null;
     if (!raw) {

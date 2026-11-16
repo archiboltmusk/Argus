@@ -1,3 +1,4 @@
+import { MusicListeningControls } from "./music-listening-controls";
 import { getMusicSourceCandidates, musicPlaybackSource } from "@/lib/music/sources";
 import { replaceQueueTrack, selectableSources } from "@/lib/music/queue-source";
 import { MusicTrackLabels } from "./music-track-labels";
@@ -411,6 +412,7 @@ export function MusicQueue({
         </button>
       </header>
       <div className="music-queue-scroll">
+        <MusicListeningControls />
         {player.current && (
           <section className="music-queue-current">
             <h3>{t("music.queue.nowPlaying")}</h3>

@@ -1,3 +1,4 @@
+import * as episodeMappingOverrides from "../src/lib/episode-mapping-overrides.ts";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
@@ -634,6 +635,7 @@ test("franchise loading reuses the existing localized and English requests and r
     overview: finaleOverview,
   };
   const { fetchEntryEpisodes } = load("src/lib/providers/anime-franchise-episodes.ts", {
+    "@/lib/episode-mapping-overrides": episodeMappingOverrides,
     "@/lib/providers/anizip": {
       aniZipByKitsu: async () => ({
         mappings: { themoviedb_id: 123 },

@@ -1,6 +1,8 @@
 import { dlog } from "@/lib/debug";
 
 export type PlaybackMilestone =
+  | "recovery-start"
+  | "rollback-ready"
   | "resolve-start"
   | "resolve-ready"
   | "preflight-start"
@@ -11,12 +13,107 @@ export type PlaybackMilestone =
   | "file-loaded"
   | "first-frame";
 
-type ActiveTrace = {
-  startedAt: number;
-  sourceClass: "direct" | "debrid" | "p2p" | "unknown";
+export type PlaybackDecision = {
+  mode: "automatic" | "manual";
+  score: number;
+  candidates: number;
+  rejected: number;
+  reasons: Array<{ signal: string; delta: number }>;
 };
 
+type ActiveTrace = {
+  decision?: PlaybackDecision;
+  startedAt: number;
+  sourceClass: "direct" | "debrid" | "p2p" | "unknown";
+  milestones: Partial<Record<PlaybackMilestone, number>>;
+};
+
+export type PlaybackTraceReport = {
+  id: string;
+  sourceClass: ActiveTrace["sourceClass"];
+  outcome: "ready" | "failed" | "aborted" | "replaced";
+  totalMs: number;
+  decision?: PlaybackDecision;
+  milestones: Partial<Record<PlaybackMilestone, number>>;
+};
+
+const reports: PlaybackTraceReport[] = [];
+const listeners = new Set<() => void>();
 const active = new Map<string, ActiveTrace>();
+
+// Memory only: never retain media identifiers, URLs, headers, or account details.
+export function readPlaybackTraceReports(): readonly PlaybackTraceReport[] {
+  return reports.map((report) => ({
+    ...report,
+    milestones: { ...report.milestones },
+    ...(report.decision
+      ? {
+          decision: {
+            ...report.decision,
+            reasons: report.decision.reasons.map((reason) => ({ ...reason })),
+          },
+        }
+      : {}),
+  }));
+}
+
+export function subscribePlaybackTraceReports(listener: () => void): () => void {
+  listeners.add(listener);
+  return () => {
+    listeners.delete(listener);
+  };
+}
+
+export function recordPlaybackDecision(
+  traceId: string | undefined,
+  decision: PlaybackDecision,
+): void {
+  const trace = traceId ? active.get(traceId) : null;
+  if (!trace) return;
+  const allowed = new Set([
+    "cached",
+    "direct url",
+    "direct-free-stream",
+    "easynews-direct",
+    "dead-link",
+    "verified-correct-link",
+    "zero-seeders-soft",
+    "zero-seeders-stale-meta",
+    "seeders",
+    "group-pref",
+    "prev-episode-group",
+    "year-mismatch",
+    "year-off-by-1",
+    "REMUX",
+    "regional-dub",
+    "AV1-efficiency",
+    "HEVC-efficiency",
+  ]);
+  trace.decision = {
+    mode: decision.mode,
+    score: Number.isFinite(decision.score) ? decision.score : 0,
+    candidates: Math.max(0, Math.floor(decision.candidates)),
+    rejected: Math.max(0, Math.floor(decision.rejected)),
+    reasons: decision.reasons.slice(0, 30).flatMap((reason) => {
+      const category = reason.signal.split(/[:=]/)[0];
+      return allowed.has(category) && Number.isFinite(reason.delta)
+        ? [{ signal: category, delta: reason.delta }]
+        : [];
+    }),
+  };
+}
+
+export function clearPlaybackTraceReports(): void {
+  reports.length = 0;
+  for (const listener of listeners) {
+    try {
+      listener();
+    } catch {
+      /* diagnostic observer */
+    }
+  }
+}
+
 let nextTraceId = 0;
 
 function now(): number {
@@ -29,7 +126,16 @@ function markName(traceId: string, milestone: string): string {
 
 export function beginPlaybackTrace(sourceClass: ActiveTrace["sourceClass"]): string {
   const traceId = `${Date.now().toString(36)}-${(++nextTraceId).toString(36)}`;
-  active.set(traceId, { startedAt: now(), sourceClass });
+  // Bound abandoned traces as well as completed reports.
+  if (active.size >= 50) {
+    const oldest = active.keys().next().value!;
+    const abandoned = active.get(oldest)!;
+    for (const milestone of ["committed", ...Object.keys(abandoned.milestones)]) {
+      performance?.clearMarks?.(markName(oldest, milestone));
+    }
+    active.delete(oldest);
+  }
+  active.set(traceId, { startedAt: now(), sourceClass, milestones: {} });
   performance?.mark?.(markName(traceId, "committed"));
   dlog(`[perf][playback] ${traceId} committed source=${sourceClass}`);
   return traceId;
@@ -42,6 +148,7 @@ export function markPlaybackTrace(
   if (!traceId || !active.has(traceId)) return;
   performance?.mark?.(markName(traceId, milestone));
   const trace = active.get(traceId)!;
+  trace.milestones[milestone] ??= Math.round(now() - trace.startedAt);
   dlog(
     `[perf][playback] ${traceId} ${milestone} elapsed_ms=${Math.round(now() - trace.startedAt)}`,
   );
@@ -69,5 +176,26 @@ export function finishPlaybackTrace(
       now() - trace.startedAt,
     )}`,
   );
+  reports.unshift({
+    id: traceId,
+    sourceClass: trace.sourceClass,
+    outcome,
+    decision: trace.decision,
+    totalMs: Math.round(now() - trace.startedAt),
+    milestones: { ...trace.milestones },
+  });
+  reports.splice(20);
   active.delete(traceId);
+  // The marks have served their purpose; long viewing sessions must stay bounded.
+  for (const milestone of ["committed", ...Object.keys(trace.milestones), outcome]) {
+    performance?.clearMarks?.(markName(traceId, milestone));
+  }
+  performance?.clearMeasures?.(markName(traceId, "total"));
+  for (const listener of listeners) {
+    try {
+      listener();
+    } catch {
+      /* diagnostic observer */
+    }
+  }
 }

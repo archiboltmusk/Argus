@@ -1,3 +1,4 @@
+import { excludedFromTaste, tasteCacheRevision } from "./listening-controls";
 import { resolveArtist } from "./artist-authority";
 import { artistIdentityKey } from "./artist-popularity";
 import { filterBlockedTracks } from "./artist-blocks";
@@ -18,7 +19,7 @@ export type MadeForYouMix = {
 };
 type Snapshot = { day: string; personalized: boolean; mixes: MadeForYouMix[]; genres?: boolean };
 const pending = new Map<string, Promise<MadeForYouMix[]>>();
-const store = (profile: string) => `made-for-you-v2-${dailySeed(profile)}`;
+const store = (profile: string) => `made-for-you-v2-${dailySeed(profile + tasteCacheRevision())}`;
 const allowed = (tracks: readonly MusicTrack[]) => mixRecordings(filterBlockedTracks(filterBlockedTracks(tracks, "show"), "play"));
 
 function valid(mix: MadeForYouMix): MadeForYouMix | null {
@@ -51,7 +52,8 @@ function describe(id: string, kind: MadeForYouMix["kind"], index: number, name: 
 
 /** Snapshot once per day. Likes and history seed distinct scenes; playback never reshuffles a mounted shelf. */
 export async function loadMadeForYou(taste: MixTaste, day: string, profile: string, onUpdate?: (mixes: MadeForYouMix[]) => void): Promise<MadeForYouMix[]> {
-  const key = `${profile}:${day}`;
+  taste = { ...taste, recents: taste.recents.filter(track => !excludedFromTaste(track)), liked: taste.liked.filter(track => !excludedFromTaste(track)), library: taste.library.filter(track => !excludedFromTaste(track)) };
+  const key = `${profile}:${day}:${tasteCacheRevision()}`;
   const personalized = !!(taste.recents.length || taste.liked.length || taste.followed.length);
   const existing = pending.get(key);
   if (existing) {

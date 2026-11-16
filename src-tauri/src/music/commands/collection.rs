@@ -130,6 +130,15 @@ pub fn music_create_playlist(
 }
 
 #[tauri::command]
+pub fn music_create_playlist_with_tracks(
+    state: tauri::State<'_, MusicState>,
+    name: String,
+    tracks: Vec<MusicTrack>,
+) -> Result<library::MusicPlaylist, String> {
+    library::create_playlist_with_tracks(&state.db, &name, &tracks)
+}
+
+#[tauri::command]
 pub fn music_add_to_playlist(
     state: tauri::State<'_, MusicState>,
     playlist_id: String,

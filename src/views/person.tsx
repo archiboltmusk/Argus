@@ -1,3 +1,4 @@
+import { useBundledAwardsVersion } from "@/lib/use-bundled-awards";
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { BackToTop } from "@/components/back-to-top";
 import { Poster } from "@/components/poster";
@@ -61,10 +62,11 @@ export function PersonView({ personId }: { personId: number }) {
     : null;
   const scrollRef = useRef<HTMLElement>(null);
   const personRank = rank(personId, person?.knownForDepartment ?? "Acting");
+  const awardsVersion = useBundledAwardsVersion();
   const liveAwards = useAwards(person?.imdbId ?? undefined);
   const awardEntries = useMemo(
     () => mergeBundledPersonAwards(liveAwards, person?.name),
-    [liveAwards, person?.name],
+    [awardsVersion, liveAwards, person?.name],
   );
   const awardChips = useMemo(() => awardSummary(awardEntries), [awardEntries]);
   const [openAward, setOpenAward] = useState<{ type: AwardType; anchor: DOMRect } | null>(null);

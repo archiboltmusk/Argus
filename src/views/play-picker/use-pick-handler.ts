@@ -27,6 +27,7 @@ import { resolveStream, shouldPreferP2pDownload } from "@/lib/streams/resolve";
 import { resolvePlaybackRedirect } from "@/lib/streams/playback-redirect";
 import {
   beginPlaybackTrace,
+  recordPlaybackDecision,
   finishPlaybackTrace,
   markPlaybackTrace,
 } from "@/lib/perf/playback-trace";
@@ -96,6 +97,8 @@ export function usePickHandler({
   autoActive,
   autoAttemptIdx,
   autoCandidatesLength,
+  candidateCount = 0,
+  rejectedCount = 0,
   autoFiredRef,
   setAutoAttemptIdx,
   setAutoExhausted,
@@ -127,6 +130,8 @@ export function usePickHandler({
   autoActive: boolean;
   autoAttemptIdx: number;
   autoCandidatesLength: number;
+  candidateCount?: number;
+  rejectedCount?: number;
   autoFiredRef: React.MutableRefObject<boolean>;
   setAutoAttemptIdx: Dispatch<SetStateAction<number>>;
   setAutoExhausted: Dispatch<SetStateAction<boolean>>;
@@ -190,6 +195,10 @@ export function usePickHandler({
       intent === "download"
         ? undefined
         : beginPlaybackTrace(playbackSourceClass(stream, debrids.length, forceP2p));
+    recordPlaybackDecision(playbackTraceId, {
+      mode: userCommitted ? "manual" : "automatic", score: stream.score,
+      candidates: candidateCount, rejected: rejectedCount, reasons: stream.reasons,
+    });
     markPlaybackTrace(playbackTraceId, "resolve-start");
     try {
       if (intent === "download" && seasonEpisodes && seasonEpisodes.length > 0) {

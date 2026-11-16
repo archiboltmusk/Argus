@@ -104,20 +104,38 @@ pub(super) async fn resolve_track(
     state: &MusicState,
     track: &MusicTrack,
 ) -> Result<MusicStream, String> {
-    state.db.upsert_track(track)?;
     if let Some(url) = track
         .playback_url
         .as_deref()
         .map(str::trim)
         .filter(|url| !url.is_empty())
     {
+        if track.connector_id.as_deref() == Some("local") {
+            let local_file = reqwest::Url::parse(url).ok().is_some_and(|parsed| {
+                parsed.scheme() == "file"
+                    && parsed.host_str().is_none_or(|host| host == "localhost")
+            });
+            if !local_file && !std::path::Path::new(url).is_absolute() {
+                return Err("Local audio requires an absolute file path".to_string());
+            }
+        } else {
+            let parsed = reqwest::Url::parse(url).map_err(|_| "Invalid audio endpoint".to_string())?;
+            if parsed.scheme() != "https"
+                || !parsed.username().is_empty()
+                || parsed.password().is_some()
+                || parsed.fragment().is_some()
+            {
+                return Err("Remote audio requires HTTPS without embedded credentials or fragments".to_string());
+            }
+        }
         return Ok(MusicStream {
             http_headers: Default::default(),
             url: url.to_string(),
-            mime_type: "audio/mpeg".to_string(),
+            mime_type: "application/octet-stream".to_string(),
             bitrate: 0,
         });
     }
+    state.db.upsert_track(track)?;
     let connector_id = track.connector_id.as_deref().unwrap_or("youtube");
 
     // 1. Primary connector resolution
@@ -138,44 +156,11 @@ pub(super) async fn resolve_track(
         }
     }
 
-    // 2. Universal cross-engine audio fallback for all federated, indie, or unauthenticated sources
-    // (Spotify without premium, Bandcamp, Audius, Jamendo, ReverbNation, Tidal, Qobuz, etc.)
-    let query = if !track.artist.trim().is_empty() && !track.title.trim().is_empty() {
-        format!("{} {}", track.artist.trim(), track.title.trim())
-    } else if !track.title.trim().is_empty() {
-        track.title.trim().to_string()
-    } else {
-        track.artist.trim().to_string()
-    };
-
-    if !query.is_empty() {
-        // First try YouTube Music
-        if let Some(yt) = state.registry.get("youtube") {
-            if let Ok(results) = yt.search(app, &query, 5).await {
-                for candidate in results {
-                    if let Ok(stream) = yt.resolve(app, &candidate).await {
-                        let _ = state.db.cache_stream(&track.id, &stream);
-                        return Ok(stream);
-                    }
-                }
-            }
-        }
-
-        // Next try SoundCloud
-        if let Some(sc) = state.registry.get("soundcloud") {
-            if let Ok(results) = sc.search(app, &query, 5).await {
-                for candidate in results {
-                    if let Ok(stream) = sc.resolve(app, &candidate).await {
-                        let _ = state.db.cache_stream(&track.id, &stream);
-                        return Ok(stream);
-                    }
-                }
-            }
-        }
-    }
+    // Provider substitution requires a new, explicit source selection in the UI.
+    // Never cache a search result under another recording's identity.
 
     Err(format!(
-        "No playable audio stream available for '{}' by '{}'",
+        "Selected source unavailable for '{}' by '{}'. Choose another source explicitly",
         track.title, track.artist
     ))
 }

@@ -1,3 +1,4 @@
+import { useBundledAwardsVersion } from "@/lib/use-bundled-awards";
 import { useMemo } from "react";
 import { AwardLogo, laurelColorFor } from "@/components/icons/award-logo";
 import { AWARD_CATALOG } from "@/lib/awards-catalog";
@@ -23,6 +24,7 @@ export function AwardChips({
   size?: "sm" | "md";
 }) {
   const isAnime = meta.id.startsWith("kitsu:") || meta.id.startsWith("mal:");
+  const awardsVersion = useBundledAwardsVersion();
   const live = useAwards(isAnime ? undefined : imdbId ?? undefined, meta.type === "series");
   const { openAward } = useView();
   const chips = useMemo(() => {
@@ -31,7 +33,7 @@ export function AwardChips({
     return awardSummary(awards)
       .filter((s) => s.wins > 0 || s.nominations > 0)
       .slice(0, limit);
-  }, [isAnime, live, meta.name, meta.releaseInfo, limit]);
+  }, [awardsVersion, isAnime, live, meta.name, meta.releaseInfo, limit]);
 
   if (chips.length === 0) return null;
   const iconPx = size === "sm" ? 13 : 15;

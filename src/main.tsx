@@ -1,5 +1,6 @@
+import { lazyView } from "@/lib/lazy-view";
 import { getCurrentWindow } from "@tauri-apps/api/window";
-import { StrictMode, useCallback, useEffect, useRef, useState } from "react";
+import { Suspense, StrictMode, useCallback, useEffect, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { App } from "@/App";
 import { hydrateCustomThemes } from "@/lib/custom-themes";
@@ -9,19 +10,26 @@ import { applyOsDataset } from "@/lib/platform";
 import { loadSecrets } from "@/lib/secret-store";
 import { initializeMusic } from "@/lib/music/player";
 import { initSubtitleCache } from "@/lib/subtitles/subtitle-cache";
-import { CaptionsApp } from "@/views/captions-app";
-import { DjDeckApp } from "@/views/dj-deck-app";
-import { ModalOverlayApp } from "@/views/modal-overlay-app";
-import { HdrOverlayApp } from "@/views/hdr-overlay-app";
 import { hdrOverlayEmitAction } from "@/lib/hdr-overlay";
-import { PipApp } from "@/views/pip";
-import { VideoPipApp } from "@/views/video-pip";
-import "@/lib/awards-history-eager";
 import "@/index.css";
 import "@/styles/unified-responsive.css";
+import "@/styles/studio.css";
+import "@/styles/music-studio.css";
 import "flag-icons/css/flag-icons.min.css";
 import { startTaskbarProgress } from "@/lib/download/taskbar-progress";
 import { completeBetaReturnPreferences } from "@/lib/updater/beta-return";
+
+const CaptionsApp = lazyView(() => import("@/views/captions-app").then(module => ({ default: module.CaptionsApp })));
+
+const DjDeckApp = lazyView(() => import("@/views/dj-deck-app").then(module => ({ default: module.DjDeckApp })));
+
+const ModalOverlayApp = lazyView(() => import("@/views/modal-overlay-app").then(module => ({ default: module.ModalOverlayApp })));
+
+const HdrOverlayApp = lazyView(() => import("@/views/hdr-overlay-app").then(module => ({ default: module.HdrOverlayApp })));
+
+const PipApp = lazyView(() => import("@/views/pip").then(module => ({ default: module.PipApp })));
+
+const VideoPipApp = lazyView(() => import("@/views/video-pip").then(module => ({ default: module.VideoPipApp })));
 
 let returnPreferencesReady = true;
 
@@ -165,21 +173,18 @@ function StartupReady() {
   return null;
 }
 
-/**
- * Minimum time the boot splash stays up before the app is revealed.
- *
- * The seconds after mount are the heaviest in the app's life: the home feed loads dozens of rows
- * and every background runner starts at once. Revealing during that window shows the user raw
- * loading jank; holding the splash through it means the first frame they see is a settled one.
- * This is the one constant to tune — raise it to hide more of the load, lower it to reach content
- * sooner.
- */
-const MIN_BOOT_MS = 1800;
+// Reveal on the shell's readiness signal instead of imposing a fixed 1.8 s delay.
+const MIN_BOOT_MS = 0;
 
 function MainRoot() {
   const [appReady, setAppReady] = useState(false);
   const markAppReady = useCallback(() => setAppReady(true), []);
   const mountedAt = useRef(performance.now());
+  useEffect(() => {
+    if (!appReady) return;
+    const timer = window.setTimeout(() => { void initializeMusic().catch(() => {}); }, 0);
+    return () => window.clearTimeout(timer);
+  }, [appReady]);
 
   // Acknowledge startup and take focus as soon as the app is mounted. The window is already on
   // screen showing the splash, and holding focus back would let the user click elsewhere first.
@@ -204,6 +209,9 @@ function MainRoot() {
   useEffect(() => {
     const dismissSplash = () => {
       revealRoot();
+      if (!performance.getEntriesByName("argus:startup:interactive").length) {
+        performance.mark("argus:startup:interactive");
+      }
       const boot = document.getElementById("argus-boot");
       if (boot) {
         boot.classList.add("gone");
@@ -242,9 +250,6 @@ async function mount() {
     loadSecrets().catch(() => {}),
     hydrateCustomThemes().catch(() => {}),
     ensureUiLocale(getUiLanguage()).catch(() => {}),
-    !isHdrOverlay && !isModal && !isCaptions && !isPip && !isVideoPip && !isDjDeck
-      ? initializeMusic().catch(() => {})
-      : Promise.resolve(),
   ]).catch(() => {});
   if (!isHdrOverlay && !isModal && !isCaptions && !isDjDeck) void initSubtitleCache();
   if (!isHdrOverlay && !isModal && !isCaptions && !isPip && !isVideoPip && !isDjDeck)
@@ -253,6 +258,7 @@ async function mount() {
   if (!rootEl) return;
   createRoot(rootEl).render(
     <StrictMode>
+      <Suspense fallback={null}>
       {isHdrOverlay ? (
         <HdrOverlayApp />
       ) : isDjDeck ? (
@@ -269,6 +275,7 @@ async function mount() {
         <MainRoot />
       )}
       {(isModal || isPip || isVideoPip || isCaptions || isDjDeck) && <StartupReady />}
+      </Suspense>
     </StrictMode>,
   );
 }

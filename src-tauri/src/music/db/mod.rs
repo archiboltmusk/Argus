@@ -217,9 +217,11 @@ ON CONFLICT(id) DO UPDATE SET
         .map(str::trim)
         .filter(|url| !url.is_empty())
     {
+        let transient = connector == "direct"
+            && reqwest::Url::parse(url).map_or(true, |parsed| parsed.query().is_some());
         connection.execute(
             "UPDATE music_tracks SET resolved_url = ?2, resolved_at = ?3 WHERE id = ?1",
-            params![track.id, url, now_seconds().to_string()],
+            params![track.id, if transient { None } else { Some(url) }, now_seconds().to_string()],
         )?;
     }
     let artist = track.artist.trim();
@@ -427,4 +429,15 @@ mod tests {
             assert_eq!(stored.playback_url, value.playback_url);
         }
     }
+    #[test]
+    fn signed_direct_endpoints_are_not_durable() {
+        let database = MusicDb::in_memory();
+        let mut value = track();
+        value.id = "direct:opaque".to_string();
+        value.connector_id = Some("direct".to_string());
+        value.playback_url = Some("https://example.test/audio?token=fixture-secret".to_string());
+        database.upsert_track(&value).unwrap();
+        assert!(database.get_track(&value.id).unwrap().unwrap().playback_url.is_none());
+    }
+
 }

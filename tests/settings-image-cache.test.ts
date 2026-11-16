@@ -1,3 +1,4 @@
+import * as navigationPolicy from "../src/chrome/navigation-policy.ts";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
@@ -17,6 +18,7 @@ function fixture() {
   const storage = { getItem: (key: string) => data.get(key) ?? null };
   const identity = (value: unknown) => value;
   const dependencies: Record<string, unknown> = {
+    "@/chrome/navigation-policy": navigationPolicy,
     "@/lib/theme": {
       DEFAULT_THEME: { preset: "cool-grey", fontPair: "sentient-switzer", backgroundDim: 0.65 },
       FONT_PAIRS: { "sentient-switzer": {} },

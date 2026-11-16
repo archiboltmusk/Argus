@@ -1,6 +1,7 @@
 // Loads the static web build in headless Chromium and fails if the React root
 // never renders. Usage: node scripts/web-smoke.mjs <url>
 // PLAYWRIGHT_DIR points at a directory that has `playwright` installed.
+import { writeFileSync } from "node:fs";
 import { createRequire } from "node:module";
 
 const url = process.argv[2];
@@ -31,6 +32,35 @@ try {
 } catch {
   rendered = false;
 }
+let startup = null;
+if (rendered) {
+  try {
+    await page.waitForFunction(
+      () => performance.getEntriesByName("argus:startup:interactive").length > 0,
+      null,
+      { timeout: 10000 },
+    );
+    startup = await page.evaluate(
+      () => performance.getEntriesByName("argus:startup:interactive")[0].startTime,
+    );
+  } catch {
+    errors.push("Application never signaled interactive startup");
+  }
+}
+writeFileSync(
+  "startup-performance.json",
+  JSON.stringify(
+    {
+      environment: "Chromium web build; navigation start to shell reveal",
+      interactiveMs: startup,
+      budgetMs: Number(process.env.ARGUS_STARTUP_BUDGET_MS ?? 1500),
+    },
+    null,
+    2,
+  ),
+);
+if (startup !== null && startup > Number(process.env.ARGUS_STARTUP_BUDGET_MS ?? 1500))
+  errors.push(`Startup budget exceeded: ${Math.round(startup)} ms`);
 await page.screenshot({ path: "web-smoke.png" });
 // Closing Chromium aborts speculative imports; these are not application failures.
 collecting = false;

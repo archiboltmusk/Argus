@@ -1,3 +1,4 @@
+import { focusedNavigation } from "@/chrome/navigation-policy";
 import {
   DEFAULT_THEME,
   FONT_PAIRS,
@@ -162,6 +163,7 @@ function parseStoredSettings(raw: string | null): { settings: Settings; cacheabl
     return {
       settings: {
         ...DEFAULT,
+        navCustomization: focusedNavigation(),
         seekBackStepSec: sanitizeSeekStep(legacySeekStep("back"), DEFAULT.seekBackStepSec),
         seekForwardStepSec: sanitizeSeekStep(legacySeekStep("forward"), DEFAULT.seekForwardStepSec),
       },
@@ -389,11 +391,7 @@ function parseStoredSettings(raw: string | null): { settings: Settings; cacheabl
       parsed.gamesEnabled = true;
       parsed.musicEnabled = true;
       if (parsed.navCustomization) {
-        if (Array.isArray(parsed.navCustomization.hidden)) {
-          parsed.navCustomization.hidden = parsed.navCustomization.hidden.filter(
-            (id) => id !== "games",
-          );
-        }
+        // Preserve explicit visibility choices, including the focused preset.
         if (
           Array.isArray(parsed.navCustomization.order) &&
           parsed.navCustomization.order.length > 0

@@ -1,3 +1,4 @@
+import { useBundledAwardsVersion } from "@/lib/use-bundled-awards";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import type { Meta } from "@/lib/cinemeta";
@@ -172,10 +173,11 @@ function DetailBody({
 
   const imdbId = detail?.imdbId ?? (meta.id.startsWith("tt") ? meta.id : null);
   const releaseYear = Number(year) || undefined;
+  const awardsVersion = useBundledAwardsVersion();
   const liveAwards = useAwards(imdbId ?? undefined, isSeries);
   const awards = useMemo(
     () => mergeBundledAwards(liveAwards, meta.name, releaseYear),
-    [liveAwards, meta.name, releaseYear],
+    [awardsVersion, liveAwards, meta.name, releaseYear],
   );
   const awardGroups = useMemo(() => awardSummary(awards), [awards]);
   const heroAwardSummary = useMemo(() => pickHeroAwards(awardGroups), [awardGroups]);

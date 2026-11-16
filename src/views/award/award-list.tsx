@@ -1,3 +1,4 @@
+import { useBundledAwardsVersion } from "@/lib/use-bundled-awards";
 import { ArrowUpRight, X } from "lucide-react";
 import { Search } from "@/components/icons/search-icon";
 import { useEffect, useMemo, useState } from "react";
@@ -11,10 +12,11 @@ import { useT } from "@/lib/i18n";
 
 export function AwardList({ awardType, tint }: { awardType: AwardType; tint: string }) {
   const t = useT();
+  const awardsVersion = useBundledAwardsVersion();
   const meta = AWARD_CATALOG[awardType];
   const history = useMemo(
     () => readAwardHistory(awardType, meta.categories),
-    [awardType, meta.categories],
+    [awardsVersion, awardType, meta.categories],
   );
   const [decade, setDecade] = useState<number | null>(null);
   const [query, setQuery] = useState("");

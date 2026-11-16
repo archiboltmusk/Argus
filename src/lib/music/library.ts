@@ -16,12 +16,12 @@ export async function loadMusicLibrary(): Promise<MusicLibrarySnapshot> {
   return { albums, artists, playlists };
 }
 
-export async function createMusicPlaylist(name: string): Promise<MusicPlaylist> {
+export async function createMusicPlaylist(name: string, tracks?: MusicTrack[]): Promise<MusicPlaylist> {
   const base = name.trim();
   let candidate = base;
   for (let attempt = 0; ; attempt += 1) {
     try {
-      return await invoke<MusicPlaylist>("music_create_playlist", { name: candidate });
+      return await invoke<MusicPlaylist>(tracks ? "music_create_playlist_with_tracks" : "music_create_playlist", { name: candidate, ...(tracks ? { tracks } : {}) });
     } catch (error) {
       // Keep the database's uniqueness guarantee, including concurrent creations.
       if (attempt >= 4 || !/UNIQUE constraint failed:\s*playlists\.name/i.test(String(error))) {

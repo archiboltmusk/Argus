@@ -1,3 +1,4 @@
+import { tuneRadio } from "./listening-controls";
 import { invoke } from "@tauri-apps/api/core";
 import { safeFetch } from "@/lib/safe-fetch";
 import { getSecret, loadSecrets } from "@/lib/secret-store";
@@ -518,7 +519,7 @@ export async function loadTrackRadio(track: MusicTrack): Promise<MusicTrack[]> {
   const following = await build([seed], new Set([trackKey(track)]), STATION_SIZE);
   const filled = await withSeedArtist(seed, track, following);
   if (filled.length < 5) throw new Error("music.radio.error");
-  return [{ ...track, mediaKind: "audio" }, ...filled];
+  return [{ ...track, mediaKind: "audio" }, ...tuneRadio(filled, [...getMusicState().recents, ...getMusicState().likedTracks])];
 }
 
 let armed: { seedKey: string; stop: () => void; extending: boolean } | null = null;

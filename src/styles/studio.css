@@ -1,0 +1,59 @@
+/* The default Studio theme shares one hierarchy across media and settings.
+   Scope visual refinements so user-created themes retain their own direction. */
+html[data-theme-preset="cool-grey"] {
+  --poster-radius: 12px;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+html[data-theme-preset="cool-grey"] :is(h1, h2) {
+  letter-spacing: -0.035em;
+  font-weight: 700;
+  text-wrap: balance;
+}
+
+html[data-theme-preset="cool-grey"] h3 {
+  letter-spacing: -0.015em;
+}
+
+html[data-theme-preset="cool-grey"] [data-argus-sidebar] {
+  background: var(--color-surface);
+  border-inline-end: 1px solid var(--color-edge-soft);
+}
+
+html[data-theme-preset="cool-grey"] [data-argus-sidebar-label] {
+  font-size: 28px;
+  letter-spacing: -0.055em;
+  font-weight: 700;
+}
+
+html[data-theme-preset="cool-grey"] .argus-poster {
+  box-shadow: 0 6px 20px rgb(0 0 0 / 0.2);
+}
+
+html[data-theme-preset="cool-grey"] :is(input, textarea, select):focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 3px;
+}
+
+html[data-theme-preset="cool-grey"] :is(button, a, [role="button"]):focus-visible {
+  outline: 2px solid var(--color-ink);
+  outline-offset: 4px;
+}
+
+html[data-theme-preset="cool-grey"] ::selection {
+  background: var(--color-accent);
+  color: var(--color-canvas);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html[data-theme-preset="cool-grey"] {
+    scroll-behavior: auto;
+  }
+}
+
+@media (forced-colors: active) {
+  html[data-theme-preset="cool-grey"] :focus-visible {
+    outline-color: Highlight;
+  }
+}

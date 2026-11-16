@@ -171,6 +171,44 @@ pub fn create_playlist(database: &MusicDb, name: &str) -> Result<MusicPlaylist, 
     })
 }
 
+pub fn create_playlist_with_tracks(
+    database: &MusicDb,
+    name: &str,
+    tracks: &[MusicTrack],
+) -> Result<MusicPlaylist, String> {
+    let name = valid_playlist_name(name)?;
+    if tracks.is_empty() {
+        return Err("Cannot save an empty queue".to_string());
+    }
+    let id = Uuid::new_v4().to_string();
+    let timestamp = now_millis().to_string();
+    database.with_connection(|connection| {
+        let transaction = connection.transaction().map_err(|error| error.to_string())?;
+        transaction.execute(
+            "INSERT INTO playlists (id, name, created_at, updated_at) VALUES (?1, ?2, ?3, ?3)",
+            params![id, name, timestamp],
+        ).map_err(|error| error.to_string())?;
+        let mut position = 0;
+        for track in tracks {
+            upsert_track_in_transaction(&transaction, track)?;
+            let inserted = transaction.execute(
+                "INSERT OR IGNORE INTO playlist_tracks (playlist_id, position, track_id) VALUES (?1, ?2, ?3)",
+                params![id, position, track.id],
+            ).map_err(|error| error.to_string())?;
+            if inserted > 0 {
+                transaction.execute(
+                    "INSERT INTO playlist_track_dates (playlist_id, track_id, added_at) VALUES (?1, ?2, ?3)",
+                    params![id, track.id, timestamp],
+                ).map_err(|error| error.to_string())?;
+                position += 1;
+            }
+        }
+        let playlist = get_playlist(&transaction, &id)?;
+        transaction.commit().map_err(|error| error.to_string())?;
+        Ok(playlist)
+    })
+}
+
 pub fn rename_playlist(
     database: &MusicDb,
     playlist_id: &str,
@@ -619,4 +657,26 @@ mod tests {
         assert_eq!(updated.tracks.len(), 1);
         assert_eq!(updated.tracks[0].id, second.id);
     }
+    #[test]
+    fn queue_save_is_ordered_and_atomic() {
+        let database = MusicDb::in_memory();
+        let one = track("atomic-one", "One", None);
+        let two = track("atomic-two", "Two", None);
+        let saved = create_playlist_with_tracks(&database, "Queue", &[one.clone(), two, one]).unwrap();
+        assert_eq!(saved.tracks.iter().map(|track| track.id.as_str()).collect::<Vec<_>>(), vec!["atomic-one", "atomic-two"]);
+    }
+
+    #[test]
+    fn failed_queue_save_leaves_no_partial_playlist() {
+        let database = MusicDb::in_memory();
+        database.with_connection(|connection| {
+            connection.execute_batch("CREATE TRIGGER fail_queue BEFORE INSERT ON playlist_tracks WHEN NEW.track_id = 'atomic-bad' BEGIN SELECT RAISE(ABORT, 'fixture failure'); END;")
+                .map_err(|error| error.to_string())
+        }).unwrap();
+        assert!(create_playlist_with_tracks(&database, "Queue", &[
+            track("atomic-good", "Good", None), track("atomic-bad", "Bad", None)
+        ]).is_err());
+        assert!(list_playlists(&database).unwrap().is_empty());
+    }
+
 }

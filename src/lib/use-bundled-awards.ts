@@ -1,5 +1,5 @@
-import { useSyncExternalStore } from "react";
-import { bundledAwardsVersion, subscribeBundledAwards } from "./awards-history";
+import { useEffect, useSyncExternalStore } from "react";
+import { bundledAwardsVersion, subscribeBundledAwards, ensureBundledAwards } from "./awards-history";
 
 /**
  * Re-render when the bundled award table arrives.
@@ -13,6 +13,7 @@ import { bundledAwardsVersion, subscribeBundledAwards } from "./awards-history";
 const NEVER = () => () => {};
 
 export function useBundledAwardsVersion(enabled = true): number {
+  useEffect(() => { if (enabled) ensureBundledAwards(); }, [enabled]);
   return useSyncExternalStore(
     enabled ? subscribeBundledAwards : NEVER,
     bundledAwardsVersion,

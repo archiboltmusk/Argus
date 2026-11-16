@@ -816,6 +816,7 @@ export async function deleteWatchProgressFromNuvio(
  */
 export async function pullWatchProgressFromNuvio(
   argusProfileId?: string | number,
+  options: { strict?: boolean } = {},
 ): Promise<NuvioWatchProgress[]> {
   if (!isNuvioSignedIn()) return [];
   const startingAccountId = getNuvioAccountId();
@@ -1096,6 +1097,8 @@ export async function pullWatchProgressFromNuvio(
 
   if (!isCurrentAccount()) return [];
 
+  if (options.strict) throw new Error("Nuvio watch progress could not be refreshed");
+
   // Gracefully fallback to cached records so CW tray never disappears or remains blank
   return readCachedWatchProgress(profileIndex, startingAccountId);
 }
@@ -1106,6 +1109,7 @@ export async function pullWatchProgressFromNuvio(
  */
 export async function pullAddonsFromNuvio(
   argusProfileId: string,
+  options: { strict?: boolean } = {},
 ): Promise<NuvioAddonItem[]> {
   if (!isNuvioSignedIn()) return [];
 
@@ -1121,11 +1125,16 @@ export async function pullAddonsFromNuvio(
       `/rest/v1/addons?profile_id=eq.${profileIndex}&order=sort_order.asc`,
     );
 
-    if (!res.ok) return [];
+    if (!res.ok) {
+      if (options.strict) throw new Error("Nuvio addons could not be refreshed");
+      return [];
+    }
 
     const list = (await res.json()) as NuvioAddonItem[];
+    if (!Array.isArray(list) && options.strict) throw new Error("Nuvio addons response is invalid");
     return Array.isArray(list) ? list : [];
   } catch (err) {
+    if (options.strict) throw err;
     console.warn("[nuvio] failed to pull addons", err);
     return [];
   }

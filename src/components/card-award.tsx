@@ -1,3 +1,4 @@
+import { useBundledAwardsVersion } from "@/lib/use-bundled-awards";
 import { useMemo } from "react";
 import { AwardTab } from "./award-tab";
 import { AwardLogo } from "./icons/award-logo";
@@ -36,13 +37,14 @@ function labelFor(win: ClassicWin): string {
 }
 
 export function useClassicAwardWin(meta: Meta, imdbId?: string): ClassicWin | null {
+  const awardsVersion = useBundledAwardsVersion();
   const live = useAwards(imdbId, meta.type === "series");
   const year = parseAwardYear(meta.releaseInfo);
   return useMemo(() => {
     const summary = awardSummary(mergeBundledAwards(live, meta.name, year));
     const won = summary.find((s) => s.wins > 0);
     return won ? { type: won.type, wins: won.wins } : null;
-  }, [live, meta.name, year]);
+  }, [awardsVersion, live, meta.name, year]);
 }
 
 export function ClassicAwardTab({

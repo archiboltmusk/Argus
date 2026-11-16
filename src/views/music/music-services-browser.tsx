@@ -1,4 +1,7 @@
-import { useState } from "react";
+import { directMusicStream } from "@/lib/music/direct-stream";
+import { getMusicHealth } from "@/lib/music/sources";
+import type { MusicConnectorHealth } from "@/lib/music/types";
+import { useEffect, useState } from "react";
 import { Globe, Palette, Play, Sparkles, Users, Zap } from "lucide-react";
 import {
   MULTI_STREAMING_SERVICES,
@@ -11,6 +14,11 @@ import { playMusic } from "@/lib/music/player";
 import type { MusicTrack } from "@/lib/music/types";
 
 export function MusicServicesBrowser({ onExploreTrack }: { onExploreTrack?: (track: MusicTrack) => void }) {
+  const [directUrl, setDirectUrl] = useState("");
+  const [directError, setDirectError] = useState("");
+  const [directBusy, setDirectBusy] = useState(false);
+  const [connectors, setConnectors] = useState<MusicConnectorHealth[]>([]);
+  useEffect(() => { let active = true; void getMusicHealth().then(value => { if (active) setConnectors(value); }).catch(() => {}); return () => { active = false; }; }, []);
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [activeServiceId, setActiveServiceId] = useState<StreamingServiceId>("reverbnation");
   const [activeTheme, setActiveTheme] = useState<string>("midnight-harbor");
@@ -19,6 +27,7 @@ export function MusicServicesBrowser({ onExploreTrack }: { onExploreTrack?: (tra
   const daylist = getCurrentDaylistVibe();
   const currentService = MULTI_STREAMING_SERVICES.find((s) => s.id === activeServiceId) ?? MULTI_STREAMING_SERVICES[0];
   const serviceTracks = getServiceCuratedTracks(activeServiceId);
+  const liveConnector = connectors.find(connector => connector.id === activeServiceId);
 
   const filteredServices = MULTI_STREAMING_SERVICES.filter((svc) => {
     if (selectedCategory === "all") return true;
@@ -56,10 +65,25 @@ export function MusicServicesBrowser({ onExploreTrack }: { onExploreTrack?: (tra
         </div>
       </section>
 
+      <section className="rounded-2xl border border-edge-soft bg-surface p-5">
+        <h2 className="text-lg font-semibold">Open an audio stream</h2>
+        <p className="mt-1 text-sm text-ink-muted">Use a direct HTTPS audio file or station endpoint, not a music-service webpage. Codec, seeking and availability depend on the endpoint. The address is passed to the player and can appear in playback history.</p>
+        <form className="mt-4 flex flex-wrap gap-3" onSubmit={async event => {
+          event.preventDefault(); if (directBusy) return;
+          setDirectError(""); setDirectBusy(true);
+          try { const track = directMusicStream(directUrl); await playMusic(track, [track]); }
+          catch (error) { setDirectError(error instanceof Error ? error.message : "Could not open this stream."); }
+          finally { setDirectBusy(false); }
+        }}>
+          <label className="flex min-w-0 flex-1 flex-col gap-1 text-sm">HTTPS audio address<input type="url" required value={directUrl} onChange={event => setDirectUrl(event.target.value)} placeholder="https://your-server.example/audio.flac" className="rounded-lg bg-elevated p-3" /></label>
+          <button disabled={directBusy} className="self-end rounded-lg bg-elevated px-5 py-3">{directBusy ? "Opening…" : "Play stream"}</button>
+        </form>
+        <p role="status" className="mt-2 text-sm text-ink-muted">{directError}</p>
+      </section>
       {/* Category Pills */}
       <div className="flex flex-wrap items-center gap-2" role="tablist">
         {[
-          { id: "all", label: "All Services (10)" },
+          { id: "all", label: `All Services (${MULTI_STREAMING_SERVICES.length})` },
           { id: "indie-community", label: "Indie & Community (ReverbNation, SoundCloud, Jamendo)" },
           { id: "audiophile-lossless", label: "Audiophile Lossless (Bandcamp, Tidal, Debrid)" },
           { id: "self-hosted", label: "Self-Hosted (Subsonic, Jellyfin, Plex)" },
@@ -138,7 +162,8 @@ export function MusicServicesBrowser({ onExploreTrack }: { onExploreTrack?: (tra
               <h3 className="text-xl font-bold">{currentService.name} Curated Stream Hub</h3>
             </div>
             <p className="text-xs text-ink-subtle mt-0.5">
-              Protocol: {currentService.protocol} · Bitrate: ~{currentService.bitrateKbps} kbps · {currentService.maxFidelity}
+              {liveConnector?.playable ? `Native connector: ${liveConnector.health}` : "Native playback not verified for this service. Catalog matches may use a different provider."}
+              <span className="block mt-1">Audio quality is determined by the actual recording and playback source, not this service card.</span>
             </p>
           </div>
           <span className="rounded-full bg-emerald-500/20 text-emerald-400 px-3 py-1 text-xs font-semibold self-start sm:self-auto">

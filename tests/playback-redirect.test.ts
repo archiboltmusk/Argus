@@ -119,6 +119,7 @@ function pickerHarness(intent = "play") {
     },
     "@/lib/perf/playback-trace": {
       beginPlaybackTrace: () => "fixture",
+      recordPlaybackDecision() {},
       finishPlaybackTrace() {},
       markPlaybackTrace() {},
     },

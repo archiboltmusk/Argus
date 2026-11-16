@@ -32,6 +32,7 @@ function radio(candidates: any[], related: any[]) {
     { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } },
   ).outputText;
   const mocks: any = {
+    "./listening-controls": { tuneRadio: (tracks: any[]) => tracks },
     "@tauri-apps/api/core": {
       invoke: async (cmd: string, args: any) => {
         calls.push({ cmd, args });

@@ -1,3 +1,4 @@
+import { focusedNavigation } from "@/chrome/navigation-policy";
 import { RotateCcw } from "../../icons";
 import { useState } from "react";
 import {
@@ -49,6 +50,10 @@ export function NavEditor({ layout, value: cfg, onChange }: {
 
   return (
     <div className="flex flex-col gap-2.5">
+      <button type="button" className="h-11 rounded-md bg-canvas px-3 text-start text-sm" onClick={() => onChange(focusedNavigation())}>
+        Focused navigation: Home, Discover, Library, Settings
+      </button>
+      <p className="text-sm text-ink-subtle">Other sections remain installed. Show them below or use Reset to restore full navigation. Existing hotkeys and parental rules still apply.</p>
       {!renamable && (
         <p className="max-w-[66ch] text-[15.5px] leading-[22px] text-ink-subtle">
           {t(

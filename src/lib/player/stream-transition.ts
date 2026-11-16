@@ -1,3 +1,4 @@
+import { beginPlaybackTrace, markPlaybackTrace, finishPlaybackTrace } from "@/lib/perf/playback-trace";
 import { normalizeLang } from "@/lib/subtitles/language";
 import type { PlayerBridge, PlayerSnapshot, PlayerSource, TrackInfo } from "./bridge";
 
@@ -117,15 +118,25 @@ export async function transitionStream(
   signal: AbortSignal,
   timeoutMs = 30_000,
 ): Promise<void> {
+  const traceId = beginPlaybackTrace("unknown");
+  markPlaybackTrace(traceId, "recovery-start");
+  let outcome: "ready" | "failed" | "aborted" = "failed";
   try {
     const after = await loadReady(bridge, next, signal, timeoutMs);
-    if (signal.aborted) return;
+    if (signal.aborted) { outcome = "aborted"; return; }
     await restoreSelection(bridge, snapshot, after);
+    markPlaybackTrace(traceId, "first-frame");
+    outcome = "ready";
   } catch (error) {
     // Another movie/switch owns the bridge after cancellation. Never load over it.
-    if (signal.aborted) return;
+    if (signal.aborted) { outcome = "aborted"; return; }
     const restored = await loadReady(bridge, previous, signal, timeoutMs);
-    if (!signal.aborted) await restoreSelection(bridge, snapshot, restored);
+    if (!signal.aborted) {
+      await restoreSelection(bridge, snapshot, restored);
+      markPlaybackTrace(traceId, "rollback-ready");
+    }
     throw error;
+  } finally {
+    finishPlaybackTrace(traceId, signal.aborted ? "aborted" : outcome);
   }
 }

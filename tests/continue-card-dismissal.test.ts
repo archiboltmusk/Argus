@@ -1,3 +1,5 @@
+import * as queueHashes from "@noble/hashes/sha2.js";
+import * as queueHex from "@noble/hashes/utils.js";
 import assert from "node:assert/strict";
 import test from "node:test";
 import { readFileSync } from "node:fs";
@@ -21,6 +23,9 @@ function harness() {
   const cache = new Map<string, any>();
   const load = (name: string): any => {
     const file = name.replace(/^@\/lib\//, "").replace(/^\.\//, "");
+    if (file === "@noble/hashes/sha2.js") return queueHashes;
+    if (file === "@noble/hashes/utils.js") return queueHex;
+    if (file === "auth") return { readActiveStremioAuthKey: () => "fixture-auth" };
     if (cache.has(file)) return cache.get(file);
     if (file === "react") return { useSyncExternalStore() {} };
     if (file === "stremio")
@@ -275,7 +280,7 @@ test("a previous account's delayed queue write cannot replace the new account's 
   const pending = JSON.parse(h.data.get("argus.stremio.write-queue.v1")!);
   assert.equal(pending.length, 2);
   assert.equal(
-    pending.find((value: any) => value.authKey === "fixture-account-b").item.state.timeOffset,
+    pending.find((value: any) => value.authRef === queueHex.bytesToHex(queueHashes.sha256(new TextEncoder().encode("fixture-account-b")))).item.state.timeOffset,
     0,
   );
   assert.equal(queue.queuedWatched("older-b", "fixture-account-b")?.watched, "b");

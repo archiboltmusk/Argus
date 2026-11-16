@@ -179,6 +179,10 @@ export function calculateRatingScoreAdjustment(stream: { infoHash?: string; url?
   isVerifiedGood: boolean;
 } {
   const rating = getStreamRating(stream);
+  // Stored feedback remains inspectable; old observations no longer affect selection.
+  if (!Number.isFinite(rating.lastUpdated) || Date.now() - rating.lastUpdated >= 7 * 24 * 60 * 60 * 1000) {
+    return { delta: 0, isFlaggedWrong: false, isFlaggedDead: false, isVerifiedGood: false };
+  }
   let delta = 0;
 
   // Upvotes boost score

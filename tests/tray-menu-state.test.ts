@@ -69,8 +69,8 @@ test("invalid custom colors use Argus's real defaults rather than an empty popup
     { "--color-surface": "inherit", "--color-canvas": "url(https://example.com)" },
     supportsColor,
   );
-  assert.equal(tokens["--color-canvas"], "oklch(0.18 0.004 260)");
-  assert.equal(tokens["--color-surface"], "oklch(0.22 0.004 260)");
+  assert.equal(tokens["--color-canvas"], "#141416");
+  assert.equal(tokens["--color-surface"], "#1c1c1f");
   assert.equal(Object.keys(tokens).length, 12);
 });
 
@@ -209,7 +209,7 @@ test("main tray bridge publishes theme and CSS changes, syncs custom themes, and
     assert.equal(snapshots.at(-1)?.labels.error, "Could not apply this change. Try again.");
     assert.equal(
       snapshots.at(-1)?.tokens["--tray-row-hover"],
-      "oklch(0.27 0.004 260)",
+      "#262629",
       "the popup needs its own row highlight tone",
     );
 
