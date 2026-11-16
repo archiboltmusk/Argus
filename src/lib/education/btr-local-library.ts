@@ -317,6 +317,10 @@ export function createBTRVideoPlayerSrc(
     ? video.fullPath
     : `file://${video.fullPath}`;
 
+  const historyUrl = companionPdfUrl
+    ? `/education?btrSubject=${subject.id}&companionPdf=${encodeURIComponent(companionPdfUrl)}`
+    : `/education?btrSubject=${subject.id}`;
+
   return {
     url: formattedUrl,
     title: video.title || `${subject.name} - Lecture ${video.lectureNumber}`,
@@ -327,6 +331,6 @@ export function createBTRVideoPlayerSrc(
       name: `${subject.name} - Lecture ${video.lectureNumber}`,
       description: `Core BTR Dr. Zainab Vora high-yield lecture for ${subject.name}.`,
     },
-    historyUrl: `/education?btrSubject=${subject.id}`,
+    historyUrl,
   };
 }

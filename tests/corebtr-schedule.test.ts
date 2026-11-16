@@ -158,5 +158,5 @@ test("CoreBTR Local Library: creates valid PlayerSrc for native zero-latency pla
   assert.equal(playerSrc.meta.type, "other");
   assert.ok(playerSrc.title.length > 0);
   assert.ok(playerSrc.subtitle?.includes("Core BTR 2027"));
-  assert.ok(playerSrc.continuation, "Companion PDF path should be attached for slide syncing");
+  assert.ok(playerSrc.historyUrl?.includes("companionPdf="), "Companion PDF path should be attached for slide syncing");
 });
