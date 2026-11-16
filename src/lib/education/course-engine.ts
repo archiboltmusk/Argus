@@ -957,6 +957,14 @@ export class CoursewareEngine {
   }
 
   /**
+   * Registers or updates a local offline course discovered by local-course-scanner.
+   */
+  public registerLocalCourse(course: UniversityCourse): void {
+    this.courses.set(course.id, course);
+    this.saveState();
+  }
+
+  /**
    * Updates playback progress for a specific lecture, auto-advancing
    * active lecture pointer if the user completed >= 90% of the lecture.
    */
