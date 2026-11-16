@@ -84,9 +84,10 @@ try {
       const firstFrameMs = performance.now() - start;
       if (source.startAtSec > 0 && Math.abs(snapshot.positionSec - source.startAtSec) > 0.5)
         throw new Error("Reload did not restore saved progress");
-      bridge.seek(6);
-      await until(() => Math.abs(snapshot.positionSec - 6) < 0.5);
       bridge.pause("acceptance");
+      await until(() => snapshot.status === "paused");
+      bridge.seek(6);
+      await until(() => Math.abs(snapshot.positionSec - 6) < 0.05);
       const position = snapshot.positionSec;
       const fallback = { ...source, startAtSec: position, startPaused: true };
       let failed = false;
@@ -116,7 +117,7 @@ try {
       result.firstFrameMs <= Number(process.env.ARGUS_FIRST_FRAME_BUDGET_MS ?? 3000),
       "first-frame performance budget exceeded",
     );
-    assert.ok(Math.abs(result.savedMs - 6000) < 500, `resume position lost: ${JSON.stringify(result)}`);
+    assert.ok(Math.abs(result.savedMs - result.positionBeforeFallback * 1000) < 500, `resume position lost: ${JSON.stringify(result)}`);
     results.push(result);
     console.log(`journey ${run + 1}/20 passed`);
   }
