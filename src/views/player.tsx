@@ -129,6 +129,7 @@ import { InteractiveCheckpointOverlay } from "./player/interactive-checkpoint-ov
 import {
   getCheckpointsForVideo,
   extractCheckpointsFromTranscript,
+  CURATED_COURSE_CHECKPOINTS,
   type LectureCheckpoint,
 } from "@/lib/education/interactive-checkpoints";
 import { AmbientEdgeGlow } from "@/components/player/ambient-edge-glow";
@@ -534,7 +535,36 @@ function NativePlayerView({ src }: { src: PlayerSrc }) {
   const completedCheckpoints = useRef(new Set<string>());
 
   const lectureCheckpoints = useMemo(() => {
+    // Movies, series, anime, TV, channels, and general entertainment media must NEVER trigger lecture checkpoints!
+    const mediaType = src.meta.type;
+    if (
+      mediaType === "movie" ||
+      mediaType === "series" ||
+      mediaType === "anime" ||
+      mediaType === "tv" ||
+      mediaType === "channel"
+    ) {
+      return [];
+    }
+
     const key = src.meta.id || src.title || "";
+    // Only permit checkpoints for explicitly designated academic courseware or clinical lectures
+    const isAcademic =
+      key.startsWith("course-") ||
+      key.startsWith("med-") ||
+      key.startsWith("academic-") ||
+      key.startsWith("stanford-") ||
+      key.startsWith("mit-") ||
+      key.startsWith("cs224") ||
+      key.startsWith("cs231") ||
+      key.startsWith("fastai-") ||
+      key.startsWith("karpathy-") ||
+      Boolean(CURATED_COURSE_CHECKPOINTS[key]);
+
+    if (!isAcademic) {
+      return [];
+    }
+
     const list = getCheckpointsForVideo(key);
     if (list.length > 0) return list;
     if (snap.chapters?.length) {
@@ -546,7 +576,7 @@ function NativePlayerView({ src }: { src: PlayerSrc }) {
       return extractCheckpointsFromTranscript(cues);
     }
     return [];
-  }, [src.meta.id, src.title, snap.chapters]);
+  }, [src.meta.type, src.meta.id, src.title, snap.chapters]);
 
   useEffect(() => {
     if (activeCheckpoint || !lectureCheckpoints.length || snap.status !== "playing") return;

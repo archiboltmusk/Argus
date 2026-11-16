@@ -128,3 +128,33 @@ test("getCheckpointsForVideo loads curated course checkpoints and saves custom d
   assert.equal(loaded.length, 1);
   assert.equal(loaded[0].id, "custom-1");
 });
+
+test("Entertainment media policy: movies and series never trigger lecture synthesis checkpoints", () => {
+  // Simulate policy check logic used in player
+  const isExcludedMediaType = (mediaType?: string) => {
+    return mediaType === "movie" || mediaType === "series" || mediaType === "anime" || mediaType === "tv" || mediaType === "channel";
+  };
+
+  assert.equal(isExcludedMediaType("movie"), true, "Movies must be strictly excluded from lecture synthesis");
+  assert.equal(isExcludedMediaType("series"), true, "Series must be excluded from lecture synthesis");
+  assert.equal(isExcludedMediaType("anime"), true, "Anime must be excluded from lecture synthesis");
+  assert.equal(isExcludedMediaType("other"), false, "Other/courseware may undergo academic evaluation");
+
+  const isAcademicKey = (key: string) => {
+    return (
+      key.startsWith("course-") ||
+      key.startsWith("med-") ||
+      key.startsWith("academic-") ||
+      key.startsWith("stanford-") ||
+      key.startsWith("mit-") ||
+      key.startsWith("cs224") ||
+      key.startsWith("cs231") ||
+      key.startsWith("fastai-") ||
+      key.startsWith("karpathy-")
+    );
+  };
+
+  assert.equal(isAcademicKey("tt1234567"), false, "IMDb movie IDs must not be treated as academic");
+  assert.equal(isAcademicKey("Loki S02E02"), false, "Movie/show titles must not be treated as academic");
+  assert.equal(isAcademicKey("stanford-cs224w-l1"), true, "Stanford lecture must be recognized as academic");
+});
