@@ -39,6 +39,7 @@ import { BTRPyramidsModal } from "@/components/education/btr-pyramids-modal";
 import { BTRDailyDripModal } from "@/components/education/btr-daily-drip-modal";
 import { BTRPdfSearchModal } from "@/components/education/btr-pdf-search-modal";
 import { BTRVignetteModal } from "@/components/education/btr-vignette-modal";
+import { BTRCrossAppTestsModal } from "@/components/education/btr-cross-app-tests-modal";
 import { BTRAppDock, type BTRAppDestination } from "@/components/education/btr-app-dock";
 import { BTRMiniPlayerDock } from "@/components/education/btr-mini-player-dock";
 import { getFSRSSummary } from "@/lib/education/btr-fsrs-engine";
@@ -113,6 +114,7 @@ export function CoreBTRWarRoom({ onStartQBankDrill, onOpenNotes }: CoreBTRWarRoo
   const [showDripModal, setShowDripModal] = useState(false);
   const [showPdfSearchModal, setShowPdfSearchModal] = useState(false);
   const [showVignetteModal, setShowVignetteModal] = useState(false);
+  const [showCrossAppModal, setShowCrossAppModal] = useState(false);
 
   // GT Form state
   const [showAddGtModal, setShowAddGtModal] = useState(false);
@@ -304,6 +306,10 @@ export function CoreBTRWarRoom({ onStartQBankDrill, onOpenNotes }: CoreBTRWarRoo
     }
     if (dest === "matrix") {
       setShowTwentyModal(true);
+      return;
+    }
+    if (dest === "cross_app_tests") {
+      setShowCrossAppModal(true);
       return;
     }
     if (dest === "workstation") {
@@ -1984,6 +1990,9 @@ export function CoreBTRWarRoom({ onStartQBankDrill, onOpenNotes }: CoreBTRWarRoo
 
       {/* Two-Step Clinical Case Drill */}
       <BTRVignetteModal open={showVignetteModal} onClose={() => setShowVignetteModal(false)} />
+
+      {/* Universal Cross-App Medical Test Center (Marrow, Prep, DAMS, Cerebellum) */}
+      <BTRCrossAppTestsModal open={showCrossAppModal} onClose={() => setShowCrossAppModal(false)} />
     </div>
   );
 }

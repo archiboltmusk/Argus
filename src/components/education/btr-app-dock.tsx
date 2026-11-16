@@ -33,6 +33,7 @@ export type BTRAppDestination =
   | "cases"
   | "volatiles"
   | "gt_analytics"
+  | "cross_app_tests"
   | "strategy";
 
 interface BTRAppDockProps {
@@ -100,6 +101,13 @@ export function BTRAppDock({
     },
     { id: "pyramids", label: "3-Tier Pyramids", icon: Triangle },
     { id: "cases", label: "Two-Step Cases", icon: Stethoscope },
+    {
+      id: "cross_app_tests",
+      label: "Cross-App Tests",
+      icon: Target,
+      badge: "Marrow/Prep",
+      badgeColor: "bg-indigo-500/20 text-indigo-300 border-indigo-500/30",
+    },
     { id: "volatiles", label: "Super-Volatiles", icon: BookmarkCheck },
     { id: "gt_analytics", label: "GT Strike Rate", icon: BarChart2 },
   ];
