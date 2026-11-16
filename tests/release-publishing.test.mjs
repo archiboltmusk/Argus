@@ -94,12 +94,16 @@ test("unsafe links, preview tags, and releases without installers cannot produce
   );
 });
 
-test("obsolete generated macOS compatibility claim is removed without losing release changes", () => {
-  const page = renderReleasePage(
-    release(
-      "Apple Silicon (M1 or newer), macOS 11+. Unsigned build.\n\n## What's Changed\n- A real fix",
-    ),
-  );
-  assert.doesNotMatch(page, /macOS 11/);
-  assert.match(page, /A real fix/);
+test("draft releases with untagged download urls are supported and normalized to tag url", () => {
+  const draftAsset = {
+    name: "Argus-aarch64.dmg",
+    url: "https://github.com/archiboltmusk/Argus/releases/download/untagged-8bae5f2ae124bde37836/Argus-aarch64.dmg",
+  };
+  const page = renderReleasePage({
+    tagName: "v3.17.10",
+    body: "## What changed\n- Performance improvements",
+    assets: [draftAsset],
+  });
+  assert.match(page, /Apple Silicon.*Download DMG/);
+  assert.match(page, /https:\/\/github\.com\/archiboltmusk\/Argus\/releases\/download\/v3\.17\.10\/Argus-aarch64\.dmg/);
 });

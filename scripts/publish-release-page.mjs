@@ -32,14 +32,19 @@ export function renderReleasePage(release, highlights = "") {
     const asset = assets.get(name);
     if (!asset) return [];
     const url = new URL(asset.url);
+    const isTaggedRelease = url.pathname.includes(`/releases/download/${release.tagName}/`);
+    const isDraftUntagged = url.pathname.includes("/releases/download/untagged-");
     if (
       url.origin !== "https://github.com" ||
-      !url.pathname.includes(`/releases/download/${release.tagName}/`) ||
+      (!isTaggedRelease && !isDraftUntagged) ||
       /[\s()]/.test(asset.url)
     ) {
       throw new Error(`Invalid installer download: ${name}`);
     }
-    return [`| ${os} | ${device} | [${label}](${asset.url}) |`];
+    const downloadUrl = isDraftUntagged
+      ? asset.url.replace(/\/releases\/download\/untagged-[^/]+\//, `/releases/download/${release.tagName}/`)
+      : asset.url;
+    return [`| ${os} | ${device} | [${label}](${downloadUrl}) |`];
   });
   if (!rows.length) throw new Error("No published installers; refusing an empty download page");
 
