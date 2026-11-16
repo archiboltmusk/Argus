@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Zap, Flame, AlertTriangle, Check, Copy, X } from "lucide-react";
 import { INICET_RAPID_TABLES } from "@/lib/education/inicet-vault";
 
-export function InicetWarRoomBanner() {
+export function InicetWarRoomBanner({ onOpenBtrWarRoom }: { onOpenBtrWarRoom?: () => void } = {}) {
   const [activeTableId, setActiveTableId] = useState<string | null>(null);
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
 
@@ -38,16 +38,29 @@ export function InicetWarRoomBanner() {
           </div>
         </div>
 
-        {activeTableId && (
-          <button
-            type="button"
-            onClick={() => setActiveTableId(null)}
-            className="flex items-center gap-1.5 text-xs font-semibold text-ink-muted hover:text-ink px-3 py-1.5 rounded-lg bg-elevated border border-edge-soft hover:bg-raised transition shrink-0"
-          >
-            <X size={13} />
-            <span>Close Vault</span>
-          </button>
-        )}
+        <div className="flex items-center gap-2">
+          {onOpenBtrWarRoom && (
+            <button
+              type="button"
+              onClick={onOpenBtrWarRoom}
+              className="flex items-center gap-1.5 text-xs font-bold text-accent px-3 py-1.5 rounded-lg bg-accent/15 border border-accent/30 hover:bg-accent/25 transition shrink-0"
+            >
+              <Zap size={13} className="fill-accent text-accent" />
+              <span>Core BTR 2027 Command Center</span>
+            </button>
+          )}
+
+          {activeTableId && (
+            <button
+              type="button"
+              onClick={() => setActiveTableId(null)}
+              className="flex items-center gap-1.5 text-xs font-semibold text-ink-muted hover:text-ink px-3 py-1.5 rounded-lg bg-elevated border border-edge-soft hover:bg-raised transition shrink-0"
+            >
+              <X size={13} />
+              <span>Close Vault</span>
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Quick Access Pills */}

@@ -43,6 +43,7 @@ import { importEducationalFile } from "@/lib/education/json-gz-importer";
 import { registerCourseShare } from "@/lib/local-library/course-share";
 import { generateAnkiDeckPackage } from "@/lib/education/anki-exporter";
 import { InicetWarRoomBanner } from "./education/inicet-war-room-banner";
+import { CoreBTRWarRoom } from "./education/corebtr-war-room";
 import { DailyWateringDeck } from "./education/daily-watering-deck";
 import { QBankRunner } from "./education/qbank-drill";
 import { QBankManager } from "./education/qbank-manager";
@@ -67,7 +68,7 @@ export function EducationView() {
   const localEntries = useLocalLibrary();
   const notes = useStudyNotes();
 
-  const [tab, setTab] = useState<"courses" | "checkpoints" | "qbank" | "simulator" | "notes">("courses");
+  const [tab, setTab] = useState<"courses" | "btr" | "checkpoints" | "qbank" | "simulator" | "notes">("courses");
   const [activeDrillCheckpoint, setActiveDrillCheckpoint] = useState<LectureCheckpoint | null>(null);
   const [activeCategory, setActiveCategory] = useState<CourseCategory>("all");
   const [searchQuery, setSearchQuery] = useState("");
@@ -343,6 +344,7 @@ export function EducationView() {
       <nav className="edu-view-tabs" aria-label={t("Education sub-navigation")}>
         {[
           ["courses", "Courses & Catalogs"],
+          ["btr", "Core BTR NEET-PG 2027"],
           ["checkpoints", "Interactive Checkpoints"],
           ["qbank", "Clinical QBank & Vault"],
           ["simulator", "Emergency Simulator"],
@@ -381,6 +383,16 @@ export function EducationView() {
 
       {/* Main Tab Content */}
       <div className="edu-body">
+        {/* TAB: CORE BTR NEET-PG 2027 STRATEGIC WAR ROOM */}
+        {tab === "btr" && (
+          <CoreBTRWarRoom
+            onStartQBankDrill={() => {
+              startQBankDrill(true);
+            }}
+            onOpenNotes={() => setTab("notes")}
+          />
+        )}
+
         {/* TAB 1: COURSES & CATALOGS */}
         {tab === "courses" && (
           <>
@@ -774,7 +786,7 @@ export function EducationView() {
         {/* TAB 2: CLINICAL QBANK & VAULT */}
         {tab === "qbank" && (
           <div className="flex flex-col gap-6">
-            <InicetWarRoomBanner />
+            <InicetWarRoomBanner onOpenBtrWarRoom={() => setTab("btr")} />
 
             {/* QBank Launch Cards */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
