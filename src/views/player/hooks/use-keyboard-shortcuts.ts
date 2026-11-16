@@ -254,6 +254,49 @@ export function useKeyboardShortcuts(params: {
         }, 350);
         return;
       }
+      // YouTube-style Chapter Navigation
+      const isNextChapterKey =
+        ((e.ctrlKey || e.altKey) && e.key === "ArrowRight") ||
+        (!e.ctrlKey && !e.altKey && !e.metaKey && e.key === "]") ||
+        (e.ctrlKey && e.key === "PageDown");
+
+      const isPrevChapterKey =
+        ((e.ctrlKey || e.altKey) && e.key === "ArrowLeft") ||
+        (!e.ctrlKey && !e.altKey && !e.metaKey && e.key === "[") ||
+        (e.ctrlKey && e.key === "PageUp");
+
+      if (isNextChapterKey) {
+        e.preventDefault();
+        if (snap.chapters && snap.chapters.length > 0) {
+          const sorted = [...snap.chapters].sort((a, b) => a.startSec - b.startSec);
+          const next = sorted.find((ch) => ch.startSec > snap.positionSec + 1);
+          if (next) {
+            seekTo(next.startSec);
+          }
+        }
+        return;
+      }
+
+      if (isPrevChapterKey) {
+        e.preventDefault();
+        if (snap.chapters && snap.chapters.length > 0) {
+          const sorted = [...snap.chapters].sort((a, b) => a.startSec - b.startSec);
+          const activeIdx = sorted.reduce(
+            (found, ch, idx) => (ch.startSec <= snap.positionSec + 0.5 ? idx : found),
+            0,
+          );
+          const activeChap = sorted[activeIdx];
+          if (activeChap && snap.positionSec - activeChap.startSec > 3) {
+            seekTo(activeChap.startSec);
+          } else if (activeIdx > 0) {
+            seekTo(sorted[activeIdx - 1].startSec);
+          } else {
+            seekTo(0);
+          }
+        }
+        return;
+      }
+
       if (match("playerSeekBack10")) {
         e.preventDefault();
         seekStep(-seekBackStepSec);
@@ -628,6 +671,39 @@ export function useKeyboardShortcuts(params: {
     svpActive,
     update,
   ]);
+
+  useEffect(() => {
+    const onJumpNext = () => {
+      if (snap.chapters && snap.chapters.length > 0) {
+        const sorted = [...snap.chapters].sort((a, b) => a.startSec - b.startSec);
+        const next = sorted.find((ch) => ch.startSec > snap.positionSec + 1);
+        if (next) seekTo(next.startSec);
+      }
+    };
+    const onJumpPrev = () => {
+      if (snap.chapters && snap.chapters.length > 0) {
+        const sorted = [...snap.chapters].sort((a, b) => a.startSec - b.startSec);
+        const activeIdx = sorted.reduce(
+          (found, ch, idx) => (ch.startSec <= snap.positionSec + 0.5 ? idx : found),
+          0,
+        );
+        const activeChap = sorted[activeIdx];
+        if (activeChap && snap.positionSec - activeChap.startSec > 3) {
+          seekTo(activeChap.startSec);
+        } else if (activeIdx > 0) {
+          seekTo(sorted[activeIdx - 1].startSec);
+        } else {
+          seekTo(0);
+        }
+      }
+    };
+    window.addEventListener("argus:chapter-jump-next", onJumpNext);
+    window.addEventListener("argus:chapter-jump-prev", onJumpPrev);
+    return () => {
+      window.removeEventListener("argus:chapter-jump-next", onJumpNext);
+      window.removeEventListener("argus:chapter-jump-prev", onJumpPrev);
+    };
+  }, [snap.chapters, snap.positionSec, seekTo]);
 
   useEffect(() => {
     if (typeof window === "undefined" || !("__TAURI_INTERNALS__" in window)) return;

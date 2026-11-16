@@ -323,6 +323,8 @@ export function RenderedStremioControl({
           isLiveChannel={ctx.isLiveChannel}
           active={ctx.active}
           onCycle={ctx.editing ? undefined : ctx.onCycleTimeFormat}
+          chapters={ctx.snap.chapters}
+          onOpenChapterMenu={() => ctx.setChapterMenuOpen?.(true)}
         />
       );
     }

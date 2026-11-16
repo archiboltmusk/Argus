@@ -1,7 +1,8 @@
-import { useEffect, useRef, useState, type RefObject } from "react";
+import { useEffect, useMemo, useRef, useState, type RefObject } from "react";
 import {
   emptySnapshot,
   initialPlayerSnapshot,
+  type Chapter,
   type PlayerBridge,
   type PlayerEngine,
   type PlayerSnapshot,
@@ -62,6 +63,7 @@ export function usePlayerBridge(params: {
   const { bridgeRef, videoMountRef, src, settings } = params;
 
   const [snap, setSnap] = useState<PlayerSnapshot>(initialPlayerSnapshot);
+  const [syntheticChapters, setSyntheticChapters] = useState<Chapter[]>([]);
   const prevSnapRef = useRef<PlayerSnapshot>(emptySnapshot);
   const [engine, setEngine] = useState<PlayerEngine>("html5");
   const [autoFallbackTried, setAutoFallbackTried] = useState(false);
@@ -260,5 +262,30 @@ export function usePlayerBridge(params: {
     );
   }, [bridgeReady, engine, settings.playerHdrToSdr, settings.playerDisplayPanel, bridgeRef]);
 
-  return { snap, engine, bridgeReady, bridgeKey, embedActive, svpActive: svpOn };
+  // Listen for synthesized or parsed chapters (e.g. from YouTube description or subtitles)
+  useEffect(() => {
+    const onSyntheticChapters = (e: Event) => {
+      const detail = (e as CustomEvent<{ chapters: Chapter[] }>).detail;
+      if (detail?.chapters?.length) {
+        setSyntheticChapters(detail.chapters);
+      }
+    };
+    window.addEventListener("argus:synthetic-chapters", onSyntheticChapters);
+    return () => {
+      window.removeEventListener("argus:synthetic-chapters", onSyntheticChapters);
+    };
+  }, []);
+
+  useEffect(() => {
+    setSyntheticChapters([]);
+  }, [src.url]);
+
+  const effectiveSnap = useMemo(() => {
+    if ((!snap.chapters || snap.chapters.length === 0) && syntheticChapters.length > 0) {
+      return { ...snap, chapters: syntheticChapters };
+    }
+    return snap;
+  }, [snap, syntheticChapters]);
+
+  return { snap: effectiveSnap, engine, bridgeReady, bridgeKey, embedActive, svpActive: svpOn };
 }

@@ -307,6 +307,8 @@ export function renderControl(id: PlayerControlId, ctx: ControlContext): ReactNo
           tight={ctx.tight}
           active={ctx.active}
           onCycle={ctx.editing ? undefined : ctx.onCycleTimeFormat}
+          chapters={ctx.snap.chapters}
+          onOpenChapterMenu={() => ctx.setChapterMenuOpen?.(true)}
         />
       );
     }

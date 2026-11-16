@@ -11,7 +11,7 @@ import { loadLangAudioDelay, saveLangAudioDelay } from "@/lib/player/audio-night
 import { resolveBluetoothAudioDelaySec } from "@/lib/player/bluetooth-latency-profiler";
 import { getVintagePresetMpvArgs } from "@/lib/player/vintage-cinema-shaders";
 import { IndicDubbingEngine } from "@/lib/player/indic-dubbing-overlay";
-import { synthesizeChapters } from "@/lib/player/synthetic-chapters";
+import { resolveBestChapters } from "@/lib/player/synthetic-chapters";
 import { playbackSourceKey, readActualPlaybackFor } from "@/lib/playback-history";
 import { playbackAudioChoice, selectPlaybackAudio, pickBestAudioTrack } from "@/lib/player/audio-choice";
 import { tmdbImdbId } from "@/lib/providers/tmdb";
@@ -968,12 +968,43 @@ export function useTrackAutoload(params: {
   const appliedAudioDelayRef = useRef<number | null>(null);
 
   useEffect(() => {
-    if (!settings.syntheticChapters || snap.chapters.length > 0 || snap.durationSec <= 300) return;
-    const chapters = synthesizeChapters({ durationSec: snap.durationSec });
+    if (!settings.syntheticChapters || snap.chapters.length > 0 || snap.durationSec <= 60) return;
+    const isIndianCinema =
+      (src.meta as any)?.country === "IN" ||
+      /india|bollywood|tollywood|kollywood|hindi|tamil|telugu|malayalam|kannada/i.test(
+        [
+          src.title,
+          (src.meta as any)?.country,
+          (src.meta as any)?.language,
+          (src.meta as any)?.genres?.join(" "),
+        ]
+          .filter(Boolean)
+          .join(" "),
+      );
+
+    const description = (src.meta as any)?.description || (src as any)?.description || "";
+    const cues = bridgeRef.current?.getSelectedTrackCues?.();
+
+    const chapters = resolveBestChapters({
+      existingChapters: snap.chapters,
+      description,
+      subtitleCues: cues && cues.length > 0 ? cues : undefined,
+      durationSec: snap.durationSec,
+      isIndianCinema,
+    });
+
     if (chapters.length > 0) {
       window.dispatchEvent(new CustomEvent("argus:synthetic-chapters", { detail: { chapters } }));
     }
-  }, [settings.syntheticChapters, snap.chapters.length, snap.durationSec]);
+  }, [
+    settings.syntheticChapters,
+    snap.chapters.length,
+    snap.durationSec,
+    snap.subtitleTracks,
+    src.meta,
+    src.title,
+    bridgeRef,
+  ]);
   useEffect(() => {
     const curAudio = snap.audioTracks.find((t) => t.selected);
     const langDelay = curAudio?.lang ? loadLangAudioDelay(curAudio.lang) : 0;

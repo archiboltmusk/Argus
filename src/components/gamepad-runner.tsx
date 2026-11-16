@@ -314,6 +314,16 @@ export function GamepadRunner() {
   }, [live.buttons.north, keyboard, captured]);
 
   useEffect(() => {
+    if (captured || !live.buttons.lb) return;
+    window.dispatchEvent(new CustomEvent("argus:chapter-jump-prev"));
+  }, [live.buttons.lb, captured]);
+
+  useEffect(() => {
+    if (captured || !live.buttons.rb) return;
+    window.dispatchEvent(new CustomEvent("argus:chapter-jump-next"));
+  }, [live.buttons.rb, captured]);
+
+  useEffect(() => {
     if (!keyboard) return;
     const close = (e: KeyboardEvent) => {
       if (e.key === "Escape") setKeyboard(null);

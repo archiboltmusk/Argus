@@ -200,6 +200,8 @@ export function SeekBar({
           hovered={hover != null}
           segments={segmentSpans}
           durationSec={durationSec}
+          chapters={chapters}
+          hoverSec={hover}
         />
         {sharedMarks.map((mark, index) =>
           durationSec > 0 && mark.sec >= 0 && mark.sec <= durationSec ? (
@@ -213,6 +215,7 @@ export function SeekBar({
           ) : null,
         )}
         {settings.seekBarChapters !== false &&
+          chapters.length < 2 &&
           durationSec > 0 &&
           chapters
             .filter((chapter) => chapter.startSec > 0 && chapter.startSec < durationSec)
