@@ -492,7 +492,8 @@ fn apply_pre_init(
         let _ = set("macos-app-activation-policy", "accessory");
     }
     let is_live = args.is_live.unwrap_or(false);
-    set("ytdl", if is_live { "yes" } else { "no" });
+    let is_ytdl_target = args.url.contains("youtube.com") || args.url.contains("youtu.be");
+    set("ytdl", if is_live || is_ytdl_target { "yes" } else { "no" });
     let mut user_agent = "VLC/3.0.20 LibVLC/3.0.20".to_string();
     let mut header_fields: Vec<String> = Vec::new();
     if let Some(headers) = &args.headers {
@@ -620,6 +621,9 @@ fn apply_pre_init(
         opt("gpu-api", "d3d11");
         opt("target-colorspace-hint", "yes");
         opt("target-peak", "10000");
+        // mpv 0.42.0 NVIDIA RTX Video HDR 10-bit swapchain output (eliminates 8-bit quantization/banding)
+        #[cfg(windows)]
+        opt("d3d11-output-format", "rgb10_a2");
     } else if args.hdr_to_sdr.unwrap_or(false) {
         opt("tone-mapping", "spline");
         opt("gamut-mapping-mode", "perceptual");
@@ -1241,6 +1245,8 @@ pub async fn mpv_start(
     let _ = mpv.set_property("sub-font", "sans-serif");
     let _ = mpv.set_property("sub-ass-shaper", "complex");
     let _ = mpv.set_property("embeddedfonts", "yes");
+    // Preserve fansub and anime ASS/SSA native fonts, colors, positioning and karaoke effects
+    let _ = mpv.set_property("sub-ass-override", "no");
 
     if let Some(extra) = args.extra_options.as_deref() {
         apply_extra_mpv_options(&mpv, extra);

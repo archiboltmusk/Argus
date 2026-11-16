@@ -75,28 +75,41 @@ export const CURATED_CLASSIC_BOOKS: OpdsBookEntry[] = [
 ];
 
 /**
+ * Escapes raw text to prevent HTML injection while preserving textual characters.
+ */
+function escapeHtml(str: string): string {
+  return str
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
+/**
  * Bionic Reading Transformer
  * Bolds the first 40%-50% of letters in each word (fixation points)
  * to guide the eye and dramatically reduce cognitive reading fatigue.
+ * Fully sanitized to eliminate XSS / HTML injection from unvalidated ebooks.
  */
 export function formatBionicReading(text: string): string {
   if (!text) return "";
 
   return text
     .split(/\s+/)
-    .map((word) => {
-      if (word.length <= 1) return word;
+    .map((rawWord) => {
+      if (rawWord.length <= 1) return escapeHtml(rawWord);
 
       // Extract leading/trailing punctuation
-      const match = word.match(/^([^\w]*)([\w'-]+)([^\w]*)$/);
-      if (!match) return word;
+      const match = rawWord.match(/^([^\w]*)([\w'-]+)([^\w]*)$/);
+      if (!match) return escapeHtml(rawWord);
 
       const [, prefix, core, suffix] = match;
       const fixationLen = Math.ceil(core.length * 0.45);
       const boldPart = core.slice(0, fixationLen);
       const restPart = core.slice(fixationLen);
 
-      return `${prefix}<b>${boldPart}</b>${restPart}${suffix}`;
+      return `${escapeHtml(prefix)}<b>${escapeHtml(boldPart)}</b>${escapeHtml(restPart)}${escapeHtml(suffix)}`;
     })
     .join(" ");
 }

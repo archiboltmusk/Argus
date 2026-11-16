@@ -19,7 +19,7 @@ import type { Meta } from "@/lib/cinemeta";
 import type { PlayEpisode, PlayerStreamRef } from "@/lib/view";
 import { useT } from "@/lib/i18n";
 import { useActiveKid } from "@/lib/profiles";
-import { FiltersMenu, type SwitcherFilters } from "./stream-switcher/filters-menu";
+import { FiltersMenu, FiltersPanel, type SwitcherFilters } from "./stream-switcher/filters-menu";
 import { sourceGroup } from "@/views/play-picker/quality-filter";
 import { KidsStreamSwitcher } from "./stream-switcher/kids-switcher";
 import { normalizeLangCode, streamMatchesLangs } from "./stream-switcher/lang-utils";
@@ -299,6 +299,7 @@ export function StreamSwitcher({
     return [currentStream, ...filteredList.filter((s) => streamKey(s) !== curKey)];
   }, [filteredList, currentStream]);
   const [showCount, setShowCount] = useState(80);
+  const [filtersOpen, setFiltersOpen] = useState(false);
   useEffect(() => {
     setShowCount(80);
   }, [addonFilter, qualityFilter, sourceFilter, filterToPreferred, cachedOnly, list.length]);
@@ -356,7 +357,11 @@ export function StreamSwitcher({
         if (e.target === e.currentTarget) onClose();
       }}
     >
-      <div className="flex h-full max-h-[82vh] w-full max-w-[880px] flex-col overflow-hidden rounded-xl bg-elevated shadow-[0_28px_72px_-20px_rgba(0,0,0,0.85)] ring-1 ring-edge animate-in fade-in slide-in-from-bottom-2 duration-150 backdrop-blur-xl">
+      <div
+        className={`flex h-full max-h-[84vh] w-full ${
+          filtersOpen ? "max-w-[980px]" : "max-w-[880px]"
+        } flex-col overflow-hidden rounded-xl bg-elevated shadow-[0_28px_72px_-20px_rgba(0,0,0,0.85)] ring-1 ring-edge transition-all duration-200 backdrop-blur-xl`}
+      >
         <header className="flex items-center justify-between gap-4 border-b border-edge-soft px-6 py-4">
           <div className="flex items-center gap-2.5">
             <HoverTooltip
@@ -387,7 +392,11 @@ export function StreamSwitcher({
             </span>
           </div>
           <div className="flex items-center gap-2">
-            <FiltersMenu filters={filters} />
+            <FiltersMenu
+              filters={filters}
+              isOpen={filtersOpen}
+              onToggle={() => setFiltersOpen((v) => !v)}
+            />
             <button
               onClick={onClose}
               className="flex h-9 w-9 items-center justify-center rounded-md bg-raised text-ink-muted transition-colors hover:bg-elevated hover:text-ink"
@@ -398,56 +407,69 @@ export function StreamSwitcher({
           </div>
         </header>
 
-        {hostSource && <HostSourceBanner source={hostSource} compact />}
+        <div className="flex flex-1 min-h-0 overflow-hidden">
+          <div className="flex flex-1 flex-col min-w-0 overflow-hidden">
+            {hostSource && <HostSourceBanner source={hostSource} compact />}
 
-        {!cache || list.length === 0 ? (
-          <div className="flex flex-1 flex-col items-center justify-center gap-4 px-8 py-12 text-center">
-            <p className="text-[13.5px] text-ink-muted">
-              {refreshing ? t("Looking for sources…") : t("No sources loaded for this title yet.")}
-            </p>
-            <button
-              onClick={() => refresh()}
-              disabled={refreshing}
-              className="flex h-10 items-center gap-2 rounded-md bg-raised px-4 text-[13px] font-semibold text-ink transition-colors hover:bg-elevated disabled:opacity-70"
-            >
-              <RefreshCw size={14} strokeWidth={2.2} className={refreshing ? "animate-spin" : ""} />
-              {t("Refresh sources")}
-            </button>
-          </div>
-        ) : (
-          <ul className="flex-1 overflow-y-auto [&::-webkit-scrollbar]:w-5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-none [&::-webkit-scrollbar-thumb]:border-4 [&::-webkit-scrollbar-thumb]:border-solid [&::-webkit-scrollbar-thumb]:border-transparent [&::-webkit-scrollbar-thumb]:bg-ink/25 [&::-webkit-scrollbar-thumb]:bg-clip-padding [&::-webkit-scrollbar-thumb:hover]:bg-ink/40">
-            {list.slice(0, showCount).map((s, i) => {
-              const isCurrent = currentStream === s;
-              const rowAddon = isCurrent ? currentAddon : null;
-              return (
-                <SwitcherRow
-                  key={`${s.addonId}-${s.infoHash ?? s.url ?? i}`}
-                  stream={s}
-                  addonLogo={addonLogos.get(rowAddon?.id ?? s.addonId) ?? null}
-                  currentAddon={rowAddon}
-                  currentName={isCurrent ? (currentRef?.name ?? null) : null}
-                  onPick={() => onPick(s)}
-                  resolving={resolvingKey === streamKey(s)}
-                  isCurrent={isCurrent}
-                  match={matchBadge(matchScores?.get(s))}
-                />
-              );
-            })}
-            {list.length > showCount && (
-              <li className="px-4 pb-3 pt-1.5">
+            {!cache || list.length === 0 ? (
+              <div className="flex flex-1 flex-col items-center justify-center gap-4 px-8 py-12 text-center">
+                <p className="text-[13.5px] text-ink-muted">
+                  {refreshing ? t("Looking for sources…") : t("No sources loaded for this title yet.")}
+                </p>
                 <button
-                  onClick={() => setShowCount((n) => n + 80)}
-                  className="flex w-full items-center justify-center gap-2 rounded-md bg-raised px-4 py-2.5 text-[12.5px] font-semibold text-ink-muted transition-colors hover:bg-elevated hover:text-ink"
+                  onClick={() => refresh()}
+                  disabled={refreshing}
+                  className="flex h-10 items-center gap-2 rounded-md bg-raised px-4 text-[13px] font-semibold text-ink transition-colors hover:bg-elevated disabled:opacity-70"
                 >
-                  {t("Load more")}
-                  <span className="text-[11px] tabular-nums text-ink-subtle">
-                    {t("{n} hidden", { n: list.length - showCount })}
-                  </span>
+                  <RefreshCw size={14} strokeWidth={2.2} className={refreshing ? "animate-spin" : ""} />
+                  {t("Refresh sources")}
                 </button>
-              </li>
+              </div>
+            ) : (
+              <ul className="flex-1 overflow-y-auto [&::-webkit-scrollbar]:w-5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-none [&::-webkit-scrollbar-thumb]:border-4 [&::-webkit-scrollbar-thumb]:border-solid [&::-webkit-scrollbar-thumb]:border-transparent [&::-webkit-scrollbar-thumb]:bg-ink/25 [&::-webkit-scrollbar-thumb]:bg-clip-padding [&::-webkit-scrollbar-thumb:hover]:bg-ink/40">
+                {list.slice(0, showCount).map((s, i) => {
+                  const isCurrent = currentStream === s;
+                  const rowAddon = isCurrent ? currentAddon : null;
+                  return (
+                    <SwitcherRow
+                      key={`${s.addonId}-${s.infoHash ?? s.url ?? i}`}
+                      stream={s}
+                      addonLogo={addonLogos.get(rowAddon?.id ?? s.addonId) ?? null}
+                      currentAddon={rowAddon}
+                      currentName={isCurrent ? (currentRef?.name ?? null) : null}
+                      onPick={() => onPick(s)}
+                      resolving={resolvingKey === streamKey(s)}
+                      isCurrent={isCurrent}
+                      match={matchBadge(matchScores?.get(s))}
+                    />
+                  );
+                })}
+                {list.length > showCount && (
+                  <li className="px-4 pb-3 pt-1.5">
+                    <button
+                      onClick={() => setShowCount((n) => n + 80)}
+                      className="flex w-full items-center justify-center gap-2 rounded-md bg-raised px-4 py-2.5 text-[12.5px] font-semibold text-ink-muted transition-colors hover:bg-elevated hover:text-ink"
+                    >
+                      {t("Load more")}
+                      <span className="text-[11px] tabular-nums text-ink-subtle">
+                        {t("{n} hidden", { n: list.length - showCount })}
+                      </span>
+                    </button>
+                  </li>
+                )}
+              </ul>
             )}
-          </ul>
-        )}
+          </div>
+
+          {filtersOpen && (
+            <aside
+              className="w-[320px] shrink-0 border-s border-white/10 bg-[#111215] flex flex-col z-20 animate-in slide-in-from-right-3 duration-150 overflow-hidden"
+              style={{ backgroundColor: "#111215" }}
+            >
+              <FiltersPanel filters={filters} onClose={() => setFiltersOpen(false)} />
+            </aside>
+          )}
+        </div>
 
         <footer className="flex items-center justify-between gap-4 border-t border-edge-soft px-6 py-2.5">
           <span className="flex items-center gap-2 text-[12px] text-ink-subtle">

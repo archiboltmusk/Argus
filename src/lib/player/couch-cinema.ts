@@ -11,6 +11,7 @@ export interface PeerPlaybackState {
   status: "playing" | "paused";
   clockSkewMs: number;
   speaking: boolean;
+  lastUpdatedEpochMs?: number;
 }
 
 export interface SpatialAudioConfig {
@@ -29,7 +30,10 @@ export class CouchCinemaSyncEngine {
   private reactions: ReactionHotspot[] = [];
 
   public updatePeerState(state: PeerPlaybackState) {
-    this.peers.set(state.peerId, state);
+    this.peers.set(state.peerId, {
+      ...state,
+      lastUpdatedEpochMs: Date.now(),
+    });
   }
 
   public removePeer(peerId: string) {
@@ -86,10 +90,13 @@ export class CouchCinemaSyncEngine {
   /**
    * Voice Activity Ducking:
    * If any peer is speaking, ducks the movie's background audio so their voice is clearly heard.
+   * Features automatic 3.0s speech timeout to eliminate stuck-ducking bugs if a peer disconnects.
    */
-  public calculateMovieAudioDucking(): { duckActive: boolean; volumeMultiplier: number } {
+  public calculateMovieAudioDucking(maxSpeechAgeMs: number = 3000): { duckActive: boolean; volumeMultiplier: number } {
+    const now = Date.now();
     for (const peer of this.peers.values()) {
-      if (peer.speaking) {
+      const isStale = peer.lastUpdatedEpochMs ? now - peer.lastUpdatedEpochMs > maxSpeechAgeMs : false;
+      if (peer.speaking && !isStale) {
         return { duckActive: true, volumeMultiplier: 0.42 }; // -7.5 dB duck
       }
     }

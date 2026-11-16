@@ -1,4 +1,4 @@
-import { ChevronDown, RotateCcw, SlidersHorizontal } from "lucide-react";
+import { ChevronDown, RotateCcw, SlidersHorizontal, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { AddonLogo } from "@/components/addon-logo";
 import { FormatBadge, type BadgeKind } from "@/components/format-badge";
@@ -46,7 +46,7 @@ export type SwitcherFilters = {
   setShowFlagged: (v: boolean) => void;
 };
 
-function activeCountOf(f: SwitcherFilters): number {
+export function activeCountOf(f: SwitcherFilters): number {
   return (
     (f.mode !== "both" ? 1 : 0) +
     (f.quality !== "all" ? 1 : 0) +
@@ -58,20 +58,15 @@ function activeCountOf(f: SwitcherFilters): number {
   );
 }
 
-export function FiltersMenu({ filters }: { filters: SwitcherFilters }) {
+export function FiltersPanel({
+  filters,
+  onClose,
+}: {
+  filters: SwitcherFilters;
+  onClose?: () => void;
+}) {
   const t = useT();
-  const [open, setOpen] = useState(false);
-  const wrapRef = useRef<HTMLDivElement>(null);
   const active = activeCountOf(filters);
-
-  useEffect(() => {
-    if (!open) return;
-    const onDown = (e: PointerEvent) => {
-      if (!wrapRef.current?.contains(e.target as Node)) setOpen(false);
-    };
-    window.addEventListener("pointerdown", onDown, true);
-    return () => window.removeEventListener("pointerdown", onDown, true);
-  }, [open]);
 
   const reset = () => {
     filters.setMode("both");
@@ -88,21 +83,223 @@ export function FiltersMenu({ filters }: { filters: SwitcherFilters }) {
   const showFlagged = filters.rejectedCount > 0;
 
   return (
+    <div className="flex h-full flex-col bg-[#111215] text-ink selection:bg-accent/30">
+      {/* Panel Header */}
+      <div className="flex shrink-0 items-center justify-between border-b border-white/10 px-4 py-3">
+        <div className="flex items-center gap-2 text-[13px] font-bold text-white">
+          <SlidersHorizontal size={14} className="text-accent" />
+          <span>{t("Filters")}</span>
+          {active > 0 && (
+            <span className="flex h-4 min-w-4 items-center justify-center rounded-full bg-accent px-1.5 text-[10px] font-bold tabular-nums text-canvas">
+              {active}
+            </span>
+          )}
+        </div>
+        <div className="flex items-center gap-2">
+          {active > 0 && (
+            <button
+              onClick={reset}
+              className="text-[11px] font-semibold text-ink-muted hover:text-white transition-colors"
+            >
+              {t("Reset")}
+            </button>
+          )}
+          {onClose && (
+            <button
+              onClick={onClose}
+              className="flex h-7 w-7 items-center justify-center rounded-md text-ink-muted hover:bg-white/10 hover:text-white transition-colors"
+              aria-label={t("Close filters")}
+            >
+              <X size={14} />
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Filter Body */}
+      <div className="flex-1 overflow-y-auto p-4 space-y-4 [&::-webkit-scrollbar]:w-3 [&::-webkit-scrollbar-thumb]:bg-white/10 [&::-webkit-scrollbar-thumb]:rounded-full">
+        <Section label={t("Sources")}>
+          <div className="flex gap-1.5">
+            {(
+              [
+                ["both", t("Both")],
+                ["addons", t("Direct/debrid")],
+                ["p2p", t("P2P")],
+              ] as Array<[StreamMode, string]>
+            ).map(([v, label]) => (
+              <Chip key={v} active={filters.mode === v} onClick={() => filters.setMode(v)} grow>
+                {label}
+              </Chip>
+            ))}
+          </div>
+        </Section>
+
+        {filters.qualityOptions.length > 0 && (
+          <Section label={t("Quality")}>
+            <div className="flex flex-wrap gap-1.5">
+              <Chip active={filters.quality === "all"} onClick={() => filters.setQuality("all")}>
+                {t("Any")}
+              </Chip>
+              {filters.qualityOptions.map((o) => (
+                <Chip
+                  key={o.id}
+                  active={filters.quality === o.id}
+                  onClick={() => filters.setQuality(o.id)}
+                >
+                  <FormatBadge kind={o.badge} size="sm" />
+                  <span>{QUALITY_LABEL[o.id]}</span>
+                  <Count n={o.count} />
+                </Chip>
+              ))}
+            </div>
+          </Section>
+        )}
+
+        {filters.sourceOptions.length > 0 && (
+          <Section label={t("Format")}>
+            <div className="flex flex-wrap gap-1.5">
+              <Chip active={filters.source === "all"} onClick={() => filters.setSource("all")}>
+                {t("Any")}
+              </Chip>
+              {filters.sourceOptions.map((o) => (
+                <Chip
+                  key={o.id}
+                  active={filters.source === o.id}
+                  onClick={() => filters.setSource(o.id)}
+                >
+                  {SOURCE_BADGE[o.id] && <FormatBadge kind={SOURCE_BADGE[o.id]} size="sm" />}
+                  <span>{o.name}</span>
+                  <Count n={o.count} />
+                </Chip>
+              ))}
+            </div>
+          </Section>
+        )}
+
+        {filters.addonOptions.length > 1 && (
+          <Section label={t("Addon")}>
+            <div className="flex max-h-52 flex-col gap-1 overflow-y-auto pr-1">
+              <AddonRow
+                active={filters.addon === "all"}
+                onClick={() => filters.setAddon("all")}
+                name={t("All addons")}
+                count={filters.total}
+              />
+              {filters.addonOptions.map((o) => (
+                <AddonRow
+                  key={o.id}
+                  active={filters.addon === o.id}
+                  onClick={() => filters.setAddon(o.id)}
+                  name={o.name}
+                  count={o.count}
+                  logo={
+                    <AddonLogo
+                      addonId={o.id}
+                      addonName={o.name}
+                      manifestLogo={filters.addonLogos.get(o.id) ?? null}
+                      size="sm"
+                    />
+                  }
+                />
+              ))}
+            </div>
+          </Section>
+        )}
+
+        {(showCached || showLangs || showFlagged) && (
+          <div className="flex flex-col gap-1 border-t border-white/10 pt-3">
+            {showCached && (
+              <ToggleRow
+                label={t("Cached only")}
+                hint={t("{n} uncached hidden", { n: filters.uncachedHidden })}
+                on={filters.cachedOnly}
+                onClick={() => filters.setCachedOnly(!filters.cachedOnly)}
+              />
+            )}
+            {showLangs && (
+              <ToggleRow
+                label={t("{langs} only", { langs: abbreviateLanguages(filters.preferredLangs) })}
+                hint={t("{n} hidden", { n: filters.langHidden })}
+                on={filters.filterToPreferred}
+                onClick={() => filters.setFilterToPreferred(!filters.filterToPreferred)}
+              />
+            )}
+            {showFlagged && (
+              <ToggleRow
+                label={t("Show flagged")}
+                hint={t("{n} hidden by trust filter", { n: filters.rejectedCount })}
+                on={filters.showFlagged}
+                onClick={() => filters.setShowFlagged(!filters.showFlagged)}
+              />
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Footer Reset */}
+      {active > 0 && (
+        <div className="shrink-0 border-t border-white/10 p-3 bg-[#0d0e11]">
+          <button
+            onClick={reset}
+            className="flex w-full items-center justify-center gap-2 rounded-lg bg-white/10 py-2 text-[12px] font-semibold text-ink transition-colors hover:bg-white/15"
+          >
+            <RotateCcw size={13} strokeWidth={2.4} />
+            {t("Reset filters")}
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+export function FiltersMenu({
+  filters,
+  isOpen,
+  onToggle,
+}: {
+  filters: SwitcherFilters;
+  isOpen?: boolean;
+  onToggle?: () => void;
+}) {
+  const t = useT();
+  const [localOpen, setLocalOpen] = useState(false);
+  const wrapRef = useRef<HTMLDivElement>(null);
+  const active = activeCountOf(filters);
+
+  const open = isOpen !== undefined ? isOpen : localOpen;
+  const toggle = onToggle !== undefined ? onToggle : () => setLocalOpen((v) => !v);
+
+  useEffect(() => {
+    if (onToggle !== undefined || !localOpen) return;
+    const onDown = (e: PointerEvent) => {
+      if (!wrapRef.current?.contains(e.target as Node)) setLocalOpen(false);
+    };
+    window.addEventListener("pointerdown", onDown, true);
+    return () => window.removeEventListener("pointerdown", onDown, true);
+  }, [localOpen, onToggle]);
+
+  return (
     <div className="relative" ref={wrapRef}>
       <button
-        onClick={() => setOpen((v) => !v)}
-        className={`flex h-9 items-center gap-2 rounded-md px-3.5 text-[11.5px] font-semibold tracking-[0.04em] transition-colors ${
-          active > 0
-            ? "bg-elevated text-ink ring-1 ring-edge hover:bg-raised"
-            : "bg-raised text-ink-muted hover:bg-elevated hover:text-ink"
+        onClick={toggle}
+        className={`flex h-9 items-center gap-2 rounded-md px-3.5 text-[11.5px] font-semibold tracking-[0.04em] transition-all ${
+          open
+            ? "bg-accent text-canvas ring-1 ring-accent font-bold"
+            : active > 0
+              ? "bg-elevated text-ink ring-1 ring-edge hover:bg-raised"
+              : "bg-raised text-ink-muted hover:bg-elevated hover:text-ink"
         }`}
         aria-haspopup="dialog"
         aria-expanded={open}
       >
         <SlidersHorizontal size={13} strokeWidth={2.2} />
-        {t("Filters")}
+        <span>{t("Filters")}</span>
         {active > 0 && (
-          <span className="flex h-4 min-w-4 items-center justify-center rounded-full bg-accent px-1 text-[10px] font-bold tabular-nums text-canvas">
+          <span
+            className={`flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[10px] font-bold tabular-nums ${
+              open ? "bg-canvas text-accent" : "bg-accent text-canvas"
+            }`}
+          >
             {active}
           </span>
         )}
@@ -113,134 +310,13 @@ export function FiltersMenu({ filters }: { filters: SwitcherFilters }) {
         />
       </button>
 
-      {open && (
-        <div className="absolute end-0 top-full z-30 mt-2 max-h-[68vh] w-[288px] overflow-y-auto rounded-md bg-elevated p-3 shadow-[0_10px_30px_-12px_rgba(0,0,0,0.6)]">
-          <Section label={t("Sources")}>
-            <div className="flex gap-1.5">
-              {(
-                [
-                  ["both", t("Both")],
-                  ["addons", t("Direct/debrid")],
-                  ["p2p", t("P2P")],
-                ] as Array<[StreamMode, string]>
-              ).map(([v, label]) => (
-                <Chip key={v} active={filters.mode === v} onClick={() => filters.setMode(v)} grow>
-                  {label}
-                </Chip>
-              ))}
-            </div>
-          </Section>
-
-          {filters.qualityOptions.length > 0 && (
-            <Section label={t("Quality")}>
-              <div className="flex flex-wrap gap-1.5">
-                <Chip active={filters.quality === "all"} onClick={() => filters.setQuality("all")}>
-                  {t("Any")}
-                </Chip>
-                {filters.qualityOptions.map((o) => (
-                  <Chip
-                    key={o.id}
-                    active={filters.quality === o.id}
-                    onClick={() => filters.setQuality(o.id)}
-                  >
-                    <FormatBadge kind={o.badge} size="sm" />
-                    {QUALITY_LABEL[o.id]}
-                    <Count n={o.count} />
-                  </Chip>
-                ))}
-              </div>
-            </Section>
-          )}
-
-          {filters.sourceOptions.length > 0 && (
-            <Section label={t("Format")}>
-              <div className="flex flex-wrap gap-1.5">
-                <Chip active={filters.source === "all"} onClick={() => filters.setSource("all")}>
-                  {t("Any")}
-                </Chip>
-                {filters.sourceOptions.map((o) => (
-                  <Chip
-                    key={o.id}
-                    active={filters.source === o.id}
-                    onClick={() => filters.setSource(o.id)}
-                  >
-                    {SOURCE_BADGE[o.id] && <FormatBadge kind={SOURCE_BADGE[o.id]} size="sm" />}
-                    {o.name}
-                    <Count n={o.count} />
-                  </Chip>
-                ))}
-              </div>
-            </Section>
-          )}
-
-          {filters.addonOptions.length > 1 && (
-            <Section label={t("Addon")}>
-              <div className="flex max-h-52 flex-col gap-0.5 overflow-y-auto">
-                <AddonRow
-                  active={filters.addon === "all"}
-                  onClick={() => filters.setAddon("all")}
-                  name={t("All addons")}
-                  count={filters.total}
-                />
-                {filters.addonOptions.map((o) => (
-                  <AddonRow
-                    key={o.id}
-                    active={filters.addon === o.id}
-                    onClick={() => filters.setAddon(o.id)}
-                    name={o.name}
-                    count={o.count}
-                    logo={
-                      <AddonLogo
-                        addonId={o.id}
-                        addonName={o.name}
-                        manifestLogo={filters.addonLogos.get(o.id) ?? null}
-                        size="sm"
-                      />
-                    }
-                  />
-                ))}
-              </div>
-            </Section>
-          )}
-
-          {(showCached || showLangs || showFlagged) && (
-            <div className="mt-3 flex flex-col gap-0.5 border-t border-edge-soft pt-2">
-              {showCached && (
-                <ToggleRow
-                  label={t("Cached only")}
-                  hint={t("{n} uncached hidden", { n: filters.uncachedHidden })}
-                  on={filters.cachedOnly}
-                  onClick={() => filters.setCachedOnly(!filters.cachedOnly)}
-                />
-              )}
-              {showLangs && (
-                <ToggleRow
-                  label={t("{langs} only", { langs: abbreviateLanguages(filters.preferredLangs) })}
-                  hint={t("{n} hidden", { n: filters.langHidden })}
-                  on={filters.filterToPreferred}
-                  onClick={() => filters.setFilterToPreferred(!filters.filterToPreferred)}
-                />
-              )}
-              {showFlagged && (
-                <ToggleRow
-                  label={t("Show flagged")}
-                  hint={t("{n} hidden by trust filter", { n: filters.rejectedCount })}
-                  on={filters.showFlagged}
-                  onClick={() => filters.setShowFlagged(!filters.showFlagged)}
-                />
-              )}
-            </div>
-          )}
-
-          {active > 0 && (
-            <button
-              onClick={reset}
-              className="mt-3 flex w-full items-center justify-center gap-2 rounded-md bg-raised py-2 text-[12px] font-semibold text-ink-muted transition-colors hover:bg-surface hover:text-ink"
-            >
-              <RotateCcw size={12} strokeWidth={2.4} />
-              {t("Reset filters")}
-            </button>
-          )}
+      {/* Fallback floating dropdown if parent doesn't handle side-panel docking */}
+      {onToggle === undefined && localOpen && (
+        <div
+          className="absolute end-0 top-full z-50 mt-2 max-h-[70vh] w-[320px] overflow-hidden rounded-xl border border-white/20 bg-[#111215] shadow-[0_24px_64px_rgba(0,0,0,0.95)]"
+          style={{ backgroundColor: "#111215" }}
+        >
+          <FiltersPanel filters={filters} onClose={() => setLocalOpen(false)} />
         </div>
       )}
     </div>
@@ -249,8 +325,8 @@ export function FiltersMenu({ filters }: { filters: SwitcherFilters }) {
 
 function Section({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <div className="mb-3 last:mb-0">
-      <div className="mb-1.5 px-0.5 text-[10px] font-bold uppercase tracking-[0.14em] text-ink-subtle">
+    <div>
+      <div className="mb-2 px-0.5 text-[10.5px] font-bold uppercase tracking-[0.12em] text-zinc-400">
         {label}
       </div>
       {children}
@@ -273,9 +349,13 @@ function Chip({
     <button
       onClick={onClick}
       aria-pressed={active}
-      className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[12px] font-semibold transition-colors ${
+      className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-[11.5px] transition-all border ${
         grow ? "flex-1 justify-center" : ""
-      } ${active ? "bg-ink text-canvas" : "bg-raised text-ink-muted hover:bg-surface hover:text-ink"}`}
+      } ${
+        active
+          ? "bg-white text-black font-bold border-white shadow-sm"
+          : "bg-[#1c1d22] text-zinc-300 font-medium border-white/10 hover:bg-[#25272e] hover:border-white/20 hover:text-white"
+      }`}
     >
       {children}
     </button>
@@ -283,7 +363,7 @@ function Chip({
 }
 
 function Count({ n }: { n: number }) {
-  return <span className="text-[10.5px] tabular-nums opacity-60">{n}</span>;
+  return <span className="text-[10px] font-mono tabular-nums opacity-60">({n})</span>;
 }
 
 function AddonRow({
@@ -302,13 +382,15 @@ function AddonRow({
   return (
     <button
       onClick={onClick}
-      className={`flex w-full items-center gap-2.5 rounded-md px-2 py-1.5 text-start text-[12.5px] transition-colors hover:bg-raised ${
-        active ? "font-semibold text-ink" : "text-ink-muted"
+      className={`flex w-full items-center gap-2.5 rounded-lg px-2.5 py-1.5 text-start text-[12px] transition-colors ${
+        active
+          ? "bg-[#25272e] font-semibold text-white border border-white/25"
+          : "text-zinc-300 hover:bg-[#1a1b20] hover:text-white border border-transparent"
       }`}
     >
       <span className="shrink-0">{logo}</span>
       <span className="flex-1 truncate">{name}</span>
-      <span className="text-[11px] tabular-nums text-ink-subtle">{count}</span>
+      <span className="text-[11px] font-mono tabular-nums text-zinc-400">{count}</span>
     </button>
   );
 }
@@ -327,19 +409,23 @@ function ToggleRow({
   return (
     <button
       onClick={onClick}
-      className="flex w-full items-center justify-between gap-3 rounded-md px-2 py-1.5 text-start transition-colors hover:bg-raised"
+      className="flex w-full items-center justify-between gap-3 rounded-lg px-2.5 py-2 text-start transition-colors hover:bg-[#1a1b20]"
     >
       <span className="flex min-w-0 flex-col">
-        <span className={`text-[12.5px] ${on ? "font-semibold text-ink" : "text-ink-muted"}`}>
+        <span className={`text-[12px] ${on ? "font-semibold text-white" : "text-zinc-300"}`}>
           {label}
         </span>
-        <span className="truncate text-[10.5px] text-ink-subtle">{hint}</span>
+        <span className="truncate text-[10px] text-zinc-400">{hint}</span>
       </span>
       <span
-        className={`relative h-4 w-7 shrink-0 rounded-full transition-colors ${on ? "bg-accent" : "bg-edge"}`}
+        className={`relative h-4 w-7 shrink-0 rounded-full transition-colors ${
+          on ? "bg-accent" : "bg-white/20"
+        }`}
       >
         <span
-          className={`absolute top-0.5 h-3 w-3 rounded-full bg-white transition-all ${on ? "start-3.5" : "start-0.5"}`}
+          className={`absolute top-0.5 h-3 w-3 rounded-full bg-white transition-all ${
+            on ? "start-3.5" : "start-0.5"
+          }`}
         />
       </span>
     </button>

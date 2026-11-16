@@ -371,6 +371,25 @@ pub async fn dvr_default_dir(app: AppHandle) -> Result<String, String> {
     if !dir.exists() {
         let _ = std::fs::create_dir_all(&dir);
     }
+
+    // Tauri 2.12 Android migration: check if legacy recordings exist in old cache directory
+    #[cfg(target_os = "android")]
+    {
+        if let Ok(cache_dir) = app.path().app_cache_dir() {
+            let legacy_dir = cache_dir.join("Argus DVR");
+            if legacy_dir.exists() && legacy_dir.is_dir() {
+                if let Ok(entries) = std::fs::read_dir(&legacy_dir) {
+                    for entry in entries.flatten() {
+                        let target = dir.join(entry.file_name());
+                        if !target.exists() {
+                            let _ = std::fs::rename(entry.path(), &target);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     Ok(dir.to_string_lossy().to_string())
 }
 
