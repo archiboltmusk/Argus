@@ -19,8 +19,12 @@ import {
   FileText,
   FolderCheck,
   Layers,
+  Download,
 } from "lucide-react";
 import { useView } from "@/lib/view";
+import { BTRSplitWorkstation } from "@/components/education/btr-split-workstation";
+import { BTRAnkiExportModal } from "@/components/education/btr-anki-export-modal";
+import { BTRErrorLogModal } from "@/components/education/btr-error-log-modal";
 import {
   CORE_BTR_SUBJECTS,
   CORE_BTR_PHASES,
@@ -70,6 +74,16 @@ export function CoreBTRWarRoom({ onStartQBankDrill, onOpenNotes }: CoreBTRWarRoo
   // Volatiles state
   const [revealedCards, setRevealedCards] = useState<Record<string, boolean>>({});
   const [copiedCardId, setCopiedCardId] = useState<string | null>(null);
+
+  // Advanced Modals State
+  const [workstationSession, setWorkstationSession] = useState<{
+    video: BTRLocalMediaFile;
+    subject: BTRSubject;
+    unannotatedPdf?: BTRLocalMediaFile;
+    annotatedPdf?: BTRLocalMediaFile;
+  } | null>(null);
+  const [showAnkiModal, setShowAnkiModal] = useState(false);
+  const [showErrorModal, setShowErrorModal] = useState(false);
 
   // GT Form state
   const [showAddGtModal, setShowAddGtModal] = useState(false);
@@ -553,14 +567,33 @@ export function CoreBTRWarRoom({ onStartQBankDrill, onOpenNotes }: CoreBTRWarRoo
                   <div className="pt-3 border-t border-edge-soft flex items-center justify-between gap-2">
                     <div className="flex items-center gap-1.5">
                       {videosCount > 0 && media && (
-                        <button
-                          type="button"
-                          onClick={() => handlePlayLecture(media.videos[0], subj)}
-                          className="flex items-center gap-1 rounded-lg bg-accent px-2.5 py-1 text-[11px] font-bold text-white shadow-xs hover:brightness-110 transition"
-                        >
-                          <Play size={11} fill="currentColor" />
-                          <span>Play</span>
-                        </button>
+                        <>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setWorkstationSession({
+                                video: media.videos[0],
+                                subject: subj,
+                                unannotatedPdf: media.unannotatedPdf,
+                                annotatedPdf: media.annotatedPdf,
+                              })
+                            }
+                            title="Open Side-by-Side Video & PDF Workstation"
+                            className="flex items-center gap-1 rounded-lg bg-emerald-600 px-2 py-1 text-[11px] font-bold text-white shadow-xs hover:brightness-110 transition"
+                          >
+                            <Layers size={11} />
+                            <span>Dual</span>
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => handlePlayLecture(media.videos[0], subj)}
+                            className="flex items-center gap-1 rounded-lg bg-accent px-2 py-1 text-[11px] font-bold text-white shadow-xs hover:brightness-110 transition"
+                          >
+                            <Play size={11} fill="currentColor" />
+                            <span>Play</span>
+                          </button>
+                        </>
                       )}
 
                       {(hasUnannotated || hasAnnotated) && media && (
@@ -569,7 +602,7 @@ export function CoreBTRWarRoom({ onStartQBankDrill, onOpenNotes }: CoreBTRWarRoo
                           onClick={() =>
                             handleOpenPdf(media.unannotatedPdf || media.annotatedPdf!)
                           }
-                          className="flex items-center gap-1 rounded-lg bg-elevated border border-edge-soft px-2.5 py-1 text-[11px] font-semibold text-ink hover:bg-raised transition"
+                          className="flex items-center gap-1 rounded-lg bg-elevated border border-edge-soft px-2 py-1 text-[11px] font-semibold text-ink hover:bg-raised transition"
                         >
                           <FileText size={11} />
                           <span>PDF</span>
@@ -899,13 +932,31 @@ export function CoreBTRWarRoom({ onStartQBankDrill, onOpenNotes }: CoreBTRWarRoo
                             </div>
                           </div>
 
-                          <button
-                            type="button"
-                            onClick={() => handlePlayLecture(vid, subj)}
-                            className="rounded-lg bg-accent px-2.5 py-1 text-[11px] font-bold text-white shadow-xs hover:brightness-110 transition"
-                          >
-                            Play
-                          </button>
+                          <div className="flex items-center gap-1.5 shrink-0">
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setWorkstationSession({
+                                  video: vid,
+                                  subject: subj,
+                                  unannotatedPdf: unannotated,
+                                  annotatedPdf: annotated,
+                                })
+                              }
+                              title="Side-by-Side Video & PDF Workstation"
+                              className="rounded-lg bg-emerald-600 px-2 py-1 text-[11px] font-bold text-white shadow-xs hover:brightness-110 transition"
+                            >
+                              Dual
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => handlePlayLecture(vid, subj)}
+                              className="rounded-lg bg-accent px-2.5 py-1 text-[11px] font-bold text-white shadow-xs hover:brightness-110 transition"
+                            >
+                              Play
+                            </button>
+                          </div>
                         </div>
                       ))}
                     </div>
@@ -938,7 +989,17 @@ export function CoreBTRWarRoom({ onStartQBankDrill, onOpenNotes }: CoreBTRWarRoo
               </div>
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setShowAnkiModal(true)}
+                className="flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-xl bg-accent text-white shadow-xs hover:brightness-110 transition"
+                title="Export cards to Anki"
+              >
+                <Download size={13} />
+                <span>Export to Anki</span>
+              </button>
+
               <button
                 type="button"
                 onClick={revealAllCards}
@@ -1090,14 +1151,25 @@ export function CoreBTRWarRoom({ onStartQBankDrill, onOpenNotes }: CoreBTRWarRoo
               </p>
             </div>
 
-            <button
-              type="button"
-              onClick={() => setShowAddGtModal(true)}
-              className="flex items-center gap-2 rounded-xl bg-accent px-4 py-2 text-xs font-bold text-white shadow-sm hover:brightness-110 transition"
-            >
-              <Plus size={14} />
-              <span>Log New Grand Test</span>
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setShowErrorModal(true)}
+                className="flex items-center gap-1.5 rounded-xl bg-amber-500/15 border border-amber-500/30 px-3.5 py-2 text-xs font-bold text-amber-400 hover:bg-amber-500/25 transition"
+              >
+                <AlertTriangle size={14} />
+                <span>GT Mistake Vault & Blitz</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setShowAddGtModal(true)}
+                className="flex items-center gap-2 rounded-xl bg-accent px-4 py-2 text-xs font-bold text-white shadow-sm hover:brightness-110 transition"
+              >
+                <Plus size={14} />
+                <span>Log New Grand Test</span>
+              </button>
+            </div>
           </div>
 
           {/* GT History Cards */}
@@ -1348,6 +1420,20 @@ export function CoreBTRWarRoom({ onStartQBankDrill, onOpenNotes }: CoreBTRWarRoo
           </div>
         </div>
       )}
+
+      {/* Advanced BTR Modals: Split-Screen Workstation, Anki Exporter, and GT Error Vault */}
+      {workstationSession && (
+        <BTRSplitWorkstation
+          open={true}
+          onClose={() => setWorkstationSession(null)}
+          video={workstationSession.video}
+          subject={workstationSession.subject}
+          unannotatedPdf={workstationSession.unannotatedPdf}
+          annotatedPdf={workstationSession.annotatedPdf}
+        />
+      )}
+      <BTRAnkiExportModal open={showAnkiModal} onClose={() => setShowAnkiModal(false)} />
+      <BTRErrorLogModal open={showErrorModal} onClose={() => setShowErrorModal(false)} />
     </div>
   );
 }
