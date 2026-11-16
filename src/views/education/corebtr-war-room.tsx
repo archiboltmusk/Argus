@@ -21,6 +21,9 @@ import {
   Layers,
   Download,
   Radio,
+  Triangle,
+  Droplets,
+  Stethoscope,
 } from "lucide-react";
 import { useView } from "@/lib/view";
 import { BTRSplitWorkstation } from "@/components/education/btr-split-workstation";
@@ -30,6 +33,11 @@ import { BTRBroadcastsModal } from "@/components/education/btr-broadcasts-panel"
 import { BTRTwentyMatrixModal } from "@/components/education/btr-twenty-matrix-modal";
 import { BTRSpotterModal } from "@/components/education/btr-spotter-modal";
 import { BTRMarathonModal } from "@/components/education/btr-marathon-modal";
+import { BTRTnDModal } from "@/components/education/btr-tnd-modal";
+import { BTRPyramidsModal } from "@/components/education/btr-pyramids-modal";
+import { BTRDailyDripModal } from "@/components/education/btr-daily-drip-modal";
+import { BTRPdfSearchModal } from "@/components/education/btr-pdf-search-modal";
+import { BTRVignetteModal } from "@/components/education/btr-vignette-modal";
 import {
   CORE_BTR_SUBJECTS,
   CORE_BTR_PHASES,
@@ -93,6 +101,11 @@ export function CoreBTRWarRoom({ onStartQBankDrill, onOpenNotes }: CoreBTRWarRoo
   const [showTwentyModal, setShowTwentyModal] = useState(false);
   const [showSpotterModal, setShowSpotterModal] = useState(false);
   const [showMarathonModal, setShowMarathonModal] = useState(false);
+  const [showTnDModal, setShowTnDModal] = useState(false);
+  const [showPyramidsModal, setShowPyramidsModal] = useState(false);
+  const [showDripModal, setShowDripModal] = useState(false);
+  const [showPdfSearchModal, setShowPdfSearchModal] = useState(false);
+  const [showVignetteModal, setShowVignetteModal] = useState(false);
 
   // GT Form state
   const [showAddGtModal, setShowAddGtModal] = useState(false);
@@ -369,15 +382,24 @@ export function CoreBTRWarRoom({ onStartQBankDrill, onOpenNotes }: CoreBTRWarRoo
         </div>
       </div>
 
-      {/* 2. Elite Power Hub: Official Broadcasts, 20th Subject, Mega BTR, & Spotters */}
+      {/* 2. Elite Power Hub: Official Broadcasts, 20th Subject, Mega BTR, Spotters & Advanced Suites */}
       <div className="flex flex-wrap items-center gap-2.5">
+        <button
+          type="button"
+          onClick={() => setShowDripModal(true)}
+          className="flex items-center gap-2 rounded-2xl bg-cyan-600/15 border border-cyan-500/30 px-3.5 py-2 text-xs font-bold text-cyan-300 hover:bg-cyan-600/25 transition shadow-xs"
+        >
+          <Droplets size={14} className="text-cyan-400" />
+          <span>Daily Volatile Drip (FSRS)</span>
+        </button>
+
         <button
           type="button"
           onClick={() => setShowBroadcastsModal(true)}
           className="flex items-center gap-2 rounded-2xl bg-red-600/15 border border-red-500/30 px-3.5 py-2 text-xs font-bold text-red-400 hover:bg-red-600/25 transition shadow-xs"
         >
           <Radio size={14} className="animate-pulse text-red-500" />
-          <span>Core Drops & Broadcasts (@corebtrbyzainabvora)</span>
+          <span>Core Drops (@corebtrbyzainabvora)</span>
         </button>
 
         <button
@@ -386,7 +408,25 @@ export function CoreBTRWarRoom({ onStartQBankDrill, onOpenNotes }: CoreBTRWarRoo
           className="flex items-center gap-2 rounded-2xl bg-amber-500/15 border border-amber-500/30 px-3.5 py-2 text-xs font-bold text-amber-300 hover:bg-amber-500/25 transition shadow-xs"
         >
           <Layers size={14} className="text-amber-400" />
-          <span>&quot;20th Subject&quot; Matrix (Biostats, DOC, BMW)</span>
+          <span>&quot;20th Subject&quot; Matrix</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setShowPyramidsModal(true)}
+          className="flex items-center gap-2 rounded-2xl bg-amber-500/15 border border-amber-500/30 px-3.5 py-2 text-xs font-bold text-amber-300 hover:bg-amber-500/25 transition shadow-xs"
+        >
+          <Triangle size={14} className="text-amber-400" />
+          <span>3-Tier Pyramids</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setShowTnDModal(true)}
+          className="flex items-center gap-2 rounded-2xl bg-emerald-600/15 border border-emerald-500/30 px-3.5 py-2 text-xs font-bold text-emerald-400 hover:bg-emerald-600/25 transition shadow-xs"
+        >
+          <Target size={14} className="text-emerald-400" />
+          <span>T&D Simulator (17 Papers)</span>
         </button>
 
         <button
@@ -395,7 +435,7 @@ export function CoreBTRWarRoom({ onStartQBankDrill, onOpenNotes }: CoreBTRWarRoo
           className="flex items-center gap-2 rounded-2xl bg-emerald-600/15 border border-emerald-500/30 px-3.5 py-2 text-xs font-bold text-emerald-400 hover:bg-emerald-600/25 transition shadow-xs"
         >
           <Zap size={14} className="text-emerald-400" />
-          <span>Mega BTR 72-Hour Blitz</span>
+          <span>Mega BTR 72h Blitz</span>
         </button>
 
         <button
@@ -404,7 +444,25 @@ export function CoreBTRWarRoom({ onStartQBankDrill, onOpenNotes }: CoreBTRWarRoo
           className="flex items-center gap-2 rounded-2xl bg-purple-600/15 border border-purple-500/30 px-3.5 py-2 text-xs font-bold text-purple-300 hover:bg-purple-600/25 transition shadow-xs"
         >
           <Eye size={14} className="text-purple-400" />
-          <span>Diagnostic Spotters & Image Bank</span>
+          <span>Spotter Image Bank</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setShowPdfSearchModal(true)}
+          className="flex items-center gap-2 rounded-2xl bg-blue-600/15 border border-blue-500/30 px-3.5 py-2 text-xs font-bold text-blue-300 hover:bg-blue-600/25 transition shadow-xs"
+        >
+          <Search size={14} className="text-blue-400" />
+          <span>Cross-PDF Search</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setShowVignetteModal(true)}
+          className="flex items-center gap-2 rounded-2xl bg-teal-600/15 border border-teal-500/30 px-3.5 py-2 text-xs font-bold text-teal-300 hover:bg-teal-600/25 transition shadow-xs"
+        >
+          <Stethoscope size={14} className="text-teal-400" />
+          <span>Two-Step Clinical Cases</span>
         </button>
       </div>
 
@@ -1537,6 +1595,106 @@ export function CoreBTRWarRoom({ onStartQBankDrill, onOpenNotes }: CoreBTRWarRoo
           }
         }}
       />
+
+      {/* Interactive T&D Exam Simulator */}
+      <BTRTnDModal
+        open={showTnDModal}
+        onClose={() => setShowTnDModal(false)}
+        onLaunchVideo={(videoName) => {
+          setShowTnDModal(false);
+          const matched = libraryState.tndVideos?.find((v) =>
+            v.filename.toLowerCase().includes(videoName.toLowerCase().replace(".mp4", ""))
+          );
+          if (matched) {
+            const dummySubject: BTRSubject = {
+              id: "tnd_review",
+              name: "Test & Discussion",
+              shortCode: "TND",
+              category: "Long Clinical",
+              blockNumber: 4,
+              recommendedDays: 1,
+              highYieldPytCount: 50,
+              iconName: "Target",
+              description: "T&D Video Discussion",
+              mustKnowTopics: ["PYQs", "Examiner Traps", "Clinical Vignettes"],
+              pyramidTiers: {
+                tier1MustKnow: ["T&D 1-25"],
+                tier2Volatile: [],
+                tier3TieBreakers: [],
+              },
+            };
+            const mediaFile: BTRLocalMediaFile = {
+              id: matched.id,
+              filename: matched.filename,
+              fullPath: matched.fullPath,
+              relativePath: matched.filename,
+              kind: "video",
+              matchedSubjectId: "tnd_review",
+              lectureNumber: 1,
+              title: matched.title,
+              sizeBytes: matched.sizeBytes,
+            };
+            setWorkstationSession({
+              video: mediaFile,
+              subject: dummySubject,
+            });
+          }
+        }}
+      />
+
+      {/* 3-Tier Subject Pyramid Visualizer */}
+      <BTRPyramidsModal open={showPyramidsModal} onClose={() => setShowPyramidsModal(false)} />
+
+      {/* Daily Volatile Drip (FSRS) */}
+      <BTRDailyDripModal open={showDripModal} onClose={() => setShowDripModal(false)} />
+
+      {/* Cross-PDF Search Engine */}
+      <BTRPdfSearchModal
+        open={showPdfSearchModal}
+        onClose={() => setShowPdfSearchModal(false)}
+        onJumpToPdfPage={(pdfFileName, pageNumber) => {
+          setShowPdfSearchModal(false);
+          // Look for matching PDF in library mappings or master PDFs
+          let matchedPdf: BTRLocalMediaFile | undefined;
+          for (const m of Object.values(libraryState.mappings)) {
+            if (m.unannotatedPdf?.filename.toLowerCase() === pdfFileName.toLowerCase()) {
+              matchedPdf = m.unannotatedPdf;
+              break;
+            }
+            if (m.annotatedPdf?.filename.toLowerCase() === pdfFileName.toLowerCase()) {
+              matchedPdf = m.annotatedPdf;
+              break;
+            }
+          }
+          if (!matchedPdf && libraryState.masterPdfs) {
+            const master = libraryState.masterPdfs.find(
+              (p) => p.filename.toLowerCase() === pdfFileName.toLowerCase()
+            );
+            if (master) {
+              matchedPdf = {
+                id: master.id,
+                filename: master.filename,
+                fullPath: master.fullPath,
+                relativePath: master.filename,
+                kind: "pdf_unannotated",
+                matchedSubjectId: "master_pdf",
+                lectureNumber: 1,
+                title: master.title,
+                sizeBytes: master.sizeBytes,
+              };
+            }
+          }
+          if (matchedPdf) {
+            const url = matchedPdf.fullPath.startsWith("file://")
+              ? matchedPdf.fullPath
+              : `file://${matchedPdf.fullPath}`;
+            window.open(`${url}#page=${pageNumber}`, "_blank");
+          }
+        }}
+      />
+
+      {/* Two-Step Clinical Case Drill */}
+      <BTRVignetteModal open={showVignetteModal} onClose={() => setShowVignetteModal(false)} />
     </div>
   );
 }
