@@ -180,6 +180,11 @@ function MainRoot() {
   const [appReady, setAppReady] = useState(false);
   const markAppReady = useCallback(() => setAppReady(true), []);
   const mountedAt = useRef(performance.now());
+  useEffect(() => {
+    if (!appReady) return;
+    const timer = window.setTimeout(() => { void initializeMusic().catch(() => {}); }, 0);
+    return () => window.clearTimeout(timer);
+  }, [appReady]);
 
   // Acknowledge startup and take focus as soon as the app is mounted. The window is already on
   // screen showing the splash, and holding focus back would let the user click elsewhere first.
@@ -245,9 +250,6 @@ async function mount() {
     loadSecrets().catch(() => {}),
     hydrateCustomThemes().catch(() => {}),
     ensureUiLocale(getUiLanguage()).catch(() => {}),
-    !isHdrOverlay && !isModal && !isCaptions && !isPip && !isVideoPip && !isDjDeck
-      ? initializeMusic().catch(() => {})
-      : Promise.resolve(),
   ]).catch(() => {});
   if (!isHdrOverlay && !isModal && !isCaptions && !isDjDeck) void initSubtitleCache();
   if (!isHdrOverlay && !isModal && !isCaptions && !isPip && !isVideoPip && !isDjDeck)

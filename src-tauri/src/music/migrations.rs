@@ -1,6 +1,6 @@
 use rusqlite::Connection;
 
-pub const LATEST_VERSION: i64 = 7;
+pub const LATEST_VERSION: i64 = 8;
 
 const CREATE_SCHEMA: &str = r#"
 CREATE TABLE IF NOT EXISTS music_tracks (
@@ -105,7 +105,25 @@ const PLAYLIST_DATES: &str = "CREATE TABLE playlist_track_dates (
   added_at TEXT NOT NULL,
   PRIMARY KEY (playlist_id, track_id)
 );";
-const STEPS: [(i64, &str); 7] = [
+const DIRECT_PRIVACY: &str = r#"
+PRAGMA defer_foreign_keys = ON;
+CREATE TEMP TABLE legacy_direct_ids AS
+ SELECT id AS old_id, 'direct:' || lower(hex(randomblob(16))) AS new_id
+ FROM music_tracks WHERE connector = 'direct' AND (instr(id, '?') > 0 OR instr(source_id, '?') > 0);
+UPDATE music_liked SET track_id = (SELECT new_id FROM legacy_direct_ids WHERE old_id = track_id) WHERE track_id IN (SELECT old_id FROM legacy_direct_ids);
+UPDATE music_recents SET track_id = (SELECT new_id FROM legacy_direct_ids WHERE old_id = track_id) WHERE track_id IN (SELECT old_id FROM legacy_direct_ids);
+UPDATE music_queue SET track_id = (SELECT new_id FROM legacy_direct_ids WHERE old_id = track_id) WHERE track_id IN (SELECT old_id FROM legacy_direct_ids);
+UPDATE playlist_tracks SET track_id = (SELECT new_id FROM legacy_direct_ids WHERE old_id = track_id) WHERE track_id IN (SELECT old_id FROM legacy_direct_ids);
+UPDATE playlist_track_dates SET track_id = (SELECT new_id FROM legacy_direct_ids WHERE old_id = track_id) WHERE track_id IN (SELECT old_id FROM legacy_direct_ids);
+UPDATE music_tracks SET
+ source_id = (SELECT new_id FROM legacy_direct_ids WHERE old_id = music_tracks.id),
+ id = (SELECT new_id FROM legacy_direct_ids WHERE old_id = music_tracks.id)
+ WHERE id IN (SELECT old_id FROM legacy_direct_ids);
+UPDATE music_tracks SET resolved_url = NULL, resolved_at = NULL, resolved_metadata = NULL
+ WHERE connector = 'direct' AND instr(COALESCE(resolved_url, ''), '?') > 0;
+DROP TABLE legacy_direct_ids;
+"#;
+const STEPS: [(i64, &str); 8] = [
     (1, CREATE_SCHEMA),
     (2, CREATE_CATALOG),
     (3, STREAM_METADATA),
@@ -115,6 +133,7 @@ const STEPS: [(i64, &str); 7] = [
     // Old remote cache entries may refer to a silent cross-provider substitute.
     // Preserve local/direct endpoints, which are user-owned playback sources.
     (7, "UPDATE music_tracks SET resolved_url = NULL, resolved_at = NULL, resolved_metadata = NULL WHERE connector NOT IN ('local', 'direct');"),
+    (8, DIRECT_PRIVACY),
 ];
 
 pub fn run(connection: &mut Connection) -> Result<(), String> {

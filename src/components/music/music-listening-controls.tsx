@@ -1,7 +1,7 @@
 import { requestMusicPanel } from "@/lib/music/navigation";
 import { useState } from "react";
 import { cwProfileScope } from "@/lib/cw-profile";
-import { createMusicPlaylist, addTracksToMusicPlaylist } from "@/lib/music/library";
+import { createMusicPlaylist } from "@/lib/music/library";
 import {
   excludedFromTaste,
   setTasteExcluded,
@@ -109,15 +109,13 @@ export function MusicListeningControls() {
             }
             setBusy(true);
             try {
-              const playlist = await createMusicPlaylist(name.trim());
-              if (cwProfileScope().profileId !== owner)
-                throw new Error("Profile changed. Saving stopped before adding tracks.");
-              await addTracksToMusicPlaylist(playlist.id, tracks);
+              if (cwProfileScope().profileId !== owner) throw new Error("Profile changed");
+              const playlist = await createMusicPlaylist(name.trim(), tracks);
               setNotice(`Saved ${tracks.length} songs to ${playlist.name}.`);
               setName("");
             } catch {
               setNotice(
-                "Could not finish saving. Check your library for a newly created empty playlist before retrying.",
+                "Could not save the queue. No partial playlist was created. Try again.",
               );
             } finally {
               setBusy(false);

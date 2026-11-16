@@ -110,13 +110,13 @@ try {
       const savedMs = readResumeMs("acceptance-fixture");
       unsubscribe();
       bridge.detach();
-      return { firstFrameMs, savedMs, fallbackRestored: true };
+      return { firstFrameMs, savedMs, positionBeforeFallback: position, positionAfterFallback: snapshot.positionSec, fallbackRestored: true };
     });
     assert.ok(
       result.firstFrameMs <= Number(process.env.ARGUS_FIRST_FRAME_BUDGET_MS ?? 3000),
       "first-frame performance budget exceeded",
     );
-    assert.ok(Math.abs(result.savedMs - 6000) < 500, "resume position lost");
+    assert.ok(Math.abs(result.savedMs - 6000) < 500, `resume position lost: ${JSON.stringify(result)}`);
     results.push(result);
     console.log(`journey ${run + 1}/20 passed`);
   }

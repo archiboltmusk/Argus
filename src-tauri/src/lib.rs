@@ -1646,6 +1646,7 @@ pub fn run() {
             music::music_list_artists,
             music::music_list_playlists,
             music::music_create_playlist,
+            music::music_create_playlist_with_tracks,
             music::music_add_to_playlist,
             music::music_add_tracks_to_playlist,
             music::music_rename_playlist,
