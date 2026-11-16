@@ -58,6 +58,30 @@ test("an empty original changelog remains idempotent", () => {
   assert.equal(renderReleasePage(release(first)), first);
 });
 
+test("ecosystem installers for Android, Apple, and Smart TV render cleanly in release page", () => {
+  const page = renderReleasePage(
+    release("Ecosystem release", [
+      asset("Argus-aarch64.dmg"),
+      asset("Argus-android-arm64.apk"),
+      asset("Argus-SmartProjector-AndroidTV.apk"),
+      asset("Argus-iOS-iPadOS.ipa"),
+      asset("Argus-AppleTV-tvOS.ipa"),
+      asset("Argus-VisionPro-visionOS.ipa"),
+      asset("Argus-AppleWatch-watchOS.ipa"),
+      asset("Argus-Samsung-Tizen.wgt"),
+      asset("Argus-LG-webOS.ipk"),
+    ]),
+  );
+  assert.match(page, /Android.*Phone & Tablet.*Download APK/);
+  assert.match(page, /Smart Projector & Android TV.*Download Projector APK/);
+  assert.match(page, /Apple iOS.*Download iOS IPA/);
+  assert.match(page, /Apple tvOS.*Download tvOS IPA/);
+  assert.match(page, /Apple visionOS.*Download visionOS IPA/);
+  assert.match(page, /Apple watchOS.*Download watchOS IPA/);
+  assert.match(page, /Samsung Tizen.*Download Tizen WGT/);
+  assert.match(page, /LG webOS.*Download webOS IPK/);
+});
+
 test("unsafe links, preview tags, and releases without installers cannot produce a page", () => {
   assert.throws(() => renderReleasePage(release("", [])), /No published installers/);
   assert.throws(() => renderReleasePage({ ...release(), tagName: "beta" }), /stable version/);

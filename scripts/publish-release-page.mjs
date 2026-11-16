@@ -13,6 +13,16 @@ const INSTALLERS = [
   ["Windows", "x64", "Argus-windows-x64.msi", "Download MSI"],
   ["Linux", "x64", "Argus-linux-x64.AppImage", "Download AppImage"],
   ["Linux", "Debian / Ubuntu x64", "Argus-linux-x64.deb", "Download DEB"],
+  ["Android", "Phone & Tablet (arm64)", "Argus-android-arm64.apk", "Download APK"],
+  ["Android", "Smart Projector & Android TV", "Argus-SmartProjector-AndroidTV.apk", "Download Projector APK"],
+  ["Android", "Android TV (arm64)", "Argus-AndroidTV-arm64.apk", "Download TV APK"],
+  ["Apple iOS", "iPhone & iPad", "Argus-iOS-iPadOS.ipa", "Download iOS IPA"],
+  ["Apple tvOS", "Apple TV 4K / HD", "Argus-AppleTV-tvOS.ipa", "Download tvOS IPA"],
+  ["Apple visionOS", "Apple Vision Pro", "Argus-VisionPro-visionOS.ipa", "Download visionOS IPA"],
+  ["Apple watchOS", "Apple Watch Remote", "Argus-AppleWatch-watchOS.ipa", "Download watchOS IPA"],
+  ["Samsung Tizen", "Smart TV", "Argus-Samsung-Tizen.wgt", "Download Tizen WGT"],
+  ["Samsung Tizen", "The Freestyle Projector", "Argus-Samsung-TheFreestyle.wgt", "Download Freestyle WGT"],
+  ["LG webOS", "Smart TV", "Argus-LG-webOS.ipk", "Download webOS IPK"],
 ];
 
 export function renderReleasePage(release, highlights = "") {

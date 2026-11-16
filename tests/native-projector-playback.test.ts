@@ -316,3 +316,48 @@ test("Web Browser Playback: proxy gate requires Tauri runtime and HTML5 bridge s
     else g.window = prevWin;
   }
 });
+
+test("Universal Player Engine Router: maps each target OS to optimal native hardware player", async () => {
+  const { getRecommendedPlayerEngine } = await import("../src/lib/platform.ts");
+  const { resolveAdaptivePlayerBridge } = await import("../src/lib/player/engines/router.ts");
+
+  // Verify optimal player engine mapping for all supported operating systems
+  assert.equal(getRecommendedPlayerEngine("tvos"), "avplayer");
+  assert.equal(getRecommendedPlayerEngine("visionos"), "avplayer");
+  assert.equal(getRecommendedPlayerEngine("watchos"), "avplayer");
+  assert.equal(getRecommendedPlayerEngine("ios"), "avplayer");
+  assert.equal(getRecommendedPlayerEngine("ipados"), "avplayer");
+
+  assert.equal(getRecommendedPlayerEngine("android-tv"), "exoplayer");
+  assert.equal(getRecommendedPlayerEngine("android-projector"), "exoplayer");
+  assert.equal(getRecommendedPlayerEngine("android-phone"), "exoplayer");
+  assert.equal(getRecommendedPlayerEngine("android-tablet"), "exoplayer");
+
+  assert.equal(getRecommendedPlayerEngine("tizen"), "tizen-avplay");
+  assert.equal(getRecommendedPlayerEngine("webos"), "webos-media");
+
+  assert.equal(getRecommendedPlayerEngine("macos"), "mpv");
+  assert.equal(getRecommendedPlayerEngine("windows"), "mpv");
+  assert.equal(getRecommendedPlayerEngine("windows-handheld"), "mpv");
+  assert.equal(getRecommendedPlayerEngine("linux"), "mpv");
+
+  assert.equal(getRecommendedPlayerEngine("chromeos"), "html5");
+  assert.equal(getRecommendedPlayerEngine("web"), "html5");
+
+  // Verify runtime bridge resolution when explicitly targeting native engines
+  const tizenRes = await resolveAdaptivePlayerBridge("tizen-avplay", false, { anime4k: false, hdrToSdr: false });
+  assert.ok(tizenRes.bridge);
+  assert.equal(tizenRes.engine, "html5");
+
+  const webosRes = await resolveAdaptivePlayerBridge("webos-media", false, { anime4k: false, hdrToSdr: false });
+  assert.ok(webosRes.bridge);
+  assert.equal(webosRes.engine, "html5");
+
+  const avplayerRes = await resolveAdaptivePlayerBridge("avplayer", false, { anime4k: false, hdrToSdr: false });
+  assert.ok(avplayerRes.bridge);
+  assert.equal(avplayerRes.engine, "html5");
+
+  const exoplayerRes = await resolveAdaptivePlayerBridge("exoplayer", false, { anime4k: false, hdrToSdr: false });
+  assert.ok(exoplayerRes.bridge);
+  assert.equal(exoplayerRes.engine, "html5");
+});
