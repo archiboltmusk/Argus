@@ -1,9 +1,11 @@
 import {
   Home,
   BookOpen,
+  Timer,
+  Tv,
+  Calendar,
   Layers,
   Target,
-  Zap,
   Eye,
   Calculator,
   Droplets,
@@ -21,6 +23,9 @@ import {
 export type BTRAppDestination =
   | "today"
   | "subjects"
+  | "tests"
+  | "live"
+  | "plan"
   | "workstation"
   | "tnd"
   | "blitz"
@@ -55,15 +60,41 @@ export function BTRAppDock({
   onLinkFolder,
   isWorkstationActive = false,
 }: BTRAppDockProps) {
-  const primaryDestinations: Array<{
+  // Canonical 5 CoreBTR App destinations
+  const canonicalDestinations: Array<{
     id: BTRAppDestination;
     label: string;
     icon: typeof Home;
     badge?: string | number;
     badgeColor?: string;
   }> = [
-    { id: "today", label: "Today & Command", icon: Home },
-    { id: "subjects", label: "19-Subject Studio", icon: BookOpen },
+    { id: "today", label: "Home", icon: Home },
+    { id: "subjects", label: "Library", icon: BookOpen, badge: "19 Subs" },
+    {
+      id: "tests",
+      label: "Tests",
+      icon: Timer,
+      badge: "GTs & Minis",
+      badgeColor: "bg-indigo-500/20 text-indigo-300 border-indigo-500/30",
+    },
+    {
+      id: "live",
+      label: "Live",
+      icon: Tv,
+      badge: "Recalls",
+      badgeColor: "bg-red-500/20 text-red-400 border-red-500/30",
+    },
+    { id: "plan", label: "Plan", icon: Calendar, badge: "Custom Mod" },
+  ];
+
+  // Studio & Specialized tools
+  const studioDestinations: Array<{
+    id: BTRAppDestination;
+    label: string;
+    icon: typeof Home;
+    badge?: string | number;
+    badgeColor?: string;
+  }> = [
     {
       id: "workstation",
       label: "Dual Workstation",
@@ -71,19 +102,6 @@ export function BTRAppDock({
       badge: isWorkstationActive ? "LIVE" : undefined,
       badgeColor: "bg-emerald-500/20 text-emerald-400 border-emerald-500/30",
     },
-    { id: "tnd", label: "T&D Exam Center", icon: Target },
-    { id: "blitz", label: "Mega BTR 72h Blitz", icon: Zap },
-    { id: "spotters", label: "Spotter Image Bank", icon: Eye },
-    { id: "matrix", label: "20th Subject Matrix", icon: Calculator },
-  ];
-
-  const toolsDestinations: Array<{
-    id: BTRAppDestination;
-    label: string;
-    icon: typeof Home;
-    badge?: string | number;
-    badgeColor?: string;
-  }> = [
     {
       id: "drip",
       label: "Daily FSRS Drip",
@@ -91,25 +109,30 @@ export function BTRAppDock({
       badge: dailyDueCount > 0 ? dailyDueCount : undefined,
       badgeColor: "bg-cyan-500/20 text-cyan-300 border-cyan-500/30",
     },
-    { id: "search", label: "Cross-PDF Search", icon: Search },
-    {
-      id: "broadcasts",
-      label: "Official Core Drops",
-      icon: Radio,
-      badge: "3 PM",
-      badgeColor: "bg-red-500/20 text-red-400 border-red-500/30",
-    },
-    { id: "pyramids", label: "3-Tier Pyramids", icon: Triangle },
-    { id: "cases", label: "Two-Step Cases", icon: Stethoscope },
+    { id: "volatiles", label: "Super-Volatiles", icon: BookmarkCheck, badge: "100" },
     {
       id: "cross_app_tests",
-      label: "Cross-App Tests",
+      label: "Cross-App Ingestion",
       icon: Target,
       badge: "Marrow/Prep",
       badgeColor: "bg-indigo-500/20 text-indigo-300 border-indigo-500/30",
     },
-    { id: "volatiles", label: "Super-Volatiles", icon: BookmarkCheck },
+  ];
+
+  const advancedDestinations: Array<{
+    id: BTRAppDestination;
+    label: string;
+    icon: typeof Home;
+    badge?: string | number;
+    badgeColor?: string;
+  }> = [
+    { id: "spotters", label: "Spotter Bank", icon: Eye },
+    { id: "matrix", label: "20th Subject Matrix", icon: Calculator },
+    { id: "pyramids", label: "3-Tier Pyramids", icon: Triangle },
+    { id: "cases", label: "Two-Step Cases", icon: Stethoscope },
     { id: "gt_analytics", label: "GT Strike Rate", icon: BarChart2 },
+    { id: "search", label: "Cross-PDF Search", icon: Search },
+    { id: "broadcasts", label: "Core Drops", icon: Radio, badge: "3 PM", badgeColor: "bg-rose-500/20 text-rose-400 border-rose-500/30" },
   ];
 
   return (
@@ -118,17 +141,17 @@ export function BTRAppDock({
       <div className="flex flex-col gap-4">
         <div className="flex items-center justify-between px-2 pt-1 pb-2 border-b border-edge-soft">
           <div className="flex items-center gap-2.5">
-            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-accent text-white font-black text-sm shadow-sm">
-              Z
+            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-indigo-600 text-white font-black text-sm shadow-sm">
+              BTR
             </div>
             <div>
               <h1 className="text-xs font-extrabold text-ink tracking-tight flex items-center gap-1.5">
-                CoreBTR Studio
-                <span className="text-[9.5px] px-1.5 py-0.2 rounded bg-accent/20 text-accent font-bold">
-                  PRO
+                CoreBTR
+                <span className="text-[9.5px] px-1.5 py-0.2 rounded bg-indigo-500/20 text-indigo-300 font-bold">
+                  APP
                 </span>
               </h1>
-              <span className="text-[10px] text-ink-muted block">Dr. Zainab Vora Curriculum</span>
+              <span className="text-[10px] text-ink-muted block">Dr. Zainab Vora Suite</span>
             </div>
           </div>
 
@@ -141,12 +164,12 @@ export function BTRAppDock({
           </div>
         </div>
 
-        {/* Primary Learning Spaces */}
+        {/* 1. CoreBTR Primary Navigation (5 Canonical Tabs) */}
         <div className="flex flex-col gap-1">
-          <span className="text-[9.5px] font-bold uppercase tracking-wider text-ink-muted px-2 mb-1">
-            Learning Spaces
+          <span className="text-[9.5px] font-bold uppercase tracking-wider text-indigo-400 px-2 mb-1">
+            CoreBTR App
           </span>
-          {primaryDestinations.map((dest) => {
+          {canonicalDestinations.map((dest) => {
             const Icon = dest.icon;
             const isActive = activeDestination === dest.id;
             return (
@@ -156,7 +179,7 @@ export function BTRAppDock({
                 onClick={() => onNavigate(dest.id)}
                 className={`flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold transition ${
                   isActive
-                    ? "bg-accent text-white shadow-xs"
+                    ? "bg-indigo-600 text-white shadow-xs font-bold"
                     : "text-ink-muted hover:text-ink hover:bg-elevated"
                 }`}
               >
@@ -167,7 +190,7 @@ export function BTRAppDock({
                 {dest.badge && (
                   <span
                     className={`font-mono text-[9.5px] font-bold px-1.5 py-0.2 rounded-full border ${
-                      dest.badgeColor || "bg-accent/20 text-accent border-accent/30"
+                      dest.badgeColor || (isActive ? "bg-white/20 text-white border-white/30" : "bg-elevated text-ink-muted border-edge-soft")
                     }`}
                   >
                     {dest.badge}
@@ -178,12 +201,12 @@ export function BTRAppDock({
           })}
         </div>
 
-        {/* Specialized Daily Tools */}
+        {/* 2. Studio & Spaced Repetition Workstation */}
         <div className="flex flex-col gap-1 pt-2 border-t border-edge-soft">
           <span className="text-[9.5px] font-bold uppercase tracking-wider text-ink-muted px-2 mb-1">
-            Revision Tools
+            Workstation & Spaced Repetition
           </span>
-          {toolsDestinations.map((dest) => {
+          {studioDestinations.map((dest) => {
             const Icon = dest.icon;
             const isActive = activeDestination === dest.id;
             return (
@@ -193,7 +216,7 @@ export function BTRAppDock({
                 onClick={() => onNavigate(dest.id)}
                 className={`flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold transition ${
                   isActive
-                    ? "bg-accent text-white shadow-xs"
+                    ? "bg-indigo-600 text-white shadow-xs font-bold"
                     : "text-ink-muted hover:text-ink hover:bg-elevated"
                 }`}
               >
@@ -204,7 +227,44 @@ export function BTRAppDock({
                 {dest.badge && (
                   <span
                     className={`font-mono text-[9.5px] font-bold px-1.5 py-0.2 rounded-full border ${
-                      dest.badgeColor || "bg-accent/20 text-accent border-accent/30"
+                      dest.badgeColor || (isActive ? "bg-white/20 text-white border-white/30" : "bg-elevated text-ink-muted border-edge-soft")
+                    }`}
+                  >
+                    {dest.badge}
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* 3. Advanced Tactical Tools */}
+        <div className="flex flex-col gap-1 pt-2 border-t border-edge-soft">
+          <span className="text-[9.5px] font-bold uppercase tracking-wider text-ink-muted px-2 mb-1">
+            Specialized BTR Engines
+          </span>
+          {advancedDestinations.map((dest) => {
+            const Icon = dest.icon;
+            const isActive = activeDestination === dest.id;
+            return (
+              <button
+                key={dest.id}
+                type="button"
+                onClick={() => onNavigate(dest.id)}
+                className={`flex items-center justify-between px-3 py-1.5 rounded-xl text-xs font-semibold transition ${
+                  isActive
+                    ? "bg-indigo-600 text-white shadow-xs font-bold"
+                    : "text-ink-muted hover:text-ink hover:bg-elevated"
+                }`}
+              >
+                <div className="flex items-center gap-2.5">
+                  <Icon size={14} />
+                  <span>{dest.label}</span>
+                </div>
+                {dest.badge && (
+                  <span
+                    className={`font-mono text-[9.5px] font-bold px-1.5 py-0.2 rounded-full border ${
+                      dest.badgeColor || (isActive ? "bg-white/20 text-white border-white/30" : "bg-elevated text-ink-muted border-edge-soft")
                     }`}
                   >
                     {dest.badge}

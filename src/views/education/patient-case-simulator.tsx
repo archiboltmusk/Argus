@@ -179,6 +179,27 @@ export function PatientCaseSimulator({ onClose }: { onClose: () => void }) {
                 </div>
               </div>
             </div>
+
+            {/* Live ECG Rhythm Strip Lead II */}
+            <div className="mt-3 pt-3 border-t border-edge-soft flex flex-col gap-1.5">
+              <div className="flex items-center justify-between text-[10px] text-ink-subtle">
+                <span className="text-emerald-400 font-bold uppercase tracking-wider">Lead II Rhythm Strip (25mm/s)</span>
+                <span className="font-mono text-emerald-400">Regular Sinus</span>
+              </div>
+              <div className="h-10 w-full bg-black/40 rounded-lg border border-emerald-500/20 overflow-hidden relative flex items-center">
+                <svg className="w-full h-8" preserveAspectRatio="none" viewBox="0 0 300 40">
+                  <path
+                    d="M 0 20 L 20 20 L 25 18 L 30 20 L 35 20 L 38 7 L 42 35 L 46 20 L 52 20 L 58 15 L 66 20 L 100 20 L 120 20 L 125 18 L 130 20 L 135 20 L 138 7 L 142 35 L 146 20 L 152 20 L 158 15 L 166 20 L 200 20 L 220 20 L 225 18 L 230 20 L 235 20 L 238 7 L 242 35 L 246 20 L 252 20 L 258 15 L 266 20 L 300 20"
+                    fill="none"
+                    stroke="#10b981"
+                    strokeWidth="1.8"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    className="animate-pulse"
+                  />
+                </svg>
+              </div>
+            </div>
           </div>
 
           {/* History of Present Illness & Physical Findings */}

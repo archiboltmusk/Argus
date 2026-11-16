@@ -22,6 +22,7 @@ import {
   Activity,
   Flame,
   Stethoscope,
+  Target,
   BrainCircuit,
   SlidersHorizontal,
 } from "lucide-react";
@@ -340,24 +341,36 @@ export function EducationView() {
         </div>
       </header>
 
-      {/* 2. Sleek Segmented Sub-Nav Tabs */}
+      {/* 2. Sleek Floating Segmented Glass Rail */}
       <nav className="edu-view-tabs" aria-label={t("Education sub-navigation")}>
         {[
-          ["courses", "Courses & Catalogs"],
-          ["btr", "Core BTR NEET-PG 2027"],
-          ["checkpoints", "Interactive Checkpoints"],
-          ["qbank", "Clinical QBank & Vault"],
-          ["simulator", "Emergency Simulator"],
-          ["notes", "Study Deck & Notes"],
-        ].map(([key, label]) => (
-          <button
-            key={key}
-            aria-pressed={tab === key}
-            onClick={() => setTab(key as typeof tab)}
-          >
-            {t(label)}
-          </button>
-        ))}
+          { key: "courses", label: "Courses & Catalogs", icon: BookOpen },
+          { key: "btr", label: "Core BTR NEET-PG 2027", icon: Flame, badge: "PRO" },
+          { key: "checkpoints", label: "Checkpoints", icon: Target },
+          { key: "qbank", label: "Clinical QBank", icon: Zap },
+          { key: "simulator", label: "Emergency Simulator", icon: Stethoscope },
+          { key: "notes", label: "Study Deck & Notes", icon: FileText },
+        ].map((item) => {
+          const Icon = item.icon;
+          const isSelected = tab === item.key;
+          return (
+            <button
+              key={item.key}
+              type="button"
+              aria-pressed={isSelected}
+              onClick={() => setTab(item.key as typeof tab)}
+              className="flex items-center gap-2"
+            >
+              <Icon size={14} className={isSelected ? "text-white" : "text-accent"} />
+              <span>{t(item.label)}</span>
+              {item.badge && (
+                <span className={`font-mono text-[9px] font-bold px-1.5 py-0.2 rounded ${isSelected ? "bg-white/20 text-white" : "bg-accent/20 text-accent"}`}>
+                  {item.badge}
+                </span>
+              )}
+            </button>
+          );
+        })}
       </nav>
 
       {/* Import Notification Banner */}

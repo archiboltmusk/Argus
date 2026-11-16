@@ -24,7 +24,15 @@ import {
   Droplets,
   Stethoscope,
   ChevronRight,
+  ChevronDown,
   Calculator,
+  ExternalLink,
+  SlidersHorizontal,
+  Bookmark,
+  Bell,
+  Tv,
+  Timer,
+  HelpCircle,
 } from "lucide-react";
 import { useView } from "@/lib/view";
 import { BTRSplitWorkstation } from "@/components/education/btr-split-workstation";
@@ -40,9 +48,13 @@ import { BTRDailyDripModal } from "@/components/education/btr-daily-drip-modal";
 import { BTRPdfSearchModal } from "@/components/education/btr-pdf-search-modal";
 import { BTRVignetteModal } from "@/components/education/btr-vignette-modal";
 import { BTRCrossAppTestsModal } from "@/components/education/btr-cross-app-tests-modal";
+import { BTRCustomModuleModal } from "@/components/education/btr-custom-module-modal";
+import { BTRSubjectExplorer } from "@/components/education/btr-subject-explorer";
+import { BTRPearlModal } from "@/components/education/btr-pearl-modal";
+import { type BTRPearlItem } from "@/lib/education/btr-pearls-data";
 import { BTRAppDock, type BTRAppDestination } from "@/components/education/btr-app-dock";
 import { BTRMiniPlayerDock } from "@/components/education/btr-mini-player-dock";
-import { getFSRSSummary } from "@/lib/education/btr-fsrs-engine";
+import { getFSRSSummary, reviewFSRSCard } from "@/lib/education/btr-fsrs-engine";
 import { CORE_BTR_BROADCASTS } from "@/lib/education/btr-broadcasts";
 import {
   CORE_BTR_SUBJECTS,
@@ -69,6 +81,202 @@ import {
   type BTRLocalMediaFile,
 } from "@/lib/education/btr-local-library";
 
+// Official CoreBTR Tests Catalog (from screenshot media_1794864389397)
+const COREBTR_OFFICIAL_TESTS = [
+  {
+    id: "gt_4",
+    title: "Baseline GRAND TEST - 4",
+    totalQuestions: 200,
+    durationMins: 210,
+    type: "Grand Tests",
+    status: "Live",
+    ended: true,
+    competitive: true,
+  },
+  {
+    id: "gt_inicet_mock",
+    title: "National INICET Mock GT",
+    totalQuestions: 200,
+    durationMins: 180,
+    type: "Grand Tests",
+    status: "Live",
+    ended: true,
+    competitive: true,
+  },
+  {
+    id: "gt_3",
+    title: "Grand Test (GT) - 3",
+    totalQuestions: 200,
+    durationMins: 180,
+    type: "Grand Tests",
+    status: "Live",
+    ended: true,
+    competitive: true,
+  },
+  {
+    id: "gt_2",
+    title: "Grand Test (GT) - 2",
+    totalQuestions: 200,
+    durationMins: 180,
+    type: "Grand Tests",
+    status: "In Progress",
+    ended: true,
+    competitive: true,
+  },
+  {
+    id: "gt_1",
+    title: "Grand Test (GT) - 1",
+    totalQuestions: 200,
+    durationMins: 180,
+    type: "Grand Tests",
+    status: "Not Attempted",
+    ended: true,
+    competitive: true,
+  },
+  {
+    id: "mini_1",
+    title: "CoreBTR Mini Test - 1",
+    totalQuestions: 100,
+    durationMins: 90,
+    type: "Mini Tests",
+    status: "Live",
+    ended: true,
+    competitive: true,
+  },
+  {
+    id: "mini_2",
+    title: "CoreBTR Mini Test - 2",
+    totalQuestions: 100,
+    durationMins: 90,
+    type: "Mini Tests",
+    status: "Live",
+    ended: true,
+    competitive: true,
+  },
+  {
+    id: "drop_6",
+    title: "Core Drop - Surprise Test-6",
+    totalQuestions: 25,
+    durationMins: 15,
+    type: "Core Drop Tests",
+    status: "Live",
+    ended: false,
+    competitive: true,
+  },
+];
+
+// Official Dr. Zainab Vora Stream Archive (from screenshot media_1794864389403)
+const COREBTR_LIVE_SESSIONS = [
+  {
+    id: "live_1",
+    title: "Way Ahead For NEET PG with CoreBTR",
+    instructor: "Dr. Zainab Vora",
+    date: "25th May",
+    time: "5:00 PM - 7:00 PM",
+    badge: "Completed",
+    topic: "Roadmap & Prioritization",
+  },
+  {
+    id: "live_2",
+    title: "INI CET May 2026 Recall Session All 200 MCQs Discussion",
+    instructor: "Dr. Zainab Vora",
+    date: "17th May",
+    time: "11:30 AM - 4:00 PM",
+    badge: "Completed",
+    topic: "200 INI-CET Recall Breakdown",
+  },
+  {
+    id: "live_3",
+    title: "Exam Day Strategy & Aashirwad Session by Dr. Zainab Vora",
+    instructor: "Dr. Zainab Vora",
+    date: "15th May",
+    time: "8:00 AM - 12:00 PM",
+    badge: "Completed",
+    topic: "Mindset & Exam Temperament",
+  },
+  {
+    id: "live_4",
+    title: "Mega BTR for INI CET Part-2 by Dr. Zainab Vora",
+    instructor: "Dr. Zainab Vora",
+    date: "14th May",
+    time: "8:30 AM - 3:00 PM",
+    badge: "Completed",
+    topic: "Volatiles & High-Yield Tables",
+  },
+  {
+    id: "live_5",
+    title: "Mega BTR for INI CET Part-1 by Dr. Zainab Vora",
+    instructor: "Dr. Zainab Vora",
+    date: "13th May",
+    time: "8:30 AM - 3:00 PM",
+    badge: "Completed",
+    topic: "Pre- & Para-Clinical High-Yield",
+  },
+  {
+    id: "live_6",
+    title: "CoreBTR Mini Test-2 Discussion by Dr. Zainab Vora",
+    instructor: "Dr. Zainab Vora",
+    date: "22nd April",
+    time: "6:55 PM - 11:00 PM",
+    badge: "Completed",
+    topic: "100 Questions Analysis",
+  },
+  {
+    id: "live_7",
+    title: "CoreBTR: 40-day strategy for INI-CET May 2026 by Dr. Zainab Vora",
+    instructor: "Dr. Zainab Vora",
+    date: "17th April",
+    time: "7:00 PM - 10:00 PM",
+    badge: "Completed",
+    topic: "40-Day Revision Strategy",
+  },
+];
+
+const SUBJECT_METRICS_MAP: Record<
+  string,
+  { items: number; completed: number; category: "Short Subjects" | "Intermediate Subjects" | "Long Subjects" }
+> = {
+  dermatology: { items: 184, completed: 3, category: "Short Subjects" },
+  radiology: { items: 171, completed: 7, category: "Short Subjects" },
+  psychiatry: { items: 109, completed: 3, category: "Short Subjects" },
+  orthopedics: { items: 229, completed: 5, category: "Short Subjects" },
+  anesthesiology: { items: 155, completed: 2, category: "Short Subjects" },
+  ent: { items: 222, completed: 4, category: "Short Subjects" },
+  ophthalmology: { items: 225, completed: 2, category: "Short Subjects" },
+  forensic: { items: 209, completed: 5, category: "Short Subjects" },
+  biochemistry: { items: 315, completed: 9, category: "Intermediate Subjects" },
+  microbiology: { items: 310, completed: 4, category: "Intermediate Subjects" },
+  pathology: { items: 480, completed: 12, category: "Intermediate Subjects" },
+  pharmacology: { items: 450, completed: 15, category: "Intermediate Subjects" },
+  anatomy: { items: 380, completed: 10, category: "Intermediate Subjects" },
+  physiology: { items: 320, completed: 8, category: "Intermediate Subjects" },
+  medicine: { items: 540, completed: 18, category: "Long Subjects" },
+  surgery: { items: 510, completed: 14, category: "Long Subjects" },
+  obgyn: { items: 420, completed: 11, category: "Long Subjects" },
+  pediatrics: { items: 390, completed: 9, category: "Long Subjects" },
+  psm: { items: 460, completed: 12, category: "Long Subjects" },
+};
+
+function InstagramIcon({ size = 14, className }: { size?: number; className?: string }) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+    >
+      <rect width="20" height="20" x="2" y="2" rx="5" ry="5" />
+      <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" />
+      <line x1="17.5" x2="17.51" y1="6.5" y2="6.5" />
+    </svg>
+  );
+}
+
 interface CoreBTRWarRoomProps {
   onStartQBankDrill?: (subjectName?: string) => void;
   onOpenNotes?: () => void;
@@ -85,7 +293,7 @@ export function CoreBTRWarRoom({ onStartQBankDrill, onOpenNotes }: CoreBTRWarRoo
   const [progressMap, setProgressMap] = useState<Record<string, BTRSubjectProgress>>({});
   const [gtRecords, setGtRecords] = useState<BTRGrandTestRecord[]>([]);
   const [libraryState, setLibraryState] = useState<BTRLocalLibraryState>(loadBTRLocalLibrary());
-  const [categoryFilter, setCategoryFilter] = useState<BTRSubjectCategory | "ALL">("ALL");
+  const [categoryFilter] = useState<BTRSubjectCategory | "ALL">("ALL");
   const [searchQuery, setSearchQuery] = useState("");
 
   // Folder Import state
@@ -116,6 +324,24 @@ export function CoreBTRWarRoom({ onStartQBankDrill, onOpenNotes }: CoreBTRWarRoo
   const [showVignetteModal, setShowVignetteModal] = useState(false);
   const [showCrossAppModal, setShowCrossAppModal] = useState(false);
 
+  // CoreBTR App Experience State (Matching Dr. Zainab Vora Official Suite)
+  const [selectedSubjectDetail, setSelectedSubjectDetail] = useState<BTRSubject | null>(null);
+  const [testsSubTab, setTestsSubTab] = useState<"Grand Tests" | "Mini Tests" | "Core Drop Tests">("Grand Tests");
+  const [testsFilter, setTestsFilter] = useState<"In Progress" | "Live" | "Upcoming" | "Not Attempted">("Live");
+  const [showCustomModuleModal, setShowCustomModuleModal] = useState(false);
+  const [selectedPearlModal, setSelectedPearlModal] = useState<BTRPearlItem | null>(null);
+  const [libraryCategoryFilter, setLibraryCategoryFilter] = useState<
+    "All Subjects" | "Short Subjects" | "Intermediate Subjects" | "Long Subjects" | "Integrated Systems"
+  >("All Subjects");
+
+  const sessionGreeting = useMemo(() => {
+    const h = new Date().getHours();
+    if (h >= 21 || h < 5) return "Night session, Dr. Anupam";
+    if (h >= 5 && h < 12) return "Morning session, Dr. Anupam";
+    if (h >= 12 && h < 17) return "Afternoon session, Dr. Anupam";
+    return "Evening session, Dr. Anupam";
+  }, []);
+
   // GT Form state
   const [showAddGtModal, setShowAddGtModal] = useState(false);
   const [newGtTitle, setNewGtTitle] = useState("");
@@ -142,6 +368,10 @@ export function CoreBTRWarRoom({ onStartQBankDrill, onOpenNotes }: CoreBTRWarRoo
   // Filtered Subjects
   const filteredSubjects = useMemo(() => {
     return CORE_BTR_SUBJECTS.filter((s) => {
+      if (libraryCategoryFilter !== "All Subjects" && libraryCategoryFilter !== "Integrated Systems") {
+        const meta = SUBJECT_METRICS_MAP[s.id];
+        if (meta && meta.category !== libraryCategoryFilter) return false;
+      }
       const matchCat = categoryFilter === "ALL" || s.category === categoryFilter;
       const matchQuery =
         !searchQuery.trim() ||
@@ -149,7 +379,7 @@ export function CoreBTRWarRoom({ onStartQBankDrill, onOpenNotes }: CoreBTRWarRoo
         s.mustKnowTopics.some((t) => t.toLowerCase().includes(searchQuery.toLowerCase()));
       return matchCat && matchQuery;
     });
-  }, [categoryFilter, searchQuery]);
+  }, [categoryFilter, libraryCategoryFilter, searchQuery]);
 
   // Filtered Volatiles
   const filteredVolatiles = useMemo(() => {
@@ -365,39 +595,57 @@ export function CoreBTRWarRoom({ onStartQBankDrill, onOpenNotes }: CoreBTRWarRoo
 
       {/* 2. Main Studio Viewport */}
       <div className="flex-1 flex flex-col overflow-hidden bg-canvas relative">
-        {/* Top Omnibar Header */}
+        {/* Top Omnibar Header (Matching Official CoreBTR Navigation) */}
         <header className="h-14 shrink-0 flex items-center justify-between border-b border-edge px-4 sm:px-6 bg-surface/80 backdrop-blur-md z-10">
           <div className="flex items-center gap-3">
-            <span className="flex items-center gap-1.5 rounded-full bg-accent/20 px-2.5 py-0.5 text-[11px] font-bold text-accent border border-accent/30 tracking-wide">
-              <Flame size={12} className="fill-accent text-accent" />
-              <span>CORE BTR 2027</span>
-            </span>
+            {/* Goal Selector Chip (from official app) */}
+            <div className="flex items-center gap-1.5 rounded-xl bg-canvas border border-edge-soft px-3 py-1 text-xs font-semibold text-ink hover:border-indigo-500/40 cursor-pointer transition select-none">
+              <span className="text-indigo-400 font-bold">NEET, INI-CET & FMGE</span>
+              <span className="text-[10px] text-ink-muted">| My Goal</span>
+              <ChevronDown size={12} className="text-ink-muted" />
+            </div>
+
+            {/* Doctor Greeting (from official app) */}
+            <div className="hidden lg:flex flex-col">
+              <span className="text-xs font-black text-ink leading-tight">{sessionGreeting}</span>
+              <span className="text-[10px] text-ink-muted">No distractions. Just you.</span>
+            </div>
+          </div>
+
+          {/* Right Header: Instagram @corebtr, Search, Countdowns & Avatar */}
+          <div className="flex items-center gap-3">
+            {/* Official Instagram @corebtr Link */}
+            <a
+              href="https://www.instagram.com/corebtr/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-fuchsia-600/15 via-rose-600/15 to-amber-600/15 border border-fuchsia-500/30 px-2.5 py-1 text-xs font-bold text-fuchsia-300 hover:border-fuchsia-400/50 hover:brightness-110 transition shadow-xs"
+              title="Official Dr. Zainab Vora CoreBTR Instagram (@corebtr)"
+            >
+              <InstagramIcon size={13} className="text-fuchsia-400" />
+              <span className="hidden sm:inline">@corebtr</span>
+              <ExternalLink size={10} className="text-fuchsia-400/70" />
+            </a>
 
             {/* Global Search Omnibar */}
             <button
               type="button"
               onClick={() => setShowPdfSearchModal(true)}
-              className="flex items-center gap-2 rounded-xl bg-canvas border border-edge-soft px-3 py-1.5 text-xs text-ink-muted hover:text-ink hover:border-accent/40 transition shadow-xs w-48 sm:w-72"
+              className="flex items-center gap-2 rounded-xl bg-canvas border border-edge-soft px-3 py-1.5 text-xs text-ink-muted hover:text-ink hover:border-indigo-500/40 transition shadow-xs w-36 sm:w-60"
             >
-              <Search size={13} className="text-accent shrink-0" />
-              <span className="truncate">Search 32 PDFs, videos, topics...</span>
+              <Search size={13} className="text-indigo-400 shrink-0" />
+              <span className="truncate">Search PDFs, topics...</span>
               <kbd className="ml-auto hidden sm:inline-block font-mono text-[10px] bg-elevated px-1.5 py-0.5 rounded border border-edge text-ink-muted">
                 ⌘K
               </kbd>
             </button>
-          </div>
 
-          {/* Right Header: Dual Countdowns & Actions */}
-          <div className="flex items-center gap-3">
-            <div className="hidden md:flex items-center gap-2">
-              <div className="flex items-center gap-1.5 rounded-xl bg-canvas border border-edge-soft px-2.5 py-1 text-xs">
-                <span className="text-[10px] font-bold uppercase text-accent">INI-CET</span>
-                <span className="font-black text-ink">{countdowns.iniCetMay.days}d</span>
-              </div>
-              <div className="flex items-center gap-1.5 rounded-xl bg-canvas border border-amber-500/30 px-2.5 py-1 text-xs">
-                <span className="text-[10px] font-bold uppercase text-amber-400">NEET-PG</span>
-                <span className="font-black text-ink">{countdowns.neetPg.days}d</span>
-              </div>
+            {/* User Avatar ST / AM */}
+            <div
+              className="h-8 w-8 rounded-full bg-indigo-600 text-white font-bold text-xs flex items-center justify-center ring-2 ring-indigo-500/30 shadow-xs cursor-pointer"
+              title="Dr. Anupam Mahato"
+            >
+              AM
             </div>
 
             {/* Hidden file input */}
@@ -455,9 +703,185 @@ export function CoreBTRWarRoom({ onStartQBankDrill, onOpenNotes }: CoreBTRWarRoo
             </div>
           )}
 
-          {/* VIEW: TODAY COMMAND CENTER */}
+          {/* VIEW: TODAY COMMAND CENTER (Matching Official CoreBTR Home Screen) */}
           {activeDestination === "today" && (
             <div className="flex flex-col gap-6 animate-in fade-in duration-200">
+              {/* 1. Official CoreBTR Hero Rankers Banner (from screenshot media_1794864389464) */}
+              <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-sky-600 via-indigo-600 to-indigo-800 p-6 md:p-8 text-white shadow-xl flex flex-col md:flex-row items-center justify-between gap-6 border border-indigo-400/30">
+                <div className="flex flex-col gap-2 relative z-10">
+                  <div className="flex items-center gap-2">
+                    <span className="px-2.5 py-0.5 rounded-full bg-white/20 text-white font-mono text-[10px] font-extrabold uppercase tracking-wider backdrop-blur-md">
+                      1/6 INI-CET RESULTS
+                    </span>
+                    <a
+                      href="https://www.instagram.com/corebtr/"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-1 text-[11px] font-bold text-white/80 hover:text-white transition"
+                    >
+                      <InstagramIcon size={12} />
+                      <span>@corebtr</span>
+                    </a>
+                  </div>
+                  <h2 className="text-2xl md:text-3xl font-black tracking-tight leading-tight">
+                    100+ STUDENTS IN TOP 200 RANKERS
+                  </h2>
+                  <span className="text-sm md:text-base font-bold text-sky-200">
+                    INICET MAY 2026 are From CoreBTR
+                  </span>
+                  <p className="text-xs text-white/80 mt-1 max-w-lg">
+                    They Revised. They Ranked. You&apos;re NEXT! High-yield 19-subject integration and active recall drills.
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-2 relative z-10 shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => setShowCustomModuleModal(true)}
+                    className="px-5 py-2.5 rounded-2xl bg-white text-indigo-900 font-extrabold text-xs shadow-lg hover:bg-sky-50 transition"
+                  >
+                    + Create Custom Module
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleNavigate("subjects")}
+                    className="px-4 py-2.5 rounded-2xl bg-white/20 hover:bg-white/30 text-white font-bold text-xs backdrop-blur-md transition"
+                  >
+                    Explore Library
+                  </button>
+                </div>
+              </div>
+
+              {/* 2. Official Quick Actions 5-Pill Grid (from screenshot media_1794864389464) */}
+              <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+                {[
+                  {
+                    id: "bookmarks",
+                    label: "Bookmarks",
+                    icon: Bookmark,
+                    action: () => handleNavigate("volatiles"),
+                  },
+                  {
+                    id: "custom_module",
+                    label: "Custom Module",
+                    icon: SlidersHorizontal,
+                    action: () => setShowCustomModuleModal(true),
+                  },
+                  {
+                    id: "downloads",
+                    label: "Downloads",
+                    icon: Download,
+                    action: () => folderInputRef.current?.click(),
+                  },
+                  {
+                    id: "study_plan",
+                    label: "Study Plan",
+                    icon: Target,
+                    action: () => handleNavigate("plan"),
+                  },
+                  {
+                    id: "notifications",
+                    label: "Notifications",
+                    icon: Bell,
+                    action: () => setShowBroadcastsModal(true),
+                  },
+                ].map((act) => {
+                  const Icon = act.icon;
+                  return (
+                    <button
+                      key={act.id}
+                      type="button"
+                      onClick={act.action}
+                      className="flex flex-col items-center justify-center gap-2 p-3.5 rounded-2xl bg-surface border border-edge-soft hover:border-indigo-500/40 hover:bg-elevated transition shadow-xs group"
+                    >
+                      <div className="h-9 w-9 rounded-xl bg-indigo-500/10 text-indigo-400 group-hover:bg-indigo-600 group-hover:text-white transition flex items-center justify-center">
+                        <Icon size={16} />
+                      </div>
+                      <span className="text-xs font-bold text-ink">{act.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* 3. Official What's On Cards Row (from screenshot media_1794864389464) */}
+              <div className="flex flex-col gap-3">
+                <span className="text-xs font-bold uppercase tracking-wider text-ink-muted">
+                  What&apos;s On
+                </span>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                  {/* Card A: Core Drop Surprise Test-6 */}
+                  <div className="p-4 rounded-2xl bg-gradient-to-br from-amber-500/15 via-surface to-elevated border border-amber-500/30 flex flex-col justify-between gap-3 shadow-xs">
+                    <div>
+                      <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded-md bg-amber-500/20 text-amber-400 border border-amber-500/30">
+                        Daily 3 PM Drop
+                      </span>
+                      <h4 className="text-sm font-bold text-ink mt-2">
+                        Core Drop - Surprise Test-6
+                      </h4>
+                      <p className="text-xs text-ink-muted mt-0.5">
+                        25 Qs • 15 Minutes • with Video Solutions
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => onStartQBankDrill?.("Core Drop Surprise Test-6")}
+                      className="w-full py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-black font-extrabold text-xs shadow transition flex items-center justify-center gap-1.5"
+                    >
+                      <Play size={12} fill="currentColor" />
+                      <span>Attempt Now</span>
+                    </button>
+                  </div>
+
+                  {/* Card B: FMGE CoreBTR Plan */}
+                  <div className="p-4 rounded-2xl bg-gradient-to-br from-indigo-500/15 via-surface to-elevated border border-indigo-500/30 flex flex-col justify-between gap-3 shadow-xs">
+                    <div>
+                      <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded-md bg-indigo-500/20 text-indigo-400 border border-indigo-500/30">
+                        Exam Schedule
+                      </span>
+                      <h4 className="text-sm font-bold text-ink mt-2">
+                        FMGE CoreBTR Plan
+                      </h4>
+                      <p className="text-xs text-ink-muted mt-0.5">
+                        3rd May - 14th June • High-Yield Rapid Revision
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => handleNavigate("plan")}
+                      className="w-full py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-extrabold text-xs shadow transition flex items-center justify-center gap-1.5"
+                    >
+                      <span>View FMGE Plan</span>
+                      <ChevronRight size={13} />
+                    </button>
+                  </div>
+
+                  {/* Card C: Instagram @corebtr Highlights */}
+                  <div className="p-4 rounded-2xl bg-gradient-to-br from-fuchsia-500/15 via-surface to-elevated border border-fuchsia-500/30 flex flex-col justify-between gap-3 shadow-xs">
+                    <div>
+                      <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded-md bg-fuchsia-500/20 text-fuchsia-400 border border-fuchsia-500/30">
+                        Social Feed
+                      </span>
+                      <h4 className="text-sm font-bold text-ink mt-2 flex items-center gap-1.5">
+                        <InstagramIcon size={14} className="text-fuchsia-400" />
+                        <span>CoreBTR on Instagram</span>
+                      </h4>
+                      <p className="text-xs text-ink-muted mt-0.5">
+                        Follow @corebtr for Dr. Zainab Vora pearls & updates
+                      </p>
+                    </div>
+                    <a
+                      href="https://www.instagram.com/corebtr/"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="w-full py-2 rounded-xl bg-gradient-to-r from-fuchsia-600 to-rose-600 text-white font-extrabold text-xs shadow transition flex items-center justify-center gap-1.5"
+                    >
+                      <span>Open @corebtr</span>
+                      <ExternalLink size={12} />
+                    </a>
+                  </div>
+                </div>
+              </div>
+
               {/* Mission Control & Readiness Banner */}
               <div className="relative overflow-hidden rounded-3xl border border-edge-soft bg-gradient-to-br from-surface/90 via-surface/60 to-elevated/40 p-6 md:p-8 shadow-sm backdrop-blur-xl">
                 <div className="absolute -right-16 -top-16 h-64 w-64 rounded-full bg-accent/15 blur-3xl pointer-events-none" />
@@ -507,51 +931,104 @@ export function CoreBTRWarRoom({ onStartQBankDrill, onOpenNotes }: CoreBTRWarRoo
                   </div>
                 </div>
 
-                {/* Readiness Meter */}
-                <div className="mt-6 pt-6 border-t border-edge-soft grid grid-cols-2 md:grid-cols-4 gap-4">
-                  <div className="flex flex-col gap-1">
-                    <span className="text-xs font-medium text-ink-muted">Mastery Readiness</span>
-                    <div className="flex items-baseline gap-2">
-                      <span className="text-2xl font-black text-ink">{readiness.completionPercentage}%</span>
-                      <span className="text-xs text-ink-muted">target &gt;85%</span>
+                {/* Concentric Radial Mastery Rings & Telemetry HUD */}
+                <div className="mt-6 pt-6 border-t border-edge-soft flex flex-col md:flex-row items-center justify-between gap-6">
+                  {/* Triple Radial Progress Ring */}
+                  <div className="flex items-center gap-5">
+                    <div className="relative flex h-24 w-24 shrink-0 items-center justify-center">
+                      <svg className="h-full w-full -rotate-90 transform" viewBox="0 0 100 100">
+                        {/* Background Tracks */}
+                        <circle cx="50" cy="50" r="42" fill="none" stroke="currentColor" strokeWidth="6" className="text-elevated/70" />
+                        <circle cx="50" cy="50" r="32" fill="none" stroke="currentColor" strokeWidth="6" className="text-elevated/70" />
+                        <circle cx="50" cy="50" r="22" fill="none" stroke="currentColor" strokeWidth="6" className="text-elevated/70" />
+
+                        {/* Outer Ring: Overall Readiness % (Emerald) */}
+                        <circle
+                          cx="50"
+                          cy="50"
+                          r="42"
+                          fill="none"
+                          stroke="#10b981"
+                          strokeWidth="6"
+                          strokeLinecap="round"
+                          strokeDasharray={2 * Math.PI * 42}
+                          strokeDashoffset={2 * Math.PI * 42 * (1 - Math.min(100, readiness.completionPercentage) / 100)}
+                          className="transition-all duration-1000 ease-out"
+                        />
+
+                        {/* Middle Ring: Mastered Subjects (Cyan, 19 target) */}
+                        <circle
+                          cx="50"
+                          cy="50"
+                          r="32"
+                          fill="none"
+                          stroke="#06b6d4"
+                          strokeWidth="6"
+                          strokeLinecap="round"
+                          strokeDasharray={2 * Math.PI * 32}
+                          strokeDashoffset={2 * Math.PI * 32 * (1 - Math.min(19, readiness.masteredCount + readiness.annotatedCount) / 19)}
+                          className="transition-all duration-1000 ease-out"
+                        />
+
+                        {/* Inner Ring: Linked BTR Videos (Amber, 61 target) */}
+                        <circle
+                          cx="50"
+                          cy="50"
+                          r="22"
+                          fill="none"
+                          stroke="#f59e0b"
+                          strokeWidth="6"
+                          strokeLinecap="round"
+                          strokeDasharray={2 * Math.PI * 22}
+                          strokeDashoffset={2 * Math.PI * 22 * (1 - Math.min(61, libraryState.totalVideosFound) / 61)}
+                          className="transition-all duration-1000 ease-out"
+                        />
+                      </svg>
+
+                      {/* Center Gauge Telemetry */}
+                      <div className="absolute flex flex-col items-center justify-center text-center">
+                        <span className="text-base font-black text-ink leading-none">
+                          {readiness.completionPercentage}%
+                        </span>
+                        <span className="text-[8.5px] font-bold uppercase tracking-wider text-emerald-400 mt-0.5">
+                          Readiness
+                        </span>
+                      </div>
                     </div>
-                    <div className="h-1.5 w-full bg-elevated rounded-full overflow-hidden mt-1">
-                      <div
-                        className="h-full bg-accent rounded-full transition-all duration-500"
-                        style={{ width: `${Math.min(100, readiness.completionPercentage)}%` }}
-                      />
+
+                    {/* Ring Legend & Telemetry */}
+                    <div className="flex flex-col gap-1.5 text-xs">
+                      <div className="flex items-center gap-2">
+                        <span className="h-2 w-2 rounded-full bg-emerald-400 shrink-0" />
+                        <span className="text-ink-muted">Mastery Readiness:</span>
+                        <strong className="text-ink font-bold">{readiness.completionPercentage}%</strong>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="h-2 w-2 rounded-full bg-cyan-400 shrink-0" />
+                        <span className="text-ink-muted">Subjects Mastered:</span>
+                        <strong className="text-ink font-bold">{readiness.masteredCount + readiness.annotatedCount}/19</strong>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="h-2 w-2 rounded-full bg-amber-400 shrink-0" />
+                        <span className="text-ink-muted">Videos Linked:</span>
+                        <strong className="text-ink font-bold">{libraryState.totalVideosFound}/61</strong>
+                      </div>
                     </div>
                   </div>
 
-                  <div className="flex flex-col gap-1">
-                    <span className="text-xs font-medium text-ink-muted">Mastered / Annotated</span>
-                    <div className="flex items-baseline gap-1.5 text-2xl font-black text-emerald-400">
-                      {readiness.masteredCount + readiness.annotatedCount}
-                      <span className="text-xs font-semibold text-ink-muted">/ 19 subjects</span>
+                  {/* Right Telemetry Cards */}
+                  <div className="grid grid-cols-2 gap-3 w-full md:w-auto">
+                    <div className="rounded-2xl bg-canvas/80 border border-edge-soft p-3.5 min-w-[140px] flex flex-col">
+                      <span className="text-[10.5px] font-medium text-ink-muted">Grand Tests Logged</span>
+                      <div className="text-xl font-black text-ink mt-0.5">{gtRecords.length} tests</div>
+                      <span className="text-[10px] text-accent">Latest: {gtRecords[0]?.percentile ?? 0}%ile</span>
                     </div>
-                    <span className="text-[11px] text-ink-muted">{readiness.masteredCount} fully mastered</span>
-                  </div>
 
-                  <div className="flex flex-col gap-1">
-                    <span className="text-xs font-medium text-ink-muted">Local BTR Files</span>
-                    <div className="flex items-baseline gap-1.5 text-2xl font-black text-amber-400">
-                      {libraryState.totalVideosFound}
-                      <span className="text-xs font-semibold text-ink-muted">videos</span>
+                    <div className="rounded-2xl bg-canvas/80 border border-edge-soft p-3.5 min-w-[140px] flex flex-col">
+                      <span className="text-[10.5px] font-medium text-ink-muted">Volatiles Active</span>
+                      <div className="text-xl font-black text-amber-400 mt-0.5">100 Tables</div>
+                      <span className="text-[10px] text-ink-muted">FSRS Repetition active</span>
                     </div>
-                    <span className="text-[11px] text-ink-muted">
-                      {libraryState.totalPdfsFound} PDF workbooks indexed
-                    </span>
-                  </div>
-
-                  <div className="flex flex-col gap-1">
-                    <span className="text-xs font-medium text-ink-muted">Grand Tests Logged</span>
-                    <div className="flex items-baseline gap-1.5 text-2xl font-black text-ink">
-                      {gtRecords.length}
-                      <span className="text-xs font-semibold text-ink-muted">tests</span>
-                    </div>
-                    <span className="text-[11px] text-ink-muted">
-                      Latest: {gtRecords[0]?.percentile ?? 0}%ile
-                    </span>
                   </div>
                 </div>
               </div>
@@ -805,68 +1282,110 @@ export function CoreBTRWarRoom({ onStartQBankDrill, onOpenNotes }: CoreBTRWarRoo
           {/* VIEW: 19-SUBJECT STUDIO & LOCAL MEDIA */}
           {activeDestination === "subjects" && (
             <div className="flex flex-col gap-6 animate-in fade-in duration-150">
-              {/* Controls bar: Sub-tab switcher, search and filters */}
-              <div className="flex flex-wrap items-center justify-between gap-3 border-b border-edge-soft pb-4">
-                <div className="flex items-center gap-1.5 rounded-2xl bg-surface/80 p-1.5 border border-edge-soft">
-                  <button
-                    type="button"
-                    onClick={() => setSubjectsSubTab("tracker")}
-                    className={`flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-bold transition ${
-                      subjectsSubTab === "tracker"
-                        ? "bg-accent text-white shadow-sm"
-                        : "text-ink-muted hover:text-ink hover:bg-elevated"
-                    }`}
-                  >
-                    <Target size={14} />
-                    <span>19-Subject Master Tracker</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setSubjectsSubTab("files")}
-                    className={`flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-bold transition ${
-                      subjectsSubTab === "files"
-                        ? "bg-accent text-white shadow-sm"
-                        : "text-ink-muted hover:text-ink hover:bg-elevated"
-                    }`}
-                  >
-                    <FolderCheck size={14} />
-                    <span>My Local Videos & PDFs ({libraryState.totalVideosFound + libraryState.totalPdfsFound})</span>
-                  </button>
-                </div>
-
-                <div className="flex items-center gap-2.5">
-                  <div className="relative">
-                    <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-muted" />
-                    <input
-                      type="text"
-                      placeholder="Search topics, drugs, bodies..."
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      className="h-9 w-44 md:w-56 rounded-xl bg-surface border border-edge-soft pl-9 pr-3 text-xs text-ink placeholder:text-ink-muted focus:border-accent focus:outline-none transition"
-                    />
-                  </div>
-
-                  <div className="hidden lg:flex items-center gap-1 rounded-xl bg-surface border border-edge-soft p-1 text-xs">
-                    {(["ALL", "Pre-Clinical", "Para-Clinical", "Short Clinical", "Long Clinical"] as const).map(
-                      (cat) => (
+              {selectedSubjectDetail ? (
+                <BTRSubjectExplorer
+                  subject={selectedSubjectDetail}
+                  onBack={() => setSelectedSubjectDetail(null)}
+                  onStartQBank={(topic) =>
+                    onStartQBankDrill?.(topic ? `${selectedSubjectDetail.name}: ${topic}` : selectedSubjectDetail.name)
+                  }
+                  onCreateCustomModule={() => setShowCustomModuleModal(true)}
+                  onPlayVideo={(vid) => handlePlayLecture(vid, selectedSubjectDetail)}
+                  onLaunchWorkstation={(vid, unannotated, annotated) =>
+                    setWorkstationSession({
+                      video: vid,
+                      subject: selectedSubjectDetail,
+                      unannotatedPdf: unannotated,
+                      annotatedPdf: annotated,
+                    })
+                  }
+                  videos={libraryState.mappings[selectedSubjectDetail.id]?.videos || []}
+                  unannotatedPdf={libraryState.mappings[selectedSubjectDetail.id]?.unannotatedPdf}
+                  annotatedPdf={libraryState.mappings[selectedSubjectDetail.id]?.annotatedPdf}
+                  onSelectPearl={(pearl) => setSelectedPearlModal(pearl)}
+                />
+              ) : (
+                <>
+                  {/* Category Pills Rail (from screenshot media_1794864389396) */}
+                  <div className="flex flex-wrap items-center justify-between gap-3 border-b border-edge-soft pb-4">
+                    <div className="flex flex-wrap items-center gap-1.5 rounded-2xl bg-surface/80 p-1.5 border border-edge-soft">
+                      {(
+                        [
+                          "All Subjects",
+                          "Short Subjects",
+                          "Intermediate Subjects",
+                          "Long Subjects",
+                          "Integrated Systems",
+                        ] as const
+                      ).map((cat) => (
                         <button
                           key={cat}
                           type="button"
-                          onClick={() => setCategoryFilter(cat)}
-                          className={`rounded-lg px-2.5 py-1 text-[11px] font-semibold transition ${
-                            categoryFilter === cat
-                              ? "bg-elevated text-ink shadow-xs border border-edge"
-                              : "text-ink-muted hover:text-ink"
+                          onClick={() => setLibraryCategoryFilter(cat)}
+                          className={`rounded-xl px-3.5 py-1.5 text-xs font-bold transition ${
+                            libraryCategoryFilter === cat
+                              ? "bg-indigo-600 text-white shadow-sm"
+                              : "text-ink-muted hover:text-ink hover:bg-elevated"
                           }`}
                         >
-                          {cat === "ALL" ? "All Blocks" : cat.replace(" Clinical", "")}
+                          {cat}
                         </button>
-                      )
-                    )}
+                      ))}
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <div className="relative">
+                        <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-muted" />
+                        <input
+                          type="text"
+                          placeholder="Search subjects, pearls..."
+                          value={searchQuery}
+                          onChange={(e) => setSearchQuery(e.target.value)}
+                          className="h-9 w-44 md:w-56 rounded-xl bg-surface border border-edge-soft pl-9 pr-3 text-xs text-ink placeholder:text-ink-muted focus:border-indigo-500 focus:outline-none transition"
+                        />
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => setShowCustomModuleModal(true)}
+                        className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-indigo-600/15 border border-indigo-500/30 text-xs font-bold text-indigo-300 hover:bg-indigo-600/25 transition"
+                      >
+                        <Plus size={13} />
+                        <span>Custom Module</span>
+                      </button>
+                    </div>
                   </div>
-                </div>
-              </div>
+
+                  {/* Sub-tab switcher for Tracker vs Raw Files */}
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-1.5 rounded-2xl bg-surface/80 p-1.5 border border-edge-soft">
+                      <button
+                        type="button"
+                        onClick={() => setSubjectsSubTab("tracker")}
+                        className={`flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-bold transition ${
+                          subjectsSubTab === "tracker"
+                            ? "bg-accent text-white shadow-sm"
+                            : "text-ink-muted hover:text-ink hover:bg-elevated"
+                        }`}
+                      >
+                        <Target size={14} />
+                        <span>Subject Grid & Modules</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setSubjectsSubTab("files")}
+                        className={`flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-bold transition ${
+                          subjectsSubTab === "files"
+                            ? "bg-accent text-white shadow-sm"
+                            : "text-ink-muted hover:text-ink hover:bg-elevated"
+                        }`}
+                      >
+                        <FolderCheck size={14} />
+                        <span>My Local Videos & PDFs ({libraryState.totalVideosFound + libraryState.totalPdfsFound})</span>
+                      </button>
+                    </div>
+                  </div>
 
               {subjectsSubTab === "tracker" ? (
                 <div className="flex flex-col gap-6">
@@ -914,9 +1433,24 @@ export function CoreBTRWarRoom({ onStartQBankDrill, onOpenNotes }: CoreBTRWarRoo
                       </span>
                     </div>
 
-                    <h3 className="text-base font-bold text-ink leading-snug group-hover:text-accent transition">
-                      {subj.name}
-                    </h3>
+                    <div
+                      onClick={() => setSelectedSubjectDetail(subj)}
+                      className="cursor-pointer"
+                    >
+                      <h3 className="text-base font-bold text-ink leading-snug group-hover:text-indigo-400 transition">
+                        {subj.name}
+                      </h3>
+                      {SUBJECT_METRICS_MAP[subj.id] && (
+                        <div className="flex items-center gap-2 mt-1">
+                          <span className="text-[11px] text-ink-muted font-medium">
+                            {SUBJECT_METRICS_MAP[subj.id].completed}/{SUBJECT_METRICS_MAP[subj.id].items} items
+                          </span>
+                          <span className="text-[10px] text-indigo-400 font-bold bg-indigo-500/10 px-1.5 py-0.2 rounded border border-indigo-500/20">
+                            {Math.round((SUBJECT_METRICS_MAP[subj.id].completed / SUBJECT_METRICS_MAP[subj.id].items) * 100)}% completed
+                          </span>
+                        </div>
+                      )}
+                    </div>
                     <p className="text-xs text-ink-muted leading-relaxed line-clamp-2">
                       {subj.description}
                     </p>
@@ -1010,20 +1544,29 @@ export function CoreBTRWarRoom({ onStartQBankDrill, onOpenNotes }: CoreBTRWarRoo
                     </div>
 
                     <div className="flex items-center gap-1.5">
-                      <select
-                        aria-label={`Update progress status for ${subj.name}`}
-                        value={currentStatus}
-                        onChange={(e) =>
-                          handleStatusChange(subj.id, e.target.value as BTRProgressStatus)
-                        }
-                        className="rounded-lg bg-elevated border border-edge-soft text-[11px] font-medium text-ink px-2 py-1 focus:outline-none focus:border-accent"
+                      <button
+                        type="button"
+                        onClick={() => setSelectedSubjectDetail(subj)}
+                        className="flex items-center gap-1 rounded-lg bg-indigo-600/15 border border-indigo-500/30 px-2 py-1 text-[11px] font-bold text-indigo-300 hover:bg-indigo-600/25 transition"
                       >
-                        <option value="unread">Unread</option>
-                        <option value="in_progress">In Progress</option>
-                        <option value="btr_annotated">BTR Annotated</option>
-                        <option value="td_completed">T&D Complete</option>
-                        <option value="mastered">Mastered</option>
-                      </select>
+                        <span>QBank</span>
+                        <ChevronRight size={11} />
+                      </button>
+
+                      {/* Tactile Multi-State Cycle Pill */}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const order: BTRProgressStatus[] = ["unread", "in_progress", "btr_annotated", "td_completed", "mastered"];
+                          const nextIdx = (order.indexOf(currentStatus) + 1) % order.length;
+                          handleStatusChange(subj.id, order[nextIdx]);
+                        }}
+                        title={`Status: ${statusLabel}. Click to cycle.`}
+                        className={`flex items-center gap-1 rounded-xl px-2.5 py-1 text-[11px] font-bold border transition shadow-xs hover:scale-[1.03] active:scale-95 cursor-pointer ${statusColor}`}
+                      >
+                        <span>{statusLabel}</span>
+                        {currentStatus === "mastered" && <span>🏆</span>}
+                      </button>
 
                       <button
                         type="button"
@@ -1370,8 +1913,232 @@ export function CoreBTRWarRoom({ onStartQBankDrill, onOpenNotes }: CoreBTRWarRoo
           </div>
         </div>
       )}
-    </div>
+    </>
   )}
+</div>
+)}
+
+{/* VIEW: OFFICIAL TESTS (GRAND TESTS, MINI TESTS, CORE DROP TESTS) */}
+{activeDestination === "tests" && (
+  <div className="flex flex-col gap-6 animate-in fade-in duration-150">
+    {/* Header & Sub-Tabs (from screenshot media_1794864389397) */}
+    <div className="flex flex-wrap items-center justify-between gap-4 border-b border-edge-soft pb-4">
+      <div className="flex items-center gap-1.5 rounded-2xl bg-surface/80 p-1.5 border border-edge-soft">
+        {(["Grand Tests", "Mini Tests", "Core Drop Tests"] as const).map((t) => (
+          <button
+            key={t}
+            type="button"
+            onClick={() => setTestsSubTab(t)}
+            className={`px-4 py-2 rounded-xl text-xs font-bold transition ${
+              testsSubTab === t
+                ? "bg-indigo-600 text-white shadow-sm"
+                : "text-ink-muted hover:text-ink hover:bg-elevated"
+            }`}
+          >
+            {t}
+          </button>
+        ))}
+      </div>
+
+      {/* Filter Chips: In Progress | Live | Upcoming | Not Attempted */}
+      <div className="flex items-center gap-1.5 rounded-xl bg-surface p-1 border border-edge-soft text-xs">
+        {(["In Progress", "Live", "Upcoming", "Not Attempted"] as const).map((status) => (
+          <button
+            key={status}
+            type="button"
+            onClick={() => setTestsFilter(status)}
+            className={`px-3 py-1 rounded-lg text-[11px] font-bold transition ${
+              testsFilter === status
+                ? "bg-elevated text-ink shadow-xs border border-edge"
+                : "text-ink-muted hover:text-ink"
+            }`}
+          >
+            {status}
+          </button>
+        ))}
+      </div>
+    </div>
+
+    {/* Tests Cards List */}
+    <div className="flex flex-col gap-3">
+      {COREBTR_OFFICIAL_TESTS.filter((test) => testsSubTab === test.type).map((test) => (
+        <div
+          key={test.id}
+          className="p-5 rounded-2xl bg-surface border border-edge-soft hover:border-indigo-500/40 hover:bg-elevated transition shadow-xs flex flex-col md:flex-row items-start md:items-center justify-between gap-4 select-none group"
+        >
+          <div className="flex flex-col gap-1.5">
+            <div className="flex items-center gap-2">
+              <span className="font-mono text-sm font-bold text-ink group-hover:text-indigo-400 transition">
+                {test.title}
+              </span>
+              {test.ended && (
+                <span className="text-[10px] font-bold px-2 py-0.2 rounded-md bg-elevated text-ink-muted border border-edge-soft">
+                  Ended
+                </span>
+              )}
+              {test.competitive && (
+                <span className="text-[10px] font-bold px-2 py-0.2 rounded-md bg-indigo-500/15 text-indigo-300 border border-indigo-500/25">
+                  Competitive
+                </span>
+              )}
+            </div>
+
+            <div className="flex items-center gap-4 text-xs text-ink-muted">
+              <span className="flex items-center gap-1">
+                <HelpCircle size={13} className="text-indigo-400" />
+                <span>{test.totalQuestions} questions</span>
+              </span>
+              <span>•</span>
+              <span className="flex items-center gap-1">
+                <Timer size={13} className="text-amber-400" />
+                <span>{test.durationMins} mins</span>
+              </span>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2.5 w-full md:w-auto">
+            <button
+              type="button"
+              onClick={() => setShowCrossAppModal(true)}
+              className="flex-1 md:flex-none px-4 py-2 rounded-xl bg-surface border border-edge-soft hover:bg-raised text-ink text-xs font-bold transition flex items-center justify-center gap-1.5"
+            >
+              <Target size={13} className="text-indigo-400" />
+              <span>Calibrate Score</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => onStartQBankDrill?.(test.title)}
+              className="flex-1 md:flex-none px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold shadow-md shadow-indigo-600/30 transition flex items-center justify-center gap-1.5"
+            >
+              <Play size={12} fill="currentColor" />
+              <span>Attempt Test</span>
+            </button>
+          </div>
+        </div>
+      ))}
+    </div>
+  </div>
+)}
+
+{/* VIEW: LIVE SESSIONS & RECALLS (DR. ZAINAB VORA) */}
+{activeDestination === "live" && (
+  <div className="flex flex-col gap-6 animate-in fade-in duration-150">
+    <div className="flex items-center justify-between border-b border-edge-soft pb-4">
+      <div className="flex items-center gap-3">
+        <div className="h-9 w-9 rounded-xl bg-red-500/15 text-red-400 border border-red-500/25 flex items-center justify-center font-bold">
+          <Tv size={17} />
+        </div>
+        <div>
+          <h3 className="text-base font-bold text-ink">Live Discussions & Recalls</h3>
+          <span className="text-xs text-ink-muted">Official Dr. Zainab Vora Video Archive</span>
+        </div>
+      </div>
+
+      <div className="flex items-center gap-2">
+        <span className="text-xs font-bold px-3 py-1 rounded-xl bg-indigo-600 text-white">
+          Completed Archive
+        </span>
+      </div>
+    </div>
+
+    {/* Sessions List (from screenshot media_1794864389403) */}
+    <div className="flex flex-col gap-3">
+      {COREBTR_LIVE_SESSIONS.map((session) => (
+        <div
+          key={session.id}
+          className="p-4 rounded-2xl bg-surface border border-edge-soft hover:border-indigo-500/40 hover:bg-elevated transition shadow-xs flex flex-col md:flex-row items-start md:items-center justify-between gap-4 group select-none"
+        >
+          <div className="flex items-start gap-3.5">
+            <div className="h-12 w-12 rounded-2xl bg-indigo-600/15 text-indigo-400 border border-indigo-500/25 flex items-center justify-center font-bold shrink-0">
+              <Play size={18} fill="currentColor" />
+            </div>
+            <div className="flex flex-col">
+              <span className="text-xs font-semibold text-indigo-400">
+                {session.instructor}
+              </span>
+              <h4 className="text-sm font-bold text-ink group-hover:text-indigo-400 transition leading-snug">
+                {session.title}
+              </h4>
+              <span className="text-xs text-ink-muted mt-1">
+                📅 {session.date} • {session.time} • {session.topic}
+              </span>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => onStartQBankDrill?.(session.title)}
+            className="px-4 py-2 rounded-xl bg-elevated hover:bg-raised text-ink text-xs font-bold border border-edge-soft transition flex items-center gap-1.5"
+          >
+            <Play size={12} fill="currentColor" />
+            <span>Watch Discussion</span>
+          </button>
+        </div>
+      ))}
+    </div>
+  </div>
+)}
+
+{/* VIEW: PLAN & CUSTOM MODULE ROADMAP */}
+{activeDestination === "plan" && (
+  <div className="flex flex-col gap-6 animate-in fade-in duration-150">
+    {/* Custom Module Action Banner */}
+    <div className="p-6 rounded-3xl bg-gradient-to-r from-indigo-900/40 via-surface to-elevated border border-indigo-500/30 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-sm">
+      <div className="flex flex-col gap-1">
+        <span className="text-[10px] font-bold uppercase tracking-wider text-indigo-400">
+          High-Yield Algorithm
+        </span>
+        <h3 className="text-lg font-black text-ink">Custom Module Engine</h3>
+        <p className="text-xs text-ink-muted max-w-lg">
+          Filter by PYQs, #2VRecommended questions, attempt history, and image spotter tags.
+        </p>
+      </div>
+      <button
+        type="button"
+        onClick={() => setShowCustomModuleModal(true)}
+        className="px-5 py-2.5 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white font-extrabold text-xs shadow-lg shadow-indigo-600/30 transition flex items-center gap-2"
+      >
+        <Plus size={15} />
+        <span>+ Create Custom Module</span>
+      </button>
+    </div>
+
+    {/* 4-Phase Strategy Breakdown */}
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      {CORE_BTR_PHASES.map((phase, idx) => (
+        <div
+          key={phase.id}
+          className="rounded-3xl bg-surface/70 border border-edge-soft p-6 flex flex-col justify-between gap-4 backdrop-blur-md relative overflow-hidden"
+        >
+          <div className="flex flex-col gap-2.5">
+            <div className="flex items-center justify-between gap-2">
+              <span className="font-mono text-xs font-bold text-accent">
+                PHASE {idx + 1}
+              </span>
+              <span className="text-[11px] font-semibold rounded-full bg-elevated px-3 py-0.5 border border-edge-soft text-ink-muted">
+                {phase.badge}
+              </span>
+            </div>
+
+            <h3 className="text-base font-bold text-ink">{phase.title}</h3>
+            <div className="rounded-xl bg-accent/10 border border-accent/20 p-2.5 text-xs text-accent font-semibold">
+              Core Focus: {phase.focus}
+            </div>
+            <p className="text-xs text-ink-muted leading-relaxed">
+              {phase.strategySummary}
+            </p>
+          </div>
+
+          <div className="pt-3 border-t border-edge-soft flex items-center justify-between text-xs">
+            <span className="text-ink-muted">Daily MCQ Target:</span>
+            <span className="font-bold text-ink">{phase.targetDailyQuestions} questions / day</span>
+          </div>
+        </div>
+      ))}
+    </div>
+  </div>
+)}
 
   {/* VIEW: SUPER-VOLATILES VAULT (ACTIVE RECALL BLUR MASK) */}
   {activeDestination === "volatiles" && (
@@ -1487,6 +2254,59 @@ export function CoreBTRWarRoom({ onStartQBankDrill, onOpenNotes }: CoreBTRWarRoo
                         </div>
                       )}
                     </div>
+
+                    {/* Quick FSRS Spaced Repetition Rating Buttons */}
+                    {isRevealed && (
+                      <div className="flex items-center justify-between gap-1.5 p-2 rounded-xl bg-canvas/60 border border-edge-soft animate-in fade-in duration-150">
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-ink-muted">Rate Recall:</span>
+                        <div className="flex items-center gap-1">
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              reviewFSRSCard(card.id, 1);
+                            }}
+                            className="px-2 py-0.5 rounded-lg text-[10px] font-bold bg-rose-500/15 text-rose-400 border border-rose-500/30 hover:bg-rose-500/25 transition"
+                            title="Forgot completely"
+                          >
+                            Again
+                          </button>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              reviewFSRSCard(card.id, 2);
+                            }}
+                            className="px-2 py-0.5 rounded-lg text-[10px] font-bold bg-amber-500/15 text-amber-400 border border-amber-500/30 hover:bg-amber-500/25 transition"
+                            title="Recalled with effort"
+                          >
+                            Hard
+                          </button>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              reviewFSRSCard(card.id, 3);
+                            }}
+                            className="px-2 py-0.5 rounded-lg text-[10px] font-bold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/25 transition"
+                            title="Optimal recall"
+                          >
+                            Good
+                          </button>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              reviewFSRSCard(card.id, 4);
+                            }}
+                            className="px-2 py-0.5 rounded-lg text-[10px] font-bold bg-cyan-500/15 text-cyan-400 border border-cyan-500/30 hover:bg-cyan-500/25 transition"
+                            title="Effortless recall"
+                          >
+                            Easy
+                          </button>
+                        </div>
+                      </div>
+                    )}
 
                     {/* Examiner Trap Callout */}
                     <div className="rounded-xl bg-amber-500/10 border border-amber-500/20 p-2.5 text-[11.5px] text-amber-300 leading-snug flex items-start gap-2">
@@ -1993,6 +2813,22 @@ export function CoreBTRWarRoom({ onStartQBankDrill, onOpenNotes }: CoreBTRWarRoo
 
       {/* Universal Cross-App Medical Test Center (Marrow, Prep, DAMS, Cerebellum) */}
       <BTRCrossAppTestsModal open={showCrossAppModal} onClose={() => setShowCrossAppModal(false)} />
+
+      {/* Create Custom Module Modal */}
+      <BTRCustomModuleModal
+        isOpen={showCustomModuleModal}
+        onClose={() => setShowCustomModuleModal(false)}
+        onStartModule={(config) => {
+          onStartQBankDrill?.(config.name);
+        }}
+        subjectName={selectedSubjectDetail?.name}
+      />
+
+      {/* High-Yield Pearl Study Modal */}
+      <BTRPearlModal
+        pearl={selectedPearlModal}
+        onClose={() => setSelectedPearlModal(null)}
+      />
     </div>
   );
 }
