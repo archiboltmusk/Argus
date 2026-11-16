@@ -11,7 +11,6 @@ import {
   Check,
   Zap,
   Target,
-  BarChart2,
   Search,
   Copy,
   FolderPlus,
@@ -24,6 +23,8 @@ import {
   Triangle,
   Droplets,
   Stethoscope,
+  ChevronRight,
+  Calculator,
 } from "lucide-react";
 import { useView } from "@/lib/view";
 import { BTRSplitWorkstation } from "@/components/education/btr-split-workstation";
@@ -38,6 +39,10 @@ import { BTRPyramidsModal } from "@/components/education/btr-pyramids-modal";
 import { BTRDailyDripModal } from "@/components/education/btr-daily-drip-modal";
 import { BTRPdfSearchModal } from "@/components/education/btr-pdf-search-modal";
 import { BTRVignetteModal } from "@/components/education/btr-vignette-modal";
+import { BTRAppDock, type BTRAppDestination } from "@/components/education/btr-app-dock";
+import { BTRMiniPlayerDock } from "@/components/education/btr-mini-player-dock";
+import { getFSRSSummary } from "@/lib/education/btr-fsrs-engine";
+import { CORE_BTR_BROADCASTS } from "@/lib/education/btr-broadcasts";
 import {
   CORE_BTR_SUBJECTS,
   CORE_BTR_PHASES,
@@ -71,9 +76,11 @@ interface CoreBTRWarRoomProps {
 export function CoreBTRWarRoom({ onStartQBankDrill, onOpenNotes }: CoreBTRWarRoomProps = {}) {
   const { openPlayer } = useView();
 
-  const [activeView, setActiveView] = useState<
-    "timeline" | "medialibrary" | "volatiles" | "gt_analytics" | "strategy"
-  >("timeline");
+  const [activeDestination, setActiveDestination] = useState<BTRAppDestination>("today");
+  const [subjectsSubTab, setSubjectsSubTab] = useState<"tracker" | "files">("tracker");
+  const summary = useMemo(() => getFSRSSummary(), []);
+  const activeView = activeDestination;
+  const setActiveView = (v: any) => setActiveDestination(v);
   const [progressMap, setProgressMap] = useState<Record<string, BTRSubjectProgress>>({});
   const [gtRecords, setGtRecords] = useState<BTRGrandTestRecord[]>([]);
   const [libraryState, setLibraryState] = useState<BTRLocalLibraryState>(loadBTRLocalLibrary());
@@ -243,14 +250,17 @@ export function CoreBTRWarRoom({ onStartQBankDrill, onOpenNotes }: CoreBTRWarRoo
     setTimeout(() => setScanNotice(null), 6000);
   };
 
-  // Play a BTR video lecture
+  // Play a BTR video lecture in Dual Workstation
   const handlePlayLecture = (video: BTRLocalMediaFile, subject: BTRSubject) => {
-    const companionPdf =
-      libraryState.mappings[subject.id]?.unannotatedPdf?.fullPath ||
-      libraryState.mappings[subject.id]?.annotatedPdf?.fullPath;
-
-    const src = createBTRVideoPlayerSrc(video, subject, companionPdf);
-    openPlayer(src);
+    const unannotated = libraryState.mappings[subject.id]?.unannotatedPdf;
+    const annotated = libraryState.mappings[subject.id]?.annotatedPdf;
+    setWorkstationSession({
+      video,
+      subject,
+      unannotatedPdf: unannotated,
+      annotatedPdf: annotated,
+    });
+    setActiveDestination("workstation");
   };
 
   // Open PDF workbook in browser/new tab
@@ -259,326 +269,603 @@ export function CoreBTRWarRoom({ onStartQBankDrill, onOpenNotes }: CoreBTRWarRoo
     window.open(url, "_blank");
   };
 
+  const handleNavigate = (dest: BTRAppDestination) => {
+    if (dest === "drip") {
+      setShowDripModal(true);
+      return;
+    }
+    if (dest === "search") {
+      setShowPdfSearchModal(true);
+      return;
+    }
+    if (dest === "broadcasts") {
+      setShowBroadcastsModal(true);
+      return;
+    }
+    if (dest === "pyramids") {
+      setShowPyramidsModal(true);
+      return;
+    }
+    if (dest === "cases") {
+      setShowVignetteModal(true);
+      return;
+    }
+    if (dest === "tnd") {
+      setShowTnDModal(true);
+      return;
+    }
+    if (dest === "blitz") {
+      setShowMarathonModal(true);
+      return;
+    }
+    if (dest === "spotters") {
+      setShowSpotterModal(true);
+      return;
+    }
+    if (dest === "matrix") {
+      setShowTwentyModal(true);
+      return;
+    }
+    if (dest === "workstation") {
+      if (!workstationSession) {
+        let fallbackVideo: BTRLocalMediaFile | undefined;
+        let fallbackSubject: BTRSubject = CORE_BTR_SUBJECTS[0];
+        for (const subj of CORE_BTR_SUBJECTS) {
+          const mapping = libraryState.mappings[subj.id];
+          if (mapping && mapping.videos.length > 0) {
+            fallbackVideo = mapping.videos[0];
+            fallbackSubject = subj;
+            break;
+          }
+        }
+        if (fallbackVideo) {
+          setWorkstationSession({
+            video: fallbackVideo,
+            subject: fallbackSubject,
+            unannotatedPdf: libraryState.mappings[fallbackSubject.id]?.unannotatedPdf,
+            annotatedPdf: libraryState.mappings[fallbackSubject.id]?.annotatedPdf,
+          });
+        }
+      }
+      setActiveDestination("workstation");
+      return;
+    }
+    setActiveDestination(dest);
+  };
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === "k") {
+        e.preventDefault();
+        setShowPdfSearchModal(true);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
+
   return (
-    <div className="flex flex-col gap-6 text-ink animate-in fade-in duration-200">
-      {/* 1. Header Mission Control & Exam Countdowns */}
-      <div className="relative overflow-hidden rounded-3xl border border-edge-soft bg-gradient-to-br from-surface/90 via-surface/60 to-elevated/40 p-6 md:p-8 shadow-sm backdrop-blur-xl">
-        <div className="absolute -right-16 -top-16 h-64 w-64 rounded-full bg-accent/15 blur-3xl pointer-events-none" />
-        <div className="absolute -left-16 -bottom-16 h-64 w-64 rounded-full bg-amber-500/10 blur-3xl pointer-events-none" />
+    <div className="flex h-[calc(100vh-4.5rem)] min-h-[720px] w-full overflow-hidden rounded-3xl border border-edge bg-canvas text-ink shadow-2xl relative select-none">
+      {/* 1. Left Navigation Rail (App Dock) */}
+      <BTRAppDock
+        activeDestination={activeDestination}
+        onNavigate={handleNavigate}
+        dailyDueCount={summary.dueTodayCount}
+        streakDays={summary.streakDays}
+        totalFilesLinked={libraryState.totalVideosFound + libraryState.totalPdfsFound}
+        onLinkFolder={() => folderInputRef.current?.click()}
+        isWorkstationActive={!!workstationSession}
+      />
 
-        <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6 relative z-10">
-          <div>
-            <div className="flex flex-wrap items-center gap-2.5 mb-2">
-              <span className="flex items-center gap-1.5 rounded-full bg-accent/20 px-3 py-1 text-xs font-bold text-accent border border-accent/30 tracking-wide">
-                <Flame size={14} className="fill-accent text-accent" />
-                CORE BTR NEET-PG 2027
-              </span>
-              <span className="rounded-full bg-elevated px-3 py-1 text-xs font-semibold text-ink-muted border border-edge-soft">
-                Dr. Zainab Vora Curriculum
-              </span>
-              <span className="rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 px-3 py-1 text-xs font-semibold">
-                19 Subjects Integrated
-              </span>
-              {libraryState.totalVideosFound > 0 && (
-                <span className="rounded-full bg-accent/15 text-accent border border-accent/30 px-3 py-1 text-xs font-bold flex items-center gap-1">
-                  <FolderCheck size={13} />
-                  {libraryState.totalVideosFound} Videos Linked
-                </span>
-              )}
-            </div>
-            <h2 className="text-2xl md:text-3xl font-extrabold tracking-tight text-ink">
-              NEET-PG 2027 Strategic Command & War Room
-            </h2>
-            <p className="mt-1 text-sm text-ink-muted max-w-2xl leading-relaxed">
-              Phased syllabus execution, unannotated workbooks, 100 super-volatile tables, and synced local video lecture playback.
-            </p>
-          </div>
-
-          {/* Dual Exam Countdowns & Quick Link Folder Button */}
-          <div className="flex flex-wrap items-center gap-3">
-            <div className="flex flex-col items-center justify-center rounded-2xl bg-canvas/80 border border-edge-soft px-4 py-3 min-w-[130px] shadow-sm">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-accent">INI-CET May 2027</span>
-              <div className="text-2xl font-black text-ink tracking-tight mt-0.5">
-                {countdowns.iniCetMay.days}
-                <span className="text-xs font-medium text-ink-muted ml-1">days</span>
-              </div>
-              <span className="text-[10.5px] text-ink-muted">{countdowns.iniCetMay.targetDateStr}</span>
-            </div>
-
-            <div className="flex flex-col items-center justify-center rounded-2xl bg-canvas/80 border border-accent/30 px-4 py-3 min-w-[130px] shadow-sm ring-1 ring-accent/20">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-amber-400">NEET-PG 2027</span>
-              <div className="text-2xl font-black text-ink tracking-tight mt-0.5">
-                {countdowns.neetPg.days}
-                <span className="text-xs font-medium text-ink-muted ml-1">days</span>
-              </div>
-              <span className="text-[10.5px] text-ink-muted">{countdowns.neetPg.targetDateStr}</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Scan / Link Notice */}
-        {scanNotice && (
-          <div className="mt-4 rounded-2xl bg-accent/15 border border-accent/30 p-3.5 text-xs font-semibold text-accent flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Check size={16} />
-              <span>{scanNotice}</span>
-            </div>
-            <button
-              type="button"
-              onClick={() => setScanNotice(null)}
-              className="text-accent hover:underline text-xs"
-            >
-              Dismiss
-            </button>
-          </div>
-        )}
-
-        {/* Readiness Meter */}
-        <div className="mt-6 pt-6 border-t border-edge-soft grid grid-cols-2 md:grid-cols-4 gap-4">
-          <div className="flex flex-col gap-1">
-            <span className="text-xs font-medium text-ink-muted">Mastery Readiness</span>
-            <div className="flex items-baseline gap-2">
-              <span className="text-2xl font-black text-ink">{readiness.completionPercentage}%</span>
-              <span className="text-xs text-ink-muted">target &gt;85%</span>
-            </div>
-            <div className="h-1.5 w-full bg-elevated rounded-full overflow-hidden mt-1">
-              <div
-                className="h-full bg-accent rounded-full transition-all duration-500"
-                style={{ width: `${Math.min(100, readiness.completionPercentage)}%` }}
-              />
-            </div>
-          </div>
-
-          <div className="flex flex-col gap-1">
-            <span className="text-xs font-medium text-ink-muted">Mastered / Annotated</span>
-            <div className="flex items-baseline gap-1.5 text-2xl font-black text-emerald-400">
-              {readiness.masteredCount + readiness.annotatedCount}
-              <span className="text-xs font-semibold text-ink-muted">/ 19 subjects</span>
-            </div>
-            <span className="text-[11px] text-ink-muted">{readiness.masteredCount} fully mastered</span>
-          </div>
-
-          <div className="flex flex-col gap-1">
-            <span className="text-xs font-medium text-ink-muted">Local BTR Files</span>
-            <div className="flex items-baseline gap-1.5 text-2xl font-black text-amber-400">
-              {libraryState.totalVideosFound}
-              <span className="text-xs font-semibold text-ink-muted">videos</span>
-            </div>
-            <span className="text-[11px] text-ink-muted">
-              {libraryState.totalPdfsFound} PDF workbooks indexed
+      {/* 2. Main Studio Viewport */}
+      <div className="flex-1 flex flex-col overflow-hidden bg-canvas relative">
+        {/* Top Omnibar Header */}
+        <header className="h-14 shrink-0 flex items-center justify-between border-b border-edge px-4 sm:px-6 bg-surface/80 backdrop-blur-md z-10">
+          <div className="flex items-center gap-3">
+            <span className="flex items-center gap-1.5 rounded-full bg-accent/20 px-2.5 py-0.5 text-[11px] font-bold text-accent border border-accent/30 tracking-wide">
+              <Flame size={12} className="fill-accent text-accent" />
+              <span>CORE BTR 2027</span>
             </span>
+
+            {/* Global Search Omnibar */}
+            <button
+              type="button"
+              onClick={() => setShowPdfSearchModal(true)}
+              className="flex items-center gap-2 rounded-xl bg-canvas border border-edge-soft px-3 py-1.5 text-xs text-ink-muted hover:text-ink hover:border-accent/40 transition shadow-xs w-48 sm:w-72"
+            >
+              <Search size={13} className="text-accent shrink-0" />
+              <span className="truncate">Search 32 PDFs, videos, topics...</span>
+              <kbd className="ml-auto hidden sm:inline-block font-mono text-[10px] bg-elevated px-1.5 py-0.5 rounded border border-edge text-ink-muted">
+                ⌘K
+              </kbd>
+            </button>
           </div>
 
-          <div className="flex flex-col gap-1">
-            <span className="text-xs font-medium text-ink-muted">Grand Tests Logged</span>
-            <div className="flex items-baseline gap-1.5 text-2xl font-black text-ink">
-              {gtRecords.length}
-              <span className="text-xs font-semibold text-ink-muted">tests</span>
+          {/* Right Header: Dual Countdowns & Actions */}
+          <div className="flex items-center gap-3">
+            <div className="hidden md:flex items-center gap-2">
+              <div className="flex items-center gap-1.5 rounded-xl bg-canvas border border-edge-soft px-2.5 py-1 text-xs">
+                <span className="text-[10px] font-bold uppercase text-accent">INI-CET</span>
+                <span className="font-black text-ink">{countdowns.iniCetMay.days}d</span>
+              </div>
+              <div className="flex items-center gap-1.5 rounded-xl bg-canvas border border-amber-500/30 px-2.5 py-1 text-xs">
+                <span className="text-[10px] font-bold uppercase text-amber-400">NEET-PG</span>
+                <span className="font-black text-ink">{countdowns.neetPg.days}d</span>
+              </div>
             </div>
-            <span className="text-[11px] text-ink-muted">
-              Latest: {gtRecords[0]?.percentile ?? 0}%ile
-            </span>
-          </div>
-        </div>
-      </div>
 
-      {/* 2. Elite Power Hub: Official Broadcasts, 20th Subject, Mega BTR, Spotters & Advanced Suites */}
-      <div className="flex flex-wrap items-center gap-2.5">
-        <button
-          type="button"
-          onClick={() => setShowDripModal(true)}
-          className="flex items-center gap-2 rounded-2xl bg-cyan-600/15 border border-cyan-500/30 px-3.5 py-2 text-xs font-bold text-cyan-300 hover:bg-cyan-600/25 transition shadow-xs"
-        >
-          <Droplets size={14} className="text-cyan-400" />
-          <span>Daily Volatile Drip (FSRS)</span>
-        </button>
-
-        <button
-          type="button"
-          onClick={() => setShowBroadcastsModal(true)}
-          className="flex items-center gap-2 rounded-2xl bg-red-600/15 border border-red-500/30 px-3.5 py-2 text-xs font-bold text-red-400 hover:bg-red-600/25 transition shadow-xs"
-        >
-          <Radio size={14} className="animate-pulse text-red-500" />
-          <span>Core Drops (@corebtrbyzainabvora)</span>
-        </button>
-
-        <button
-          type="button"
-          onClick={() => setShowTwentyModal(true)}
-          className="flex items-center gap-2 rounded-2xl bg-amber-500/15 border border-amber-500/30 px-3.5 py-2 text-xs font-bold text-amber-300 hover:bg-amber-500/25 transition shadow-xs"
-        >
-          <Layers size={14} className="text-amber-400" />
-          <span>&quot;20th Subject&quot; Matrix</span>
-        </button>
-
-        <button
-          type="button"
-          onClick={() => setShowPyramidsModal(true)}
-          className="flex items-center gap-2 rounded-2xl bg-amber-500/15 border border-amber-500/30 px-3.5 py-2 text-xs font-bold text-amber-300 hover:bg-amber-500/25 transition shadow-xs"
-        >
-          <Triangle size={14} className="text-amber-400" />
-          <span>3-Tier Pyramids</span>
-        </button>
-
-        <button
-          type="button"
-          onClick={() => setShowTnDModal(true)}
-          className="flex items-center gap-2 rounded-2xl bg-emerald-600/15 border border-emerald-500/30 px-3.5 py-2 text-xs font-bold text-emerald-400 hover:bg-emerald-600/25 transition shadow-xs"
-        >
-          <Target size={14} className="text-emerald-400" />
-          <span>T&D Simulator (17 Papers)</span>
-        </button>
-
-        <button
-          type="button"
-          onClick={() => setShowMarathonModal(true)}
-          className="flex items-center gap-2 rounded-2xl bg-emerald-600/15 border border-emerald-500/30 px-3.5 py-2 text-xs font-bold text-emerald-400 hover:bg-emerald-600/25 transition shadow-xs"
-        >
-          <Zap size={14} className="text-emerald-400" />
-          <span>Mega BTR 72h Blitz</span>
-        </button>
-
-        <button
-          type="button"
-          onClick={() => setShowSpotterModal(true)}
-          className="flex items-center gap-2 rounded-2xl bg-purple-600/15 border border-purple-500/30 px-3.5 py-2 text-xs font-bold text-purple-300 hover:bg-purple-600/25 transition shadow-xs"
-        >
-          <Eye size={14} className="text-purple-400" />
-          <span>Spotter Image Bank</span>
-        </button>
-
-        <button
-          type="button"
-          onClick={() => setShowPdfSearchModal(true)}
-          className="flex items-center gap-2 rounded-2xl bg-blue-600/15 border border-blue-500/30 px-3.5 py-2 text-xs font-bold text-blue-300 hover:bg-blue-600/25 transition shadow-xs"
-        >
-          <Search size={14} className="text-blue-400" />
-          <span>Cross-PDF Search</span>
-        </button>
-
-        <button
-          type="button"
-          onClick={() => setShowVignetteModal(true)}
-          className="flex items-center gap-2 rounded-2xl bg-teal-600/15 border border-teal-500/30 px-3.5 py-2 text-xs font-bold text-teal-300 hover:bg-teal-600/25 transition shadow-xs"
-        >
-          <Stethoscope size={14} className="text-teal-400" />
-          <span>Two-Step Clinical Cases</span>
-        </button>
-      </div>
-
-      {/* 3. Sub-Navigation Tabs */}
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-edge-soft pb-4">
-        <div className="flex items-center gap-1.5 rounded-2xl bg-surface/80 p-1.5 border border-edge-soft">
-          {[
-            { id: "timeline", label: "19-Subject Master Tracker", icon: Target },
-            { id: "medialibrary", label: "My BTR Videos & PDFs", icon: FolderCheck },
-            { id: "volatiles", label: "Super-Volatiles Vault", icon: Zap },
-            { id: "gt_analytics", label: "GT Calibrator & Strike Rate", icon: BarChart2 },
-            { id: "strategy", label: "4-Phase BTR Strategy", icon: BookOpen },
-          ].map((tab) => {
-            const Icon = tab.icon;
-            const isActive = activeView === tab.id;
-            return (
-              <button
-                key={tab.id}
-                type="button"
-                onClick={() => setActiveView(tab.id as typeof activeView)}
-                className={`flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-bold transition ${
-                  isActive
-                    ? "bg-accent text-white shadow-sm"
-                    : "text-ink-muted hover:text-ink hover:bg-elevated"
-                }`}
-              >
-                <Icon size={14} />
-                <span>{tab.label}</span>
-              </button>
-            );
-          })}
-        </div>
-
-        {/* Global Search / Folder Link Controls */}
-        <div className="flex items-center gap-2.5">
-          <input
-            type="file"
-            ref={folderInputRef}
-            // @ts-expect-error webkitdirectory is standard for folder pickers
-            webkitdirectory="true"
-            directory="true"
-            multiple
-            onChange={handleFolderSelect}
-            className="hidden"
-          />
-
-          <button
-            type="button"
-            onClick={() => folderInputRef.current?.click()}
-            className="flex items-center gap-1.5 rounded-xl bg-accent px-3 py-2 text-xs font-bold text-white shadow-sm hover:brightness-110 transition"
-          >
-            <FolderPlus size={14} />
-            <span>Link BTR Folder</span>
-          </button>
-
-          {onStartQBankDrill && (
-            <button
-              type="button"
-              onClick={() => onStartQBankDrill()}
-              className="hidden sm:flex items-center gap-1.5 rounded-xl bg-elevated border border-edge-soft px-3 py-2 text-xs font-semibold text-ink hover:bg-raised transition"
-            >
-              <Zap size={14} className="text-accent" />
-              <span>QBank Sprint</span>
-            </button>
-          )}
-
-          {onOpenNotes && (
-            <button
-              type="button"
-              onClick={onOpenNotes}
-              className="hidden sm:flex items-center gap-1.5 rounded-xl bg-elevated border border-edge-soft px-3 py-2 text-xs font-semibold text-ink hover:bg-raised transition"
-            >
-              <FileText size={14} className="text-ink-muted" />
-              <span>My Notes</span>
-            </button>
-          )}
-
-          <div className="relative">
-            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-muted" />
+            {/* Hidden file input */}
             <input
-              type="text"
-              placeholder="Search topics, drugs, bodies..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="h-9 w-44 md:w-56 rounded-xl bg-surface border border-edge-soft pl-9 pr-3 text-xs text-ink placeholder:text-ink-muted focus:border-accent focus:outline-none transition"
+              type="file"
+              ref={folderInputRef}
+              // @ts-expect-error webkitdirectory is standard for folder pickers
+              webkitdirectory="true"
+              directory="true"
+              multiple
+              onChange={handleFolderSelect}
+              className="hidden"
             />
-          </div>
 
-          <div className="hidden lg:flex items-center gap-1 rounded-xl bg-surface border border-edge-soft p-1 text-xs">
-            {(["ALL", "Pre-Clinical", "Para-Clinical", "Short Clinical", "Long Clinical"] as const).map(
-              (cat) => (
-                <button
-                  key={cat}
-                  type="button"
-                  onClick={() => setCategoryFilter(cat)}
-                  className={`rounded-lg px-2.5 py-1 text-[11px] font-semibold transition ${
-                    categoryFilter === cat
-                      ? "bg-elevated text-ink shadow-xs border border-edge"
-                      : "text-ink-muted hover:text-ink"
-                  }`}
-                >
-                  {cat === "ALL" ? "All Blocks" : cat.replace(" Clinical", "")}
-                </button>
-              )
+            {onStartQBankDrill && (
+              <button
+                type="button"
+                onClick={() => onStartQBankDrill()}
+                className="hidden sm:flex items-center gap-1.5 rounded-xl bg-elevated border border-edge-soft px-3 py-1.5 text-xs font-semibold text-ink hover:bg-raised transition"
+              >
+                <Zap size={13} className="text-accent" />
+                <span>QBank Sprint</span>
+              </button>
+            )}
+
+            {onOpenNotes && (
+              <button
+                type="button"
+                onClick={onOpenNotes}
+                className="hidden sm:flex items-center gap-1.5 rounded-xl bg-elevated border border-edge-soft px-3 py-1.5 text-xs font-semibold text-ink hover:bg-raised transition"
+              >
+                <FileText size={13} className="text-ink-muted" />
+                <span>Notes</span>
+              </button>
             )}
           </div>
-        </div>
-      </div>
+        </header>
 
-      {/* 3. TAB CONTENT */}
+        {/* Viewport Content */}
+        <main className="flex-1 overflow-y-auto p-4 sm:p-6 flex flex-col gap-6 bg-canvas pb-24 select-text">
+          {/* Scan Notice */}
+          {scanNotice && (
+            <div className="rounded-2xl bg-accent/15 border border-accent/30 p-3.5 text-xs font-semibold text-accent flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Check size={16} />
+                <span>{scanNotice}</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setScanNotice(null)}
+                className="text-accent hover:underline text-xs"
+              >
+                Dismiss
+              </button>
+            </div>
+          )}
 
-      {/* VIEW 1: 19-SUBJECT MASTER TRACKER */}
-      {activeView === "timeline" && (
-        <div className="flex flex-col gap-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {filteredSubjects.map((subj) => {
+          {/* VIEW: TODAY COMMAND CENTER */}
+          {activeDestination === "today" && (
+            <div className="flex flex-col gap-6 animate-in fade-in duration-200">
+              {/* Mission Control & Readiness Banner */}
+              <div className="relative overflow-hidden rounded-3xl border border-edge-soft bg-gradient-to-br from-surface/90 via-surface/60 to-elevated/40 p-6 md:p-8 shadow-sm backdrop-blur-xl">
+                <div className="absolute -right-16 -top-16 h-64 w-64 rounded-full bg-accent/15 blur-3xl pointer-events-none" />
+                <div className="absolute -left-16 -bottom-16 h-64 w-64 rounded-full bg-amber-500/10 blur-3xl pointer-events-none" />
+
+                <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6 relative z-10">
+                  <div>
+                    <div className="flex flex-wrap items-center gap-2 mb-2">
+                      <span className="flex items-center gap-1.5 rounded-full bg-accent/20 px-3 py-1 text-xs font-bold text-accent border border-accent/30 tracking-wide">
+                        <Flame size={14} className="fill-accent text-accent" />
+                        CORE BTR NEET-PG 2027
+                      </span>
+                      <span className="rounded-full bg-elevated px-3 py-1 text-xs font-semibold text-ink-muted border border-edge-soft">
+                        Dr. Zainab Vora Curriculum
+                      </span>
+                      <span className="rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 px-3 py-1 text-xs font-semibold">
+                        19 Subjects Integrated
+                      </span>
+                    </div>
+                    <h2 className="text-2xl md:text-3xl font-extrabold tracking-tight text-ink">
+                      NEET-PG 2027 Strategic Command & War Room
+                    </h2>
+                    <p className="mt-1 text-sm text-ink-muted max-w-2xl leading-relaxed">
+                      Phased syllabus execution, unannotated workbooks, 100 super-volatile tables, and synced local video lecture playback.
+                    </p>
+                  </div>
+
+                  {/* Dual Countdowns */}
+                  <div className="flex flex-wrap items-center gap-3">
+                    <div className="flex flex-col items-center justify-center rounded-2xl bg-canvas/80 border border-edge-soft px-4 py-3 min-w-[130px] shadow-sm">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-accent">INI-CET May 2027</span>
+                      <div className="text-2xl font-black text-ink tracking-tight mt-0.5">
+                        {countdowns.iniCetMay.days}
+                        <span className="text-xs font-medium text-ink-muted ml-1">days</span>
+                      </div>
+                      <span className="text-[10.5px] text-ink-muted">{countdowns.iniCetMay.targetDateStr}</span>
+                    </div>
+
+                    <div className="flex flex-col items-center justify-center rounded-2xl bg-canvas/80 border border-accent/30 px-4 py-3 min-w-[130px] shadow-sm ring-1 ring-accent/20">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-amber-400">NEET-PG 2027</span>
+                      <div className="text-2xl font-black text-ink tracking-tight mt-0.5">
+                        {countdowns.neetPg.days}
+                        <span className="text-xs font-medium text-ink-muted ml-1">days</span>
+                      </div>
+                      <span className="text-[10.5px] text-ink-muted">{countdowns.neetPg.targetDateStr}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Readiness Meter */}
+                <div className="mt-6 pt-6 border-t border-edge-soft grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <div className="flex flex-col gap-1">
+                    <span className="text-xs font-medium text-ink-muted">Mastery Readiness</span>
+                    <div className="flex items-baseline gap-2">
+                      <span className="text-2xl font-black text-ink">{readiness.completionPercentage}%</span>
+                      <span className="text-xs text-ink-muted">target &gt;85%</span>
+                    </div>
+                    <div className="h-1.5 w-full bg-elevated rounded-full overflow-hidden mt-1">
+                      <div
+                        className="h-full bg-accent rounded-full transition-all duration-500"
+                        style={{ width: `${Math.min(100, readiness.completionPercentage)}%` }}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex flex-col gap-1">
+                    <span className="text-xs font-medium text-ink-muted">Mastered / Annotated</span>
+                    <div className="flex items-baseline gap-1.5 text-2xl font-black text-emerald-400">
+                      {readiness.masteredCount + readiness.annotatedCount}
+                      <span className="text-xs font-semibold text-ink-muted">/ 19 subjects</span>
+                    </div>
+                    <span className="text-[11px] text-ink-muted">{readiness.masteredCount} fully mastered</span>
+                  </div>
+
+                  <div className="flex flex-col gap-1">
+                    <span className="text-xs font-medium text-ink-muted">Local BTR Files</span>
+                    <div className="flex items-baseline gap-1.5 text-2xl font-black text-amber-400">
+                      {libraryState.totalVideosFound}
+                      <span className="text-xs font-semibold text-ink-muted">videos</span>
+                    </div>
+                    <span className="text-[11px] text-ink-muted">
+                      {libraryState.totalPdfsFound} PDF workbooks indexed
+                    </span>
+                  </div>
+
+                  <div className="flex flex-col gap-1">
+                    <span className="text-xs font-medium text-ink-muted">Grand Tests Logged</span>
+                    <div className="flex items-baseline gap-1.5 text-2xl font-black text-ink">
+                      {gtRecords.length}
+                      <span className="text-xs font-semibold text-ink-muted">tests</span>
+                    </div>
+                    <span className="text-[11px] text-ink-muted">
+                      Latest: {gtRecords[0]?.percentile ?? 0}%ile
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Row 1: Priority Active Learning Cards */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Priority Card A: Daily Volatile Drip (FSRS Spaced Repetition) */}
+                <div className="rounded-2xl border border-cyan-500/30 bg-gradient-to-br from-cyan-950/20 via-surface to-elevated/40 p-5 flex flex-col justify-between gap-4 shadow-sm hover:border-cyan-400/50 transition">
+                  <div className="flex flex-col gap-2">
+                    <div className="flex items-center justify-between">
+                      <span className="flex items-center gap-1.5 rounded-full bg-cyan-500/15 px-2.5 py-0.5 text-[11px] font-bold text-cyan-300 border border-cyan-500/30">
+                        <Droplets size={12} className="text-cyan-400" />
+                        <span>FSRS Spaced Repetition</span>
+                      </span>
+                      <span className="text-xs font-mono text-cyan-300 font-bold">
+                        {summary.streakDays} Day Streak 🔥
+                      </span>
+                    </div>
+                    <h3 className="text-base font-bold text-ink">Daily Volatile Drip</h3>
+                    <p className="text-xs text-ink-muted leading-relaxed">
+                      10 super-volatile cards calculated for optimal memory stability. Active recall with spaced repetition intervals.
+                    </p>
+                  </div>
+
+                  <div className="flex items-center justify-between pt-2 border-t border-edge-soft">
+                    <span className="text-xs text-ink-muted">
+                      <strong className="text-cyan-300 font-bold font-mono">{summary.dueTodayCount}</strong> cards due today
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setShowDripModal(true)}
+                      className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-cyan-600/20 text-cyan-300 border border-cyan-500/40 text-xs font-bold hover:bg-cyan-600/30 transition shadow-xs"
+                    >
+                      <span>Start 5-Min Drip</span>
+                      <ChevronRight size={13} />
+                    </button>
+                  </div>
+                </div>
+
+                {/* Priority Card B: Dual Split Workstation */}
+                <div className="rounded-2xl border border-emerald-500/30 bg-gradient-to-br from-emerald-950/20 via-surface to-elevated/40 p-5 flex flex-col justify-between gap-4 shadow-sm hover:border-emerald-400/50 transition">
+                  <div className="flex flex-col gap-2">
+                    <div className="flex items-center justify-between">
+                      <span className="flex items-center gap-1.5 rounded-full bg-emerald-500/15 px-2.5 py-0.5 text-[11px] font-bold text-emerald-300 border border-emerald-500/30">
+                        <Layers size={12} className="text-emerald-400" />
+                        <span>Dual-Pane Studio</span>
+                      </span>
+                      {workstationSession && (
+                        <span className="text-[10.5px] font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/25">
+                          ACTIVE
+                        </span>
+                      )}
+                    </div>
+                    <h3 className="text-base font-bold text-ink">Dual Split Workstation</h3>
+                    <p className="text-xs text-ink-muted leading-relaxed">
+                      {workstationSession
+                        ? `Loaded: ${workstationSession.subject.shortCode} • ${workstationSession.video.title || workstationSession.video.filename}`
+                        : "Synchronized local video lectures with companion unannotated workbook viewing and A-B loop active recall."}
+                    </p>
+                  </div>
+
+                  <div className="flex items-center justify-between pt-2 border-t border-edge-soft">
+                    <span className="text-xs text-ink-muted">
+                      {libraryState.totalVideosFound} local videos linked
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => handleNavigate("workstation")}
+                      className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-emerald-600/20 text-emerald-300 border border-emerald-500/40 text-xs font-bold hover:bg-emerald-600/30 transition shadow-xs"
+                    >
+                      <span>{workstationSession ? "Resume Workstation" : "Launch Workstation"}</span>
+                      <ChevronRight size={13} />
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Row 2: Official YouTube Drops & 20th Subject Matrix */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Official Broadcast Card */}
+                <div className="rounded-2xl border border-red-500/30 bg-gradient-to-br from-red-950/20 via-surface to-elevated/40 p-5 flex flex-col justify-between gap-4 shadow-sm hover:border-red-400/50 transition">
+                  <div className="flex flex-col gap-2">
+                    <div className="flex items-center justify-between">
+                      <span className="flex items-center gap-1.5 rounded-full bg-red-500/15 px-2.5 py-0.5 text-[11px] font-bold text-red-400 border border-red-500/30">
+                        <Radio size={12} className="animate-pulse text-red-500" />
+                        <span>Daily 3 PM Core Drop</span>
+                      </span>
+                      <span className="text-[10.5px] font-semibold text-ink-muted">@corebtrbyzainabvora</span>
+                    </div>
+                    <h3 className="text-sm font-bold text-ink truncate">
+                      {CORE_BTR_BROADCASTS[0].title}
+                    </h3>
+                    <p className="text-xs text-ink-muted line-clamp-2 leading-relaxed">
+                      {CORE_BTR_BROADCASTS[0].description}
+                    </p>
+                  </div>
+
+                  <div className="flex items-center justify-between pt-2 border-t border-edge-soft">
+                    <span className="text-xs text-red-400 font-semibold">
+                      {CORE_BTR_BROADCASTS[0].durationLabel} • {CORE_BTR_BROADCASTS[0].categoryLabel}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setShowBroadcastsModal(true)}
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-red-600/20 text-red-300 border border-red-500/40 text-xs font-bold hover:bg-red-600/30 transition shadow-xs"
+                    >
+                      <span>Channel Broadcasts</span>
+                      <ChevronRight size={13} />
+                    </button>
+                  </div>
+                </div>
+
+                {/* 20th Subject Card */}
+                <div className="rounded-2xl border border-amber-500/30 bg-gradient-to-br from-amber-950/20 via-surface to-elevated/40 p-5 flex flex-col justify-between gap-4 shadow-sm hover:border-amber-400/50 transition">
+                  <div className="flex flex-col gap-2">
+                    <div className="flex items-center justify-between">
+                      <span className="flex items-center gap-1.5 rounded-full bg-amber-500/15 px-2.5 py-0.5 text-[11px] font-bold text-amber-300 border border-amber-500/30">
+                        <Calculator size={12} className="text-amber-400" />
+                        <span>&quot;20th Subject&quot; Matrix</span>
+                      </span>
+                      <span className="text-[10.5px] font-semibold text-amber-400">High-Yield Numbers</span>
+                    </div>
+                    <h3 className="text-sm font-bold text-ink">
+                      Biostatistics, DOCs & Bio-Medical Waste
+                    </h3>
+                    <p className="text-xs text-ink-muted leading-relaxed">
+                      Instant 2x2 Sensitivity/Specificity calculator, Drug of Choice master directory, GCS, CURB-65 & BMW 2016 rules.
+                    </p>
+                  </div>
+
+                  <div className="flex items-center justify-between pt-2 border-t border-edge-soft">
+                    <span className="text-xs text-ink-muted">
+                      Sens, Spec, PPV, NPV formulas
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setShowTwentyModal(true)}
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-500/20 text-amber-300 border border-amber-500/40 text-xs font-bold hover:bg-amber-500/30 transition shadow-xs"
+                    >
+                      <span>Open Matrix</span>
+                      <ChevronRight size={13} />
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Row 3: High-Yield Tool Launchers Grid */}
+              <div className="flex flex-col gap-3">
+                <span className="text-xs font-bold uppercase tracking-wider text-ink-muted">
+                  Interactive High-Yield Revision Drills
+                </span>
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+                  {[
+                    {
+                      label: "T&D Simulator",
+                      sub: "17 Exam Papers",
+                      icon: Target,
+                      color: "text-emerald-400 border-emerald-500/30 bg-emerald-500/10",
+                      action: () => setShowTnDModal(true),
+                    },
+                    {
+                      label: "3-Tier Pyramids",
+                      sub: "Base to Tie-Breakers",
+                      icon: Triangle,
+                      color: "text-amber-400 border-amber-500/30 bg-amber-500/10",
+                      action: () => setShowPyramidsModal(true),
+                    },
+                    {
+                      label: "Mega BTR 72h",
+                      sub: "Rapid Revision Blitz",
+                      icon: Zap,
+                      color: "text-yellow-400 border-yellow-500/30 bg-yellow-500/10",
+                      action: () => setShowMarathonModal(true),
+                    },
+                    {
+                      label: "Spotter Image Bank",
+                      sub: "Active Recall Mask",
+                      icon: Eye,
+                      color: "text-purple-400 border-purple-500/30 bg-purple-500/10",
+                      action: () => setShowSpotterModal(true),
+                    },
+                    {
+                      label: "Two-Step Cases",
+                      sub: "Clinical Vignettes",
+                      icon: Stethoscope,
+                      color: "text-teal-400 border-teal-500/30 bg-teal-500/10",
+                      action: () => setShowVignetteModal(true),
+                    },
+                    {
+                      label: "Cross-PDF Search",
+                      sub: "32 Workbooks",
+                      icon: Search,
+                      color: "text-blue-400 border-blue-500/30 bg-blue-500/10",
+                      action: () => setShowPdfSearchModal(true),
+                    },
+                  ].map((drill) => {
+                    const DrillIcon = drill.icon;
+                    return (
+                      <button
+                        key={drill.label}
+                        type="button"
+                        onClick={drill.action}
+                        className={`flex flex-col items-center justify-center p-3.5 rounded-2xl border text-center transition hover:scale-[1.02] shadow-xs ${drill.color}`}
+                      >
+                        <DrillIcon size={18} className="mb-1.5" />
+                        <span className="text-xs font-bold text-ink leading-tight">{drill.label}</span>
+                        <span className="text-[10px] text-ink-muted mt-0.5">{drill.sub}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* VIEW: DUAL SPLIT WORKSTATION */}
+          {activeDestination === "workstation" && (
+            <div className="flex-1 flex flex-col animate-in fade-in duration-150">
+              {workstationSession ? (
+                <BTRSplitWorkstation
+                  open={true}
+                  embedded={true}
+                  onClose={() => setActiveDestination("today")}
+                  video={workstationSession.video}
+                  subject={workstationSession.subject}
+                  unannotatedPdf={workstationSession.unannotatedPdf}
+                  annotatedPdf={workstationSession.annotatedPdf}
+                />
+              ) : (
+                <div className="flex flex-col items-center justify-center p-12 text-center rounded-3xl border border-edge-soft bg-surface/40 min-h-[500px]">
+                  <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-accent/15 text-accent border border-accent/25 mb-4">
+                    <Layers size={32} />
+                  </div>
+                  <h3 className="text-lg font-bold text-ink">Dual Split Workstation Ready</h3>
+                  <p className="text-xs text-ink-muted max-w-md mt-1 mb-6">
+                    Synchronized local video lectures with companion unannotated workbook viewing, A-B looping, and audio walk mode. Select any lecture from the 19-Subject Studio to launch.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => setActiveDestination("subjects")}
+                    className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-accent text-white text-xs font-bold hover:brightness-110 shadow-sm transition"
+                  >
+                    <BookOpen size={15} />
+                    <span>Browse 19-Subject Studio</span>
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* VIEW: 19-SUBJECT STUDIO & LOCAL MEDIA */}
+          {activeDestination === "subjects" && (
+            <div className="flex flex-col gap-6 animate-in fade-in duration-150">
+              {/* Controls bar: Sub-tab switcher, search and filters */}
+              <div className="flex flex-wrap items-center justify-between gap-3 border-b border-edge-soft pb-4">
+                <div className="flex items-center gap-1.5 rounded-2xl bg-surface/80 p-1.5 border border-edge-soft">
+                  <button
+                    type="button"
+                    onClick={() => setSubjectsSubTab("tracker")}
+                    className={`flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-bold transition ${
+                      subjectsSubTab === "tracker"
+                        ? "bg-accent text-white shadow-sm"
+                        : "text-ink-muted hover:text-ink hover:bg-elevated"
+                    }`}
+                  >
+                    <Target size={14} />
+                    <span>19-Subject Master Tracker</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setSubjectsSubTab("files")}
+                    className={`flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-bold transition ${
+                      subjectsSubTab === "files"
+                        ? "bg-accent text-white shadow-sm"
+                        : "text-ink-muted hover:text-ink hover:bg-elevated"
+                    }`}
+                  >
+                    <FolderCheck size={14} />
+                    <span>My Local Videos & PDFs ({libraryState.totalVideosFound + libraryState.totalPdfsFound})</span>
+                  </button>
+                </div>
+
+                <div className="flex items-center gap-2.5">
+                  <div className="relative">
+                    <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-muted" />
+                    <input
+                      type="text"
+                      placeholder="Search topics, drugs, bodies..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="h-9 w-44 md:w-56 rounded-xl bg-surface border border-edge-soft pl-9 pr-3 text-xs text-ink placeholder:text-ink-muted focus:border-accent focus:outline-none transition"
+                    />
+                  </div>
+
+                  <div className="hidden lg:flex items-center gap-1 rounded-xl bg-surface border border-edge-soft p-1 text-xs">
+                    {(["ALL", "Pre-Clinical", "Para-Clinical", "Short Clinical", "Long Clinical"] as const).map(
+                      (cat) => (
+                        <button
+                          key={cat}
+                          type="button"
+                          onClick={() => setCategoryFilter(cat)}
+                          className={`rounded-lg px-2.5 py-1 text-[11px] font-semibold transition ${
+                            categoryFilter === cat
+                              ? "bg-elevated text-ink shadow-xs border border-edge"
+                              : "text-ink-muted hover:text-ink"
+                          }`}
+                        >
+                          {cat === "ALL" ? "All Blocks" : cat.replace(" Clinical", "")}
+                        </button>
+                      )
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {subjectsSubTab === "tracker" ? (
+                <div className="flex flex-col gap-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {filteredSubjects.map((subj) => {
               const currentStatus: BTRProgressStatus = progressMap[subj.id]?.status || "unread";
               const media = libraryState.mappings[subj.id];
               const videosCount = media?.videos.length || 0;
@@ -750,28 +1037,25 @@ export function CoreBTRWarRoom({ onStartQBankDrill, onOpenNotes }: CoreBTRWarRoo
             })}
           </div>
         </div>
-      )}
+      ) : (
+                <div className="flex flex-col gap-6">
+                  <div className="rounded-2xl bg-surface/70 border border-edge-soft p-5 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div>
+                      <h3 className="text-base font-bold text-ink">BTR Local Storage & Course Mapping</h3>
+                      <p className="text-xs text-ink-muted">
+                        Argus automatically indexes your BTR directory into the 19 NEET-PG subjects and enables zero-latency libmpv playback with synced PDF workbooks.
+                      </p>
+                    </div>
 
-      {/* VIEW 2: BTR MEDIA & PDF LIBRARY */}
-      {activeView === "medialibrary" && (
-        <div className="flex flex-col gap-6">
-          <div className="rounded-2xl bg-surface/70 border border-edge-soft p-5 flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <div>
-              <h3 className="text-base font-bold text-ink">BTR Local Storage & Course Mapping</h3>
-              <p className="text-xs text-ink-muted">
-                Argus automatically indexes your BTR directory into the 19 NEET-PG subjects and enables zero-latency libmpv playback with synced PDF workbooks.
-              </p>
-            </div>
-
-            <button
-              type="button"
-              onClick={() => folderInputRef.current?.click()}
-              className="flex items-center gap-2 rounded-xl bg-accent px-4 py-2 text-xs font-bold text-white shadow-sm hover:brightness-110 transition shrink-0"
-            >
-              <FolderPlus size={15} />
-              <span>{libraryState.totalVideosFound > 0 ? "Re-Scan BTR Directory" : "Link BTR Folder"}</span>
-            </button>
-          </div>
+                    <button
+                      type="button"
+                      onClick={() => folderInputRef.current?.click()}
+                      className="flex items-center gap-2 rounded-xl bg-accent px-4 py-2 text-xs font-bold text-white shadow-sm hover:brightness-110 transition shrink-0"
+                    >
+                      <FolderPlus size={15} />
+                      <span>{libraryState.totalVideosFound > 0 ? "Re-Scan BTR Directory" : "Link BTR Folder"}</span>
+                    </button>
+                  </div>
 
           {/* Master BTR Workbooks & QBanks */}
           {libraryState.masterPdfs && libraryState.masterPdfs.length > 0 && (
@@ -1080,9 +1364,11 @@ export function CoreBTRWarRoom({ onStartQBankDrill, onOpenNotes }: CoreBTRWarRoo
           </div>
         </div>
       )}
+    </div>
+  )}
 
-      {/* VIEW 3: SUPER-VOLATILES VAULT (ACTIVE RECALL BLUR MASK) */}
-      {activeView === "volatiles" && (
+  {/* VIEW: SUPER-VOLATILES VAULT (ACTIVE RECALL BLUR MASK) */}
+  {activeDestination === "volatiles" && (
         <div className="flex flex-col gap-5">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 rounded-2xl bg-surface/50 border border-edge-soft p-4">
             <div className="flex items-center gap-2">
@@ -1527,17 +1813,20 @@ export function CoreBTRWarRoom({ onStartQBankDrill, onOpenNotes }: CoreBTRWarRoo
         </div>
       )}
 
-      {/* Advanced BTR Modals: Split-Screen Workstation, Anki Exporter, and GT Error Vault */}
-      {workstationSession && (
-        <BTRSplitWorkstation
-          open={true}
-          onClose={() => setWorkstationSession(null)}
-          video={workstationSession.video}
-          subject={workstationSession.subject}
-          unannotatedPdf={workstationSession.unannotatedPdf}
-          annotatedPdf={workstationSession.annotatedPdf}
-        />
-      )}
+        </main>
+
+        {/* Persistent Bottom Mini-Player Dock */}
+        {workstationSession && activeDestination !== "workstation" && (
+          <BTRMiniPlayerDock
+            session={workstationSession}
+            isPlaying={true}
+            onExpandWorkstation={() => setActiveDestination("workstation")}
+            onCloseSession={() => setWorkstationSession(null)}
+          />
+        )}
+      </div>
+
+      {/* Advanced BTR Modals: Anki Exporter, and GT Error Vault */}
       <BTRAnkiExportModal open={showAnkiModal} onClose={() => setShowAnkiModal(false)} />
       <BTRErrorLogModal open={showErrorModal} onClose={() => setShowErrorModal(false)} />
 

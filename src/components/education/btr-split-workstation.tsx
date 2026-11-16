@@ -23,6 +23,7 @@ interface BTRSplitWorkstationProps {
   subject: BTRSubject;
   unannotatedPdf?: BTRLocalMediaFile;
   annotatedPdf?: BTRLocalMediaFile;
+  embedded?: boolean;
 }
 
 export function BTRSplitWorkstation({
@@ -32,6 +33,7 @@ export function BTRSplitWorkstation({
   subject,
   unannotatedPdf,
   annotatedPdf,
+  embedded = false,
 }: BTRSplitWorkstationProps) {
   const videoRef = useRef<HTMLVideoElement | null>(null);
 
@@ -117,7 +119,13 @@ export function BTRSplitWorkstation({
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-[250] flex flex-col bg-canvas text-ink animate-in fade-in duration-150">
+    <div
+      className={
+        embedded
+          ? "h-[calc(100vh-140px)] min-h-[640px] w-full flex flex-col rounded-3xl overflow-hidden border border-edge bg-canvas shadow-xl text-ink"
+          : "fixed inset-0 z-[250] flex flex-col bg-canvas text-ink animate-in fade-in duration-150"
+      }
+    >
       {/* 1. Header Navigation Bar */}
       <header className="flex h-14 items-center justify-between border-b border-edge px-4 sm:px-6 bg-surface/90 backdrop-blur-md">
         <div className="flex items-center gap-3">
