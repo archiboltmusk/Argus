@@ -281,7 +281,6 @@ jobs:
         with:
           tag_name: ${{ steps.rtag.outputs.tag }}
           name: Argus ${{ steps.rtag.outputs.tag }}
-          target_commitish: ${{ github.sha }}
           prerelease: false
           draft: true
           make_latest: false
