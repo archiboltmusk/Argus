@@ -3,7 +3,7 @@
 import assert from "node:assert/strict";
 import { createRequire } from "node:module";
 import { execFileSync } from "node:child_process";
-import { rmSync, writeFileSync } from "node:fs";
+import { readFileSync, rmSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 
 const require = createRequire(`${process.env.PLAYWRIGHT_DIR ?? process.cwd()}/`);
@@ -41,9 +41,38 @@ try {
   });
   const context = await browser.newContext();
   const page = await context.newPage();
-  await page.route("**/argus-acceptance-fixture.webm", (route) =>
-    route.fulfill({ path: fixture, contentType: "video/webm" }),
-  );
+  const fixtureBytes = readFileSync(fixture);
+  await page.route("**/argus-acceptance-fixture.webm", async (route) => {
+    // Chromium seeks with byte ranges. A 200/full-file response to every range
+    // can reset a paused seek to zero instead of decoding the requested frame.
+    const range = route.request().headers().range;
+    const match = range && /^bytes=(\d+)-(\d*)$/.exec(range);
+    const headers = { "Accept-Ranges": "bytes", "Content-Type": "video/webm" };
+    if (!range) {
+      await route.fulfill({ status: 200, headers, body: fixtureBytes });
+      return;
+    }
+    const start = match ? Number(match[1]) : -1;
+    const end = match?.[2]
+      ? Math.min(Number(match[2]), fixtureBytes.length - 1)
+      : fixtureBytes.length - 1;
+    if (start < 0 || start >= fixtureBytes.length || end < start) {
+      await route.fulfill({
+        status: 416,
+        headers: { ...headers, "Content-Range": `bytes */${fixtureBytes.length}` },
+      });
+      return;
+    }
+    await route.fulfill({
+      status: 206,
+      headers: {
+        ...headers,
+        "Content-Range": `bytes ${start}-${end}/${fixtureBytes.length}`,
+        "Content-Length": String(end - start + 1),
+      },
+      body: fixtureBytes.subarray(start, end + 1),
+    });
+  });
   page.on("pageerror", (error) => errors.push(error.message));
   // Isolated fixture page, real application modules; never mount a test hook in the product.
   await page.route("**/__argus_acceptance", (route) =>
