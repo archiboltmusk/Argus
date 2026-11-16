@@ -19,7 +19,9 @@ import {
   Sparkles,
   Trash2,
   X,
+  Radio,
 } from "lucide-react";
+import { TorrentBookModal } from "@/components/ebook/torrent-book-modal";
 import "./ebook-sources-panel.css";
 import { createPortal } from "react-dom";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
@@ -647,6 +649,48 @@ function AnnasArchiveQuickAdd() {
         </span>
       </button>
     </div>
+  );
+}
+
+function TorrentBooksQuickAction() {
+  const t = useT();
+  const [modalOpen, setModalOpen] = useState(false);
+  return (
+    <>
+      <div className={`group ${CARD}`}>
+        <button
+          type="button"
+          onClick={() => setModalOpen(true)}
+          className="ebook-source-add-row flex w-full items-center gap-4 px-4 py-4 text-start"
+        >
+          <span className="ebook-source-icon">
+            <Radio size={20} />
+          </span>
+          <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+            <span className="text-[16px] font-semibold text-ink">
+              {t("Read Books from Torrents & Magnets")}
+            </span>
+            <span className="truncate text-[13px] text-ink-muted">
+              {t("Stream EPUB, PDF, and book collections from BitTorrent swarms")}
+            </span>
+          </span>
+          <span className="grid h-9 w-9 shrink-0 place-items-center text-ink-muted">
+            <BookOpen size={18} />
+          </span>
+        </button>
+      </div>
+      <TorrentBookModal
+        open={modalOpen}
+        onClose={() => setModalOpen(false)}
+        onOpenBook={(ebook, chapter) => {
+          window.dispatchEvent(
+            new CustomEvent("argus:open-ebook", {
+              detail: { ebook, chapter },
+            }),
+          );
+        }}
+      />
+    </>
   );
 }
 
@@ -1314,6 +1358,7 @@ export function EBookSourcesView({ onBack }: { onBack: () => void }) {
                 <StandardEbooksQuickAdd />
                 <IndicLibraryQuickAdd />
                 <AnnasArchiveQuickAdd />
+                <TorrentBooksQuickAction />
                 <LocalFolder />
                 <OpdsCatalogCard />
                 <CalibreMeshDiscovery />
