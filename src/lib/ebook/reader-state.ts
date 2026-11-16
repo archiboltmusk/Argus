@@ -14,7 +14,7 @@ export type EBookReaderPrefs = {
   fontSize: number;
   lineHeight: number;
   width: number;
-  background: "dark" | "dim" | "light";
+  background: "dark" | "dim" | "light" | "eink" | "amber";
   brightness: number;
   focusMode: boolean;
   mouseLineTrack: boolean;
@@ -22,6 +22,7 @@ export type EBookReaderPrefs = {
   font: "literary" | "arabic" | "classic";
   customFontId?: string;
   narrationVoice: string;
+  bionicReading?: boolean;
 };
 
 export type EBookBookmark = {
@@ -80,6 +81,7 @@ const DEFAULTS: EBookReaderPrefs = {
   lineTrackColor: "#ff9f4d",
   font: "literary",
   narrationVoice: "en-US-AvaNeural",
+  bionicReading: false,
 };
 
 const safe = (value: string) => encodeURIComponent(value);
@@ -98,6 +100,11 @@ export function loadEBookReaderPrefs(): EBookReaderPrefs {
     if (["alloy", "nova", "shimmer", "onyx", "echo", "fable"].includes(value.narrationVoice)) {
       value.narrationVoice = DEFAULTS.narrationVoice;
     }
+    const validBackgrounds = ["dark", "dim", "light", "eink", "amber"];
+    if (!validBackgrounds.includes(value.background)) {
+      value.background = DEFAULTS.background;
+    }
+    value.bionicReading = Boolean(value.bionicReading ?? DEFAULTS.bionicReading);
     return value;
   } catch {
     return DEFAULTS;

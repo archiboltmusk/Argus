@@ -8,6 +8,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Copy,
+  Download,
   Gauge,
   Headphones,
   Highlighter,
@@ -62,6 +63,9 @@ import {
   synthesizeNarration,
   type EdgeNarrationVoice,
 } from "@/lib/ebook/narration";
+import { renderBionicText } from "@/lib/ebook/bionic-reading";
+import { exportAnnotationsToMarkdown } from "@/lib/ebook/offline-export";
+import { subscribeTVRemoteActions } from "@/lib/tv/tv-remote-gamepad-engine";
 
 type Props = {
   profile: string;
@@ -109,6 +113,8 @@ const paper = {
   dark: { desk: "#090a0c", page: "#17181b", ink: "#e9e3d8", muted: "#8f8b84" },
   dim: { desk: "#17130f", page: "#2d261e", ink: "#eadbc5", muted: "#aa9a86" },
   light: { desk: "#c8c0b3", page: "#f4eddf", ink: "#29251f", muted: "#776f64" },
+  eink: { desk: "#e5e5e5", page: "#ffffff", ink: "#111111", muted: "#4b5563" },
+  amber: { desk: "#080705", page: "#120f0a", ink: "#e8a95c", muted: "#9a703d" },
 };
 
 const inks = [
@@ -710,7 +716,7 @@ export function ArgusReader({
       textIdentity,
     ],
   );
-  const colors = paper[prefs.background];
+  const colors = paper[prefs.background] ?? paper.dark;
   const effectiveDirection =
     prefs.direction === "auto" ? textDirection(readerText, direction) : prefs.direction;
 
@@ -1515,6 +1521,240 @@ export function ArgusReader({
     }
   };
 
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (
+        event.target instanceof Element &&
+        event.target.closest("input,textarea,[contenteditable]:not([contenteditable='false'])")
+      ) {
+        return;
+      }
+
+      if (event.key === "Escape") {
+        if (panel) {
+          setPanel(null);
+        } else if (chaptersOpen) {
+          setChaptersOpen(false);
+        } else if (volumeMenuOpen) {
+          setVolumeMenuOpen(false);
+        } else if (editing) {
+          setEditing(null);
+        } else {
+          stopSpeech();
+          onClose();
+        }
+        return;
+      }
+
+      if (event.key === " " || event.key === "PageDown" || event.key === "j" || event.key === "J") {
+        event.preventDefault();
+        revealChrome();
+        if (prefs.mode === "book" && flipPages.urls.length) {
+          bookApi.current?.next();
+        } else {
+          goTo(Math.min(paragraphs.length - 1, current + 3));
+        }
+      } else if (event.key === "PageUp" || event.key === "k" || event.key === "K") {
+        event.preventDefault();
+        revealChrome();
+        if (prefs.mode === "book" && flipPages.urls.length) {
+          bookApi.current?.prev();
+        } else {
+          goTo(Math.max(0, current - 3));
+        }
+      } else if (event.key === "ArrowDown") {
+        event.preventDefault();
+        revealChrome();
+        goTo(Math.min(paragraphs.length - 1, current + 1));
+      } else if (event.key === "ArrowUp") {
+        event.preventDefault();
+        revealChrome();
+        goTo(Math.max(0, current - 1));
+      } else if (event.key === "ArrowRight") {
+        if (prefs.mode === "book" && flipPages.urls.length) {
+          event.preventDefault();
+          revealChrome();
+          if (effectiveDirection === "rtl") {
+            bookApi.current?.prev();
+          } else {
+            bookApi.current?.next();
+          }
+        }
+      } else if (event.key === "ArrowLeft") {
+        if (prefs.mode === "book" && flipPages.urls.length) {
+          event.preventDefault();
+          revealChrome();
+          if (effectiveDirection === "rtl") {
+            bookApi.current?.next();
+          } else {
+            bookApi.current?.prev();
+          }
+        }
+      } else if (event.key === "]" && nextChapter) {
+        event.preventDefault();
+        selectChapter(nextChapter);
+      } else if (event.key === "[" && previousChapter) {
+        event.preventDefault();
+        selectChapter(previousChapter);
+      }
+    };
+
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [
+    chaptersOpen,
+    current,
+    editing,
+    effectiveDirection,
+    flipPages.urls.length,
+    goTo,
+    nextChapter,
+    onClose,
+    panel,
+    paragraphs.length,
+    prefs.mode,
+    previousChapter,
+    revealChrome,
+    selectChapter,
+    stopSpeech,
+    volumeMenuOpen,
+  ]);
+
+  useEffect(() => {
+    return subscribeTVRemoteActions((action) => {
+      revealChrome();
+      switch (action.type) {
+        case "NAV_DOWN":
+          goTo(Math.min(paragraphs.length - 1, current + 1));
+          break;
+        case "NAV_UP":
+          goTo(Math.max(0, current - 1));
+          break;
+        case "NAV_RIGHT":
+        case "CHAPTER_NEXT":
+        case "VARIABLE_FORWARD":
+          if (prefs.mode === "book" && flipPages.urls.length) {
+            bookApi.current?.next();
+          } else if (current >= paragraphs.length - 1 && nextChapter) {
+            selectChapter(nextChapter);
+          } else {
+            goTo(Math.min(paragraphs.length - 1, current + 4));
+          }
+          break;
+        case "NAV_LEFT":
+        case "CHAPTER_PREV":
+        case "VARIABLE_REWIND":
+          if (prefs.mode === "book" && flipPages.urls.length) {
+            bookApi.current?.prev();
+          } else if (current <= 0 && previousChapter) {
+            selectChapter(previousChapter);
+          } else {
+            goTo(Math.max(0, current - 4));
+          }
+          break;
+        case "ACTION_BACK":
+          stopSpeech();
+          onClose();
+          break;
+        case "PLAY_PAUSE":
+          if (narrationLoading) stopSpeech();
+          else if (speaking) toggleNarrationPause();
+          else void speakFrom();
+          break;
+      }
+    });
+  }, [
+    current,
+    flipPages.urls.length,
+    goTo,
+    narrationLoading,
+    nextChapter,
+    onClose,
+    paragraphs.length,
+    prefs.mode,
+    previousChapter,
+    revealChrome,
+    selectChapter,
+    speakFrom,
+    speaking,
+    stopSpeech,
+    toggleNarrationPause,
+  ]);
+
+  useEffect(() => {
+    let animId = 0;
+    let lastPoll = 0;
+
+    const poll = (time: number) => {
+      if (time - lastPoll > 140) {
+        const gamepads = typeof navigator.getGamepads === "function" ? navigator.getGamepads() : [];
+        for (const pad of gamepads) {
+          if (!pad) continue;
+          const dDown = pad.buttons[13]?.pressed || pad.axes[1] > 0.55;
+          const dUp = pad.buttons[12]?.pressed || pad.axes[1] < -0.55;
+          const dRight = pad.buttons[15]?.pressed || pad.buttons[5]?.pressed || pad.axes[0] > 0.55;
+          const dLeft = pad.buttons[14]?.pressed || pad.buttons[4]?.pressed || pad.axes[0] < -0.55;
+          const bBtn = pad.buttons[1]?.pressed;
+
+          if (dDown) {
+            lastPoll = time;
+            revealChrome();
+            goTo(Math.min(paragraphs.length - 1, current + 1));
+            break;
+          } else if (dUp) {
+            lastPoll = time;
+            revealChrome();
+            goTo(Math.max(0, current - 1));
+            break;
+          } else if (dRight) {
+            lastPoll = time;
+            revealChrome();
+            if (prefs.mode === "book" && flipPages.urls.length) {
+              bookApi.current?.next();
+            } else if (current >= paragraphs.length - 1 && nextChapter) {
+              selectChapter(nextChapter);
+            } else {
+              goTo(Math.min(paragraphs.length - 1, current + 4));
+            }
+            break;
+          } else if (dLeft) {
+            lastPoll = time;
+            revealChrome();
+            if (prefs.mode === "book" && flipPages.urls.length) {
+              bookApi.current?.prev();
+            } else if (current <= 0 && previousChapter) {
+              selectChapter(previousChapter);
+            } else {
+              goTo(Math.max(0, current - 4));
+            }
+            break;
+          } else if (bBtn) {
+            lastPoll = time;
+            stopSpeech();
+            onClose();
+            break;
+          }
+        }
+      }
+      animId = requestAnimationFrame(poll);
+    };
+
+    animId = requestAnimationFrame(poll);
+    return () => cancelAnimationFrame(animId);
+  }, [
+    current,
+    flipPages.urls.length,
+    goTo,
+    nextChapter,
+    onClose,
+    paragraphs.length,
+    prefs.mode,
+    previousChapter,
+    revealChrome,
+    selectChapter,
+    stopSpeech,
+  ]);
+
   const addBookmark = (index = current) => {
     setBookmarks(
       addEBookBookmark(profile, {
@@ -1660,6 +1900,10 @@ export function ArgusReader({
     }, 1500);
   };
 
+  const renderContentChunk = (chunk: string) => {
+    return prefs.bionicReading ? renderBionicText(chunk) : chunk;
+  };
+
   const renderText = (text: string, line: number) => {
     const ranges = annotations
       .flatMap((annotation) => {
@@ -1678,13 +1922,13 @@ export function ArgusReader({
         return [...direct, ...found];
       })
       .sort((a, b) => a.start - b.start || b.end - a.end);
-    if (!ranges.length) return text;
+    if (!ranges.length) return renderContentChunk(text);
     const output: React.ReactNode[] = [];
     let cursor = 0;
     ranges.forEach(({ start: rawStart, end: rawEnd, annotation }) => {
       const start = Math.max(cursor, Math.min(text.length, rawStart));
       const end = Math.max(start, Math.min(text.length, rawEnd));
-      if (start > cursor) output.push(text.slice(cursor, start));
+      if (start > cursor) output.push(renderContentChunk(text.slice(cursor, start)));
       if (end > start)
         output.push(
           <mark
@@ -1722,12 +1966,12 @@ export function ArgusReader({
               setEditing(annotation);
             }}
           >
-            {text.slice(start, end)}
+            {renderContentChunk(text.slice(start, end))}
           </mark>,
         );
       cursor = end;
     });
-    if (cursor < text.length) output.push(text.slice(cursor));
+    if (cursor < text.length) output.push(renderContentChunk(text.slice(cursor)));
     return output;
   };
 
@@ -2433,6 +2677,26 @@ export function ArgusReader({
                     {t("Select a passage to add a highlight, note, or reference.")}
                   </p>
                 )}
+                {annotations.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const md = exportAnnotationsToMarkdown(bookTitle, annotations, bookmarks);
+                      const blob = new Blob([md], { type: "text/markdown;charset=utf-8" });
+                      const url = URL.createObjectURL(blob);
+                      const link = document.createElement("a");
+                      link.href = url;
+                      link.download = `${bookTitle.replace(/[^\w\s-]/g, "")}-notes.md`;
+                      link.click();
+                      URL.revokeObjectURL(url);
+                    }}
+                    className="mb-3 flex w-full items-center justify-center gap-2 rounded-xl border border-dashed py-2.5 text-xs font-medium transition hover:border-accent hover:text-accent"
+                    style={{ borderColor: `${colors.muted}40` }}
+                  >
+                    <Download size={15} />
+                    {t("Export notes to Markdown")}
+                  </button>
+                )}
                 {annotations.map((annotation) => {
                   const savedVolume = volumes.find((volume) =>
                     volume.chapters.some((item) => item.id === annotation.chapterId),
@@ -2904,24 +3168,34 @@ function Settings({
         )}
       </Setting>
       <Setting label={t("Paper")}>
-        <div className="grid grid-cols-3 gap-2">
+        <div className="grid grid-cols-5 gap-1.5">
           {(
             [
               { background: "dark", label: t("Dark") },
               { background: "dim", label: t("Dim") },
               { background: "light", label: t("Light") },
+              { background: "eink", label: t("E-Ink") },
+              { background: "amber", label: t("Amber") },
             ] as const
           ).map(({ background, label }) => (
             <button
               key={background}
               aria-label={label}
+              title={label}
               onClick={() => patch({ background })}
-              className={`grid h-12 place-items-center rounded-xl border capitalize ${prefs.background === background ? "border-accent text-accent" : ""}`}
+              className={`flex flex-col items-center justify-center gap-1 h-14 rounded-xl border text-[11px] capitalize ${prefs.background === background ? "border-accent text-accent" : ""}`}
               style={{
                 borderColor: prefs.background === background ? undefined : `${colors.muted}35`,
               }}
             >
-              {background === "light" ? <Sun size={18} /> : <Moon size={18} />}
+              {background === "light" ? (
+                <Sun size={16} />
+              ) : background === "eink" ? (
+                <BookOpen size={16} />
+              ) : (
+                <Moon size={16} />
+              )}
+              <span className="truncate max-w-full px-0.5">{label}</span>
             </button>
           ))}
         </div>
@@ -3090,6 +3364,20 @@ function Settings({
           type="checkbox"
           checked={prefs.focusMode}
           onChange={(event) => patch({ focusMode: event.target.checked })}
+          className="h-5 w-5 accent-[var(--color-accent)]"
+        />
+      </label>
+      <label className="flex items-center justify-between gap-4">
+        <div className="flex flex-col">
+          <span>{t("Bionic reading")}</span>
+          <span className="text-[11px] opacity-60">
+            {t("Fixation points for faster comprehension")}
+          </span>
+        </div>
+        <input
+          type="checkbox"
+          checked={Boolean(prefs.bionicReading)}
+          onChange={(event) => patch({ bionicReading: event.target.checked })}
           className="h-5 w-5 accent-[var(--color-accent)]"
         />
       </label>

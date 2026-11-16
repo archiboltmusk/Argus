@@ -35,7 +35,10 @@ export async function resolve(specifier, context, nextResolve) {
 
   // UiIcon consumes real SVG strings through Vite's ?raw import. Preserve that
   // asset boundary when exercising the same action renderer in Node tests.
-  if (sourcePath && specifier.endsWith(".svg?raw")) {
+  if (
+    sourcePath &&
+    (specifier.endsWith(".svg?raw") || specifier.endsWith(".md?raw") || specifier.endsWith(".md"))
+  ) {
     const rawPath = sourcePath.endsWith("?raw") ? sourcePath.slice(0, -4) : sourcePath;
     return { url: `${pathToFileURL(rawPath).href}?raw`, shortCircuit: true };
   }
@@ -57,8 +60,14 @@ export async function load(url, context, nextLoad) {
   if (url.endsWith(".css")) {
     return { format: "module", source: "export {};", shortCircuit: true };
   }
-  if (url.endsWith(".svg?raw")) {
-    const source = await readFile(fileURLToPath(new URL(url)), "utf8");
+  if (
+    url.endsWith(".svg?raw") ||
+    url.endsWith(".md?raw") ||
+    url.endsWith(".md") ||
+    url.includes(".md?")
+  ) {
+    const rawUrl = url.includes("?") ? url.slice(0, url.indexOf("?")) : url;
+    const source = await readFile(fileURLToPath(new URL(rawUrl)), "utf8");
     return {
       format: "module",
       source: `export default ${JSON.stringify(source)};`,

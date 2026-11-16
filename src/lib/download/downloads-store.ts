@@ -37,7 +37,7 @@ export type DownloadItem = {
   error: string | null;
   startedAt: number;
   kind?: "video" | "ebook";
-  format?: "epub" | "pdf";
+  format?: "epub" | "pdf" | "markdown";
   author?: string | null;
   publishedYear?: number | null;
   summary?: string | null;
@@ -68,7 +68,7 @@ export type ManagedDownloadArgs = {
   subtitle?: string | null;
   poster?: string | null;
   path: string;
-  format: "epub" | "pdf";
+  format: "epub" | "pdf" | "markdown";
   author?: string | null;
   publishedYear?: number | null;
   summary?: string | null;

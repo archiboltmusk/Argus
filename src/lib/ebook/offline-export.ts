@@ -11,8 +11,9 @@ import {
   type EBookChapter,
   type EBookChapterContent,
 } from "./providers";
+import type { EBookAnnotation, EBookBookmark } from "./reader-state";
 
-export type EBookExportFormat = "epub" | "pdf";
+export type EBookExportFormat = "epub" | "pdf" | "markdown";
 export type EBookExportProgress = {
   completed: number;
   total: number;
@@ -356,6 +357,104 @@ async function printPdf(
   }, 180);
 }
 
+export function makeMarkdownBook(
+  ebook: EBook,
+  chapters: EBookChapter[],
+  contents: EBookChapterContent[],
+): string {
+  const lines: string[] = [];
+  lines.push("---");
+  lines.push(`title: "${ebook.title.replace(/"/g, '\\"')}"`);
+  if (ebook.authors.length) {
+    lines.push(`authors: [${ebook.authors.map((a) => `"${a.replace(/"/g, '\\"')}"`).join(", ")}]`);
+  }
+  if (ebook.year) lines.push(`year: ${ebook.year}`);
+  lines.push(`exported: "${new Date().toISOString()}"`);
+  lines.push(`generator: "Argus EBook Reader"`);
+  lines.push("---");
+  lines.push("");
+  lines.push(`# ${ebook.title}`);
+  if (ebook.authors.length) {
+    lines.push(`*By ${ebook.authors.join(", ")}*`);
+  }
+  lines.push("");
+
+  // Table of Contents
+  if (chapters.length > 1) {
+    lines.push("## Table of Contents");
+    chapters.forEach((chapter, index) => {
+      const heading = chapter.title || `Chapter ${index + 1}`;
+      lines.push(`- [${heading}](#chapter-${index + 1})`);
+    });
+    lines.push("");
+    lines.push("---");
+    lines.push("");
+  }
+
+  // Chapters
+  chapters.forEach((chapter, index) => {
+    const heading = chapter.title || `Chapter ${index + 1}`;
+    lines.push(`<a id="chapter-${index + 1}"></a>`);
+    lines.push(`## ${heading}`);
+    lines.push("");
+    const content = contents[index];
+    if (content?.text) {
+      lines.push(content.text.trim());
+      lines.push("");
+    }
+  });
+
+  return lines.join("\n");
+}
+
+export function exportAnnotationsToMarkdown(
+  bookTitle: string,
+  annotations: EBookAnnotation[],
+  bookmarks: EBookBookmark[] = [],
+): string {
+  const lines: string[] = [];
+  lines.push("---");
+  lines.push(`book: "${bookTitle.replace(/"/g, '\\"')}"`);
+  lines.push(`exported: "${new Date().toISOString()}"`);
+  lines.push("source: Argus Reader");
+  lines.push("tags: [argus, reading-notes, annotations]");
+  lines.push("---");
+  lines.push("");
+  lines.push(`# Notes & Highlights: ${bookTitle}`);
+  lines.push("");
+
+  if (annotations.length > 0) {
+    lines.push("## Highlights & Annotations");
+    lines.push("");
+    annotations.forEach((item) => {
+      const location = item.chapterLabel || item.chapterId || "Chapter";
+      lines.push(`> [!quote] ${location}`);
+      lines.push(`> ${item.text.replace(/\n+/g, " ").trim()}`);
+      if (item.body) {
+        lines.push(`>`);
+        lines.push(`> **Note**: ${item.body.trim()}`);
+      }
+      if (item.tags?.length) {
+        lines.push(`>`);
+        lines.push(`> ${item.tags.map((t) => `#${t.replace(/\s+/g, "_")}`).join(" ")}`);
+      }
+      lines.push("");
+    });
+  }
+
+  if (bookmarks.length > 0) {
+    lines.push("## Bookmarks");
+    lines.push("");
+    bookmarks.forEach((bm) => {
+      const title = bm.chapterTitle || bm.chapterLabel || "Bookmark";
+      lines.push(`- **${title}** (Line ${bm.line + 1}): "${bm.preview.replace(/\n+/g, " ").trim()}"`);
+    });
+    lines.push("");
+  }
+
+  return lines.join("\n");
+}
+
 export async function exportEBookForOffline(
   ebook: EBook,
   format: EBookExportFormat,
@@ -384,6 +483,52 @@ export async function exportEBookForOffline(
       phase: "complete",
     });
     return true;
+  }
+  if (format === "markdown") {
+    onProgress?.({
+      completed: chapters.length,
+      total: chapters.length,
+      percent: 90,
+      label: t("Building Markdown"),
+      downloadedBytes: contents.reduce(
+        (total, content) => total + new TextEncoder().encode(JSON.stringify(content)).byteLength,
+        0,
+      ),
+      estimatedTotalBytes: 0,
+      bytesPerSecond: 0,
+      etaSeconds: null,
+      phase: "packaging",
+      indeterminate: true,
+    });
+    const markdown = makeMarkdownBook(ebook, chapters, contents);
+    const bytes = new TextEncoder().encode(markdown);
+    throwIfAborted(signal);
+    onProgress?.({
+      completed: chapters.length,
+      total: chapters.length,
+      percent: 96,
+      label: t("Saving Markdown"),
+      downloadedBytes: bytes.byteLength,
+      estimatedTotalBytes: bytes.byteLength,
+      bytesPerSecond: 0,
+      etaSeconds: 0,
+      phase: "saving",
+    });
+    const saved = await saveBytes(bytes, `${fileName(ebook.title)}.md`, destinationPath);
+    if (saved) {
+      onProgress?.({
+        completed: chapters.length,
+        total: chapters.length,
+        percent: 100,
+        label: t("Markdown saved"),
+        downloadedBytes: bytes.byteLength,
+        estimatedTotalBytes: bytes.byteLength,
+        bytesPerSecond: 0,
+        etaSeconds: 0,
+        phase: "complete",
+      });
+    }
+    return saved;
   }
   onProgress?.({
     completed: chapters.length,
@@ -468,7 +613,8 @@ async function eBookExportPath(ebook: EBook, format: EBookExportFormat): Promise
     directory = `${directory}${directory.endsWith(separator) ? "" : separator}${fileName(ebook.title)}`;
     await mkdir(directory, { recursive: true });
   }
-  const name = `${fileName(ebook.title)}.${format}`;
+  const extension = format === "markdown" ? "md" : format;
+  const name = `${fileName(ebook.title)}.${extension}`;
   return uniqueExportPath(
     directory ? `${directory}${directory.endsWith(separator) ? "" : separator}${name}` : name,
   );
@@ -499,7 +645,7 @@ export async function enqueueEBookExport(ebook: EBook, format: EBookExportFormat
             etaSeconds: progress.etaSeconds,
             label: progress.label,
           }),
-        { signal, destinationPath: format === "epub" ? path : undefined },
+        { signal, destinationPath: format === "epub" || format === "markdown" ? path : undefined },
       );
       if (!saved) throw new Error(t("The eBook export was canceled."));
     },
