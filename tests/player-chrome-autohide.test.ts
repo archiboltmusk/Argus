@@ -38,4 +38,9 @@ test("player chrome ignores synthetic mousemove events without real coordinate d
 
   // Synthetic pointermove protection in HDR overlay stage
   assert.match(hdrOverlay, /dx < 2 && dy < 2/);
+
+  // Ensure root player main element does not bypass coordinate delta checking with raw onMouseMove/onMouseEnter
+  const playerView = read("src/views/player.tsx");
+  assert.doesNotMatch(playerView, /onMouseMove=\{wakeChrome\}/);
+  assert.doesNotMatch(playerView, /onMouseEnter=\{wakeChrome\}/);
 });

@@ -92,6 +92,7 @@ export function useChromeVisibility(params: {
         lastPointerPosRef.current = { x: e.clientX, y: e.clientY };
       }
       lastInputKeyboardRef.current = false;
+      wakeChrome();
     };
     const onKeyDown = () => {
       lastInputKeyboardRef.current = true;
@@ -135,6 +136,7 @@ export function useChromeVisibility(params: {
   useEffect(() => {
     const onLeave = (e: MouseEvent) => {
       if (e.relatedTarget) return;
+      lastPointerPosRef.current = { x: -1, y: -1 };
       if (!playing || drawMode) return;
       if (anyMenuOpenRef.current || getSeekScrubbing()) return;
       if (hideTimer.current) window.clearTimeout(hideTimer.current);
@@ -148,6 +150,7 @@ export function useChromeVisibility(params: {
 
   useEffect(() => {
     const onBlur = () => {
+      lastPointerPosRef.current = { x: -1, y: -1 };
       if (hideTimer.current) window.clearTimeout(hideTimer.current);
       setChromeVisible(false);
       setChromeHidden(true);

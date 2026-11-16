@@ -1784,8 +1784,6 @@ function NativePlayerView({ src }: { src: PlayerSrc }) {
         ...dockDrag.style,
         ...(src.pipDocked ? { visibility: "hidden", pointerEvents: "none" } : {}),
       }}
-      onMouseMove={wakeChrome}
-      onMouseEnter={wakeChrome}
     >
       {prefetchNextEpisode && prefetchAddonId && (
         <NextEpisodePrefetch
