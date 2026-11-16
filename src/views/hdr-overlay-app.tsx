@@ -178,7 +178,13 @@ function HdrOverlayChrome() {
 
   useEffect(() => {
     let last = 0;
-    const onMove = () => {
+    const lastPos = { x: -1, y: -1 };
+    const onMove = (e: PointerEvent) => {
+      const dx = Math.abs(e.clientX - lastPos.x);
+      const dy = Math.abs(e.clientY - lastPos.y);
+      if (dx < 2 && dy < 2 && lastPos.x !== -1) return;
+      lastPos.x = e.clientX;
+      lastPos.y = e.clientY;
       const now = performance.now();
       if (now - last < 200) return;
       last = now;

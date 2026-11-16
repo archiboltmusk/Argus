@@ -64,6 +64,7 @@ export function subscribePlaybackClock(cb: () => void): () => void {
 }
 
 let seekHovering = false;
+let seekScrubbing = false;
 const seekListeners = new Set<() => void>();
 
 export function setSeekHovering(v: boolean): void {
@@ -74,6 +75,16 @@ export function setSeekHovering(v: boolean): void {
 
 export function getSeekHovering(): boolean {
   return seekHovering;
+}
+
+export function setSeekScrubbing(v: boolean): void {
+  if (seekScrubbing === v) return;
+  seekScrubbing = v;
+  for (const l of seekListeners) l();
+}
+
+export function getSeekScrubbing(): boolean {
+  return seekScrubbing;
 }
 
 export function subscribeSeekHovering(cb: () => void): () => void {

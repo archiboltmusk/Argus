@@ -7,6 +7,7 @@ import {
   usePlaybackBufferedGated,
   usePlaybackDownloadedGated,
   setSeekHovering,
+  setSeekScrubbing,
 } from "@/lib/player/playback-clock";
 import { useTrickplayState } from "@/lib/trickplay";
 import { useSkipSegmentsView } from "@/lib/skip-intro/segment-store";
@@ -90,8 +91,24 @@ export function SeekBar({
 
   useEffect(() => {
     setSeekHovering(hover != null || scrub != null);
+    setSeekScrubbing(scrub != null);
   }, [hover, scrub]);
-  useEffect(() => () => setSeekHovering(false), []);
+  useEffect(
+    () => () => {
+      setSeekHovering(false);
+      setSeekScrubbing(false);
+    },
+    [],
+  );
+  useEffect(() => {
+    const handleClear = () => {
+      setHover(null);
+      setOverDot(false);
+      setSeekHovering(false);
+    };
+    window.addEventListener("argus:clear-player-hover", handleClear);
+    return () => window.removeEventListener("argus:clear-player-hover", handleClear);
+  }, []);
   useEffect(() => {
     positionRef.current = position;
   }, [position]);

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
-import { getSeekHovering, subscribeSeekHovering } from "@/lib/player/playback-clock";
+import { getSeekScrubbing, subscribeSeekHovering } from "@/lib/player/playback-clock";
 import { CHROME_HIDE_MS_PAUSED, CHROME_HIDE_MS_PLAYING, CHROME_HIDE_MS_RESUME } from "../player-utils";
 
 const UI_SCALE_ACTIVITY_EVENT = "argus:ui-scale-activity";
@@ -36,6 +36,7 @@ export function useChromeVisibility(params: {
   playingRef.current = playing;
   const drawModeRef = useRef(drawMode);
   drawModeRef.current = drawMode;
+  const lastPointerPosRef = useRef({ x: -1, y: -1 });
   const pipModeRef = useRef(pipMode);
   pipModeRef.current = pipMode;
 
@@ -43,7 +44,9 @@ export function useChromeVisibility(params: {
     setChromeVisible(true);
     setChromeHidden(pipModeRef.current);
     if (hideTimer.current) window.clearTimeout(hideTimer.current);
-    if (resizingUiRef.current || anyMenuOpenRef.current || getSeekHovering()) return;
+    // Only hold chrome open indefinitely if UI scale is actively resizing, a menu dropdown is open,
+    // or the user is actively holding down the pointer dragging the timeline scrubber (getSeekScrubbing).
+    if (resizingUiRef.current || anyMenuOpenRef.current || getSeekScrubbing()) return;
     let wait = playingRef.current && !drawModeRef.current ? CHROME_HIDE_MS_PLAYING : CHROME_HIDE_MS_PAUSED;
     if (resumeHideRef.current) {
       resumeHideRef.current = false;
@@ -52,6 +55,7 @@ export function useChromeVisibility(params: {
     hideTimer.current = window.setTimeout(() => {
       setChromeVisible(false);
       setChromeHidden(true);
+      window.dispatchEvent(new Event("argus:clear-player-hover"));
     }, wait);
   }, [setChromeHidden]);
   const wakeChromeRef = useRef(wakeChrome);
@@ -68,14 +72,25 @@ export function useChromeVisibility(params: {
       if (hideTimer.current) window.clearTimeout(hideTimer.current);
       setChromeVisible(false);
       setChromeHidden(true);
+      window.dispatchEvent(new Event("argus:clear-player-hover"));
     } else {
       wakeChrome();
     }
-    const onMove = () => {
+    const onMove = (e: Event) => {
+      if (e instanceof MouseEvent) {
+        const dx = Math.abs(e.clientX - lastPointerPosRef.current.x);
+        const dy = Math.abs(e.clientY - lastPointerPosRef.current.y);
+        // Ignore synthetic or sub-pixel mousemove events triggered by DOM/canvas updates without real motion
+        if (dx < 2 && dy < 2 && lastPointerPosRef.current.x !== -1) return;
+        lastPointerPosRef.current = { x: e.clientX, y: e.clientY };
+      }
       lastInputKeyboardRef.current = false;
       wakeChrome();
     };
-    const onPointerDown = () => {
+    const onPointerDown = (e: Event) => {
+      if (e instanceof MouseEvent) {
+        lastPointerPosRef.current = { x: e.clientX, y: e.clientY };
+      }
       lastInputKeyboardRef.current = false;
     };
     const onKeyDown = () => {
@@ -121,10 +136,11 @@ export function useChromeVisibility(params: {
     const onLeave = (e: MouseEvent) => {
       if (e.relatedTarget) return;
       if (!playing || drawMode) return;
-      if (anyMenuOpenRef.current || getSeekHovering()) return;
+      if (anyMenuOpenRef.current || getSeekScrubbing()) return;
       if (hideTimer.current) window.clearTimeout(hideTimer.current);
       setChromeVisible(false);
       setChromeHidden(true);
+      window.dispatchEvent(new Event("argus:clear-player-hover"));
     };
     document.addEventListener("mouseout", onLeave);
     return () => document.removeEventListener("mouseout", onLeave);
@@ -135,6 +151,7 @@ export function useChromeVisibility(params: {
       if (hideTimer.current) window.clearTimeout(hideTimer.current);
       setChromeVisible(false);
       setChromeHidden(true);
+      window.dispatchEvent(new Event("argus:clear-player-hover"));
     };
     window.addEventListener("blur", onBlur);
     return () => window.removeEventListener("blur", onBlur);
@@ -143,7 +160,7 @@ export function useChromeVisibility(params: {
   useEffect(
     () =>
       subscribeSeekHovering(() => {
-        if (getSeekHovering()) {
+        if (getSeekScrubbing()) {
           setChromeVisible(true);
           if (hideTimer.current) window.clearTimeout(hideTimer.current);
         } else {
