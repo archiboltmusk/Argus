@@ -19,6 +19,16 @@ export interface ScratchpadItem {
   createdAt: number;
 }
 
+export type DerivationStep = ScratchpadItem;
+
+export function KaTeXRenderer({ latex }: { latex: string }) {
+  return (
+    <div className="font-mono text-emerald-300 overflow-x-auto select-all">
+      $${latex}$$
+    </div>
+  );
+}
+
 const TEMPLATE_DERIVATIONS = [
   {
     title: "MIT 18.06 Column Picture",

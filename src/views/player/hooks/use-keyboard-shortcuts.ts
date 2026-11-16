@@ -46,6 +46,9 @@ export function useKeyboardShortcuts(params: {
   onScreenshot?: () => void;
   onCopyTimestamp?: () => void;
   onOpenStudyNotes?: () => void;
+  onToggleSlideCompanion?: () => void;
+  onToggleFlashcards?: () => void;
+  onCycleAudioEnhancer?: () => void;
   onGifRecord?: () => void;
   onClipRecord?: () => void;
   onToggleCrop?: () => void;
@@ -88,6 +91,9 @@ export function useKeyboardShortcuts(params: {
     onScreenshot,
     onCopyTimestamp,
     onOpenStudyNotes,
+    onToggleSlideCompanion,
+    onToggleFlashcards,
+    onCycleAudioEnhancer,
     onGifRecord,
     onClipRecord,
     onToggleCrop,
@@ -592,6 +598,24 @@ export function useKeyboardShortcuts(params: {
         onOpenStudyNotes();
         return;
       }
+      if (e.shiftKey && (e.key === "P" || e.key === "p") && !e.ctrlKey && !e.metaKey && !e.altKey && onToggleSlideCompanion) {
+        e.preventDefault();
+        if (e.repeat) return;
+        onToggleSlideCompanion();
+        return;
+      }
+      if (e.shiftKey && (e.key === "F" || e.key === "f") && !e.ctrlKey && !e.metaKey && !e.altKey && onToggleFlashcards) {
+        e.preventDefault();
+        if (e.repeat) return;
+        onToggleFlashcards();
+        return;
+      }
+      if (e.shiftKey && (e.key === "A" || e.key === "a") && !e.ctrlKey && !e.metaKey && !e.altKey && onCycleAudioEnhancer) {
+        e.preventDefault();
+        if (e.repeat) return;
+        onCycleAudioEnhancer();
+        return;
+      }
       if (match("playerGifRecord") && onGifRecord) {
         e.preventDefault();
         if (e.repeat) return;
@@ -697,6 +721,9 @@ export function useKeyboardShortcuts(params: {
     onScreenshot,
     onCopyTimestamp,
     onOpenStudyNotes,
+    onToggleSlideCompanion,
+    onToggleFlashcards,
+    onCycleAudioEnhancer,
     onGifRecord,
     onClipRecord,
     onToggleCrop,

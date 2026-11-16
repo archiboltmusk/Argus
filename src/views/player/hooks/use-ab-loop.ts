@@ -67,9 +67,9 @@ export function useAbLoop(params: {
       if (e.ctrlKey || e.metaKey || e.altKey) return;
       const target = e.target as HTMLElement | null;
       if (target && (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable)) return;
-      if (e.key === "I") { e.preventDefault(); setA(); return; }
-      if (e.key === "O") { e.preventDefault(); setB(); return; }
-      if (e.key === "L") { e.preventDefault(); clear(); return; }
+      if (e.key === "I" || (e.shiftKey && (e.key === "{" || e.key === "["))) { e.preventDefault(); setA(); return; }
+      if (e.key === "O" || (e.shiftKey && (e.key === "}" || e.key === "]"))) { e.preventDefault(); setB(); return; }
+      if (e.key === "\\" || (e.shiftKey && e.key === "C")) { e.preventDefault(); clear(); return; }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);

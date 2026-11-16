@@ -41,6 +41,9 @@ export function usePlayerHotkeys(params: {
   gif: ReturnType<typeof useGifRecorder>;
   clip: ReturnType<typeof useClipRecorder>;
   onOpenStudyNotes?: () => void;
+  onToggleSlideCompanion?: () => void;
+  onToggleFlashcards?: () => void;
+  onCycleAudioEnhancer?: () => void;
   videoFill: ReturnType<typeof useVideoFill>;
   onToggleAnime4k?: () => void;
   onAnime4kOn?: () => void;
@@ -81,6 +84,9 @@ export function usePlayerHotkeys(params: {
     gif,
     clip,
     onOpenStudyNotes,
+    onToggleSlideCompanion,
+    onToggleFlashcards,
+    onCycleAudioEnhancer,
     videoFill,
     onToggleAnime4k,
     onAnime4kOn,
@@ -125,6 +131,9 @@ export function usePlayerHotkeys(params: {
     onCopyTimestamp: () =>
       void navigator.clipboard?.writeText(timestampNote(noteTitle, snap.positionSec, noteLink?.(snap.positionSec, snap.rate))),
     onOpenStudyNotes,
+    onToggleSlideCompanion,
+    onToggleFlashcards,
+    onCycleAudioEnhancer,
     onScreenshot: quickToolsEnabled ? () => frameGrab.trigger() : undefined,
     onGifRecord: quickToolsEnabled ? () => gif.toggle() : undefined,
     onClipRecord: quickToolsEnabled ? () => clip.openChooser() : undefined,
