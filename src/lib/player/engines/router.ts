@@ -62,14 +62,28 @@ export async function resolveAdaptivePlayerBridge(
     platform === "windows-handheld" ||
     platform === "linux";
 
+  const hasHdrDisplay =
+    typeof window !== "undefined" &&
+    Boolean(
+      window.matchMedia?.("(dynamic-range: high)").matches ||
+        (window.screen && (window.screen.colorDepth ?? 24) >= 30),
+    );
+
+  const isIntelMac =
+    platform === "macos" &&
+    typeof navigator !== "undefined" &&
+    navigator.userAgent.includes("Intel");
+
   const tunedMpvOpts: PlayerEngineSelectionOptions = {
     ...mpvOpts,
     renderer: mpvOpts.renderer ?? "gpu-next",
-    macEdr: platform === "macos" ? (mpvOpts.macEdr ?? true) : mpvOpts.macEdr,
+    macEdr: platform === "macos" && hasHdrDisplay ? (mpvOpts.macEdr ?? true) : false,
     d3d11Flip:
       platform === "windows" || platform === "windows-handheld"
         ? (mpvOpts.d3d11Flip ?? true)
         : mpvOpts.d3d11Flip,
+    // Keep heavy neural scaling opt-in and conservative on Intel Mac & handhelds
+    anime4k: isIntelMac ? false : mpvOpts.anime4k,
   };
 
   let cachedProbe: Awaited<ReturnType<typeof probeMpv>> | null = null;

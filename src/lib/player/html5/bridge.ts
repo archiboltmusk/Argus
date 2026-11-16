@@ -784,10 +784,11 @@ export function createHtml5Bridge(): PlayerBridge {
       const isHls =
         bare.endsWith(".m3u8") || lowerUrl.includes("m3u8") || lowerUrl.includes("/playlist/");
       const isFlv = bare.endsWith(".flv");
+      const isDash = bare.endsWith(".mpd") || lowerUrl.includes(".mpd");
       const isTs =
         bare.endsWith(".ts") ||
         isFlv ||
-        (isLiveSrc && !isHls && !/\.(mp4|webm|mov|mkv|mpd)$/.test(bare));
+        (isLiveSrc && !isHls && !isDash && !/\.(mp4|webm|mov|mkv)$/.test(bare));
       const canNativeHls =
         typeof video.canPlayType === "function" &&
         Boolean(

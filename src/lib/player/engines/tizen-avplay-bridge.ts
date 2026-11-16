@@ -22,6 +22,8 @@ interface TizenAvPlayApi {
   play(): void;
   pause(): void;
   stop(): void;
+  suspend?(): void;
+  restore?(): void;
   seekTo(ms: number, onSuccess?: () => void, onError?: (err: unknown) => void): void;
   setDisplayRect(x: number, y: number, w: number, h: number): void;
   setDisplayMethod?(method: string): void;
@@ -60,6 +62,20 @@ function parseTizenExtraInfo(raw?: string): { language?: string; codec?: string 
     return { language: parsed.language, codec: parsed.fourCC || parsed.codec };
   } catch {
     return {};
+  }
+}
+
+export function getTizenPlatformInfo(): { version: string; year: number; isUhd: boolean } {
+  if (typeof window === "undefined") return { version: "5.5", year: 2020, isUhd: true };
+  const w = window as unknown as { tizen?: { systeminfo?: { getCapability?: (key: string) => unknown } } };
+  try {
+    const version = String(w.tizen?.systeminfo?.getCapability?.("http://tizen.org/feature/platform.version") ?? "5.5");
+    const major = parseFloat(version);
+    const year = major >= 7.0 ? 2023 : major >= 6.0 ? 2021 : major >= 5.5 ? 2020 : 2018;
+    const isUhd = Boolean(w.tizen?.systeminfo?.getCapability?.("http://tizen.org/feature/screen.size.uhd") ?? true);
+    return { version, year, isUhd };
+  } catch {
+    return { version: "5.5", year: 2020, isUhd: true };
   }
 }
 
@@ -143,6 +159,22 @@ export function createTizenAvplayBridge(): PlayerBridge {
         // ignore if state not ready
       }
     };
+
+    const handleVisibilityChange = () => {
+      if (typeof document !== "undefined" && document.hidden) {
+        try {
+          avplay.suspend?.();
+        } catch {}
+      } else {
+        try {
+          avplay.restore?.();
+          updateRect();
+        } catch {}
+      }
+    };
+    if (typeof document !== "undefined") {
+      document.addEventListener("visibilitychange", handleVisibilityChange);
+    }
 
     return {
       attach(el: HTMLElement) {
@@ -344,6 +376,9 @@ export function createTizenAvplayBridge(): PlayerBridge {
         };
       },
       destroy() {
+        if (typeof document !== "undefined") {
+          document.removeEventListener("visibilitychange", handleVisibilityChange);
+        }
         activeRevision += 1;
         listeners.clear();
         try {

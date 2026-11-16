@@ -45,6 +45,51 @@ export function buildAppleExternalPlayerUrl(
   }
 }
 
+export interface ApplePlayabilityResult {
+  directPlayable: boolean;
+  needsMpvKit: boolean;
+  recommendedAction: "direct" | "mpvkit" | "external";
+  container: string;
+}
+
+/**
+ * Probes container and codec playability on Apple platforms (iOS, iPadOS, tvOS, visionOS).
+ * Instead of assuming MKV plays directly in AVPlayer, checks canPlayType to determine
+ * whether AVPlayer can decode directly or needs MPVKit / external handoff.
+ */
+export function probeAppleMediaPlayability(url: string, mime?: string): ApplePlayabilityResult {
+  const cleanUrl = url.split("?")[0].toLowerCase();
+  const ext = cleanUrl.substring(cleanUrl.lastIndexOf(".") + 1);
+  const isHls = ext === "m3u8" || cleanUrl.includes(".m3u8");
+  const isMp4 = ext === "mp4" || ext === "m4v" || ext === "mov";
+  const isMkvOrAvi = ext === "mkv" || ext === "avi" || ext === "webm" || ext === "wmv";
+
+  if (typeof document !== "undefined") {
+    const v = document.createElement("video");
+    if (isHls && (v.canPlayType("application/vnd.apple.mpegurl") || v.canPlayType("application/x-mpegurl"))) {
+      return { directPlayable: true, needsMpvKit: false, recommendedAction: "direct", container: ext || "hls" };
+    }
+    if (mime && v.canPlayType(mime) === "probably") {
+      return { directPlayable: true, needsMpvKit: false, recommendedAction: "direct", container: ext || "mp4" };
+    }
+    if (isMp4 && v.canPlayType('video/mp4; codecs="avc1.42E01E, mp4a.40.2"') !== "") {
+      return { directPlayable: true, needsMpvKit: false, recommendedAction: "direct", container: ext || "mp4" };
+    }
+  }
+
+  if (isMkvOrAvi) {
+    return { directPlayable: false, needsMpvKit: true, recommendedAction: "mpvkit", container: ext || "mkv" };
+  }
+
+  const direct = isMp4 || isHls;
+  return {
+    directPlayable: direct,
+    needsMpvKit: !direct,
+    recommendedAction: direct ? "direct" : "mpvkit",
+    container: ext || "unknown",
+  };
+}
+
 /**
  * AVPlayer + MPVKit Bridge: Apple Ecosystem (iOS, iPadOS, tvOS, visionOS, macOS native)
  * Uses native MPVKit (WKWebView ArgusNativePlayer handler) when hosted in the native shell,
@@ -92,12 +137,14 @@ export function createAvPlayerBridge(options?: {
       fallback.detach();
     },
     async load(src: PlayerSource) {
+      const playability = probeAppleMediaPlayability(src.url);
       const nativeHandler = getAppleNativeMpvHandler();
-      if (nativeHandler && options?.notWebReady) {
+      if (nativeHandler && (options?.notWebReady || playability.needsMpvKit)) {
         nativeHandler.postMessage({
           action: "load",
-          platform: options.platform ?? "apple",
+          platform: options?.platform ?? "apple",
           source: src,
+          preferMpvKit: playability.needsMpvKit,
         });
       }
       await fallback.load(src);

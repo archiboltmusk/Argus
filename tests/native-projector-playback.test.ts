@@ -243,12 +243,39 @@ test("Cross-OS Native Playback: Tizen webapis.avplay and Apple external player U
       },
     };
 
-    const { createTizenAvplayBridge } = await import(
+    const { createTizenAvplayBridge, getTizenPlatformInfo } = await import(
       "../src/lib/player/engines/tizen-avplay-bridge.ts"
     );
-    const { buildAppleExternalPlayerUrl } = await import(
+    const { buildAppleExternalPlayerUrl, probeAppleMediaPlayability } = await import(
       "../src/lib/player/engines/avplayer-bridge.ts"
     );
+    const { buildWebOsMediaOptionString, getWebOsDeviceInfo } = await import(
+      "../src/lib/player/engines/webos-media-bridge.ts"
+    );
+
+    const tizenInfo = getTizenPlatformInfo();
+    assert.ok(tizenInfo.version);
+    assert.ok(tizenInfo.year >= 2018);
+
+    const webosMediaOption = buildWebOsMediaOptionString();
+    assert.ok(webosMediaOption.includes("htmlMediaOption"));
+    assert.ok(webosMediaOption.includes("useUMSMediaInfo"));
+    const webosDevInfo = getWebOsDeviceInfo();
+    assert.ok(webosDevInfo.version);
+
+    // Apple container and codec playability inspection
+    const mkvProbe = probeAppleMediaPlayability("https://cdn.example/video.mkv");
+    assert.equal(mkvProbe.directPlayable, false);
+    assert.equal(mkvProbe.needsMpvKit, true);
+    assert.equal(mkvProbe.recommendedAction, "mpvkit");
+
+    const hlsProbe = probeAppleMediaPlayability("https://cdn.example/live.m3u8");
+    assert.equal(hlsProbe.directPlayable, true);
+    assert.equal(hlsProbe.needsMpvKit, false);
+    assert.equal(hlsProbe.recommendedAction, "direct");
+
+    const mp4Probe = probeAppleMediaPlayability("https://cdn.example/movie.mp4");
+    assert.equal(mp4Probe.directPlayable, true);
 
     const tizen = createTizenAvplayBridge();
     await tizen.load({ url: "http://192.168.1.50/movie.mkv", startAtSec: 12 });
