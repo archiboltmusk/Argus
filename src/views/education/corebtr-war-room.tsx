@@ -20,11 +20,16 @@ import {
   FolderCheck,
   Layers,
   Download,
+  Radio,
 } from "lucide-react";
 import { useView } from "@/lib/view";
 import { BTRSplitWorkstation } from "@/components/education/btr-split-workstation";
 import { BTRAnkiExportModal } from "@/components/education/btr-anki-export-modal";
 import { BTRErrorLogModal } from "@/components/education/btr-error-log-modal";
+import { BTRBroadcastsModal } from "@/components/education/btr-broadcasts-panel";
+import { BTRTwentyMatrixModal } from "@/components/education/btr-twenty-matrix-modal";
+import { BTRSpotterModal } from "@/components/education/btr-spotter-modal";
+import { BTRMarathonModal } from "@/components/education/btr-marathon-modal";
 import {
   CORE_BTR_SUBJECTS,
   CORE_BTR_PHASES,
@@ -84,6 +89,10 @@ export function CoreBTRWarRoom({ onStartQBankDrill, onOpenNotes }: CoreBTRWarRoo
   } | null>(null);
   const [showAnkiModal, setShowAnkiModal] = useState(false);
   const [showErrorModal, setShowErrorModal] = useState(false);
+  const [showBroadcastsModal, setShowBroadcastsModal] = useState(false);
+  const [showTwentyModal, setShowTwentyModal] = useState(false);
+  const [showSpotterModal, setShowSpotterModal] = useState(false);
+  const [showMarathonModal, setShowMarathonModal] = useState(false);
 
   // GT Form state
   const [showAddGtModal, setShowAddGtModal] = useState(false);
@@ -360,7 +369,46 @@ export function CoreBTRWarRoom({ onStartQBankDrill, onOpenNotes }: CoreBTRWarRoo
         </div>
       </div>
 
-      {/* 2. Sub-Navigation Tabs */}
+      {/* 2. Elite Power Hub: Official Broadcasts, 20th Subject, Mega BTR, & Spotters */}
+      <div className="flex flex-wrap items-center gap-2.5">
+        <button
+          type="button"
+          onClick={() => setShowBroadcastsModal(true)}
+          className="flex items-center gap-2 rounded-2xl bg-red-600/15 border border-red-500/30 px-3.5 py-2 text-xs font-bold text-red-400 hover:bg-red-600/25 transition shadow-xs"
+        >
+          <Radio size={14} className="animate-pulse text-red-500" />
+          <span>Core Drops & Broadcasts (@corebtrbyzainabvora)</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setShowTwentyModal(true)}
+          className="flex items-center gap-2 rounded-2xl bg-amber-500/15 border border-amber-500/30 px-3.5 py-2 text-xs font-bold text-amber-300 hover:bg-amber-500/25 transition shadow-xs"
+        >
+          <Layers size={14} className="text-amber-400" />
+          <span>&quot;20th Subject&quot; Matrix (Biostats, DOC, BMW)</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setShowMarathonModal(true)}
+          className="flex items-center gap-2 rounded-2xl bg-emerald-600/15 border border-emerald-500/30 px-3.5 py-2 text-xs font-bold text-emerald-400 hover:bg-emerald-600/25 transition shadow-xs"
+        >
+          <Zap size={14} className="text-emerald-400" />
+          <span>Mega BTR 72-Hour Blitz</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setShowSpotterModal(true)}
+          className="flex items-center gap-2 rounded-2xl bg-purple-600/15 border border-purple-500/30 px-3.5 py-2 text-xs font-bold text-purple-300 hover:bg-purple-600/25 transition shadow-xs"
+        >
+          <Eye size={14} className="text-purple-400" />
+          <span>Diagnostic Spotters & Image Bank</span>
+        </button>
+      </div>
+
+      {/* 3. Sub-Navigation Tabs */}
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-edge-soft pb-4">
         <div className="flex items-center gap-1.5 rounded-2xl bg-surface/80 p-1.5 border border-edge-soft">
           {[
@@ -1434,6 +1482,61 @@ export function CoreBTRWarRoom({ onStartQBankDrill, onOpenNotes }: CoreBTRWarRoo
       )}
       <BTRAnkiExportModal open={showAnkiModal} onClose={() => setShowAnkiModal(false)} />
       <BTRErrorLogModal open={showErrorModal} onClose={() => setShowErrorModal(false)} />
+
+      {/* Official YouTube Channel Broadcasts & 3 PM Core Drops */}
+      <BTRBroadcastsModal open={showBroadcastsModal} onClose={() => setShowBroadcastsModal(false)} />
+
+      {/* "20th Subject" Master Matrix (Biostats, DOCs, BMW 2016, Scores) */}
+      <BTRTwentyMatrixModal open={showTwentyModal} onClose={() => setShowTwentyModal(false)} />
+
+      {/* Visual Diagnostic Spotter & Image Bank Trainer */}
+      <BTRSpotterModal open={showSpotterModal} onClose={() => setShowSpotterModal(false)} />
+
+      {/* Mega BTR 72-Hour Rapid Revision Command Center */}
+      <BTRMarathonModal
+        open={showMarathonModal}
+        onClose={() => setShowMarathonModal(false)}
+        onPlayModule={(mod) => {
+          setShowMarathonModal(false);
+          const matched = libraryState.megaBtrVideos?.find((v) =>
+            v.filename.toLowerCase().includes(mod.targetFileName.toLowerCase().replace(".mp4", ""))
+          );
+          if (matched) {
+            const dummySubject: BTRSubject = {
+              id: "mega_btr",
+              name: "Mega BTR Marathon",
+              shortCode: "MEGA",
+              category: "Long Clinical",
+              blockNumber: 4,
+              recommendedDays: 3,
+              highYieldPytCount: 100,
+              iconName: "Zap",
+              description: "Rapid 19-Subject Marathon Sweep",
+              mustKnowTopics: mod.highYieldFoci,
+              pyramidTiers: {
+                tier1MustKnow: mod.highYieldFoci,
+                tier2Volatile: mod.subjectsCovered,
+                tier3TieBreakers: [],
+              },
+            };
+            const mediaFile: BTRLocalMediaFile = {
+              id: matched.id,
+              filename: matched.filename,
+              fullPath: matched.fullPath,
+              relativePath: matched.filename,
+              kind: "video",
+              matchedSubjectId: "mega_btr",
+              lectureNumber: 1,
+              title: mod.title,
+              sizeBytes: matched.sizeBytes,
+            };
+            setWorkstationSession({
+              video: mediaFile,
+              subject: dummySubject,
+            });
+          }
+        }}
+      />
     </div>
   );
 }
