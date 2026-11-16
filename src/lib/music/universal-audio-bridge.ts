@@ -51,6 +51,15 @@ export class UniversalAudioBridge {
     }
   }
 
+  public getPlaybackState(): { track: UniversalAudioTrack | null; isPlaying: boolean } {
+    return { track: this.currentTrack, isPlaying: this.isPlaying };
+  }
+
+  public setPlaybackState(track: UniversalAudioTrack | null, isPlaying: boolean) {
+    this.currentTrack = track;
+    this.isPlaying = isPlaying;
+  }
+
   public createPlaylist(title: string, description?: string): UniversalPlaylist {
     const id = `playlist-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
     const playlist: UniversalPlaylist = {

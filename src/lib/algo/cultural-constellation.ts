@@ -9,7 +9,6 @@ import type { Meta } from "@/lib/cinemeta";
 import {
   type ContentVector,
   extractContentVector,
-  cosineSimilarity,
 } from "./content-dna";
 import {
   CURATED_MASTERPIECES,
