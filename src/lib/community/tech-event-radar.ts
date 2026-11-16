@@ -234,6 +234,14 @@ export class TechEventRadarEngine {
             });
           }
         }
+
+        const storedFeedback = localStorage.getItem(STORAGE_FEEDBACK_KEY);
+        if (storedFeedback) {
+          const parsedFeedback = JSON.parse(storedFeedback) as CanonFeedbackEntry[];
+          for (const f of parsedFeedback) {
+            this.feedbackEntries.set(f.eventId, f);
+          }
+        }
       }
     } catch {}
 
@@ -251,6 +259,7 @@ export class TechEventRadarEngine {
         localStorage.setItem(STORAGE_EVENTS_KEY, JSON.stringify(list));
         localStorage.setItem(STORAGE_NOTIFIED_KEY, JSON.stringify(Array.from(this.notifiedIds)));
         localStorage.setItem(STORAGE_PREFS_KEY, JSON.stringify(this.preferences));
+        localStorage.setItem(STORAGE_FEEDBACK_KEY, JSON.stringify(Array.from(this.feedbackEntries.values())));
       }
     } catch {}
   }
