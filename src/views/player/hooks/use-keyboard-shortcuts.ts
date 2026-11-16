@@ -327,6 +327,54 @@ export function useKeyboardShortcuts(params: {
         seekStep(30);
         return;
       }
+
+      // YouTube Pro Navigation: J (-10s), K (play/pause), L (+10s), Frame Stepper, 0-9 Jumps, Speed
+      if (!e.ctrlKey && !e.metaKey && !e.altKey) {
+        const keyLower = e.key.toLowerCase();
+        if (keyLower === "j") {
+          e.preventDefault();
+          seekStep(-10);
+          return;
+        }
+        if (keyLower === "k") {
+          e.preventDefault();
+          playPauseToggle();
+          return;
+        }
+        if (keyLower === "l" && !e.shiftKey) {
+          e.preventDefault();
+          seekStep(10);
+          return;
+        }
+        if (e.key === "," && onFrameStep) {
+          e.preventDefault();
+          onFrameStep(-1);
+          return;
+        }
+        if (e.key === "." && onFrameStep) {
+          e.preventDefault();
+          onFrameStep(1);
+          return;
+        }
+        if (e.key >= "0" && e.key <= "9" && snap.durationSec > 0) {
+          e.preventDefault();
+          const targetSec = (Number(e.key) / 10) * snap.durationSec;
+          seekTo(targetSec);
+          return;
+        }
+        if (e.shiftKey && (e.key === ">" || e.key === ".")) {
+          e.preventDefault();
+          const nextRate = Math.min(3.0, Math.round((snap.rate + 0.05) * 100) / 100);
+          bridgeRef.current?.setRate(nextRate);
+          return;
+        }
+        if (e.shiftKey && (e.key === "<" || e.key === ",")) {
+          e.preventDefault();
+          const nextRate = Math.max(0.25, Math.round((snap.rate - 0.05) * 100) / 100);
+          bridgeRef.current?.setRate(nextRate);
+          return;
+        }
+      }
       if (match("playerFrameForward") && onFrameStep) {
         e.preventDefault();
         onFrameStep(1);

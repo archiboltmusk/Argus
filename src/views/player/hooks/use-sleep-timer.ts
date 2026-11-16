@@ -46,26 +46,39 @@ export function useSleepTimer(params: {
   const originalVolumeRef = useRef<number | null>(null);
 
   // Gentle audio fade: in the final 60 seconds before sleep timer triggers,
-  // smoothly taper volume to prevent startle wakeups.
+  // or final 30 seconds before end-of-episode sleep triggers, smoothly taper volume.
   useEffect(() => {
-    if (mode.kind !== "minutes" || remainingMs == null) {
-      if (originalVolumeRef.current != null) {
-        bridgeRef.current?.setVolume(originalVolumeRef.current);
-        originalVolumeRef.current = null;
+    if (mode.kind === "minutes" && remainingMs != null) {
+      const FADE_WINDOW_MS = 60_000;
+      if (remainingMs <= FADE_WINDOW_MS && remainingMs > 0) {
+        if (originalVolumeRef.current == null) {
+          originalVolumeRef.current = 1.0;
+        }
+        const factor = Math.max(0.05, remainingMs / FADE_WINDOW_MS);
+        bridgeRef.current?.setVolume(originalVolumeRef.current * factor);
       }
       return;
     }
 
-    const FADE_WINDOW_MS = 60_000;
-    if (remainingMs <= FADE_WINDOW_MS && remainingMs > 0) {
-      if (originalVolumeRef.current == null) {
-        // Record current user volume before beginning fade
-        originalVolumeRef.current = 1.0;
+    if (mode.kind === "end_episode" && durationSec > 0) {
+      const pos = getPlaybackPosition();
+      const timeLeft = durationSec - pos;
+      const FADE_SEC = 30;
+      if (timeLeft <= FADE_SEC && timeLeft > 0) {
+        if (originalVolumeRef.current == null) {
+          originalVolumeRef.current = 1.0;
+        }
+        const factor = Math.max(0.05, timeLeft / FADE_SEC);
+        bridgeRef.current?.setVolume(originalVolumeRef.current * factor);
+        return;
       }
-      const factor = Math.max(0.05, remainingMs / FADE_WINDOW_MS);
-      bridgeRef.current?.setVolume(originalVolumeRef.current * factor);
     }
-  }, [mode, remainingMs, bridgeRef]);
+
+    if (originalVolumeRef.current != null) {
+      bridgeRef.current?.setVolume(originalVolumeRef.current);
+      originalVolumeRef.current = null;
+    }
+  }, [mode, remainingMs, durationSec, bridgeRef]);
 
   useEffect(() => {
     registerSleepFireHandler(() => {

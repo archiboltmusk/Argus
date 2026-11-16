@@ -96,8 +96,10 @@ export const StageOverlays = memo(function StageOverlays({
         <SvpIndicator engine={engine} chromeVisible={chromeVisible} suppressed={topVolumeShowing} />
       )}
       {holdSpeedActive && !pipMode && (
-        <div className="pointer-events-none absolute left-1/2 top-8 z-30 flex -translate-x-1/2 items-center gap-1.5 rounded-full bg-canvas/85 px-3.5 py-1.5 text-[13px] font-semibold text-ink backdrop-blur-md">
-          {snap.rate}x<span className="font-normal text-ink-muted">{t("speed")}</span>
+        <div className="pointer-events-none absolute left-1/2 top-8 z-30 flex -translate-x-1/2 items-center gap-2 rounded-full bg-black/85 border border-white/20 px-4 py-1.5 text-sm font-bold text-white shadow-2xl backdrop-blur-xl animate-[argus-fade-in_150ms_ease-out]">
+          <span className="text-amber-400">⚡</span>
+          <span>{snap.rate}×</span>
+          <span className="text-xs uppercase tracking-wider text-white/70 font-semibold">{t("Speed")}</span>
         </div>
       )}
       {!holdSpeedActive && !pipMode && (
