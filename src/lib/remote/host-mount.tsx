@@ -1,3 +1,8 @@
+import {
+  HANDOFF_EVENT,
+  parsePlaybackHandoff,
+  type PlaybackHandoff,
+} from "@/lib/player/household-handoff";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
@@ -60,7 +65,10 @@ function broadcast(msg: RemoteServerMessage) {
 }
 
 function pushSnapshot(force = false) {
-  const snapshot = { ...buildRemoteSnapshot(getPlaybackPosition()), manga: buildRemoteMangaState() };
+  const snapshot = {
+    ...buildRemoteSnapshot(getPlaybackPosition()),
+    manga: buildRemoteMangaState(),
+  };
   if (!force) {
     const { updatedAt: _ignored, ...rest } = snapshot;
     void _ignored;
@@ -488,6 +496,14 @@ export function RemoteHostMount() {
       if (msg.t === "cmd") {
         void (async () => {
           try {
+            if ((msg.command as { action: string }).action === "handoffPlayback") {
+              const payload = parsePlaybackHandoff(
+                (msg.command as unknown as { payload: PlaybackHandoff }).payload,
+              );
+              if (payload)
+                window.dispatchEvent(new CustomEvent(HANDOFF_EVENT, { detail: payload }));
+              return;
+            }
             if (msg.command.action === "castDiscover") {
               setRemoteCastDiscovering(true);
               setRemoteCastDevices([]);

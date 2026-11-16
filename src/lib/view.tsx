@@ -85,6 +85,7 @@ export type PlayEpisode = {
 export type EpisodeDetailPlayback = { meta: Meta; episode: PlayEpisode };
 
 export type PlayerSrc = {
+  handoff?: import("./player/household-handoff").PlaybackHandoff;
   /** true: corner preview; false: expanded preview (Back restores it); absent: regular player. */
   sportsDocked?: boolean;
   /** The video moved to its own window, so the player keeps the session but yields the page. */

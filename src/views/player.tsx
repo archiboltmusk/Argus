@@ -1,3 +1,6 @@
+import { useHandoffReceipt } from "./player/hooks/use-handoff-receipt";
+import { PlaybackHelp } from "@/components/player/playback-help";
+import { useSourceMemory } from "./player/hooks/use-source-memory";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { SportsDockControls } from "./sports/dock-controls";
 import { useDockDrag, type DockSpot } from "./sports/use-dock-drag";
@@ -583,8 +586,7 @@ function NativePlayerView({ src }: { src: PlayerSrc }) {
     const currentPos = snap.positionSec;
     const match = lectureCheckpoints.find(
       (cp) =>
-        Math.abs(currentPos - cp.timestampSec) <= 1.2 &&
-        !completedCheckpoints.current.has(cp.id),
+        Math.abs(currentPos - cp.timestampSec) <= 1.2 && !completedCheckpoints.current.has(cp.id),
     );
     if (match) {
       completedCheckpoints.current.add(match.id);
@@ -1277,6 +1279,9 @@ function NativePlayerView({ src }: { src: PlayerSrc }) {
     onVolumeFeedback: showVolumeFeedback,
   });
 
+  useSourceMemory(liveUrl, liveStreamRef, snap);
+  useHandoffReceipt(src, snap);
+
   useEffect(() => {
     if (snap.status === "idle" || snap.status === "ended" || snap.status === "error") {
       clearMediaControls();
@@ -1815,6 +1820,13 @@ function NativePlayerView({ src }: { src: PlayerSrc }) {
         ...(src.pipDocked ? { visibility: "hidden", pointerEvents: "none" } : {}),
       }}
     >
+      <PlaybackHelp
+        snap={snap}
+        bridge={bridgeRef.current}
+        chooseSource={pickAnotherOrGuide}
+        reload={reloadSource}
+        src={{ ...src, url: liveUrl }}
+      />
       {prefetchNextEpisode && prefetchAddonId && (
         <NextEpisodePrefetch
           key={`${src.meta.id}:${prefetchNextEpisode.season}:${prefetchNextEpisode.episode}:${prefetchNextEpisode.videoId ?? ""}`}

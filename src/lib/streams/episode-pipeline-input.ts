@@ -1,3 +1,4 @@
+import { readSourceMemory } from "@/lib/player/source-memory";
 import { addonBasesForOrigin, type Addon } from "@/lib/addons";
 import { isAddonNativeMeta, type Meta } from "@/lib/cinemeta";
 import type { DebridStore } from "@/lib/debrid/types";
@@ -7,8 +8,19 @@ import type { PlayEpisode } from "@/lib/view";
 import { resolveAddonRanks } from "./addon-priority";
 import { animeAbsoluteFromScopedId, splitAnimeStreamCoordinates } from "./anime-identity-core";
 import type { PipelineInput } from "./pipeline";
-import { demotedHashes, parseGroupList, parseHostList, verifiedCorrectHashes } from "@/lib/streams/dead-links";
-import { PLUGIN_ADDON_PREFIX, isPluginAddon, pluginAddonById, pluginIdFromCatalogueBase, pluginsForAddon } from "./plugins/addon";
+import {
+  demotedHashes,
+  parseGroupList,
+  parseHostList,
+  verifiedCorrectHashes,
+} from "@/lib/streams/dead-links";
+import {
+  PLUGIN_ADDON_PREFIX,
+  isPluginAddon,
+  pluginAddonById,
+  pluginIdFromCatalogueBase,
+  pluginsForAddon,
+} from "./plugins/addon";
 import { preferredAnimeImdbStreamId, unverifiedAnimeSeasonId } from "./stream-ids";
 import type { Stream } from "./types";
 import { detectScoreCapabilities } from "@/lib/capabilities";
@@ -91,9 +103,7 @@ export function buildEpisodePipelineInput(params: {
   // The master switch wins: with every plugin paused there is nothing to resolve an item with,
   // however it names its source.
   if (params.resolvePinnedPlugin !== false && settings.pluginsEnabled) {
-    pinnedId = originBases
-      .map((base) => pluginIdFromCatalogueBase(base))
-      .find((id) => id != null);
+    pinnedId = originBases.map((base) => pluginIdFromCatalogueBase(base)).find((id) => id != null);
     // A plugin row names its plugin by id rather than by base, and a saved row may have kept
     // only that; either way the name is enough when it belongs to an installed plugin.
     if (!pinnedId && meta.addonOrigin?.id && pluginAddonById(meta.addonOrigin.id)) {
@@ -108,7 +118,8 @@ export function buildEpisodePipelineInput(params: {
     const covered = effectiveAddons.some(
       (a) =>
         a.transportUrl === url ||
-        (isPluginAddon(a) && pluginsForAddon(a).some((p) => `${PLUGIN_ADDON_PREFIX}${p.id}` === url)),
+        (isPluginAddon(a) &&
+          pluginsForAddon(a).some((p) => `${PLUGIN_ADDON_PREFIX}${p.id}` === url)),
     );
     if (!covered) {
       const only = pluginAddonById(pinnedId);
@@ -128,9 +139,16 @@ export function buildEpisodePipelineInput(params: {
         ? "series"
         : "movie";
   const animeReq = streamIds.some((id) => id.startsWith("kitsu:") || id.startsWith("mal:"));
-  const preferredAnimeImdbId = settings.animePreferImdbStreams && !addonNative
-    ? preferredAnimeImdbStreamId(meta.id, episode, imdbId, params.imdbIdVerified === true, streamIds)
-    : undefined;
+  const preferredAnimeImdbId =
+    settings.animePreferImdbStreams && !addonNative
+      ? preferredAnimeImdbStreamId(
+          meta.id,
+          episode,
+          imdbId,
+          params.imdbIdVerified === true,
+          streamIds,
+        )
+      : undefined;
   const unverifiedAnimeId = unverifiedAnimeSeasonId(meta.id, episode);
   const animeIdUnverified =
     unverifiedAnimeId != null &&
@@ -140,27 +158,39 @@ export function buildEpisodePipelineInput(params: {
   const animeAbsoluteEpisode = animeReq
     ? (streamIds.map(animeAbsoluteFromScopedId).find((n) => n != null) ?? null)
     : null;
-  const split = splitAnimeStreamCoordinates(episode?.kitsuStreamId ?? streamIds.find((id) => id.startsWith("kitsu:")));
+  const split = splitAnimeStreamCoordinates(
+    episode?.kitsuStreamId ?? streamIds.find((id) => id.startsWith("kitsu:")),
+  );
   // Split-franchise cours (Bleach TYBW) are numbered entry-relative while addon
   // streams often use provider coords (cour 4 ep 1 = S17E41). Accept both so the
   // episode filter keeps streams in either numbering and drops clear mismatches.
-  const animeEpisodeAliases = split ? new Set(split.absoluteNumbers) :
-    animeReq &&
-    episode?.imdbEpisode != null &&
-    episode?.episode != null &&
-    episode.imdbEpisode !== episode.episode
+  const animeEpisodeAliases = split
+    ? new Set(split.absoluteNumbers)
+    : animeReq &&
+        episode?.imdbEpisode != null &&
+        episode?.episode != null &&
+        episode.imdbEpisode !== episode.episode
       ? new Set<number>([episode.imdbEpisode])
       : null;
   const imdbEpAligned =
     !animeReq || episode?.imdbEpisode == null || episode.episode === episode.imdbEpisode;
-  const effSeason = split?.coordinates[0][0] ?? (imdbEpAligned ? (episode?.imdbSeason ?? episode?.season) : episode?.season);
-  const effEpisode = split?.coordinates[0][1] ?? (imdbEpAligned ? (episode?.imdbEpisode ?? episode?.episode) : episode?.episode);
+  const effSeason =
+    split?.coordinates[0][0] ??
+    (imdbEpAligned ? (episode?.imdbSeason ?? episode?.season) : episode?.season);
+  const effEpisode =
+    split?.coordinates[0][1] ??
+    (imdbEpAligned ? (episode?.imdbEpisode ?? episode?.episode) : episode?.episode);
   const prevGroup =
     episode && typeof effSeason === "number" && typeof effEpisode === "number" && effEpisode > 1
       ? (readPlayback(meta.id, effSeason, effEpisode - 1)?.releaseGroup ?? undefined)
       : undefined;
   if (imdbId) {
-    void loadAliases(imdbId, meta.name, episode || meta.type === "series" ? "series" : "movie", animeReq);
+    void loadAliases(
+      imdbId,
+      meta.name,
+      episode || meta.type === "series" ? "series" : "movie",
+      animeReq,
+    );
   }
   return {
     indexers: settings.indexers,
@@ -172,7 +202,7 @@ export function buildEpisodePipelineInput(params: {
       preferredAnimeImdbId,
       animeIdUnverified,
       context: {
-        imdbId: split && (episode?.imdbSeason ?? 0) >= 17 ? null : imdbId ?? null,
+        imdbId: split && (episode?.imdbSeason ?? 0) >= 17 ? null : (imdbId ?? null),
         title: meta.name,
         year: parseInt(meta.releaseInfo ?? "", 10) || null,
         season: effSeason ?? null,
@@ -182,7 +212,7 @@ export function buildEpisodePipelineInput(params: {
     },
     query: {
       type: episode ? "series" : meta.type === "series" ? "series" : "movie",
-      imdbId: split && (episode?.imdbSeason ?? 0) >= 17 ? "" : imdbId ?? "",
+      imdbId: split && (episode?.imdbSeason ?? 0) >= 17 ? "" : (imdbId ?? ""),
       title: meta.name,
       year: parseInt(meta.releaseInfo ?? "", 10) || undefined,
       season: animeReq && episode?.imdbSeason == null ? undefined : effSeason,
@@ -193,8 +223,9 @@ export function buildEpisodePipelineInput(params: {
     isAnime: animeReq,
     animeAbsoluteEpisode,
     animeEpisodeAliases,
-    animeEpisodeCoordinates: split?.coordinates ?? (animeReq && effSeason != null && effEpisode != null
-      ? [[effSeason, effEpisode]] : undefined),
+    animeEpisodeCoordinates:
+      split?.coordinates ??
+      (animeReq && effSeason != null && effEpisode != null ? [[effSeason, effEpisode]] : undefined),
     animeSplitPart: split?.coordinates[0][0],
     presetStreams: embedded.length > 0 ? embedded : undefined,
     addonTimeoutMs: Math.max(8, Math.min(120, settings.addonTimeoutSec ?? 30)) * 1000,
@@ -224,6 +255,7 @@ export function buildEpisodePipelineInput(params: {
       hideZeroSeeders: settings.hideZeroSeederStreams !== false,
     },
     score: {
+      sourceMemory: readSourceMemory(),
       activeDebrids: debrids.map((d) => d.slug),
       preferredLanguages: settings.preferredLanguages,
       releaseDate: meta.releaseDate ?? null,
@@ -245,7 +277,9 @@ export function buildEpisodePipelineInput(params: {
       preferAddonId: meta.addonOrigin?.id,
       preferredReleaseGroup: prevGroup,
       respectAddonOrder: settings.streamSort === "addon",
-      preferredGroups: settings.bestLinkScoring ? parseGroupList(settings.preferredReleaseGroups) : undefined,
+      preferredGroups: settings.bestLinkScoring
+        ? parseGroupList(settings.preferredReleaseGroups)
+        : undefined,
       preferredHosts: settings.bestLinkScoring ? parseHostList(settings.preferredHosts) : undefined,
       bitrateSweetSpot: settings.bestLinkScoring,
       penalizeDubs: settings.bestLinkScoring,

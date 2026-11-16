@@ -1,3 +1,4 @@
+import { isIncognito } from "@/lib/incognito";
 import type { ExternalCwSource } from "@/lib/stremio";
 import { privateCwProfileId } from "./cw-profile";
 
@@ -6,7 +7,8 @@ const PRIVATE_PREFIX = "argus.resume.private.v1.";
 
 function nuvioAccountId(): string {
   try {
-    const raw = localStorage.getItem("argus.nuvio.state.v1") ?? localStorage.getItem("argus.nuvio.state");
+    const raw =
+      localStorage.getItem("argus.nuvio.state.v1") ?? localStorage.getItem("argus.nuvio.state");
     if (raw) {
       const parsed = JSON.parse(raw);
       if (parsed?.session?.user?.id) return String(parsed.session.user.id);
@@ -33,7 +35,8 @@ function isNuvioMode(): boolean {
 
 function nuvioActiveSlot(): number {
   try {
-    const raw = localStorage.getItem("argus.nuvio.state.v1") || localStorage.getItem("argus.nuvio.state");
+    const raw =
+      localStorage.getItem("argus.nuvio.state.v1") || localStorage.getItem("argus.nuvio.state");
     if (raw) {
       const parsed = JSON.parse(raw);
       return typeof parsed.activeProfileIndex === "number" ? parsed.activeProfileIndex : 1;
@@ -110,7 +113,7 @@ export function saveResumeMs(
   source?: ExternalCwSource,
   ownerId?: string,
 ): void {
-  if (!Number.isFinite(ms) || ms < 0) return;
+  if (isIncognito() || !Number.isFinite(ms) || ms < 0) return;
   if (typeof season === "number" && typeof episode === "number") {
     if (season < 0 || episode < 1) return;
   }
@@ -155,10 +158,7 @@ export function saveResumeBatch(
 ): void {
   if (entries.length === 0) return;
   const eff = effectiveOwner(ownerId);
-  const key =
-    eff && eff.startsWith("nuvio-")
-      ? `${PRIVATE_PREFIX}${nuvioAccountId()}.${eff}`
-      : KEY;
+  const key = eff && eff.startsWith("nuvio-") ? `${PRIVATE_PREFIX}${nuvioAccountId()}.${eff}` : KEY;
   const all = readAll(key);
   const now = Date.now();
   for (const e of entries) {
@@ -178,7 +178,12 @@ export function saveResumeBatch(
   writeAll(all, key);
 }
 
-export function readResumeMs(id: string, season?: number, episode?: number, ownerId?: string): number {
+export function readResumeMs(
+  id: string,
+  season?: number,
+  episode?: number,
+  ownerId?: string,
+): number {
   const all = readAll(readKey(ownerId));
   return all[entryKey(id, season, episode)]?.ms ?? 0;
 }
@@ -216,11 +221,7 @@ export function clearAllNuvioResume(): void {
     const toRemove: string[] = [];
     for (let i = 0; i < localStorage.length; i++) {
       const key = localStorage.key(i);
-      if (
-        key &&
-        (key.startsWith("argus.resume.private.v1.nuvio-") ||
-          key.includes(".nuvio-"))
-      ) {
+      if (key && (key.startsWith("argus.resume.private.v1.nuvio-") || key.includes(".nuvio-"))) {
         toRemove.push(key);
       }
     }

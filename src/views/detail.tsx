@@ -819,9 +819,7 @@ export function DetailView({
         .then((progressItems) => {
           if (cancelled) return;
           const matches = progressItems.filter(
-            (p) =>
-              p.content_id === meta.id ||
-              (detail?.imdbId && p.content_id === detail.imdbId),
+            (p) => p.content_id === meta.id || (detail?.imdbId && p.content_id === detail.imdbId),
           );
           if (matches.length > 0) {
             matches.sort((a, b) => {
@@ -847,8 +845,17 @@ export function DetailView({
               const isFinished = latest.progress_seconds > dur * 0.9;
               if (isFinished) {
                 const subsequent = matches.find((m) => {
-                  if (m.season == null || m.episode == null || latest.season == null || latest.episode == null) return false;
-                  return m.season > latest.season || (m.season === latest.season && m.episode > latest.episode);
+                  if (
+                    m.season == null ||
+                    m.episode == null ||
+                    latest.season == null ||
+                    latest.episode == null
+                  )
+                    return false;
+                  return (
+                    m.season > latest.season ||
+                    (m.season === latest.season && m.episode > latest.episode)
+                  );
                 });
                 if (subsequent) {
                   latest = subsequent;
@@ -1191,7 +1198,12 @@ export function DetailView({
   useEffect(() => {
     setEnglishTitle(null);
     const imdbId = detail?.imdbId ?? (meta.id.startsWith("tt") ? meta.id : null);
-    if (!settings.englishTitleFallback || !imdbId || /^[\p{Script=Latin}\p{N}\p{P}\p{Z}]*$/u.test(title)) return;
+    if (
+      !settings.englishTitleFallback ||
+      !imdbId ||
+      /^[\p{Script=Latin}\p{N}\p{P}\p{Z}]*$/u.test(title)
+    )
+      return;
     let cancelled = false;
     loadAliases(imdbId, title, meta.type === "movie" ? "movie" : "series", isAnime).then((list) => {
       const latin = list.find((a) => /^[\p{Script=Latin}\p{N}\p{P}\p{Z}]+$/u.test(a));
@@ -1504,7 +1516,16 @@ export function DetailView({
       cancelled = true;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [seriesWatchedVer, authKey, isSeries, isAnime, cinemetaFull?.videos, detail?.imdbId, meta.id, settings.accountProvider]);
+  }, [
+    seriesWatchedVer,
+    authKey,
+    isSeries,
+    isAnime,
+    cinemetaFull?.videos,
+    detail?.imdbId,
+    meta.id,
+    settings.accountProvider,
+  ]);
 
   const upcoming = !loading && isTitleUpcoming(detail, meta);
   const currentFranchiseId = animeCanonicalId ?? meta.id;
@@ -1739,10 +1760,23 @@ export function DetailView({
           const isFinished = matched.progress_seconds > dur * 0.9;
           if (isFinished) {
             const subsequent = matches.find((m) => {
-              if (m.season == null || m.episode == null || matched.season == null || matched.episode == null) return false;
-              return m.season > matched.season || (m.season === matched.season && m.episode > matched.episode);
+              if (
+                m.season == null ||
+                m.episode == null ||
+                matched.season == null ||
+                matched.episode == null
+              )
+                return false;
+              return (
+                m.season > matched.season ||
+                (m.season === matched.season && m.episode > matched.episode)
+              );
             });
-            if (subsequent && typeof subsequent.season === "number" && typeof subsequent.episode === "number") {
+            if (
+              subsequent &&
+              typeof subsequent.season === "number" &&
+              typeof subsequent.episode === "number"
+            ) {
               matched = subsequent;
             } else {
               matched = { ...matched, episode: matched.episode + 1 };
@@ -2127,7 +2161,11 @@ export function DetailView({
                           releaseInfo: meta.releaseInfo,
                           imdbRating: meta.imdbRating,
                           genres: meta.genres,
-                          posterShape: ((meta as unknown as Record<string, unknown>).posterShape as "POSTER" | "SQUARE" | "LANDSCAPE") || "POSTER",
+                          posterShape:
+                            ((meta as unknown as Record<string, unknown>).posterShape as
+                              | "POSTER"
+                              | "SQUARE"
+                              | "LANDSCAPE") || "POSTER",
                         })
                       }
                       className={`flex h-12 items-center gap-2.5 whitespace-nowrap rounded-full px-6 text-[15px] font-medium transition-[transform,background-color] duration-200 active:scale-[0.98] ${
@@ -2210,7 +2248,11 @@ export function DetailView({
                         releaseInfo: meta.releaseInfo,
                         imdbRating: meta.imdbRating,
                         genres: meta.genres,
-                        posterShape: ((meta as unknown as Record<string, unknown>).posterShape as "POSTER" | "SQUARE" | "LANDSCAPE") || "POSTER",
+                        posterShape:
+                          ((meta as unknown as Record<string, unknown>).posterShape as
+                            | "POSTER"
+                            | "SQUARE"
+                            | "LANDSCAPE") || "POSTER",
                       })
                     }
                     simkl={{
@@ -2311,10 +2353,10 @@ export function DetailView({
                     {meta.type === "movie" && <EpisodeDownloadButton meta={meta} variant="bar" />}
                   </>
                 )}
-                {(meta.type === "series" || isAnime) && (
+                {(meta.type === "movie" || meta.type === "series" || isAnime) && (
                   <ReminderButton
                     id={meta.id}
-                    type="series"
+                    type={meta.type === "movie" ? "movie" : "series"}
                     name={title || meta.name}
                     poster={meta.poster ?? detail?.poster}
                   />

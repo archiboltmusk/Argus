@@ -1,3 +1,7 @@
+import { movieReminderKey } from "@/lib/movie-reminder";
+import { resolveMeta } from "@/lib/meta-resource";
+import { readActiveStremioAuthKey } from "@/lib/auth";
+import { get as tmdbGet } from "@/lib/providers/tmdb/tmdb-client";
 import { useEffect, useRef } from "react";
 import { emitListToast } from "@/components/lists/list-toast";
 import { useT } from "@/lib/i18n";
@@ -28,7 +32,26 @@ function fire(entry: ReminderEntry, body: string): void {
 const DAY_OF_WINDOW_MS = 36 * 60 * 60 * 1000;
 
 async function checkOne(entry: ReminderEntry, tmdbKey: string, t: Tfn): Promise<void> {
-  if (entry.type === "movie") return;
+  if (entry.type === "movie") {
+    if (!entry.episodes) return;
+    const tmdb = entry.id.match(/^tmdb:movie:(\d+)$/);
+    const movie = tmdb ? null : await resolveMeta(readActiveStremioAuthKey(), "movie", entry.id);
+    const tmdbMovie =
+      tmdb && tmdbKey
+        ? await tmdbGet<{ release_date?: string }>(tmdbKey, `movie/${tmdb[1]}`)
+        : null;
+    const date =
+      tmdbMovie?.release_date ??
+      movie?.releaseDate ??
+      (movie as (Meta & { released?: string }) | null)?.released;
+    const now = Date.now();
+    const key = movieReminderKey(date, entry.createdAt, entry.seenKeys, now);
+    if (key) {
+      fire(entry, t("Released today"));
+      setReminderSeen(entry.id, [...(entry.seenKeys ?? []), key], now);
+    }
+    return;
+  }
   const meta: Meta = { id: entry.id, type: "series", name: entry.name };
   const eps = await fetchEpisodeList(meta, { tmdbKey });
   if (!eps.length) return;

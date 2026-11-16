@@ -1,3 +1,4 @@
+import { openPlaybackHelp } from "@/lib/player/playback-help";
 import {
   AudioLines,
   Download,
@@ -51,6 +52,14 @@ export function playerContextSources(
         const player = readCurrent();
         if (!player) return [];
         const actions: ContextAction[] = [
+          {
+            id: "player:fix-playback",
+            label: t("Fix playback"),
+            icon: <Settings size={16} />,
+            run: openPlaybackHelp,
+            group: "tools",
+            restoreFocus: false,
+          },
           {
             id: "player:fullscreen",
             label: t("Full screen"),

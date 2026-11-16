@@ -202,6 +202,7 @@ export type Settings = {
   playerTitleScale: number;
   playerTitleSeriesFirst: boolean;
   uiScale: number;
+  reduceMotion: boolean;
   serveWebUi: boolean;
   remoteControlEnabled: boolean;
   controllerSupportEnabled: boolean;
@@ -625,7 +626,16 @@ export type Settings = {
   audioDelayRemember: boolean;
   /** Extra audio delay in ms for slow outputs such as Bluetooth headphones. */
   audioOutputLatencyMs: number;
-  audioProfile: "off" | "bass" | "voice" | "speech-clarity" | "bass-reduce" | "night" | "spatial-3d" | "whisper" | "dialogue-ducking";
+  audioProfile:
+    | "off"
+    | "bass"
+    | "voice"
+    | "speech-clarity"
+    | "bass-reduce"
+    | "night"
+    | "spatial-3d"
+    | "whisper"
+    | "dialogue-ducking";
   /** 10-band equalizer gains in dB (-12 to +12) for [31.5Hz, 63Hz, 125Hz, 250Hz, 500Hz, 1kHz, 2kHz, 4kHz, 8kHz, 16kHz] */
   audioEqualizerBands: number[];
   audioEqualizerEnabled: boolean;
@@ -951,7 +961,12 @@ export type Settings = {
   nightCinemaMode: boolean;
   nightCinemaAutoWindow: boolean;
   neuralVoiceClarifier: boolean;
-  voiceClarifierProfileId: "ray-vintage" | "tollywood-classic" | "night-dialogue" | "projector-beem" | "balanced-speech";
+  voiceClarifierProfileId:
+    | "ray-vintage"
+    | "tollywood-classic"
+    | "night-dialogue"
+    | "projector-beem"
+    | "balanced-speech";
   lanSwarmCache: boolean;
   letterboxSubtitleDodging: boolean;
   syntheticChapters: boolean;

@@ -87,6 +87,7 @@ async function fixture({
       ),
     );
   const deps: Record<string, unknown> = {
+    "@/lib/player/playback-help": { openPlaybackHelp: () => {} },
     react: React,
     "react/jsx-runtime": jsxRuntime,
     "lucide-react": lucide,

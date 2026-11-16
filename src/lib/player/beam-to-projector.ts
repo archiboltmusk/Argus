@@ -53,7 +53,11 @@ export async function beamStreamToTarget(
       body: JSON.stringify(payload),
     }).catch(() => null);
 
-    return { ok: res?.ok ?? true, url };
+    return {
+      ok: res?.ok === true,
+      url,
+      error: res?.ok ? undefined : "The receiver did not confirm delivery.",
+    };
   } catch (err) {
     return {
       ok: false,

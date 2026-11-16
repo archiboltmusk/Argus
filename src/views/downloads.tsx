@@ -1,3 +1,4 @@
+import { TravelReadiness } from "./downloads/travel-readiness";
 import { useMemo, useRef, useState } from "react";
 import { Download as DownloadIcon, ListFilter, ListVideo } from "lucide-react";
 import { Poster, usePosterChain } from "@/components/poster";
@@ -123,6 +124,8 @@ export function DownloadsView({ active = false }: { active?: boolean }) {
             <SaveLocationChip />
           </div>
         </header>
+
+        <TravelReadiness items={items} />
 
         {items.length > 0 && (
           <div className="mb-5 flex flex-wrap items-center gap-1.5">

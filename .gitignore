@@ -153,3 +153,6 @@ public/argus-acceptance-fixture.mp4
 startup-performance.json
 
 public/argus-acceptance-fixture.webm
+
+everyday-acceptance.json
+.argus-everyday-fixture.tsx

@@ -12,6 +12,7 @@ on:
       - "pnpm-lock.yaml"
       - "scripts/web-smoke.mjs"
       - "scripts/playback-acceptance.mjs"
+      - "scripts/everyday-acceptance.mjs"
       - ".github/workflows/web.yml"
   pull_request:
     paths:
@@ -22,6 +23,7 @@ on:
       - ".github/workflows/web.yml"
       - "scripts/web-smoke.mjs"
       - "scripts/playback-acceptance.mjs"
+      - "scripts/everyday-acceptance.mjs"
   workflow_dispatch:
 
 concurrency:
@@ -72,6 +74,7 @@ jobs:
             sleep 1
           done
           PLAYWRIGHT_DIR="$RUNNER_TEMP/pw" node scripts/playback-acceptance.mjs http://127.0.0.1:1420
+          PLAYWRIGHT_DIR="$RUNNER_TEMP/pw" node scripts/everyday-acceptance.mjs http://127.0.0.1:1420
       - uses: actions/upload-artifact@v7
         if: always()
         with:
@@ -79,6 +82,7 @@ jobs:
           path: |
             web-smoke.png
             playback-acceptance.json
+            everyday-acceptance.json
             startup-performance.json
           if-no-files-found: ignore
       - uses: actions/upload-pages-artifact@v3

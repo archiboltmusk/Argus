@@ -1,3 +1,4 @@
+import { isIncognito } from "@/lib/incognito";
 import { useSyncExternalStore } from "react";
 import type { AddonProgress } from "./streams/addons";
 import type { PlayerSrc } from "./view";
@@ -210,6 +211,7 @@ export function savePlayback(
   season?: number,
   episode?: number,
 ): void {
+  if (isIncognito()) return;
   const all = readAll();
   const key = entryKey(metaId, season, episode);
   const prev = all[key];
@@ -227,6 +229,7 @@ export function savePlayback(
 }
 
 export function recordActualPlayback(playback: ActualPlayback): boolean {
+  if (isIncognito()) return false;
   if (!isPlaybackActorCurrent(playback.actor) || !validActualPlayback(playback)) return false;
   const all = readAll();
   const key = entryKey(
@@ -248,13 +251,15 @@ export function recordActualPlayback(playback: ActualPlayback): boolean {
     playbackSourceKey(previousActual.src) === playbackSourceKey(playback.src)
       ? { ...playback, audioTrack: previousActual.audioTrack }
       : playback;
+  const { handoff: _handoff, ...storedSrc } = actual.src;
+  void _handoff;
   const next = {
     ...all,
     [key]: {
       ...previous,
       title: previous?.title ?? playback.src.meta.name,
       savedAt: Math.max(previous?.savedAt ?? 0, playback.playedAt),
-      actual,
+      actual: { ...actual, src: storedSrc },
     },
   };
   const entries = Object.entries(next).sort((a, b) => b[1].savedAt - a[1].savedAt);
@@ -368,13 +373,15 @@ export function streamOfferedByAddon(
  * addon. Debrid library copies and aggregator duplicates share the torrent hash,
  * so a plain hash match would otherwise select whichever row came first.
  */
-export function findPreferredSourceMatch<T extends {
-  addonId?: string | null;
-  contributors?: Array<{ id: string }>;
-  resolution?: string | null;
-  releaseGroupNormalized?: string | null;
-  audioLanguages?: string[] | null;
-}>(
+export function findPreferredSourceMatch<
+  T extends {
+    addonId?: string | null;
+    contributors?: Array<{ id: string }>;
+    resolution?: string | null;
+    releaseGroupNormalized?: string | null;
+    audioLanguages?: string[] | null;
+  },
+>(
   streams: T[],
   entry: PlaybackEntry,
   match: (stream: T, entry: PlaybackEntry) => boolean,

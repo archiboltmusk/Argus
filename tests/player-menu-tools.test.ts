@@ -98,6 +98,7 @@ test("player menu has a source-scoped magnet strip and separate subtitle and str
     "react/jsx-runtime": jsxRuntime,
     "lucide-react": icons,
     "@/lib/i18n": { t: (text: string) => text },
+    "@/lib/player/playback-help": { openPlaybackHelp: () => {} },
     "./content-actions": {
       copyContextText: async (text: string) => {
         copied.push(text);
@@ -173,6 +174,7 @@ test("player Settings preserves the current navigation command's permission, PIN
     "react/jsx-runtime": jsxRuntime,
     "lucide-react": icons,
     "@/lib/i18n": { t: (text: string) => text },
+    "@/lib/player/playback-help": { openPlaybackHelp: () => {} },
     "./content-actions": { copyContextText: async () => {} },
     "@/lib/social/link-out": { openLinkOut: async () => {} },
   });

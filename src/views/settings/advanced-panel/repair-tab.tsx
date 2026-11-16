@@ -1,3 +1,4 @@
+import { DeviceReadiness } from "./device-readiness";
 import { EpisodeMappingSection } from "./episode-mapping-section";
 import { useT } from "@/lib/i18n";
 import { Section } from "../shared";
@@ -15,6 +16,7 @@ export function RepairTab() {
   );
   return (
     <div className="flex flex-col gap-10">
+      <DeviceReadiness />
       <ConnectionHealthSection />
       <EpisodeMappingSection />
       <Section

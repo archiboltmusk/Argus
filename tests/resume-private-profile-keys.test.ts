@@ -16,6 +16,7 @@ function harness(privateProfileId: string | null) {
   const data = new Map<string, string>();
   let failingKey: string | null = null;
   const mocks: Record<string, unknown> = {
+    "@/lib/incognito": { isIncognito: () => false },
     "./cw-profile": { privateCwProfileId: () => privateProfileId },
   };
   const output = ts.transpileModule(read("src/lib/resume.ts"), {

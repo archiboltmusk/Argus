@@ -1,3 +1,4 @@
+import { openPlaybackHelp } from "@/lib/player/playback-help";
 import { Check, AlertCircle, Sparkles } from "lucide-react";
 import { useT } from "@/lib/i18n";
 import { useActiveKid } from "@/lib/profiles";
@@ -33,19 +34,59 @@ export function StreamCheckPill({
 
   const copy = live
     ? variant === "check"
-      ? { title: t("Is the channel playing right?"), sub: t("Wrong channel or source?"), icon: Check, accent: "rgba(255,255,255,0.85)" }
+      ? {
+          title: t("Is the channel playing right?"),
+          sub: t("Wrong channel or source?"),
+          icon: Check,
+          accent: "rgba(255,255,255,0.85)",
+        }
       : variant === "stalled"
-        ? { title: t("Channel is taking a while"), sub: t("This source is slow. Try another."), icon: AlertCircle, accent: "#f59e0b" }
+        ? {
+            title: t("Channel is taking a while"),
+            sub: t("This source is slow. Try another."),
+            icon: AlertCircle,
+            accent: "#f59e0b",
+          }
         : variant === "upgrade"
-          ? { title: t("Better stream available"), sub: t("Higher quality detected"), icon: Sparkles, accent: "#38bdf8" }
-          : { title: t("Channel won't load"), sub: t("Try another source."), icon: AlertCircle, accent: "#ef4444" }
+          ? {
+              title: t("Better stream available"),
+              sub: t("Higher quality detected"),
+              icon: Sparkles,
+              accent: "#38bdf8",
+            }
+          : {
+              title: t("Channel won't load"),
+              sub: t("Try another source."),
+              icon: AlertCircle,
+              accent: "#ef4444",
+            }
     : variant === "check"
-      ? { title: t("Does this stream look right?"), sub: t("Wrong episode or quality?"), icon: Check, accent: "rgba(255,255,255,0.85)" }
+      ? {
+          title: t("Does this stream look right?"),
+          sub: t("Wrong episode or quality?"),
+          icon: Check,
+          accent: "rgba(255,255,255,0.85)",
+        }
       : variant === "stalled"
-        ? { title: t("Stream is taking a while"), sub: t("Probably not cached. Pick another?"), icon: AlertCircle, accent: "#f59e0b" }
+        ? {
+            title: t("Stream is taking a while"),
+            sub: t("Probably not cached. Pick another?"),
+            icon: AlertCircle,
+            accent: "#f59e0b",
+          }
         : variant === "upgrade"
-          ? { title: t("Higher quality found"), sub: t("Better resolution or audio detected"), icon: Sparkles, accent: "#38bdf8" }
-          : { title: t("Stream failed to load"), sub: t("Try a different source."), icon: AlertCircle, accent: "#ef4444" };
+          ? {
+              title: t("Higher quality found"),
+              sub: t("Better resolution or audio detected"),
+              icon: Sparkles,
+              accent: "#38bdf8",
+            }
+          : {
+              title: t("Stream failed to load"),
+              sub: t("Try a different source."),
+              icon: AlertCircle,
+              accent: "#ef4444",
+            };
 
   const Icon = copy.icon;
   const title = customTitle ?? copy.title;
@@ -56,6 +97,15 @@ export function StreamCheckPill({
       className={`pointer-events-auto absolute left-1/2 z-40 flex -translate-x-1/2 items-center gap-3 rounded-2xl border border-white/12 bg-black/85 py-2.5 ps-3.5 pe-2.5 shadow-[0_18px_48px_-18px_rgba(0,0,0,0.85),inset_0_1px_0_rgba(255,255,255,0.06)] backdrop-blur-2xl animate-in fade-in slide-in-from-top-2 duration-300 ${compact ? "top-2" : "top-7"}`}
       role="status"
     >
+      {(variant === "failed" || variant === "stalled") && (
+        <button
+          type="button"
+          onClick={openPlaybackHelp}
+          className="rounded-lg px-3 py-2 text-sm text-white"
+        >
+          {t("Fix playback")}
+        </button>
+      )}
       <span
         className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full"
         style={{ background: variant === "check" ? "rgba(255,255,255,0.08)" : `${copy.accent}26` }}

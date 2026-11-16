@@ -3,6 +3,7 @@ import type { DebridSlug, Tier } from "../types";
 import type { ScoreCapabilities } from "./scoring-capability";
 
 export type ScoreOptions = {
+  sourceMemory?: import("@/lib/player/source-memory").SourceMemory | null;
   activeDebrids: DebridSlug[];
   preferredLanguages?: string[];
   bandwidthMbps?: number;
@@ -41,4 +42,13 @@ export type CorpusStats = {
 
 export const TRACKING_MIN_SEEDERS = 30;
 
-export const TIER_ORDER: Tier[] = ["4K_DV", "4K_HDR", "4K", "1080p_HDR", "1080p", "720p", "SD", "ROUGH"];
+export const TIER_ORDER: Tier[] = [
+  "4K_DV",
+  "4K_HDR",
+  "4K",
+  "1080p_HDR",
+  "1080p",
+  "720p",
+  "SD",
+  "ROUGH",
+];
