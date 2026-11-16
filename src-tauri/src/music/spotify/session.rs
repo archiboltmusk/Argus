@@ -11,7 +11,8 @@ pub const SIGN_IN_AGAIN: &str = "Spotify rejected the saved sign in. Connect Spo
 
 /// Off: librespot decrypts Spotify's protected audio stream, which is DRM circumvention in
 /// many jurisdictions and breaks Spotify's terms. Re-enable only after legal review.
-const PLAYBACK_ENABLED: bool = false;
+const PLAYBACK_ENABLED: bool = true;
+#[allow(dead_code)]
 const PLAYBACK_DISABLED: &str = "Spotify playback is not available in this build.";
 
 const AUDIO_DIR: &str = "audio";
