@@ -4,6 +4,7 @@ import {
   type SaveResult,
 } from "./player-chrome-profiles";
 import { DEFAULT_PLAYER_ICONS } from "./default-player-icons";
+import { publicAssetUrl } from "./public-url";
 
 export type PlayerSlot =
   | "top-left"
@@ -139,11 +140,12 @@ export function getCustomIcon(
 ): string | undefined {
   if (state) {
     const k = iconKey(id, state);
-    if (map?.[k]) return map[k];
-    if (DEFAULT_PLAYER_ICONS[k]) return DEFAULT_PLAYER_ICONS[k];
+    if (map?.[k]) return publicAssetUrl(map[k]);
+    if (DEFAULT_PLAYER_ICONS[k]) return publicAssetUrl(DEFAULT_PLAYER_ICONS[k]);
   }
-  if (map?.[id]) return map[id];
-  return DEFAULT_PLAYER_ICONS[id];
+  if (map?.[id]) return publicAssetUrl(map[id]);
+  const fallback = DEFAULT_PLAYER_ICONS[id];
+  return fallback ? publicAssetUrl(fallback) : undefined;
 }
 
 export const ICON_REPLACEABLE_CONTROLS: readonly PlayerControlId[] = [

@@ -293,4 +293,26 @@ test("Web Browser Playback: proxy gate requires Tauri runtime and HTML5 bridge s
   assert.ok(switcherCode.includes('hasProxyHeaders && hasTauriRuntime'));
   assert.ok(html5Code.includes("canNativeHls"));
   assert.ok(html5Code.includes('isFlv ? "flv" : "mpegts"'));
+  assert.ok(html5Code.includes('referrerpolicy", "no-referrer"'));
+
+  const { publicAssetUrl } = await import("../src/lib/public-url.ts");
+  assert.equal(publicAssetUrl("/player-icons/back.svg", "/Argus/"), "/Argus/player-icons/back.svg");
+  assert.equal(publicAssetUrl("/Argus/player-icons/back.svg", "/Argus/"), "/Argus/player-icons/back.svg");
+  assert.equal(publicAssetUrl("/player-icons/back.svg", "./"), "./player-icons/back.svg");
+  assert.equal(publicAssetUrl("/player-icons/back.svg", "/"), "/player-icons/back.svg");
+  assert.equal(publicAssetUrl("https://cdn.example/icon.svg", "/Argus/"), "https://cdn.example/icon.svg");
+
+  const { isMixedContentSource } = await import("../src/lib/player/web-playback.ts");
+  const g = globalThis as unknown as { window?: Record<string, unknown> };
+  const prevWin = g.window;
+  try {
+    g.window = { location: { protocol: "https:" } };
+    assert.equal(isMixedContentSource("http://127.0.0.1:11470/stream.mp4"), false);
+    assert.equal(isMixedContentSource("http://localhost:11470/stream.mp4"), false);
+    assert.equal(isMixedContentSource("http://cdn.example.com/movie.mp4"), true);
+    assert.equal(isMixedContentSource("https://cdn.example.com/movie.mp4"), false);
+  } finally {
+    if (prevWin === undefined) delete g.window;
+    else g.window = prevWin;
+  }
 });

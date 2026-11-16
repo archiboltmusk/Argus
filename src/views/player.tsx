@@ -819,7 +819,7 @@ function NativePlayerView({ src }: { src: PlayerSrc }) {
     engine === "html5" &&
     !isAndroidNativePlayerAvailable() &&
     !settings.playerExternalMpv &&
-    (snap.status === "error" || snap.status === "loading");
+    (snap.status === "error" || (!isWeb() && snap.status === "loading"));
   // The browser has no mpv to fall back to, so say why a source can't play
   // here instead of the generic "provider didn't respond" card.
   const webErrorCode =

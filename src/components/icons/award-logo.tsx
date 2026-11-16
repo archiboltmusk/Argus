@@ -1,5 +1,6 @@
 import { allAwardSources, awardSourceMeta, type AwardSourceId } from "@/lib/anime-awards";
 import { AWARD_ICON_REGISTRY, useAwardIcon } from "@/lib/award-icons";
+import { publicAssetUrl } from "@/lib/public-url";
 
 const ANIME_CATEGORY_KEYS = new Set<string>(
   AWARD_ICON_REGISTRY.find((g) => g.title === "Anime categories")?.items.map((i) => i.key) ?? [],
@@ -78,7 +79,7 @@ export function AwardLogo({ type, size = 22 }: { type: string; size?: number }) 
   const custom = useAwardIcon(type);
   return (
     <img
-      src={custom ?? defaultAwardIcon(type)}
+      src={publicAssetUrl(custom ?? defaultAwardIcon(type))}
       alt=""
       aria-hidden
       loading="lazy"

@@ -5,6 +5,7 @@ import type { Meta } from "@/lib/cinemeta";
 import type { PanelCorner } from "@/lib/player-chrome";
 import type { PlayEpisode } from "@/lib/view";
 import { useT } from "@/lib/i18n";
+import { publicAssetUrl } from "@/lib/public-url";
 import { HeaderWarning, NoAudioWarning } from "./header-warning";
 
 export const PanelsLayer = memo(function PanelsLayer({
@@ -81,7 +82,7 @@ export const PanelsLayer = memo(function PanelsLayer({
           }`}
         >
           <img
-            src="/player-icons/up-next.png"
+            src={publicAssetUrl("/player-icons/up-next.png")}
             width={22}
             height={22}
             alt=""

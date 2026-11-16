@@ -713,6 +713,7 @@ export function createHtml5Bridge(): PlayerBridge {
       const v = document.createElement("video");
       v.playsInline = true;
       v.preload = "auto";
+      v.setAttribute("referrerpolicy", "no-referrer");
       v.style.width = "100%";
       v.style.height = "100%";
       v.style.objectFit = "contain";

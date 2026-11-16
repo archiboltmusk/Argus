@@ -1,6 +1,7 @@
 import { AlertCircle } from "lucide-react";
 import { NavGlyph } from "@/components/icons/nav-glyph";
 import { useEffect, useState, type ReactNode } from "react";
+import { publicAssetUrl } from "@/lib/public-url";
 import type { PlayerControlId } from "@/lib/player-chrome";
 import { t as translate } from "@/lib/i18n";
 import type { ControlContext } from "./control-renderer";
@@ -10,10 +11,11 @@ import { Tooltip } from "./tooltip";
 import { StremioBtn } from "./stremio-btn";
 
 export function CustomIcon({ url, size }: { url: string; size: number }) {
+  const resolvedUrl = publicAssetUrl(url);
   const [errored, setErrored] = useState(false);
   useEffect(() => {
     setErrored(false);
-  }, [url]);
+  }, [resolvedUrl]);
   if (errored) {
     return (
       <AlertCircle
@@ -25,7 +27,7 @@ export function CustomIcon({ url, size }: { url: string; size: number }) {
   }
   return (
     <img
-      src={url}
+      src={resolvedUrl}
       alt=""
       width={size}
       height={size}

@@ -12,6 +12,9 @@ export async function registerStreamProxy(
   headers?: Record<string, string>,
   opts?: { transcode?: boolean; prebufferBytes?: number },
 ): Promise<ProxyResult> {
+  if (typeof window !== "undefined" && !("__TAURI_INTERNALS__" in window)) {
+    throw new Error("Stream proxy requires Tauri runtime");
+  }
   const args: Record<string, unknown> = { url, headers: headers ?? {} };
   if (opts?.transcode) {
     args.transcode = true;

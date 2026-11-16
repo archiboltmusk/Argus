@@ -1,6 +1,7 @@
 import { ChevronDown } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useT } from "@/lib/i18n";
+import { publicAssetUrl } from "@/lib/public-url";
 import { SEEK_STEP_OPTIONS, sanitizeSeekStep } from "@/lib/seek-step";
 const DEFAULT_SHORT_SEC = 3;
 const CURATED_SEEK = [5, 10, 30];
@@ -27,7 +28,7 @@ export function SeekStepBtn({
     direction === "back" ? settings.seekBackStepShortSec : settings.seekForwardStepShortSec,
     DEFAULT_SHORT_SEC,
   );
-  const numberedSrc = `/player-icons/seek-${direction}-${seconds}.png`;
+  const numberedSrc = publicAssetUrl(`/player-icons/seek-${direction}-${seconds}.png`);
   const [numberedOk, setNumberedOk] = useState(true);
   useEffect(() => setNumberedOk(true), [numberedSrc]);
   const [pickerOpen, setPickerOpen] = useState(false);
@@ -151,7 +152,7 @@ export function SeekStepBtn({
           ) : (
             <>
               <img
-                src={`/player-icons/seek-${direction}.svg`}
+                src={publicAssetUrl(`/player-icons/seek-${direction}.svg`)}
                 width={34}
                 height={34}
                 alt=""

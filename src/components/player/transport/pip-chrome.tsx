@@ -1,6 +1,7 @@
 import { Captions } from "lucide-react";
 import type { PlayerSnapshot } from "@/lib/player/bridge";
 import { useT } from "@/lib/i18n";
+import { publicAssetUrl } from "@/lib/public-url";
 import { Tooltip } from "./tooltip";
 import { PipIconBtn, PipStepBtn } from "./pip-controls";
 import { PipSeekBar } from "./pip-seek-bar";
@@ -108,7 +109,7 @@ export function PipChrome({
             className="pointer-events-auto inline-flex shrink-0 items-center gap-1.5 rounded-full border border-white/15 bg-black/55 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.16em] text-white/95 backdrop-blur-md transition-colors hover:bg-black/85"
             aria-label={t("Exit Picture in Picture")}
           >
-            <img src="/player-icons/pip--inactive.svg" width="12" height="12" alt="" className="shrink-0 select-none" draggable={false} />
+            <img src={publicAssetUrl("/player-icons/pip--inactive.svg")} width="12" height="12" alt="" className="shrink-0 select-none" draggable={false} />
             {t("Exit PiP")}
           </button>
         </Tooltip>
@@ -127,7 +128,7 @@ export function PipChrome({
             onClick={onPrevEp}
             disabled={!hasPrevEp}
             icon={
-              <img src="/player-icons/skip-prev.png" width={17} height={17} alt="" draggable={false} className="select-none" />
+              <img src={publicAssetUrl("/player-icons/skip-prev.png")} width={17} height={17} alt="" draggable={false} className="select-none" />
             }
           />
           <PipStepBtn
@@ -135,7 +136,7 @@ export function PipChrome({
             onClick={() => onSeekStep(-backSec)}
             icon={
               <img
-                src={`/player-icons/seek-back-${backSec}.png`}
+                src={publicAssetUrl(`/player-icons/seek-back-${backSec}.png`)}
                 width={22}
                 height={22}
                 alt=""
@@ -156,9 +157,9 @@ export function PipChrome({
                   Hardcoded here rather than resolved through getCustomIcon, so
                   fixing the shared icon map did not reach this surface. */}
               {playing ? (
-                <img src="/player-icons/play-pause--paused.svg" width={28} height={28} alt="" draggable={false} className="select-none" />
+                <img src={publicAssetUrl("/player-icons/play-pause--paused.svg")} width={28} height={28} alt="" draggable={false} className="select-none" />
               ) : (
-                <img src="/player-icons/play-pause--playing.svg" width={28} height={28} alt="" draggable={false} className="select-none" />
+                <img src={publicAssetUrl("/player-icons/play-pause--playing.svg")} width={28} height={28} alt="" draggable={false} className="select-none" />
               )}
             </button>
           </Tooltip>
@@ -167,7 +168,7 @@ export function PipChrome({
             onClick={() => onSeekStep(fwdSec)}
             icon={
               <img
-                src={`/player-icons/seek-forward-${fwdSec}.png`}
+                src={publicAssetUrl(`/player-icons/seek-forward-${fwdSec}.png`)}
                 width={22}
                 height={22}
                 alt=""
@@ -181,7 +182,7 @@ export function PipChrome({
             onClick={onNextEp}
             disabled={!hasNextEp}
             icon={
-              <img src="/player-icons/skip-next.png" width={17} height={17} alt="" draggable={false} className="select-none" />
+              <img src={publicAssetUrl("/player-icons/skip-next.png")} width={17} height={17} alt="" draggable={false} className="select-none" />
             }
           />
           <PipVolume snap={snap} muted={muted} onMute={onMute} onVolume={onVolume} />
