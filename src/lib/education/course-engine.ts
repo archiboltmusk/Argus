@@ -270,6 +270,18 @@ export const CURATED_UNIVERSITY_COURSES: UniversityCourse[] = [
         ],
       },
       {
+        id: "cs224w-l2",
+        lectureNumber: 2,
+        title: "Lecture 2: Traditional Feature-Based ML for Graphs",
+        durationSec: 4380,
+        videoUrl: "https://www.youtube.com/watch?v=3IS7UhNkfPA",
+        completed: false,
+        lastPositionSec: 0,
+        conceptNotes: [
+          { timestampSec: 900, title: "Node Centrality & PageRank", note: "Eigenvector centrality, betweenness, and random walk formulations." },
+        ],
+      },
+      {
         id: "cs224w-l6",
         lectureNumber: 6,
         title: "Lecture 6: Graph Neural Networks & Graph Convolution (GCN)",
@@ -890,6 +902,9 @@ export const CURATED_UNIVERSITY_COURSES: UniversityCourse[] = [
     ],
   },
 ];
+
+/** Backward-compatible alias for Stanford / University course catalog */
+export const CURATED_STANFORD_COURSES = CURATED_UNIVERSITY_COURSES;
 
 const STORAGE_COURSES_KEY = "argus.courses.store";
 
