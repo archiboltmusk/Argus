@@ -1872,6 +1872,7 @@ pub fn run() {
             torrent_engine::torrent_engine_list,
             torrent_engine::torrent_engine_pause,
             torrent_engine::torrent_engine_resume,
+            torrent_engine::torrent_engine_eval_dual_window,
             torrent_engine::torrent_engine_remove,
             torrent_engine::torrent_engine_selftest,
             torrent_engine::torrent_engine_restart,

@@ -1,5 +1,6 @@
 mod cache_sweep;
 mod dht_boot;
+pub mod dual_window;
 mod lifecycle;
 mod netcheck;
 mod selftest;
@@ -1400,4 +1401,12 @@ pub async fn torrent_engine_resume(info_hash: String) -> Result<(), String> {
         Ok(())
     })
     .await
+}
+
+#[tauri::command]
+pub async fn torrent_engine_eval_dual_window(
+    ctx: dual_window::PlaybackContextDto,
+) -> Result<dual_window::DualWindowBoundsDto, String> {
+    let scheduler = dual_window::DualWindowScheduler::new(ctx);
+    Ok(scheduler.calculate_windows())
 }
