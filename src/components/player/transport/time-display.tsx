@@ -17,8 +17,9 @@ function ActiveChapterPill({
 }): ReactNode {
   if (!chapter || !chapter.title) return null;
   const handleOpen = () => {
-    window.dispatchEvent(new CustomEvent("argus:open-chapter-menu"));
     onOpen?.();
+    const btn = document.querySelector<HTMLButtonElement>("[data-chapter-menu-button]");
+    if (btn) btn.click();
   };
   return (
     <span className="inline-flex items-center">

@@ -45,17 +45,6 @@ export function ChapterMenu({
     onOpenChange?.(open);
   }, [open, onOpenChange]);
 
-  useEffect(() => {
-    const handleOpen = () => setOpen(true);
-    const handleToggle = () => setOpen((prev) => !prev);
-    window.addEventListener("argus:open-chapter-menu", handleOpen);
-    window.addEventListener("argus:toggle-chapter-menu", handleToggle);
-    return () => {
-      window.removeEventListener("argus:open-chapter-menu", handleOpen);
-      window.removeEventListener("argus:toggle-chapter-menu", handleToggle);
-    };
-  }, []);
-
   // The transport keeps its chrome visible while a menu is open. Chapters can
   // disappear mid-menu (a stream switch to a file without them), and the control
   // unmounts then, so it has to release that flag itself.
@@ -93,6 +82,7 @@ export function ChapterMenu({
       <Tooltip label={t("Chapters")}>
         <button
           type="button"
+          data-chapter-menu-button=""
           onClick={() => setOpen((value) => !value)}
           aria-label={t("Chapters")}
           aria-expanded={open}
