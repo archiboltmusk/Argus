@@ -1,3 +1,4 @@
+import { isIncognito } from "@/lib/incognito";
 import { activeProfileId } from "@/lib/active-profile-id";
 import { subscribeAuthor } from "@/lib/theme-auth";
 import { rateLimitRemaining, runPull, runPush } from "./engine";
@@ -43,6 +44,10 @@ export function scheduleFlush(delay = DEBOUNCE_MS): void {
 }
 
 async function flush(): Promise<void> {
+  if (isIncognito()) {
+    scheduleFlush(30000);
+    return;
+  }
   if (busy) {
     scheduleFlush(1000);
     return;
@@ -75,6 +80,10 @@ function schedulePull(delay: number): void {
 }
 
 async function pull(): Promise<void> {
+  if (isIncognito()) {
+    schedulePull(30000);
+    return;
+  }
   if (busy) {
     schedulePull(2000);
     return;
@@ -122,6 +131,7 @@ function scopeFor(section: SectionKey, profileId?: string): string | null {
  * mutation after that.
  */
 export function markSectionDirty(section: SectionKey, profileId?: string): void {
+  if (isIncognito()) return;
   const scope = scopeFor(section, profileId);
   if (!scope) return;
   enqueueDirty(docKey(section, scope));
@@ -130,6 +140,7 @@ export function markSectionDirty(section: SectionKey, profileId?: string): void 
 }
 
 export function markSectionCleared(section: SectionKey, profileId?: string): void {
+  if (isIncognito()) return;
   const scope = scopeFor(section, profileId);
   if (!scope) return;
   enqueueClear(docKey(section, scope));

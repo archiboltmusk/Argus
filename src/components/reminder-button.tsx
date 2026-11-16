@@ -81,8 +81,12 @@ function ReminderMenu({
   const rows = [
     {
       key: "episodes",
-      label: t("New episodes"),
-      sub: t("When a new episode airs"),
+      label: t(seed.type === "movie" ? "Release date" : "New episodes"),
+      sub: t(
+        seed.type === "movie"
+          ? "When the announced movie release date arrives"
+          : "When a new episode airs",
+      ),
       value: episodes,
       set: setEpisodes,
     },
@@ -93,7 +97,7 @@ function ReminderMenu({
       value: seasons,
       set: setSeasons,
     },
-  ];
+  ].filter((row) => seed.type !== "movie" || row.key === "episodes");
 
   return (
     <AnchoredMenu anchorRef={anchorRef} open={open} onClose={onClose} width={300}>
@@ -156,7 +160,7 @@ function ReminderMenu({
         <div className="p-3.5 pt-3">
           <button
             onClick={save}
-            disabled={!episodes && !seasons}
+            disabled={seed.type === "movie" ? !episodes : !episodes && !seasons}
             className="h-10 w-full rounded-xl bg-ink text-[13.5px] font-semibold text-canvas transition-transform duration-150 hover:scale-[1.01] active:scale-[0.98] disabled:opacity-40 disabled:hover:scale-100"
           >
             {active ? t("Save changes") : t("Set reminder")}

@@ -248,6 +248,10 @@ export function SettingsProvider({
   }, [settings.posterRadius]);
 
   useEffect(() => {
+    document.documentElement.toggleAttribute("data-reduce-motion", settings.reduceMotion === true);
+  }, [settings.reduceMotion]);
+
+  useEffect(() => {
     const scale = settings.uiScale > 0 ? settings.uiScale : 1;
     const root = document.getElementById("root") as
       | (HTMLElement & { style: CSSStyleDeclaration & { zoom?: string } })
@@ -616,7 +620,9 @@ export function SettingsProvider({
     const onProviderChange = (e: Event) => {
       const provider = (e as CustomEvent)?.detail?.provider as "stremio" | "nuvio" | undefined;
       if (provider) {
-        setSettings((s) => (s.accountProvider === provider ? s : { ...s, accountProvider: provider }));
+        setSettings((s) =>
+          s.accountProvider === provider ? s : { ...s, accountProvider: provider },
+        );
       }
     };
     window.addEventListener("argus:account-provider-changed", onProviderChange);

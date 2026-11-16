@@ -34,7 +34,9 @@ export function generateCouchHandoffUrl(
     generatedAt: Date.now(),
   };
 
-  const encodedData = encodeURIComponent(btoa(JSON.stringify(fullPayload)));
+  const encodedData = encodeURIComponent(
+    btoa(unescape(encodeURIComponent(JSON.stringify(fullPayload)))),
+  );
   return `http://${lanHostIp}:${port}/handoff?data=${encodedData}`;
 }
 
@@ -47,7 +49,15 @@ export function parseCouchHandoffUrl(urlStr: string): HandoffPayload | null {
     const dataParam = url.searchParams.get("data");
     if (!dataParam) return null;
     const jsonStr = atob(decodeURIComponent(dataParam));
-    return JSON.parse(jsonStr) as HandoffPayload;
+    const value = JSON.parse(decodeURIComponent(escape(jsonStr))) as HandoffPayload;
+    return value.version === 1 &&
+      Number.isFinite(value.positionSec) &&
+      value.positionSec >= 0 &&
+      Number.isFinite(value.generatedAt) &&
+      Date.now() - value.generatedAt < 600_000 &&
+      value.generatedAt <= Date.now() + 5000
+      ? value
+      : null;
   } catch {
     return null;
   }

@@ -1,3 +1,4 @@
+import { HandoffReceiver } from "@/components/player/handoff-receiver";
 import { useEffect } from "react";
 import { isBigPictureActive, pushBigPicture } from "@/lib/big-picture";
 import type { Meta } from "@/lib/cinemeta";
@@ -157,5 +158,5 @@ export function RemoteOpenBridge() {
     window.addEventListener("argus:remote-open", onOpen);
     return () => window.removeEventListener("argus:remote-open", onOpen);
   }, [openMeta, openPerson, openPicker, openPlayer, openService, setView, settings]);
-  return null;
+  return <HandoffReceiver />;
 }

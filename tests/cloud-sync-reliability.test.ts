@@ -17,6 +17,7 @@ function harness() {
     rejectLibrary = false;
   let libraryRead: () => Promise<unknown[]> = async () => [];
   const dependencies = {
+    isIncognito: () => false,
     useSyncExternalStore() {},
     isNuvioSignedIn: () => false,
     loadNuvioState: () => ({ activeProfileIndex: 1, session: null }),

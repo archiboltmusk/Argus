@@ -1,3 +1,4 @@
+import { openPlaybackHelp } from "@/lib/player/playback-help";
 import {
   Check,
   Download,
@@ -66,7 +67,19 @@ export function MoreMenu({
   const subUrl = selectedSub?.url ?? null;
   const magnet = infoHash ? magnetFromHash(infoHash) : null;
 
-  const rows: MoreRowSpec[] = [];
+  const rows: MoreRowSpec[] = [
+    {
+      key: "help",
+      icon: MoreHorizontal,
+      label: t("Fix playback"),
+      feedback: "none",
+      run: () => {
+        setOpen(false);
+        openPlaybackHelp();
+        return true;
+      },
+    },
+  ];
   if (subUrl) {
     rows.push({
       key: "sub",
@@ -137,31 +150,31 @@ export function MoreMenu({
           visible ? "opacity-100" : "pointer-events-none opacity-0"
         }`}
       >
-      <div ref={wrap} className="relative">
-        <Tooltip label={t("More")} side="bottom" align="end">
-          <button
-            type="button"
-            onClick={() => setOpen((o) => !o)}
-            aria-label={t("More options")}
-            aria-expanded={open}
-            className={`flex h-10 w-10 items-center justify-center rounded-full border border-white/15 shadow-[0_14px_40px_-15px_rgba(0,0,0,0.85)] backdrop-blur-md transition-colors ${
-              open
-                ? "bg-white/22 text-white"
-                : "bg-black/65 text-white/90 hover:bg-black/85 hover:text-white"
-            }`}
-          >
-            <MoreHorizontal size={20} strokeWidth={2.2} />
-          </button>
-        </Tooltip>
-        {open && (
-          <div className="absolute end-0 top-[calc(100%+10px)] w-64 max-w-[calc(100vw-32px)] overflow-hidden rounded-md bg-elevated p-1.5 shadow-[0_10px_30px_-12px_rgba(0,0,0,0.6)]">
-            {rows.map((r) => (
-              <MoreRow key={r.key} spec={r} />
-            ))}
-          </div>
-        )}
+        <div ref={wrap} className="relative">
+          <Tooltip label={t("More")} side="bottom" align="end">
+            <button
+              type="button"
+              onClick={() => setOpen((o) => !o)}
+              aria-label={t("More options")}
+              aria-expanded={open}
+              className={`flex h-10 w-10 items-center justify-center rounded-full border border-white/15 shadow-[0_14px_40px_-15px_rgba(0,0,0,0.85)] backdrop-blur-md transition-colors ${
+                open
+                  ? "bg-white/22 text-white"
+                  : "bg-black/65 text-white/90 hover:bg-black/85 hover:text-white"
+              }`}
+            >
+              <MoreHorizontal size={20} strokeWidth={2.2} />
+            </button>
+          </Tooltip>
+          {open && (
+            <div className="absolute end-0 top-[calc(100%+10px)] w-64 max-w-[calc(100vw-32px)] overflow-hidden rounded-md bg-elevated p-1.5 shadow-[0_10px_30px_-12px_rgba(0,0,0,0.6)]">
+              {rows.map((r) => (
+                <MoreRow key={r.key} spec={r} />
+              ))}
+            </div>
+          )}
+        </div>
       </div>
-    </div>
     </>
   );
 }

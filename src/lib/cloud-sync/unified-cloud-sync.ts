@@ -1,3 +1,4 @@
+import { isIncognito } from "@/lib/incognito";
 /**
  * Unified Cross-Platform Cloud Sync Service
  * Coordinates provider refreshes and status across platforms. Provider-specific
@@ -7,7 +8,11 @@
 import { useSyncExternalStore } from "react";
 import { isNuvioSignedIn, loadNuvioState } from "@/lib/nuvio/nuvio-client";
 import { fetchNuvioProfiles, signOutNuvio } from "@/lib/nuvio/nuvio-auth";
-import { pullAddonsFromNuvio, pullWatchProgressFromNuvio, resolveNuvioProfileIndex } from "@/lib/nuvio/nuvio-sync";
+import {
+  pullAddonsFromNuvio,
+  pullWatchProgressFromNuvio,
+  resolveNuvioProfileIndex,
+} from "@/lib/nuvio/nuvio-sync";
 import { pullNuvioLibrarySnapshot } from "@/lib/nuvio/nuvio-library";
 import { library, invalidateLibraryCache } from "@/lib/stremio";
 import { flushWriteQueue } from "@/lib/stremio-write-queue";
@@ -28,12 +33,19 @@ export interface CloudSyncState {
 
 const CLOUD_SYNC_TIMESTAMP_KEY = "argus.cloud-sync.last_synced_at";
 let stateOwner = "";
-let pending: { owner: string; promise: Promise<{ ok: boolean; count: number; error?: string }> } | null = null;
+let pending: {
+  owner: string;
+  promise: Promise<{ ok: boolean; count: number; error?: string }>;
+} | null = null;
 
 function syncOwner(): string {
   const nuvio = loadNuvioState();
-  return JSON.stringify([cwProfileScope().profileId, isNuvioSignedIn() ? nuvio.session?.user?.id : null,
-    nuvio.activeProfileIndex, readActiveStremioAuthKey()]);
+  return JSON.stringify([
+    cwProfileScope().profileId,
+    isNuvioSignedIn() ? nuvio.session?.user?.id : null,
+    nuvio.activeProfileIndex,
+    readActiveStremioAuthKey(),
+  ]);
 }
 
 function timestampKey(): string | null {
@@ -41,8 +53,12 @@ function timestampKey(): string | null {
   const scope = cwProfileScope();
   let accountId = isNuvioSignedIn() ? nuvio.session?.user?.id : null;
   if (!accountId) {
-    try { accountId = JSON.parse(localStorage.getItem(`argus.auth.${scope.sharedId}`) ?? "null")?.user?._id; }
-    catch { /* Do not reuse another account's timestamp when identity is unavailable. */ }
+    try {
+      accountId = JSON.parse(localStorage.getItem(`argus.auth.${scope.sharedId}`) ?? "null")?.user
+        ?._id;
+    } catch {
+      /* Do not reuse another account's timestamp when identity is unavailable. */
+    }
   }
   if (!accountId) return null;
   return `${CLOUD_SYNC_TIMESTAMP_KEY}.${JSON.stringify([scope.profileId, accountId, nuvio.activeProfileIndex])}`;
@@ -98,8 +114,15 @@ export function getCloudSyncSnapshot(): CloudSyncState {
   const owner = syncOwner();
   if (owner !== stateOwner) {
     stateOwner = owner;
-    activeState = { provider: "none", isConnected: false, userEmail: null, lastSyncedAt: null,
-      isSyncing: false, itemsCount: 0, error: null };
+    activeState = {
+      provider: "none",
+      isConnected: false,
+      userEmail: null,
+      lastSyncedAt: null,
+      isSyncing: false,
+      itemsCount: 0,
+      error: null,
+    };
   }
   const nuvio = isNuvioSignedIn();
   const nuvioState = loadNuvioState();
@@ -126,9 +149,16 @@ export function getCloudSyncSnapshot(): CloudSyncState {
     if (raw) storedLastSync = parseInt(raw, 10);
   } catch {}
 
-  const lastSyncedAt = Number.isFinite(storedLastSync) && storedLastSync! > 0 ? storedLastSync : activeState.lastSyncedAt;
-  if (activeState.provider !== provider || activeState.isConnected !== isConnected ||
-      activeState.userEmail !== userEmail || activeState.lastSyncedAt !== lastSyncedAt) {
+  const lastSyncedAt =
+    Number.isFinite(storedLastSync) && storedLastSync! > 0
+      ? storedLastSync
+      : activeState.lastSyncedAt;
+  if (
+    activeState.provider !== provider ||
+    activeState.isConnected !== isConnected ||
+    activeState.userEmail !== userEmail ||
+    activeState.lastSyncedAt !== lastSyncedAt
+  ) {
     activeState = { ...activeState, provider, isConnected, userEmail, lastSyncedAt };
   }
 
@@ -144,15 +174,25 @@ export function subscribeCloudSync(listener: () => void): () => void {
  * Executes a full cloud sync across all services (watch history, library, addons, profiles).
  */
 export function syncAllCloudData(): Promise<{ ok: boolean; count: number; error?: string }> {
+  if (isIncognito())
+    return Promise.resolve({
+      ok: false,
+      count: 0,
+      error: "Sync is paused during a private session.",
+    });
   const owner = syncOwner();
   if (pending?.owner === owner) return pending.promise;
   const promise = runCloudSync(owner);
   pending = { owner, promise };
-  void promise.finally(() => { if (pending?.promise === promise) pending = null; });
+  void promise.finally(() => {
+    if (pending?.promise === promise) pending = null;
+  });
   return promise;
 }
 
-async function runCloudSync(owner: string): Promise<{ ok: boolean; count: number; error?: string }> {
+async function runCloudSync(
+  owner: string,
+): Promise<{ ok: boolean; count: number; error?: string }> {
   const current = getCloudSyncSnapshot();
   const assertOwner = () => {
     if (syncOwner() !== owner) throw new Error("Account or profile changed during sync");
@@ -255,9 +295,12 @@ export function initUnifiedCloudSyncRunner(): () => void {
   void syncAllCloudData();
 
   // Periodic interval: every 5 minutes
-  const intervalId = window.setInterval(() => {
-    void syncAllCloudData();
-  }, 5 * 60 * 1000);
+  const intervalId = window.setInterval(
+    () => {
+      void syncAllCloudData();
+    },
+    5 * 60 * 1000,
+  );
 
   const onVisibility = () => {
     if (document.visibilityState === "visible") {
@@ -288,7 +331,11 @@ export function initUnifiedCloudSyncRunner(): () => void {
  * React hook to observe and trigger Cloud Sync across any view.
  */
 export function useCloudSync() {
-  const state = useSyncExternalStore(subscribeCloudSync, getCloudSyncSnapshot, getCloudSyncSnapshot);
+  const state = useSyncExternalStore(
+    subscribeCloudSync,
+    getCloudSyncSnapshot,
+    getCloudSyncSnapshot,
+  );
 
   return {
     ...state,

@@ -1,3 +1,4 @@
+import { sourceMemoryBonus } from "@/lib/player/source-memory";
 import { isTrustedGroup } from "../parser";
 import type { ParsedStream, ScoredStream, ScoreReason } from "../types";
 import { addonPriorityPoints, trustedAddonPoints } from "./scoring-addons";
@@ -97,14 +98,8 @@ export function scoreStream(
     reasons.push({ signal: "zero-seeders-soft", delta: deadPenalty });
   }
 
-  const expectedYear = opts.releaseDate
-    ? parseInt(opts.releaseDate.slice(0, 4), 10)
-    : null;
-  if (
-    expectedYear != null &&
-    Number.isFinite(expectedYear) &&
-    s.year != null
-  ) {
+  const expectedYear = opts.releaseDate ? parseInt(opts.releaseDate.slice(0, 4), 10) : null;
+  if (expectedYear != null && Number.isFinite(expectedYear) && s.year != null) {
     const diff = Math.abs(s.year - expectedYear);
     if (diff !== 0) {
       const releaseMs = opts.releaseDate ? Date.parse(opts.releaseDate) : NaN;
@@ -115,11 +110,17 @@ export function scoreStream(
       if (diff === 1) {
         const delta = isRecent ? -75 : -18;
         score += delta;
-        reasons.push({ signal: `year-off-by-1:${s.year}vs${expectedYear}${isRecent ? "-recent" : ""}`, delta });
+        reasons.push({
+          signal: `year-off-by-1:${s.year}vs${expectedYear}${isRecent ? "-recent" : ""}`,
+          delta,
+        });
       } else {
         const delta = isRecent ? -150 : -70;
         score += delta;
-        reasons.push({ signal: `year-mismatch:${s.year}vs${expectedYear}${isRecent ? "-recent" : ""}`, delta });
+        reasons.push({
+          signal: `year-mismatch:${s.year}vs${expectedYear}${isRecent ? "-recent" : ""}`,
+          delta,
+        });
       }
     }
   }
@@ -281,9 +282,15 @@ export function scoreStream(
   // so web users get an instant, flawless playback experience without VLC error cards.
   if (opts.capabilities?.isWeb) {
     const isWebNativeContainer =
-      s.container === "mp4" || s.container === "m4v" || s.container === "webm" || !!s.url?.includes(".m3u8");
+      s.container === "mp4" ||
+      s.container === "m4v" ||
+      s.container === "webm" ||
+      !!s.url?.includes(".m3u8");
     const isWebNativeAudio =
-      s.audio.codec === "AAC" || s.audio.codec === "Opus" || s.audio.codec === "Other" || !s.audio.codec;
+      s.audio.codec === "AAC" ||
+      s.audio.codec === "Opus" ||
+      s.audio.codec === "Other" ||
+      !s.audio.codec;
     if (isWebNativeContainer && isWebNativeAudio) {
       score += 40;
       reasons.push({ signal: "web-friendly-stream", delta: 40 });
@@ -299,7 +306,9 @@ export function scoreStream(
     reasons.push(bitratePenalty);
   }
 
-  const expectedMin = opts.runtimeMinutes ? expectedMinSizeBytes(s.resolution, opts.runtimeMinutes) : null;
+  const expectedMin = opts.runtimeMinutes
+    ? expectedMinSizeBytes(s.resolution, opts.runtimeMinutes)
+    : null;
   const hasValidSize = !!s.size && !!expectedMin && s.size >= expectedMin;
 
   const sizePenalty = sizeMislabelPenalty(s, expectedMin);
@@ -375,5 +384,10 @@ export function scoreStream(
     });
   }
 
+  const memory = score > 0 ? sourceMemoryBonus(s, opts.sourceMemory) : 0;
+  if (memory) {
+    score += memory;
+    reasons.push({ signal: "worked-on-this-device", delta: memory });
+  }
   return { ...s, score, reasons, tier: tierOf(s) };
 }

@@ -1,3 +1,4 @@
+import { selectHandoffAudio } from "@/lib/player/household-handoff";
 import { useEffect, useMemo, useRef, useState, type RefObject } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import type { PlayerBridge, PlayerSnapshot } from "@/lib/player/bridge";
@@ -13,7 +14,11 @@ import { getVintagePresetMpvArgs } from "@/lib/player/vintage-cinema-shaders";
 import { IndicDubbingEngine } from "@/lib/player/indic-dubbing-overlay";
 import { resolveBestChapters } from "@/lib/player/synthetic-chapters";
 import { playbackSourceKey, readActualPlaybackFor } from "@/lib/playback-history";
-import { playbackAudioChoice, selectPlaybackAudio, pickBestAudioTrack } from "@/lib/player/audio-choice";
+import {
+  playbackAudioChoice,
+  selectPlaybackAudio,
+  pickBestAudioTrack,
+} from "@/lib/player/audio-choice";
 import { tmdbImdbId } from "@/lib/providers/tmdb";
 import type { Addon } from "@/lib/addons";
 import type { GeneratedSubtitleGroup } from "@/lib/subtitles/types";
@@ -57,10 +62,18 @@ export function useTrackAutoload(params: {
   const sourceKey = playbackSourceKey(src);
   const rememberedAudio = useMemo(
     () =>
-      src.continuation?.sourceKey === sourceKey
+      src.handoff?.audio ??
+      (src.continuation?.sourceKey === sourceKey
         ? src.continuation.audioTrack
-        : readActualPlaybackFor(src)?.audioTrack,
-    [sourceKey, src.meta.id, src.episode?.season, src.episode?.episode, src.continuation],
+        : readActualPlaybackFor(src)?.audioTrack),
+    [
+      sourceKey,
+      src.meta.id,
+      src.episode?.season,
+      src.episode?.episode,
+      src.continuation,
+      src.handoff,
+    ],
   );
   const snapRef = useRef(snap);
   snapRef.current = snap;
@@ -514,6 +527,23 @@ export function useTrackAutoload(params: {
     if (snap.audioTracks.length === 0 && snap.subtitleTracks.length === 0 && snap.durationSec === 0)
       return;
     if (preselectAppliedRef.current === src.url) return;
+    if (!choice.off && !choice.url) {
+      const exact = snap.subtitleTracks.find(
+        (track) =>
+          (track.title ?? track.label) === choice.title &&
+          (!choice.lang || normalizeLang(track.lang) === normalizeLang(choice.lang)),
+      );
+      const sameLanguage = choice.lang
+        ? snap.subtitleTracks.filter(
+            (track) => normalizeLang(track.lang) === normalizeLang(choice.lang),
+          )
+        : [];
+      const selected = exact ?? (sameLanguage.length === 1 ? sameLanguage[0] : null);
+      if (!selected) return;
+      bridgeRef.current?.setSubtitleTrack(selected.id);
+      preselectAppliedRef.current = src.url;
+      return;
+    }
     preselectAppliedRef.current = src.url;
     if (choice.off) {
       bridgeRef.current?.setSubtitleTrack(null);
@@ -777,19 +807,27 @@ export function useTrackAutoload(params: {
   useEffect(() => {
     const nightHour = new Date().getHours();
     const nightCinemaActive =
-      settings.nightCinemaMode || (settings.nightCinemaAutoWindow && nightHour >= 0 && nightHour < 5);
+      settings.nightCinemaMode ||
+      (settings.nightCinemaAutoWindow && nightHour >= 0 && nightHour < 5);
     const nightOn = settings.audioNightMode || nightCinemaActive || settings.nightDialogueBooster;
     IndicDubbingEngine.getInstance().setConfig(
       settings.indicDubbingOverlay,
       settings.indicDubbingLanguage,
     );
-    if (settings.nextEpisodePreBuffer && snap.durationSec > 0 && snap.positionSec > snap.durationSec * 0.85) {
+    if (
+      settings.nextEpisodePreBuffer &&
+      snap.durationSec > 0 &&
+      snap.positionSec > snap.durationSec * 0.85
+    ) {
       document.documentElement.dataset.nextEpisodePrebuffer = "ready";
     }
     if (engine !== "mpv") return;
     bridgeRef.current?.setAudioNormalize(settings.audioNormalize);
     bridgeRef.current?.setAudioProfile?.(settings.audioProfile);
-    bridgeRef.current?.setAudioEqualizer?.(settings.audioEqualizerBands, settings.audioEqualizerEnabled);
+    bridgeRef.current?.setAudioEqualizer?.(
+      settings.audioEqualizerBands,
+      settings.audioEqualizerEnabled,
+    );
     bridgeRef.current?.setAudioNightMode?.(nightOn);
     bridgeRef.current?.setRegionalDialogueEq?.(settings.regionalDialogueEq);
     if (settings.vintageCinemaShaders) {
@@ -836,7 +874,10 @@ export function useTrackAutoload(params: {
     autoTrackKeyRef.current = key;
     bridgeRef.current?.setAudioNormalize(settings.audioNormalize);
     bridgeRef.current?.setAudioProfile?.(settings.audioProfile);
-    bridgeRef.current?.setAudioEqualizer?.(settings.audioEqualizerBands, settings.audioEqualizerEnabled);
+    bridgeRef.current?.setAudioEqualizer?.(
+      settings.audioEqualizerBands,
+      settings.audioEqualizerEnabled,
+    );
 
     const prefs = readPlayerPrefs(src.meta.id);
     const isAnime =
@@ -883,7 +924,9 @@ export function useTrackAutoload(params: {
         const want =
           // A known choice is explicit user intent, even if its title matches
           // an automatic-selection exclusion such as "commentary".
-          selectPlaybackAudio(snap.audioTracks, rememberedAudio) ??
+          (src.handoff
+            ? selectHandoffAudio(snap.audioTracks, rememberedAudio)
+            : selectPlaybackAudio(snap.audioTracks, rememberedAudio)) ??
           originalTrack ??
           pickBestTrack(allow(snap.audioTracks), audioLangs) ??
           pickBestAudioTrack(allow(snap.audioTracks), audioLangs[0] ?? "eng");
@@ -1030,7 +1073,13 @@ export function useTrackAutoload(params: {
         audioDelaySec: normalizedDelay,
       });
     }
-  }, [snap.audioDelaySec, settings.audioDelayRemember, audioOffsetSec, src.meta.id, snap.audioTracks]);
+  }, [
+    snap.audioDelaySec,
+    settings.audioDelayRemember,
+    audioOffsetSec,
+    src.meta.id,
+    snap.audioTracks,
+  ]);
 
   useEffect(() => {
     if (!subsOffFor(readPlayerPrefs(src.meta.id), settings)) return;
@@ -1088,7 +1137,12 @@ function pickOriginalAudioTrack<T extends { lang?: string; title?: string; label
 ): T | null {
   if (tracks.length === 0) return null;
   if (isAnime) {
-    const ja = tracks.find((t) => normalizeLang(t.lang) === "ja" || /japanese/i.test(t.title ?? "") || /japanese/i.test(t.label ?? ""));
+    const ja = tracks.find(
+      (t) =>
+        normalizeLang(t.lang) === "ja" ||
+        /japanese/i.test(t.title ?? "") ||
+        /japanese/i.test(t.label ?? ""),
+    );
     if (ja) return ja;
   }
   const norm = normalizeLang(meta.language);

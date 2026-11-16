@@ -114,6 +114,7 @@ export const DEFAULT: Settings = {
   playerTitleScale: 1,
   playerTitleSeriesFirst: false,
   uiScale: 1,
+  reduceMotion: false,
   serveWebUi: false,
   remoteControlEnabled: false,
   controllerSupportEnabled: true,
@@ -854,6 +855,6 @@ export function getSecondaryPrivileges(
 
   return {
     ...DEFAULT_SECONDARY_PRIVILEGES,
-    ...(fallbackSource ?? {}),
+    ...fallbackSource,
   };
 }

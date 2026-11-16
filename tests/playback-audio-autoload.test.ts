@@ -74,6 +74,7 @@ async function fixture(remembered = true) {
       readActualPlaybackFor: () => null,
     },
     "@/lib/player/audio-choice": audioChoice,
+    "@/lib/player/household-handoff": { selectHandoffAudio: audioChoice.selectPlaybackAudio },
     "@/lib/providers/tmdb": {},
     "@/lib/subtitles/addon-source": { gatherSubtitleAddons: async () => [] },
     "@/lib/streams/stream-ids": { buildStreamIds: () => [] },
