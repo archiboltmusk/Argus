@@ -125,6 +125,12 @@ import { EndScreen } from "./player/end-screen";
 import { useEndScreen } from "./player/hooks/use-end-screen";
 import { LeaveConfirmModal } from "@/components/player/leave-confirm-modal";
 import { StudyNotesModal } from "./player/study-notes-modal";
+import { InteractiveCheckpointOverlay } from "./player/interactive-checkpoint-overlay";
+import {
+  getCheckpointsForVideo,
+  extractCheckpointsFromTranscript,
+  type LectureCheckpoint,
+} from "@/lib/education/interactive-checkpoints";
 import { AmbientEdgeGlow } from "@/components/player/ambient-edge-glow";
 import { HdrStageBridge } from "./player/hdr-stage-bridge";
 import { setSkipSegmentsView } from "@/lib/skip-intro/segment-store";
@@ -524,6 +530,38 @@ function NativePlayerView({ src }: { src: PlayerSrc }) {
   const cast = usePlayerCast({ src: castSource, debrids, snapRef, bridgeRef, settings });
   const returnTargetRef = useRef(activeMediaSrc);
   const [studyNotesOpen, setStudyNotesOpen] = useState(false);
+  const [activeCheckpoint, setActiveCheckpoint] = useState<LectureCheckpoint | null>(null);
+  const completedCheckpoints = useRef(new Set<string>());
+
+  const lectureCheckpoints = useMemo(() => {
+    const key = src.meta.id || src.title || "";
+    const list = getCheckpointsForVideo(key);
+    if (list.length > 0) return list;
+    if (snap.chapters?.length) {
+      const cues = snap.chapters.map((ch, idx) => ({
+        startSec: ch.startSec,
+        endSec: snap.chapters[idx + 1]?.startSec ?? ch.startSec + 120,
+        text: ch.title || `Chapter ${idx + 1}`,
+      }));
+      return extractCheckpointsFromTranscript(cues);
+    }
+    return [];
+  }, [src.meta.id, src.title, snap.chapters]);
+
+  useEffect(() => {
+    if (activeCheckpoint || !lectureCheckpoints.length || snap.status !== "playing") return;
+    const currentPos = snap.positionSec;
+    const match = lectureCheckpoints.find(
+      (cp) =>
+        Math.abs(currentPos - cp.timestampSec) <= 1.2 &&
+        !completedCheckpoints.current.has(cp.id),
+    );
+    if (match) {
+      completedCheckpoints.current.add(match.id);
+      bridgeRef.current?.pause();
+      setActiveCheckpoint(match);
+    }
+  }, [snap.positionSec, snap.status, activeCheckpoint, lectureCheckpoints]);
   returnTargetRef.current = activeMediaSrc;
   const returnToPlayerRef = useRef<(options?: PlayerReturnOptions) => Promise<void>>(
     async () => {},
@@ -1952,6 +1990,21 @@ function NativePlayerView({ src }: { src: PlayerSrc }) {
         sourceId={src.meta.id}
         onResumePlayback={() => bridgeRef.current?.play()}
       />
+      {activeCheckpoint && (
+        <InteractiveCheckpointOverlay
+          checkpoint={activeCheckpoint}
+          onContinue={() => {
+            setActiveCheckpoint(null);
+            bridgeRef.current?.play();
+          }}
+          onRewind={(seconds) => {
+            setActiveCheckpoint(null);
+            const targetTime = Math.max(0, snap.positionSec - seconds);
+            bridgeRef.current?.seek(targetTime);
+            bridgeRef.current?.play();
+          }}
+        />
+      )}
       <HdrStageBridge
         active={hdrStageRequested}
         payload={{

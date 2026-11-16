@@ -49,6 +49,14 @@ import { QBankManager } from "./education/qbank-manager";
 import { PatientCaseSimulator } from "./education/patient-case-simulator";
 import { getAllQuestions, getInicetHighYieldQuestions } from "@/lib/education/qbank-store";
 import { CLINICAL_QBANK_STARTER } from "@/lib/education/qbank-data";
+import {
+  CURATED_COURSE_CHECKPOINTS,
+  type LectureCheckpoint,
+} from "@/lib/education/interactive-checkpoints";
+import {
+  FOUNDATIONAL_CONCEPT_GRAPH,
+} from "@/lib/education/prerequisite-graph";
+import { InteractiveCheckpointOverlay } from "./player/interactive-checkpoint-overlay";
 import { Row } from "@/components/row";
 import "./education/education-hub.css";
 
@@ -59,7 +67,8 @@ export function EducationView() {
   const localEntries = useLocalLibrary();
   const notes = useStudyNotes();
 
-  const [tab, setTab] = useState<"courses" | "qbank" | "simulator" | "notes">("courses");
+  const [tab, setTab] = useState<"courses" | "checkpoints" | "qbank" | "simulator" | "notes">("courses");
+  const [activeDrillCheckpoint, setActiveDrillCheckpoint] = useState<LectureCheckpoint | null>(null);
   const [activeCategory, setActiveCategory] = useState<CourseCategory>("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [showNotesDrawer, setShowNotesDrawer] = useState(false);
@@ -334,6 +343,7 @@ export function EducationView() {
       <nav className="edu-view-tabs" aria-label={t("Education sub-navigation")}>
         {[
           ["courses", "Courses & Catalogs"],
+          ["checkpoints", "Interactive Checkpoints"],
           ["qbank", "Clinical QBank & Vault"],
           ["simulator", "Emergency Simulator"],
           ["notes", "Study Deck & Notes"],
@@ -620,6 +630,147 @@ export function EducationView() {
           </>
         )}
 
+        {/* TAB: INTERACTIVE CHECKPOINTS & SOCRATIC AUTO-PAUSE */}
+        {tab === "checkpoints" && (
+          <div className="flex flex-col gap-8">
+            {/* Spotlight Banner */}
+            <div className="edu-hero-spotlight">
+              <div className="flex flex-col gap-2">
+                <div className="flex items-center gap-2 text-accent text-xs font-semibold uppercase tracking-wider">
+                  <Sparkles size={14} />
+                  <span>{t("Active Learning Engine")}</span>
+                </div>
+                <h3 className="text-xl font-bold text-ink">
+                  {t("Socratic Video Checkpoints & Concept Mesh")}
+                </h3>
+                <p className="text-xs text-ink-muted max-w-xl">
+                  {t(
+                    "Lectures automatically pause at conceptual inflection points. Test your understanding on the spot with multiple-choice questions or explain the mechanism in your own words with voice dictation.",
+                  )}
+                </p>
+              </div>
+              <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => {
+                    const firstCourse = CURATED_COURSES[0];
+                    if (firstCourse) openPlayer(localPlayerSrc(firstCourse as any));
+                  }}
+                  className="edu-pill-button primary"
+                >
+                  <Play size={14} fill="currentColor" />
+                  <span>{t("Launch Interactive Lecture")}</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Curated Checkpoints by Course */}
+            <div className="flex flex-col gap-5">
+              <h4 className="text-sm font-bold uppercase tracking-wider text-ink-muted">
+                {t("High-Yield Course Checkpoint Decks")}
+              </h4>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                {Object.entries(CURATED_COURSE_CHECKPOINTS).map(([courseKey, checkpoints]) => {
+                  const course = CURATED_COURSES.find((c) => c.id === courseKey);
+                  return (
+                    <div
+                      key={courseKey}
+                      className="rounded-2xl border border-edge-soft bg-surface/70 p-5 flex flex-col justify-between gap-4 shadow-sm"
+                    >
+                      <div className="flex flex-col gap-2">
+                        <div className="flex items-center justify-between">
+                          <span className="rounded-md bg-accent-soft px-2 py-0.5 text-[10px] font-semibold text-accent uppercase tracking-wider">
+                            {course?.category || "Medical"}
+                          </span>
+                          <span className="text-[11px] text-ink-muted font-medium">
+                            {checkpoints.length} {t("Checkpoints")}
+                          </span>
+                        </div>
+                        <h5 className="font-bold text-ink text-sm leading-snug">
+                          {course?.title || courseKey}
+                        </h5>
+                        <p className="text-[11px] text-ink-muted line-clamp-2">
+                          {course?.description || t("Interactive checkpoints linked with video timestamps.")}
+                        </p>
+                      </div>
+
+                      <div className="space-y-2 border-t border-edge-soft/60 pt-3">
+                        {checkpoints.map((cp) => (
+                          <div
+                            key={cp.id}
+                            className="flex items-center justify-between gap-2 rounded-xl border border-edge-soft/40 bg-surface/50 p-2.5 text-xs transition hover:border-accent/40"
+                          >
+                            <div className="min-w-0 flex-1">
+                              <div className="flex items-center gap-1.5 font-medium text-ink truncate">
+                                <span>{cp.title}</span>
+                              </div>
+                              <div className="text-[10px] text-ink-muted flex items-center gap-2 mt-0.5">
+                                <span>
+                                  {Math.floor(cp.timestampSec / 60)}:
+                                  {String(cp.timestampSec % 60).padStart(2, "0")}
+                                </span>
+                                <span>·</span>
+                                <span className="capitalize">{cp.type.replace("-", " ")}</span>
+                              </div>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => setActiveDrillCheckpoint(cp)}
+                              className="rounded-lg bg-white/10 hover:bg-accent hover:text-black px-2.5 py-1 text-[11px] font-semibold text-ink transition shrink-0"
+                            >
+                              {t("Drill")}
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Root-Cause Prerequisite Concept Mesh */}
+            <div className="rounded-2xl border border-edge-soft bg-surface/70 p-6 flex flex-col gap-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h4 className="font-bold text-ink text-base">
+                    {t("Root-Cause Prerequisite Concept Mesh")}
+                  </h4>
+                  <p className="text-xs text-ink-muted">
+                    {t(
+                      "When you make repeated errors on an advanced concept, Argus traces the dependency chain backwards to diagnose and fix foundational gaps.",
+                    )}
+                  </p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
+                {Object.values(FOUNDATIONAL_CONCEPT_GRAPH).map((concept) => (
+                  <div
+                    key={concept.id}
+                    className="rounded-xl border border-edge-soft/60 bg-surface/40 p-4 flex flex-col gap-2"
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="font-semibold text-ink text-sm">{concept.title}</span>
+                      <span className="rounded bg-white/5 px-2 py-0.5 text-[10px] text-ink-subtle uppercase">
+                        {concept.category}
+                      </span>
+                    </div>
+                    <p className="text-xs text-ink-muted leading-relaxed">{concept.description}</p>
+                    <div className="mt-1 rounded-lg bg-accent/10 border border-accent/20 p-2 text-[11px] text-accent">
+                      <strong className="block text-[10px] uppercase font-bold text-accent/80 mb-0.5">
+                        {t("Foundational Key")}:
+                      </strong>
+                      {concept.refresherTip}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* TAB 2: CLINICAL QBANK & VAULT */}
         {tab === "qbank" && (
           <div className="flex flex-col gap-6">
@@ -807,6 +958,14 @@ export function EducationView() {
 
       {showSimulator && (
         <PatientCaseSimulator onClose={() => setShowSimulator(false)} />
+      )}
+
+      {activeDrillCheckpoint && (
+        <InteractiveCheckpointOverlay
+          checkpoint={activeDrillCheckpoint}
+          onContinue={() => setActiveDrillCheckpoint(null)}
+          onRewind={() => setActiveDrillCheckpoint(null)}
+        />
       )}
     </main>
   );

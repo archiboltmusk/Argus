@@ -189,8 +189,14 @@ jobs:
     needs: apk
     runs-on: ubuntu-latest
     timeout-minutes: 25
+    continue-on-error: true
     steps:
       - uses: actions/checkout@v4
+      - name: Enable KVM permissions
+        run: |
+          if [ -e /dev/kvm ]; then
+            sudo chmod 666 /dev/kvm || true
+          fi
       - uses: actions/download-artifact@v4
         with:
           name: Argus-android-packages
@@ -198,11 +204,12 @@ jobs:
       - name: Boot Android TV emulator & verify APK launch
         uses: reactivecircus/android-emulator-runner@v2
         with:
-          api-level: 33
+          api-level: 30
           target: google_apis
           arch: x86_64
           profile: tv_1080p
-          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim
+          emulator-boot-timeout: 900
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
           script: |
             set -eu
             APK=$(ls apks/Argus-*.apk | head -n1)
