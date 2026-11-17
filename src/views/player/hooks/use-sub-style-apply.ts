@@ -18,6 +18,8 @@ export function useSubStyleApply(params: {
   assScale?: number;
   subTrackId?: string;
   sdhFilterAllowed: boolean;
+  videoWidth?: number;
+  videoHeight?: number;
 }) {
   const {
     engine,
@@ -32,17 +34,24 @@ export function useSubStyleApply(params: {
     assScale,
     subTrackId,
     sdhFilterAllowed,
+    videoWidth,
+    videoHeight,
   } = params;
 
   useEffect(() => {
     if (engine !== "mpv") return;
     if (!bridgeReady) return;
     if (!mediaReady) return;
+    const isLetterboxed =
+      videoWidth && videoHeight && videoWidth > 0 && videoHeight > 0
+        ? videoWidth / videoHeight > window.innerWidth / Math.max(1, window.innerHeight) + 0.03
+        : true;
     void applySubStyle(settings, {
       assNativeActive,
       imageNativeActive,
       assScale,
       sdhFilterAllowed,
+      isLetterboxed,
     });
   }, [
     engine,
@@ -54,6 +63,8 @@ export function useSubStyleApply(params: {
     assScale,
     subTrackId,
     sdhFilterAllowed,
+    videoWidth,
+    videoHeight,
     settings.subHideSdh,
     settings.subAssNormalizeSize,
     settings.subFontSize,

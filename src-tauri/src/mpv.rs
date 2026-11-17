@@ -1251,6 +1251,7 @@ pub async fn mpv_start(
     let _ = mpv.set_property("sub-ass-force-margins", "yes");
     let _ = mpv.set_property("stretch-image-subs-to-screen", "yes");
     let _ = mpv.set_property("image-subs-video-resolution", "no");
+    let _ = mpv.set_property("sub-pos", 106);
 
     if let Some(extra) = args.extra_options.as_deref() {
         apply_extra_mpv_options(&mpv, extra);

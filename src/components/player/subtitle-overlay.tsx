@@ -77,14 +77,14 @@ export const SubtitleOverlay = memo(function SubtitleOverlay({
   }, [isLetterboxed, videoWidth, videoHeight, boxH]);
 
   const effectiveMarginY = useMemo(() => {
-    if (isLetterboxed && letterboxBarPercent >= 4) {
-      const baseBarOffsetY = Math.max(2, Math.round(letterboxBarPercent * 0.38));
-      const userRatio = marginY / 12;
+    if (isLetterboxed && letterboxBarPercent >= 3) {
+      const centerOfBar = letterboxBarPercent / 2;
+      const userAdjust = ((marginY - 12) / 12) * (letterboxBarPercent * 0.35);
       return Math.max(
         1,
         Math.min(
-          Math.round(letterboxBarPercent - 2),
-          Math.round(baseBarOffsetY * userRatio),
+          Math.round(letterboxBarPercent - 1.5),
+          Math.max(2, Math.round(centerOfBar + userAdjust)),
         ),
       );
     }

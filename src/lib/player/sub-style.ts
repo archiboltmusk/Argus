@@ -70,6 +70,7 @@ export type SubRenderContext = {
   assScale?: number;
   sdhFilterAllowed?: boolean;
   hudVisible?: boolean;
+  isLetterboxed?: boolean;
 };
 
 export async function applySubStyle(
@@ -90,6 +91,7 @@ export async function applySubStyle(
   const reposition = !context.assNativeActive || override !== "no";
   const hideSdh = s.subHideSdh === true && context.sdhFilterAllowed !== false;
   const letterboxDodging = s.letterboxSubtitleDodging !== false;
+  const isLetterboxed = context.isLetterboxed ?? true;
   const useMargins =
     context.assNativeActive && override === "no"
       ? "no"
@@ -99,11 +101,11 @@ export async function applySubStyle(
       ? "no"
       : (letterboxDodging ? "yes" : assMargins);
   const stretchImageSubs = letterboxDodging ? "yes" : "no";
-  const subPos = letterboxDodging
-    ? (context.imageNativeActive ? 104 : 100)
+  const subPos = letterboxDodging && isLetterboxed
+    ? (reposition ? clamp(106 - Math.round((marginY - 12) * 0.15), 102, 112) : 106)
     : (reposition ? clamp(100 - marginY, 0, 100) : 100);
-  const mpvMarginY = letterboxDodging
-    ? clamp(Math.round(marginY * 1.5), 8, 160)
+  const mpvMarginY = letterboxDodging && isLetterboxed
+    ? clamp(marginY, 6, 24)
     : marginY;
   const props: Array<[string, unknown]> = [
     ["sub-filter-sdh", hideSdh],
