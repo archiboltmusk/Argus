@@ -72,6 +72,28 @@ import { InteractiveCheckpointOverlay } from "./player/interactive-checkpoint-ov
 import { Row } from "@/components/row";
 import "./education/education-hub.css";
 
+const BTR_19_SUBJECTS_CATALOG = [
+  { id: "anatomy", name: "Anatomy", yieldTopic: "Brachial Plexus, Cranial Nerves & Embryology", duration: "18h 30m", lessons: 4, thumbnail: "https://images.unsplash.com/photo-1532187863486-abf9dbad1b69?w=800&auto=format&fit=crop&q=80" },
+  { id: "physiology", name: "Physiology", yieldTopic: "Cardiac Output, Frank-Starling & Action Potentials", duration: "14h 15m", lessons: 3, thumbnail: "https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?w=800&auto=format&fit=crop&q=80" },
+  { id: "biochemistry", name: "Biochemistry", yieldTopic: "Inborn Errors, Enzyme Kinetics & Vitamins", duration: "12h 45m", lessons: 3, thumbnail: "https://images.unsplash.com/photo-1507668077129-56e32842fceb?w=800&auto=format&fit=crop&q=80" },
+  { id: "pathology", name: "Pathology", yieldTopic: "Hematopathology, Neoplasia & Amyloidosis", duration: "22h 00m", lessons: 5, thumbnail: "https://images.unsplash.com/photo-1579154204601-01588f351e67?w=800&auto=format&fit=crop&q=80" },
+  { id: "pharmacology", name: "Pharmacology", yieldTopic: "Autonomic Nervous System & Antimicrobials", duration: "19h 20m", lessons: 4, thumbnail: "https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=800&auto=format&fit=crop&q=80" },
+  { id: "microbiology", name: "Microbiology", yieldTopic: "Bacteriology Culture Media & Virology PCR", duration: "15h 10m", lessons: 3, thumbnail: "https://images.unsplash.com/photo-1583912267670-6575ad4736f8?w=800&auto=format&fit=crop&q=80" },
+  { id: "forensic", name: "Forensic Medicine", yieldTopic: "Toxicology Antidotes & Thanatology Rules", duration: "8h 40m", lessons: 2, thumbnail: "https://images.unsplash.com/photo-1516549655169-df83a0774514?w=800&auto=format&fit=crop&q=80" },
+  { id: "psm", name: "Community Medicine (PSM)", yieldTopic: "Biostatistics 2x2, Vaccines & National Health", duration: "16h 00m", lessons: 4, thumbnail: "https://images.unsplash.com/photo-1576091160550-2173dba999ef?w=800&auto=format&fit=crop&q=80" },
+  { id: "medicine", name: "General Medicine", yieldTopic: "Cardiology ECGs, Neurology & Rheumatology", duration: "32h 40m", lessons: 7, thumbnail: "https://images.unsplash.com/photo-1582719508461-905c673771fd?w=800&auto=format&fit=crop&q=80" },
+  { id: "surgery", name: "General Surgery", yieldTopic: "Trauma ATLS, Breast & Thyroid Carcinomas", duration: "24h 10m", lessons: 5, thumbnail: "https://images.unsplash.com/photo-1551076805-e1869033e561?w=800&auto=format&fit=crop&q=80" },
+  { id: "obgyn", name: "Obstetrics & Gynecology", yieldTopic: "CTG Interpretations, High-Risk Labor & Cervix", duration: "21h 30m", lessons: 5, thumbnail: "https://images.unsplash.com/photo-1584515979956-d9f6e5d09982?w=800&auto=format&fit=crop&q=80" },
+  { id: "pediatrics", name: "Pediatrics", yieldTopic: "Developmental Milestones & Neonatal Resuscitation", duration: "13h 50m", lessons: 3, thumbnail: "https://images.unsplash.com/photo-1502086223501-7ea6ecd79368?w=800&auto=format&fit=crop&q=80" },
+  { id: "orthopedics", name: "Orthopedics", yieldTopic: "Eponymous Fractures & Pediatric Limp", duration: "9h 20m", lessons: 2, thumbnail: "https://images.unsplash.com/photo-1588776814546-1ffcf47267a5?w=800&auto=format&fit=crop&q=80" },
+  { id: "dermatology", name: "Dermatology", yieldTopic: "Blistering Disorders & Leprosy Classification", duration: "7h 30m", lessons: 2, thumbnail: "https://images.unsplash.com/photo-1616394584738-fc6e612e71b9?w=800&auto=format&fit=crop&q=80" },
+  { id: "psychiatry", name: "Psychiatry", yieldTopic: "Psychopharmacology & Schizophrenia Criteria", duration: "6h 45m", lessons: 2, thumbnail: "https://images.unsplash.com/photo-1527137342181-19aab11a8ee8?w=800&auto=format&fit=crop&q=80" },
+  { id: "radiology", name: "Radiology", yieldTopic: "Chest X-Ray Signs & Contrast CT Imaging", duration: "11h 15m", lessons: 3, thumbnail: "https://images.unsplash.com/photo-1516549655169-df83a0774514?w=800&auto=format&fit=crop&q=80" },
+  { id: "ent", name: "ENT", yieldTopic: "Audiometry Tuning Fork Tests & Stridor", duration: "8h 10m", lessons: 2, thumbnail: "https://images.unsplash.com/photo-1579684385127-1ef15d508118?w=800&auto=format&fit=crop&q=80" },
+  { id: "ophthalmology", name: "Ophthalmology", yieldTopic: "Diabetic Retinopathy & Glaucoma Fields", duration: "9h 00m", lessons: 2, thumbnail: "https://images.unsplash.com/photo-1584017911766-d451b3d0e843?w=800&auto=format&fit=crop&q=80" },
+  { id: "anesthesia", name: "Anesthesia", yieldTopic: "Difficult Airway Algorithm & Local Anesthetics", duration: "7h 50m", lessons: 2, thumbnail: "https://images.unsplash.com/photo-1579684385127-1ef15d508118?w=800&auto=format&fit=crop&q=80" },
+];
+
 export function EducationView() {
   const t = useT();
   const { openPlayer, openSettings } = useView();
@@ -79,7 +101,7 @@ export function EducationView() {
   const localEntries = useLocalLibrary();
   const notes = useStudyNotes();
 
-  const [tab, setTab] = useState<"courses" | "btr" | "checkpoints" | "qbank" | "simulator" | "notes">("courses");
+  const [tab, setTab] = useState<"courses" | "btr" | "checkpoints" | "qbank" | "simulator" | "notes">("btr");
   const [activeDrillCheckpoint, setActiveDrillCheckpoint] = useState<LectureCheckpoint | null>(null);
   const [activeCategory, setActiveCategory] = useState<CourseCategory>("all");
   const [searchQuery, setSearchQuery] = useState("");
@@ -776,6 +798,80 @@ export function EducationView() {
               </section>
             )}
 
+            {/* Section 1.5: CoreBTR High-Yield 19-Subject Curriculum */}
+            <section className="flex flex-col gap-4">
+              <div className="edu-section-head flex-col sm:flex-row sm:items-center justify-between">
+                <div>
+                  <div className="flex items-center gap-2 text-[#4da2ff] text-[11px] font-extrabold uppercase tracking-widest">
+                    <Flame size={13} className="text-[#feb122]" />
+                    <span>{t("CoreBTR 19-Subject Integrated System")}</span>
+                  </div>
+                  <h2 className="text-xl font-black tracking-tight text-white mt-0.5">
+                    {t("High-Yield PG Board Curriculum")}
+                  </h2>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setTab("btr")}
+                  className="text-xs font-bold text-[#4da2ff] hover:text-white flex items-center gap-1 transition"
+                >
+                  <span>{t("Open 19-Subject Studio")}</span>
+                  <ChevronRight size={14} />
+                </button>
+              </div>
+
+              <div className="-mx-2">
+                <Row min={280} shape="landscape" alwaysActive scrollKey="education:btr-19-subjects">
+                  {BTR_19_SUBJECTS_CATALOG.map((subject) => (
+                    <div
+                      key={subject.id}
+                      onClick={() => setTab("btr")}
+                      className="edu-obsidian-card group/sub flex flex-col justify-between overflow-hidden p-0 transition-all duration-300 hover:scale-[1.02] border border-[#1767be]/30 hover:border-[#4da2ff] shadow-xl cursor-pointer"
+                    >
+                      <div className="relative h-32 w-full overflow-hidden bg-[#0d1b4b]">
+                        <img
+                          src={subject.thumbnail}
+                          alt={subject.name}
+                          className="h-full w-full object-cover transition duration-500 group-hover/sub:scale-105 filter brightness-65"
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-[#0d1b4b] via-[#0d1b4b]/40 to-transparent" />
+                        
+                        <div className="absolute top-2.5 start-2.5 flex items-center gap-1.5">
+                          <span className="rounded-md bg-[#1767be]/90 px-2 py-0.5 text-[9.5px] font-black text-white shadow-md uppercase tracking-wider">
+                            {subject.lessons} Lectures
+                          </span>
+                          <span className="rounded-md bg-black/60 px-2 py-0.5 text-[9.5px] font-semibold text-white/90 backdrop-blur-md border border-white/10">
+                            {subject.duration}
+                          </span>
+                        </div>
+
+                        <div className="absolute bottom-2 start-2.5 end-2.5">
+                          <h4 className="text-sm font-extrabold text-white truncate drop-shadow">
+                            {subject.name}
+                          </h4>
+                        </div>
+                      </div>
+
+                      <div className="p-3 flex flex-col gap-2 bg-[#0d1b4b]/95">
+                        <p className="text-[11px] text-white/70 line-clamp-1 leading-snug">
+                          {subject.yieldTopic}
+                        </p>
+                        <div className="flex items-center justify-between pt-1 border-t border-white/[0.06]">
+                          <span className="text-[10px] font-bold text-[#feb122] uppercase tracking-wider">
+                            Dr. Zainab Vora
+                          </span>
+                          <span className="text-[11px] font-bold text-[#4da2ff] group-hover/sub:translate-x-0.5 transition flex items-center gap-0.5">
+                            <span>Explore</span>
+                            <ChevronRight size={12} />
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </Row>
+              </div>
+            </section>
+
             {/* Section 2: Subscribed Feeds */}
             {subscribedFeeds.length > 0 && (
               <section className="flex flex-col gap-3">
@@ -959,7 +1055,7 @@ export function EducationView() {
               <div className="relative z-10 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
                 <div className="flex flex-col gap-2 max-w-2xl">
                   <div className="flex items-center gap-2">
-                    <span className="flex items-center gap-1.5 rounded-full bg-indigo-500/20 px-3 py-0.5 text-[11px] font-extrabold uppercase tracking-widest text-indigo-300 border border-indigo-500/30">
+                    <span className="flex items-center gap-1.5 rounded-full bg-indigo-500/20 px-3 py-0.5 text-[11px] font-extrabold uppercase tracking-widest text-[#4da2ff] border border-indigo-500/30">
                       <Sparkles size={12} />
                       {t("Active Learning Engine")}
                     </span>
@@ -981,12 +1077,12 @@ export function EducationView() {
                 {/* Quick Stats Pill */}
                 <div className="flex items-center gap-3 shrink-0">
                   <div className="flex items-center gap-3 rounded-2xl bg-white/[0.04] border border-white/10 px-4 py-3 backdrop-blur-xl">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-500/15 text-indigo-300 border border-indigo-500/30">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-500/15 text-[#4da2ff] border border-indigo-500/30">
                       <Award size={20} />
                     </div>
                     <div>
                       <div className="text-[11px] uppercase font-bold text-white/50 tracking-wider">{t("Checkpoints")}</div>
-                      <div className="text-lg font-black text-white">3 / 4 <span className="text-xs font-semibold text-indigo-300">(75%)</span></div>
+                      <div className="text-lg font-black text-white">3 / 4 <span className="text-xs font-semibold text-[#4da2ff]">(75%)</span></div>
                     </div>
                   </div>
 
@@ -1152,8 +1248,8 @@ export function EducationView() {
                   <div className="edu-knowledge-track flex flex-col gap-4">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
-                        <span className="h-2 w-2 rounded-full bg-indigo-500 shadow-[0_0_8px_rgba(99,102,241,0.5)]" />
-                        <h5 className="text-sm font-extrabold text-indigo-400 uppercase tracking-wider">
+                        <span className="h-2 w-2 rounded-full bg-[#1767be] shadow-[0_0_8px_rgba(23,103,190,0.6)]" />
+                        <h5 className="text-sm font-extrabold text-[#4da2ff] uppercase tracking-wider">
                           Cardiovascular Hemodynamics & Mechanics
                         </h5>
                       </div>
@@ -1170,19 +1266,19 @@ export function EducationView() {
                         return (
                           <div
                             key={concept.id}
-                            className="relative rounded-2xl border border-white/[0.08] bg-[#12142b]/90 p-4 flex flex-col justify-between gap-3 shadow-lg hover:border-indigo-500/40 transition group"
+                            className="relative rounded-2xl border border-[#1767be]/30 bg-[#0d1b4b]/95 p-4 flex flex-col justify-between gap-3 shadow-xl hover:border-[#4da2ff] transition group"
                           >
                             <div className="flex flex-col gap-1.5">
                               <div className="flex items-center justify-between">
-                                <span className="rounded bg-indigo-500/15 border border-indigo-500/30 px-2 py-0.5 text-[9.5px] font-bold text-indigo-300 uppercase">
+                                <span className="rounded bg-[#1767be]/20 border border-[#1767be]/40 px-2 py-0.5 text-[9.5px] font-bold text-[#4da2ff] uppercase">
                                   {idx === 0 ? "Level 3: Target" : idx === 1 ? "Level 2: Mechanism" : idx === 2 ? "Level 1: Law" : "Root Cause"}
                                 </span>
                                 {stats?.mastered ? (
-                                  <span className="text-emerald-400 text-[10px] font-bold flex items-center gap-1">
+                                  <span className="text-[#10b981] text-[10px] font-bold flex items-center gap-1">
                                     <CheckCircle2 size={12} /> Mastered
                                   </span>
                                 ) : (
-                                  <span className="text-slate-400 text-[10px] font-medium">
+                                  <span className="text-white/50 text-[10px] font-medium">
                                     Needs Drill
                                   </span>
                                 )}
@@ -1190,15 +1286,15 @@ export function EducationView() {
                               <h6 className="font-extrabold text-white text-xs leading-snug">
                                 {concept.title}
                               </h6>
-                              <p className="text-[11px] text-white/60 line-clamp-2 leading-relaxed">
+                              <p className="text-[11px] text-white/70 line-clamp-2 leading-relaxed">
                                 {concept.description}
                               </p>
                             </div>
 
                             {/* Active Recall Occlusion Key Box */}
-                            <div className="edu-occlusion-card">
+                            <div className="edu-occlusion-card bg-[#1d204b]/60 border border-[#1767be]/30">
                               <div className="flex items-center justify-between mb-1">
-                                <strong className="text-[9.5px] uppercase font-bold text-indigo-300">
+                                <strong className="text-[9.5px] uppercase font-bold text-[#4da2ff]">
                                   {t("Foundational Key")}
                                 </strong>
                                 <button
@@ -1217,7 +1313,7 @@ export function EducationView() {
                                 <button
                                   type="button"
                                   onClick={() => toggleConceptReveal(concept.id)}
-                                  className="mt-1 w-full text-center text-[10px] font-bold text-indigo-300 hover:text-white transition"
+                                  className="mt-1 w-full text-center text-[10px] font-bold text-[#4da2ff] hover:text-white transition"
                                 >
                                   {t("👁 Reveal Active Recall Key")}
                                 </button>
@@ -1230,14 +1326,14 @@ export function EducationView() {
                                 <button
                                   type="button"
                                   onClick={() => handleRateConcept(concept.id, true)}
-                                  className="rounded px-2 py-0.5 text-[10px] font-bold bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 transition"
+                                  className="rounded px-2 py-0.5 text-[10px] font-bold bg-[#10b981]/15 hover:bg-[#10b981]/25 text-[#10b981] border border-[#10b981]/30 transition"
                                 >
                                   ✓ Got It
                                 </button>
                                 <button
                                   type="button"
                                   onClick={() => handleRateConcept(concept.id, false)}
-                                  className="rounded px-2 py-0.5 text-[10px] font-bold bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30 transition"
+                                  className="rounded px-2 py-0.5 text-[10px] font-bold bg-white/5 hover:bg-white/10 text-white/70 border border-white/10 transition"
                                 >
                                   ✕ Weak
                                 </button>
@@ -1246,7 +1342,7 @@ export function EducationView() {
                               <button
                                 type="button"
                                 onClick={() => launchConceptMicroQuiz(concept.id)}
-                                className="flex items-center gap-1 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white px-2.5 py-1 text-[10px] font-bold transition shadow-sm"
+                                className="flex items-center gap-1 rounded-lg bg-[#1767be] hover:bg-[#155bb0] text-white px-2.5 py-1 text-[10px] font-bold transition shadow-xs"
                               >
                                 <Zap size={10} fill="currentColor" />
                                 <span>Quiz</span>
@@ -1264,8 +1360,8 @@ export function EducationView() {
                   <div className="edu-knowledge-track flex flex-col gap-4">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
-                        <span className="h-2 w-2 rounded-full bg-indigo-500 shadow-[0_0_8px_rgba(99,102,241,0.5)]" />
-                        <h5 className="text-sm font-extrabold text-indigo-400 uppercase tracking-wider">
+                        <span className="h-2 w-2 rounded-full bg-[#1767be] shadow-[0_0_8px_rgba(23,103,190,0.6)]" />
+                        <h5 className="text-sm font-extrabold text-[#4da2ff] uppercase tracking-wider">
                           Upper Limb Neuroanatomy & Palsy Localization
                         </h5>
                       </div>
@@ -1282,19 +1378,19 @@ export function EducationView() {
                         return (
                           <div
                             key={concept.id}
-                            className="relative rounded-2xl border border-white/[0.08] bg-[#12142b]/90 p-4 flex flex-col justify-between gap-3 shadow-lg hover:border-indigo-500/40 transition group"
+                            className="relative rounded-2xl border border-[#1767be]/30 bg-[#0d1b4b]/95 p-4 flex flex-col justify-between gap-3 shadow-lg shadow-xl hover:border-[#4da2ff] transition group"
                           >
                             <div className="flex flex-col gap-1.5">
                               <div className="flex items-center justify-between">
-                                <span className="rounded bg-indigo-500/15 border border-indigo-500/30 px-2 py-0.5 text-[9.5px] font-bold text-indigo-300 uppercase">
+                                <span className="rounded bg-[#1767be]/20 border border-[#1767be]/40 px-2 py-0.5 text-[9.5px] font-bold text-[#4da2ff] uppercase">
                                   {idx === 0 ? "Clinical Syndrome" : "Root Anatomical Basis"}
                                 </span>
                                 {stats?.mastered ? (
-                                  <span className="text-emerald-400 text-[10px] font-bold flex items-center gap-1">
+                                  <span className="text-[#10b981] text-[10px] font-bold flex items-center gap-1">
                                     <CheckCircle2 size={12} /> Mastered
                                   </span>
                                 ) : (
-                                  <span className="text-slate-400 text-[10px] font-medium">
+                                  <span className="text-white/50 text-[10px] font-medium">
                                     Needs Drill
                                   </span>
                                 )}
@@ -1307,9 +1403,9 @@ export function EducationView() {
                               </p>
                             </div>
 
-                            <div className="edu-occlusion-card">
+                            <div className="edu-occlusion-card bg-[#1d204b]/60 border border-[#1767be]/30">
                               <div className="flex items-center justify-between mb-1">
-                                <strong className="text-[9.5px] uppercase font-bold text-indigo-300">
+                                <strong className="text-[9.5px] uppercase font-bold text-[#4da2ff]">
                                   {t("Foundational Key")}
                                 </strong>
                                 <button
@@ -1327,7 +1423,7 @@ export function EducationView() {
                                 <button
                                   type="button"
                                   onClick={() => toggleConceptReveal(concept.id)}
-                                  className="mt-1 w-full text-center text-[10px] font-bold text-indigo-300 hover:text-white transition"
+                                  className="mt-1 w-full text-center text-[10px] font-bold text-[#4da2ff] hover:text-white transition"
                                 >
                                   {t("👁 Reveal Active Recall Key")}
                                 </button>
@@ -1339,14 +1435,14 @@ export function EducationView() {
                                 <button
                                   type="button"
                                   onClick={() => handleRateConcept(concept.id, true)}
-                                  className="rounded px-2 py-0.5 text-[10px] font-bold bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 transition"
+                                  className="rounded px-2 py-0.5 text-[10px] font-bold bg-[#10b981]/15 hover:bg-[#10b981]/25 text-[#10b981] border border-[#10b981]/30 transition"
                                 >
                                   ✓ Got It
                                 </button>
                                 <button
                                   type="button"
                                   onClick={() => handleRateConcept(concept.id, false)}
-                                  className="rounded px-2 py-0.5 text-[10px] font-bold bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30 transition"
+                                  className="rounded px-2 py-0.5 text-[10px] font-bold bg-white/5 hover:bg-white/10 text-white/70 border border-white/10 transition"
                                 >
                                   ✕ Weak
                                 </button>
@@ -1355,7 +1451,7 @@ export function EducationView() {
                               <button
                                 type="button"
                                 onClick={() => launchConceptMicroQuiz(concept.id)}
-                                className="flex items-center gap-1 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white px-2.5 py-1 text-[10px] font-bold transition shadow-sm"
+                                className="flex items-center gap-1 rounded-lg bg-[#1767be] hover:bg-[#155bb0] text-white px-2.5 py-1 text-[10px] font-bold transition shadow-xs"
                               >
                                 <Zap size={10} fill="currentColor" />
                                 <span>Quiz</span>
@@ -1373,8 +1469,8 @@ export function EducationView() {
                   <div className="edu-knowledge-track flex flex-col gap-4">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
-                        <span className="h-2 w-2 rounded-full bg-indigo-500 shadow-[0_0_8px_rgba(99,102,241,0.5)]" />
-                        <h5 className="text-sm font-extrabold text-indigo-400 uppercase tracking-wider">
+                        <span className="h-2 w-2 rounded-full bg-[#1767be] shadow-[0_0_8px_rgba(23,103,190,0.6)]" />
+                        <h5 className="text-sm font-extrabold text-[#4da2ff] uppercase tracking-wider">
                           Renal, Acid-Base & Physicochemical Buffers
                         </h5>
                       </div>
@@ -1391,19 +1487,19 @@ export function EducationView() {
                         return (
                           <div
                             key={concept.id}
-                            className="relative rounded-2xl border border-white/[0.08] bg-[#12142b]/90 p-4 flex flex-col justify-between gap-3 shadow-lg hover:border-indigo-500/40 transition group"
+                            className="relative rounded-2xl border border-[#1767be]/30 bg-[#0d1b4b]/95 p-4 flex flex-col justify-between gap-3 shadow-lg shadow-xl hover:border-[#4da2ff] transition group"
                           >
                             <div className="flex flex-col gap-1.5">
                               <div className="flex items-center justify-between">
-                                <span className="rounded bg-indigo-500/15 border border-indigo-500/30 px-2 py-0.5 text-[9.5px] font-bold text-indigo-300 uppercase">
+                                <span className="rounded bg-[#1767be]/20 border border-[#1767be]/40 px-2 py-0.5 text-[9.5px] font-bold text-[#4da2ff] uppercase">
                                   {idx === 0 ? "Clinical Disturbance" : "Physicochemical Buffer Law"}
                                 </span>
                                 {stats?.mastered ? (
-                                  <span className="text-emerald-400 text-[10px] font-bold flex items-center gap-1">
+                                  <span className="text-[#10b981] text-[10px] font-bold flex items-center gap-1">
                                     <CheckCircle2 size={12} /> Mastered
                                   </span>
                                 ) : (
-                                  <span className="text-slate-400 text-[10px] font-medium">
+                                  <span className="text-white/50 text-[10px] font-medium">
                                     Needs Drill
                                   </span>
                                 )}
@@ -1416,9 +1512,9 @@ export function EducationView() {
                               </p>
                             </div>
 
-                            <div className="edu-occlusion-card">
+                            <div className="edu-occlusion-card bg-[#1d204b]/60 border border-[#1767be]/30">
                               <div className="flex items-center justify-between mb-1">
-                                <strong className="text-[9.5px] uppercase font-bold text-indigo-300">
+                                <strong className="text-[9.5px] uppercase font-bold text-[#4da2ff]">
                                   {t("Foundational Key")}
                                 </strong>
                                 <button
@@ -1436,7 +1532,7 @@ export function EducationView() {
                                 <button
                                   type="button"
                                   onClick={() => toggleConceptReveal(concept.id)}
-                                  className="mt-1 w-full text-center text-[10px] font-bold text-indigo-300 hover:text-white transition"
+                                  className="mt-1 w-full text-center text-[10px] font-bold text-[#4da2ff] hover:text-white transition"
                                 >
                                   {t("👁 Reveal Active Recall Key")}
                                 </button>
@@ -1448,14 +1544,14 @@ export function EducationView() {
                                 <button
                                   type="button"
                                   onClick={() => handleRateConcept(concept.id, true)}
-                                  className="rounded px-2 py-0.5 text-[10px] font-bold bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 transition"
+                                  className="rounded px-2 py-0.5 text-[10px] font-bold bg-[#10b981]/15 hover:bg-[#10b981]/25 text-[#10b981] border border-[#10b981]/30 transition"
                                 >
                                   ✓ Got It
                                 </button>
                                 <button
                                   type="button"
                                   onClick={() => handleRateConcept(concept.id, false)}
-                                  className="rounded px-2 py-0.5 text-[10px] font-bold bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30 transition"
+                                  className="rounded px-2 py-0.5 text-[10px] font-bold bg-white/5 hover:bg-white/10 text-white/70 border border-white/10 transition"
                                 >
                                   ✕ Weak
                                 </button>
@@ -1464,7 +1560,7 @@ export function EducationView() {
                               <button
                                 type="button"
                                 onClick={() => launchConceptMicroQuiz(concept.id)}
-                                className="flex items-center gap-1 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white px-2.5 py-1 text-[10px] font-bold transition shadow-sm"
+                                className="flex items-center gap-1 rounded-lg bg-[#1767be] hover:bg-[#155bb0] text-white px-2.5 py-1 text-[10px] font-bold transition shadow-xs"
                               >
                                 <Zap size={10} fill="currentColor" />
                                 <span>Quiz</span>

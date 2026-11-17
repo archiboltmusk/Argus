@@ -231,7 +231,7 @@ export function BTRCanvasMarkup({
     <div
       ref={containerRef}
       className={`absolute inset-0 z-30 pointer-events-none overflow-hidden select-none ${
-        enabled ? "ring-1 ring-indigo-500/30" : ""
+        enabled ? "ring-1 ring-[#1767be]/30" : ""
       }`}
     >
       {/* Canvas Layer */}
@@ -269,19 +269,19 @@ export function BTRCanvasMarkup({
             }}
             placeholder="Type answer..."
             style={{ color: note.color }}
-            className="bg-black/80 px-2 py-0.5 rounded-lg border border-indigo-500/40 text-xs font-bold outline-none shadow-md backdrop-blur-sm"
+            className="bg-black/80 px-2 py-0.5 rounded-lg border border-[#1767be]/40 text-xs font-bold outline-none shadow-md backdrop-blur-sm"
           />
         </div>
       ))}
 
       {/* Markup Floating Palette Toolbar */}
-      <div className="absolute bottom-3 left-1/2 -translate-x-1/2 pointer-events-auto flex items-center gap-1.5 p-1.5 rounded-2xl bg-[#0f101d]/95 backdrop-blur-md border border-indigo-500/40 shadow-2xl z-40">
+      <div className="absolute bottom-3 left-1/2 -translate-x-1/2 pointer-events-auto flex items-center gap-1.5 p-1.5 rounded-2xl bg-[#0d1b4b]/95 backdrop-blur-md border border-[#1767be]/40 shadow-2xl z-40">
         <button
           type="button"
           onClick={onToggleEnabled}
           className={`px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 ${
             enabled
-              ? "bg-indigo-600 text-white shadow-md"
+              ? "bg-[#1767be] text-white shadow-md"
               : "bg-white/10 text-white/70 hover:text-white"
           }`}
           title="Toggle Active Recall Pen Layer"
@@ -301,7 +301,7 @@ export function BTRCanvasMarkup({
                 onClick={() => setCurrentTool("pen")}
                 className={`p-1.5 rounded-lg transition ${
                   currentTool === "pen"
-                    ? "bg-indigo-500/30 text-indigo-300 ring-1 ring-indigo-400"
+                    ? "bg-[#1767be]/30 text-[#4da2ff] ring-1 ring-[#4da2ff]"
                     : "text-white/60 hover:text-white"
                 }`}
                 title="Pen (Fine Point)"

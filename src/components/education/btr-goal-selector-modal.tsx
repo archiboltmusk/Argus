@@ -85,16 +85,16 @@ export function BTRGoalSelectorModal({
 
   return (
     <div className="fixed inset-0 z-[260] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-150">
-      <div className="relative w-full max-w-xl rounded-3xl bg-[#0e101f] border border-indigo-500/30 shadow-2xl p-6 flex flex-col gap-5 text-white">
+      <div className="relative w-full max-w-xl rounded-3xl bg-[#0d1b4b] border border-[#1767be]/30 shadow-2xl p-6 flex flex-col gap-5 text-white">
         {/* Header */}
-        <div className="flex items-center justify-between pb-3 border-b border-indigo-500/20">
+        <div className="flex items-center justify-between pb-3 border-b border-[#1767be]/20">
           <div className="flex items-center gap-3">
-            <div className="h-9 w-9 rounded-xl bg-indigo-600/20 border border-indigo-500/30 text-indigo-400 flex items-center justify-center">
+            <div className="h-9 w-9 rounded-xl bg-[#1767be]/20 border border-[#1767be]/30 text-[#4da2ff] flex items-center justify-center">
               <Target size={18} />
             </div>
             <div>
               <h3 className="text-base font-black text-white">Select Your Target Goal</h3>
-              <p className="text-xs text-indigo-300">
+              <p className="text-xs text-[#4da2ff]">
                 Customizes countdown timers, QBank marking rules, and daily target pacing.
               </p>
             </div>
@@ -119,19 +119,19 @@ export function BTRGoalSelectorModal({
                 onClick={() => handleConfirm(goal)}
                 className={`p-4 rounded-2xl border transition cursor-pointer select-none flex flex-col gap-2.5 ${
                   isSelected
-                    ? "bg-indigo-600/25 border-indigo-500 shadow-md ring-1 ring-indigo-500/50"
-                    : "bg-[#14162e] border-indigo-500/15 hover:border-indigo-500/40 hover:bg-[#181a38]"
+                    ? "bg-[#1767be]/25 border-[#1767be] shadow-md ring-1 ring-[#1767be]/50"
+                    : "bg-[#1d204b] border-[#1767be]/15 hover:border-[#1767be]/40 hover:bg-[#25285a]"
                 }`}
               >
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex flex-col">
                     <div className="flex items-center gap-2">
                       <span className="text-sm font-bold text-white">{goal.name}</span>
-                      <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-md bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+                      <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-md bg-[#1767be]/20 text-[#4da2ff] border border-[#1767be]/30">
                         {goal.badge}
                       </span>
                     </div>
-                    <span className="text-xs text-indigo-300/80 mt-0.5">
+                    <span className="text-xs text-[#4da2ff]/80 mt-0.5">
                       {goal.pattern} • {goal.markingScheme}
                     </span>
                   </div>
@@ -144,7 +144,7 @@ export function BTRGoalSelectorModal({
                       <span className="text-[10px] text-white/50 block">{goal.examMonth}</span>
                     </div>
                     {isSelected ? (
-                      <div className="h-6 w-6 rounded-full bg-indigo-600 text-white flex items-center justify-center shrink-0">
+                      <div className="h-6 w-6 rounded-full bg-[#1767be] text-white flex items-center justify-center shrink-0">
                         <Check size={14} />
                       </div>
                     ) : (
@@ -162,7 +162,7 @@ export function BTRGoalSelectorModal({
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-between pt-3 border-t border-indigo-500/20 text-xs text-white/50">
+        <div className="flex items-center justify-between pt-3 border-t border-[#1767be]/20 text-xs text-white/50">
           <span>Goals can be updated anytime without losing test history.</span>
           <button
             type="button"

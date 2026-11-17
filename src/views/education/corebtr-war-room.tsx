@@ -749,10 +749,10 @@ export function CoreBTRWarRoom({ onStartQBankDrill, onOpenNotes }: CoreBTRWarRoo
             {/* Goal Selector Chip (from official app) */}
             <div
               onClick={() => setShowGoalModal(true)}
-              className="flex items-center gap-1.5 rounded-xl bg-canvas border border-edge-soft px-3 py-1 text-xs font-semibold text-ink hover:border-indigo-500/40 cursor-pointer transition select-none"
+              className="flex items-center gap-1.5 rounded-xl bg-canvas border border-edge-soft px-3 py-1 text-xs font-semibold text-ink hover:border-[#1767be]/40 cursor-pointer transition select-none"
               title="Click to switch your examination goal"
             >
-              <span className="text-indigo-400 font-bold max-w-[140px] sm:max-w-none truncate">{currentGoal.name}</span>
+              <span className="text-[#4da2ff] font-bold max-w-[140px] sm:max-w-none truncate">{currentGoal.name}</span>
               <span className="text-[10px] text-ink-muted">| My Goal</span>
               <ChevronDown size={12} className="text-ink-muted shrink-0" />
             </div>
@@ -1058,7 +1058,7 @@ export function CoreBTRWarRoom({ onStartQBankDrill, onOpenNotes }: CoreBTRWarRoo
                     <button
                       type="button"
                       onClick={() => handleNavigate("plan")}
-                      className="w-full py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-extrabold text-xs shadow transition flex items-center justify-center gap-1.5"
+                      className="w-full py-2 rounded-xl bg-[#1767be] hover:bg-[#155bb0] text-white font-extrabold text-xs shadow transition flex items-center justify-center gap-1.5"
                     >
                       <span>View FMGE Plan</span>
                       <ChevronRight size={13} />
@@ -1516,7 +1516,7 @@ export function CoreBTRWarRoom({ onStartQBankDrill, onOpenNotes }: CoreBTRWarRoo
                           onClick={() => setLibraryCategoryFilter(cat)}
                           className={`rounded-xl px-3.5 py-1.5 text-xs font-bold transition ${
                             libraryCategoryFilter === cat
-                              ? "bg-indigo-600 text-white shadow-sm"
+                              ? "bg-[#1767be] text-white shadow-sm"
                               : "text-ink-muted hover:text-ink hover:bg-elevated"
                           }`}
                         >
@@ -1533,14 +1533,14 @@ export function CoreBTRWarRoom({ onStartQBankDrill, onOpenNotes }: CoreBTRWarRoo
                           placeholder="Search subjects, pearls..."
                           value={searchQuery}
                           onChange={(e) => setSearchQuery(e.target.value)}
-                          className="h-9 w-44 md:w-56 rounded-xl bg-surface border border-edge-soft pl-9 pr-3 text-xs text-ink placeholder:text-ink-muted focus:border-indigo-500 focus:outline-none transition"
+                          className="h-9 w-44 md:w-56 rounded-xl bg-surface border border-edge-soft pl-9 pr-3 text-xs text-ink placeholder:text-ink-muted focus:border-[#1767be] focus:outline-none transition"
                         />
                       </div>
 
                       <button
                         type="button"
                         onClick={() => setShowCustomModuleModal(true)}
-                        className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-indigo-600/15 border border-indigo-500/30 text-xs font-bold text-indigo-300 hover:bg-indigo-600/25 transition"
+                        className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#1767be]/15 border border-[#1767be]/30 text-xs font-bold text-[#4da2ff] hover:bg-[#1767be]/25 transition"
                       >
                         <Plus size={13} />
                         <span>Custom Module</span>
@@ -1629,7 +1629,7 @@ export function CoreBTRWarRoom({ onStartQBankDrill, onOpenNotes }: CoreBTRWarRoo
                       onClick={() => setSelectedSubjectDetail(subj)}
                       className="cursor-pointer"
                     >
-                      <h3 className="text-base font-bold text-ink leading-snug group-hover:text-indigo-400 transition">
+                      <h3 className="text-base font-bold text-ink leading-snug group-hover:text-[#4da2ff] transition">
                         {subj.name}
                       </h3>
                       {SUBJECT_METRICS_MAP[subj.id] && (
@@ -1637,7 +1637,7 @@ export function CoreBTRWarRoom({ onStartQBankDrill, onOpenNotes }: CoreBTRWarRoo
                           <span className="text-[11px] text-ink-muted font-medium">
                             {SUBJECT_METRICS_MAP[subj.id].completed}/{SUBJECT_METRICS_MAP[subj.id].items} items
                           </span>
-                          <span className="text-[10px] text-indigo-400 font-bold bg-indigo-500/10 px-1.5 py-0.2 rounded border border-indigo-500/20">
+                          <span className="text-[10px] text-[#4da2ff] font-bold bg-[#1767be]/10 px-1.5 py-0.2 rounded border border-[#1767be]/20">
                             {Math.round((SUBJECT_METRICS_MAP[subj.id].completed / SUBJECT_METRICS_MAP[subj.id].items) * 100)}% completed
                           </span>
                         </div>
@@ -1739,7 +1739,7 @@ export function CoreBTRWarRoom({ onStartQBankDrill, onOpenNotes }: CoreBTRWarRoo
                       <button
                         type="button"
                         onClick={() => setSelectedSubjectDetail(subj)}
-                        className="flex items-center gap-1 rounded-lg bg-indigo-600/15 border border-indigo-500/30 px-2 py-1 text-[11px] font-bold text-indigo-300 hover:bg-indigo-600/25 transition"
+                        className="flex items-center gap-1 rounded-lg bg-[#1767be]/15 border border-[#1767be]/30 px-2 py-1 text-[11px] font-bold text-[#4da2ff] hover:bg-[#1767be]/25 transition"
                       >
                         <span>QBank</span>
                         <ChevronRight size={11} />
@@ -2123,7 +2123,7 @@ export function CoreBTRWarRoom({ onStartQBankDrill, onOpenNotes }: CoreBTRWarRoo
             onClick={() => setTestsSubTab(t)}
             className={`px-4 py-2 rounded-xl text-xs font-bold transition ${
               testsSubTab === t
-                ? "bg-indigo-600 text-white shadow-sm"
+                ? "bg-[#1767be] text-white shadow-sm"
                 : "text-ink-muted hover:text-ink hover:bg-elevated"
             }`}
           >
@@ -2156,11 +2156,11 @@ export function CoreBTRWarRoom({ onStartQBankDrill, onOpenNotes }: CoreBTRWarRoo
       {COREBTR_OFFICIAL_TESTS.filter((test) => testsSubTab === test.type).map((test) => (
         <div
           key={test.id}
-          className="p-5 rounded-2xl bg-surface border border-edge-soft hover:border-indigo-500/40 hover:bg-elevated transition shadow-xs flex flex-col md:flex-row items-start md:items-center justify-between gap-4 select-none group"
+          className="p-5 rounded-2xl bg-surface border border-edge-soft hover:border-[#1767be]/40 hover:bg-elevated transition shadow-xs flex flex-col md:flex-row items-start md:items-center justify-between gap-4 select-none group"
         >
           <div className="flex flex-col gap-1.5">
             <div className="flex items-center gap-2">
-              <span className="font-mono text-sm font-bold text-ink group-hover:text-indigo-400 transition">
+              <span className="font-mono text-sm font-bold text-ink group-hover:text-[#4da2ff] transition">
                 {test.title}
               </span>
               {test.ended && (
@@ -2169,7 +2169,7 @@ export function CoreBTRWarRoom({ onStartQBankDrill, onOpenNotes }: CoreBTRWarRoo
                 </span>
               )}
               {test.competitive && (
-                <span className="text-[10px] font-bold px-2 py-0.2 rounded-md bg-indigo-500/15 text-indigo-300 border border-indigo-500/25">
+                <span className="text-[10px] font-bold px-2 py-0.2 rounded-md bg-[#1767be]/15 text-[#4da2ff] border border-[#1767be]/25">
                   Competitive
                 </span>
               )}
@@ -2177,7 +2177,7 @@ export function CoreBTRWarRoom({ onStartQBankDrill, onOpenNotes }: CoreBTRWarRoo
 
             <div className="flex items-center gap-4 text-xs text-ink-muted">
               <span className="flex items-center gap-1">
-                <HelpCircle size={13} className="text-indigo-400" />
+                <HelpCircle size={13} className="text-[#4da2ff]" />
                 <span>{test.totalQuestions} questions</span>
               </span>
               <span>•</span>
@@ -2194,14 +2194,14 @@ export function CoreBTRWarRoom({ onStartQBankDrill, onOpenNotes }: CoreBTRWarRoo
               onClick={() => setShowCrossAppModal(true)}
               className="flex-1 md:flex-none px-4 py-2 rounded-xl bg-surface border border-edge-soft hover:bg-raised text-ink text-xs font-bold transition flex items-center justify-center gap-1.5"
             >
-              <Target size={13} className="text-indigo-400" />
+              <Target size={13} className="text-[#4da2ff]" />
               <span>Calibrate Score</span>
             </button>
 
             <button
               type="button"
               onClick={() => onStartQBankDrill?.(test.title)}
-              className="flex-1 md:flex-none px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold shadow-md shadow-indigo-600/30 transition flex items-center justify-center gap-1.5"
+              className="flex-1 md:flex-none px-5 py-2 rounded-xl bg-[#1767be] hover:bg-[#155bb0] text-white text-xs font-bold shadow-md shadow-[#1767be]/30 transition flex items-center justify-center gap-1.5"
             >
               <Play size={12} fill="currentColor" />
               <span>Attempt Test</span>
@@ -2228,7 +2228,7 @@ export function CoreBTRWarRoom({ onStartQBankDrill, onOpenNotes }: CoreBTRWarRoo
       </div>
 
       <div className="flex items-center gap-2">
-        <span className="text-xs font-bold px-3 py-1 rounded-xl bg-indigo-600 text-white">
+        <span className="text-xs font-bold px-3 py-1 rounded-xl bg-[#1767be] text-white">
           Completed Archive
         </span>
       </div>
@@ -2239,17 +2239,17 @@ export function CoreBTRWarRoom({ onStartQBankDrill, onOpenNotes }: CoreBTRWarRoo
       {COREBTR_LIVE_SESSIONS.map((session) => (
         <div
           key={session.id}
-          className="p-4 rounded-2xl bg-surface border border-edge-soft hover:border-indigo-500/40 hover:bg-elevated transition shadow-xs flex flex-col md:flex-row items-start md:items-center justify-between gap-4 group select-none"
+          className="p-4 rounded-2xl bg-surface border border-edge-soft hover:border-[#1767be]/40 hover:bg-elevated transition shadow-xs flex flex-col md:flex-row items-start md:items-center justify-between gap-4 group select-none"
         >
           <div className="flex items-start gap-3.5">
-            <div className="h-12 w-12 rounded-2xl bg-indigo-600/15 text-indigo-400 border border-indigo-500/25 flex items-center justify-center font-bold shrink-0">
+            <div className="h-12 w-12 rounded-2xl bg-[#1767be]/15 text-[#4da2ff] border border-[#1767be]/25 flex items-center justify-center font-bold shrink-0">
               <Play size={18} fill="currentColor" />
             </div>
             <div className="flex flex-col">
-              <span className="text-xs font-semibold text-indigo-400">
+              <span className="text-xs font-semibold text-[#4da2ff]">
                 {session.instructor}
               </span>
-              <h4 className="text-sm font-bold text-ink group-hover:text-indigo-400 transition leading-snug">
+              <h4 className="text-sm font-bold text-ink group-hover:text-[#4da2ff] transition leading-snug">
                 {session.title}
               </h4>
               <span className="text-xs text-ink-muted mt-1">
@@ -2262,7 +2262,7 @@ export function CoreBTRWarRoom({ onStartQBankDrill, onOpenNotes }: CoreBTRWarRoo
             <button
               type="button"
               onClick={() => setActiveLiveStreamModal(session)}
-              className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold shadow-md transition flex items-center gap-1.5"
+              className="px-4 py-2 rounded-xl bg-[#1767be] hover:bg-[#155bb0] text-white text-xs font-bold shadow-md transition flex items-center gap-1.5"
             >
               <Play size={12} fill="currentColor" />
               <span>Watch Discussion</span>
@@ -2288,9 +2288,9 @@ export function CoreBTRWarRoom({ onStartQBankDrill, onOpenNotes }: CoreBTRWarRoo
 {activeDestination === "plan" && (
   <div className="flex flex-col gap-6 animate-in fade-in duration-150">
     {/* Custom Module Action Banner */}
-    <div className="p-6 rounded-3xl bg-gradient-to-r from-indigo-900/40 via-surface to-elevated border border-indigo-500/30 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-sm">
+    <div className="p-6 rounded-3xl bg-gradient-to-r from-[#1d204b]/60 via-surface to-elevated border border-[#1767be]/30 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-sm">
       <div className="flex flex-col gap-1">
-        <span className="text-[10px] font-bold uppercase tracking-wider text-indigo-400">
+        <span className="text-[10px] font-bold uppercase tracking-wider text-[#4da2ff]">
           High-Yield Algorithm
         </span>
         <h3 className="text-lg font-black text-ink">Custom Module Engine</h3>
@@ -2301,7 +2301,7 @@ export function CoreBTRWarRoom({ onStartQBankDrill, onOpenNotes }: CoreBTRWarRoo
       <button
         type="button"
         onClick={() => setShowCustomModuleModal(true)}
-        className="px-5 py-2.5 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white font-extrabold text-xs shadow-lg shadow-indigo-600/30 transition flex items-center gap-2"
+        className="px-5 py-2.5 rounded-2xl bg-[#1767be] hover:bg-[#155bb0] text-white font-extrabold text-xs shadow-lg shadow-[#1767be]/30 transition flex items-center gap-2"
       >
         <Plus size={15} />
         <span>+ Create Custom Module</span>

@@ -551,7 +551,7 @@ export function BTRSplitWorkstation({
                 onClick={() => setIsMarkupEnabled(!isMarkupEnabled)}
                 className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold transition ${
                   isMarkupEnabled
-                    ? "bg-indigo-600 text-white shadow-xs"
+                    ? "bg-[#1767be] text-white shadow-xs"
                     : "bg-elevated border border-edge-soft text-ink-muted hover:text-ink"
                 }`}
                 title="Fill in blanks directly over workbook"

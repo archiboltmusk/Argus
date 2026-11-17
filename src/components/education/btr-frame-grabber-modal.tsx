@@ -169,16 +169,16 @@ export function BTRFrameGrabberModal({
 
   return (
     <div className="fixed inset-0 z-[280] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-150">
-      <div className="relative w-full max-w-2xl rounded-3xl bg-[#0e101f] border border-indigo-500/30 shadow-2xl p-6 flex flex-col gap-4 text-white max-h-[92vh] overflow-y-auto">
+      <div className="relative w-full max-w-2xl rounded-3xl bg-[#0d1b4b] border border-[#1767be]/30 shadow-2xl p-6 flex flex-col gap-4 text-white max-h-[92vh] overflow-y-auto">
         {/* Header */}
-        <div className="flex items-center justify-between pb-3 border-b border-indigo-500/20">
+        <div className="flex items-center justify-between pb-3 border-b border-[#1767be]/20">
           <div className="flex items-center gap-3">
-            <div className="h-9 w-9 rounded-xl bg-indigo-600/20 border border-indigo-500/30 text-indigo-400 flex items-center justify-center">
+            <div className="h-9 w-9 rounded-xl bg-[#1767be]/20 border border-[#1767be]/30 text-[#4da2ff] flex items-center justify-center">
               <Camera size={18} />
             </div>
             <div>
               <h3 className="text-base font-black text-white">Capture Video Frame to FSRS Vault</h3>
-              <p className="text-xs text-indigo-300">
+              <p className="text-xs text-[#4da2ff]">
                 {subjectName} • {lectureTitle} ({timestampLabel})
               </p>
             </div>
@@ -236,7 +236,7 @@ export function BTRFrameGrabberModal({
                 onClick={() => setSelectedTag(t)}
                 className={`px-2.5 py-0.5 rounded-lg text-[11px] font-bold transition ${
                   selectedTag === t
-                    ? "bg-indigo-600 text-white shadow-xs"
+                    ? "bg-[#1767be] text-white shadow-xs"
                     : "bg-white/5 text-white/60 hover:text-white"
                 }`}
               >
@@ -253,7 +253,7 @@ export function BTRFrameGrabberModal({
               value={prompt}
               onChange={(e) => setPrompt(e.target.value)}
               placeholder="e.g. Identify this sign and associated pathology..."
-              className="w-full rounded-xl bg-[#14162e] border border-white/10 px-3 py-2 text-xs text-white outline-none focus:border-indigo-500 transition"
+              className="w-full rounded-xl bg-[#1d204b] border border-white/10 px-3 py-2 text-xs text-white outline-none focus:border-[#1767be] transition"
             />
           </div>
 
@@ -265,13 +265,13 @@ export function BTRFrameGrabberModal({
               value={answer}
               onChange={(e) => setAnswer(e.target.value)}
               placeholder="e.g. Rigler's double-wall sign indicating pneumoperitoneum due to visceral perforation."
-              className="w-full rounded-xl bg-[#14162e] border border-white/10 px-3 py-2 text-xs text-white outline-none focus:border-indigo-500 transition resize-none"
+              className="w-full rounded-xl bg-[#1d204b] border border-white/10 px-3 py-2 text-xs text-white outline-none focus:border-[#1767be] transition resize-none"
             />
           </div>
         </div>
 
         {/* Actions */}
-        <div className="flex items-center justify-between pt-3 border-t border-indigo-500/20">
+        <div className="flex items-center justify-between pt-3 border-t border-[#1767be]/20">
           <span className="text-[11px] text-white/40">
             Automatically schedules spaced repetition in FSRS Error Vault.
           </span>
@@ -291,7 +291,7 @@ export function BTRFrameGrabberModal({
               className={`px-5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 ${
                 savedSuccess
                   ? "bg-emerald-600 text-white"
-                  : "bg-indigo-600 hover:bg-indigo-500 text-white disabled:opacity-40"
+                  : "bg-[#1767be] hover:bg-[#155bb0] text-white disabled:opacity-40"
               }`}
             >
               {savedSuccess ? (

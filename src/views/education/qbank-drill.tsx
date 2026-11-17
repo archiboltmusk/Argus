@@ -11,6 +11,11 @@ import {
   RotateCcw,
   Flag,
   ChevronRight,
+  Monitor,
+  FileText,
+  Info,
+  User,
+  Zap,
 } from "lucide-react";
 import type { ClinicalQuestion, QBankSessionState, GrandTestResult } from "@/lib/education/qbank-types";
 import { CLINICAL_QBANK_STARTER } from "@/lib/education/qbank-data";
@@ -29,6 +34,11 @@ export function QBankRunner({
   onFinish,
   onClose,
 }: QBankRunnerProps) {
+  const [activeQuestions, setActiveQuestions] = useState<ClinicalQuestion[]>(questions);
+  const [cbtMode, setCbtMode] = useState<boolean>(examMode);
+  const [showQuestionPaper, setShowQuestionPaper] = useState<boolean>(false);
+  const [showInstructions, setShowInstructions] = useState<boolean>(false);
+
   const [session, setSession] = useState<QBankSessionState>({
     activeQuestionIndex: 0,
     selectedAnswers: {},
@@ -54,8 +64,8 @@ export function QBankRunner({
     return () => clearInterval(interval);
   }, [examFinished]);
 
-  const activeQuestion = questions[session.activeQuestionIndex] ?? questions[0];
-  const qId = activeQuestion.id;
+  const activeQuestion = activeQuestions[session.activeQuestionIndex] ?? activeQuestions[0];
+  const qId = activeQuestion?.id || "q_0";
   const selectedIdx = session.selectedAnswers[qId];
   const eliminated = session.eliminatedOptions[qId] || [];
   const submitted = examMode ? examFinished : !!session.isSubmitted[qId];
@@ -144,9 +154,9 @@ export function QBankRunner({
     if (isNowBookmarked) {
       saveStudyNote({
         itemId: activeQuestion.id,
-        itemTitle: `[QBank FSRS] ${activeQuestion.subject}: ${activeQuestion.topic}`,
+        itemTitle: `BTR: ${activeQuestion.topic} (${activeQuestion.subject})`,
         timestampSec: 0,
-        timestampLabel: "QBank",
+        timestampLabel: "00:00",
         markdown: `**Vignette:** ${activeQuestion.vignette}\n\n**Examiner Trap:** ${activeQuestion.examinerTrap}\n\n**Rule:** ${activeQuestion.explanation.bottomLine}`,
         highYield: true,
         topic: activeQuestion.topic,
@@ -160,7 +170,7 @@ export function QBankRunner({
     let incorrect = 0;
     let attempted = 0;
 
-    questions.forEach((q) => {
+    activeQuestions.forEach((q) => {
       const sel = session.selectedAnswers[q.id];
       if (sel !== undefined) {
         attempted++;
@@ -174,14 +184,14 @@ export function QBankRunner({
 
     // NEET-PG standard scoring: +4 correct, -1 incorrect
     const score = correct * 4 - incorrect * 1;
-    const maxScore = questions.length * 4;
+    const maxScore = activeQuestions.length * 4;
     const accuracyPct = attempted > 0 ? Math.round((correct / attempted) * 100) : 0;
 
     const result: GrandTestResult = {
       id: `gt_${Date.now()}`,
       examTitle: examMode ? "CoreBTR National Grand Test Simulation" : "CoreBTR Custom Module Drill",
       timestamp: Date.now(),
-      totalQuestions: questions.length,
+      totalQuestions: activeQuestions.length,
       attempted,
       correct,
       incorrect,
@@ -194,7 +204,33 @@ export function QBankRunner({
     setResultData(result);
     setExamFinished(true);
     onFinish?.(result);
-  }, [questions, session.selectedAnswers, examMode, elapsedTimer, onFinish]);
+  }, [activeQuestions, session.selectedAnswers, examMode, elapsedTimer, onFinish]);
+
+  // Restart focused Recovery Sprint on missed questions
+  const handleStartRecoverySprint = () => {
+    const missed = activeQuestions.filter((q) => {
+      const sel = session.selectedAnswers[q.id];
+      return sel !== undefined && sel !== q.correctIndex;
+    });
+
+    if (missed.length === 0) return;
+
+    setActiveQuestions(missed);
+    setSession({
+      activeQuestionIndex: 0,
+      selectedAnswers: {},
+      eliminatedOptions: {},
+      isSubmitted: {},
+      bookmarks: [],
+      timeSpentSec: {},
+    });
+    setGuessedQuestions({});
+    setMarkedForReview([]);
+    setExamFinished(false);
+    setElapsedTimer(0);
+    setResultData(null);
+    setActiveTab("analysis");
+  };
 
   const formatTimer = (sec: number) => {
     const m = Math.floor(sec / 60);
@@ -202,9 +238,23 @@ export function QBankRunner({
     return `${m}:${String(s).padStart(2, "0")}`;
   };
 
+  // Calculate palette status for TCS iON grid
+  const getQuestionPaletteStatus = (index: number) => {
+    const q = activeQuestions[index];
+    if (!q) return "not_visited";
+    const isAns = session.selectedAnswers[q.id] !== undefined;
+    const isMarked = markedForReview.includes(q.id);
+
+    if (isAns && isMarked) return "ans_marked";
+    if (isMarked) return "marked";
+    if (isAns) return "answered";
+    if (index <= session.activeQuestionIndex) return "not_answered";
+    return "not_visited";
+  };
+
   // If exam finished, render authentic CoreBTR Analysis Screen (matching screenshot media_1794864389406_b0b9e895.jpg)
   if (examFinished && resultData) {
-    const totalQ = questions.length;
+    const totalQ = activeQuestions.length;
     const correctCount = resultData.correct;
     const incorrectCount = resultData.incorrect;
     const notAnsweredCount = totalQ - (correctCount + incorrectCount);
@@ -213,7 +263,7 @@ export function QBankRunner({
     // Calculate guess statistics
     const totalGuesses = Object.values(guessedQuestions).filter(Boolean).length;
     let correctGuesses = 0;
-    questions.forEach((q) => {
+    activeQuestions.forEach((q) => {
       if (guessedQuestions[q.id] && session.selectedAnswers[q.id] === q.correctIndex) {
         correctGuesses++;
       }
@@ -227,7 +277,7 @@ export function QBankRunner({
       { total: number; correct: number; incorrect: number; notAnswered: number; qIds: string[] }
     > = {};
 
-    questions.forEach((q) => {
+    activeQuestions.forEach((q) => {
       if (!subjectMap[q.subject]) {
         subjectMap[q.subject] = { total: 0, correct: 0, incorrect: 0, notAnswered: 0, qIds: [] };
       }
@@ -245,9 +295,9 @@ export function QBankRunner({
     });
 
     return (
-      <div className="flex flex-col h-full w-full max-w-4xl mx-auto bg-[#0b0c16] rounded-3xl border border-indigo-500/30 shadow-2xl overflow-hidden text-white select-none animate-in zoom-in-95 duration-200">
+      <div className="flex flex-col h-full w-full max-w-4xl mx-auto bg-[#0d1b4b] rounded-3xl border border-[#1767be]/35 shadow-2xl overflow-hidden text-white select-none animate-in zoom-in-95 duration-200">
         {/* Top Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-white/10 bg-[#121324]">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-[#1767be]/25 bg-[#1d204b]">
           <div className="flex items-center gap-3">
             <button
               type="button"
@@ -258,75 +308,95 @@ export function QBankRunner({
             </button>
             <div>
               <h2 className="text-base font-black text-white">Custom Module Analysis</h2>
-              <span className="text-[11px] text-white/50">
-                Completed • {totalQ} questions • {resultData.timeSpentMinutes} mins
+              <span className="text-xs text-white/60">
+                Performance Telemetry • CoreBTR Diagnostic Engine
               </span>
             </div>
           </div>
 
-          {/* Analysis / Questions Tabs */}
-          <div className="flex items-center bg-white/5 p-1 rounded-2xl border border-white/10">
-            <button
-              type="button"
-              onClick={() => setActiveTab("analysis")}
-              className={`px-4 py-1.5 rounded-xl text-xs font-bold transition ${
-                activeTab === "analysis"
-                  ? "bg-indigo-600 text-white shadow-sm"
-                  : "text-white/60 hover:text-white"
-              }`}
-            >
-              Analysis
-            </button>
-            <button
-              type="button"
-              onClick={() => setActiveTab("questions")}
-              className={`px-4 py-1.5 rounded-xl text-xs font-bold transition ${
-                activeTab === "questions"
-                  ? "bg-indigo-600 text-white shadow-sm"
-                  : "text-white/60 hover:text-white"
-              }`}
-            >
-              Questions
-            </button>
+          <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5 rounded-xl bg-white/5 border border-white/10 p-1 text-xs">
+              <button
+                type="button"
+                onClick={() => setActiveTab("analysis")}
+                className={`px-3 py-1 rounded-lg font-bold transition ${
+                  activeTab === "analysis" ? "bg-[#1767be] text-white shadow-xs" : "text-white/60 hover:text-white"
+                }`}
+              >
+                Analysis
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveTab("questions")}
+                className={`px-3 py-1 rounded-lg font-bold transition ${
+                  activeTab === "questions" ? "bg-[#1767be] text-white shadow-xs" : "text-white/60 hover:text-white"
+                }`}
+              >
+                Questions ({totalQ})
+              </button>
+            </div>
           </div>
         </div>
 
-        {/* Content Area */}
+        {/* Body */}
         <div className="flex-1 overflow-y-auto p-6 flex flex-col gap-6">
           {activeTab === "analysis" ? (
             <>
-              {/* Total Questions Card */}
-              <div className="flex flex-col gap-4 p-5 rounded-3xl bg-[#14152a] border border-indigo-500/20">
+              {/* Recovery Sprint Alert Banner */}
+              {incorrectCount > 0 && (
+                <div className="p-4 rounded-2xl bg-[#1d204b] border border-[#1767be]/40 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-md">
+                  <div className="flex items-center gap-3">
+                    <div className="h-10 w-10 rounded-xl bg-[#feb122]/15 text-[#feb122] border border-[#feb122]/30 flex items-center justify-center shrink-0">
+                      <Zap size={18} className="fill-[#feb122]" />
+                    </div>
+                    <div>
+                      <h4 className="text-sm font-bold text-white">Weaker Topics Recovery Sprint</h4>
+                      <p className="text-xs text-white/70">
+                        {incorrectCount} questions missed. Launch an instant drill to master these examiner traps.
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleStartRecoverySprint}
+                    className="w-full sm:w-auto px-4 py-2 rounded-xl bg-[#1767be] hover:bg-[#155bb0] text-white font-extrabold text-xs shadow-md transition shrink-0"
+                  >
+                    Start Recovery Sprint ({incorrectCount} Qs)
+                  </button>
+                </div>
+              )}
+
+              {/* Accuracy & Breakdown Card (Matching App Store Screenshot) */}
+              <div className="p-5 rounded-2xl bg-[#1d204b]/70 border border-[#1767be]/30 flex flex-col gap-4">
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-bold uppercase tracking-wider text-white/60">
-                    Total Questions
+                    Accuracy & Score
                   </span>
-                  <span className="text-2xl font-black text-white">{correctPct}% Correct</span>
+                  <div className="flex items-center gap-3 text-xs">
+                    <div className="flex items-center gap-1.5">
+                      <span className="h-3 w-3 rounded-full bg-emerald-500 shrink-0" />
+                      <span className="text-white/80">
+                        <strong className="text-white">{correctCount}</strong> Correct
+                      </span>
+                    </div>
+
+                    <div className="flex items-center gap-1.5">
+                      <span className="h-3 w-3 rounded-full bg-rose-500 shrink-0" />
+                      <span className="text-white/80">
+                        <strong className="text-white">{incorrectCount}</strong> Incorrect
+                      </span>
+                    </div>
+
+                    <div className="flex items-center gap-1.5">
+                      <span className="h-3 w-3 rounded-full bg-white/20 shrink-0" />
+                      <span className="text-white/80">
+                        <strong className="text-white">{notAnsweredCount}</strong> Not Answered
+                      </span>
+                    </div>
+                  </div>
                 </div>
 
-                {/* Score Indicators Row */}
-                <div className="flex items-center gap-6 text-xs">
-                  <div className="flex items-center gap-2">
-                    <span className="h-3 w-3 rounded-full bg-emerald-500 shrink-0" />
-                    <span className="text-white/70">
-                      <strong className="text-white font-bold">{correctCount}</strong> Correct
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="h-3 w-3 rounded-full bg-rose-500 shrink-0" />
-                    <span className="text-white/70">
-                      <strong className="text-white font-bold">{incorrectCount}</strong> Incorrect
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="h-3 w-3 rounded-full bg-amber-500 shrink-0" />
-                    <span className="text-white/70">
-                      <strong className="text-white font-bold">{notAnsweredCount}</strong> Not Answered
-                    </span>
-                  </div>
-                </div>
-
-                {/* Multi-Color Progress Bar */}
+                {/* Progress bar */}
                 <div className="h-3 w-full bg-white/10 rounded-full overflow-hidden flex">
                   <div
                     style={{ width: `${(correctCount / totalQ) * 100}%` }}
@@ -338,56 +408,65 @@ export function QBankRunner({
                     className="bg-rose-500 h-full transition-all duration-700"
                     title={`Incorrect: ${incorrectCount}`}
                   />
-                  <div
-                    style={{ width: `${(notAnsweredCount / totalQ) * 100}%` }}
-                    className="bg-amber-500 h-full transition-all duration-700"
-                    title={`Not Answered: ${notAnsweredCount}`}
-                  />
                 </div>
 
-                {/* 6 Metric Cards Grid (Matching official screenshot) */}
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-3 pt-3 border-t border-white/10">
-                  <div className="p-3.5 rounded-2xl bg-white/5 border border-white/10 flex flex-col">
-                    <span className="text-[11px] text-white/50">Marks</span>
-                    <strong className="text-base font-black text-white mt-0.5">
-                      {resultData.score > 0 ? `+${resultData.score}` : resultData.score} / {resultData.maxScore}
-                    </strong>
+                {/* Accuracy Percentage Callout */}
+                <div className="flex items-center justify-between pt-1">
+                  <div>
+                    <span className="text-3xl font-black text-white">{correctPct}%</span>
+                    <span className="text-xs text-white/60 ml-2">Accuracy</span>
                   </div>
+                  <div className="text-right">
+                    <span className="text-sm font-bold text-white">
+                      Score: {resultData.score} / {resultData.maxScore}
+                    </span>
+                    <span className="text-[11px] text-white/50 block">NEET-PG (+4 / -1 Marking)</span>
+                  </div>
+                </div>
+              </div>
 
-                  <div className="p-3.5 rounded-2xl bg-white/5 border border-white/10 flex flex-col">
-                    <span className="text-[11px] text-white/50">Total Time</span>
-                    <strong className="text-base font-black text-white mt-0.5">
-                      {resultData.timeSpentMinutes} min
-                    </strong>
-                  </div>
+              {/* 6-Metric HUD Grid */}
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                <div className="p-3.5 rounded-2xl bg-[#1d204b]/60 border border-[#1767be]/25 flex flex-col">
+                  <span className="text-[11px] text-white/60">Marks Obtained</span>
+                  <strong className="text-base font-black text-white mt-0.5">
+                    {resultData.score > 0 ? `+${resultData.score}` : resultData.score} / {resultData.maxScore}
+                  </strong>
+                </div>
 
-                  <div className="p-3.5 rounded-2xl bg-white/5 border border-white/10 flex flex-col">
-                    <span className="text-[11px] text-white/50">Guess Accuracy</span>
-                    <strong className="text-base font-black text-indigo-400 mt-0.5">
-                      {guessAccuracy}%
-                    </strong>
-                  </div>
+                <div className="p-3.5 rounded-2xl bg-[#1d204b]/60 border border-[#1767be]/25 flex flex-col">
+                  <span className="text-[11px] text-white/60">Total Time</span>
+                  <strong className="text-base font-black text-white mt-0.5">
+                    {resultData.timeSpentMinutes} min
+                  </strong>
+                </div>
 
-                  <div className="p-3.5 rounded-2xl bg-white/5 border border-white/10 flex flex-col">
-                    <span className="text-[11px] text-white/50">Accuracy</span>
-                    <strong className="text-base font-black text-emerald-400 mt-0.5">
-                      {resultData.accuracyPct}%
-                    </strong>
-                  </div>
+                <div className="p-3.5 rounded-2xl bg-[#1d204b]/60 border border-[#1767be]/25 flex flex-col">
+                  <span className="text-[11px] text-white/60">Guess Accuracy</span>
+                  <strong className="text-base font-black text-[#4da2ff] mt-0.5">
+                    {guessAccuracy}%
+                  </strong>
+                </div>
 
-                  <div className="p-3.5 rounded-2xl bg-white/5 border border-white/10 flex flex-col">
-                    <span className="text-[11px] text-white/50">Avg time per question</span>
-                    <strong className="text-base font-black text-white mt-0.5">
-                      {avgTimePerQ} sec/ques
-                    </strong>
-                  </div>
+                <div className="p-3.5 rounded-2xl bg-[#1d204b]/60 border border-[#1767be]/25 flex flex-col">
+                  <span className="text-[11px] text-white/60">Accuracy</span>
+                  <strong className="text-base font-black text-emerald-400 mt-0.5">
+                    {resultData.accuracyPct}%
+                  </strong>
+                </div>
 
-                  <div className="p-3.5 rounded-2xl bg-white/5 border border-white/10 flex flex-col">
-                    <span className="text-[11px] text-white/50">Correct Guesses</span>
-                    <strong className="text-base font-black text-amber-400 mt-0.5">
-                      {correctGuesses} out of {totalGuesses}
-                    </strong>
-                  </div>
+                <div className="p-3.5 rounded-2xl bg-[#1d204b]/60 border border-[#1767be]/25 flex flex-col">
+                  <span className="text-[11px] text-white/60">Avg Time / Question</span>
+                  <strong className="text-base font-black text-white mt-0.5">
+                    {avgTimePerQ} sec/ques
+                  </strong>
+                </div>
+
+                <div className="p-3.5 rounded-2xl bg-[#1d204b]/60 border border-[#1767be]/25 flex flex-col">
+                  <span className="text-[11px] text-white/60">Correct Guesses</span>
+                  <strong className="text-base font-black text-[#feb122] mt-0.5">
+                    {correctGuesses} out of {totalGuesses}
+                  </strong>
                 </div>
               </div>
 
@@ -408,7 +487,7 @@ export function QBankRunner({
                     return (
                       <div
                         key={subject}
-                        className="flex flex-col gap-2.5 p-4 rounded-2xl bg-[#14152a] border border-white/10 hover:border-indigo-500/30 transition"
+                        className="flex flex-col gap-2.5 p-4 rounded-2xl bg-[#1d204b]/60 border border-[#1767be]/25 hover:border-[#4da2ff]/40 transition"
                       >
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-2">
@@ -431,14 +510,14 @@ export function QBankRunner({
                               <span className="text-rose-400 font-bold">{stats.incorrect}</span> Incorrect
                             </span>
                             <span className="text-white/60">
-                              <span className="text-amber-400 font-bold">{stats.notAnswered}</span> Not Answered
+                              <span className="text-white/40 font-bold">{stats.notAnswered}</span> Not Answered
                             </span>
                           </div>
 
                           <button
                             type="button"
                             onClick={() => setActiveTab("questions")}
-                            className="text-xs font-bold text-indigo-400 hover:text-indigo-300 transition flex items-center gap-1"
+                            className="text-xs font-bold text-[#4da2ff] hover:underline transition flex items-center gap-1"
                           >
                             <span>view questions ({stats.total})</span>
                             <ChevronRight size={12} />
@@ -453,7 +532,7 @@ export function QBankRunner({
           ) : (
             /* Questions Review Tab */
             <div className="flex flex-col gap-3">
-              {questions.map((q, idx) => {
+              {activeQuestions.map((q, idx) => {
                 const sel = session.selectedAnswers[q.id];
                 const isCorrect = sel === q.correctIndex;
                 const isUnanswered = sel === undefined;
@@ -463,10 +542,10 @@ export function QBankRunner({
                     key={q.id}
                     className={`p-4 rounded-2xl border transition ${
                       isCorrect
-                        ? "bg-emerald-950/20 border-emerald-500/30"
+                        ? "bg-[#1d204b]/80 border-emerald-500/40"
                         : isUnanswered
-                          ? "bg-amber-950/20 border-amber-500/30"
-                          : "bg-rose-950/20 border-rose-500/30"
+                          ? "bg-[#1d204b]/50 border-white/10"
+                          : "bg-[#1d204b]/80 border-rose-500/40"
                     }`}
                   >
                     <div className="flex items-center justify-between mb-2">
@@ -474,7 +553,7 @@ export function QBankRunner({
                         <span className="font-mono text-xs font-bold text-white/70">
                           Q{idx + 1}
                         </span>
-                        <span className="text-xs font-semibold px-2 py-0.5 rounded bg-white/10 text-white/80">
+                        <span className="text-xs font-semibold px-2 py-0.5 rounded bg-[#1767be]/20 text-[#4da2ff] border border-[#1767be]/30">
                           {q.subject}
                         </span>
                       </div>
@@ -483,7 +562,7 @@ export function QBankRunner({
                           isCorrect
                             ? "text-emerald-400"
                             : isUnanswered
-                              ? "text-amber-400"
+                              ? "text-white/50"
                               : "text-rose-400"
                         }`}
                       >
@@ -505,11 +584,11 @@ export function QBankRunner({
         </div>
 
         {/* Bottom Done Button */}
-        <div className="p-4 border-t border-white/10 bg-[#121324] flex justify-end">
+        <div className="p-4 border-t border-[#1767be]/25 bg-[#1d204b] flex justify-end">
           <button
             type="button"
             onClick={onClose}
-            className="px-6 py-2.5 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs transition"
+            className="px-6 py-2.5 rounded-2xl bg-[#1767be] hover:bg-[#155bb0] text-white font-bold text-xs transition"
           >
             Close & Return to CoreBTR
           </button>
@@ -518,21 +597,395 @@ export function QBankRunner({
     );
   }
 
-  // Active Question Solving View (matching official CoreBTR App standard)
+  // Question Paper Modal
+  if (showQuestionPaper) {
+    return (
+      <div className="fixed inset-0 z-[400] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
+        <div className="relative w-full max-w-3xl max-h-[85vh] bg-[#0d1b4b] rounded-3xl border border-[#1767be]/35 shadow-2xl flex flex-col overflow-hidden text-white">
+          <div className="flex items-center justify-between px-6 py-4 border-b border-[#1767be]/25 bg-[#1d204b]">
+            <div className="flex items-center gap-2">
+              <FileText size={18} className="text-[#4da2ff]" />
+              <h3 className="text-base font-bold text-white">Complete Question Paper</h3>
+            </div>
+            <button
+              type="button"
+              onClick={() => setShowQuestionPaper(false)}
+              className="p-1 rounded-lg hover:bg-white/10 text-white/70 hover:text-white"
+            >
+              <X size={16} />
+            </button>
+          </div>
+          <div className="flex-1 overflow-y-auto p-6 flex flex-col gap-6">
+            {activeQuestions.map((q, i) => (
+              <div key={q.id} className="p-4 rounded-2xl bg-[#1d204b]/70 border border-[#1767be]/20 flex flex-col gap-2">
+                <span className="font-bold text-xs text-[#4da2ff]">Question {i + 1} • {q.subject}</span>
+                <p className="text-xs text-white/90 leading-relaxed">{q.vignette}</p>
+                <div className="grid grid-cols-2 gap-2 mt-2">
+                  {q.options.map((opt, optIdx) => (
+                    <div key={optIdx} className="text-[11.5px] text-white/70 p-2 rounded-lg bg-black/20 border border-white/5">
+                      <strong className="text-white/90">{String.fromCharCode(65 + optIdx)})</strong> {opt}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Instructions Modal
+  if (showInstructions) {
+    return (
+      <div className="fixed inset-0 z-[400] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
+        <div className="relative w-full max-w-2xl max-h-[85vh] bg-[#0d1b4b] rounded-3xl border border-[#1767be]/35 shadow-2xl flex flex-col overflow-hidden text-white">
+          <div className="flex items-center justify-between px-6 py-4 border-b border-[#1767be]/25 bg-[#1d204b]">
+            <div className="flex items-center gap-2">
+              <Info size={18} className="text-[#4da2ff]" />
+              <h3 className="text-base font-bold text-white">TCS iON CBT Examination Instructions</h3>
+            </div>
+            <button
+              type="button"
+              onClick={() => setShowInstructions(false)}
+              className="p-1 rounded-lg hover:bg-white/10 text-white/70 hover:text-white"
+            >
+              <X size={16} />
+            </button>
+          </div>
+          <div className="flex-1 overflow-y-auto p-6 flex flex-col gap-4 text-xs text-white/80 leading-relaxed">
+            <h4 className="text-sm font-bold text-white">General Guidelines for NEET-PG & INI-CET Aspirants:</h4>
+            <p>1. The clock will be set at the server. The countdown timer at top right indicates time remaining.</p>
+            <p>2. The Question Palette displays status of each question using official color conventions:</p>
+            <ul className="list-disc pl-5 flex flex-col gap-1 text-[11.5px]">
+              <li><strong className="text-emerald-400">Green:</strong> You have answered the question.</li>
+              <li><strong className="text-rose-400">Red:</strong> You have not answered the question.</li>
+              <li><strong className="text-white/50">Grey:</strong> You have not visited the question yet.</li>
+              <li><strong className="text-purple-400">Purple:</strong> You have marked the question for review.</li>
+              <li><strong className="text-purple-300">Purple with Green Dot:</strong> Answered and marked for review (evaluated in final score).</li>
+            </ul>
+            <p>3. Marking Scheme: <strong>+4 Marks</strong> for each correct response, <strong>-1 Mark</strong> for each incorrect response.</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // MODE A: TCS iON CBT PROMETRIC EXAM SCREEN
+  if (cbtMode) {
+    const answeredCount = Object.keys(session.selectedAnswers).length;
+    const markedCount = markedForReview.length;
+    const notAnsweredCount = session.activeQuestionIndex + 1 - answeredCount;
+    const notVisitedCount = Math.max(0, activeQuestions.length - (session.activeQuestionIndex + 1));
+
+    return (
+      <div className="flex flex-col h-full w-full max-w-5xl mx-auto bg-[#0d1b4b] rounded-3xl border border-[#1767be]/40 shadow-2xl overflow-hidden text-white select-none animate-in zoom-in-95 duration-150">
+        {/* TCS iON Official Masthead */}
+        <div className="flex items-center justify-between px-6 py-3 border-b border-[#1767be]/30 bg-[#1d204b]">
+          <div className="flex items-center gap-3">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#1767be] text-white font-bold text-xs">
+              CBT
+            </div>
+            <div>
+              <h2 className="text-xs font-bold text-white tracking-tight">
+                National Board of Examinations • NEET-PG / INI-CET Computer-Based Test
+              </h2>
+              <span className="text-[10px] text-[#4da2ff]">Subject: {activeQuestion.subject} • Official TCS iON Skin</span>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-1.5 rounded-xl bg-white/5 border border-white/10 px-3 py-1 font-mono text-xs font-bold text-white">
+              <Timer size={13} className="text-[#4da2ff]" />
+              <span>Time Left: {formatTimer(7200 - elapsedTimer)}</span>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setCbtMode(false)}
+              className="text-xs text-[#4da2ff] hover:underline font-semibold"
+              title="Switch to CoreBTR Obsidian View"
+            >
+              CoreBTR View
+            </button>
+
+            <button
+              type="button"
+              onClick={onClose}
+              className="p-1 rounded-lg text-white/60 hover:text-white"
+            >
+              <X size={16} />
+            </button>
+          </div>
+        </div>
+
+        {/* Two-Column Split Layout */}
+        <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
+          {/* Left Column: Active Question */}
+          <div className="flex-1 flex flex-col overflow-y-auto p-6 border-r border-[#1767be]/20">
+            {/* Question Header */}
+            <div className="flex items-center justify-between border-b border-[#1767be]/20 pb-3 mb-4">
+              <span className="font-bold text-sm text-white">
+                Question No. {session.activeQuestionIndex + 1}
+              </span>
+              <span className="text-[11px] text-white/60 font-mono">
+                Marks for correct answer: +4 | Negative mark: -1
+              </span>
+            </div>
+
+            {/* Vignette */}
+            <div className="text-[14.5px] leading-relaxed text-white font-medium p-4 rounded-2xl bg-[#1d204b]/50 border border-[#1767be]/20 mb-5">
+              {activeQuestion.vignette}
+            </div>
+
+            {/* Options Radio List */}
+            <div className="flex flex-col gap-3 flex-1">
+              {activeQuestion.options.map((option, idx) => {
+                const isSelected = selectedIdx === idx;
+                const isElim = eliminated.includes(idx);
+
+                return (
+                  <div
+                    key={idx}
+                    onClick={() => !isElim && handleSelectOption(idx)}
+                    className={`flex items-center justify-between p-3.5 rounded-xl border transition cursor-pointer ${
+                      isSelected
+                        ? "bg-[#1767be]/25 border-[#1767be] text-white font-bold ring-1 ring-[#4da2ff]"
+                        : isElim
+                          ? "opacity-35 line-through bg-black/20 border-white/5 text-white/40"
+                          : "bg-[#1d204b]/40 border-[#1767be]/20 hover:bg-[#1d204b]/80 text-white"
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div
+                        className={`h-4 w-4 rounded-full border flex items-center justify-center ${
+                          isSelected ? "border-[#4da2ff] bg-[#1767be]" : "border-white/40"
+                        }`}
+                      >
+                        {isSelected && <div className="h-2 w-2 rounded-full bg-white" />}
+                      </div>
+                      <span className="text-xs font-mono font-bold text-[#4da2ff]">
+                        {String.fromCharCode(65 + idx)})
+                      </span>
+                      <span className="text-xs leading-snug">{option}</span>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={(e) => handleToggleEliminate(e, idx)}
+                      className="text-white/40 hover:text-rose-400 p-1 text-xs font-bold"
+                      title={isElim ? "Restore distractor" : "Strike-out distractor"}
+                    >
+                      ✕
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Bottom Actions Bar */}
+            <div className="flex flex-wrap items-center justify-between gap-3 pt-4 border-t border-[#1767be]/20 mt-4">
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={handleToggleMarkReview}
+                  className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition ${
+                    isMarkedReview
+                      ? "bg-purple-600 text-white"
+                      : "bg-[#1d204b] border border-[#1767be]/30 text-white hover:bg-[#252a60]"
+                  }`}
+                >
+                  {isMarkedReview ? "Marked for Review" : "Mark for Review & Next"}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleResetAnswer}
+                  disabled={selectedIdx === undefined}
+                  className="px-3.5 py-1.5 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 text-white/70 hover:text-white text-xs font-bold transition disabled:opacity-30"
+                >
+                  Clear Response
+                </button>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() =>
+                    setSession((prev) => ({
+                      ...prev,
+                      activeQuestionIndex: Math.max(0, prev.activeQuestionIndex - 1),
+                    }))
+                  }
+                  disabled={session.activeQuestionIndex === 0}
+                  className="px-4 py-1.5 rounded-xl bg-white/5 border border-white/10 text-white/80 hover:text-white text-xs font-bold transition disabled:opacity-30"
+                >
+                  Previous
+                </button>
+
+                {session.activeQuestionIndex < activeQuestions.length - 1 ? (
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setSession((prev) => ({
+                        ...prev,
+                        activeQuestionIndex: prev.activeQuestionIndex + 1,
+                      }))
+                    }
+                    className="px-5 py-1.5 rounded-xl bg-[#1767be] hover:bg-[#155bb0] text-white text-xs font-bold shadow-md transition"
+                  >
+                    Save & Next
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={handleFinishExam}
+                    className="px-5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-md transition"
+                  >
+                    Submit Test
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Right Column: Candidate & Question Palette */}
+          <div className="w-full md:w-72 shrink-0 bg-[#0a1334] p-4 flex flex-col justify-between gap-4 overflow-y-auto">
+            <div className="flex flex-col gap-4">
+              {/* Candidate Info */}
+              <div className="flex items-center gap-3 p-3 rounded-2xl bg-[#1d204b]/70 border border-[#1767be]/25">
+                <div className="h-10 w-10 rounded-full bg-[#1767be] text-white font-bold flex items-center justify-center shrink-0">
+                  <User size={18} />
+                </div>
+                <div className="min-w-0">
+                  <h4 className="text-xs font-bold text-white truncate">Dr. Anupam Mahato</h4>
+                  <span className="text-[10.5px] text-white/60 block">Roll: 27041995 • AIIMS/NBE</span>
+                </div>
+              </div>
+
+              {/* Status Legend */}
+              <div className="grid grid-cols-2 gap-2 text-[10px] text-white/80">
+                <div className="flex items-center gap-1.5">
+                  <span className="h-4 w-4 rounded bg-emerald-600 text-white font-bold flex items-center justify-center text-[9px] shrink-0">
+                    {answeredCount}
+                  </span>
+                  <span>Answered</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <span className="h-4 w-4 rounded bg-rose-600 text-white font-bold flex items-center justify-center text-[9px] shrink-0">
+                    {notAnsweredCount}
+                  </span>
+                  <span>Not Answered</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <span className="h-4 w-4 rounded bg-white/20 text-white font-bold flex items-center justify-center text-[9px] shrink-0">
+                    {notVisitedCount}
+                  </span>
+                  <span>Not Visited</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <span className="h-4 w-4 rounded-full bg-purple-600 text-white font-bold flex items-center justify-center text-[9px] shrink-0">
+                    {markedCount}
+                  </span>
+                  <span>Marked</span>
+                </div>
+              </div>
+
+              {/* Question Palette Numbered Buttons */}
+              <div className="flex flex-col gap-2 pt-2 border-t border-[#1767be]/20">
+                <span className="text-[11px] font-bold text-white/70">
+                  Choose a Question:
+                </span>
+                <div className="grid grid-cols-5 gap-1.5 max-h-56 overflow-y-auto p-1">
+                  {activeQuestions.map((q, idx) => {
+                    const status = getQuestionPaletteStatus(idx);
+                    const isCurrent = idx === session.activeQuestionIndex;
+
+                    let bgClass = "bg-white/10 text-white/70";
+                    if (status === "answered") bgClass = "bg-emerald-600 text-white font-bold";
+                    else if (status === "not_answered") bgClass = "bg-rose-600 text-white font-bold";
+                    else if (status === "marked" || status === "ans_marked") bgClass = "bg-purple-600 text-white font-bold";
+
+                    return (
+                      <button
+                        key={q.id}
+                        type="button"
+                        onClick={() =>
+                          setSession((prev) => ({
+                            ...prev,
+                            activeQuestionIndex: idx,
+                          }))
+                        }
+                        className={`h-8 rounded-lg font-mono text-xs font-bold transition flex items-center justify-center ${bgClass} ${
+                          isCurrent ? "ring-2 ring-white scale-105" : "hover:brightness-110"
+                        }`}
+                      >
+                        {idx + 1}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+
+            {/* Bottom Palette Actions */}
+            <div className="flex flex-col gap-2 pt-3 border-t border-[#1767be]/20">
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setShowQuestionPaper(true)}
+                  className="flex-1 py-1.5 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 text-white text-[11px] font-bold transition"
+                >
+                  Question Paper
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowInstructions(true)}
+                  className="flex-1 py-1.5 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 text-white text-[11px] font-bold transition"
+                >
+                  Instructions
+                </button>
+              </div>
+
+              <button
+                type="button"
+                onClick={handleFinishExam}
+                className="w-full py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-md transition"
+              >
+                Submit Exam
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // MODE B: CORE BTR OBSIDIAN GLASS VIEW
   return (
     <div className="flex flex-col h-full w-full max-w-3xl mx-auto bg-[#0d1b4b] rounded-3xl border border-[#1767be]/35 shadow-2xl overflow-hidden text-white select-none animate-in zoom-in-95 duration-150">
       {/* Top Question Status Bar */}
       <div className="flex items-center justify-between px-6 py-4 border-b border-[#1767be]/25 bg-[#1d204b]">
         <div className="flex items-center gap-3">
           <span className="font-mono text-sm font-black text-white">
-            {session.activeQuestionIndex + 1}/{questions.length}
+            {session.activeQuestionIndex + 1}/{activeQuestions.length}
           </span>
           <span className="rounded-lg bg-[#1767be]/20 px-2.5 py-0.5 text-xs font-bold text-[#4da2ff] border border-[#1767be]/30">
             {activeQuestion.subject}
           </span>
         </div>
 
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={() => setCbtMode(true)}
+            className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-white/5 border border-white/10 text-xs font-semibold text-white/80 hover:text-white hover:border-[#1767be]/40 transition"
+            title="Switch to TCS iON Prometric Examination Skin"
+          >
+            <Monitor size={13} className="text-[#4da2ff]" />
+            <span className="hidden sm:inline">TCS iON CBT Mode</span>
+          </button>
+
           <div className="flex items-center gap-1.5 rounded-xl bg-white/5 border border-white/10 px-3 py-1 text-xs font-mono font-bold text-white">
             <Timer size={13} className="text-[#4da2ff]" />
             <span>{formatTimer(elapsedTimer)}</span>
@@ -732,7 +1185,7 @@ export function QBankRunner({
           Previous
         </button>
 
-        {session.activeQuestionIndex < questions.length - 1 ? (
+        {session.activeQuestionIndex < activeQuestions.length - 1 ? (
           <button
             type="button"
             onClick={() =>
