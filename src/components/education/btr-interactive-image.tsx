@@ -11,6 +11,8 @@ import {
 } from "lucide-react";
 import type { InteractiveImagingMeta } from "@/lib/education/qbank-types";
 
+export type WindowPreset = "standard" | "bone" | "lung" | "invert";
+
 export interface BTRInteractiveImageProps {
   imageUrl: string;
   caption?: string;
@@ -23,12 +25,26 @@ export function BTRInteractiveImage({
   imagingMeta,
 }: BTRInteractiveImageProps) {
   const [zoomLevel, setZoomLevel] = useState<number>(1);
+  const [windowPreset, setWindowPreset] = useState<WindowPreset>("standard");
   const [showNormalComparison, setShowNormalComparison] = useState<boolean>(false);
   const [showAnnotations, setShowAnnotations] = useState<boolean>(true);
 
   const handleZoomIn = () => setZoomLevel((z) => Math.min(3, Math.round((z + 0.3) * 10) / 10));
   const handleZoomOut = () => setZoomLevel((z) => Math.max(1, Math.round((z - 0.3) * 10) / 10));
   const handleResetZoom = () => setZoomLevel(1);
+
+  const getWindowFilter = () => {
+    switch (windowPreset) {
+      case "bone":
+        return "contrast(2.2) brightness(0.9) grayscale(1)";
+      case "lung":
+        return "contrast(1.6) brightness(1.2)";
+      case "invert":
+        return "invert(1) contrast(1.2)";
+      default:
+        return "none";
+    }
+  };
 
   // Normal comparison fallback images for common modalities
   const normalUrl =
@@ -79,6 +95,23 @@ export function BTRInteractiveImage({
               <RotateCcw size={13} />
             </button>
           )}
+
+          {/* DICOM Radiologic Window Presets */}
+          <div className="flex items-center gap-0.5 rounded-lg bg-white/5 border border-white/10 p-0.5 ml-1">
+            {(["standard", "bone", "lung", "invert"] as WindowPreset[]).map((w) => (
+              <button
+                key={w}
+                type="button"
+                onClick={() => setWindowPreset(w)}
+                className={`px-1.5 py-0.5 rounded text-[9px] font-bold uppercase transition ${
+                  windowPreset === w ? "bg-white text-black shadow-xs" : "text-white/60 hover:text-white"
+                }`}
+                title={`${w.toUpperCase()} Window`}
+              >
+                {w === "standard" ? "Std" : w}
+              </button>
+            ))}
+          </div>
 
           {/* Toggle Normal Anatomy Comparison */}
           {normalUrl && (
@@ -161,7 +194,8 @@ export function BTRInteractiveImage({
             <img
               src={imageUrl}
               alt={caption || "Clinical image"}
-              className="max-h-[360px] w-auto max-w-full object-contain rounded-lg"
+              className="max-h-[360px] w-auto max-w-full object-contain rounded-lg transition"
+              style={{ filter: getWindowFilter() }}
               loading="lazy"
             />
 

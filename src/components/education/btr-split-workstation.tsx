@@ -16,8 +16,10 @@ import {
   Upload,
   Camera,
   PenTool,
+  BrainCircuit,
+  CheckCircle2,
 } from "lucide-react";
-import { getChaptersForVideo } from "@/lib/education/btr-chapters-engine";
+import { getChaptersForVideo, type BTRLectureChapter } from "@/lib/education/btr-chapters-engine";
 import {
   type BTRLocalMediaFile,
   resolveBTRPlayableUrl,
@@ -84,6 +86,12 @@ export function BTRSplitWorkstation({
   const [frameGrabDataUrl, setFrameGrabDataUrl] = useState<string | null>(null);
   const [showFrameGrabModal, setShowFrameGrabModal] = useState(false);
 
+  // Socratic Checkpoints State
+  const [activeCheckpoint, setActiveCheckpoint] = useState<BTRLectureChapter | null>(null);
+  const [completedCheckpoints, setCompletedCheckpoints] = useState<Set<string>>(new Set());
+  const [socraticAnsweredIndex, setSocraticAnsweredIndex] = useState<number | null>(null);
+  const [enableAutoCheckpoints, setEnableAutoCheckpoints] = useState<boolean>(true);
+
   const handleGrabFrame = useCallback(() => {
     const vid = videoRef.current;
     if (!vid) return;
@@ -144,6 +152,24 @@ export function BTRSplitWorkstation({
       setCurrentTime(sec);
     }
   };
+
+  // Open Socratic Checkpoint
+  const handleOpenCheckpoint = useCallback((ch: BTRLectureChapter) => {
+    if (videoRef.current) {
+      videoRef.current.pause();
+    }
+    setIsPlaying(false);
+    if (videoRef.current) {
+      videoRef.current.currentTime = ch.timestampSec;
+    }
+    setCurrentTime(ch.timestampSec);
+    if (ch.pageNumberRef) {
+      setPdfPage(ch.pageNumberRef);
+    }
+    setActiveCheckpoint(ch);
+    setSocraticAnsweredIndex(null);
+    setCompletedCheckpoints((prev) => new Set(prev).add(ch.id));
+  }, []);
 
   // Time format helper
   const formatTime = (secs: number) => {
@@ -341,7 +367,25 @@ export function BTRSplitWorkstation({
                 ref={videoRef}
                 src={playableVideoUrl}
                 className="w-full h-full object-contain"
-                onTimeUpdate={(e) => setCurrentTime(e.currentTarget.currentTime)}
+                onTimeUpdate={(e) => {
+                  const ct = e.currentTarget.currentTime;
+                  setCurrentTime(ct);
+                  if (enableAutoCheckpoints && !activeCheckpoint) {
+                    const triggerable = chapters.find(
+                      (ch) =>
+                        ch.timestampSec > 30 &&
+                        Math.abs(ct - ch.timestampSec) <= 1.2 &&
+                        !completedCheckpoints.has(ch.id)
+                    );
+                    if (triggerable) {
+                      e.currentTarget.pause();
+                      setIsPlaying(false);
+                      setActiveCheckpoint(triggerable);
+                      setSocraticAnsweredIndex(null);
+                      setCompletedCheckpoints((prev) => new Set(prev).add(triggerable.id));
+                    }
+                  }
+                }}
                 onLoadedMetadata={(e) => {
                   setDuration(e.currentTarget.duration);
                   setVideoError(false);
@@ -353,6 +397,120 @@ export function BTRSplitWorkstation({
                 onPlay={() => setIsPlaying(true)}
                 onPause={() => setIsPlaying(false)}
               />
+            )}
+
+            {/* In-Lecture Socratic Checkpoint Overlay */}
+            {activeCheckpoint && (
+              <div className="absolute inset-0 z-30 bg-black/85 backdrop-blur-md p-6 flex flex-col justify-center items-center text-ink animate-in fade-in duration-200">
+                <div className="max-w-lg w-full bg-surface border border-accent/40 rounded-2xl p-5 shadow-2xl flex flex-col gap-3.5">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2 text-accent font-bold text-xs uppercase tracking-wider">
+                      <BrainCircuit size={16} />
+                      <span>Dr. Zainab Vora Socratic Checkpoint</span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setActiveCheckpoint(null);
+                        if (videoRef.current) {
+                          videoRef.current.play();
+                          setIsPlaying(true);
+                        }
+                      }}
+                      className="text-ink-muted hover:text-ink text-xs p-1 rounded-lg"
+                      title="Skip Checkpoint"
+                    >
+                      <X size={16} />
+                    </button>
+                  </div>
+
+                  <div>
+                    <h3 className="text-sm font-bold text-ink leading-snug">{activeCheckpoint.title}</h3>
+                    <p className="text-[11px] text-ink-muted mt-0.5">
+                      Timestamp: {activeCheckpoint.timestampLabel} · Workbook Reference: Page {activeCheckpoint.pageNumberRef ?? 1}
+                    </p>
+                  </div>
+
+                  <div className="p-3 rounded-xl bg-canvas border border-edge text-xs text-ink font-medium leading-relaxed">
+                    <strong>Active Recall Check:</strong> What is the pathognomonic clinical rule or management pearl for this section?
+                  </div>
+
+                  <div className="space-y-2">
+                    {[
+                      { text: activeCheckpoint.mustKnowConcept, isCorrect: true },
+                      {
+                        text:
+                          activeCheckpoint.highYieldTrap ||
+                          "Common Misconception: Non-specific variant with no therapeutic implication",
+                        isCorrect: false,
+                      },
+                      { text: "Absolute contraindication in all cohorts regardless of presentation", isCorrect: false },
+                      { text: "Spontaneous resolution within 24 hours without targeted intervention", isCorrect: false },
+                    ].map((opt, oIdx) => {
+                      const isSelected = socraticAnsweredIndex === oIdx;
+                      let btnClass = "border-edge bg-elevated/70 text-ink hover:bg-raised";
+                      if (socraticAnsweredIndex !== null) {
+                        if (opt.isCorrect) btnClass = "border-emerald-500/60 bg-emerald-500/15 text-emerald-300 font-semibold";
+                        else if (isSelected) btnClass = "border-rose-500/60 bg-rose-500/15 text-rose-300 line-through";
+                      }
+                      return (
+                        <button
+                          key={oIdx}
+                          type="button"
+                          disabled={socraticAnsweredIndex !== null}
+                          onClick={() => setSocraticAnsweredIndex(oIdx)}
+                          className={`w-full text-left p-2.5 rounded-xl border text-xs transition flex items-start gap-2.5 ${btnClass}`}
+                        >
+                          <span className="font-mono font-bold text-ink-muted shrink-0">
+                            {String.fromCharCode(65 + oIdx)}.
+                          </span>
+                          <span className="flex-1 leading-snug">{opt.text}</span>
+                          {socraticAnsweredIndex !== null && opt.isCorrect && (
+                            <CheckCircle2 size={15} className="text-emerald-400 shrink-0 mt-0.5" />
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  {socraticAnsweredIndex !== null && (
+                    <div className="p-3 rounded-xl bg-accent/10 border border-accent/25 text-xs text-ink flex flex-col gap-1.5 animate-in fade-in">
+                      <div className="flex items-center gap-1.5 text-accent font-bold">
+                        <Sparkles size={13} />
+                        <span>Clinical Bottom Line</span>
+                      </div>
+                      <p className="text-[11.5px] leading-relaxed text-ink-muted">
+                        {activeCheckpoint.mustKnowConcept}
+                      </p>
+                      {activeCheckpoint.highYieldTrap && (
+                        <div className="text-[11px] text-amber-300 font-medium mt-1">
+                          ⚠️ <em>Examiner Trap:</em> {activeCheckpoint.highYieldTrap}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  <div className="flex items-center justify-between pt-2 border-t border-edge">
+                    <span className="text-[11px] text-ink-muted">
+                      {socraticAnsweredIndex === null ? "Choose best option to verify recall" : "Checkpoint recorded!"}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setActiveCheckpoint(null);
+                        if (videoRef.current) {
+                          videoRef.current.play();
+                          setIsPlaying(true);
+                        }
+                      }}
+                      className="px-4 py-2 rounded-xl bg-accent text-white font-bold text-xs hover:brightness-110 transition flex items-center gap-1.5 shadow-md"
+                    >
+                      <Play size={12} fill="currentColor" />
+                      <span>Resume Lecture</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
             )}
           </div>
 
@@ -374,17 +532,17 @@ export function BTRSplitWorkstation({
                 {chapters.map((ch) => {
                   if (!duration || ch.timestampSec <= 0) return null;
                   const leftPct = Math.min(99, Math.max(1, (ch.timestampSec / duration) * 100));
+                  const isDone = completedCheckpoints.has(ch.id);
                   return (
                     <button
                       key={ch.id}
                       type="button"
-                      onClick={() => {
-                        handleSeek(ch.timestampSec);
-                        if (ch.pageNumberRef) setPdfPage(ch.pageNumberRef);
-                      }}
+                      onClick={() => handleOpenCheckpoint(ch)}
                       style={{ left: `${leftPct}%` }}
                       title={`Checkpoint: ${ch.title} (${ch.timestampLabel}) • Page ${ch.pageNumberRef ?? 1}`}
-                      className="absolute -top-1 -translate-x-1/2 h-3.5 w-3.5 rotate-45 rounded-xs bg-amber-400 hover:scale-125 border border-black shadow-xs cursor-pointer transition transform z-10"
+                      className={`absolute -top-1 -translate-x-1/2 h-3.5 w-3.5 rotate-45 rounded-xs hover:scale-125 border border-black shadow-xs cursor-pointer transition transform z-10 ${
+                        isDone ? "bg-emerald-400" : "bg-amber-400"
+                      }`}
                     />
                   );
                 })}
@@ -469,6 +627,21 @@ export function BTRSplitWorkstation({
                   </button>
                 )}
               </div>
+
+              {/* Socratic Checkpoint Auto-Prompt Toggle */}
+              <button
+                type="button"
+                onClick={() => setEnableAutoCheckpoints(!enableAutoCheckpoints)}
+                className={`flex items-center gap-1.5 rounded-xl border px-2.5 py-1 text-xs font-semibold transition ${
+                  enableAutoCheckpoints
+                    ? "bg-accent/15 border-accent/30 text-accent"
+                    : "bg-elevated border-edge-soft text-ink-muted hover:text-ink"
+                }`}
+                title="Automatically pause video at high-yield checkpoints for Socratic active recall"
+              >
+                <BrainCircuit size={12} />
+                <span>Socratic Recall {enableAutoCheckpoints ? "ON" : "OFF"}</span>
+              </button>
             </div>
 
             {/* Chapters Seeker Strip */}
@@ -479,23 +652,24 @@ export function BTRSplitWorkstation({
               <div className="flex items-center gap-2 overflow-x-auto pb-1 max-w-full no-scrollbar">
                 {chapters.map((ch) => {
                   const isCurrent = currentChapter?.id === ch.id;
+                  const isDone = completedCheckpoints.has(ch.id);
                   return (
                     <button
                       key={ch.id}
                       type="button"
-                      onClick={() => {
-                        handleSeek(ch.timestampSec);
-                        if (ch.pageNumberRef) {
-                          setPdfPage(ch.pageNumberRef);
-                        }
-                      }}
+                      onClick={() => handleOpenCheckpoint(ch)}
                       className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap shrink-0 transition ${
                         isCurrent
                           ? "bg-accent text-white shadow-xs"
                           : "bg-elevated border border-edge-soft text-ink-muted hover:text-ink"
                       }`}
+                      title="Jump to chapter and trigger Socratic Checkpoint"
                     >
-                      <Clock size={11} />
+                      {isDone ? (
+                        <CheckCircle2 size={11} className="text-emerald-400" />
+                      ) : (
+                        <Clock size={11} />
+                      )}
                       <span>{ch.title}</span>
                       <span className="text-[10px] opacity-75 font-mono">{ch.timestampLabel}</span>
                     </button>

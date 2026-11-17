@@ -19,6 +19,9 @@ import {
   TrendingUp,
   ShieldAlert,
   Brain,
+  Headphones,
+  Activity,
+  AlertOctagon,
 } from "lucide-react";
 import type { ClinicalQuestion, QBankSessionState, GrandTestResult } from "@/lib/education/qbank-types";
 import { CLINICAL_QBANK_STARTER } from "@/lib/education/qbank-data";
@@ -34,6 +37,15 @@ import {
 } from "@/lib/education/btr-rank-optimizer";
 import { BTRInteractiveImage } from "@/components/education/btr-interactive-image";
 import { BTRClinicalAutopsy } from "@/components/education/btr-clinical-autopsy";
+import {
+  generateIRTRankSimulation,
+  type IRTExamSimulationReport,
+} from "@/lib/education/btr-irt-rank-simulator";
+import {
+  aggregateSessionBiases,
+  type CandidateResponseTelemetry,
+} from "@/lib/education/btr-cognitive-decoder";
+import { BTRAudioPodModal } from "@/components/education/btr-audio-pod-modal";
 
 export type QBankRunnerProps = {
   questions?: ClinicalQuestion[];
@@ -72,6 +84,9 @@ export function QBankRunner({
     Record<string, { initialOption: number; finalOption: number; timeSeconds: number }>
   >({});
   const [activeTab, setActiveTab] = useState<"analysis" | "questions">("analysis");
+  const [irtSimulation, setIrtSimulation] = useState<IRTExamSimulationReport | null>(null);
+  const [sessionBiases, setSessionBiases] = useState<ReturnType<typeof aggregateSessionBiases> | null>(null);
+  const [showAudioPodModal, setShowAudioPodModal] = useState(false);
 
   // Timer
   useEffect(() => {
@@ -298,6 +313,38 @@ export function QBankRunner({
 
     saveRankTelemetry(telemetry);
     setRankTelemetry(telemetry);
+
+    // Item Response Theory (IRT) Latent Ability & All-India Rank Simulation
+    const irtItems = activeQuestions.map((q) => {
+      const sel = session.selectedAnswers[q.id];
+      const isRight = sel === q.correctIndex;
+      return {
+        questionId: q.id,
+        isCorrect: isRight,
+        vignette: q.vignette,
+        examinerTrap: q.examinerTrap,
+        highYieldTags: q.highYieldTags,
+        imageUrl: q.imageUrl,
+      };
+    });
+    const irtReport = generateIRTRankSimulation(irtItems);
+    setIrtSimulation(irtReport);
+
+    // Socratic Cognitive Bias Diagnostics
+    const candidateResponses: CandidateResponseTelemetry[] = activeQuestions.map((q) => {
+      const sel = session.selectedAnswers[q.id] ?? -1;
+      const timeSpent =
+        session.timeSpentSec[q.id] ||
+        Math.max(1, Math.round(elapsedTimer / Math.max(1, activeQuestions.length)));
+      return {
+        question: q,
+        selectedIndex: sel,
+        timeSpentSeconds: timeSpent,
+        changedMind: !!answerChanges[q.id],
+      };
+    });
+    const biasReport = aggregateSessionBiases(candidateResponses);
+    setSessionBiases(biasReport);
 
     const result: GrandTestResult = {
       id: `gt_${Date.now()}`,
@@ -755,6 +802,169 @@ export function QBankRunner({
                 </div>
               )}
 
+              {/* IRT 2PL Model All-India Rank Projection */}
+              {irtSimulation && (
+                <div className="p-5 rounded-3xl bg-surface/90 border border-edge shadow-xl flex flex-col gap-4">
+                  <div className="flex items-center justify-between border-b border-edge pb-3">
+                    <div className="flex items-center gap-3">
+                      <div className="h-9 w-9 rounded-xl bg-accent/15 text-accent border border-accent/30 flex items-center justify-center shrink-0">
+                        <Activity size={18} className="text-accent" />
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <h3 className="text-sm font-black text-white">
+                            Item Response Theory (IRT) Rank Simulation
+                          </h3>
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-accent/20 text-accent border border-accent/40 font-mono">
+                            2PL Model (N=200,000)
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-white/60">
+                          Latent clinical ability θ calibrated against national NEET-PG percentile distribution
+                        </p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <span className="text-[10px] font-mono uppercase text-white/50 block">Projected Percentile</span>
+                      <strong className="text-base font-black text-accent font-mono">
+                        {irtSimulation.projectedNeetPercentile}%
+                      </strong>
+                    </div>
+                  </div>
+
+                  {/* AIR Range Triple Display */}
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div className="p-3.5 rounded-2xl bg-elevated border border-edge flex flex-col items-center justify-center text-center">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-white/50">Best-Case AIR</span>
+                      <strong className="text-xl font-black text-emerald-400 font-mono mt-0.5">
+                        AIR #{irtSimulation.projectedAIRRange.best.toLocaleString()}
+                      </strong>
+                      <span className="text-[10px] text-emerald-400/80 mt-0.5">Optimal exam execution</span>
+                    </div>
+
+                    <div className="p-3.5 rounded-2xl bg-accent/10 border border-accent/30 flex flex-col items-center justify-center text-center">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-accent">Median Projected AIR</span>
+                      <strong className="text-2xl font-black text-white font-mono mt-0.5">
+                        AIR #{irtSimulation.projectedAIRRange.median.toLocaleString()}
+                      </strong>
+                      <span className="text-[10px] text-white/70 mt-0.5">θ = {irtSimulation.thetaAbility} (50% likelihood)</span>
+                    </div>
+
+                    <div className="p-3.5 rounded-2xl bg-elevated border border-edge flex flex-col items-center justify-center text-center">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-white/50">Conservative AIR</span>
+                      <strong className="text-xl font-black text-amber-300 font-mono mt-0.5">
+                        AIR #{irtSimulation.projectedAIRRange.conservative.toLocaleString()}
+                      </strong>
+                      <span className="text-[10px] text-amber-300/80 mt-0.5">Worst-case boundary</span>
+                    </div>
+                  </div>
+
+                  {/* Cardinal Sin Repeats vs Frontier Deciders */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+                    <div className="p-3.5 rounded-2xl bg-elevated border border-edge flex flex-col justify-between gap-2">
+                      <div className="flex items-center justify-between">
+                        <span className="font-bold text-white flex items-center gap-1.5">
+                          <AlertOctagon size={14} className="text-rose-400" />
+                          <span>Cardinal Sin Repeats Missed</span>
+                        </span>
+                        <span className="font-mono font-black text-rose-400">
+                          {irtSimulation.cardinalRepeatsMissed} Qs
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-white/70 leading-relaxed">
+                        {irtSimulation.cardinalRepeatsMissed > 0
+                          ? `Missing ${irtSimulation.cardinalRepeatsMissed} standard repeat(s) cost an estimated -${irtSimulation.rankLostToCardinalErrors} All-India ranks.`
+                          : "Zero cardinal repeats missed! Flawless defense on must-know fundamentals."}
+                      </p>
+                    </div>
+
+                    <div className="p-3.5 rounded-2xl bg-elevated border border-edge flex flex-col justify-between gap-2">
+                      <div className="flex items-center justify-between">
+                        <span className="font-bold text-white flex items-center gap-1.5">
+                          <TrendingUp size={14} className="text-emerald-400" />
+                          <span>Frontier Deciders Secured</span>
+                        </span>
+                        <span className="font-mono font-black text-emerald-400">
+                          {irtSimulation.frontierDecidersSecured} Qs
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-white/70 leading-relaxed">
+                        {irtSimulation.frontierDecidersSecured > 0
+                          ? `Secured ${irtSimulation.frontierDecidersSecured} high-discrimination frontier decider(s), elevating rank by +${irtSimulation.rankGainedFromFrontierDeciders} ranks!`
+                          : "No frontier deciders converted yet. Drill the Top-100 Frontier Vault to secure top-tier tie-breakers."}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="p-3 rounded-xl bg-canvas border border-edge text-xs text-white/80 leading-relaxed">
+                    <strong>IRT Executive Summary:</strong> {irtSimulation.executiveSummary}
+                  </div>
+                </div>
+              )}
+
+              {/* Socratic Cognitive Bias & Misreading Decoder */}
+              {sessionBiases && sessionBiases.totalErrors > 0 && (
+                <div className="p-5 rounded-3xl bg-surface/90 border border-edge shadow-xl flex flex-col gap-4">
+                  <div className="flex items-center justify-between border-b border-edge pb-3">
+                    <div className="flex items-center gap-3">
+                      <div className="h-9 w-9 rounded-xl bg-purple-500/15 text-purple-300 border border-purple-500/30 flex items-center justify-center shrink-0">
+                        <Brain size={18} className="text-purple-400" />
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <h3 className="text-sm font-black text-white">
+                            Socratic Cognitive Bias & Misreading Decoder
+                          </h3>
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/40">
+                            Debiasing Engine
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-white/60">
+                          Root-cause breakdown of error cognitive patterns and examiner trap vulnerabilities
+                        </p>
+                      </div>
+                    </div>
+                    <span className="text-xs font-mono font-bold text-rose-400">
+                      {sessionBiases.totalErrors} Error Patterns Analyzed
+                    </span>
+                  </div>
+
+                  {/* Primary Bias Alert Banner */}
+                  <div className="p-4 rounded-2xl bg-purple-950/30 border border-purple-500/30 flex flex-col gap-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold text-purple-300 uppercase tracking-wider">
+                        Primary Diagnosed Cognitive Bias
+                      </span>
+                      <span className="text-xs font-mono font-bold text-white bg-purple-500/30 px-2 py-0.5 rounded-md">
+                        {sessionBiases.primaryBias}
+                      </span>
+                    </div>
+                    <p className="text-xs text-white/80 leading-relaxed">
+                      {sessionBiases.executiveActionPlan}
+                    </p>
+                  </div>
+
+                  {/* Bias Distribution Bar */}
+                  <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-7 gap-2">
+                    {Object.entries(sessionBiases.biasCounts).map(([bias, count]) => (
+                      <div
+                        key={bias}
+                        className={`p-2.5 rounded-xl border flex flex-col items-center justify-center text-center ${
+                          sessionBiases.primaryBias === bias
+                            ? "bg-purple-500/20 border-purple-500/50 text-purple-200"
+                            : "bg-elevated border-edge text-white/70"
+                        }`}
+                      >
+                        <span className="text-[10px] font-semibold truncate max-w-full">
+                          {bias.replace("Bias", "").replace("Fall", "").replace("Gap", "")}
+                        </span>
+                        <strong className="text-sm font-black font-mono mt-0.5">{count}</strong>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               {/* Subject-wise Analysis */}
               <div className="flex flex-col gap-3">
                 <span className="text-xs font-bold uppercase tracking-wider text-white/60">
@@ -1007,6 +1217,16 @@ export function QBankRunner({
           </div>
 
           <div className="flex items-center gap-4">
+            <button
+              type="button"
+              onClick={() => setShowAudioPodModal(true)}
+              className="flex items-center gap-1.5 px-3 py-1 rounded-xl text-xs font-bold bg-amber-500/15 border border-amber-500/30 text-amber-300 hover:bg-amber-500/25 transition shadow-xs"
+              title="Hands-Free Active Recall Audio Pod"
+            >
+              <Headphones size={13} />
+              <span className="hidden sm:inline">Audio Pod</span>
+            </button>
+
             <div className="flex items-center gap-1.5 rounded-xl bg-white/5 border border-white/10 px-3 py-1 font-mono text-xs font-bold text-white">
               <Timer size={13} className="text-ink-muted" />
               <span>Time Left: {formatTimer(7200 - elapsedTimer)}</span>
@@ -1318,6 +1538,16 @@ export function QBankRunner({
             <span className="hidden sm:inline">TCS iON CBT Mode</span>
           </button>
 
+          <button
+            type="button"
+            onClick={() => setShowAudioPodModal(true)}
+            className="flex items-center gap-1.5 px-3 py-1 rounded-xl text-xs font-bold bg-amber-500/15 border border-amber-500/30 text-amber-300 hover:bg-amber-500/25 transition shadow-xs"
+            title="Hands-Free Active Recall Audio Pod"
+          >
+            <Headphones size={13} />
+            <span className="hidden sm:inline">Audio Pod</span>
+          </button>
+
           <div className="flex items-center gap-1.5 rounded-xl bg-white/5 border border-white/10 px-3 py-1 text-xs font-mono font-bold text-white">
             <Timer size={13} className="text-ink-muted" />
             <span>{formatTimer(elapsedTimer)}</span>
@@ -1541,6 +1771,13 @@ export function QBankRunner({
           </button>
         )}
       </div>
+
+      {/* Hands-Free Rapid Audio Pod Modal */}
+      <BTRAudioPodModal
+        isOpen={showAudioPodModal}
+        onClose={() => setShowAudioPodModal(false)}
+        questions={activeQuestions}
+      />
     </div>
   );
 }

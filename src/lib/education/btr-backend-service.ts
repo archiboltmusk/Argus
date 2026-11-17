@@ -151,6 +151,16 @@ export async function initBTRBackendDatabase(): Promise<boolean> {
         } catch {
           // ignore fetch error
         }
+      } else {
+        try {
+          const fs = await import("node:fs/promises");
+          const path = await import("node:path");
+          const filePath = path.resolve(process.cwd(), "public/data/corebtr-database.json.gz");
+          const fileBuf = await fs.readFile(filePath);
+          buffer = fileBuf.buffer.slice(fileBuf.byteOffset, fileBuf.byteOffset + fileBuf.byteLength);
+        } catch {
+          // ignore fs error
+        }
       }
 
       if (buffer) {
@@ -728,3 +738,136 @@ export async function getQuestionsByClinicalAttribute(
   }
   return results;
 }
+
+export interface MicroSurgicalDrillOptions {
+  weakSubject?: string;
+  system?: OrganSystem;
+  attribute?: ClinicalAttribute;
+  count?: number;
+  prioritizeTrapsAndMissed?: boolean;
+}
+
+/**
+ * Closed-Loop Micro-Surgical Weakness Healer:
+ * Generates a targeted, high-intensity remediation drill specifically focused on
+ * a candidate's diagnosed subject/system weakness or cognitive trap vulnerability.
+ */
+export async function generateMicroSurgicalDrill(
+  options: MicroSurgicalDrillOptions = {}
+): Promise<ClinicalQuestion[]> {
+  await initBTRBackendDatabase();
+
+  const {
+    weakSubject,
+    system,
+    attribute,
+    count = 15,
+    prioritizeTrapsAndMissed = true,
+  } = options;
+
+  const candidatePool: Array<{ question: ClinicalQuestion; score: number }> = [];
+
+  for (const q of memoryQuestionsCache.values()) {
+    let matches = true;
+
+    if (weakSubject && weakSubject !== "All") {
+      const qSubj = q.subject.toLowerCase();
+      const targetSubj = weakSubject.toLowerCase();
+      if (!qSubj.includes(targetSubj) && !targetSubj.includes(qSubj)) {
+        matches = false;
+      }
+    }
+
+    if (matches && system) {
+      if (getQuestionSystem(q.subject, q.topic, q.vignette) !== system) {
+        matches = false;
+      }
+    }
+
+    if (matches && attribute) {
+      if (!inferQuestionAttributes(q).includes(attribute)) {
+        matches = false;
+      }
+    }
+
+    if (!matches) continue;
+
+    // Calculate priority score
+    let score = 10;
+    const userState = memoryUserStateCache.get(q.id);
+
+    if (prioritizeTrapsAndMissed) {
+      if ((userState?.incorrects ?? 0) > 0) {
+        score += 50; // User previously missed this
+      }
+      if (userState?.isBookmarked) {
+        score += 20; // User flagged it
+      }
+      if (q.examinerTrap && q.examinerTrap.length > 10) {
+        score += 25; // Contains an active examiner trap
+      }
+      if (inferQuestionAttributes(q).includes("HighYieldRepeat")) {
+        score += 15; // Must-know repeat
+      }
+      if (q.imageUrl) {
+        score += 10; // High yield image based
+      }
+    }
+
+    // Add mild deterministic jitter based on ID
+    const hash = q.id.split("").reduce((acc, ch) => acc + ch.charCodeAt(0), 0);
+    score += (hash % 10);
+
+    candidatePool.push({ question: q, score });
+  }
+
+  // If pool is sparse, check TOP_100_FRONTIER_VAULT
+  if (candidatePool.length < count && weakSubject) {
+    const matchingFrontier = TOP_100_FRONTIER_VAULT.filter((f) => {
+      const fTags = f.tags.join(" ").toLowerCase();
+      const targetSubj = weakSubject.toLowerCase();
+      return fTags.includes(targetSubj) || f.category.toLowerCase().includes(targetSubj);
+    });
+
+    for (const f of matchingFrontier) {
+      candidatePool.push({
+        question: {
+          id: `drill-frontier-${f.id}`,
+          subject: f.tags[0] || weakSubject,
+          topic: f.title,
+          vignette: `${f.clinicalContext}\n\nWhat is the gold standard next step or diagnostic pearl according to latest national guidelines?`,
+          options: [
+            f.mustKnowPill,
+            `Trap: ${f.examinerTrap}`,
+            "Routine observation without intervention",
+            "Alternative empiric management",
+          ],
+          correctIndex: 0,
+          examinerTrap: f.examinerTrap,
+          highYieldTags: f.tags,
+          explanation: {
+            bottomLine: f.mustKnowPill,
+            correctRationale: f.clinicalContext,
+            distractorBreakdown: [
+              { option: "B", reason: `Examiner Trap: ${f.examinerTrap}` },
+              { option: "C", reason: "Incorrect routine finding." },
+              { option: "D", reason: "Incorrect empiric choice." },
+            ],
+            whyCorrect: {
+              mechanism: f.clinicalContext,
+              clinicalRule: f.mustKnowPill,
+            },
+          },
+        },
+        score: 100, // Top priority frontier items
+      });
+    }
+  }
+
+  // Sort descending by score
+  candidatePool.sort((a, b) => b.score - a.score);
+
+  // Return top N questions
+  return candidatePool.slice(0, count).map((item) => item.question);
+}
+

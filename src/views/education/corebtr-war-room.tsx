@@ -34,9 +34,11 @@ import {
   Timer,
   HelpCircle,
   Award,
+  Headphones,
 } from "lucide-react";
 import { useView } from "@/lib/view";
 import { BTRSplitWorkstation } from "@/components/education/btr-split-workstation";
+import { BTRAudioPodModal } from "@/components/education/btr-audio-pod-modal";
 import { BTRAnkiExportModal } from "@/components/education/btr-anki-export-modal";
 import { BTRErrorLogModal } from "@/components/education/btr-error-log-modal";
 import { BTRBroadcastsModal } from "@/components/education/btr-broadcasts-panel";
@@ -78,6 +80,7 @@ import {
   buildCustomModuleTest,
   getLatestAutopsyReport,
   generateAIR100Prescription,
+  generateMicroSurgicalDrill,
 } from "@/lib/education/btr-backend-service";
 import type { ClinicalQuestion } from "@/lib/education/qbank-types";
 import {
@@ -523,6 +526,38 @@ export function CoreBTRWarRoom({
   const [testsFilter, setTestsFilter] = useState<"In Progress" | "Live" | "Upcoming" | "Not Attempted">("Live");
   const [showCustomModuleModal, setShowCustomModuleModal] = useState(false);
   const [showFrontierVaultModal, setShowFrontierVaultModal] = useState(false);
+  const [showAudioPodModal, setShowAudioPodModal] = useState(false);
+  const [audioPodQuestions, setAudioPodQuestions] = useState<ClinicalQuestion[]>([]);
+  const [isGeneratingDrill, setIsGeneratingDrill] = useState(false);
+
+  const handleOpenAudioPod = async (targetQuestions?: ClinicalQuestion[]) => {
+    if (targetQuestions && targetQuestions.length > 0) {
+      setAudioPodQuestions(targetQuestions);
+    } else {
+      const pool = await generateMicroSurgicalDrill({ count: 20 });
+      setAudioPodQuestions(pool);
+    }
+    setShowAudioPodModal(true);
+  };
+
+  const handleLaunchMicroSurgicalDrill = async (weakSubject?: string) => {
+    setIsGeneratingDrill(true);
+    try {
+      const drillQuestions = await generateMicroSurgicalDrill({
+        weakSubject,
+        count: 15,
+        prioritizeTrapsAndMissed: true,
+      });
+      if (drillQuestions.length > 0) {
+        onStartQBankDrill?.(
+          weakSubject ? `Micro-Surgical Remediation: ${weakSubject}` : "Micro-Surgical Weakness Drill",
+          drillQuestions
+        );
+      }
+    } finally {
+      setIsGeneratingDrill(false);
+    }
+  };
   const [selectedPearlModal, setSelectedPearlModal] = useState<BTRPearlItem | null>(null);
   const [activePearlsDeck, setActivePearlsDeck] = useState<BTRPearlItem[] | null>(null);
   const [activeLiveStreamModal, setActiveLiveStreamModal] = useState<BTRLiveSessionData | null>(null);
@@ -1084,9 +1119,15 @@ export function CoreBTRWarRoom({
                 </div>
               </div>
 
-              {/* 2. Official Quick Actions 6-Pill Grid */}
-              <div className="grid grid-cols-2 sm:grid-cols-6 gap-3">
+              {/* 2. Official Quick Actions 7-Pill Grid */}
+              <div className="grid grid-cols-2 sm:grid-cols-7 gap-3">
                 {[
+                  {
+                    id: "audio_pod",
+                    label: "Audio Pod",
+                    icon: Headphones,
+                    action: () => handleOpenAudioPod(),
+                  },
                   {
                     id: "bookmarks",
                     label: "Bookmarks",
@@ -2955,7 +2996,19 @@ export function CoreBTRWarRoom({
                     </div>
                   ))}
                 </div>
-                <div className="flex justify-end pt-2">
+                <div className="flex flex-wrap items-center justify-end gap-2 pt-2">
+                  <button
+                    type="button"
+                    disabled={isGeneratingDrill}
+                    onClick={() => {
+                      const primaryWeakness = autopsy.recommendations[0]?.subject;
+                      handleLaunchMicroSurgicalDrill(primaryWeakness);
+                    }}
+                    className="px-4 py-2 rounded-xl bg-accent hover:brightness-110 text-white font-semibold text-xs transition flex items-center gap-1.5 shadow-sm"
+                  >
+                    <Zap size={12} fill="currentColor" />
+                    <span>{isGeneratingDrill ? "Synthesizing..." : "Launch Micro-Surgical Drill (15 Qs)"}</span>
+                  </button>
                   <button
                     type="button"
                     onClick={() => {
@@ -3479,6 +3532,17 @@ export function CoreBTRWarRoom({
         onStartDrill={(qs) => {
           setShowFrontierVaultModal(false);
           onStartQBankDrill?.("Top-100 Frontier Tie-Breaker Drill", qs);
+        }}
+      />
+
+      {/* Hands-Free Rapid-Fire Audio Pod Modal */}
+      <BTRAudioPodModal
+        isOpen={showAudioPodModal}
+        onClose={() => setShowAudioPodModal(false)}
+        questions={audioPodQuestions}
+        onReviewCard={(qid, rating) => {
+          const score = rating === "again" ? 1 : rating === "hard" ? 2 : rating === "good" ? 3 : 4;
+          reviewFSRSCard(qid, score);
         }}
       />
     </div>
