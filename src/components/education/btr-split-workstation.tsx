@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useMemo } from "react";
+import { useState, useRef, useEffect, useMemo, useCallback } from "react";
 import {
   X,
   Play,
@@ -14,6 +14,8 @@ import {
   AlertTriangle,
   ExternalLink,
   Upload,
+  Camera,
+  PenTool,
 } from "lucide-react";
 import { getChaptersForVideo } from "@/lib/education/btr-chapters-engine";
 import {
@@ -23,6 +25,8 @@ import {
 } from "@/lib/education/btr-local-library";
 import type { BTRSubject } from "@/lib/education/corebtr-schedule";
 import { useView } from "@/lib/view";
+import { BTRCanvasMarkup } from "./btr-canvas-markup";
+import { BTRFrameGrabberModal } from "./btr-frame-grabber-modal";
 
 interface BTRSplitWorkstationProps {
   open: boolean;
@@ -74,6 +78,42 @@ export function BTRSplitWorkstation({
   const [pdfPage, setPdfPage] = useState<number>(1);
   const [quickScratchpad, setQuickScratchpad] = useState<string>("");
   const [savedScratchpad, setSavedScratchpad] = useState(false);
+
+  // Canvas Markup & Frame Grabber State
+  const [isMarkupEnabled, setIsMarkupEnabled] = useState(false);
+  const [frameGrabDataUrl, setFrameGrabDataUrl] = useState<string | null>(null);
+  const [showFrameGrabModal, setShowFrameGrabModal] = useState(false);
+
+  const handleGrabFrame = useCallback(() => {
+    const vid = videoRef.current;
+    if (!vid) return;
+    try {
+      const offscreen = document.createElement("canvas");
+      offscreen.width = vid.videoWidth || 1280;
+      offscreen.height = vid.videoHeight || 720;
+      const ctx = offscreen.getContext("2d");
+      if (ctx) {
+        ctx.drawImage(vid, 0, 0, offscreen.width, offscreen.height);
+        const dataUrl = offscreen.toDataURL("image/jpeg", 0.9);
+        setFrameGrabDataUrl(dataUrl);
+        setShowFrameGrabModal(true);
+      }
+    } catch (e) {
+      console.warn("Frame grab failed", e);
+    }
+  }, []);
+
+  // Global shortcut: ⌘+Shift+C (or Ctrl+Shift+C) to capture frame
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key.toLowerCase() === "c") {
+        e.preventDefault();
+        handleGrabFrame();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [handleGrabFrame]);
 
   // Chapters
   const chapters = useMemo(() => getChaptersForVideo(activeVideo.filename), [activeVideo.filename]);
@@ -195,6 +235,18 @@ export function BTRSplitWorkstation({
 
         {/* Global Workstation Controls */}
         <div className="flex items-center gap-2.5">
+          {/* Capture Video Frame to FSRS Vault */}
+          <button
+            type="button"
+            onClick={handleGrabFrame}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-amber-500/15 border border-amber-500/30 text-amber-300 hover:bg-amber-500/25 transition shadow-xs"
+            title="Capture current video frame to FSRS Error Vault (⌘+Shift+C)"
+          >
+            <Camera size={13} />
+            <span className="hidden sm:inline">Frame Grab</span>
+            <kbd className="hidden md:inline-block font-mono text-[9px] bg-black/40 px-1 py-0.5 rounded text-amber-300/80">⌘⇧C</kbd>
+          </button>
+
           {/* Launch Native Player in Argus Engine */}
           <button
             type="button"
@@ -306,17 +358,37 @@ export function BTRSplitWorkstation({
 
           {/* Video Control HUD */}
           <div className="p-4 bg-surface/90 border-t border-edge flex flex-col gap-3">
-            {/* Timeline Scrubber */}
+            {/* Timeline Scrubber with High-Yield Checkpoint Diamonds */}
             <div className="flex items-center gap-3 text-xs text-ink-muted">
               <span className="font-mono text-[11px]">{formatTime(currentTime)}</span>
-              <input
-                type="range"
-                min={0}
-                max={duration || 100}
-                value={currentTime}
-                onChange={(e) => handleSeek(Number(e.target.value))}
-                className="flex-1 accent-accent h-1.5 bg-elevated rounded-lg cursor-pointer"
-              />
+              <div className="relative flex-1 flex items-center">
+                <input
+                  type="range"
+                  min={0}
+                  max={duration || 100}
+                  value={currentTime}
+                  onChange={(e) => handleSeek(Number(e.target.value))}
+                  className="w-full accent-accent h-1.5 bg-elevated rounded-lg cursor-pointer"
+                />
+                {/* Chapter & MCQ Marker Diamonds */}
+                {chapters.map((ch) => {
+                  if (!duration || ch.timestampSec <= 0) return null;
+                  const leftPct = Math.min(99, Math.max(1, (ch.timestampSec / duration) * 100));
+                  return (
+                    <button
+                      key={ch.id}
+                      type="button"
+                      onClick={() => {
+                        handleSeek(ch.timestampSec);
+                        if (ch.pageNumberRef) setPdfPage(ch.pageNumberRef);
+                      }}
+                      style={{ left: `${leftPct}%` }}
+                      title={`Checkpoint: ${ch.title} (${ch.timestampLabel}) • Page ${ch.pageNumberRef ?? 1}`}
+                      className="absolute -top-1 -translate-x-1/2 h-3.5 w-3.5 rotate-45 rounded-xs bg-amber-400 hover:scale-125 border border-black shadow-xs cursor-pointer transition transform z-10"
+                    />
+                  );
+                })}
+              </div>
               <span className="font-mono text-[11px]">{formatTime(duration)}</span>
             </div>
 
@@ -473,22 +545,45 @@ export function BTRSplitWorkstation({
               </button>
             </div>
 
-            {/* Quick Master Peek indicator */}
-            <span className="text-[11px] text-ink-muted hidden sm:inline">
-              {pdfMode === "unannotated"
-                ? "Active Recall Mode (Fill blanks)"
-                : "Dr. Zainab Vora Solutions"}
-            </span>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setIsMarkupEnabled(!isMarkupEnabled)}
+                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold transition ${
+                  isMarkupEnabled
+                    ? "bg-indigo-600 text-white shadow-xs"
+                    : "bg-elevated border border-edge-soft text-ink-muted hover:text-ink"
+                }`}
+                title="Fill in blanks directly over workbook"
+              >
+                <PenTool size={12} />
+                <span>{isMarkupEnabled ? "Markup (ON)" : "Fill Blanks"}</span>
+              </button>
+
+              {/* Quick Master Peek indicator */}
+              <span className="text-[11px] text-ink-muted hidden sm:inline">
+                {pdfMode === "unannotated"
+                  ? "Active Recall Mode"
+                  : "Dr. Zainab Vora Solutions"}
+              </span>
+            </div>
           </div>
 
           {/* PDF Frame / Content */}
           <div className="flex-1 bg-elevated/40 relative overflow-hidden flex flex-col">
             {pdfUrl ? (
-              <iframe
-                title="BTR PDF Workbook"
-                src={`${pdfUrl}#page=${pdfPage}&toolbar=1`}
-                className="w-full h-full border-none"
-              />
+              <>
+                <iframe
+                  title="BTR PDF Workbook"
+                  src={`${pdfUrl}#page=${pdfPage}&toolbar=1`}
+                  className="w-full h-full border-none"
+                />
+                <BTRCanvasMarkup
+                  storageKey={`${subject.id}_${pdfMode}_p${pdfPage}`}
+                  enabled={isMarkupEnabled}
+                  onToggleEnabled={() => setIsMarkupEnabled(!isMarkupEnabled)}
+                />
+              </>
             ) : (
               <div className="flex-1 flex flex-col items-center justify-center p-8 text-center text-ink-muted gap-3">
                 <BookOpen size={36} className="text-accent" />
@@ -530,6 +625,17 @@ export function BTRSplitWorkstation({
           </div>
         </div>
       </div>
+
+      {/* Frame Grabber to FSRS Error Vault Modal */}
+      <BTRFrameGrabberModal
+        open={showFrameGrabModal}
+        onClose={() => setShowFrameGrabModal(false)}
+        frameDataUrl={frameGrabDataUrl}
+        lectureTitle={activeVideo.title || `${subject.name} - Lecture ${activeVideo.lectureNumber}`}
+        subjectName={subject.name}
+        timestampSec={currentTime}
+        timestampLabel={formatTime(currentTime)}
+      />
     </div>
   );
 }

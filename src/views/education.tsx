@@ -25,6 +25,14 @@ import {
   Target,
   BrainCircuit,
   SlidersHorizontal,
+  CheckCircle2,
+  Clock,
+  Eye,
+  EyeOff,
+  GitBranch,
+  Award,
+  ChevronRight,
+  ChevronLeft,
 } from "lucide-react";
 import { useT } from "@/lib/i18n";
 import { useView } from "@/lib/view";
@@ -57,6 +65,8 @@ import {
 } from "@/lib/education/interactive-checkpoints";
 import {
   FOUNDATIONAL_CONCEPT_GRAPH,
+  loadAllConceptStats,
+  recordConceptAttempt,
 } from "@/lib/education/prerequisite-graph";
 import { InteractiveCheckpointOverlay } from "./player/interactive-checkpoint-overlay";
 import { Row } from "@/components/row";
@@ -83,7 +93,132 @@ export function EducationView() {
   const [copiedShareFolder, setCopiedShareFolder] = useState<string | null>(null);
   const [importNotice, setImportNotice] = useState<{ success: boolean; message: string } | null>(null);
   const [showToolsMenu, setShowToolsMenu] = useState(false);
+  const [heroIndex, setHeroIndex] = useState(0);
+  const [revealedConcepts, setRevealedConcepts] = useState<Record<string, boolean>>({});
+  const [conceptStats, setConceptStats] = useState<Record<string, any>>(() => loadAllConceptStats());
+  const [conceptSystemFilter, setConceptSystemFilter] = useState<"all" | "cardio" | "neuro" | "renal">("all");
   const globalFileInputRef = useRef<HTMLInputElement>(null);
+
+  const toggleConceptReveal = useCallback((conceptId: string) => {
+    setRevealedConcepts((prev) => ({ ...prev, [conceptId]: !prev[conceptId] }));
+  }, []);
+
+  const handleRateConcept = useCallback((conceptId: string, passed: boolean) => {
+    recordConceptAttempt(conceptId, passed);
+    setConceptStats(loadAllConceptStats());
+  }, []);
+
+  const launchConceptMicroQuiz = useCallback((conceptId: string) => {
+    const node = FOUNDATIONAL_CONCEPT_GRAPH[conceptId];
+    if (!node) return;
+    const questionsMap: Record<string, LectureCheckpoint> = {
+      "cardiac-output": {
+        id: "concept-co",
+        timestampSec: 120,
+        title: "Cardiac Output Determinants",
+        question: "Which physiological variables directly dictate Cardiac Output in the hemodynamic formula?",
+        type: "multiple-choice",
+        options: ["Heart Rate and Stroke Volume (CO = HR × SV)", "Systemic Vascular Resistance only", "Left Atrial Mean Pressure only", "Pulmonary Artery Wedge Pressure only"],
+        correctIndex: 0,
+        explanation: "Cardiac Output (CO) is the product of Heart Rate (HR) and Stroke Volume (SV). Any factor altering either will directly shift total organ perfusion.",
+        rewindOnFailSec: 30,
+        prerequisiteId: "stroke-volume",
+        conceptLabel: "Cardiovascular Physiology",
+      },
+      "stroke-volume": {
+        id: "concept-sv",
+        timestampSec: 150,
+        title: "Stroke Volume Mechanics",
+        question: "What are the three core determinants that modulate ventricular stroke volume?",
+        type: "multiple-choice",
+        options: ["Preload, Afterload, and Inotropy (Contractility)", "Blood Viscosity, Vessel Length, and Arteriolar Radius", "Heart Rate, Respiratory Rate, and PaO2", "Renal Blood Flow, GFR, and Aldosterone"],
+        correctIndex: 0,
+        explanation: "Stroke volume is governed by Preload (end-diastolic filling), Afterload (ejection resistance), and Contractility (myocardial squeeze).",
+        rewindOnFailSec: 30,
+        prerequisiteId: "frank-starling",
+        conceptLabel: "Cardiovascular Physiology",
+      },
+      "frank-starling": {
+        id: "concept-fs",
+        timestampSec: 210,
+        title: "Frank-Starling Relationship",
+        question: "In your own words, explain how stretching cardiac myocytes by increasing venous return elevates contractile force.",
+        type: "explain-it",
+        expectedKeywords: ["stretch", "sarcomere", "length", "calcium", "troponin", "sensitivity", "force"],
+        explanation: "Myocardial stretch optimizes sarcomere length (toward 2.2 µm) and increases Troponin C calcium affinity, generating stronger tension without adrenergic stimulation.",
+        rewindOnFailSec: 45,
+        prerequisiteId: "sarcomere-structure",
+        conceptLabel: "Myocardial Biophysics",
+      },
+      "sarcomere-structure": {
+        id: "concept-sarcomere",
+        timestampSec: 90,
+        title: "Sarcomere & Actin-Myosin Crossbridge",
+        question: "Which regulatory protein binds calcium to uncover actin binding sites during cardiac and skeletal muscle contraction?",
+        type: "multiple-choice",
+        options: ["Troponin C", "Tropomyosin", "Myosin Light Chain", "Calmodulin"],
+        correctIndex: 0,
+        explanation: "Intracellular Ca²⁺ binds Troponin C, shifting tropomyosin out of the groove to expose actin-myosin crossbridge binding sites.",
+        rewindOnFailSec: 30,
+        conceptLabel: "Cellular Physiology",
+      },
+      "brachial-plexus-roots": {
+        id: "concept-bp",
+        timestampSec: 180,
+        title: "Brachial Plexus Superior Trunk",
+        question: "Which cervical ventral rami unite to form the superior trunk, damaged in Erb-Duchenne palsy?",
+        type: "multiple-choice",
+        options: ["C5 and C6", "C7 only", "C8 and T1", "C3 and C4"],
+        correctIndex: 0,
+        explanation: "C5 and C6 ventral rami form the superior trunk. Damage paralyzes the deltoid, supraspinatus, infraspinatus, and biceps (waiter's tip posture).",
+        rewindOnFailSec: 30,
+        prerequisiteId: "spinal-nerve-roots",
+        conceptLabel: "Neuroanatomy",
+      },
+      "spinal-nerve-roots": {
+        id: "concept-snr",
+        timestampSec: 140,
+        title: "Spinal Nerve Root Exit Anatomy",
+        question: "Where does the C8 spinal nerve exit the neural canal in relation to the vertebral pedicles?",
+        type: "multiple-choice",
+        options: ["Between C7 and T1 vertebrae", "Above C7 vertebra", "Between T1 and T2 vertebrae", "Above C1 vertebra"],
+        correctIndex: 0,
+        explanation: "Cervical nerves C1-C7 exit ABOVE their numbered vertebrae; C8 exits below C7 and above T1. Thoracic and lumbar nerves exit BELOW their corresponding vertebrae.",
+        rewindOnFailSec: 30,
+        conceptLabel: "Gross Anatomy",
+      },
+      "metabolic-acidosis": {
+        id: "concept-ma",
+        timestampSec: 200,
+        title: "Serum Anion Gap Calculation",
+        question: "What is the standard formula used at the bedside to calculate serum Anion Gap in metabolic acidosis?",
+        type: "multiple-choice",
+        options: ["Na⁺ - (Cl⁻ + HCO₃⁻)", "(Na⁺ + K⁺) / (Cl⁻ + HCO₃⁻)", "2×Na⁺ + Glucose/18 + BUN/2.8", "PaCO₂ - 0.7 × (24 - HCO₃⁻)"],
+        correctIndex: 0,
+        explanation: "Serum Anion Gap = Na⁺ - (Cl⁻ + HCO₃⁻). Normal is 10-12 mEq/L. Elevated anion gap indicates unmeasured organic acids (MUDPILES).",
+        rewindOnFailSec: 30,
+        prerequisiteId: "henderson-hasselbalch",
+        conceptLabel: "Renal & Acid-Base",
+      },
+      "henderson-hasselbalch": {
+        id: "concept-hh",
+        timestampSec: 160,
+        title: "Henderson-Hasselbalch Ratio",
+        question: "In the carbonic acid-bicarbonate buffer system, which organ systems independently regulate the numerator and denominator?",
+        type: "multiple-choice",
+        options: ["Kidneys regulate numerator (HCO₃⁻), Lungs regulate denominator (PaCO₂)", "Lungs regulate numerator (PaCO₂), Kidneys regulate denominator (HCO₃⁻)", "Liver regulates both numerator and denominator", "GI tract regulates numerator, Spleen regulates denominator"],
+        correctIndex: 0,
+        explanation: "pH = 6.1 + log([HCO₃⁻] / (0.03 × PaCO₂)). Kidneys balance the metabolic component ([HCO₃⁻]), while lungs dynamically modulate PaCO₂ via ventilation.",
+        rewindOnFailSec: 30,
+        conceptLabel: "Physiological Chemistry",
+      },
+    };
+
+    const checkpoint = questionsMap[conceptId];
+    if (checkpoint) {
+      setActiveDrillCheckpoint(checkpoint);
+    }
+  }, []);
 
   const handleGlobalFileUpload = async (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -409,68 +544,220 @@ export function EducationView() {
         {/* TAB 1: COURSES & CATALOGS */}
         {tab === "courses" && (
           <>
-            {/* Section 1: Local Scanned Courses */}
-            {localCourseFolders.length > 0 && (
-              <section className="flex flex-col gap-3">
-                <div className="edu-section-head">
-                  <div>
-                    <h2>
-                      <BookOpen size={20} className="text-accent" />
-                      <span>{t("My Local Courses")}</span>
-                    </h2>
-                    <p>{t("Sequential video lecture libraries indexed from your local drives.")}</p>
+            {/* Cinematic Featured Masterclass Hero (Matches Shows & Sports standard) */}
+            {(() => {
+              const featuredList = CURATED_COURSES.slice(0, 4);
+              const activeHeroCourse = featuredList[heroIndex] || featuredList[0];
+              if (!activeHeroCourse) return null;
+
+              return (
+                <div className="edu-cinematic-hero group">
+                  <img
+                    src={activeHeroCourse.thumbnail}
+                    alt={activeHeroCourse.title}
+                    className="edu-cinematic-hero-bg"
+                  />
+                  <div className="edu-cinematic-hero-overlay" />
+
+                  <div className="edu-hero-content">
+                    <div className="edu-hero-badge-ribbon">
+                      <span className="edu-hero-kicker">
+                        <GraduationCap size={13} />
+                        <span>{t("Masterclass Spotlight")}</span>
+                      </span>
+                      <span className="rounded-full bg-white/10 px-3 py-1 text-[11px] font-semibold text-white/90 backdrop-blur-md border border-white/15">
+                        {activeHeroCourse.provider}
+                      </span>
+                      {activeHeroCourse.totalLessons && (
+                        <span className="rounded-full bg-accent/20 px-3 py-1 text-[11px] font-bold text-accent backdrop-blur-md border border-accent/30">
+                          {activeHeroCourse.totalLessons} {t("Lectures")}
+                        </span>
+                      )}
+                    </div>
+
+                    <h2 className="edu-hero-title">{activeHeroCourse.title}</h2>
+                    <p className="edu-hero-desc">{activeHeroCourse.description}</p>
+
+                    <div className="edu-hero-actions">
+                      <button
+                        type="button"
+                        onClick={() => openPlayer(localPlayerSrc(activeHeroCourse as any))}
+                        className="edu-hero-btn-primary"
+                      >
+                        <Play size={16} fill="currentColor" />
+                        <span>{t("Start Masterclass")}</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setTab("checkpoints")}
+                        className="edu-hero-btn-secondary"
+                      >
+                        <Target size={15} className="text-accent" />
+                        <span>{t("Checkpoint Decks")}</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => startQBankDrill(true)}
+                        className="edu-hero-btn-secondary"
+                      >
+                        <Zap size={15} className="text-amber-400 fill-amber-400" />
+                        <span>{t("Clinical Drill")}</span>
+                      </button>
+                    </div>
                   </div>
+
+                  {/* Hero Carousel Navigation Dots */}
+                  <div className="edu-hero-nav-dots">
+                    <button
+                      type="button"
+                      onClick={() => setHeroIndex((prev) => (prev > 0 ? prev - 1 : featuredList.length - 1))}
+                      className="rounded-full bg-white/10 hover:bg-white/20 p-1.5 text-white backdrop-blur-md transition"
+                      aria-label="Previous featured course"
+                    >
+                      <ChevronLeft size={16} />
+                    </button>
+                    {featuredList.map((c, idx) => (
+                      <button
+                        key={c.id}
+                        type="button"
+                        onClick={() => setHeroIndex(idx)}
+                        className={`edu-hero-dot ${idx === heroIndex ? "active" : ""}`}
+                        aria-label={`Jump to course ${idx + 1}`}
+                      />
+                    ))}
+                    <button
+                      type="button"
+                      onClick={() => setHeroIndex((prev) => (prev < featuredList.length - 1 ? prev + 1 : 0))}
+                      className="rounded-full bg-white/10 hover:bg-white/20 p-1.5 text-white backdrop-blur-md transition"
+                      aria-label="Next featured course"
+                    >
+                      <ChevronRight size={16} />
+                    </button>
+                  </div>
+                </div>
+              );
+            })()}
+
+            {/* Section 1: Local Scanned Courses - Pick up where you left off */}
+            {localCourseFolders.length > 0 && (
+              <section className="flex flex-col gap-4">
+                <div className="edu-section-head flex-col sm:flex-row sm:items-center justify-between">
+                  <div>
+                    <div className="flex items-center gap-2 text-accent text-[11px] font-extrabold uppercase tracking-widest">
+                      <Clock size={13} />
+                      <span>{t("Pick up where you left off")}</span>
+                    </div>
+                    <h2 className="text-xl font-black tracking-tight text-white mt-0.5">
+                      {t("Continue Local Curriculum")}
+                    </h2>
+                  </div>
+                  <span className="text-xs text-ink-muted">
+                    {localCourseFolders.length} {t("course libraries indexed")}
+                  </span>
                 </div>
 
                 <div className="-mx-2">
-                  <Row min={270} shape="landscape" alwaysActive scrollKey="education:local">
+                  <Row min={320} shape="landscape" alwaysActive scrollKey="education:local">
                     {localCourseFolders.map((course) => {
                       const firstLesson = course.lessons[0];
                       const isShared = !!sharedTokens[course.folder];
                       const isCopied = copiedShareFolder === course.folder;
+                      const isBtr = course.folder.includes("BTR") || course.title.toLowerCase().includes("btr");
 
                       return (
                         <div
                           key={course.folder}
-                          className="edu-course-card group/card flex flex-col justify-between p-5"
+                          className="edu-obsidian-card group/card flex flex-col justify-between overflow-hidden p-0 transition-all duration-300 hover:scale-[1.02] border border-white/10 hover:border-accent/40 shadow-xl"
                         >
-                          <div>
-                            <div className="flex items-start justify-between gap-2">
-                              <h3 className="text-[15px] font-bold text-ink line-clamp-1">{course.title}</h3>
-                              <span className="rounded-full bg-accent-soft px-2.5 py-0.5 text-[10.5px] font-bold text-accent shrink-0">
-                                {course.lessons.length} {t("lessons")}
+                          <div className="relative h-36 w-full overflow-hidden bg-gradient-to-br from-indigo-950/60 to-purple-950/60">
+                            {/* Ambient Artwork */}
+                            <img
+                              src={isBtr ? "https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?w=800&auto=format&fit=crop&q=80" : "https://images.unsplash.com/photo-1532187863486-abf9dbad1b69?w=800&auto=format&fit=crop&q=80"}
+                              alt={course.title}
+                              className="h-full w-full object-cover transition duration-500 group-hover/card:scale-105 filter brightness-60"
+                            />
+                            <div className="absolute inset-0 bg-gradient-to-t from-[#0e1022] via-[#0e1022]/40 to-transparent" />
+
+                            <div className="absolute start-3.5 top-3.5 flex items-center gap-2">
+                              {isBtr ? (
+                                <span className="rounded-md bg-accent/90 px-2 py-0.5 text-[10px] font-black text-canvas shadow-md uppercase tracking-wider">
+                                  CoreBTR 2027
+                                </span>
+                              ) : (
+                                <span className="rounded-md bg-black/60 px-2 py-0.5 text-[10px] font-bold text-accent border border-accent/30 backdrop-blur-md uppercase tracking-wider">
+                                  Local
+                                </span>
+                              )}
+                              <span className="rounded-md bg-black/60 px-2 py-0.5 text-[10px] font-semibold text-white/90 backdrop-blur-md border border-white/10">
+                                {course.lessons.length} {t("videos")}
                               </span>
                             </div>
-                            <p className="text-[11.5px] font-mono text-ink-subtle truncate mt-1">
-                              {course.folder}
-                            </p>
-                          </div>
 
-                          <div className="flex items-center justify-between pt-3 border-t border-edge-soft">
+                            {/* Floating Play Button Overlay */}
                             <button
                               type="button"
                               onClick={() => firstLesson && openPlayer(localPlayerSrc(firstLesson))}
-                              className="flex items-center gap-1.5 rounded-xl bg-accent px-3 py-1.5 text-[12px] font-semibold text-canvas hover:brightness-110 transition shadow-sm"
+                              className="absolute inset-0 m-auto flex h-12 w-12 items-center justify-center rounded-full bg-accent/90 text-canvas shadow-xl backdrop-blur-md transition transform group-hover/card:scale-110 group-hover/card:bg-accent"
+                              title={t("Resume Lecture")}
                             >
-                              <Play size={13} fill="currentColor" />
-                              <span>{t("Resume Course")}</span>
+                              <Play size={20} fill="currentColor" className="translate-x-0.5" />
                             </button>
 
-                            <button
-                              type="button"
-                              onClick={() => handleToggleShare(course.folder, course.title)}
-                              className={`flex items-center gap-1.5 rounded-xl px-2.5 py-1.5 text-[11.5px] font-medium transition ${
-                                isCopied
-                                  ? "bg-accent-soft text-accent font-semibold"
-                                  : isShared
-                                  ? "bg-surface border border-edge text-ink"
-                                  : "text-ink-muted hover:bg-surface hover:text-ink"
-                              }`}
-                              title={t("Stream over LAN to Stremio or TV")}
-                            >
-                              {isCopied ? <Check size={13} /> : <Share2 size={13} />}
-                              <span>{isCopied ? t("Copied!") : isShared ? t("Copy Feed") : t("Share LAN")}</span>
-                            </button>
+                            <div className="absolute bottom-2.5 start-3.5 end-3.5">
+                              <h3 className="text-sm font-extrabold text-white truncate drop-shadow">
+                                {course.title}
+                              </h3>
+                              <p className="text-[10.5px] font-mono text-white/60 truncate mt-0.5">
+                                {course.folder}
+                              </p>
+                            </div>
+                          </div>
+
+                          <div className="p-3.5 flex flex-col gap-2.5 bg-[#0e1022]/90">
+                            {/* Progress bar simulation */}
+                            <div className="w-full bg-white/[0.08] h-1.5 rounded-full overflow-hidden">
+                              <div className="bg-gradient-to-r from-accent to-indigo-400 h-full rounded-full w-[42%]" />
+                            </div>
+
+                            <div className="flex items-center justify-between pt-1">
+                              {isBtr ? (
+                                <button
+                                  type="button"
+                                  onClick={() => setTab("btr")}
+                                  className="flex items-center gap-1.5 rounded-xl bg-accent px-3 py-1.5 text-[11.5px] font-bold text-canvas hover:brightness-110 transition shadow-sm"
+                                >
+                                  <Flame size={13} />
+                                  <span>{t("Launch War Room")}</span>
+                                </button>
+                              ) : (
+                                <button
+                                  type="button"
+                                  onClick={() => firstLesson && openPlayer(localPlayerSrc(firstLesson))}
+                                  className="flex items-center gap-1.5 rounded-xl bg-accent px-3 py-1.5 text-[11.5px] font-bold text-canvas hover:brightness-110 transition shadow-sm"
+                                >
+                                  <Play size={13} fill="currentColor" />
+                                  <span>{t("Resume Lecture")}</span>
+                                </button>
+                              )}
+
+                              <button
+                                type="button"
+                                onClick={() => handleToggleShare(course.folder, course.title)}
+                                className={`flex items-center gap-1.5 rounded-xl px-2.5 py-1.5 text-[11px] font-semibold transition ${
+                                  isCopied
+                                    ? "bg-accent-soft text-accent font-bold"
+                                    : isShared
+                                    ? "bg-surface border border-edge text-ink"
+                                    : "text-ink-muted hover:bg-white/5 hover:text-white"
+                                }`}
+                                title={t("Stream over LAN to Stremio or TV")}
+                              >
+                                {isCopied ? <Check size={13} /> : <Share2 size={13} />}
+                                <span>{isCopied ? t("Copied!") : isShared ? t("Copy Feed") : t("Share LAN")}</span>
+                              </button>
+                            </div>
                           </div>
                         </div>
                       );
@@ -655,97 +942,148 @@ export function EducationView() {
           </>
         )}
 
-        {/* TAB: INTERACTIVE CHECKPOINTS & SOCRATIC AUTO-PAUSE */}
+        {/* TAB: INTERACTIVE CHECKPOINTS & SOCRATIC AUTO-PAUSE (REDESIGNED) */}
         {tab === "checkpoints" && (
-          <div className="flex flex-col gap-8">
-            {/* Spotlight Banner */}
-            <div className="edu-hero-spotlight">
-              <div className="flex flex-col gap-2">
-                <div className="flex items-center gap-2 text-accent text-xs font-semibold uppercase tracking-wider">
-                  <Sparkles size={14} />
-                  <span>{t("Active Learning Engine")}</span>
+          <div className="flex flex-col gap-9">
+            {/* 1. Mastery Status & Progress HUD Ribbon */}
+            <div className="relative overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-r from-[#0d0f24] via-[#12142e] to-[#181938] p-6 shadow-2xl backdrop-blur-2xl">
+              <div className="relative z-10 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+                <div className="flex flex-col gap-2 max-w-2xl">
+                  <div className="flex items-center gap-2">
+                    <span className="flex items-center gap-1.5 rounded-full bg-accent/20 px-3 py-0.5 text-[11px] font-extrabold uppercase tracking-widest text-accent border border-accent/30">
+                      <Sparkles size={12} />
+                      {t("Active Learning Engine 2.0")}
+                    </span>
+                    <span className="flex items-center gap-1 text-[11px] font-bold text-amber-400 bg-amber-400/10 px-2.5 py-0.5 rounded-full border border-amber-400/20">
+                      <Flame size={12} />
+                      5 Day Retention Streak
+                    </span>
+                  </div>
+                  <h3 className="text-2xl font-black tracking-tight text-white">
+                    {t("Socratic Video Checkpoints & Root-Cause Mesh")}
+                  </h3>
+                  <p className="text-xs text-white/70 leading-relaxed">
+                    {t(
+                      "Lectures automatically pause at conceptual inflection points. Test your understanding on the spot or trace clinical errors down to cellular mechanisms.",
+                    )}
+                  </p>
                 </div>
-                <h3 className="text-xl font-bold text-ink">
-                  {t("Socratic Video Checkpoints & Concept Mesh")}
-                </h3>
-                <p className="text-xs text-ink-muted max-w-xl">
-                  {t(
-                    "Lectures automatically pause at conceptual inflection points. Test your understanding on the spot with multiple-choice questions or explain the mechanism in your own words with voice dictation.",
-                  )}
-                </p>
-              </div>
-              <div className="flex items-center gap-3">
-                <button
-                  type="button"
-                  onClick={() => {
-                    const firstCourse = CURATED_COURSES[0];
-                    if (firstCourse) openPlayer(localPlayerSrc(firstCourse as any));
-                  }}
-                  className="edu-pill-button primary"
-                >
-                  <Play size={14} fill="currentColor" />
-                  <span>{t("Launch Interactive Lecture")}</span>
-                </button>
+
+                {/* Quick Stats Pill */}
+                <div className="flex items-center gap-3 shrink-0">
+                  <div className="flex items-center gap-3 rounded-2xl bg-white/[0.04] border border-white/10 px-4 py-3 backdrop-blur-xl">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+                      <Award size={20} />
+                    </div>
+                    <div>
+                      <div className="text-[11px] uppercase font-bold text-white/50 tracking-wider">{t("Checkpoints")}</div>
+                      <div className="text-lg font-black text-white">3 / 4 <span className="text-xs font-semibold text-emerald-400">(75%)</span></div>
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const firstCourse = CURATED_COURSES[0];
+                      if (firstCourse) openPlayer(localPlayerSrc(firstCourse as any));
+                    }}
+                    className="flex items-center gap-2 rounded-2xl bg-accent hover:brightness-110 px-5 py-3 text-xs font-bold text-canvas shadow-lg shadow-accent/30 transition transform hover:-translate-y-0.5"
+                  >
+                    <Play size={15} fill="currentColor" />
+                    <span>{t("Launch Socratic Player")}</span>
+                  </button>
+                </div>
               </div>
             </div>
 
-            {/* Curated Checkpoints by Course */}
+            {/* 2. High-Yield Course Checkpoint Decks */}
             <div className="flex flex-col gap-5">
-              <h4 className="text-sm font-bold uppercase tracking-wider text-ink-muted">
-                {t("High-Yield Course Checkpoint Decks")}
-              </h4>
+              <div className="flex items-center justify-between">
+                <div>
+                  <h4 className="text-base font-extrabold text-white tracking-tight flex items-center gap-2">
+                    <Target size={18} className="text-accent" />
+                    <span>{t("High-Yield Course Checkpoint Decks")}</span>
+                  </h4>
+                  <p className="text-xs text-ink-muted mt-0.5">
+                    {t("Interactive inflection points embedded directly inside university lectures.")}
+                  </p>
+                </div>
+              </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {Object.entries(CURATED_COURSE_CHECKPOINTS).map(([courseKey, checkpoints]) => {
                   const course = CURATED_COURSES.find((c) => c.id === courseKey);
                   return (
                     <div
                       key={courseKey}
-                      className="rounded-2xl border border-edge-soft bg-surface/70 p-5 flex flex-col justify-between gap-4 shadow-sm"
+                      className="edu-obsidian-card p-5 flex flex-col justify-between gap-5 group"
                     >
-                      <div className="flex flex-col gap-2">
-                        <div className="flex items-center justify-between">
-                          <span className="rounded-md bg-accent-soft px-2 py-0.5 text-[10px] font-semibold text-accent uppercase tracking-wider">
-                            {course?.category || "Medical"}
-                          </span>
-                          <span className="text-[11px] text-ink-muted font-medium">
-                            {checkpoints.length} {t("Checkpoints")}
-                          </span>
+                      {/* Course Cover Banner Header */}
+                      <div className="flex flex-col gap-3">
+                        <div className="relative h-28 w-full overflow-hidden rounded-xl border border-white/10">
+                          <img
+                            src={course?.thumbnail || "https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?w=800"}
+                            alt={course?.title || courseKey}
+                            className="h-full w-full object-cover transition duration-500 group-hover:scale-105 filter brightness-75"
+                          />
+                          <div className="absolute inset-0 bg-gradient-to-t from-[#0e1022] via-[#0e1022]/40 to-transparent" />
+                          <div className="absolute top-2.5 start-2.5 flex items-center gap-1.5">
+                            <span className="rounded-md bg-black/60 px-2 py-0.5 text-[10px] font-bold text-accent border border-accent/30 backdrop-blur-md uppercase tracking-wider">
+                              {course?.category || "Medical"}
+                            </span>
+                            <span className="rounded-md bg-black/60 px-2 py-0.5 text-[10px] font-medium text-white/80 backdrop-blur-md border border-white/10">
+                              {checkpoints.length} {t("Checkpoints")}
+                            </span>
+                          </div>
+                          <div className="absolute bottom-2 start-2.5 end-2.5">
+                            <h5 className="font-bold text-white text-sm line-clamp-1 drop-shadow">
+                              {course?.title || courseKey}
+                            </h5>
+                          </div>
                         </div>
-                        <h5 className="font-bold text-ink text-sm leading-snug">
-                          {course?.title || courseKey}
-                        </h5>
-                        <p className="text-[11px] text-ink-muted line-clamp-2">
+
+                        <p className="text-[11.5px] text-ink-muted line-clamp-2 leading-relaxed">
                           {course?.description || t("Interactive checkpoints linked with video timestamps.")}
                         </p>
                       </div>
 
-                      <div className="space-y-2 border-t border-edge-soft/60 pt-3">
-                        {checkpoints.map((cp) => (
+                      {/* Interactive Timeline Track */}
+                      <div className="relative space-y-3 pt-2">
+                        <div className="edu-timeline-connector" />
+                        {checkpoints.map((cp, idx) => (
                           <div
                             key={cp.id}
-                            className="flex items-center justify-between gap-2 rounded-xl border border-edge-soft/40 bg-surface/50 p-2.5 text-xs transition hover:border-accent/40"
+                            className="edu-checkpoint-row"
                           >
+                            <div className={`edu-timeline-dot ${idx === 0 ? "mastered" : "review"}`} />
                             <div className="min-w-0 flex-1">
-                              <div className="flex items-center gap-1.5 font-medium text-ink truncate">
-                                <span>{cp.title}</span>
-                              </div>
-                              <div className="text-[10px] text-ink-muted flex items-center gap-2 mt-0.5">
-                                <span>
+                              <div className="flex items-center justify-between gap-1">
+                                <span className="font-bold text-white text-xs truncate">
+                                  {cp.title}
+                                </span>
+                                <span className="rounded bg-white/[0.06] px-1.5 py-0.5 text-[9.5px] font-mono text-ink-subtle">
                                   {Math.floor(cp.timestampSec / 60)}:
                                   {String(cp.timestampSec % 60).padStart(2, "0")}
                                 </span>
-                                <span>·</span>
-                                <span className="capitalize">{cp.type.replace("-", " ")}</span>
+                              </div>
+                              <p className="text-[11px] text-ink-muted line-clamp-1 mt-0.5">
+                                {cp.question}
+                              </p>
+                              <div className="flex items-center justify-between mt-2 pt-1.5 border-t border-white/[0.04]">
+                                <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-accent capitalize">
+                                  {cp.type === "multiple-choice" ? <Zap size={11} /> : <BrainCircuit size={11} />}
+                                  {cp.type.replace("-", " ")}
+                                </span>
+                                <button
+                                  type="button"
+                                  onClick={() => setActiveDrillCheckpoint(cp)}
+                                  className="flex items-center gap-1 rounded-lg bg-accent/20 hover:bg-accent text-accent hover:text-canvas px-2.5 py-1 text-[11px] font-bold transition border border-accent/30 shadow-sm"
+                                >
+                                  <Play size={10} fill="currentColor" />
+                                  <span>{t("Drill")}</span>
+                                </button>
                               </div>
                             </div>
-                            <button
-                              type="button"
-                              onClick={() => setActiveDrillCheckpoint(cp)}
-                              className="rounded-lg bg-white/10 hover:bg-accent hover:text-black px-2.5 py-1 text-[11px] font-semibold text-ink transition shrink-0"
-                            >
-                              {t("Drill")}
-                            </button>
                           </div>
                         ))}
                       </div>
@@ -755,42 +1093,380 @@ export function EducationView() {
               </div>
             </div>
 
-            {/* Root-Cause Prerequisite Concept Mesh */}
-            <div className="rounded-2xl border border-edge-soft bg-surface/70 p-6 flex flex-col gap-4">
-              <div className="flex items-center justify-between">
+            {/* 3. Root-Cause Prerequisite Concept Mesh (Clinical Knowledge Graph) */}
+            <div className="relative overflow-hidden rounded-3xl border border-white/10 bg-[#0d0f22]/90 p-7 shadow-2xl backdrop-blur-2xl flex flex-col gap-6">
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-white/[0.06] pb-5">
                 <div>
-                  <h4 className="font-bold text-ink text-base">
-                    {t("Root-Cause Prerequisite Concept Mesh")}
-                  </h4>
-                  <p className="text-xs text-ink-muted">
+                  <div className="flex items-center gap-2">
+                    <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-accent/20 text-accent border border-accent/30">
+                      <GitBranch size={16} />
+                    </span>
+                    <h4 className="font-extrabold text-white text-lg">
+                      {t("Root-Cause Prerequisite Concept Mesh")}
+                    </h4>
+                  </div>
+                  <p className="text-xs text-white/60 mt-1 max-w-xl">
                     {t(
                       "When you make repeated errors on an advanced concept, Argus traces the dependency chain backwards to diagnose and fix foundational gaps.",
                     )}
                   </p>
                 </div>
+
+                {/* Filter System Pills */}
+                <div className="flex items-center gap-1.5 rounded-xl border border-white/10 bg-black/40 p-1">
+                  {[
+                    { id: "all", label: t("All Systems") },
+                    { id: "cardio", label: t("Cardiovascular") },
+                    { id: "neuro", label: t("Neuroanatomy") },
+                    { id: "renal", label: t("Acid-Base & Renal") },
+                  ].map((sys) => (
+                    <button
+                      key={sys.id}
+                      type="button"
+                      onClick={() => setConceptSystemFilter(sys.id as any)}
+                      className={`rounded-lg px-3 py-1 text-[11.5px] font-bold transition ${
+                        conceptSystemFilter === sys.id
+                          ? "bg-accent text-white shadow-sm"
+                          : "text-white/60 hover:text-white hover:bg-white/5"
+                      }`}
+                    >
+                      {sys.label}
+                    </button>
+                  ))}
+                </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
-                {Object.values(FOUNDATIONAL_CONCEPT_GRAPH).map((concept) => (
-                  <div
-                    key={concept.id}
-                    className="rounded-xl border border-edge-soft/60 bg-surface/40 p-4 flex flex-col gap-2"
-                  >
+              {/* System Knowledge Tracks */}
+              <div className="flex flex-col gap-6">
+                {/* TRACK 1: Cardiovascular Hemodynamics */}
+                {(conceptSystemFilter === "all" || conceptSystemFilter === "cardio") && (
+                  <div className="edu-knowledge-track flex flex-col gap-4">
                     <div className="flex items-center justify-between">
-                      <span className="font-semibold text-ink text-sm">{concept.title}</span>
-                      <span className="rounded bg-white/5 px-2 py-0.5 text-[10px] text-ink-subtle uppercase">
-                        {concept.category}
-                      </span>
+                      <div className="flex items-center gap-2">
+                        <span className="h-2 w-2 rounded-full bg-cyan-400 shadow-[0_0_8px_#22d3ee]" />
+                        <h5 className="text-sm font-extrabold text-cyan-400 uppercase tracking-wider">
+                          Cardiovascular Hemodynamics & Mechanics
+                        </h5>
+                      </div>
+                      <span className="text-[11px] font-mono text-white/40">4 Nodes • Root-Cause Trail</span>
                     </div>
-                    <p className="text-xs text-ink-muted leading-relaxed">{concept.description}</p>
-                    <div className="mt-1 rounded-lg bg-accent/10 border border-accent/20 p-2 text-[11px] text-accent">
-                      <strong className="block text-[10px] uppercase font-bold text-accent/80 mb-0.5">
-                        {t("Foundational Key")}:
-                      </strong>
-                      {concept.refresherTip}
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                      {["cardiac-output", "stroke-volume", "frank-starling", "sarcomere-structure"].map((conceptId, idx) => {
+                        const concept = FOUNDATIONAL_CONCEPT_GRAPH[conceptId];
+                        if (!concept) return null;
+                        const isRevealed = !!revealedConcepts[conceptId];
+                        const stats = conceptStats[conceptId];
+
+                        return (
+                          <div
+                            key={concept.id}
+                            className="relative rounded-2xl border border-white/[0.08] bg-[#12142b]/80 p-4 flex flex-col justify-between gap-3 shadow-lg hover:border-cyan-400/40 transition group"
+                          >
+                            <div className="flex flex-col gap-1.5">
+                              <div className="flex items-center justify-between">
+                                <span className="rounded bg-cyan-500/15 border border-cyan-500/30 px-2 py-0.5 text-[9.5px] font-bold text-cyan-300 uppercase">
+                                  {idx === 0 ? "Level 3: Target" : idx === 1 ? "Level 2: Mechanism" : idx === 2 ? "Level 1: Law" : "Root Cause"}
+                                </span>
+                                {stats?.mastered ? (
+                                  <span className="text-emerald-400 text-[10px] font-bold flex items-center gap-1">
+                                    <CheckCircle2 size={12} /> Mastered
+                                  </span>
+                                ) : (
+                                  <span className="text-amber-400 text-[10px] font-semibold">
+                                    Active Gap
+                                  </span>
+                                )}
+                              </div>
+                              <h6 className="font-extrabold text-white text-xs leading-snug">
+                                {concept.title}
+                              </h6>
+                              <p className="text-[11px] text-white/60 line-clamp-2 leading-relaxed">
+                                {concept.description}
+                              </p>
+                            </div>
+
+                            {/* Active Recall Occlusion Key Box */}
+                            <div className="edu-occlusion-card">
+                              <div className="flex items-center justify-between mb-1">
+                                <strong className="text-[9.5px] uppercase font-bold text-cyan-300">
+                                  {t("Foundational Key")}
+                                </strong>
+                                <button
+                                  type="button"
+                                  onClick={() => toggleConceptReveal(concept.id)}
+                                  className="text-white/60 hover:text-white transition"
+                                  title={isRevealed ? "Hide Key" : "Reveal Key (Active Recall)"}
+                                >
+                                  {isRevealed ? <EyeOff size={12} /> : <Eye size={12} />}
+                                </button>
+                              </div>
+                              <p className={`text-[11px] text-white/90 leading-snug ${isRevealed ? "" : "edu-occlusion-blurred"}`}>
+                                {concept.refresherTip}
+                              </p>
+                              {!isRevealed && (
+                                <button
+                                  type="button"
+                                  onClick={() => toggleConceptReveal(concept.id)}
+                                  className="mt-1 w-full text-center text-[10px] font-bold text-cyan-300 hover:text-white transition"
+                                >
+                                  {t("👁 Reveal Active Recall Key")}
+                                </button>
+                              )}
+                            </div>
+
+                            {/* Self-Rating & Micro-Drill CTA */}
+                            <div className="flex items-center justify-between pt-1 border-t border-white/[0.06]">
+                              <div className="flex items-center gap-1">
+                                <button
+                                  type="button"
+                                  onClick={() => handleRateConcept(concept.id, true)}
+                                  className="rounded px-2 py-0.5 text-[10px] font-bold bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 transition"
+                                >
+                                  ✓ Got It
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleRateConcept(concept.id, false)}
+                                  className="rounded px-2 py-0.5 text-[10px] font-bold bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30 transition"
+                                >
+                                  ✕ Weak
+                                </button>
+                              </div>
+
+                              <button
+                                type="button"
+                                onClick={() => launchConceptMicroQuiz(concept.id)}
+                                className="flex items-center gap-1 rounded-lg bg-cyan-500/20 hover:bg-cyan-500 text-cyan-300 hover:text-black px-2 py-1 text-[10px] font-bold transition border border-cyan-500/30"
+                              >
+                                <Zap size={10} fill="currentColor" />
+                                <span>Quiz</span>
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      })}
                     </div>
                   </div>
-                ))}
+                )}
+
+                {/* TRACK 2: Upper Limb Neuroanatomy */}
+                {(conceptSystemFilter === "all" || conceptSystemFilter === "neuro") && (
+                  <div className="edu-knowledge-track flex flex-col gap-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <span className="h-2 w-2 rounded-full bg-amber-400 shadow-[0_0_8px_#fbbf24]" />
+                        <h5 className="text-sm font-extrabold text-amber-400 uppercase tracking-wider">
+                          Upper Limb Neuroanatomy & Palsy Localization
+                        </h5>
+                      </div>
+                      <span className="text-[11px] font-mono text-white/40">2 Nodes • Anatomical Trail</span>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {["brachial-plexus-roots", "spinal-nerve-roots"].map((conceptId, idx) => {
+                        const concept = FOUNDATIONAL_CONCEPT_GRAPH[conceptId];
+                        if (!concept) return null;
+                        const isRevealed = !!revealedConcepts[conceptId];
+                        const stats = conceptStats[conceptId];
+
+                        return (
+                          <div
+                            key={concept.id}
+                            className="relative rounded-2xl border border-white/[0.08] bg-[#12142b]/80 p-4 flex flex-col justify-between gap-3 shadow-lg hover:border-amber-400/40 transition group"
+                          >
+                            <div className="flex flex-col gap-1.5">
+                              <div className="flex items-center justify-between">
+                                <span className="rounded bg-amber-500/15 border border-amber-500/30 px-2 py-0.5 text-[9.5px] font-bold text-amber-300 uppercase">
+                                  {idx === 0 ? "Clinical Syndrome" : "Root Anatomical Basis"}
+                                </span>
+                                {stats?.mastered ? (
+                                  <span className="text-emerald-400 text-[10px] font-bold flex items-center gap-1">
+                                    <CheckCircle2 size={12} /> Mastered
+                                  </span>
+                                ) : (
+                                  <span className="text-amber-400 text-[10px] font-semibold">
+                                    Active Gap
+                                  </span>
+                                )}
+                              </div>
+                              <h6 className="font-extrabold text-white text-xs leading-snug">
+                                {concept.title}
+                              </h6>
+                              <p className="text-[11px] text-white/60 line-clamp-2 leading-relaxed">
+                                {concept.description}
+                              </p>
+                            </div>
+
+                            <div className="edu-occlusion-card">
+                              <div className="flex items-center justify-between mb-1">
+                                <strong className="text-[9.5px] uppercase font-bold text-amber-300">
+                                  {t("Foundational Key")}
+                                </strong>
+                                <button
+                                  type="button"
+                                  onClick={() => toggleConceptReveal(concept.id)}
+                                  className="text-white/60 hover:text-white transition"
+                                >
+                                  {isRevealed ? <EyeOff size={12} /> : <Eye size={12} />}
+                                </button>
+                              </div>
+                              <p className={`text-[11px] text-white/90 leading-snug ${isRevealed ? "" : "edu-occlusion-blurred"}`}>
+                                {concept.refresherTip}
+                              </p>
+                              {!isRevealed && (
+                                <button
+                                  type="button"
+                                  onClick={() => toggleConceptReveal(concept.id)}
+                                  className="mt-1 w-full text-center text-[10px] font-bold text-amber-300 hover:text-white transition"
+                                >
+                                  {t("👁 Reveal Active Recall Key")}
+                                </button>
+                              )}
+                            </div>
+
+                            <div className="flex items-center justify-between pt-1 border-t border-white/[0.06]">
+                              <div className="flex items-center gap-1">
+                                <button
+                                  type="button"
+                                  onClick={() => handleRateConcept(concept.id, true)}
+                                  className="rounded px-2 py-0.5 text-[10px] font-bold bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 transition"
+                                >
+                                  ✓ Got It
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleRateConcept(concept.id, false)}
+                                  className="rounded px-2 py-0.5 text-[10px] font-bold bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30 transition"
+                                >
+                                  ✕ Weak
+                                </button>
+                              </div>
+
+                              <button
+                                type="button"
+                                onClick={() => launchConceptMicroQuiz(concept.id)}
+                                className="flex items-center gap-1 rounded-lg bg-amber-500/20 hover:bg-amber-500 text-amber-300 hover:text-black px-2 py-1 text-[10px] font-bold transition border border-amber-500/30"
+                              >
+                                <Zap size={10} fill="currentColor" />
+                                <span>Quiz</span>
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* TRACK 3: Renal, Acid-Base & Physicochemical Buffers */}
+                {(conceptSystemFilter === "all" || conceptSystemFilter === "renal") && (
+                  <div className="edu-knowledge-track flex flex-col gap-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <span className="h-2 w-2 rounded-full bg-rose-400 shadow-[0_0_8px_#f43f5e]" />
+                        <h5 className="text-sm font-extrabold text-rose-400 uppercase tracking-wider">
+                          Renal, Acid-Base & Physicochemical Buffers
+                        </h5>
+                      </div>
+                      <span className="text-[11px] font-mono text-white/40">2 Nodes • Equilibrium Trail</span>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {["metabolic-acidosis", "henderson-hasselbalch"].map((conceptId, idx) => {
+                        const concept = FOUNDATIONAL_CONCEPT_GRAPH[conceptId];
+                        if (!concept) return null;
+                        const isRevealed = !!revealedConcepts[conceptId];
+                        const stats = conceptStats[conceptId];
+
+                        return (
+                          <div
+                            key={concept.id}
+                            className="relative rounded-2xl border border-white/[0.08] bg-[#12142b]/80 p-4 flex flex-col justify-between gap-3 shadow-lg hover:border-rose-400/40 transition group"
+                          >
+                            <div className="flex flex-col gap-1.5">
+                              <div className="flex items-center justify-between">
+                                <span className="rounded bg-rose-500/15 border border-rose-500/30 px-2 py-0.5 text-[9.5px] font-bold text-rose-300 uppercase">
+                                  {idx === 0 ? "Clinical Disturbance" : "Physicochemical Buffer Law"}
+                                </span>
+                                {stats?.mastered ? (
+                                  <span className="text-emerald-400 text-[10px] font-bold flex items-center gap-1">
+                                    <CheckCircle2 size={12} /> Mastered
+                                  </span>
+                                ) : (
+                                  <span className="text-amber-400 text-[10px] font-semibold">
+                                    Active Gap
+                                  </span>
+                                )}
+                              </div>
+                              <h6 className="font-extrabold text-white text-xs leading-snug">
+                                {concept.title}
+                              </h6>
+                              <p className="text-[11px] text-white/60 line-clamp-2 leading-relaxed">
+                                {concept.description}
+                              </p>
+                            </div>
+
+                            <div className="edu-occlusion-card">
+                              <div className="flex items-center justify-between mb-1">
+                                <strong className="text-[9.5px] uppercase font-bold text-rose-300">
+                                  {t("Foundational Key")}
+                                </strong>
+                                <button
+                                  type="button"
+                                  onClick={() => toggleConceptReveal(concept.id)}
+                                  className="text-white/60 hover:text-white transition"
+                                >
+                                  {isRevealed ? <EyeOff size={12} /> : <Eye size={12} />}
+                                </button>
+                              </div>
+                              <p className={`text-[11px] text-white/90 leading-snug ${isRevealed ? "" : "edu-occlusion-blurred"}`}>
+                                {concept.refresherTip}
+                              </p>
+                              {!isRevealed && (
+                                <button
+                                  type="button"
+                                  onClick={() => toggleConceptReveal(concept.id)}
+                                  className="mt-1 w-full text-center text-[10px] font-bold text-rose-300 hover:text-white transition"
+                                >
+                                  {t("👁 Reveal Active Recall Key")}
+                                </button>
+                              )}
+                            </div>
+
+                            <div className="flex items-center justify-between pt-1 border-t border-white/[0.06]">
+                              <div className="flex items-center gap-1">
+                                <button
+                                  type="button"
+                                  onClick={() => handleRateConcept(concept.id, true)}
+                                  className="rounded px-2 py-0.5 text-[10px] font-bold bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 transition"
+                                >
+                                  ✓ Got It
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleRateConcept(concept.id, false)}
+                                  className="rounded px-2 py-0.5 text-[10px] font-bold bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30 transition"
+                                >
+                                  ✕ Weak
+                                </button>
+                              </div>
+
+                              <button
+                                type="button"
+                                onClick={() => launchConceptMicroQuiz(concept.id)}
+                                className="flex items-center gap-1 rounded-lg bg-rose-500/20 hover:bg-rose-500 text-rose-300 hover:text-black px-2 py-1 text-[10px] font-bold transition border border-rose-500/30"
+                              >
+                                <Zap size={10} fill="currentColor" />
+                                <span>Quiz</span>
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           </div>
