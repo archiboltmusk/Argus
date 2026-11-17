@@ -180,279 +180,273 @@ export const LifemaxxingView: React.FC<{ active?: boolean }> = ({ active = true 
 
   const filteredGoals = ARGUS_20_GOALS.filter(g => {
     if (goalFilter !== "All" && g.category !== goalFilter) return false;
-    if (searchGoal && !g.title.toLowerCase().includes(searchGoal.toLowerCase()) && !g.tagline.toLowerCase().includes(searchGoal.toLowerCase())) return false;
+    if (
+      searchGoal &&
+      !g.title.toLowerCase().includes(searchGoal.toLowerCase()) &&
+      !g.tagline.toLowerCase().includes(searchGoal.toLowerCase()) &&
+      !g.problemSolved.toLowerCase().includes(searchGoal.toLowerCase())
+    ) {
+      return false;
+    }
     return true;
   });
 
   return (
     <div className="flourish-container">
-      {/* Top OS Header Bar */}
-      <header className="flourish-header-bar">
-        <div className="max-w-7xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-indigo-600 via-purple-600 to-emerald-400 p-0.5 shadow-lg shadow-indigo-500/20">
-              <div className="w-full h-full bg-slate-950 rounded-[10px] flex items-center justify-center">
-                <Compass className="w-5 h-5 text-indigo-400 animate-spin-slow" />
+      <div className="mx-auto max-w-[1400px] px-6 pt-24 pb-16 sm:px-8 lg:px-12">
+        {/* Unified Authoritative Hero Masthead */}
+        <header className="flourish-masthead">
+          <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
+            <div className="space-y-3">
+              <div className="flourish-eyebrow">
+                <Sparkles className="w-4 h-4 text-accent" />
+                <span>ARGUS Flourishing OS v2.0</span>
+                <span className="flourish-eyebrow-badge">Obsidian Glass Standard</span>
               </div>
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="font-extrabold tracking-tight text-white text-base">ARGUS</span>
-                <span className="text-[10px] font-mono uppercase bg-indigo-500/20 text-indigo-300 px-2 py-0.5 rounded-full border border-indigo-500/30">
-                  Human Flourishing OS v2.0
-                </span>
-              </div>
-              <p className="text-[11px] text-slate-400 hidden sm:block">
-                Unlock the extraordinary in everyone · Knowledge, Health, Opportunity, Trust & Sovereignty
+              <h1 className="text-3xl font-extrabold tracking-tight text-ink sm:text-4xl">
+                The Human Flourishing Operating System
+              </h1>
+              <p className="max-w-3xl text-sm leading-relaxed text-ink-muted sm:text-base">
+                Unlock the extraordinary in everyone. Universal access to knowledge, health intelligence, civic accountability, opportunity equalization, and human sovereignty—regardless of wealth, background, or circumstance.
               </p>
             </div>
-          </div>
 
-          <div className="flex items-center gap-3">
-            <div className="hidden md:flex items-center gap-4 text-xs font-mono text-slate-400 border-r border-slate-800 pr-4">
-              <span>20 Goals</span>
-              <span>12 Engines</span>
-              <span>20 Sectors</span>
-              <span className="text-emerald-400">88.3% Cost Cut</span>
+            <div className="flex flex-wrap items-center gap-3 shrink-0">
+              <div className="flex items-center gap-3.5 text-xs font-mono text-ink-subtle bg-surface-elevated/70 px-4 py-2.5 rounded-full border border-edge">
+                <span><strong className="text-ink">20</strong> Goals</span>
+                <span className="text-edge-soft">·</span>
+                <span><strong className="text-ink">12</strong> Engines</span>
+                <span className="text-edge-soft">·</span>
+                <span><strong className="text-ink">20</strong> Sectors</span>
+                <span className="text-edge-soft">·</span>
+                <span className="text-accent font-bold">88.3% Cost Cut</span>
+              </div>
+              <a
+                href="https://github.com/archiboltmusk/Argus"
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center gap-1.5 text-xs font-medium text-ink-muted hover:text-ink bg-surface border border-edge hover:border-edge-strong px-3.5 py-2.5 rounded-full transition-all"
+              >
+                <span>GitHub</span>
+                <ExternalLink className="w-3.5 h-3.5" />
+              </a>
             </div>
-            <a
-              href="https://github.com/archiboltmusk/Argus"
-              target="_blank"
-              rel="noreferrer"
-              className="text-xs text-slate-400 hover:text-slate-200 flex items-center gap-1 bg-slate-800/60 px-3 py-1.5 rounded-lg border border-slate-700/60 transition-colors"
-            >
-              <span>GitHub</span>
-              <ExternalLink className="w-3 h-3" />
-            </a>
           </div>
-        </div>
-      </header>
 
-      {/* Main Tab Bar */}
-      <div className="flourish-tabs-bar">
-        <div className="max-w-7xl mx-auto px-4 overflow-x-auto scrollbar-none py-2 flex items-center gap-1.5">
+          <div className="mt-5 flex flex-wrap gap-3 text-xs">
+            <div className="flourish-card-subtle flex items-center gap-2">
+              <span className="text-accent font-bold uppercase tracking-wider text-[10px]">Core Doctrine</span>
+              <span className="text-ink-muted">Every human life is precious. Every person deserves the opportunity to realize their latent potential without exploitation.</span>
+            </div>
+          </div>
+        </header>
+
+        {/* Sub-navigation Tabs Rail */}
+        <nav className="flourish-tabs-bar" role="tablist" aria-label="ARGUS Flourishing Subsystems">
           {TABS.filter((tab) => tab.id !== "community" || (activeProfile && !activeProfile.kid)).map((tab) => {
             const Icon = tab.icon;
             const isActive = activeTab === tab.id;
             return (
               <button
                 key={tab.id}
+                role="tab"
+                aria-selected={isActive}
                 onClick={() => setActiveTab(tab.id)}
                 className={`flourish-tab-button ${isActive ? "active" : ""}`}
               >
-                <Icon className="w-3.5 h-3.5" />
+                <Icon className="w-4 h-4" />
                 <span>{tab.label}</span>
                 <span className="flourish-tab-badge">{tab.tag}</span>
               </button>
             );
           })}
-        </div>
-      </div>
+        </nav>
 
-      {/* Main Content Area */}
-      <main className="flex-1 max-w-7xl mx-auto w-full p-4 md:p-6 lg:p-8 space-y-6">
-        {/* TAB: BLUEPRINT */}
-        {activeTab === "blueprint" && (
-          <div className="space-y-8 animate-fadeIn">
-            {/* Vision Banner */}
-            <div className="flourish-masthead">
-              <div className="flourish-eyebrow">
-                <Compass className="w-4 h-4 text-accent" />
-                <span>Consolidated Vision Blueprint v1.0</span>
-                <span className="flourish-eyebrow-badge">Argus OS Standard</span>
-              </div>
-              <h1>The Human Flourishing Operating System</h1>
-              <p>
-                Make knowledge, wisdom, health, opportunity, human connection, and personalized guidance 
-                accessible to every person—regardless of wealth, age, profession, location, or background.
-              </p>
-              <div className="mt-4 flex flex-wrap gap-3 text-xs">
-                <div className="flourish-card-subtle flex items-center gap-2">
-                  <span className="text-accent font-bold">Core Doctrine:</span>
-                  <span>Every human life is precious. Every person deserves the opportunity to realize their potential.</span>
-                </div>
-              </div>
-            </div>
-
-            {/* North Star Metrics Grid */}
-            <div>
-              <div className="flex items-center justify-between mb-3">
-                <h2 className="text-base font-bold text-white flex items-center gap-2">
-                  <BarChart3 className="w-4 h-4 text-emerald-400" />
-                  The 8 North Star Indicators of Real-World Impact
-                </h2>
-                <span className="text-xs text-slate-400">Measured outside the app</span>
-              </div>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                {ARGUS_NORTH_STARS.map((ns, idx) => (
-                  <div key={idx} className="bg-slate-900/90 border border-slate-800 p-3.5 rounded-xl space-y-1">
-                    <span className="text-[11px] text-slate-400 block">{ns.name}</span>
-                    <div className="text-lg font-bold text-emerald-400">{ns.target}</div>
-                    <p className="text-[10px] text-slate-400 leading-tight">{ns.description}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* 20 Ultimate Goals Registry */}
-            <div className="space-y-4">
-              <div className="flex items-center justify-between flex-wrap gap-3 pb-2 border-b border-slate-800">
-                <div>
-                  <h2 className="text-lg font-bold text-white flex items-center gap-2">
-                    <Target className="w-5 h-5 text-indigo-400" />
-                    The 20 Ultimate Goals of ARGUS
+        {/* Main Content Area */}
+        <main className="space-y-8">
+          {/* TAB: BLUEPRINT */}
+          {activeTab === "blueprint" && (
+            <div className="space-y-10 animate-fadeIn">
+              {/* North Star Metrics Grid */}
+              <section className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <h2 className="text-base font-bold text-ink flex items-center gap-2">
+                    <BarChart3 className="w-4 h-4 text-accent" />
+                    The 8 North Star Indicators of Real-World Impact
                   </h2>
-                  <span className="text-xs text-slate-400">Categorized into Core, Growth, and Frontier</span>
+                  <span className="text-xs text-ink-subtle">Measured outside the software in daily human lives</span>
                 </div>
-
-                <div className="flex items-center gap-2 flex-wrap">
-                  <div className="relative">
-                    <Search className="w-3.5 h-3.5 text-slate-500 absolute left-2.5 top-2.5" />
-                    <input
-                      type="text"
-                      placeholder="Search goals..."
-                      value={searchGoal}
-                      onChange={(e) => setSearchGoal(e.target.value)}
-                      className="bg-slate-900 border border-slate-700 text-xs rounded-lg pl-8 pr-3 py-1.5 text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500"
-                    />
-                  </div>
-
-                  {(["All", "Core", "Growth", "Frontier"] as const).map((cat) => (
-                    <button
-                      key={cat}
-                      onClick={() => setGoalFilter(cat)}
-                      className={`px-3 py-1 rounded-lg text-xs font-medium transition-colors ${
-                        goalFilter === cat
-                          ? "bg-indigo-600 text-white"
-                          : "bg-slate-900 border border-slate-800 text-slate-400 hover:text-slate-200"
-                      }`}
-                    >
-                      {cat}
-                    </button>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5">
+                  {ARGUS_NORTH_STARS.map((ns, idx) => (
+                    <div key={idx} className="bg-surface border border-edge hover:border-edge-strong p-4 rounded-2xl space-y-1.5 transition-all shadow-sm">
+                      <span className="text-[11px] font-medium text-ink-subtle block">{ns.name}</span>
+                      <div className="text-xl font-extrabold tracking-tight text-ink">{ns.target}</div>
+                      <p className="text-[11px] text-ink-muted leading-snug">{ns.description}</p>
+                    </div>
                   ))}
                 </div>
-              </div>
+              </section>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
-                {filteredGoals.map((g) => (
-                  <div
-                    key={g.id}
-                    className="p-4 rounded-xl bg-slate-900/90 border border-slate-800 hover:border-slate-700 transition-all space-y-2.5"
-                  >
-                    <div className="flex items-center justify-between text-xs">
-                      <div className="flex items-center gap-2">
-                        <span className="w-5 h-5 rounded-full bg-indigo-950 border border-indigo-800 text-indigo-300 font-mono text-[10px] flex items-center justify-center font-bold">
-                          {g.id}
-                        </span>
-                        <span className="font-semibold text-white">{g.title}</span>
-                      </div>
-                      <span
-                        className={`px-2 py-0.5 rounded text-[10px] font-semibold uppercase ${
-                          g.category === "Core"
-                            ? "bg-indigo-950 text-indigo-300 border border-indigo-800"
-                            : g.category === "Growth"
-                            ? "bg-purple-950 text-purple-300 border border-purple-800"
-                            : "bg-emerald-950 text-emerald-300 border border-emerald-800"
+              {/* 20 Ultimate Goals Registry */}
+              <section className="space-y-5">
+                <div className="flex items-center justify-between flex-wrap gap-3 pb-3 border-b border-edge-soft">
+                  <div>
+                    <h2 className="text-lg font-bold text-ink flex items-center gap-2">
+                      <Target className="w-5 h-5 text-accent" />
+                      The 20 Ultimate Goals of ARGUS
+                    </h2>
+                    <span className="text-xs text-ink-subtle">Categorized into Core, Growth, and Frontier</span>
+                  </div>
+
+                  <div className="flex items-center gap-2.5 flex-wrap">
+                    <div className="relative">
+                      <Search className="w-3.5 h-3.5 text-ink-subtle absolute left-3 top-2.5" />
+                      <input
+                        type="text"
+                        placeholder="Search goals & problems..."
+                        value={searchGoal}
+                        onChange={(e) => setSearchGoal(e.target.value)}
+                        className="bg-surface border border-edge text-xs rounded-full pl-9 pr-4 py-1.5 text-ink placeholder:text-ink-subtle focus:outline-none focus:border-accent transition-all"
+                      />
+                    </div>
+
+                    {(["All", "Core", "Growth", "Frontier"] as const).map((cat) => (
+                      <button
+                        key={cat}
+                        onClick={() => setGoalFilter(cat)}
+                        className={`px-3.5 py-1 rounded-full text-xs font-semibold transition-all ${
+                          goalFilter === cat
+                            ? "bg-white text-black shadow-sm"
+                            : "bg-surface border border-edge text-ink-muted hover:text-ink hover:border-edge-strong"
                         }`}
                       >
-                        {g.category}
-                      </span>
-                    </div>
+                        {cat}
+                      </button>
+                    ))}
+                  </div>
+                </div>
 
-                    <p className="text-xs text-slate-300 leading-snug font-medium">{g.tagline}</p>
-
-                    <div className="text-[11px] text-slate-400 bg-slate-950 p-2.5 rounded-lg border border-slate-800 space-y-1">
-                      <div>
-                        <strong className="text-slate-300">Problem:</strong> {g.problemSolved}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {filteredGoals.map((g) => (
+                    <div
+                      key={g.id}
+                      className="p-5 rounded-2xl bg-surface border border-edge hover:border-edge-strong transition-all space-y-3 shadow-sm"
+                    >
+                      <div className="flex items-center justify-between text-xs">
+                        <div className="flex items-center gap-2.5">
+                          <span className="w-6 h-6 rounded-full bg-accent-soft border border-accent/20 text-accent font-mono text-[11px] flex items-center justify-center font-bold">
+                            {g.id}
+                          </span>
+                          <span className="font-bold text-ink text-sm">{g.title}</span>
+                        </div>
+                        <span
+                          className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold tracking-wide uppercase ${
+                            g.category === "Core"
+                              ? "bg-accent-soft text-accent border border-accent/20"
+                              : g.category === "Growth"
+                              ? "bg-surface-elevated text-ink border border-edge"
+                              : "bg-surface-elevated text-ink-muted border border-edge"
+                          }`}
+                        >
+                          {g.category}
+                        </span>
                       </div>
-                      <div className="text-indigo-300">
-                        <strong className="text-slate-300">ARGUS:</strong> {g.argusCapability}
+
+                      <p className="text-xs text-ink-muted leading-relaxed font-medium">{g.tagline}</p>
+
+                      <div className="text-[11px] text-ink-subtle bg-surface-elevated p-3 rounded-xl border border-edge-soft space-y-1.5">
+                        <div>
+                          <strong className="text-ink">Problem:</strong> {g.problemSolved}
+                        </div>
+                        <div className="text-accent font-medium">
+                          <strong className="text-ink">ARGUS:</strong> {g.argusCapability}
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))}
-              </div>
-            </div>
+                  ))}
+                </div>
+              </section>
 
-            {/* The 12 Core Intelligence Engines */}
-            <div className="space-y-4 pt-4 border-t border-slate-800">
-              <h2 className="text-lg font-bold text-white flex items-center gap-2">
-                <Cpu className="w-5 h-5 text-purple-400" />
-                The 12 Core Intelligence Engines
-              </h2>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
-                {ARGUS_12_ENGINES.map((eng) => (
-                  <div key={eng.id} className="p-4 rounded-xl bg-slate-900 border border-slate-800 space-y-2">
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="font-mono text-[10px] text-purple-400 font-bold">Engine #{eng.number}</span>
-                      <span className="text-[10px] bg-slate-950 text-slate-400 px-2 py-0.5 rounded border border-slate-800">
-                        {eng.architectureTier.split("(")[0]}
-                      </span>
+              {/* The 12 Core Intelligence Engines */}
+              <section className="space-y-4 pt-4 border-t border-edge-soft">
+                <h2 className="text-lg font-bold text-ink flex items-center gap-2">
+                  <Cpu className="w-5 h-5 text-accent" />
+                  The 12 Core Intelligence Engines
+                </h2>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {ARGUS_12_ENGINES.map((eng) => (
+                    <div key={eng.id} className="p-4 rounded-2xl bg-surface border border-edge hover:border-edge-strong transition-all space-y-2.5 shadow-sm">
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="font-mono text-[10px] text-accent font-bold">Engine #{eng.number}</span>
+                        <span className="text-[10px] bg-surface-elevated text-ink-muted px-2 py-0.5 rounded-full border border-edge-soft">
+                          {eng.architectureTier.split("(")[0]}
+                        </span>
+                      </div>
+                      <h3 className="text-sm font-bold text-ink">{eng.name}</h3>
+                      <p className="text-xs text-ink-muted leading-relaxed">{eng.role}</p>
+                      <div className="text-[11px] text-ink-subtle pt-2 border-t border-edge-soft">
+                        <span className="text-accent font-semibold">Safeguard:</span> {eng.humanSafeguard}
+                      </div>
                     </div>
-                    <h3 className="text-sm font-bold text-white">{eng.name}</h3>
-                    <p className="text-xs text-slate-300 leading-snug">{eng.role}</p>
-                    <div className="text-[11px] text-slate-400 pt-1 border-t border-slate-800/80">
-                      <span className="text-emerald-400 font-semibold">Safeguard:</span> {eng.humanSafeguard}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
+                  ))}
+                </div>
+              </section>
 
-            {/* 4-Phase Roadmap */}
-            <div className="space-y-4 pt-4 border-t border-slate-800">
-              <h2 className="text-lg font-bold text-white flex items-center gap-2">
-                <Workflow className="w-5 h-5 text-emerald-400" />
-                4-Phase Evolution Roadmap
-              </h2>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                {ARGUS_ROADMAP.map((rm) => (
-                  <div key={rm.phase} className="p-4 rounded-xl bg-slate-900/90 border border-slate-800 space-y-2.5">
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="font-mono text-[10px] font-bold text-indigo-400">{rm.phase}</span>
-                      <span className="text-[10px] text-slate-500">{rm.timeframe}</span>
+              {/* 4-Phase Evolution Roadmap */}
+              <section className="space-y-4 pt-4 border-t border-edge-soft">
+                <h2 className="text-lg font-bold text-ink flex items-center gap-2">
+                  <Workflow className="w-5 h-5 text-accent" />
+                  4-Phase Evolution Roadmap
+                </h2>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                  {ARGUS_ROADMAP.map((rm) => (
+                    <div key={rm.phase} className="p-4 rounded-2xl bg-surface border border-edge hover:border-edge-strong transition-all space-y-2.5 shadow-sm">
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="font-mono text-[10px] font-bold text-accent">{rm.phase}</span>
+                        <span className="text-[10px] text-ink-subtle">{rm.timeframe}</span>
+                      </div>
+                      <h3 className="text-sm font-bold text-ink">{rm.name}</h3>
+                      <p className="text-[11px] text-ink-muted leading-relaxed">{rm.theme}</p>
+                      <ul className="space-y-1.5 text-[10px] text-ink-muted list-disc pl-3.5 pt-1">
+                        {rm.deliverables.map((d, i) => (
+                          <li key={i}>{d}</li>
+                        ))}
+                      </ul>
                     </div>
-                    <h3 className="text-sm font-bold text-white">{rm.name}</h3>
-                    <p className="text-[11px] text-slate-400 leading-snug">{rm.theme}</p>
-                    <ul className="space-y-1.5 text-[10px] text-slate-300 list-disc pl-3.5 pt-1">
-                      {rm.deliverables.map((d, i) => (
-                        <li key={i}>{d}</li>
-                      ))}
-                    </ul>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              </section>
+            </div>
+          )}
+
+          {/* OTHER SUB-MODULES */}
+          {activeTab === "accountability" && <AccountabilityModule />}
+          {activeTab === "trust" && <TrustModule />}
+          {activeTab === "community" && <CommunityTab profileId={activeProfile?.id ?? null} childProfile={!activeProfile || !!activeProfile.kid} active={active} />}
+          {activeTab === "now" && <NowModule />}
+          {activeTab === "evolution" && <EvolutionModule />}
+          {activeTab === "solver" && <SolverModule />}
+          {activeTab === "health" && <HealthModule />}
+          {activeTab === "equity" && <EquityModule />}
+          {activeTab === "mesh" && <MeshModule />}
+          {activeTab === "capability" && <CapabilityModule />}
+          {activeTab === "economics" && <EconomicsModule />}
+          {activeTab === "doctrine" && <DoctrineModule />}
+          {activeTab === "flourishing" && <FlourishingModule />}
+        </main>
+
+        {/* Footer */}
+        <footer className="mt-14 border-t border-edge-soft py-8 text-center text-xs text-ink-subtle">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
+            <p>ARGUS: The Human Flourishing Operating System · Open-source, private, and sovereignty-preserving.</p>
+            <div className="flex items-center gap-4 text-[11px]">
+              <span>Truth over comfort</span>
+              <span>Wisdom over stimulation</span>
+              <span>Capability over dependency</span>
             </div>
           </div>
-        )}
-
-        {/* OTHER SUB-MODULES */}
-        {activeTab === "accountability" && <AccountabilityModule />}
-        {activeTab === "trust" && <TrustModule />}
-        {activeTab === "community" && <CommunityTab profileId={activeProfile?.id ?? null} childProfile={!activeProfile || !!activeProfile.kid} active={active} />}
-        {activeTab === "now" && <NowModule />}
-        {activeTab === "evolution" && <EvolutionModule />}
-        {activeTab === "solver" && <SolverModule />}
-        {activeTab === "health" && <HealthModule />}
-        {activeTab === "equity" && <EquityModule />}
-        {activeTab === "mesh" && <MeshModule />}
-        {activeTab === "capability" && <CapabilityModule />}
-        {activeTab === "economics" && <EconomicsModule />}
-        {activeTab === "doctrine" && <DoctrineModule />}
-        {activeTab === "flourishing" && <FlourishingModule />}
-      </main>
-
-      {/* Footer */}
-      <footer className="border-t border-slate-800 py-6 text-center text-xs text-slate-500">
-        <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-3">
-          <p>ARGUS: The Human Flourishing Operating System · Open-source, private, and sovereignty-preserving.</p>
-          <div className="flex items-center gap-4 text-[11px]">
-            <span>Truth over comfort</span>
-            <span>Wisdom over stimulation</span>
-            <span>Capability over dependency</span>
-          </div>
-        </div>
-      </footer>
+        </footer>
+      </div>
     </div>
   );
 };

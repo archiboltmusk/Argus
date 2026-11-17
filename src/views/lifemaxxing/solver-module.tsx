@@ -32,7 +32,7 @@ export function UniversalSolverModule() {
   return (
     <div className="space-y-8 animate-in fade-in duration-300">
       {/* Hero Banner: Universal Problem Solver */}
-      <div className="rounded-2xl border border-white/10 bg-gradient-to-br from-slate-950/60 via-zinc-950/40 to-black/90 p-6 md:p-8 backdrop-blur-xl relative overflow-hidden shadow-2xl">
+      <div className="rounded-2xl border border-white/10 bg-gradient-to-br from-surface/60 via-zinc-950/40 to-black/90 p-6 md:p-8 backdrop-blur-xl relative overflow-hidden shadow-2xl">
         <div className="absolute -right-16 -top-16 h-64 w-64 rounded-full bg-indigo-500/10 blur-3xl pointer-events-none" />
         <div className="relative z-10 space-y-4">
           <div className="inline-flex items-center gap-2 rounded-full border border-indigo-400/30 bg-indigo-500/10 px-3.5 py-1 text-xs font-semibold tracking-wide text-indigo-300">

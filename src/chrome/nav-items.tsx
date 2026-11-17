@@ -265,7 +265,7 @@ const NAV_ITEMS_ALL: NavItem[] = [
   },
   {
     id: "argus-lab",
-    label: "Argus Lab",
+    label: "Argus Hub",
     render: (active) => <Compass size={25} strokeWidth={active ? 2.4 : 2} className={active ? "text-accent" : "opacity-75"} />,
     view: "argus-lab",
   },
