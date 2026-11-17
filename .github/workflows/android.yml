@@ -44,13 +44,30 @@ jobs:
         with:
           distribution: temurin
           java-version: "17"
-      # ubuntu-latest ships the Android SDK; only the NDK and build-tools pin are installed here.
+      # ubuntu-latest ships the Android SDK; only missing NDK/platforms/build-tools are installed here.
       - name: Install NDK
         run: |
           yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses >/dev/null || true
-          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --install "ndk;${NDK_VERSION}" "platforms;android-36" "platforms;android-37.0" "build-tools;35.0.0"
-          echo "ANDROID_NDK_HOME=$ANDROID_HOME/ndk/${NDK_VERSION}" >> "$GITHUB_ENV"
-          echo "NDK_HOME=$ANDROID_HOME/ndk/${NDK_VERSION}" >> "$GITHUB_ENV"
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --install "platforms;android-36" "platforms;android-35" "build-tools;35.0.0"
+          
+          # Detect preinstalled NDK or install pinned version
+          NDK_DIR=""
+          if [ -d "$ANDROID_HOME/ndk/${NDK_VERSION}" ]; then
+            NDK_DIR="$ANDROID_HOME/ndk/${NDK_VERSION}"
+          else
+            PREINSTALLED=$(ls -d "$ANDROID_HOME"/ndk/27.* "$ANDROID_HOME"/ndk/26.* 2>/dev/null | tail -n1 || true)
+            if [ -n "$PREINSTALLED" ] && [ -d "$PREINSTALLED" ]; then
+              echo "Using runner preinstalled NDK: $PREINSTALLED"
+              NDK_DIR="$PREINSTALLED"
+            else
+              echo "Installing NDK ${NDK_VERSION}..."
+              "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --install "ndk;${NDK_VERSION}"
+              NDK_DIR="$ANDROID_HOME/ndk/${NDK_VERSION}"
+            fi
+          fi
+          
+          echo "ANDROID_NDK_HOME=$NDK_DIR" >> "$GITHUB_ENV"
+          echo "NDK_HOME=$NDK_DIR" >> "$GITHUB_ENV"
       - uses: dtolnay/rust-toolchain@stable
         with:
           targets: aarch64-linux-android,armv7-linux-androideabi
