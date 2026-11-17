@@ -70,6 +70,12 @@ import { BTRMiniPlayerDock } from "@/components/education/btr-mini-player-dock";
 import { getFSRSSummary, reviewFSRSCard } from "@/lib/education/btr-fsrs-engine";
 import { CORE_BTR_BROADCASTS } from "@/lib/education/btr-broadcasts";
 import {
+  getBackendTests,
+  getQuestionsForTest,
+  getQuestionsForSubject,
+} from "@/lib/education/btr-backend-service";
+import type { ClinicalQuestion } from "@/lib/education/qbank-types";
+import {
   CORE_BTR_SUBJECTS,
   CORE_BTR_PHASES,
   CORE_BTR_SUPER_VOLATILES,
@@ -436,7 +442,7 @@ function InstagramIcon({ size = 14, className }: { size?: number; className?: st
 }
 
 interface CoreBTRWarRoomProps {
-  onStartQBankDrill?: (subjectName?: string) => void;
+  onStartQBankDrill?: (subjectName?: string, questions?: ClinicalQuestion[]) => void;
   onOpenNotes?: () => void;
   initialDestination?: BTRAppDestination;
   initialSubjectId?: string;
@@ -1861,7 +1867,14 @@ export function CoreBTRWarRoom({
                     <div className="flex items-center gap-1.5">
                       <button
                         type="button"
-                        onClick={() => setSelectedSubjectDetail(subj)}
+                        onClick={async () => {
+                          const qs = await getQuestionsForSubject(subj.name);
+                          if (qs.length > 0) {
+                            onStartQBankDrill?.(subj.name, qs);
+                          } else {
+                            setSelectedSubjectDetail(subj);
+                          }
+                        }}
                         className="flex items-center gap-1 rounded-lg bg-white/10 border border-edge px-2 py-1 text-[11px] font-bold text-ink-muted hover:bg-white/15 transition"
                       >
                         <span>QBank</span>
@@ -2339,7 +2352,14 @@ export function CoreBTRWarRoom({
 
             <button
               type="button"
-              onClick={() => onStartQBankDrill?.(test.title)}
+              onClick={async () => {
+                const qs = await getQuestionsForTest(test.id);
+                if (qs.length > 0) {
+                  onStartQBankDrill?.(test.title, qs);
+                } else {
+                  onStartQBankDrill?.(test.title);
+                }
+              }}
               className="flex-1 md:flex-none px-5 py-2 rounded-xl bg-white hover:bg-white/90 text-black font-semibold text-xs font-bold shadow-md shadow-black/30 transition flex items-center justify-center gap-1.5"
             >
               <Play size={12} fill="currentColor" />
@@ -2420,18 +2440,41 @@ export function CoreBTRWarRoom({
                 </p>
               </div>
 
-              <button
-                type="button"
-                onClick={() => {
-                  const fullPath = `/Users/anupam/Downloads/BTR/${cbt.filename}`;
-                  const url = resolveBTRPlayableUrl(fullPath);
-                  window.open(url, "_blank");
-                }}
-                className="flex items-center justify-center gap-2 rounded-xl bg-white hover:bg-white/90 text-black font-semibold py-2 px-4 text-xs font-bold shadow-md transition"
-              >
-                <Play size={12} fill="currentColor" />
-                <span>Launch Official CBT Exam Simulation</span>
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={async () => {
+                    const tests = await getBackendTests();
+                    const test = tests.find((t) => cbt.title.toLowerCase().includes(t.title.toLowerCase()) || t.title.toLowerCase().includes(cbt.title.toLowerCase()));
+                    if (test) {
+                      const qs = await getQuestionsForTest(test.id);
+                      if (qs.length > 0) {
+                        onStartQBankDrill?.(test.title, qs);
+                        return;
+                      }
+                    }
+                    onStartQBankDrill?.(cbt.title);
+                  }}
+                  className="flex-1 flex items-center justify-center gap-1.5 rounded-xl bg-white hover:bg-white/90 text-black font-semibold py-2 px-3 text-xs font-bold shadow-md transition"
+                >
+                  <Play size={12} fill="currentColor" />
+                  <span>Start in Argus</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    const fullPath = `/Users/anupam/Downloads/BTR/${cbt.filename}`;
+                    const url = resolveBTRPlayableUrl(fullPath);
+                    window.open(url, "_blank");
+                  }}
+                  className="flex items-center justify-center gap-1.5 rounded-xl bg-white/10 hover:bg-white/15 border border-edge text-white py-2 px-3 text-xs font-semibold transition"
+                  title="Launch original HTML standalone simulation"
+                >
+                  <ExternalLink size={12} />
+                  <span>HTML</span>
+                </button>
+              </div>
             </div>
           ))}
         </div>

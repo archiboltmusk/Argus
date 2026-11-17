@@ -59,6 +59,13 @@ import { QBankManager } from "./education/qbank-manager";
 import { PatientCaseSimulator } from "./education/patient-case-simulator";
 import { getAllQuestions, getInicetHighYieldQuestions } from "@/lib/education/qbank-store";
 import { CLINICAL_QBANK_STARTER } from "@/lib/education/qbank-data";
+import type { ClinicalQuestion } from "@/lib/education/qbank-types";
+import {
+  getBackendTests,
+  getQuestionsForTest,
+  getQuestionsForSubject,
+  saveExamResult,
+} from "@/lib/education/btr-backend-service";
 import {
   CURATED_COURSE_CHECKPOINTS,
   type LectureCheckpoint,
@@ -370,14 +377,49 @@ export function EducationView() {
     [settings.videoFeeds, update, openSettings],
   );
 
-  const startQBankDrill = useCallback((highYieldOnly = false) => {
-    if (highYieldOnly) {
+  const [activeTestId, setActiveTestId] = useState<string | undefined>(undefined);
+
+  const startQBankDrill = useCallback(async (testTitleOrSubject?: string | boolean, questionsOverride?: ClinicalQuestion[]) => {
+    if (questionsOverride && questionsOverride.length > 0) {
+      setActiveDrillQuestions(questionsOverride);
+      setActiveTestId(typeof testTitleOrSubject === "string" ? testTitleOrSubject : undefined);
+      setShowQBank(true);
+      return;
+    }
+    if (typeof testTitleOrSubject === "string" && testTitleOrSubject.trim()) {
+      try {
+        const tests = await getBackendTests();
+        const test = tests.find(
+          (t) => t.title.toLowerCase() === testTitleOrSubject.toLowerCase() || t.id === testTitleOrSubject
+        );
+        if (test) {
+          const qs = await getQuestionsForTest(test.id);
+          if (qs.length > 0) {
+            setActiveDrillQuestions(qs);
+            setActiveTestId(test.id);
+            setShowQBank(true);
+            return;
+          }
+        }
+        const subjQs = await getQuestionsForSubject(testTitleOrSubject);
+        if (subjQs.length > 0) {
+          setActiveDrillQuestions(subjQs);
+          setActiveTestId(undefined);
+          setShowQBank(true);
+          return;
+        }
+      } catch (err) {
+        console.warn("[education] Failed to load backend questions, falling back to starter pack", err);
+      }
+    }
+    if (testTitleOrSubject === true) {
       const highYield = getInicetHighYieldQuestions();
       setActiveDrillQuestions(highYield.length > 0 ? highYield : CLINICAL_QBANK_STARTER);
     } else {
       const allImported = getAllQuestions();
       setActiveDrillQuestions(allImported.length > 0 ? allImported : CLINICAL_QBANK_STARTER);
     }
+    setActiveTestId(undefined);
     setShowQBank(true);
   }, []);
 
@@ -560,8 +602,8 @@ export function EducationView() {
         {/* TAB: CORE BTR NEET-PG 2027 STRATEGIC WAR ROOM */}
         {tab === "btr" && (
           <CoreBTRWarRoom
-            onStartQBankDrill={() => {
-              startQBankDrill(true);
+            onStartQBankDrill={(target, questions) => {
+              startQBankDrill(target, questions);
             }}
             onOpenNotes={() => setTab("notes")}
             initialDestination={selectedBtrDestination}
@@ -1901,9 +1943,13 @@ export function EducationView() {
         <div className="fixed inset-0 z-[200] flex items-center justify-center bg-canvas/80 backdrop-blur-md p-4">
           <QBankRunner
             questions={activeDrillQuestions}
+            onFinish={(result) => {
+              saveExamResult(result, activeTestId);
+            }}
             onClose={() => {
               setShowQBank(false);
               setActiveDrillQuestions(undefined);
+              setActiveTestId(undefined);
             }}
           />
         </div>,
