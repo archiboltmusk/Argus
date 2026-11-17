@@ -73,6 +73,7 @@ export function useSubStyleApply(params: {
     settings.subShadowBlur,
     settings.subMarginX,
     settings.subAssStyleOverrides,
+    settings.letterboxSubtitleDodging,
   ]);
 
   useEffect(() => () => resetRtxVideoState(), [bridgeKey]);

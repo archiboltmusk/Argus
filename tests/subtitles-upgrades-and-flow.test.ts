@@ -245,3 +245,21 @@ test("TranscriptStore: manages live cues, search queries, and playback tracking"
 
   closeTranscriptDrawer();
 });
+
+test("Widescreen & Embedded Subtitle Positioning: places subtitles in bottom letterbox bar", async () => {
+  const { computeSubtitleLayout } = await import("../src/lib/subtitles/letterbox-subtitle-dodger");
+
+  // 2.39:1 movie (e.g. Tintin / blockbuster) on standard 16:9 display (1080p)
+  const layout = computeSubtitleLayout({
+    videoAspect: 2.39,
+    displayAspect: 1.777,
+    displayHeightPx: 1080,
+    isProjectorOrOled: false,
+  });
+
+  assert.equal(layout.placement, "bottom-letterbox");
+  assert.equal(layout.hasLetterbox, true);
+  // Total letterbox bar is ~138px tall. Subtitle offset percentage lands comfortably inside the bar:
+  assert.ok(layout.offsetYPercent >= 2 && layout.offsetYPercent <= 10);
+  assert.equal(layout.textColor, "#FFFFFF");
+});

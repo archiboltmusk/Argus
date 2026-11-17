@@ -89,6 +89,15 @@ export async function applySubStyle(
   const isShadow = s.subStyle === "shadow";
   const reposition = !context.assNativeActive || override !== "no";
   const hideSdh = s.subHideSdh === true && context.sdhFilterAllowed !== false;
+  const letterboxDodging = s.letterboxSubtitleDodging !== false;
+  const useMargins =
+    context.assNativeActive && override === "no"
+      ? "no"
+      : (letterboxDodging ? "yes" : assMargins);
+  const subPos = letterboxDodging ? 100 : (reposition ? clamp(100 - marginY, 0, 100) : 100);
+  const mpvMarginY = letterboxDodging
+    ? clamp(Math.round(marginY * 1.5), 8, 160)
+    : marginY;
   const props: Array<[string, unknown]> = [
     ["sub-filter-sdh", hideSdh],
     ["sub-filter-sdh-harder", false],
@@ -101,17 +110,18 @@ export async function applySubStyle(
     ["sub-back-color", isBox ? mpvColor(s.subBoxColor, boxOpacity * opacity) : "#00000000"],
     ["sub-shadow-color", mpvColor("#000000", opacity)],
     ["sub-shadow-offset", isShadow ? 1.4 : 0],
-    ["sub-margin-y", marginY],
+    ["sub-margin-y", mpvMarginY],
     ["sub-margin-x", clamp(Number(s.subMarginX ?? 25), 0, 200)],
     ["sub-blur", clamp(Number(s.subShadowBlur ?? 0), 0, 20)],
     ["sub-ass-style-overrides", (s.subAssStyleOverrides ?? "").replace(/[\r\n]+/g, ",").trim()],
     ["sub-align-x", s.subAlignX],
     ["sub-ass-override", effOverride],
     ["sub-ass-force-margins", assMargins],
-    ["sub-use-margins", assMargins],
+    ["sub-use-margins", useMargins],
+    ["image-subs-video-resolution", letterboxDodging ? "no" : "yes"],
     ["sub-spacing", s.subLineSpacing],
     ["sub-bold", s.subBold ? "yes" : "no"],
-    ["sub-pos", reposition ? clamp(100 - marginY, 0, 100) : 100],
+    ["sub-pos", subPos],
   ];
   await Promise.all(
     props.map(([name, value]) =>

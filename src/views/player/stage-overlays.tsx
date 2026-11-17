@@ -81,6 +81,8 @@ export const StageOverlays = memo(function StageOverlays({
             scale={pipMode ? 0.45 : 1}
             secondaryText={snap.secondarySubText}
             elevateForHud={chromeVisible}
+            videoWidth={snap.videoWidth}
+            videoHeight={snap.videoHeight}
           />
         )}
       {showStats && !pipMode && <StatsOverlay snap={snap} engine={engine} />}
