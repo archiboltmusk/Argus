@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   X,
   Play,
@@ -10,6 +10,8 @@ import {
   Check,
   BookOpen,
   Maximize2,
+  Zap,
+  Loader2,
 } from "lucide-react";
 import {
   CORE_BTR_OFFICIAL_CHANNEL,
@@ -17,6 +19,7 @@ import {
   type BTRBroadcastVideo,
 } from "@/lib/education/btr-broadcasts";
 import { buildYouTubeEmbedUrl } from "@/lib/education/btr-youtube-bridge";
+import { fetchTrailer, trailerSrc } from "@/lib/trailer";
 
 interface BTRBroadcastsModalProps {
   open: boolean;
@@ -32,6 +35,13 @@ export function BTRBroadcastsModal({
   const [activeVideo, setActiveVideo] = useState<BTRBroadcastVideo>(CORE_BTR_BROADCASTS[0]);
   const [activeFilter, setActiveFilter] = useState<string>("ALL");
   const [copiedPearl, setCopiedPearl] = useState<string | null>(null);
+  const [nativeSrc, setNativeSrc] = useState<string | null>(null);
+  const [isExtracting, setIsExtracting] = useState<boolean>(false);
+
+  useEffect(() => {
+    setNativeSrc(null);
+    setIsExtracting(false);
+  }, [activeVideo.youtubeId]);
 
   if (!open) return null;
 
@@ -45,6 +55,20 @@ export function BTRBroadcastsModal({
     navigator.clipboard?.writeText(text);
     setCopiedPearl(text);
     setTimeout(() => setCopiedPearl(null), 2000);
+  };
+
+  const startNativeStream = async (youtubeId: string) => {
+    setIsExtracting(true);
+    try {
+      const info = await fetchTrailer(youtubeId, "720p");
+      if (info) {
+        setNativeSrc(trailerSrc(info));
+      }
+    } catch {
+      // Fallback remains in embed mode
+    } finally {
+      setIsExtracting(false);
+    }
   };
 
   return (
@@ -100,19 +124,57 @@ export function BTRBroadcastsModal({
         <div className="flex-1 flex flex-col lg:flex-row overflow-hidden">
           {/* LEFT: Player & Key Points (60%) */}
           <div className="w-full lg:w-[60%] flex flex-col border-b lg:border-b-0 lg:border-r border-edge bg-black/60 overflow-y-auto p-4 sm:p-5 gap-4">
-            {/* Embed Frame with Error 153 mitigation & Popout Theater mode */}
+            {/* Embed Frame with Error 153 mitigation & Native HD Playback */}
             <div className="relative aspect-video w-full rounded-2xl overflow-hidden bg-black border border-edge-soft shadow-lg group">
-              <iframe
-                key={activeVideo.youtubeId}
-                title={activeVideo.title}
-                src={buildYouTubeEmbedUrl(activeVideo.youtubeId, { autoplay: false, enableJsApi: false })}
-                className="w-full h-full border-none"
-                referrerPolicy="no-referrer-when-downgrade"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                allowFullScreen
-              />
-              {/* Quick Watch on YouTube & Popout Window Controls */}
+              {nativeSrc ? (
+                <div className="relative w-full h-full bg-black flex items-center justify-center">
+                  <video
+                    src={nativeSrc}
+                    controls
+                    autoPlay
+                    className="w-full h-full object-contain"
+                  />
+                </div>
+              ) : isExtracting ? (
+                <div className="relative w-full h-full bg-black flex flex-col items-center justify-center gap-3 text-white">
+                  <Loader2 size={32} className="animate-spin text-accent" />
+                  <span className="text-xs font-medium text-white/80">
+                    Extracting High-Definition Stream via Argus Engine...
+                  </span>
+                </div>
+              ) : (
+                <iframe
+                  key={activeVideo.youtubeId}
+                  title={activeVideo.title}
+                  src={buildYouTubeEmbedUrl(activeVideo.youtubeId, { autoplay: false, enableJsApi: false })}
+                  className="w-full h-full border-none"
+                  referrerPolicy="strict-origin-when-cross-origin"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                  allowFullScreen
+                />
+              )}
+
+              {/* Quick Watch Controls: Native HD, Popout Window & YouTube */}
               <div className="absolute top-3 right-3 z-20 flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (nativeSrc) {
+                      setNativeSrc(null);
+                    } else {
+                      void startNativeStream(activeVideo.youtubeId);
+                    }
+                  }}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-bold text-xs backdrop-blur-md border transition shadow-lg opacity-90 hover:opacity-100 ${
+                    nativeSrc
+                      ? "bg-accent text-white border-accent/40"
+                      : "bg-black/85 hover:bg-black text-amber-300 border-amber-400/30"
+                  }`}
+                  title="Stream directly with zero restrictions using the Argus native engine"
+                >
+                  <Zap size={12} className={nativeSrc ? "fill-current" : "text-amber-400"} />
+                  <span>{nativeSrc ? "Embed Mode" : "Native HD"}</span>
+                </button>
                 <button
                   type="button"
                   onClick={() => {
@@ -141,11 +203,39 @@ export function BTRBroadcastsModal({
                 </a>
               </div>
 
-              {/* In-player smart fallback hint */}
-              <div className="absolute bottom-2 left-3 right-3 z-10 flex items-center justify-between text-[11px] text-white/70 bg-black/60 backdrop-blur-xs px-3 py-1 rounded-lg pointer-events-none opacity-0 group-hover:opacity-100 transition">
-                <span>Video not playing? Click Popout Player above to watch.</span>
-                <span className="font-mono text-[10px] text-accent">HD Video</span>
-              </div>
+              {/* In-player smart fallback hint with Error 153 quick resolution */}
+              {!nativeSrc && !isExtracting && (
+                <div className="absolute bottom-2 left-3 right-3 z-10 flex items-center justify-between text-[11px] text-white/90 bg-black/80 backdrop-blur-md px-3 py-1.5 rounded-xl border border-white/10 shadow-lg">
+                  <span className="flex items-center gap-1.5">
+                    <span className="h-1.5 w-1.5 rounded-full bg-amber-400 animate-pulse" />
+                    <span>Seeing Error 153?</span>
+                  </span>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => void startNativeStream(activeVideo.youtubeId)}
+                      className="font-bold text-accent hover:underline flex items-center gap-1 cursor-pointer"
+                    >
+                      <Zap size={11} /> Stream in Native HD
+                    </button>
+                    <span className="text-white/30">•</span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const popout = window.open(
+                          `https://www.youtube.com/watch?v=${activeVideo.youtubeId}`,
+                          "_blank",
+                          "width=1000,height=560,menubar=no,toolbar=no,location=no,status=no"
+                        );
+                        popout?.focus();
+                      }}
+                      className="text-white/70 hover:text-white hover:underline cursor-pointer"
+                    >
+                      Popout
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Video Meta */}

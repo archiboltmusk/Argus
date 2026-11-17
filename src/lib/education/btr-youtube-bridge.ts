@@ -107,7 +107,7 @@ export function extractYouTubeTimestamp(urlStr: string): number {
 }
 
 /**
- * Builds a privacy-preserving YouTube embed URL with options
+ * Builds a reliable, zero-config YouTube embed URL with Error 153 mitigation
  */
 export function buildYouTubeEmbedUrl(
   videoId: string,
@@ -116,12 +116,14 @@ export function buildYouTubeEmbedUrl(
     autoplay?: boolean;
     modestBranding?: boolean;
     enableJsApi?: boolean;
+    useNoCookie?: boolean;
   } = {}
 ): string {
   const {
     startSec = 0,
     autoplay = true,
     enableJsApi = false,
+    useNoCookie = false,
   } = options;
 
   const params = new URLSearchParams();
@@ -129,22 +131,30 @@ export function buildYouTubeEmbedUrl(
   if (startSec > 0) params.set("start", Math.floor(startSec).toString());
   params.set("rel", "0");
   params.set("playsinline", "1");
+  params.set("iv_load_policy", "3");
+  params.set("modestbranding", "1");
 
   // YouTube Error 153 mitigation:
-  // Passing enablejsapi=1 without a valid HTTP/S origin or with mismatched referrers
-  // triggers YouTube Error 153 ("Video player configuration error").
-  // youtube-nocookie.com + explicit origin bypasses cross-cookie restrictions.
+  // Desktop WebViews (Tauri/WebKit/Blink) operating under custom schemes (tauri://, app://)
+  // or stripped referrers trigger YouTube Error 153 ("Video player configuration error").
+  // Passing widget_referrer and standard origin resolves player config bootstrap.
+  params.set("widget_referrer", "https://www.youtube.com");
   if (typeof window !== "undefined" && window.location.origin) {
     const origin = window.location.origin;
     if (origin.startsWith("http://") || origin.startsWith("https://")) {
+      params.set("origin", origin);
       if (enableJsApi) {
         params.set("enablejsapi", "1");
-        params.set("origin", origin);
       }
+    } else {
+      params.set("origin", "https://www.youtube.com");
     }
+  } else {
+    params.set("origin", "https://www.youtube.com");
   }
 
-  return `https://www.youtube-nocookie.com/embed/${videoId}?${params.toString()}`;
+  const domain = useNoCookie ? "www.youtube-nocookie.com" : "www.youtube.com";
+  return `https://${domain}/embed/${videoId}?${params.toString()}`;
 }
 
 /**

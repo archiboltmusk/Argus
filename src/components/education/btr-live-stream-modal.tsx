@@ -108,7 +108,7 @@ export function BTRLiveStreamModal({
             title={session.title}
             src={embedUrl}
             className="w-full h-full border-none"
-            referrerPolicy="no-referrer-when-downgrade"
+            referrerPolicy="strict-origin-when-cross-origin"
             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
             allowFullScreen
           />

@@ -7,7 +7,15 @@ import type { SkipSegment } from "./types";
 export async function fetchSponsorBlockSegments(videoId: string): Promise<SkipSegment[]> {
   if (!videoId || videoId.length < 5) return [];
 
-  const url = `https://sponsor.ajay.app/api/skipSegments?videoID=${encodeURIComponent(videoId)}&categories=["sponsor","selfpromo","interaction"]`;
+  const categories = JSON.stringify([
+    "sponsor",
+    "selfpromo",
+    "interaction",
+    "intro",
+    "outro",
+    "preview",
+  ]);
+  const url = `https://sponsor.ajay.app/api/skipSegments?videoID=${encodeURIComponent(videoId)}&categories=${encodeURIComponent(categories)}`;
 
   try {
     const res = await fetch(url, {
@@ -40,8 +48,13 @@ export async function fetchSponsorBlockSegments(videoId: string): Promise<SkipSe
       if (typeof startSec !== "number" || typeof endSec !== "number") continue;
       if (endSec <= startSec) continue;
 
+      let kind: "intro" | "outro" | "recap" | "ad" = "ad";
+      if (item.category === "intro") kind = "intro";
+      else if (item.category === "outro") kind = "outro";
+      else if (item.category === "preview") kind = "recap";
+
       segments.push({
-        kind: "ad", // Map sponsor & self-promo to standard ad-skip handler
+        kind,
         startSec,
         endSec,
         source: "adcorpus",

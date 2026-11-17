@@ -528,7 +528,7 @@ export function BTRSplitWorkstation({
                     startSec: currentTime,
                     autoplay: true,
                   })}
-                  referrerPolicy="no-referrer-when-downgrade"
+                  referrerPolicy="strict-origin-when-cross-origin"
                   className="w-full h-full border-none"
                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                   allowFullScreen

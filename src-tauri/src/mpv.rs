@@ -494,6 +494,19 @@ fn apply_pre_init(
     let is_live = args.is_live.unwrap_or(false);
     let is_ytdl_target = args.url.contains("youtube.com") || args.url.contains("youtu.be");
     set("ytdl", if is_live || is_ytdl_target { "yes" } else { "no" });
+    if is_ytdl_target {
+        // Hardware-accelerated codec preference: H.264 (avc1) / 1080p + AAC/Opus to prevent VP9 software drops
+        set(
+            "ytdl-format",
+            "bestvideo[height<=1080][ext=mp4][vcodec^=avc1]+bestaudio[ext=m4a]/bestvideo[height<=1080]+bestaudio/best[height<=1080]/best",
+        );
+        // DVR back-buffer: allow rewind and prevent buffering stalls
+        set("demuxer-max-bytes", "150MiB");
+        set("demuxer-max-back-bytes", "100MiB");
+    } else if is_live {
+        set("demuxer-max-bytes", "100MiB");
+        set("demuxer-max-back-bytes", "50MiB");
+    }
     let mut user_agent = "VLC/3.0.20 LibVLC/3.0.20".to_string();
     let mut header_fields: Vec<String> = Vec::new();
     if let Some(headers) = &args.headers {
