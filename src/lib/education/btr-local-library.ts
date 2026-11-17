@@ -6,6 +6,7 @@
  */
 
 import type { PlayerSrc } from "@/lib/view";
+import { convertFileSrc, isTauri } from "@tauri-apps/api/core";
 import { CORE_BTR_SUBJECTS, type BTRSubject } from "./corebtr-schedule";
 import { USER_LOCAL_BTR_MANIFEST } from "./btr-library-manifest";
 
@@ -353,17 +354,24 @@ export function resolveBTRPlayableUrl(
 
   const cleanPath = fullPath.replace(/^file:\/\//, "");
 
-  if (
-    typeof window !== "undefined" &&
-    ("__TAURI_INTERNALS__" in window || "__TAURI__" in window)
-  ) {
+  if (typeof window !== "undefined") {
     try {
-      // eslint-disable-next-line @typescript-eslint/no-require-imports
-      const { convertFileSrc } = require("@tauri-apps/api/core");
-      if (typeof convertFileSrc === "function") {
+      if (isTauri()) {
         return convertFileSrc(cleanPath);
       }
-    } catch {}
+      const tauriInternals = (
+        window as unknown as {
+          __TAURI_INTERNALS__?: {
+            convertFileSrc?: (path: string, protocol?: string) => string;
+          };
+        }
+      ).__TAURI_INTERNALS__;
+      if (typeof tauriInternals?.convertFileSrc === "function") {
+        return tauriInternals.convertFileSrc(cleanPath);
+      }
+    } catch {
+      // Fall through to cleanPath if convertFileSrc is unavailable
+    }
   }
 
   return cleanPath;

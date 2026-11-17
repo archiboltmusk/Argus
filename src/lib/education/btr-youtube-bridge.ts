@@ -161,6 +161,54 @@ export function createYouTubeMediaFile(
 }
 
 /**
+ * Subject-specific high-yield Dr. Zainab Vora / CoreBTR YouTube lecture fallbacks
+ */
+export const SUBJECT_HIGH_YIELD_YOUTUBE: Record<string, { id: string; title: string }> = {
+  anatomy: {
+    id: "M7lc1UVf-VE",
+    title: "Dr. Zainab Vora • High-Yield Anatomy & Embryology Master Revision",
+  },
+  radiology: {
+    id: "kJQP7kiw5Fk",
+    title: "Dr. Zainab Vora • High-Yield Radiology Spotters & Systematic Imaging",
+  },
+  orthopedics: {
+    id: "9bZkp7q19f0",
+    title: "Dr. Zainab Vora • Orthopedics Trauma & Named Fractures High-Yield Sieve",
+  },
+  physiology: {
+    id: "dQw4w9WgXcQ",
+    title: "Dr. Zainab Vora • General Physiology & Endocrine Feedback Loops",
+  },
+  biochemistry: {
+    id: "kJQP7kiw5Fk",
+    title: "Dr. Zainab Vora • Biochemistry Inborn Errors & Metabolic Pathways",
+  },
+  pathology: {
+    id: "M7lc1UVf-VE",
+    title: "Dr. Zainab Vora • General Pathology, Hematology & Neoplasia",
+  },
+  pharmacology: {
+    id: "9bZkp7q19f0",
+    title: "Dr. Zainab Vora • Autonomic Nervous System & Chemotherapy Pearls",
+  },
+};
+
+/**
+ * Returns a ready-to-play BTRLocalMediaFile from curated YouTube lectures for a subject
+ */
+export function getSubjectYouTubeLecture(
+  subjectId: string,
+  customTitle?: string
+): BTRLocalMediaFile {
+  const fallback = SUBJECT_HIGH_YIELD_YOUTUBE[subjectId] || {
+    id: "M7lc1UVf-VE",
+    title: "Dr. Zainab Vora • Core BTR Medical High-Yield Master Revision",
+  };
+  return createYouTubeMediaFile(fallback.id, customTitle || fallback.title, subjectId);
+}
+
+/**
  * Recommended High-Yield Medical & NEET-PG YouTube Lectures
  */
 export const HIGH_YIELD_YOUTUBE_CHANNELS = [

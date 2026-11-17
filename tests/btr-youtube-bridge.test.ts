@@ -5,6 +5,7 @@ import {
   extractYouTubeTimestamp,
   buildYouTubeEmbedUrl,
   createYouTubeMediaFile,
+  getSubjectYouTubeLecture,
   HIGH_YIELD_YOUTUBE_CHANNELS,
 } from "../src/lib/education/btr-youtube-bridge";
 
@@ -98,5 +99,15 @@ describe("BTR YouTube Bridge & Medical Lecture Suite", () => {
     const zainabChannel = HIGH_YIELD_YOUTUBE_CHANNELS.find((c) => c.handle === "@corebtrbyzainabvora");
     assert.ok(zainabChannel, "Dr. Zainab official channel must be registered");
     assert.ok(zainabChannel.rssFeed.includes("feeds/videos.xml"), "Must provide valid RSS feed endpoint");
+  });
+
+  it("resolves curated subject YouTube lectures gracefully", () => {
+    const anatLecture = getSubjectYouTubeLecture("anatomy");
+    assert.ok(anatLecture.fullPath.includes("youtube.com"));
+    assert.equal(anatLecture.matchedSubjectId, "anatomy");
+    assert.ok(anatLecture.title.includes("Anatomy"));
+
+    const unknownLecture = getSubjectYouTubeLecture("non_existent_subject");
+    assert.ok(unknownLecture.fullPath.includes("youtube.com"));
   });
 });

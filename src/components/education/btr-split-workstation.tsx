@@ -20,6 +20,10 @@ import {
   CheckCircle2,
   Video,
   Link,
+  Search,
+  FolderOpen,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 import { getChaptersForVideo, type BTRLectureChapter } from "@/lib/education/btr-chapters-engine";
 import {
@@ -31,7 +35,11 @@ import {
   extractYouTubeId,
   buildYouTubeEmbedUrl,
   createYouTubeMediaFile,
+  getSubjectYouTubeLecture,
 } from "@/lib/education/btr-youtube-bridge";
+import {
+  getDigitalNotesForSubject,
+} from "@/lib/education/btr-digital-notes";
 import { CORE_BTR_BROADCASTS } from "@/lib/education/btr-broadcasts";
 import type { BTRSubject } from "@/lib/education/corebtr-schedule";
 import { useView } from "@/lib/view";
@@ -93,10 +101,39 @@ export function BTRSplitWorkstation({
   const [isLoopActive, setIsLoopActive] = useState(false);
 
   // PDF pane state
-  const [pdfMode, setPdfMode] = useState<"unannotated" | "annotated">(
-    unannotatedPdf ? "unannotated" : "annotated"
+  const [pdfMode, setPdfMode] = useState<"unannotated" | "annotated" | "digital_summary">(
+    annotatedPdf ? "annotated" : unannotatedPdf ? "unannotated" : "digital_summary"
   );
   const [pdfPage, setPdfPage] = useState<number>(1);
+  const [customAnnotatedBlob, setCustomAnnotatedBlob] = useState<string | null>(null);
+  const [customUnannotatedBlob, setCustomUnannotatedBlob] = useState<string | null>(null);
+  const [pdfLoadError, setPdfLoadError] = useState(false);
+  const directPdfInputRef = useRef<HTMLInputElement | null>(null);
+
+  // Digital Notes Reader State
+  const [notesSearchQuery, setNotesSearchQuery] = useState("");
+  const [revealedClozeIds, setRevealedClozeIds] = useState<Set<string>>(new Set());
+  const [activeNoteCategory, setActiveNoteCategory] = useState<string>("All");
+
+  const digitalNotes = useMemo(() => {
+    return getDigitalNotesForSubject(subject.id);
+  }, [subject.id]);
+
+  const filteredNotes = useMemo(() => {
+    return digitalNotes.filter((sec) => {
+      const matchesCat = activeNoteCategory === "All" || sec.category === activeNoteCategory;
+      if (!matchesCat) return false;
+      if (!notesSearchQuery.trim()) return true;
+      const q = notesSearchQuery.toLowerCase();
+      return (
+        sec.title.toLowerCase().includes(q) ||
+        sec.summary.toLowerCase().includes(q) ||
+        sec.pearls.some((p) => p.toLowerCase().includes(q)) ||
+        Boolean(sec.table?.rows.some((row) => row.some((c) => c.toLowerCase().includes(q))))
+      );
+    });
+  }, [digitalNotes, activeNoteCategory, notesSearchQuery]);
+
   const [quickScratchpad, setQuickScratchpad] = useState<string>("");
   const [savedScratchpad, setSavedScratchpad] = useState(false);
 
@@ -224,12 +261,49 @@ export function BTRSplitWorkstation({
     return resolveBTRPlayableUrl(activeVideo.fullPath, activeVideo.blobUrl);
   }, [activeVideo]);
 
-  // PDF URL resolution with convertFileSrc
+  // PDF URL resolution with convertFileSrc and blob fallback
   const activePdf = pdfMode === "unannotated" ? unannotatedPdf : annotatedPdf;
+  const activeCustomBlob = pdfMode === "unannotated" ? customUnannotatedBlob : customAnnotatedBlob;
   const pdfUrl = useMemo(() => {
+    if (activeCustomBlob) return activeCustomBlob;
     if (!activePdf) return null;
-    return resolveBTRPlayableUrl(activePdf.fullPath);
-  }, [activePdf]);
+    return resolveBTRPlayableUrl(activePdf.fullPath, activePdf.blobUrl);
+  }, [activeCustomBlob, activePdf]);
+
+  // Direct PDF file picker handler
+  const handleDirectPdfSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const blobUrl = URL.createObjectURL(file);
+    if (pdfMode === "unannotated") {
+      setCustomUnannotatedBlob(blobUrl);
+    } else {
+      setCustomAnnotatedBlob(blobUrl);
+    }
+    setPdfLoadError(false);
+  };
+
+  // Open PDF in Native macOS Viewer / Preview
+  const handleOpenPdfInSystemViewer = async () => {
+    const targetPath = activePdf?.fullPath?.replace(/^file:\/\//, "");
+    if (!targetPath) return;
+    try {
+      const { openPath } = await import("@tauri-apps/plugin-opener");
+      await openPath(targetPath);
+    } catch (e) {
+      console.warn("Failed to open PDF in system viewer:", e);
+      if (pdfUrl) {
+        window.open(pdfUrl, "_blank");
+      }
+    }
+  };
+
+  // Instant switch to high-yield YouTube lecture when local video is unplayable
+  const handleStreamSubjectYouTube = () => {
+    const ytVideo = getSubjectYouTubeLecture(subject.id);
+    setActiveVideo(ytVideo);
+    setVideoError(false);
+  };
 
   // Direct file picker handler for instant webview playback
   const handleDirectFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -261,12 +335,21 @@ export function BTRSplitWorkstation({
           : "fixed inset-0 z-[250] flex flex-col bg-canvas text-ink animate-in fade-in duration-150"
       }
     >
-      {/* Hidden direct file input */}
+      {/* Hidden direct file input for video */}
       <input
         type="file"
         ref={directFileInputRef}
         accept="video/*"
         onChange={handleDirectFileSelect}
+        className="hidden"
+      />
+
+      {/* Hidden direct file input for PDF workbook */}
+      <input
+        type="file"
+        ref={directPdfInputRef}
+        accept="application/pdf"
+        onChange={handleDirectPdfSelect}
         className="hidden"
       />
 
@@ -375,21 +458,22 @@ export function BTRSplitWorkstation({
                 )}
               </div>
             ) : videoError ? (
-              <div className="flex flex-col items-center justify-center gap-4 p-8 text-center max-w-md">
+              <div className="flex flex-col items-center justify-center gap-4 p-8 text-center max-w-lg">
                 <div className="flex h-16 w-16 items-center justify-center rounded-3xl bg-amber-500/15 border border-amber-500/30 text-amber-400">
                   <AlertTriangle size={32} />
                 </div>
                 <div>
                   <h3 className="text-base font-bold text-ink">Video Decoder Mismatch</h3>
                   <p className="text-xs text-ink-muted mt-1.5 leading-relaxed">
-                    This video format (MKV, 10-bit HEVC, or sandboxed disk path) is not supported by standard webview HTML5 decoders.
+                    This video format (MKV, 10-bit HEVC, or sandboxed disk path) is not supported by standard webview HTML5 decoders. Select a playback option below:
                   </p>
                 </div>
-                <div className="flex flex-col sm:flex-row items-center gap-2.5 w-full">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 w-full">
                   <button
                     type="button"
                     onClick={handleLaunchNativePlayer}
-                    className="w-full flex items-center justify-center gap-1.5 rounded-xl bg-accent px-3 py-2 text-xs font-bold text-white shadow-md hover:brightness-110 transition"
+                    className="w-full flex items-center justify-center gap-1.5 rounded-xl bg-accent px-3 py-2.5 text-xs font-bold text-white shadow-md hover:brightness-110 transition"
+                    title="Play with zero-lag hardware decoding via Argus MPV engine"
                   >
                     <ExternalLink size={13} />
                     <span>Native MPV</span>
@@ -397,20 +481,29 @@ export function BTRSplitWorkstation({
                   <button
                     type="button"
                     onClick={() => directFileInputRef.current?.click()}
-                    className="w-full flex items-center justify-center gap-1.5 rounded-xl bg-elevated border border-edge-soft px-3 py-2 text-xs font-bold text-ink hover:bg-raised transition"
+                    className="w-full flex items-center justify-center gap-1.5 rounded-xl bg-elevated border border-edge-soft px-3 py-2.5 text-xs font-bold text-ink hover:bg-raised transition"
+                    title="Pick video from disk for immediate in-webview playback"
                   >
                     <Upload size={13} />
-                    <span>Local File</span>
+                    <span>Pick File</span>
                   </button>
                   <button
                     type="button"
-                    onClick={() => setShowYouTubeModal(true)}
-                    className="w-full flex items-center justify-center gap-1.5 rounded-xl bg-red-600/20 border border-red-500/40 px-3 py-2 text-xs font-bold text-red-300 hover:bg-red-600/30 transition"
+                    onClick={handleStreamSubjectYouTube}
+                    className="w-full flex items-center justify-center gap-1.5 rounded-xl bg-red-600/25 border border-red-500/50 px-3 py-2.5 text-xs font-bold text-red-200 hover:bg-red-600/40 transition shadow-sm"
+                    title={`Stream Dr. Zainab Vora high-yield ${subject.name} lecture`}
                   >
                     <Video size={13} />
-                    <span>YouTube</span>
+                    <span>Stream YouTube</span>
                   </button>
                 </div>
+                <button
+                  type="button"
+                  onClick={() => setShowYouTubeModal(true)}
+                  className="text-[11px] text-ink-muted hover:text-ink underline transition mt-1"
+                >
+                  Or paste a custom YouTube link or video ID
+                </button>
               </div>
             ) : activeYouTubeId ? (
               <div className="relative w-full h-full flex flex-col items-center justify-center bg-black">
@@ -750,89 +843,323 @@ export function BTRSplitWorkstation({
 
         {/* RIGHT PANE: Synced PDF Workbook & Scratchpad (45%) */}
         <div className="w-full lg:w-[45%] flex flex-col bg-surface overflow-hidden">
-          {/* PDF Toolbar */}
-          <div className="h-12 border-b border-edge px-4 flex items-center justify-between gap-3 bg-surface/90">
-            {/* Unannotated vs Annotated Toggle */}
+          {/* PDF & Digital Notes Toolbar */}
+          <div className="h-12 border-b border-edge px-3 sm:px-4 flex items-center justify-between gap-2 bg-surface/90">
+            {/* Unannotated vs Annotated vs Digital Notes Toggle */}
             <div className="flex items-center gap-1 rounded-xl bg-elevated border border-edge-soft p-1">
               <button
                 type="button"
-                onClick={() => setPdfMode("unannotated")}
-                disabled={!unannotatedPdf}
-                className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold transition ${
+                onClick={() => {
+                  setPdfMode("unannotated");
+                  setPdfLoadError(false);
+                }}
+                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold transition ${
                   pdfMode === "unannotated"
                     ? "bg-accent text-white shadow-xs"
-                    : unannotatedPdf
+                    : unannotatedPdf || customUnannotatedBlob
                     ? "text-ink-muted hover:text-ink"
-                    : "opacity-40 cursor-not-allowed text-ink-muted"
+                    : "opacity-60 text-ink-muted"
                 }`}
+                title="Unannotated active recall workbook"
               >
                 <BookOpen size={12} />
-                <span>Unannotated Workbook</span>
+                <span className="hidden sm:inline">Workbook</span>
               </button>
 
               <button
                 type="button"
-                onClick={() => setPdfMode("annotated")}
-                disabled={!annotatedPdf}
-                className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold transition ${
+                onClick={() => {
+                  setPdfMode("annotated");
+                  setPdfLoadError(false);
+                }}
+                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold transition ${
                   pdfMode === "annotated"
                     ? "bg-blue-600 text-white shadow-xs"
-                    : annotatedPdf
+                    : annotatedPdf || customAnnotatedBlob
                     ? "text-ink-muted hover:text-ink"
-                    : "opacity-40 cursor-not-allowed text-ink-muted"
+                    : "opacity-60 text-ink-muted"
                 }`}
+                title="Dr. Zainab Vora Annotated Solutions"
               >
                 <FileText size={12} />
-                <span>Annotated Master</span>
+                <span>Annotated</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setPdfMode("digital_summary")}
+                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold transition ${
+                  pdfMode === "digital_summary"
+                    ? "bg-purple-600 text-white shadow-xs"
+                    : "text-ink-muted hover:text-ink"
+                }`}
+                title="Offline High-Yield Digital Summary & Tables"
+              >
+                <Sparkles size={12} />
+                <span>Digital Notes</span>
               </button>
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5 sm:gap-2">
+              <button
+                type="button"
+                onClick={() => directPdfInputRef.current?.click()}
+                className="flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-semibold bg-elevated border border-edge-soft text-ink-muted hover:text-ink hover:bg-raised transition"
+                title="Pick local PDF file directly from disk"
+              >
+                <FolderOpen size={12} />
+                <span className="hidden md:inline">Pick PDF</span>
+              </button>
+
+              {activePdf?.fullPath && (
+                <button
+                  type="button"
+                  onClick={handleOpenPdfInSystemViewer}
+                  className="hidden sm:flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-semibold bg-elevated border border-edge-soft text-ink-muted hover:text-ink hover:bg-raised transition"
+                  title="Open PDF in macOS Preview app"
+                >
+                  <ExternalLink size={12} />
+                  <span>Preview</span>
+                </button>
+              )}
+
               <button
                 type="button"
                 onClick={() => setIsMarkupEnabled(!isMarkupEnabled)}
-                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold transition ${
+                className={`flex items-center gap-1.5 px-2 py-1 rounded-lg text-xs font-bold transition ${
                   isMarkupEnabled
                     ? "bg-white text-black font-semibold shadow-xs"
                     : "bg-elevated border border-edge-soft text-ink-muted hover:text-ink"
                 }`}
-                title="Fill in blanks directly over workbook"
+                title="Fill in blanks or highlight directly"
               >
                 <PenTool size={12} />
-                <span>{isMarkupEnabled ? "Markup (ON)" : "Fill Blanks"}</span>
+                <span className="hidden sm:inline">{isMarkupEnabled ? "Markup ON" : "Markup"}</span>
               </button>
-
-              {/* Quick Master Peek indicator */}
-              <span className="text-[11px] text-ink-muted hidden sm:inline">
-                {pdfMode === "unannotated"
-                  ? "Active Recall Mode"
-                  : "Dr. Zainab Vora Solutions"}
-              </span>
             </div>
           </div>
 
-          {/* PDF Frame / Content */}
-          <div className="flex-1 bg-elevated/40 relative overflow-hidden flex flex-col">
-            {pdfUrl ? (
-              <>
+          {/* PDF Frame / Digital Notes Content */}
+          <div className="flex-1 bg-canvas relative overflow-hidden flex flex-col">
+            {pdfMode === "digital_summary" || !pdfUrl || pdfLoadError ? (
+              <div className="flex-1 flex flex-col overflow-y-auto p-4 space-y-4 no-scrollbar">
+                {/* Fallback Notice Strip if switched automatically from PDF */}
+                {pdfLoadError && (
+                  <div className="flex items-center justify-between p-3 rounded-2xl bg-amber-500/15 border border-amber-500/30 text-amber-200 text-xs">
+                    <div className="flex items-center gap-2">
+                      <AlertTriangle size={15} className="shrink-0 text-amber-400" />
+                      <span>PDF loading blocked by webview sandbox. Showing Digital High-Yield Notes below.</span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => directPdfInputRef.current?.click()}
+                      className="px-2.5 py-1 rounded-lg bg-amber-500/25 border border-amber-500/40 font-bold hover:bg-amber-500/35 transition shrink-0"
+                    >
+                      Pick Local PDF
+                    </button>
+                  </div>
+                )}
+
+                {/* Digital Notes Header & Search Strip */}
+                <div className="flex flex-col gap-2.5 bg-surface/60 border border-edge rounded-2xl p-3.5">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h3 className="text-sm font-bold text-ink flex items-center gap-2">
+                        <Sparkles size={14} className="text-purple-400" />
+                        <span>{subject.name} High-Yield Master Deck</span>
+                      </h3>
+                      <p className="text-[11px] text-ink-muted mt-0.5">
+                        High-yield tables, clinical lesions, and NEET-PG / INI-CET must-know pearls.
+                      </p>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => directPdfInputRef.current?.click()}
+                      className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-purple-500/15 border border-purple-500/30 text-purple-300 text-xs font-semibold hover:bg-purple-500/25 transition"
+                    >
+                      <Upload size={12} />
+                      <span>Link Local PDF</span>
+                    </button>
+                  </div>
+
+                  {/* Search input */}
+                  <div className="relative">
+                    <Search size={13} className="absolute left-3 top-2.5 text-ink-muted" />
+                    <input
+                      type="text"
+                      value={notesSearchQuery}
+                      onChange={(e) => setNotesSearchQuery(e.target.value)}
+                      placeholder={`Search ${subject.name} pearls, nerves, tables, or foramina...`}
+                      className="w-full pl-8 pr-3 py-1.5 rounded-xl bg-canvas border border-edge text-xs text-ink placeholder:text-ink-muted focus:outline-none focus:border-accent"
+                    />
+                  </div>
+
+                  {/* Category Pills */}
+                  <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5 no-scrollbar">
+                    {["All", "High-Yield Tables", "Nerve & Lesion Matrix", "Anatomical Landmarks", "Embryology & Derivations", "20th Subject Traps"].map((cat) => (
+                      <button
+                        key={cat}
+                        type="button"
+                        onClick={() => setActiveNoteCategory(cat)}
+                        className={`px-2 py-0.5 rounded-lg text-[10.5px] font-bold shrink-0 transition ${
+                          activeNoteCategory === cat
+                            ? "bg-purple-600 text-white shadow-xs"
+                            : "bg-canvas border border-edge text-ink-muted hover:text-ink hover:bg-elevated"
+                        }`}
+                      >
+                        {cat}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Digital Note Sections */}
+                {filteredNotes.map((section) => (
+                  <div
+                    key={section.id}
+                    className="flex flex-col gap-3 p-4 rounded-2xl bg-surface border border-edge shadow-xs"
+                  >
+                    <div className="flex items-center justify-between border-b border-edge pb-2">
+                      <div className="flex items-center gap-2">
+                        <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-md bg-purple-500/15 text-purple-300 border border-purple-500/25">
+                          {section.category}
+                        </span>
+                        <h4 className="text-xs font-bold text-ink">{section.title}</h4>
+                      </div>
+                    </div>
+
+                    <p className="text-xs text-ink-muted leading-relaxed">{section.summary}</p>
+
+                    {/* Pearls Bullets */}
+                    <div className="space-y-1.5">
+                      {section.pearls.map((pearl, pIdx) => (
+                        <div key={pIdx} className="flex items-start gap-2 text-xs text-ink leading-snug">
+                          <span className="text-purple-400 shrink-0 font-bold">•</span>
+                          <span>{pearl}</span>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* High Yield Table */}
+                    {section.table && (
+                      <div className="overflow-x-auto rounded-xl border border-edge bg-canvas/60 mt-2">
+                        <table className="w-full text-left text-xs border-collapse">
+                          <thead>
+                            <tr className="border-b border-edge bg-elevated/70 text-ink font-bold">
+                              {section.table.headers.map((h, hIdx) => (
+                                <th key={hIdx} className="p-2 sm:px-3 sm:py-2 border-r last:border-r-0 border-edge font-mono text-[11px]">
+                                  {h}
+                                </th>
+                              ))}
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {section.table.rows.map((row, rIdx) => (
+                              <tr
+                                key={rIdx}
+                                className="border-b last:border-b-0 border-edge-soft hover:bg-surface/50 transition"
+                              >
+                                {row.map((cell, cIdx) => (
+                                  <td
+                                    key={cIdx}
+                                    className={`p-2 sm:px-3 sm:py-2 text-[11.5px] border-r last:border-r-0 border-edge-soft leading-snug ${
+                                      cIdx === 0 ? "font-semibold text-accent" : "text-ink"
+                                    }`}
+                                  >
+                                    {cell}
+                                  </td>
+                                ))}
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+
+                    {/* Cloze Active Recall Cards */}
+                    {section.clozeItems && section.clozeItems.length > 0 && (
+                      <div className="space-y-2 mt-2 pt-2 border-t border-edge-soft">
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-purple-400">
+                          Active Recall Cloze Self-Test:
+                        </span>
+                        {section.clozeItems.map((item) => {
+                          const isRevealed = revealedClozeIds.has(item.id);
+                          return (
+                            <div
+                              key={item.id}
+                              onClick={() => {
+                                setRevealedClozeIds((prev) => {
+                                  const next = new Set(prev);
+                                  if (next.has(item.id)) next.delete(item.id);
+                                  else next.add(item.id);
+                                  return next;
+                                });
+                              }}
+                              className="p-3 rounded-xl bg-purple-500/10 border border-purple-500/25 text-xs text-ink cursor-pointer hover:bg-purple-500/15 transition flex items-start justify-between gap-3"
+                            >
+                              <span className="leading-relaxed">
+                                {isRevealed
+                                  ? item.textWithBlanks.replace(/\{([^}]+)\}/g, "$1")
+                                  : item.textWithBlanks.replace(/\{([^}]+)\}/g, "[ ___ ? ___ ]")}
+                              </span>
+                              <span className="shrink-0 text-purple-400 font-bold text-[10px] flex items-center gap-1 mt-0.5">
+                                {isRevealed ? <EyeOff size={12} /> : <Eye size={12} />}
+                                {isRevealed ? "Hide" : "Reveal"}
+                              </span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="relative w-full h-full flex flex-col">
                 <iframe
+                  key={`${pdfUrl}-${pdfPage}`}
                   title="BTR PDF Workbook"
                   src={`${pdfUrl}#page=${pdfPage}&toolbar=1`}
-                  className="w-full h-full border-none"
+                  className="w-full flex-1 border-none bg-canvas"
+                  onError={() => setPdfLoadError(true)}
                 />
+                {/* PDF Footer Quick Bar */}
+                <div className="h-7 border-t border-edge-soft px-3 flex items-center justify-between bg-surface/90 text-[11px] text-ink-muted shrink-0">
+                  <span className="truncate max-w-[200px] font-mono text-[10.5px]">
+                    {activePdf?.filename || "Workbook PDF"}
+                  </span>
+                  <div className="flex items-center gap-2 font-medium">
+                    <button
+                      type="button"
+                      onClick={() => directPdfInputRef.current?.click()}
+                      className="hover:text-accent transition"
+                    >
+                      Re-link PDF
+                    </button>
+                    <span>•</span>
+                    <button
+                      type="button"
+                      onClick={handleOpenPdfInSystemViewer}
+                      className="hover:text-accent transition flex items-center gap-1"
+                    >
+                      <ExternalLink size={10} /> Preview
+                    </button>
+                    <span>•</span>
+                    <button
+                      type="button"
+                      onClick={() => setPdfMode("digital_summary")}
+                      className="text-purple-400 hover:text-purple-300 font-semibold transition"
+                    >
+                      Digital Deck
+                    </button>
+                  </div>
+                </div>
                 <BTRCanvasMarkup
                   storageKey={`${subject.id}_${pdfMode}_p${pdfPage}`}
                   enabled={isMarkupEnabled}
                   onToggleEnabled={() => setIsMarkupEnabled(!isMarkupEnabled)}
                 />
-              </>
-            ) : (
-              <div className="flex-1 flex flex-col items-center justify-center p-8 text-center text-ink-muted gap-3">
-                <BookOpen size={36} className="text-accent" />
-                <h4 className="text-sm font-bold text-ink">No PDF Linked for {subject.name}</h4>
-                <p className="text-xs max-w-sm">
-                  Add the corresponding PDF to your BTR folder to view the workbook side-by-side with the lecture.
-                </p>
               </div>
             )}
           </div>
