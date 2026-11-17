@@ -38,6 +38,7 @@ import {
   Mic,
   GitBranch,
   ArrowRight,
+  Activity,
 } from "lucide-react";
 import { useView } from "@/lib/view";
 import { BTRSplitWorkstation } from "@/components/education/btr-split-workstation";
@@ -80,6 +81,7 @@ import { BTRTriLinkSearchModal } from "@/components/education/btr-tri-link-searc
 import { BTRBranchingTreeModal } from "@/components/education/btr-branching-tree-modal";
 import { BTRVoiceVivaModal } from "@/components/education/btr-voice-viva-modal";
 import { BTRWarRoomClashModal } from "@/components/education/btr-war-room-clash-modal";
+import { BTRECGModal } from "@/components/education/btr-ecg-modal";
 import { T_MINUS_7_PLANS, buildCountdownQuestionsForDay } from "@/lib/education/btr-countdown-deck";
 import {
   getBackendTests,
@@ -521,6 +523,7 @@ export function CoreBTRWarRoom({
   const [showBranchingTreeModal, setShowBranchingTreeModal] = useState(false);
   const [showVoiceVivaModal, setShowVoiceVivaModal] = useState(false);
   const [showWarRoomClashModal, setShowWarRoomClashModal] = useState(false);
+  const [showECGModal, setShowECGModal] = useState(false);
 
   // Live Next GT Tracker state
   const { test: nextGT, statusInfo: nextGTStatus } = useMemo(() => {
@@ -1203,7 +1206,7 @@ export function CoreBTRWarRoom({
                   <Sparkles size={13} className="text-purple-400" />
                   <span>Next-Gen AI Clinical Lab</span>
                 </span>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3">
                   {/* Card 1: Tri-Link Unified Search */}
                   <div className="p-4 rounded-2xl bg-gradient-to-br from-purple-500/10 via-elevated/70 to-blue-500/10 border border-edge flex flex-col justify-between gap-3 shadow-xs hover:border-purple-400/40 transition group">
                     <div>
@@ -1305,6 +1308,32 @@ export function CoreBTRWarRoom({
                     >
                       <span>Open War Room Arena</span>
                       <Zap size={13} />
+                    </button>
+                  </div>
+
+                  {/* Card 5: Real-Time ECG & Rhythm Strip Simulator */}
+                  <div className="p-4 rounded-2xl bg-gradient-to-br from-emerald-500/10 via-elevated/70 to-cyan-500/10 border border-edge flex flex-col justify-between gap-3 shadow-xs hover:border-emerald-400/40 transition group">
+                    <div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded-md bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
+                          Telemetry Lab
+                        </span>
+                        <Activity size={14} className="text-emerald-300 animate-pulse" />
+                      </div>
+                      <h4 className="text-sm font-bold text-white mt-2">
+                        Real-Time ECG Strip Simulator
+                      </h4>
+                      <p className="text-xs text-white/70 mt-1">
+                        Mathematical cardiac wave synthesis with diagnostic calipers and STEMI / Arrhythmia presets.
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setShowECGModal(true)}
+                      className="w-full py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs transition shadow-xs flex items-center justify-center gap-1.5"
+                    >
+                      <span>Launch ECG Strip</span>
+                      <Activity size={13} />
                     </button>
                   </div>
                 </div>
@@ -3849,6 +3878,12 @@ export function CoreBTRWarRoom({
         isOpen={showWarRoomClashModal}
         onClose={() => setShowWarRoomClashModal(false)}
         onStartQBankDrill={onStartQBankDrill}
+      />
+
+      {/* Real-Time Interactive ECG Strip & Telemetry Modal */}
+      <BTRECGModal
+        isOpen={showECGModal}
+        onClose={() => setShowECGModal(false)}
       />
     </div>
   );

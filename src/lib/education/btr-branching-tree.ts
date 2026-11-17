@@ -10,6 +10,8 @@
  * - Stage 3: Management of Complications / Therapeutic Intervention
  */
 
+import type { ECGRhythmType } from "./btr-ecg-simulator";
+
 export interface DecisionBranchOption {
   id: string;
   label: string;
@@ -31,6 +33,7 @@ export interface DecisionStage {
     spo2: number;
     gcs?: number;
   };
+  ecgRhythm?: ECGRhythmType;
   clinicalNarrative: string;
   investigationFindings?: string;
   options: DecisionBranchOption[];
@@ -181,8 +184,9 @@ export const BRANCHING_CLINICAL_SCENARIOS: BranchingScenario[] = [
         stageNumber: 1,
         stageTitle: "Stage 1: Bedside Differentiation",
         patientVitals: { hr: 138, bp: "74/46", rr: 36, spo2: 84 },
+        ecgRhythm: "afib",
         clinicalNarrative:
-          "Patient is in profound cardiogenic shock with elevated jugular venous distension. ECG reveals S1Q3T3 pattern with new right bundle branch block (RBBB). Bedside echocardiography shows severely dilated right ventricle with McConnell's sign (hyperdynamic RV apex with akinetic RV free wall).",
+          "Patient is in profound cardiogenic shock with elevated jugular venous distension. ECG reveals S1Q3T3 pattern with rapid atrial rhythm and new right bundle branch block (RBBB). Bedside echocardiography shows severely dilated right ventricle with McConnell's sign.",
         options: [
           {
             id: "pe1-opt-1",
@@ -212,6 +216,7 @@ export const BRANCHING_CLINICAL_SCENARIOS: BranchingScenario[] = [
         stageNumber: 2,
         stageTitle: "Stage 2: Post-Lysis Monitoring",
         patientVitals: { hr: 96, bp: "112/72", rr: 20, spo2: 96 },
+        ecgRhythm: "normal_sinus",
         clinicalNarrative:
           "Hemodynamics have normalized. 6 hours post-thrombolysis, what anticoagulation regimen must be maintained?",
         options: [
@@ -234,6 +239,93 @@ export const BRANCHING_CLINICAL_SCENARIOS: BranchingScenario[] = [
               "Rebound thromboembolism occurs at 18 hours with fatal cardiac arrest.",
             mechanismAutopsy:
               "Thrombolysis only dissolves existing clot; the prothrombotic state remains extreme. Anticoagulation must never be interrupted.",
+          },
+        ],
+      },
+    ],
+  },
+
+  // Case 3: Severe Refractory Hyperkalemia & The Cardiac Membrane Trap
+  {
+    id: "branch-hyperkalemia-03",
+    title: "Lethal Hyperkalemia (K+ 7.8): The Calcium Membrane Shield",
+    specialty: "Nephrology / Emergency Medicine",
+    initialChiefComplaint: "62-year-old end-stage renal disease (ESRD) patient on hemodialysis misses 2 sessions; presents with profound weakness and bradycardia.",
+    difficulty: "HighYieldCore",
+    tags: ["Nephrology", "Cardiology", "Hyperkalemia", "ECG", "Calcium Gluconate"],
+    debriefingBottomLine:
+      "Cardinal Rule of Hyperkalemia with ECG Changes: Intravenous Calcium Gluconate (or Chloride via central line) does NOT lower serum potassium; it antagonizes potassium's membrane excitability to prevent ventricular fibrillation and asystole.",
+    stages: [
+      {
+        id: "hk-stage-1",
+        stageNumber: 1,
+        stageTitle: "Stage 1: Bedside ECG Triage",
+        patientVitals: { hr: 52, bp: "86/52", rr: 22, spo2: 94 },
+        ecgRhythm: "hyperkalemia",
+        clinicalNarrative:
+          "Patient is lethargic with flaccid quadriplegia and areflexia. Telemetry monitor shows tall tented peaked T-waves, PR interval prolongation (240ms), and QRS widening (160ms). Blood gas confirms K+ = 7.8 mEq/L. What is the immediate first-line action?",
+        options: [
+          {
+            id: "hk1-opt-1",
+            label: "Administer 10 mL of 10% IV Calcium Gluconate over 2 to 3 minutes under continuous cardiac monitoring",
+            isOptimal: true,
+            isFatalTrap: false,
+            clinicalConsequence:
+              "Within 3 minutes, QRS narrows, tall tented T-waves diminish in amplitude, and rhythm stabilizes without asystole.",
+            mechanismAutopsy:
+              "Calcium raises threshold potential closer to normal (-75mV) without lowering serum potassium, immediately restoring myocardial membrane stability.",
+            nextStageId: "hk-stage-2",
+          },
+          {
+            id: "hk1-opt-2",
+            label: "Administer 10 units regular insulin with 50 mL 50% dextrose (D50) IV push as sole therapy",
+            isOptimal: false,
+            isFatalTrap: true,
+            clinicalConsequence:
+              "FATAL TRAP: Insulin requires 15-30 minutes to shift potassium. During this latency window, widening QRS degenerates into sine wave and ventricular fibrillation.",
+            mechanismAutopsy:
+              "Insulin-dextrose shifts potassium into cells but provides zero immediate membrane stabilization. In the presence of ECG widening, withholding calcium is fatal.",
+          },
+          {
+            id: "hk1-opt-3",
+            label: "Administer 30 grams oral Sodium Polystyrene Sulfonate (Kayexalate) powder with sorbitol",
+            isOptimal: false,
+            isFatalTrap: true,
+            clinicalConsequence:
+              "Colonic necrosis risk; resin requires 2 to 4 hours to begin exchange. Patient arrests from ventricular tachycardia before GI transit occurs.",
+            mechanismAutopsy:
+              "Kayexalate is contraindicated in acute emergent hyperkalemia with conduction delay due to delayed onset and intestinal ischemia risk.",
+          },
+        ],
+      },
+      {
+        id: "hk-stage-2",
+        stageNumber: 2,
+        stageTitle: "Stage 2: Shifting & Definitive Elimination",
+        patientVitals: { hr: 68, bp: "114/72", rr: 18, spo2: 98 },
+        ecgRhythm: "normal_sinus",
+        clinicalNarrative:
+          "Myocardium is stabilized. Now that the membrane is protected, what dual-action strategy must be executed to shift potassium intracellularly and eliminate the total body excess?",
+        options: [
+          {
+            id: "hk2-opt-1",
+            label: "IV Regular Insulin (10U) + 50% Dextrose (50mL) + Inhaled Albuterol (10-20mg neb) AND emergent nephrology consult for urgent hemodialysis",
+            isOptimal: true,
+            isFatalTrap: false,
+            clinicalConsequence:
+              "Serum K+ drops to 6.2 mEq/L within 40 minutes via Na+/K+-ATPase activation. Emergent hemodialysis clears 80 mEq K+ completely.",
+            mechanismAutopsy:
+              "Triple intracellular shifting (insulin, beta-2 agonist) buys safe time for hemodialysis, which is the definitive removal modality in ESRD.",
+          },
+          {
+            id: "hk2-opt-2",
+            label: "Intravenous Furosemide (120 mg bolus) to promote brisk urinary kaluresis",
+            isOptimal: false,
+            isFatalTrap: true,
+            clinicalConsequence:
+              "In anuric ESRD patient, loop diuretics produce zero urine output and provoke profound ototoxicity.",
+            mechanismAutopsy:
+              "The Anuric Loop Diuretic Trap: Loop diuretics require functioning nephrons. In ESRD, dialytic removal is mandatory.",
           },
         ],
       },

@@ -11,6 +11,10 @@ import {
   ArrowRight,
   Stethoscope,
 } from "lucide-react";
+import {
+  playClinicalSuccessChime,
+  playExaminerTrapAlert,
+} from "@/lib/education/btr-sound-effects";
 
 export interface ClinicalVivaCase {
   id: string;
@@ -196,6 +200,12 @@ export function BTRVoiceVivaModal({ isOpen, onClose }: BTRVoiceVivaModalProps) {
     } else {
       critique =
         "Sub-optimal response. In high-stakes emergency situations, hesitation or missing contraindications carries severe clinical consequence.";
+    }
+
+    if (trapsDetected.length > 0) {
+      playExaminerTrapAlert();
+    } else if (score >= 4) {
+      playClinicalSuccessChime();
     }
 
     setEvaluation({

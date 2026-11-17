@@ -18,6 +18,7 @@ import {
   type BranchingScenario,
   type DecisionBranchOption,
 } from "@/lib/education/btr-branching-tree";
+import { BTRECGViewer } from "@/components/education/btr-ecg-viewer";
 
 export interface BTRBranchingTreeModalProps {
   isOpen: boolean;
@@ -42,6 +43,7 @@ export function BTRBranchingTreeModal({
     Array<{ stageId: string; chosenOption: DecisionBranchOption }>
   >([]);
   const [isScenarioFinished, setIsScenarioFinished] = useState(false);
+  const [showECG, setShowECG] = useState(false);
 
   const activeStage =
     activeScenario.stages.find((s) => s.id === currentStageId) || activeScenario.stages[0];
@@ -175,8 +177,31 @@ export function BTRBranchingTreeModal({
                 {vitals.spo2}%
               </strong>
             </div>
+
+            <button
+              type="button"
+              onClick={() => setShowECG(!showECG)}
+              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-bold border transition ${
+                showECG || activeStage.ecgRhythm
+                  ? "bg-emerald-500/20 text-emerald-300 border-emerald-500/40"
+                  : "bg-white/10 text-white/70 border-white/20 hover:text-white"
+              }`}
+            >
+              <Activity size={12} className="animate-pulse text-emerald-400" />
+              <span>{showECG ? "Hide ECG Strip" : "Lead II ECG"}</span>
+            </button>
           </div>
         </div>
+
+        {/* Real-time ECG telemetry strip if active */}
+        {showECG && (
+          <div className="p-4 bg-black/90 border-b border-edge">
+            <BTRECGViewer
+              initialRhythm={activeStage.ecgRhythm || "normal_sinus"}
+              title={`Lead II Cardiac Monitor — ${activeStage.stageTitle}`}
+            />
+          </div>
+        )}
 
         {/* Body Content */}
         <div className="flex-1 overflow-y-auto p-6 flex flex-col gap-5">
