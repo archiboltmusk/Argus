@@ -16,10 +16,24 @@ import {
   Info,
   User,
   Zap,
+  Award,
+  TrendingUp,
+  Activity,
+  ShieldAlert,
+  Brain,
 } from "lucide-react";
 import type { ClinicalQuestion, QBankSessionState, GrandTestResult } from "@/lib/education/qbank-types";
 import { CLINICAL_QBANK_STARTER } from "@/lib/education/qbank-data";
 import { saveStudyNote } from "@/lib/education/notes";
+import {
+  highlightStemKeywords,
+  computeGuessEVReport,
+  computeCognitiveFatigueBlocks,
+  saveRankTelemetry,
+  type AIR100ExamTelemetry,
+  type AnswerChangeRecord,
+  type GuessRecord,
+} from "@/lib/education/btr-rank-optimizer";
 
 export type QBankRunnerProps = {
   questions?: ClinicalQuestion[];
@@ -53,6 +67,10 @@ export function QBankRunner({
   const [examFinished, setExamFinished] = useState(false);
   const [elapsedTimer, setElapsedTimer] = useState(0);
   const [resultData, setResultData] = useState<GrandTestResult | null>(null);
+  const [rankTelemetry, setRankTelemetry] = useState<AIR100ExamTelemetry | null>(null);
+  const [answerChanges, setAnswerChanges] = useState<
+    Record<string, { initialOption: number; finalOption: number; timeSeconds: number }>
+  >({});
   const [activeTab, setActiveTab] = useState<"analysis" | "questions">("analysis");
 
   // Timer
@@ -73,9 +91,20 @@ export function QBankRunner({
   const isMarkedReview = markedForReview.includes(qId);
   const isGuess = !!guessedQuestions[qId];
 
-  // Handle Option Select
+  // Handle Option Select with Answer Switch Telemetry
   const handleSelectOption = (idx: number) => {
     if (submitted) return;
+    const prevSelected = session.selectedAnswers[qId];
+    if (prevSelected !== undefined && prevSelected !== idx) {
+      setAnswerChanges((prev) => ({
+        ...prev,
+        [qId]: {
+          initialOption: prev[qId]?.initialOption ?? prevSelected,
+          finalOption: idx,
+          timeSeconds: elapsedTimer,
+        },
+      }));
+    }
     setSession((prev) => ({
       ...prev,
       selectedAnswers: {
@@ -164,20 +193,50 @@ export function QBankRunner({
     }
   };
 
-  // Complete Exam and calculate CoreBTR analytics
+  // Complete Exam and calculate CoreBTR analytics + AIR < 100 Telemetry
   const handleFinishExam = useCallback(() => {
     let correct = 0;
     let incorrect = 0;
     let attempted = 0;
 
-    activeQuestions.forEach((q) => {
+    const questionResults: Array<{
+      questionIndex: number;
+      isCorrect: boolean;
+      timeSpentSeconds: number;
+    }> = [];
+
+    const guessRecords: GuessRecord[] = [];
+
+    activeQuestions.forEach((q, idx) => {
       const sel = session.selectedAnswers[q.id];
+      const timeSpent =
+        session.timeSpentSec[q.id] ||
+        Math.max(1, Math.round(elapsedTimer / Math.max(1, activeQuestions.length)));
+
       if (sel !== undefined) {
         attempted++;
-        if (sel === q.correctIndex) {
+        const isRight = sel === q.correctIndex;
+        if (isRight) {
           correct++;
         } else {
           incorrect++;
+        }
+
+        questionResults.push({
+          questionIndex: idx,
+          isCorrect: isRight,
+          timeSpentSeconds: timeSpent,
+        });
+
+        const elim = session.eliminatedOptions[q.id] || [];
+        if (guessedQuestions[q.id] || elim.length >= 2) {
+          guessRecords.push({
+            questionId: q.id,
+            subject: q.subject,
+            eliminatedOptions: elim.map((e) => q.options[e] || ""),
+            selectedOption: q.options[sel] || "",
+            isCorrect: isRight,
+          });
         }
       }
     });
@@ -186,6 +245,59 @@ export function QBankRunner({
     const score = correct * 4 - incorrect * 1;
     const maxScore = activeQuestions.length * 4;
     const accuracyPct = attempted > 0 ? Math.round((correct / attempted) * 100) : 0;
+
+    // AIR < 100 Telemetry Computation
+    const changeRecords: AnswerChangeRecord[] = Object.entries(answerChanges).map(
+      ([questionId, rec]) => {
+        const q = activeQuestions.find((item) => item.id === questionId);
+        const initialWasCorrect = q ? rec.initialOption === q.correctIndex : false;
+        const finalWasCorrect = q ? rec.finalOption === q.correctIndex : false;
+        return {
+          questionId,
+          initialOption: String.fromCharCode(65 + rec.initialOption),
+          finalOption: String.fromCharCode(65 + rec.finalOption),
+          initialWasCorrect,
+          finalWasCorrect,
+          timeOfChangeSeconds: rec.timeSeconds,
+        };
+      }
+    );
+
+    const changedCorrectToIncorrect = changeRecords.filter(
+      (c) => c.initialWasCorrect && !c.finalWasCorrect
+    ).length;
+    const changedIncorrectToCorrect = changeRecords.filter(
+      (c) => !c.initialWasCorrect && c.finalWasCorrect
+    ).length;
+    const marksLostToSillyErrors = changedCorrectToIncorrect * 5;
+    const netIntuitionGain = changedIncorrectToCorrect * 5 - marksLostToSillyErrors;
+    const intuitionRatio =
+      changedCorrectToIncorrect > 0
+        ? Math.round((changedIncorrectToCorrect / changedCorrectToIncorrect) * 100) / 100
+        : changedIncorrectToCorrect > 0
+          ? 2.0
+          : 1.0;
+
+    const guessReport = computeGuessEVReport(guessRecords);
+    const fatigueAnalysis = computeCognitiveFatigueBlocks(questionResults, activeQuestions.length);
+
+    const telemetry: AIR100ExamTelemetry = {
+      examId: `telemetry_${Date.now()}`,
+      examTitle: examMode ? "CoreBTR National Grand Test Simulation" : "CoreBTR Custom Module Drill",
+      timestamp: Date.now(),
+      totalMarks: score,
+      marksLostToSillyErrors,
+      answerChanges: changeRecords,
+      intuitionRatio,
+      intuitionNetGainMarks: netIntuitionGain,
+      guessStats: guessReport,
+      cognitiveFatigueBlocks: fatigueAnalysis.blocks,
+      fatigueSlumpDetected: fatigueAnalysis.slumpDetected,
+      fatigueSlumpBlock: fatigueAnalysis.slumpBlock,
+    };
+
+    saveRankTelemetry(telemetry);
+    setRankTelemetry(telemetry);
 
     const result: GrandTestResult = {
       id: `gt_${Date.now()}`,
@@ -204,7 +316,17 @@ export function QBankRunner({
     setResultData(result);
     setExamFinished(true);
     onFinish?.(result);
-  }, [activeQuestions, session.selectedAnswers, examMode, elapsedTimer, onFinish]);
+  }, [
+    activeQuestions,
+    session.selectedAnswers,
+    session.eliminatedOptions,
+    session.timeSpentSec,
+    guessedQuestions,
+    answerChanges,
+    examMode,
+    elapsedTimer,
+    onFinish,
+  ]);
 
   // Restart focused Recovery Sprint on missed questions
   const handleStartRecoverySprint = () => {
@@ -225,6 +347,8 @@ export function QBankRunner({
       timeSpentSec: {},
     });
     setGuessedQuestions({});
+    setAnswerChanges({});
+    setRankTelemetry(null);
     setMarkedForReview([]);
     setExamFinished(false);
     setElapsedTimer(0);
@@ -469,6 +593,167 @@ export function QBankRunner({
                   </strong>
                 </div>
               </div>
+
+              {/* AIR < 100 Rank Maximization Telemetry Suite */}
+              {rankTelemetry && (
+                <div className="p-5 rounded-3xl bg-surface/90 border border-edge shadow-xl flex flex-col gap-5">
+                  <div className="flex items-center justify-between border-b border-edge pb-3">
+                    <div className="flex items-center gap-3">
+                      <div className="h-9 w-9 rounded-xl bg-amber-500/15 text-amber-300 border border-amber-500/30 flex items-center justify-center shrink-0">
+                        <Award size={18} className="text-amber-400" />
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <h3 className="text-sm font-black text-white">
+                            AIR &lt; 100 Rank Maximization Telemetry
+                          </h3>
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40">
+                            Frontier Engine
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-white/60">
+                          Silly mistakes elimination, 50:50 guess expected value, and 8-block cognitive pacing
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* 1. Silly Mistake & Instinct Radar */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="p-4 rounded-2xl bg-elevated border border-edge flex flex-col justify-between gap-3">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <ShieldAlert size={16} className="text-amber-400" />
+                          <span className="text-xs font-bold text-white">
+                            Zero-Silly-Mistake Radar
+                          </span>
+                        </div>
+                        <span className="font-mono text-xs font-black text-amber-300">
+                          {rankTelemetry.marksLostToSillyErrors > 0
+                            ? `-${rankTelemetry.marksLostToSillyErrors} Marks`
+                            : "0 Marks Lost"}
+                        </span>
+                      </div>
+
+                      <div className="text-xs text-white/80 leading-relaxed">
+                        {rankTelemetry.marksLostToSillyErrors === 0 ? (
+                          <div className="flex items-center gap-2 text-emerald-400 font-semibold">
+                            <CheckCircle2 size={16} />
+                            <span>Zero silly errors! You maintained elite instinct discipline.</span>
+                          </div>
+                        ) : (
+                          <div className="flex items-start gap-2 text-rose-300">
+                            <AlertTriangle size={16} className="shrink-0 mt-0.5" />
+                            <span>
+                              Lost {rankTelemetry.marksLostToSillyErrors} marks by altering correct answers to wrong choices. Trust your primary clinical instinct!
+                            </span>
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="flex items-center justify-between text-[11px] pt-2 border-t border-edge text-white/60">
+                        <span>Total Answer Switches: {rankTelemetry.answerChanges.length}</span>
+                        <span>Instinct Ratio: {rankTelemetry.intuitionRatio}x</span>
+                      </div>
+                    </div>
+
+                    {/* 2. 50:50 Guess Expected Value (EV) */}
+                    <div className="p-4 rounded-2xl bg-elevated border border-edge flex flex-col justify-between gap-3">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <TrendingUp size={16} className="text-emerald-400" />
+                          <span className="text-xs font-bold text-white">
+                            50:50 Guess Expected Value (EV)
+                          </span>
+                        </div>
+                        <span className="font-mono text-xs font-black text-emerald-400">
+                          {rankTelemetry.guessStats.neetExpectedValueMarks >= 0 ? "+" : ""}
+                          {rankTelemetry.guessStats.neetExpectedValueMarks} NEET Marks
+                        </span>
+                      </div>
+
+                      <p className="text-xs text-white/70">
+                        Strike rate across {rankTelemetry.guessStats.totalGuesses} educated guesses is{" "}
+                        <strong className="text-white">{rankTelemetry.guessStats.strikeRatePct}%</strong>.
+                        {rankTelemetry.guessStats.strikeRatePct >= 50
+                          ? " Aggressive elimination strategy yielded net positive marks!"
+                          : " Selective elimination required; stick to high-confidence topics."}
+                      </p>
+
+                      <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-edge">
+                        {rankTelemetry.guessStats.subjectGuidance.slice(0, 3).map((g) => (
+                          <span
+                            key={g.subject}
+                            className={`text-[10px] font-bold px-2 py-0.5 rounded-md ${
+                              g.action === "ALWAYS_ATTEMPT"
+                                ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/40"
+                                : g.action === "CALCULATED_RISK"
+                                  ? "bg-amber-500/20 text-amber-300 border border-amber-500/40"
+                                  : "bg-rose-500/20 text-rose-300 border border-rose-500/40"
+                            }`}
+                          >
+                            {g.subject}: {g.action.replace("_", " ")} ({g.strikeRatePct}%)
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* 3. 8-Block Cognitive Fatigue & Endurance Curve */}
+                  {rankTelemetry.cognitiveFatigueBlocks.length > 0 && (
+                    <div className="p-4 rounded-2xl bg-elevated border border-edge flex flex-col gap-3">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <Brain size={16} className="text-purple-400" />
+                          <span className="text-xs font-bold text-white">
+                            8-Block Cognitive Fatigue Profile (3.5-Hour Endurance Curve)
+                          </span>
+                        </div>
+                        {rankTelemetry.fatigueSlumpDetected ? (
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-rose-500/20 text-rose-400 border border-rose-500/40">
+                            Fatigue Slump Detected in Block #{rankTelemetry.fatigueSlumpBlock}
+                          </span>
+                        ) : (
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
+                            Pacing Stable Across 8 Blocks
+                          </span>
+                        )}
+                      </div>
+
+                      <div className="grid grid-cols-4 sm:grid-cols-8 gap-2 pt-2">
+                        {rankTelemetry.cognitiveFatigueBlocks.map((b) => (
+                          <div
+                            key={b.blockNumber}
+                            className={`p-2 rounded-xl border flex flex-col items-center justify-center gap-1 ${
+                              rankTelemetry.fatigueSlumpBlock === b.blockNumber
+                                ? "bg-rose-500/15 border-rose-500/40 ring-1 ring-rose-500/30"
+                                : "bg-surface/80 border-edge"
+                            }`}
+                          >
+                            <span className="text-[10px] font-mono text-white/50">
+                              B#{b.blockNumber}
+                            </span>
+                            <strong
+                              className={`text-xs font-black ${
+                                b.accuracyPct >= 70
+                                  ? "text-emerald-400"
+                                  : b.accuracyPct >= 50
+                                    ? "text-amber-400"
+                                    : "text-rose-400"
+                              }`}
+                            >
+                              {b.accuracyPct}%
+                            </strong>
+                            <span className="text-[9px] text-white/40 font-mono">
+                              {b.avgTimePerQuestionSec}s/q
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
 
               {/* Subject-wise Analysis */}
               <div className="flex flex-col gap-3">
@@ -733,9 +1018,20 @@ export function QBankRunner({
               </span>
             </div>
 
-            {/* Vignette */}
+            {/* Vignette with Negative Keyword Alert Radar */}
             <div className="text-[14.5px] leading-relaxed text-white font-medium p-4 rounded-2xl bg-elevated border border-edge mb-5">
-              {activeQuestion.vignette}
+              {highlightStemKeywords(activeQuestion.vignette).map((part, pIdx) =>
+                part.isNegativeKeyword ? (
+                  <span
+                    key={pIdx}
+                    className="px-1.5 py-0.5 mx-0.5 rounded-md bg-amber-500/20 text-amber-300 border border-amber-500/40 font-black tracking-wide"
+                  >
+                    {part.text}
+                  </span>
+                ) : (
+                  <span key={pIdx}>{part.text}</span>
+                )
+              )}
             </div>
 
             {/* Options Radio List */}
@@ -1016,9 +1312,20 @@ export function QBankRunner({
 
       {/* Main Question Body */}
       <div className="flex-1 overflow-y-auto px-6 py-6 flex flex-col gap-5">
-        {/* Vignette */}
+        {/* Vignette with Negative Keyword Alert Radar */}
         <div className="text-[15px] leading-relaxed text-white font-medium p-4 rounded-2xl bg-elevated border border-edge">
-          {activeQuestion.vignette}
+          {highlightStemKeywords(activeQuestion.vignette).map((part, pIdx) =>
+            part.isNegativeKeyword ? (
+              <span
+                key={pIdx}
+                className="px-1.5 py-0.5 mx-0.5 rounded-md bg-amber-500/20 text-amber-300 border border-amber-500/40 font-black tracking-wide"
+              >
+                {part.text}
+              </span>
+            ) : (
+              <span key={pIdx}>{part.text}</span>
+            )
+          )}
         </div>
 
         {/* Action Row: Reset Answer & Mark for Review */}

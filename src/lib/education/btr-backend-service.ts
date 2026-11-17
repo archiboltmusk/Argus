@@ -9,6 +9,7 @@ import type {
   RemediationRecommendation,
 } from "./btr-backend-types";
 import { readEducationalFileText } from "./json-gz-importer";
+import { TOP_100_FRONTIER_VAULT } from "./btr-frontier-vault";
 
 const DB_NAME = "argus_corebtr_db";
 const DB_VERSION = 1;
@@ -615,4 +616,58 @@ export async function getGTAnalyticsSummary(): Promise<BTRGTAnalyticsSummary> {
     ],
     recentScores: recent,
   };
+}
+
+/**
+ * Generates Today's AIR < 100 Rank Maximization Daily Prescription
+ * Combines:
+ * - 10 FSRS volatile spaced repetition cards
+ * - 10 Mini-Test / Grand-Test clinical questions
+ * - 5 Frontier Vault rank-deciding tie-breakers
+ */
+export async function generateAIR100Prescription(): Promise<ClinicalQuestion[]> {
+  await initBTRBackendDatabase();
+  const fsrsQs = await getDailyFSRSReviewQueue(10);
+
+  // Get mini test questions
+  const mini1 = await getQuestionsForTest("mini_1");
+  const miniQs = (mini1.length > 0 ? mini1 : Array.from(memoryQuestionsCache.values())).slice(0, 10);
+
+  // Convert 5 frontier vault facts into rank tie-breaker questions
+  const frontierQs: ClinicalQuestion[] = TOP_100_FRONTIER_VAULT.slice(0, 5).map((f, i) => ({
+    id: `prescription_frontier_${f.id}_${i}`,
+    subject: f.tags[0] || "Frontier Tie-Breaker",
+    topic: f.title,
+    vignette: `${f.clinicalContext}\n\nRegarding ${f.title}, which of the following statements is strictly accurate under current exam standards?`,
+    options: [
+      f.mustKnowPill,
+      `Common Misconception: ${f.examinerTrap}`,
+      "Routine clinical finding with no bearing on stage or management",
+      "Contraindicated in all adult cohorts",
+    ],
+    correctIndex: 0,
+    examinerTrap: f.examinerTrap,
+    explanation: {
+      bottomLine: f.mustKnowPill,
+      whyCorrect: f.clinicalContext,
+      distractorNotes: [
+        `Trap: ${f.examinerTrap}`,
+        "Incorrect: significantly alters clinical management.",
+        "Incorrect: this is a major rank decider.",
+      ],
+    },
+  }));
+
+  // Combine and deduplicate
+  const combined = [...fsrsQs, ...miniQs, ...frontierQs];
+  const seen = new Set<string>();
+  const uniqueQs: ClinicalQuestion[] = [];
+  for (const q of combined) {
+    if (!seen.has(q.id)) {
+      seen.add(q.id);
+      uniqueQs.push(q);
+    }
+  }
+
+  return uniqueQs;
 }

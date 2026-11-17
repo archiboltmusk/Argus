@@ -33,6 +33,7 @@ import {
   Tv,
   Timer,
   HelpCircle,
+  Award,
 } from "lucide-react";
 import { useView } from "@/lib/view";
 import { BTRSplitWorkstation } from "@/components/education/btr-split-workstation";
@@ -51,6 +52,8 @@ import { BTRCrossAppTestsModal } from "@/components/education/btr-cross-app-test
 import { BTRGTTrackerModal } from "@/components/education/btr-gt-tracker-modal";
 import { getNextUpcomingGT } from "@/lib/education/gt-tracker-engine";
 import { BTRCustomModuleModal } from "@/components/education/btr-custom-module-modal";
+import { BTRFrontierVaultModal } from "@/components/education/btr-frontier-vault-modal";
+import { TOP_100_FRONTIER_VAULT } from "@/lib/education/btr-frontier-vault";
 import { BTRSubjectExplorer } from "@/components/education/btr-subject-explorer";
 import { BTRPearlModal } from "@/components/education/btr-pearl-modal";
 import { type BTRPearlItem } from "@/lib/education/btr-pearls-data";
@@ -75,6 +78,7 @@ import {
   getQuestionsForSubject,
   buildCustomModuleTest,
   getLatestAutopsyReport,
+  generateAIR100Prescription,
 } from "@/lib/education/btr-backend-service";
 import type { ClinicalQuestion } from "@/lib/education/qbank-types";
 import {
@@ -519,6 +523,7 @@ export function CoreBTRWarRoom({
   const [testsSubTab, setTestsSubTab] = useState<"Grand Tests" | "Mini Tests" | "Core Drop Tests">("Grand Tests");
   const [testsFilter, setTestsFilter] = useState<"In Progress" | "Live" | "Upcoming" | "Not Attempted">("Live");
   const [showCustomModuleModal, setShowCustomModuleModal] = useState(false);
+  const [showFrontierVaultModal, setShowFrontierVaultModal] = useState(false);
   const [selectedPearlModal, setSelectedPearlModal] = useState<BTRPearlItem | null>(null);
   const [activePearlsDeck, setActivePearlsDeck] = useState<BTRPearlItem[] | null>(null);
   const [activeLiveStreamModal, setActiveLiveStreamModal] = useState<BTRLiveSessionData | null>(null);
@@ -1033,8 +1038,55 @@ export function CoreBTRWarRoom({
                 </div>
               </div>
 
-              {/* 2. Official Quick Actions 5-Pill Grid */}
-              <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+              {/* Today's AIR < 100 Rank Maximization Prescription Card */}
+              <div className="p-6 rounded-3xl bg-gradient-to-r from-amber-500/10 via-surface to-elevated border border-amber-500/30 shadow-xl flex flex-col md:flex-row items-start md:items-center justify-between gap-6 relative overflow-hidden">
+                <div className="flex flex-col gap-2 relative z-10">
+                  <div className="flex items-center gap-2">
+                    <span className="px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40 font-mono text-[10px] font-extrabold uppercase tracking-wider">
+                      Today&apos;s Prescription • AIR &lt; 100
+                    </span>
+                    <span className="text-[11px] font-bold text-white/60">
+                      ~45 Min Precision Sprint
+                    </span>
+                  </div>
+
+                  <h3 className="text-xl md:text-2xl font-black text-white tracking-tight">
+                    Autonomous Rank Maximization Queue
+                  </h3>
+
+                  <div className="flex flex-wrap items-center gap-3 text-xs text-white/80 pt-1">
+                    <span className="flex items-center gap-1.5 bg-white/5 border border-white/10 px-3 py-1 rounded-xl">
+                      <Flame size={13} className="text-amber-400" />
+                      <span>{summary.dueTodayCount > 0 ? summary.dueTodayCount : 10} FSRS Due Cards</span>
+                    </span>
+                    <span className="flex items-center gap-1.5 bg-white/5 border border-white/10 px-3 py-1 rounded-xl">
+                      <Zap size={13} className="text-amber-400" />
+                      <span>1 Mini Test (Surprise Drop)</span>
+                    </span>
+                    <span className="flex items-center gap-1.5 bg-white/5 border border-white/10 px-3 py-1 rounded-xl">
+                      <Award size={13} className="text-amber-400" />
+                      <span>5 Top-100 Frontier Tie-Breakers</span>
+                    </span>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2 relative z-10 shrink-0 w-full md:w-auto">
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      const qs = await generateAIR100Prescription();
+                      onStartQBankDrill?.("Today's AIR < 100 Prescription", qs);
+                    }}
+                    className="w-full md:w-auto px-6 py-3 rounded-2xl bg-white hover:bg-white/90 text-black font-extrabold text-xs shadow-lg transition flex items-center justify-center gap-2"
+                  >
+                    <Play size={14} className="fill-black" />
+                    <span>Launch Today&apos;s Prescription (25 Qs)</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* 2. Official Quick Actions 6-Pill Grid */}
+              <div className="grid grid-cols-2 sm:grid-cols-6 gap-3">
                 {[
                   {
                     id: "bookmarks",
@@ -1047,6 +1099,12 @@ export function CoreBTRWarRoom({
                     label: "Custom Module",
                     icon: SlidersHorizontal,
                     action: () => setShowCustomModuleModal(true),
+                  },
+                  {
+                    id: "frontier_vault",
+                    label: "Top-100 Vault",
+                    icon: Award,
+                    action: () => setShowFrontierVaultModal(true),
                   },
                   {
                     id: "downloads",
@@ -3413,6 +3471,16 @@ export function CoreBTRWarRoom({
         onClose={() => setActiveLiveStreamModal(null)}
         session={activeLiveStreamModal}
         onStartQBankDrill={onStartQBankDrill}
+      />
+
+      {/* Top-100 Frontier Tie-Breakers Vault Modal */}
+      <BTRFrontierVaultModal
+        isOpen={showFrontierVaultModal}
+        onClose={() => setShowFrontierVaultModal(false)}
+        onStartDrill={(qs) => {
+          setShowFrontierVaultModal(false);
+          onStartQBankDrill?.("Top-100 Frontier Tie-Breaker Drill", qs);
+        }}
       />
     </div>
   );
