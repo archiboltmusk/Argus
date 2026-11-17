@@ -14,6 +14,7 @@ import {
   type CustomStreamFilter,
 } from "@/lib/streams/custom-filters";
 import { filterStreamsByMode } from "@/lib/streams/mode";
+import { filterDeviceSupportedStreams } from "@/lib/streams/device-stream-filter";
 import type { PipelineResult } from "@/lib/streams/pipeline";
 import type { ScoredStream } from "@/lib/streams/types";
 import {
@@ -136,6 +137,10 @@ export function useBpStreamFilters(params: {
     if (cachedOnly && debrids.length > 0) {
       const cached = all.filter(isCached);
       if (cached.length > 0) all = cached;
+    }
+    if (settings.filterUnsupportedDeviceStreams !== false) {
+      const supported = filterDeviceSupportedStreams(all);
+      if (supported.length > 0) all = supported;
     }
     let fellBack = false;
     if (activeStreamFilter && !hostMatch) {

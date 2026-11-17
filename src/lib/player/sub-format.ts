@@ -25,6 +25,8 @@ export function canBeSecondarySub(track: TrackInfo | null | undefined): boolean 
 export function isImageSubTrack(track: TrackInfo | null | undefined): boolean {
   if (!track) return false;
   const codec = (track.codec ?? "").toUpperCase();
+  const format = (track.format ?? "").toUpperCase();
+  const title = (track.title ?? "").toUpperCase();
   return (
     codec.includes("PGS") ||
     codec.includes("HDMV") ||
@@ -33,7 +35,11 @@ export function isImageSubTrack(track: TrackInfo | null | undefined): boolean {
     codec.includes("DVD SUBTITLE") ||
     codec.includes("DVB") ||
     codec.includes("VOBSUB") ||
-    codec.includes("XSUB")
+    codec.includes("XSUB") ||
+    format.includes("PGS") ||
+    format.includes("SUP") ||
+    title.includes("PGS") ||
+    title.includes("VOBSUB")
   );
 }
 

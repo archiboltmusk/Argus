@@ -94,7 +94,14 @@ export async function applySubStyle(
     context.assNativeActive && override === "no"
       ? "no"
       : (letterboxDodging ? "yes" : assMargins);
-  const subPos = letterboxDodging ? 100 : (reposition ? clamp(100 - marginY, 0, 100) : 100);
+  const assMarginsForce =
+    context.assNativeActive && override === "no"
+      ? "no"
+      : (letterboxDodging ? "yes" : assMargins);
+  const stretchImageSubs = letterboxDodging ? "yes" : "no";
+  const subPos = letterboxDodging
+    ? (context.imageNativeActive ? 104 : 100)
+    : (reposition ? clamp(100 - marginY, 0, 100) : 100);
   const mpvMarginY = letterboxDodging
     ? clamp(Math.round(marginY * 1.5), 8, 160)
     : marginY;
@@ -116,9 +123,10 @@ export async function applySubStyle(
     ["sub-ass-style-overrides", (s.subAssStyleOverrides ?? "").replace(/[\r\n]+/g, ",").trim()],
     ["sub-align-x", s.subAlignX],
     ["sub-ass-override", effOverride],
-    ["sub-ass-force-margins", assMargins],
+    ["sub-ass-force-margins", assMarginsForce],
     ["sub-use-margins", useMargins],
-    ["image-subs-video-resolution", letterboxDodging ? "no" : "yes"],
+    ["stretch-image-subs-to-screen", stretchImageSubs],
+    ["image-subs-video-resolution", "no"],
     ["sub-spacing", s.subLineSpacing],
     ["sub-bold", s.subBold ? "yes" : "no"],
     ["sub-pos", subPos],

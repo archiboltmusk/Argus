@@ -969,6 +969,7 @@ export type Settings = {
     | "balanced-speech";
   lanSwarmCache: boolean;
   letterboxSubtitleDodging: boolean;
+  filterUnsupportedDeviceStreams: boolean;
   syntheticChapters: boolean;
   hybridLegalFallback: boolean;
   indicDubbingOverlay: boolean;

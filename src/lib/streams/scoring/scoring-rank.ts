@@ -1,5 +1,6 @@
 import type { DebridSlug, RankedPicker, ScoredStream, Tier } from "../types";
 import { isCached } from "../cached";
+import { evaluateDeviceStreamSupport } from "../device-stream-filter";
 
 export function rankAndPick(
   scored: ScoredStream[],
@@ -25,9 +26,15 @@ export function rankAndPick(
     if (!byTier[s.tier]) byTier[s.tier] = s;
   }
 
-  let primary = all.find((s) => isCached(s, activeDebrids)) ?? null;
+  // Prefer a stream that is fully supported and decodable on this device/browser
+  let primary = all.find((s) => isCached(s, activeDebrids) && evaluateDeviceStreamSupport(s).supported) ?? null;
+  if (!primary) {
+    primary = all.find((s) => isCached(s, activeDebrids)) ?? null;
+  }
   if (preferAac && primary) {
-    const aac = all.find((s) => isCached(s, activeDebrids) && s.audio?.codec === "AAC");
+    const aac = all.find(
+      (s) => isCached(s, activeDebrids) && s.audio?.codec === "AAC" && evaluateDeviceStreamSupport(s).supported,
+    );
     if (aac) primary = aac;
   }
 

@@ -1247,6 +1247,10 @@ pub async fn mpv_start(
     let _ = mpv.set_property("embeddedfonts", "yes");
     // Preserve fansub and anime ASS/SSA native fonts, colors, positioning and karaoke effects
     let _ = mpv.set_property("sub-ass-override", "no");
+    let _ = mpv.set_property("sub-use-margins", "yes");
+    let _ = mpv.set_property("sub-ass-force-margins", "yes");
+    let _ = mpv.set_property("stretch-image-subs-to-screen", "yes");
+    let _ = mpv.set_property("image-subs-video-resolution", "no");
 
     if let Some(extra) = args.extra_options.as_deref() {
         apply_extra_mpv_options(&mpv, extra);
