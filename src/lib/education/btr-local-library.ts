@@ -21,6 +21,8 @@ export interface BTRLocalMediaFile {
   matchedSubjectId: string;
   lectureNumber: number;
   title: string;
+  blobUrl?: string;
+  streamUrl?: string;
 }
 
 export interface BTRSubjectMediaMapping {
@@ -114,7 +116,9 @@ export function classifyBTRFile(
   filename: string,
   fullPath: string,
   relativePath: string = filename,
-  sizeBytes?: number
+  sizeBytes?: number,
+  blobUrl?: string,
+  streamUrl?: string
 ): BTRLocalMediaFile | null {
   const ext = getFileExtension(filename);
   const isVideo = VIDEO_EXTS.has(ext);
@@ -183,6 +187,8 @@ export function classifyBTRFile(
     matchedSubjectId,
     lectureNumber,
     title,
+    blobUrl,
+    streamUrl,
   };
 }
 
@@ -190,7 +196,15 @@ export function classifyBTRFile(
  * Index a collection of user-uploaded or scanned files into the BTR 19-Subject structure
  */
 export function indexBTRFiles(
-  files: Array<{ name: string; path?: string; fullPath?: string; size?: number; relativePath?: string }>,
+  files: Array<{
+    name: string;
+    path?: string;
+    fullPath?: string;
+    size?: number;
+    relativePath?: string;
+    blobUrl?: string;
+    streamUrl?: string;
+  }>,
   rootFolderPath?: string
 ): BTRLocalLibraryState {
   const mappings: Record<string, BTRSubjectMediaMapping> = {};
@@ -210,7 +224,14 @@ export function indexBTRFiles(
 
   for (const f of files) {
     const pathStr = f.fullPath || f.path || f.name;
-    const classified = classifyBTRFile(f.name, pathStr, f.relativePath || f.name, f.size);
+    const classified = classifyBTRFile(
+      f.name,
+      pathStr,
+      f.relativePath || f.name,
+      f.size,
+      f.blobUrl,
+      f.streamUrl
+    );
     if (!classified) continue;
 
     const subjectMap = mappings[classified.matchedSubjectId];
@@ -306,6 +327,45 @@ export function saveBTRLocalLibrary(state: BTRLocalLibraryState): void {
 }
 
 /**
+ * Resolves a video or PDF file path to a streamable/playable URL.
+ * In Tauri: maps local disk paths through convertFileSrc to bypass webview file:// blocking.
+ * In Browser: uses blob URL or web URL.
+ */
+export function resolveBTRPlayableUrl(
+  fullPath: string,
+  blobUrl?: string
+): string {
+  if (blobUrl) return blobUrl;
+  if (!fullPath) return "";
+
+  if (
+    fullPath.startsWith("http://") ||
+    fullPath.startsWith("https://") ||
+    fullPath.startsWith("blob:") ||
+    fullPath.startsWith("asset://")
+  ) {
+    return fullPath;
+  }
+
+  const cleanPath = fullPath.replace(/^file:\/\//, "");
+
+  if (
+    typeof window !== "undefined" &&
+    ("__TAURI_INTERNALS__" in window || "__TAURI__" in window)
+  ) {
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      const { convertFileSrc } = require("@tauri-apps/api/core");
+      if (typeof convertFileSrc === "function") {
+        return convertFileSrc(cleanPath);
+      }
+    } catch {}
+  }
+
+  return cleanPath;
+}
+
+/**
  * Build a PlayerSrc object for instant native video playback in Argus player
  */
 export function createBTRVideoPlayerSrc(
@@ -313,18 +373,27 @@ export function createBTRVideoPlayerSrc(
   subject: BTRSubject,
   companionPdfUrl?: string
 ): PlayerSrc {
-  const formattedUrl = video.fullPath.startsWith("file://")
-    ? video.fullPath
-    : `file://${video.fullPath}`;
+  const cleanPath = video.fullPath.replace(/^file:\/\//, "");
+  const isRemote =
+    video.fullPath.startsWith("http://") ||
+    video.fullPath.startsWith("https://") ||
+    video.fullPath.startsWith("blob:");
+  const isBlob = Boolean(video.blobUrl);
+  const isLocalDisk = !isRemote && !isBlob;
+
+  // For native desktop engines (MPV / AVPlayer), feed clean disk path
+  const playableUrl = video.blobUrl || (isRemote ? video.fullPath : cleanPath);
 
   const historyUrl = companionPdfUrl
     ? `/education?btrSubject=${subject.id}&companionPdf=${encodeURIComponent(companionPdfUrl)}`
     : `/education?btrSubject=${subject.id}`;
 
   return {
-    url: formattedUrl,
+    url: playableUrl,
     title: video.title || `${subject.name} - Lecture ${video.lectureNumber}`,
     subtitle: `Core BTR 2027 • ${subject.name} (${subject.category})`,
+    // notWebReady invokes Argus's native MPVKit / AVPlayer on macOS & desktop for local disk MKV / HEVC files
+    notWebReady: isLocalDisk,
     meta: {
       id: `btr-video-${subject.id}-${video.lectureNumber}`,
       type: "other",

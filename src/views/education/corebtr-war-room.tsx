@@ -52,6 +52,10 @@ import { BTRCustomModuleModal } from "@/components/education/btr-custom-module-m
 import { BTRSubjectExplorer } from "@/components/education/btr-subject-explorer";
 import { BTRPearlModal } from "@/components/education/btr-pearl-modal";
 import { type BTRPearlItem } from "@/lib/education/btr-pearls-data";
+import {
+  BTRLiveStreamModal,
+  type BTRLiveSessionData,
+} from "@/components/education/btr-live-stream-modal";
 import { BTRAppDock, type BTRAppDestination } from "@/components/education/btr-app-dock";
 import { BTRMiniPlayerDock } from "@/components/education/btr-mini-player-dock";
 import { getFSRSSummary, reviewFSRSCard } from "@/lib/education/btr-fsrs-engine";
@@ -77,6 +81,7 @@ import {
   loadBTRLocalLibrary,
   indexBTRFiles,
   createBTRVideoPlayerSrc,
+  resolveBTRPlayableUrl,
   type BTRLocalLibraryState,
   type BTRLocalMediaFile,
 } from "@/lib/education/btr-local-library";
@@ -166,7 +171,7 @@ const COREBTR_OFFICIAL_TESTS = [
 ];
 
 // Official Dr. Zainab Vora Stream Archive (from screenshot media_1794864389403)
-const COREBTR_LIVE_SESSIONS = [
+const COREBTR_LIVE_SESSIONS: BTRLiveSessionData[] = [
   {
     id: "live_1",
     title: "Way Ahead For NEET PG with CoreBTR",
@@ -175,6 +180,19 @@ const COREBTR_LIVE_SESSIONS = [
     time: "5:00 PM - 7:00 PM",
     badge: "Completed",
     topic: "Roadmap & Prioritization",
+    youtubeId: "vD246f3h614",
+    duration: "2h 00m",
+    keyTimestamps: [
+      { time: "00:00", label: "NEET PG 2026 High-Yield Roadmap", seconds: 0 },
+      { time: "25:30", label: "20th Subject Strategy & Weightage", seconds: 1530 },
+      { time: "58:10", label: "Daily BTR Cycles & GT Cadence", seconds: 3490 },
+      { time: "1:35:00", label: "Handling Burnout & Exam Mindset", seconds: 5700 },
+    ],
+    takeaways: [
+      "Prioritize 20th Subject and High-Yield PYQs in the last 40 days.",
+      "Never miss Grand Test review; spend 2x test time on error log analysis.",
+      "Active recall with unannotated workbooks yields 3x memory retention vs passive reading.",
+    ],
   },
   {
     id: "live_2",
@@ -184,6 +202,19 @@ const COREBTR_LIVE_SESSIONS = [
     time: "11:30 AM - 4:00 PM",
     badge: "Completed",
     topic: "200 INI-CET Recall Breakdown",
+    youtubeId: "E04_O8N91fM",
+    duration: "4h 30m",
+    keyTimestamps: [
+      { time: "00:00", label: "INI-CET Paper Pattern & Cut-off Traps", seconds: 0 },
+      { time: "32:00", label: "Anatomy & Physiology Recalls (Qs 1-40)", seconds: 1920 },
+      { time: "1:45:00", label: "Radiology & Pathology Spotters (Qs 41-110)", seconds: 6300 },
+      { time: "3:10:00", label: "Clinical Surgery & OBGYN Recalls (Qs 111-200)", seconds: 11400 },
+    ],
+    takeaways: [
+      "AIIMS examiners repeatedly test atypical presentations of common syndromes.",
+      "Multi-step image questions often give away the answer in the second diagnostic finding.",
+      "Volatiles tables accounted for 38% of direct repeat questions.",
+    ],
   },
   {
     id: "live_3",
@@ -193,6 +224,17 @@ const COREBTR_LIVE_SESSIONS = [
     time: "8:00 AM - 12:00 PM",
     badge: "Completed",
     topic: "Mindset & Exam Temperament",
+    youtubeId: "tE1U4xW1-sQ",
+    duration: "1h 45m",
+    keyTimestamps: [
+      { time: "00:00", label: "Pre-Exam Routine & Sleep Optimization", seconds: 0 },
+      { time: "20:00", label: "Intelligent Elimination: The 50:50 Rule", seconds: 1200 },
+      { time: "48:00", label: "Time Management in 200-Question Sprints", seconds: 2880 },
+    ],
+    takeaways: [
+      "Avoid altering your first instinct unless you identify a clear trick in the stem.",
+      "Mark no more than 25 questions for final review to prevent end-of-test panic.",
+    ],
   },
   {
     id: "live_4",
@@ -202,6 +244,18 @@ const COREBTR_LIVE_SESSIONS = [
     time: "8:30 AM - 3:00 PM",
     badge: "Completed",
     topic: "Volatiles & High-Yield Tables",
+    youtubeId: "zV99BTR002",
+    duration: "6h 30m",
+    keyTimestamps: [
+      { time: "00:00", label: "Radiology Classifications & CT Signs", seconds: 0 },
+      { time: "1:40:00", label: "Orthopedics Fractures & Epiphyseal Injuries", seconds: 6000 },
+      { time: "3:15:00", label: "Dermatology Blistering Disorders & Spotters", seconds: 11700 },
+      { time: "4:50:00", label: "Biostatistics 2x2 Formulas & BMW Guidelines", seconds: 17400 },
+    ],
+    takeaways: [
+      "Master the Gustilo-Anderson and Gartland classifications for trauma questions.",
+      "Keep biostatistics PPV/NPV formulas at fingertips for instant 4 marks.",
+    ],
   },
   {
     id: "live_5",
@@ -211,6 +265,18 @@ const COREBTR_LIVE_SESSIONS = [
     time: "8:30 AM - 3:00 PM",
     badge: "Completed",
     topic: "Pre- & Para-Clinical High-Yield",
+    youtubeId: "zV99BTR001",
+    duration: "6h 30m",
+    keyTimestamps: [
+      { time: "00:00", label: "Embryology & Neuro-Anatomy High Yields", seconds: 0 },
+      { time: "1:30:00", label: "Pharmacology DOCs & Antidote Tables", seconds: 5400 },
+      { time: "3:10:00", label: "Microbiology Parasitology & Culture Spotters", seconds: 11400 },
+      { time: "4:45:00", label: "Biochemistry Inborn Errors of Metabolism", seconds: 17100 },
+    ],
+    takeaways: [
+      "Inborn errors of metabolism enzyme defects are guaranteed high-rank differentiators.",
+      "Memorize autonomic receptor pharmacology table for 6+ direct questions.",
+    ],
   },
   {
     id: "live_6",
@@ -220,6 +286,17 @@ const COREBTR_LIVE_SESSIONS = [
     time: "6:55 PM - 11:00 PM",
     badge: "Completed",
     topic: "100 Questions Analysis",
+    youtubeId: "zV99BTR003",
+    duration: "4h 00m",
+    keyTimestamps: [
+      { time: "00:00", label: "Mini Test 2 General Radiography Qs 1-25", seconds: 0 },
+      { time: "1:05:00", label: "Thoracic & Neuroradiology Qs 26-60", seconds: 3900 },
+      { time: "2:20:00", label: "Nuclear Medicine & Radiotherapy Qs 61-100", seconds: 8400 },
+    ],
+    takeaways: [
+      "Distinguish between ground glass opacity and consolidation on HRCT.",
+      "Nuclear medicine tracers (Tc-99m MIBI vs FDG PET) high-yield table recap.",
+    ],
   },
   {
     id: "live_7",
@@ -229,6 +306,17 @@ const COREBTR_LIVE_SESSIONS = [
     time: "7:00 PM - 10:00 PM",
     badge: "Completed",
     topic: "40-Day Revision Strategy",
+    youtubeId: "zV99BTR004",
+    duration: "3h 00m",
+    keyTimestamps: [
+      { time: "00:00", label: "40-Day Block Schedule Structure", seconds: 0 },
+      { time: "45:00", label: "Balancing Subject Marathons with Daily MCQs", seconds: 2700 },
+      { time: "1:50:00", label: "FSRS Spaced Repetition for Last-Mile Recall", seconds: 6600 },
+    ],
+    takeaways: [
+      "Divide your remaining 40 days into 25 days (Cycle 1) + 10 days (Cycle 2) + 5 days (Volatiles).",
+      "Do 100 questions daily in strict exam-timed blocks.",
+    ],
   },
 ];
 
@@ -330,6 +418,7 @@ export function CoreBTRWarRoom({ onStartQBankDrill, onOpenNotes }: CoreBTRWarRoo
   const [testsFilter, setTestsFilter] = useState<"In Progress" | "Live" | "Upcoming" | "Not Attempted">("Live");
   const [showCustomModuleModal, setShowCustomModuleModal] = useState(false);
   const [selectedPearlModal, setSelectedPearlModal] = useState<BTRPearlItem | null>(null);
+  const [activeLiveStreamModal, setActiveLiveStreamModal] = useState<BTRLiveSessionData | null>(null);
   const [libraryCategoryFilter, setLibraryCategoryFilter] = useState<
     "All Subjects" | "Short Subjects" | "Intermediate Subjects" | "Long Subjects" | "Integrated Systems"
   >("All Subjects");
@@ -456,21 +545,68 @@ export function CoreBTRWarRoom({ onStartQBankDrill, onOpenNotes }: CoreBTRWarRoo
     setGtRecords(updated);
   };
 
-  // Folder Upload Handler
+  // Native Folder Picker (Tauri) or fallback to HTML file input (Web)
+  const handleOpenFolderPicker = async () => {
+    try {
+      const { isTauri, invoke } = await import("@tauri-apps/api/core");
+      if (isTauri()) {
+        const { open } = await import("@tauri-apps/plugin-dialog");
+        const folder = await open({
+          directory: true,
+          multiple: false,
+          title: "Select CoreBTR Video & Notes Folder",
+        });
+        if (typeof folder === "string") {
+          const scanned = (await invoke("argus_scan_folder", {
+            folder,
+            minSizeMb: 0,
+          })) as Array<{ path: string; filename: string; size: number }>;
+
+          const fileList = scanned.map((s) => ({
+            name: s.filename,
+            fullPath: s.path,
+            relativePath: s.path.replace(folder, "").replace(/^[/\\]/, ""),
+            size: s.size,
+          }));
+
+          const state = indexBTRFiles(fileList, folder);
+          setLibraryState(state);
+          setScanNotice(
+            `Indexed ${state.totalVideosFound} lecture videos and ${state.totalPdfsFound} PDF workbooks from ${folder}!`
+          );
+          setTimeout(() => setScanNotice(null), 6000);
+          return;
+        }
+      }
+    } catch (e) {
+      console.warn("Native folder picker fallback", e);
+    }
+    // Browser fallback
+    folderInputRef.current?.click();
+  };
+
+  // Browser HTML Folder Selection (stores blobUrls for instant zero-latency playback)
   const handleFolderSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
 
-    const fileList: Array<{ name: string; fullPath?: string; relativePath?: string; size?: number }> = [];
+    const fileList: Array<{
+      name: string;
+      fullPath?: string;
+      relativePath?: string;
+      size?: number;
+      blobUrl?: string;
+    }> = [];
     for (let i = 0; i < files.length; i++) {
       const file = files[i];
-      // webkitRelativePath gives folder hierarchy e.g. "BTR 2027/Anatomy/Lecture 01.mp4"
       const relative = file.webkitRelativePath || file.name;
+      const blobUrl = URL.createObjectURL(file);
       fileList.push({
         name: file.name,
-        fullPath: (file as any).path || relative,
+        fullPath: (file as any).path || blobUrl,
         relativePath: relative,
         size: file.size,
+        blobUrl,
       });
     }
 
@@ -497,7 +633,7 @@ export function CoreBTRWarRoom({ onStartQBankDrill, onOpenNotes }: CoreBTRWarRoo
 
   // Open PDF workbook in browser/new tab
   const handleOpenPdf = (pdf: BTRLocalMediaFile) => {
-    const url = pdf.fullPath.startsWith("file://") ? pdf.fullPath : `file://${pdf.fullPath}`;
+    const url = resolveBTRPlayableUrl(pdf.fullPath);
     window.open(url, "_blank");
   };
 
@@ -589,7 +725,7 @@ export function CoreBTRWarRoom({ onStartQBankDrill, onOpenNotes }: CoreBTRWarRoo
         dailyDueCount={summary.dueTodayCount}
         streakDays={summary.streakDays}
         totalFilesLinked={libraryState.totalVideosFound + libraryState.totalPdfsFound}
-        onLinkFolder={() => folderInputRef.current?.click()}
+        onLinkFolder={handleOpenFolderPicker}
         isWorkstationActive={!!workstationSession}
       />
 
@@ -771,7 +907,7 @@ export function CoreBTRWarRoom({ onStartQBankDrill, onOpenNotes }: CoreBTRWarRoo
                     id: "downloads",
                     label: "Downloads",
                     icon: Download,
-                    action: () => folderInputRef.current?.click(),
+                    action: handleOpenFolderPicker,
                   },
                   {
                     id: "study_plan",
@@ -1598,7 +1734,7 @@ export function CoreBTRWarRoom({ onStartQBankDrill, onOpenNotes }: CoreBTRWarRoo
 
                     <button
                       type="button"
-                      onClick={() => folderInputRef.current?.click()}
+                      onClick={handleOpenFolderPicker}
                       className="flex items-center gap-2 rounded-xl bg-accent px-4 py-2 text-xs font-bold text-white shadow-sm hover:brightness-110 transition shrink-0"
                     >
                       <FolderPlus size={15} />
@@ -2066,14 +2202,26 @@ export function CoreBTRWarRoom({ onStartQBankDrill, onOpenNotes }: CoreBTRWarRoo
             </div>
           </div>
 
-          <button
-            type="button"
-            onClick={() => onStartQBankDrill?.(session.title)}
-            className="px-4 py-2 rounded-xl bg-elevated hover:bg-raised text-ink text-xs font-bold border border-edge-soft transition flex items-center gap-1.5"
-          >
-            <Play size={12} fill="currentColor" />
-            <span>Watch Discussion</span>
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setActiveLiveStreamModal(session)}
+              className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold shadow-md transition flex items-center gap-1.5"
+            >
+              <Play size={12} fill="currentColor" />
+              <span>Watch Discussion</span>
+            </button>
+            {onStartQBankDrill && (
+              <button
+                type="button"
+                onClick={() => onStartQBankDrill(session.title)}
+                className="px-3 py-2 rounded-xl bg-elevated hover:bg-raised text-ink text-xs font-semibold border border-edge-soft transition flex items-center gap-1.5"
+                title="Practice MCQs for this recall session"
+              >
+                <span>MCQs</span>
+              </button>
+            )}
+          </div>
         </div>
       ))}
     </div>
@@ -2800,9 +2948,7 @@ export function CoreBTRWarRoom({ onStartQBankDrill, onOpenNotes }: CoreBTRWarRoo
             }
           }
           if (matchedPdf) {
-            const url = matchedPdf.fullPath.startsWith("file://")
-              ? matchedPdf.fullPath
-              : `file://${matchedPdf.fullPath}`;
+            const url = resolveBTRPlayableUrl(matchedPdf.fullPath);
             window.open(`${url}#page=${pageNumber}`, "_blank");
           }
         }}
@@ -2828,6 +2974,14 @@ export function CoreBTRWarRoom({ onStartQBankDrill, onOpenNotes }: CoreBTRWarRoo
       <BTRPearlModal
         pearl={selectedPearlModal}
         onClose={() => setSelectedPearlModal(null)}
+      />
+
+      {/* CoreBTR Live Discussion Player Modal */}
+      <BTRLiveStreamModal
+        open={!!activeLiveStreamModal}
+        onClose={() => setActiveLiveStreamModal(null)}
+        session={activeLiveStreamModal}
+        onStartQBankDrill={onStartQBankDrill}
       />
     </div>
   );

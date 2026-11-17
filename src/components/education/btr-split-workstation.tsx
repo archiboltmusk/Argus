@@ -11,10 +11,18 @@ import {
   Check,
   Sparkles,
   Repeat,
+  AlertTriangle,
+  ExternalLink,
+  Upload,
 } from "lucide-react";
 import { getChaptersForVideo } from "@/lib/education/btr-chapters-engine";
-import type { BTRLocalMediaFile } from "@/lib/education/btr-local-library";
+import {
+  type BTRLocalMediaFile,
+  resolveBTRPlayableUrl,
+  createBTRVideoPlayerSrc,
+} from "@/lib/education/btr-local-library";
 import type { BTRSubject } from "@/lib/education/corebtr-schedule";
+import { useView } from "@/lib/view";
 
 interface BTRSplitWorkstationProps {
   open: boolean;
@@ -29,13 +37,22 @@ interface BTRSplitWorkstationProps {
 export function BTRSplitWorkstation({
   open,
   onClose,
-  video,
+  video: initialVideo,
   subject,
   unannotatedPdf,
   annotatedPdf,
   embedded = false,
 }: BTRSplitWorkstationProps) {
+  const { openPlayer } = useView();
   const videoRef = useRef<HTMLVideoElement | null>(null);
+  const directFileInputRef = useRef<HTMLInputElement | null>(null);
+
+  // Active Video state (allows overriding with direct file picker if needed)
+  const [activeVideo, setActiveVideo] = useState<BTRLocalMediaFile>(initialVideo);
+  useEffect(() => {
+    setActiveVideo(initialVideo);
+    setVideoError(false);
+  }, [initialVideo]);
 
   // Playback state
   const [isPlaying, setIsPlaying] = useState(false);
@@ -43,6 +60,7 @@ export function BTRSplitWorkstation({
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [audioOnlyMode, setAudioOnlyMode] = useState(false);
+  const [videoError, setVideoError] = useState(false);
 
   // A-B Loop
   const [loopA, setLoopA] = useState<number | null>(null);
@@ -58,7 +76,7 @@ export function BTRSplitWorkstation({
   const [savedScratchpad, setSavedScratchpad] = useState(false);
 
   // Chapters
-  const chapters = useMemo(() => getChaptersForVideo(video.filename), [video.filename]);
+  const chapters = useMemo(() => getChaptersForVideo(activeVideo.filename), [activeVideo.filename]);
 
   // Current Chapter
   const currentChapter = useMemo(() => {
@@ -108,13 +126,37 @@ export function BTRSplitWorkstation({
     }
   }, [currentTime, isLoopActive, loopA, loopB]);
 
-  // PDF URL resolution
+  // Video URL resolution with convertFileSrc in Tauri & blob fallback
+  const playableVideoUrl = useMemo(() => {
+    return resolveBTRPlayableUrl(activeVideo.fullPath, activeVideo.blobUrl);
+  }, [activeVideo]);
+
+  // PDF URL resolution with convertFileSrc
   const activePdf = pdfMode === "unannotated" ? unannotatedPdf : annotatedPdf;
-  const pdfUrl = activePdf
-    ? activePdf.fullPath.startsWith("file://")
-      ? activePdf.fullPath
-      : `file://${activePdf.fullPath}`
-    : null;
+  const pdfUrl = useMemo(() => {
+    if (!activePdf) return null;
+    return resolveBTRPlayableUrl(activePdf.fullPath);
+  }, [activePdf]);
+
+  // Direct file picker handler for instant webview playback
+  const handleDirectFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const blobUrl = URL.createObjectURL(file);
+    setActiveVideo((prev) => ({
+      ...prev,
+      blobUrl,
+      title: file.name,
+      filename: file.name,
+    }));
+    setVideoError(false);
+  };
+
+  // Launch in native Argus Theater Engine (AVPlayer / MPVKit)
+  const handleLaunchNativePlayer = () => {
+    const src = createBTRVideoPlayerSrc(activeVideo, subject, activePdf?.fullPath);
+    openPlayer(src);
+  };
 
   if (!open) return null;
 
@@ -126,6 +168,15 @@ export function BTRSplitWorkstation({
           : "fixed inset-0 z-[250] flex flex-col bg-canvas text-ink animate-in fade-in duration-150"
       }
     >
+      {/* Hidden direct file input */}
+      <input
+        type="file"
+        ref={directFileInputRef}
+        accept="video/*"
+        onChange={handleDirectFileSelect}
+        className="hidden"
+      />
+
       {/* 1. Header Navigation Bar */}
       <header className="flex h-14 items-center justify-between border-b border-edge px-4 sm:px-6 bg-surface/90 backdrop-blur-md">
         <div className="flex items-center gap-3">
@@ -134,7 +185,7 @@ export function BTRSplitWorkstation({
           </span>
           <div className="flex flex-col">
             <h2 className="text-sm font-bold text-ink truncate max-w-md sm:max-w-xl">
-              {video.title || `${subject.name} - Lecture ${video.lectureNumber}`}
+              {activeVideo.title || `${subject.name} - Lecture ${activeVideo.lectureNumber}`}
             </h2>
             <span className="text-[11px] text-ink-muted">
               {subject.name} • Dr. Zainab Vora High-Yield Workstation
@@ -143,7 +194,18 @@ export function BTRSplitWorkstation({
         </div>
 
         {/* Global Workstation Controls */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2.5">
+          {/* Launch Native Player in Argus Engine */}
+          <button
+            type="button"
+            onClick={handleLaunchNativePlayer}
+            className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-accent/15 border border-accent/30 text-accent hover:bg-accent/25 transition shadow-xs"
+            title="Open lecture in Argus Native Hardware Theater Engine (MPV / AVPlayer for MKV/HEVC)"
+          >
+            <ExternalLink size={13} />
+            <span>Native Theater Engine</span>
+          </button>
+
           {/* Audio-only / Walk Mode Toggle */}
           <button
             type="button"
@@ -192,13 +254,50 @@ export function BTRSplitWorkstation({
                   </div>
                 )}
               </div>
+            ) : videoError ? (
+              <div className="flex flex-col items-center justify-center gap-4 p-8 text-center max-w-md">
+                <div className="flex h-16 w-16 items-center justify-center rounded-3xl bg-amber-500/15 border border-amber-500/30 text-amber-400">
+                  <AlertTriangle size={32} />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-ink">Video Decoder Mismatch</h3>
+                  <p className="text-xs text-ink-muted mt-1.5 leading-relaxed">
+                    This video format (MKV, 10-bit HEVC, or sandboxed disk path) is not supported by standard webview HTML5 decoders.
+                  </p>
+                </div>
+                <div className="flex flex-col sm:flex-row items-center gap-3 w-full">
+                  <button
+                    type="button"
+                    onClick={handleLaunchNativePlayer}
+                    className="w-full flex items-center justify-center gap-2 rounded-xl bg-accent px-4 py-2.5 text-xs font-bold text-white shadow-md hover:brightness-110 transition"
+                  >
+                    <ExternalLink size={14} />
+                    <span>Play in Native Engine (MPV)</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => directFileInputRef.current?.click()}
+                    className="w-full flex items-center justify-center gap-2 rounded-xl bg-elevated border border-edge-soft px-4 py-2.5 text-xs font-bold text-ink hover:bg-raised transition"
+                  >
+                    <Upload size={14} />
+                    <span>Pick Local File</span>
+                  </button>
+                </div>
+              </div>
             ) : (
               <video
                 ref={videoRef}
-                src={video.fullPath.startsWith("file://") ? video.fullPath : `file://${video.fullPath}`}
+                src={playableVideoUrl}
                 className="w-full h-full object-contain"
                 onTimeUpdate={(e) => setCurrentTime(e.currentTarget.currentTime)}
-                onLoadedMetadata={(e) => setDuration(e.currentTarget.duration)}
+                onLoadedMetadata={(e) => {
+                  setDuration(e.currentTarget.duration);
+                  setVideoError(false);
+                }}
+                onError={() => {
+                  // If local webview cannot decode e.g. MKV or file scheme, trip fallback banner
+                  setVideoError(true);
+                }}
                 onPlay={() => setIsPlaying(true)}
                 onPause={() => setIsPlaying(false)}
               />
