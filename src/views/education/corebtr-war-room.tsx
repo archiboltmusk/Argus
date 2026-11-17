@@ -1243,12 +1243,12 @@ export function CoreBTRWarRoom({
                           cy="50"
                           r="42"
                           fill="none"
-                          stroke="currentColor" className="text-white/40"
+                          stroke="currentColor"
                           strokeWidth="6"
                           strokeLinecap="round"
                           strokeDasharray={2 * Math.PI * 42}
                           strokeDashoffset={2 * Math.PI * 42 * (1 - Math.min(100, readiness.completionPercentage) / 100)}
-                          className="transition-all duration-1000 ease-out"
+                          className="text-white/40 transition-all duration-1000 ease-out"
                         />
 
                         {/* Middle Ring: Mastered Subjects (Light Medical Blue, 19 target) */}
@@ -1257,12 +1257,12 @@ export function CoreBTRWarRoom({
                           cy="50"
                           r="32"
                           fill="none"
-                          stroke="currentColor" className="text-accent"
+                          stroke="currentColor"
                           strokeWidth="6"
                           strokeLinecap="round"
                           strokeDasharray={2 * Math.PI * 32}
                           strokeDashoffset={2 * Math.PI * 32 * (1 - Math.min(19, readiness.masteredCount + readiness.annotatedCount) / 19)}
-                          className="transition-all duration-1000 ease-out"
+                          className="text-accent transition-all duration-1000 ease-out"
                         />
 
                         {/* Inner Ring: Linked BTR Videos (Warm Gold, 61 target) */}
@@ -1271,12 +1271,12 @@ export function CoreBTRWarRoom({
                           cy="50"
                           r="22"
                           fill="none"
-                          stroke="#feb122"
+                          stroke="currentColor"
                           strokeWidth="6"
                           strokeLinecap="round"
                           strokeDasharray={2 * Math.PI * 22}
                           strokeDashoffset={2 * Math.PI * 22 * (1 - Math.min(61, libraryState.totalVideosFound) / 61)}
-                          className="transition-all duration-1000 ease-out"
+                          className="text-amber-400 transition-all duration-1000 ease-out"
                         />
                       </svg>
 
