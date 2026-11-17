@@ -10,6 +10,14 @@ import type {
 } from "./btr-backend-types";
 import { readEducationalFileText } from "./json-gz-importer";
 import { TOP_100_FRONTIER_VAULT } from "./btr-frontier-vault";
+import {
+  getQuestionPhase,
+  getQuestionSystem,
+  inferQuestionAttributes,
+  type MedicalPhase,
+  type OrganSystem,
+  type ClinicalAttribute,
+} from "./btr-taxonomy";
 
 const DB_NAME = "argus_corebtr_db";
 const DB_VERSION = 1;
@@ -647,14 +655,19 @@ export async function generateAIR100Prescription(): Promise<ClinicalQuestion[]> 
     ],
     correctIndex: 0,
     examinerTrap: f.examinerTrap,
+    highYieldTags: f.tags,
     explanation: {
       bottomLine: f.mustKnowPill,
-      whyCorrect: f.clinicalContext,
-      distractorNotes: [
-        `Trap: ${f.examinerTrap}`,
-        "Incorrect: significantly alters clinical management.",
-        "Incorrect: this is a major rank decider.",
+      correctRationale: f.clinicalContext,
+      distractorBreakdown: [
+        { option: "B", reason: `Trap: ${f.examinerTrap}` },
+        { option: "C", reason: "Incorrect: routine findings do not apply here." },
+        { option: "D", reason: "Incorrect: not contraindicated." },
       ],
+      whyCorrect: {
+        mechanism: f.clinicalContext,
+        clinicalRule: f.mustKnowPill,
+      },
     },
   }));
 
@@ -670,4 +683,48 @@ export async function generateAIR100Prescription(): Promise<ClinicalQuestion[]> 
   }
 
   return uniqueQs;
+}
+
+/**
+ * Query questions by medical phase (Pre-Clinical, Para-Clinical, Clinical-1, Clinical-2, Integrated)
+ */
+export async function getQuestionsByPhase(phase: MedicalPhase): Promise<ClinicalQuestion[]> {
+  await initBTRBackendDatabase();
+  const results: ClinicalQuestion[] = [];
+  for (const q of memoryQuestionsCache.values()) {
+    if (getQuestionPhase(q.subject) === phase) {
+      results.push(q);
+    }
+  }
+  return results;
+}
+
+/**
+ * Query questions by organ system (CVS, CNS, Respiratory, Renal, GI/HPB, etc.)
+ */
+export async function getQuestionsBySystem(system: OrganSystem): Promise<ClinicalQuestion[]> {
+  await initBTRBackendDatabase();
+  const results: ClinicalQuestion[] = [];
+  for (const q of memoryQuestionsCache.values()) {
+    if (getQuestionSystem(q.subject, q.topic, q.vignette) === system) {
+      results.push(q);
+    }
+  }
+  return results;
+}
+
+/**
+ * Query questions by clinical attribute (ImageBased, ClinicalVignette, RecentUpdate, ExaminerTrap, etc.)
+ */
+export async function getQuestionsByClinicalAttribute(
+  attr: ClinicalAttribute
+): Promise<ClinicalQuestion[]> {
+  await initBTRBackendDatabase();
+  const results: ClinicalQuestion[] = [];
+  for (const q of memoryQuestionsCache.values()) {
+    if (inferQuestionAttributes(q).includes(attr)) {
+      results.push(q);
+    }
+  }
+  return results;
 }

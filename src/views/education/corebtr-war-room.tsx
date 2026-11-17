@@ -53,7 +53,6 @@ import { BTRGTTrackerModal } from "@/components/education/btr-gt-tracker-modal";
 import { getNextUpcomingGT } from "@/lib/education/gt-tracker-engine";
 import { BTRCustomModuleModal } from "@/components/education/btr-custom-module-modal";
 import { BTRFrontierVaultModal } from "@/components/education/btr-frontier-vault-modal";
-import { TOP_100_FRONTIER_VAULT } from "@/lib/education/btr-frontier-vault";
 import { BTRSubjectExplorer } from "@/components/education/btr-subject-explorer";
 import { BTRPearlModal } from "@/components/education/btr-pearl-modal";
 import { type BTRPearlItem } from "@/lib/education/btr-pearls-data";

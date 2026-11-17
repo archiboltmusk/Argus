@@ -4,7 +4,6 @@ import {
   XCircle,
   ArrowRight,
   AlertTriangle,
-  Lightbulb,
   Timer,
   Bookmark,
   X,
@@ -18,7 +17,6 @@ import {
   Zap,
   Award,
   TrendingUp,
-  Activity,
   ShieldAlert,
   Brain,
 } from "lucide-react";
@@ -34,6 +32,8 @@ import {
   type AnswerChangeRecord,
   type GuessRecord,
 } from "@/lib/education/btr-rank-optimizer";
+import { BTRInteractiveImage } from "@/components/education/btr-interactive-image";
+import { BTRClinicalAutopsy } from "@/components/education/btr-clinical-autopsy";
 
 export type QBankRunnerProps = {
   questions?: ClinicalQuestion[];
@@ -861,6 +861,33 @@ export function QBankRunner({
                       <strong>Correct Option: {String.fromCharCode(65 + q.correctIndex)}) </strong>
                       {q.options[q.correctIndex]}
                     </div>
+
+                    {/* Interactive Image if present */}
+                    {(q.imageUrl || (q as any).images?.[0]?.url) && (
+                      <div className="mt-3">
+                        <BTRInteractiveImage
+                          imageUrl={q.imageUrl || (q as any).images?.[0]?.url}
+                          caption={q.topic}
+                          imagingMeta={q.imagingMeta}
+                        />
+                      </div>
+                    )}
+
+                    {/* 5-Tier Clinical Autopsy & Distractor Inversion */}
+                    <div className="mt-3">
+                      <BTRClinicalAutopsy
+                        question={q}
+                        selectedOptionIndex={sel}
+                        onBookmarkFSRS={() => {
+                          if (!session.bookmarks.includes(q.id)) {
+                            setSession((prev) => ({
+                              ...prev,
+                              bookmarks: [...prev.bookmarks, q.id],
+                            }));
+                          }
+                        }}
+                      />
+                    </div>
                   </div>
                 );
               })}
@@ -1033,6 +1060,15 @@ export function QBankRunner({
                 )
               )}
             </div>
+
+            {/* Interactive Clinical & Radiological Imaging Suite */}
+            {(activeQuestion.imageUrl || (activeQuestion as any).images?.[0]?.url) && (
+              <BTRInteractiveImage
+                imageUrl={activeQuestion.imageUrl || (activeQuestion as any).images?.[0]?.url}
+                caption={activeQuestion.topic}
+                imagingMeta={activeQuestion.imagingMeta}
+              />
+            )}
 
             {/* Options Radio List */}
             <div className="flex flex-col gap-3 flex-1">
@@ -1328,6 +1364,15 @@ export function QBankRunner({
           )}
         </div>
 
+        {/* Interactive Clinical & Radiological Imaging Suite */}
+        {(activeQuestion.imageUrl || (activeQuestion as any).images?.[0]?.url) && (
+          <BTRInteractiveImage
+            imageUrl={activeQuestion.imageUrl || (activeQuestion as any).images?.[0]?.url}
+            caption={activeQuestion.topic}
+            imagingMeta={activeQuestion.imagingMeta}
+          />
+        )}
+
         {/* Action Row: Reset Answer & Mark for Review */}
         <div className="flex items-center justify-end gap-4 text-xs font-semibold text-white/60">
           <button
@@ -1445,34 +1490,13 @@ export function QBankRunner({
           </div>
         )}
 
-        {/* Socratic Rationale */}
+        {/* 5-Tier Clinical Autopsy, Distractor Inversion & Synapse Engine */}
         {submitted && (
-          <div className="flex flex-col gap-4 rounded-2xl border border-edge bg-elevated/95 p-5 animate-in fade-in duration-200">
-            <div className="flex items-start gap-2.5 rounded-xl bg-amber-500/10 border border-amber-500/30 p-3 text-xs text-amber-400">
-              <AlertTriangle size={15} className="shrink-0 mt-0.5" />
-              <div>
-                <span className="font-bold uppercase tracking-wider text-[10px]">Examiner Trap Radar</span>
-                <p className="text-[12px] text-white/90 leading-relaxed mt-0.5">{activeQuestion.examinerTrap}</p>
-              </div>
-            </div>
-
-            <div className="flex flex-col gap-1.5">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-400 flex items-center gap-1">
-                <CheckCircle2 size={13} /> Why Option {String.fromCharCode(65 + activeQuestion.correctIndex)} is Correct
-              </span>
-              <div className="text-[13px] text-white/90 leading-relaxed whitespace-pre-line">
-                {activeQuestion.explanation.correctRationale}
-              </div>
-            </div>
-
-            <div className="flex items-center gap-2 rounded-xl bg-white/10 border border-edge p-2.5 text-xs text-ink-muted">
-              <Lightbulb size={15} className="shrink-0" />
-              <span>
-                <strong className="text-white font-bold">Bottom Line: </strong>
-                {activeQuestion.explanation.bottomLine}
-              </span>
-            </div>
-          </div>
+          <BTRClinicalAutopsy
+            question={activeQuestion}
+            selectedOptionIndex={selectedIdx}
+            onBookmarkFSRS={handleToggleBookmark}
+          />
         )}
       </div>
 

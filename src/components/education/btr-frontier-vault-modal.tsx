@@ -5,17 +5,8 @@ import {
   Zap,
   AlertTriangle,
   Award,
-  BookOpen,
-  Filter,
-  ArrowRight,
-  Calculator,
-  ShieldCheck,
-  CheckCircle2,
 } from "lucide-react";
-import {
-  TOP_100_FRONTIER_VAULT,
-  type FrontierFact,
-} from "@/lib/education/btr-frontier-vault";
+import { TOP_100_FRONTIER_VAULT } from "@/lib/education/btr-frontier-vault";
 import type { ClinicalQuestion } from "@/lib/education/qbank-types";
 
 export interface BTRFrontierVaultModalProps {
@@ -100,14 +91,19 @@ export function BTRFrontierVaultModal({
       ],
       correctIndex: 0,
       examinerTrap: f.examinerTrap,
+      highYieldTags: f.tags,
       explanation: {
         bottomLine: f.mustKnowPill,
-        whyCorrect: f.clinicalContext,
-        distractorNotes: [
-          `Trap: ${f.examinerTrap}`,
-          "Incorrect: alters staging and treatment pathway completely.",
-          "Incorrect: this is a major rank-deciding guideline update.",
+        correctRationale: f.clinicalContext,
+        distractorBreakdown: [
+          { option: "B", reason: `Trap: ${f.examinerTrap}` },
+          { option: "C", reason: "Incorrect: alters staging and treatment pathway completely." },
+          { option: "D", reason: "Incorrect: this is a major rank-deciding guideline update." },
         ],
+        whyCorrect: {
+          mechanism: f.clinicalContext,
+          clinicalRule: f.mustKnowPill,
+        },
       },
     }));
 

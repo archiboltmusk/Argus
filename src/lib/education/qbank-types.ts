@@ -4,6 +4,7 @@ export type SubjectCategory =
   | "Medicine"
   | "Surgery"
   | "OBGYN"
+  | "Obstetrics & Gynaecology"
   | "Microbiology"
   | "Radiology"
   | "Biochemistry"
@@ -17,7 +18,17 @@ export type SubjectCategory =
   | "Psychiatry"
   | "Anesthesia"
   | "FMT"
-  | "PSM";
+  | "PSM"
+  | "Preventive & Social Medicine"
+  | "Cardiovascular"
+  | "Central Nervous"
+  | "Respiratory System"
+  | "GI & Hepatobiliary System"
+  | "Renal & Electrolytes"
+  | "Endocrine"
+  | "Hematology"
+  | "Immunology"
+  | (string & {});
 
 export type QuestionDepthLevel =
   | "L1_Recall" // Single-liner / straightforward fact memory
@@ -32,6 +43,61 @@ export type InicetQuestionFormat =
   | "MatchingMatrix"
   | "ImageSpotter";
 
+export interface DistractorAutopsyItem {
+  option: string;
+  reason: string;
+  inversionScenario?: string; // "This would be correct if the vignette had presented with..."
+}
+
+export interface TextbookCitation {
+  textbook: string; // e.g. "Harrison's 21st Ed.", "Robbins 10th Ed."
+  chapter: string;
+  page?: string;
+  edition?: string;
+}
+
+export interface ClinicalExplanation5Tier {
+  correctRationale: string;
+  distractorBreakdown: DistractorAutopsyItem[];
+  bottomLine: string;
+  whyCorrect?: {
+    mechanism: string;
+    clinicalRule: string;
+  };
+  comparisonTable?: {
+    title?: string;
+    headers: string[];
+    rows: string[][];
+  };
+  citations?: TextbookCitation[];
+}
+
+export interface InteractiveImagingMeta {
+  normalReferenceUrl?: string; // Side-by-side normal anatomy reference
+  normalCaption?: string;
+  abnormalCaption?: string;
+  annotations?: Array<{
+    id: string;
+    label: string;
+    x: number; // percentage 0-100 across image width
+    y: number; // percentage 0-100 across image height
+    description?: string;
+  }>;
+}
+
+export interface SynapseLinkage {
+  btrVideo?: {
+    title: string;
+    youtubeId?: string;
+    fileKey?: string;
+    timestampSeconds: number;
+    label: string;
+  };
+  docTableId?: string;
+  fsrsCardId?: string;
+  relatedTopicIds?: string[];
+}
+
 export type ClinicalQuestion = {
   id: string;
   subject: SubjectCategory;
@@ -41,11 +107,7 @@ export type ClinicalQuestion = {
   options: string[];
   correctIndex: number;
   examinerTrap: string;
-  explanation: {
-    correctRationale: string;
-    distractorBreakdown: { option: string; reason: string }[];
-    bottomLine: string;
-  };
+  explanation: ClinicalExplanation5Tier;
   highYieldTags: string[];
   depthLevel?: QuestionDepthLevel;
   format?: InicetQuestionFormat;
@@ -53,6 +115,8 @@ export type ClinicalQuestion = {
   author?: string;
   sourceExam?: string; // e.g. "INI-CET Nov 2024", "NEET PG 2024"
   packId?: string;
+  imagingMeta?: InteractiveImagingMeta;
+  synapseLinks?: SynapseLinkage;
 };
 
 export type QBankPack = {
