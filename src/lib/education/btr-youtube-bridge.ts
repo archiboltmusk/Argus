@@ -143,7 +143,7 @@ export function createYouTubeMediaFile(
   title?: string,
   subjectId: string = "medicine"
 ): BTRLocalMediaFile {
-  const videoId = extractYouTubeId(urlOrId) || "dQw4w9WgXcQ";
+  const videoId = extractYouTubeId(urlOrId) || "uBGl2BujkPQ";
   const startSec = extractYouTubeTimestamp(urlOrId);
   const subj = CORE_BTR_SUBJECTS.find((s) => s.id === subjectId) || CORE_BTR_SUBJECTS[0];
 
@@ -165,32 +165,80 @@ export function createYouTubeMediaFile(
  */
 export const SUBJECT_HIGH_YIELD_YOUTUBE: Record<string, { id: string; title: string }> = {
   anatomy: {
-    id: "M7lc1UVf-VE",
+    id: "uBGl2BujkPQ",
     title: "Dr. Zainab Vora • High-Yield Anatomy & Embryology Master Revision",
   },
-  radiology: {
-    id: "kJQP7kiw5Fk",
-    title: "Dr. Zainab Vora • High-Yield Radiology Spotters & Systematic Imaging",
-  },
-  orthopedics: {
-    id: "9bZkp7q19f0",
-    title: "Dr. Zainab Vora • Orthopedics Trauma & Named Fractures High-Yield Sieve",
-  },
   physiology: {
-    id: "dQw4w9WgXcQ",
-    title: "Dr. Zainab Vora • General Physiology & Endocrine Feedback Loops",
+    id: "OZG8M_ldA1M",
+    title: "Dr. Zainab Vora • General Physiology & Action Potentials",
   },
   biochemistry: {
-    id: "kJQP7kiw5Fk",
-    title: "Dr. Zainab Vora • Biochemistry Inborn Errors & Metabolic Pathways",
+    id: "SCV_m91mN-Q",
+    title: "Dr. Zainab Vora • Biochemistry Inborn Errors & Hormone Cascades",
   },
   pathology: {
-    id: "M7lc1UVf-VE",
-    title: "Dr. Zainab Vora • General Pathology, Hematology & Neoplasia",
+    id: "2DFN4IBZ3rI",
+    title: "Dr. Zainab Vora • General Pathology, Immunity & Neoplasia",
   },
   pharmacology: {
-    id: "9bZkp7q19f0",
+    id: "71pCilo8k4M",
     title: "Dr. Zainab Vora • Autonomic Nervous System & Chemotherapy Pearls",
+  },
+  microbiology: {
+    id: "rd2cf5hValM",
+    title: "Dr. Zainab Vora • Clinical Microbiology & Host Defense Mechanisms",
+  },
+  fmt: {
+    id: "D-SzmURNBH0",
+    title: "Dr. Zainab Vora • Forensic Medicine, Toxicology & Post-Mortem Changes",
+  },
+  psm: {
+    id: "qPix_X-9t7E",
+    title: "Dr. Zainab Vora • Epidemiology, Biostatistics & Public Health Programs",
+  },
+  ent: {
+    id: "Ie2j7GpC4JU",
+    title: "Dr. Zainab Vora • High-Yield ENT: Hearing, Balance & Vestibular Disorders",
+  },
+  ophthalmology: {
+    id: "o0DYP-u1rNM",
+    title: "Dr. Zainab Vora • Ophthalmology: Vision, Fundus & Pupillary Pathways",
+  },
+  dermatology: {
+    id: "lUe_RI_m-Vg",
+    title: "Dr. Zainab Vora • Dermatology: Blistering Diseases & Skin Lesion Signs",
+  },
+  radiology: {
+    id: "v43ej5lCeBo",
+    title: "Dr. Zainab Vora • High-Yield Radiology Spotters & Systematic Imaging",
+  },
+  psychiatry: {
+    id: "VitFvNvRIIY",
+    title: "Dr. Zainab Vora • Psychiatry: Neurotransmitters, Mood & Psychopharmacology",
+  },
+  anesthesia: {
+    id: "bHZsvBdUC2I",
+    title: "Dr. Zainab Vora • Anesthesia: Airway Management & Gas Mechanics",
+  },
+  orthopedics: {
+    id: "rDGqkMHPDqE",
+    title: "Dr. Zainab Vora • Orthopedics: Trauma, Named Fractures & Bone Matrix",
+  },
+  medicine: {
+    id: "qPix_X-9t7E",
+    title: "Dr. Zainab Vora • Internal Medicine & Integrated Clinical Vignettes",
+  },
+  surgery: {
+    id: "Jvtb0a2RXaY",
+    title: "Dr. Zainab Vora • General Surgery: Trauma, Abdomen & Suture Principles",
+  },
+  obgyn: {
+    id: "Cqt4LjHnMEA",
+    title: "Dr. Zainab Vora • Obstetrics & Gynecology: Labor, CTG & Contraception",
+  },
+  pediatrics: {
+    id: "Ktv-CaOt6UQ",
+    title: "Dr. Zainab Vora • Pediatrics: Milestones, Neonatology & Growth Charts",
   },
 };
 
@@ -202,7 +250,7 @@ export function getSubjectYouTubeLecture(
   customTitle?: string
 ): BTRLocalMediaFile {
   const fallback = SUBJECT_HIGH_YIELD_YOUTUBE[subjectId] || {
-    id: "M7lc1UVf-VE",
+    id: "uBGl2BujkPQ",
     title: "Dr. Zainab Vora • Core BTR Medical High-Yield Master Revision",
   };
   return createYouTubeMediaFile(fallback.id, customTitle || fallback.title, subjectId);

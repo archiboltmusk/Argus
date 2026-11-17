@@ -100,14 +100,15 @@ export function BTRSplitWorkstation({
   const [loopB, setLoopB] = useState<number | null>(null);
   const [isLoopActive, setIsLoopActive] = useState(false);
 
-  // PDF pane state
-  const [pdfMode, setPdfMode] = useState<"unannotated" | "annotated" | "digital_summary">(
-    annotatedPdf ? "annotated" : unannotatedPdf ? "unannotated" : "digital_summary"
+  // PDF / Digital Notes pane state
+  const [pdfMode, setPdfMode] = useState<"annotated" | "unannotated" | "cloze_blanks" | "pdf">(
+    "annotated"
   );
   const [pdfPage, setPdfPage] = useState<number>(1);
-  const [customAnnotatedBlob, setCustomAnnotatedBlob] = useState<string | null>(null);
-  const [customUnannotatedBlob, setCustomUnannotatedBlob] = useState<string | null>(null);
+  const [customPdfBlob, setCustomPdfBlob] = useState<string | null>(null);
   const [pdfLoadError, setPdfLoadError] = useState(false);
+  const [autoFallbackTriggered, setAutoFallbackTriggered] = useState(false);
+  const [revealedSolutions, setRevealedSolutions] = useState<Set<string>>(new Set());
   const directPdfInputRef = useRef<HTMLInputElement | null>(null);
 
   // Digital Notes Reader State
@@ -262,24 +263,20 @@ export function BTRSplitWorkstation({
   }, [activeVideo]);
 
   // PDF URL resolution with convertFileSrc and blob fallback
-  const activePdf = pdfMode === "unannotated" ? unannotatedPdf : annotatedPdf;
-  const activeCustomBlob = pdfMode === "unannotated" ? customUnannotatedBlob : customAnnotatedBlob;
+  const activePdf = annotatedPdf || unannotatedPdf;
   const pdfUrl = useMemo(() => {
-    if (activeCustomBlob) return activeCustomBlob;
+    if (customPdfBlob) return customPdfBlob;
     if (!activePdf) return null;
     return resolveBTRPlayableUrl(activePdf.fullPath, activePdf.blobUrl);
-  }, [activeCustomBlob, activePdf]);
+  }, [customPdfBlob, activePdf]);
 
   // Direct PDF file picker handler
   const handleDirectPdfSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     const blobUrl = URL.createObjectURL(file);
-    if (pdfMode === "unannotated") {
-      setCustomUnannotatedBlob(blobUrl);
-    } else {
-      setCustomAnnotatedBlob(blobUrl);
-    }
+    setCustomPdfBlob(blobUrl);
+    setPdfMode("pdf");
     setPdfLoadError(false);
   };
 
@@ -370,20 +367,37 @@ export function BTRSplitWorkstation({
         </div>
 
         {/* Global Workstation Controls */}
-        <div className="flex items-center gap-2.5">
+        <div className="flex items-center gap-2 sm:gap-2.5">
+          {/* Quick Stream / Local Switch */}
+          <button
+            type="button"
+            onClick={() => {
+              if (activeYouTubeId) {
+                setActiveVideo(initialVideo);
+                setAutoFallbackTriggered(false);
+              } else {
+                handleStreamSubjectYouTube();
+              }
+            }}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition shadow-xs ${
+              activeYouTubeId
+                ? "bg-red-600/20 border border-red-500/40 text-red-400 hover:bg-red-600/30"
+                : "bg-elevated border border-edge-soft text-ink-muted hover:text-ink"
+            }`}
+            title="Switch between high-yield online lecture stream and local file"
+          >
+            <Video size={13} />
+            <span>{activeYouTubeId ? "Online Stream" : "Local Engine"}</span>
+          </button>
+
           {/* Connect / Paste YouTube Lecture Link */}
           <button
             type="button"
             onClick={() => setShowYouTubeModal(true)}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition shadow-xs ${
-              activeYouTubeId
-                ? "bg-red-600/20 border border-red-500/40 text-red-400 hover:bg-red-600/30"
-                : "bg-red-600/10 border border-red-500/25 text-red-400 hover:bg-red-600/20"
-            }`}
-            title="Connect YouTube Lecture or Paste YouTube Video Link"
+            className="hidden md:flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-semibold bg-elevated border border-edge-soft text-ink-muted hover:text-ink transition"
+            title="Paste custom YouTube link or video ID"
           >
-            <Video size={13} />
-            <span>{activeYouTubeId ? "YouTube HD" : "Connect YouTube"}</span>
+            <span>Custom URL</span>
           </button>
 
           {/* Capture Video Frame to FSRS Vault */}
@@ -514,13 +528,25 @@ export function BTRSplitWorkstation({
                     startSec: currentTime,
                     autoplay: true,
                   })}
+                  referrerPolicy="strict-origin-when-cross-origin"
                   className="w-full h-full border-none"
                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                   allowFullScreen
                 />
-                <div className="absolute top-3 left-3 z-10 flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-red-600/90 text-white font-bold text-[10px] tracking-wider uppercase shadow-lg backdrop-blur-xs">
-                  <span className="h-1.5 w-1.5 rounded-full bg-white animate-pulse" />
-                  <span>YouTube Connected</span>
+                <div className="absolute top-3 left-3 z-10 flex items-center gap-2">
+                  <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-red-600/90 text-white font-bold text-[10px] tracking-wider uppercase shadow-lg backdrop-blur-xs">
+                    <span className="h-1.5 w-1.5 rounded-full bg-white animate-pulse" />
+                    <span>Stream HD</span>
+                  </div>
+                  <a
+                    href={`https://www.youtube.com/watch?v=${activeYouTubeId}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-black/75 hover:bg-black text-white font-medium text-[10px] border border-white/20 backdrop-blur-xs transition"
+                  >
+                    <ExternalLink size={10} />
+                    <span>Watch on YouTube</span>
+                  </a>
                 </div>
               </div>
             ) : (
@@ -552,12 +578,50 @@ export function BTRSplitWorkstation({
                   setVideoError(false);
                 }}
                 onError={() => {
-                  // If local webview cannot decode e.g. MKV or file scheme, trip fallback banner
-                  setVideoError(true);
+                  // If local webview cannot decode e.g. MKV or file scheme, seamlessly auto-connect to verified YouTube stream
+                  const ytVideo = getSubjectYouTubeLecture(subject.id);
+                  setActiveVideo(ytVideo);
+                  setAutoFallbackTriggered(true);
+                  setVideoError(false);
                 }}
                 onPlay={() => setIsPlaying(true)}
                 onPause={() => setIsPlaying(false)}
               />
+            )}
+
+            {/* Seamless Fallback Notification Banner */}
+            {autoFallbackTriggered && (
+              <div className="absolute top-3 left-3 right-3 z-20 flex items-center justify-between p-2.5 rounded-xl bg-black/90 backdrop-blur-md border border-accent/40 text-xs text-white shadow-xl animate-in fade-in">
+                <div className="flex items-center gap-2 truncate">
+                  <span className="flex h-2 w-2 rounded-full bg-emerald-400 animate-pulse shrink-0" />
+                  <span className="truncate font-semibold text-white/90">
+                    Auto-switched to verified stream (Local file not found / HEVC format).
+                  </span>
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  <button
+                    type="button"
+                    onClick={handleLaunchNativePlayer}
+                    className="px-2.5 py-1 rounded-lg bg-accent text-white font-bold text-[11px] hover:brightness-110 transition shadow-xs"
+                  >
+                    Native MPV
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => directFileInputRef.current?.click()}
+                    className="px-2.5 py-1 rounded-lg bg-white/10 hover:bg-white/20 text-white font-medium text-[11px] transition"
+                  >
+                    Pick File
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setAutoFallbackTriggered(false)}
+                    className="text-white/60 hover:text-white"
+                  >
+                    <X size={14} />
+                  </button>
+                </div>
+              </div>
             )}
 
             {/* In-Lecture Socratic Checkpoint Overlay */}
@@ -845,8 +909,25 @@ export function BTRSplitWorkstation({
         <div className="w-full lg:w-[45%] flex flex-col bg-surface overflow-hidden">
           {/* PDF & Digital Notes Toolbar */}
           <div className="h-12 border-b border-edge px-3 sm:px-4 flex items-center justify-between gap-2 bg-surface/90">
-            {/* Unannotated vs Annotated vs Digital Notes Toggle */}
+            {/* 4 Tabs: Annotated Master | Unannotated Workbook | Fill Blanks | PDF Doc */}
             <div className="flex items-center gap-1 rounded-xl bg-elevated border border-edge-soft p-1">
+              <button
+                type="button"
+                onClick={() => {
+                  setPdfMode("annotated");
+                  setPdfLoadError(false);
+                }}
+                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold transition ${
+                  pdfMode === "annotated"
+                    ? "bg-accent text-white shadow-xs"
+                    : "text-ink-muted hover:text-ink"
+                }`}
+                title="Dr. Zainab Vora Annotated Master Solutions & Clinical Pearls"
+              >
+                <FileText size={12} />
+                <span>Annotated Master</span>
+              </button>
+
               <button
                 type="button"
                 onClick={() => {
@@ -856,11 +937,9 @@ export function BTRSplitWorkstation({
                 className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold transition ${
                   pdfMode === "unannotated"
                     ? "bg-accent text-white shadow-xs"
-                    : unannotatedPdf || customUnannotatedBlob
-                    ? "text-ink-muted hover:text-ink"
-                    : "opacity-60 text-ink-muted"
+                    : "text-ink-muted hover:text-ink"
                 }`}
-                title="Unannotated active recall workbook"
+                title="Unannotated Active Practice Workbook"
               >
                 <BookOpen size={12} />
                 <span className="hidden sm:inline">Workbook</span>
@@ -869,34 +948,35 @@ export function BTRSplitWorkstation({
               <button
                 type="button"
                 onClick={() => {
-                  setPdfMode("annotated");
+                  setPdfMode("cloze_blanks");
                   setPdfLoadError(false);
                 }}
                 className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold transition ${
-                  pdfMode === "annotated"
-                    ? "bg-blue-600 text-white shadow-xs"
-                    : annotatedPdf || customAnnotatedBlob
-                    ? "text-ink-muted hover:text-ink"
-                    : "opacity-60 text-ink-muted"
+                  pdfMode === "cloze_blanks"
+                    ? "bg-purple-600 text-white shadow-xs"
+                    : "text-ink-muted hover:text-ink"
                 }`}
-                title="Dr. Zainab Vora Annotated Solutions"
+                title="Fill in the Blanks / Cloze Active Recall"
               >
-                <FileText size={12} />
-                <span>Annotated</span>
+                <Sparkles size={12} />
+                <span>Fill Blanks</span>
               </button>
 
               <button
                 type="button"
-                onClick={() => setPdfMode("digital_summary")}
+                onClick={() => {
+                  setPdfMode("pdf");
+                  setPdfLoadError(false);
+                }}
                 className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold transition ${
-                  pdfMode === "digital_summary"
-                    ? "bg-purple-600 text-white shadow-xs"
+                  pdfMode === "pdf"
+                    ? "bg-blue-600 text-white shadow-xs"
                     : "text-ink-muted hover:text-ink"
                 }`}
-                title="Offline High-Yield Digital Summary & Tables"
+                title="Local PDF File Document Viewer"
               >
-                <Sparkles size={12} />
-                <span>Digital Notes</span>
+                <ExternalLink size={12} />
+                <span className="hidden md:inline">PDF Doc</span>
               </button>
             </div>
 
@@ -941,46 +1021,148 @@ export function BTRSplitWorkstation({
 
           {/* PDF Frame / Digital Notes Content */}
           <div className="flex-1 bg-canvas relative overflow-hidden flex flex-col">
-            {pdfMode === "digital_summary" || !pdfUrl || pdfLoadError ? (
-              <div className="flex-1 flex flex-col overflow-y-auto p-4 space-y-4 no-scrollbar">
-                {/* Fallback Notice Strip if switched automatically from PDF */}
-                {pdfLoadError && (
-                  <div className="flex items-center justify-between p-3 rounded-2xl bg-amber-500/15 border border-amber-500/30 text-amber-200 text-xs">
-                    <div className="flex items-center gap-2">
-                      <AlertTriangle size={15} className="shrink-0 text-amber-400" />
-                      <span>PDF loading blocked by webview sandbox. Showing Digital High-Yield Notes below.</span>
+            {pdfMode === "pdf" ? (
+              <div className="relative w-full h-full flex flex-col">
+                {pdfUrl && !pdfLoadError ? (
+                  <>
+                    <iframe
+                      key={`${pdfUrl}-${pdfPage}`}
+                      title="BTR PDF Workbook"
+                      src={`${pdfUrl}#page=${pdfPage}&toolbar=1`}
+                      className="w-full flex-1 border-none bg-canvas"
+                      onError={() => setPdfLoadError(true)}
+                    />
+                    {/* PDF Footer Quick Bar */}
+                    <div className="h-7 border-t border-edge-soft px-3 flex items-center justify-between bg-surface/90 text-[11px] text-ink-muted shrink-0">
+                      <span className="truncate max-w-[200px] font-mono text-[10.5px]">
+                        {activePdf?.filename || "Workbook PDF"}
+                      </span>
+                      <div className="flex items-center gap-2 font-medium">
+                        <button
+                          type="button"
+                          onClick={() => directPdfInputRef.current?.click()}
+                          className="hover:text-accent transition"
+                        >
+                          Re-link PDF
+                        </button>
+                        <span>•</span>
+                        <button
+                          type="button"
+                          onClick={handleOpenPdfInSystemViewer}
+                          className="hover:text-accent transition flex items-center gap-1"
+                        >
+                          <ExternalLink size={10} /> Preview
+                        </button>
+                        <span>•</span>
+                        <button
+                          type="button"
+                          onClick={() => setPdfMode("annotated")}
+                          className="text-accent hover:underline font-semibold transition"
+                        >
+                          Master Deck
+                        </button>
+                      </div>
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => directPdfInputRef.current?.click()}
-                      className="px-2.5 py-1 rounded-lg bg-amber-500/25 border border-amber-500/40 font-bold hover:bg-amber-500/35 transition shrink-0"
-                    >
-                      Pick Local PDF
-                    </button>
+                    <BTRCanvasMarkup
+                      storageKey={`${subject.id}_${pdfMode}_p${pdfPage}`}
+                      enabled={isMarkupEnabled}
+                      onToggleEnabled={() => setIsMarkupEnabled(!isMarkupEnabled)}
+                    />
+                  </>
+                ) : (
+                  <div className="flex-1 flex flex-col items-center justify-center p-8 text-center bg-canvas">
+                    <div className="flex h-16 w-16 items-center justify-center rounded-3xl bg-blue-500/15 border border-blue-500/30 text-blue-400 mb-4">
+                      <FileText size={32} />
+                    </div>
+                    <h3 className="text-base font-bold text-ink">Local PDF Not Detected</h3>
+                    <p className="text-xs text-ink-muted max-w-sm mt-1 mb-6 leading-relaxed">
+                      Select your local workbook PDF from disk, open in macOS Preview, or review Dr. Zainab Vora&apos;s high-yield annotated notes.
+                    </p>
+                    <div className="flex flex-wrap items-center justify-center gap-2.5">
+                      <button
+                        type="button"
+                        onClick={() => directPdfInputRef.current?.click()}
+                        className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-accent text-white font-bold text-xs shadow-md hover:brightness-110 transition"
+                      >
+                        <FolderOpen size={14} />
+                        <span>Pick Local PDF</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setPdfMode("annotated")}
+                        className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-elevated border border-edge-soft text-ink font-semibold text-xs hover:bg-raised transition"
+                      >
+                        <FileText size={14} />
+                        <span>View Annotated Master</span>
+                      </button>
+                    </div>
                   </div>
                 )}
-
-                {/* Digital Notes Header & Search Strip */}
+              </div>
+            ) : (
+              <div className="flex-1 flex flex-col overflow-y-auto p-4 space-y-4 no-scrollbar">
+                {/* Mode Indicator & Mode Switch Sub-header */}
                 <div className="flex flex-col gap-2.5 bg-surface/60 border border-edge rounded-2xl p-3.5">
                   <div className="flex items-center justify-between">
                     <div>
                       <h3 className="text-sm font-bold text-ink flex items-center gap-2">
-                        <Sparkles size={14} className="text-purple-400" />
-                        <span>{subject.name} High-Yield Master Deck</span>
+                        {pdfMode === "annotated" ? (
+                          <>
+                            <FileText size={14} className="text-accent" />
+                            <span>{subject.name} Annotated Master Deck</span>
+                          </>
+                        ) : pdfMode === "unannotated" ? (
+                          <>
+                            <BookOpen size={14} className="text-amber-400" />
+                            <span>{subject.name} Active Recall Practice Workbook</span>
+                          </>
+                        ) : (
+                          <>
+                            <Sparkles size={14} className="text-purple-400" />
+                            <span>{subject.name} High-Yield Cloze Test Bank</span>
+                          </>
+                        )}
                       </h3>
                       <p className="text-[11px] text-ink-muted mt-0.5">
-                        High-yield tables, clinical lesions, and NEET-PG / INI-CET must-know pearls.
+                        {pdfMode === "annotated"
+                          ? "Dr. Zainab Vora verified solutions, clinical correlations, and high-yield summary tables."
+                          : pdfMode === "unannotated"
+                          ? "Practice solving before checking annotations. Click 'Reveal Solution' on any card."
+                          : "Interactive active recall: click blanks to reveal Dr. Zainab Vora's high-yield keys."}
                       </p>
                     </div>
 
-                    <button
-                      type="button"
-                      onClick={() => directPdfInputRef.current?.click()}
-                      className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-purple-500/15 border border-purple-500/30 text-purple-300 text-xs font-semibold hover:bg-purple-500/25 transition"
-                    >
-                      <Upload size={12} />
-                      <span>Link Local PDF</span>
-                    </button>
+                    {pdfMode === "cloze_blanks" ? (
+                      <div className="flex items-center gap-1.5">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const allIds = new Set<string>();
+                            filteredNotes.forEach((s) => s.clozeItems?.forEach((c) => allIds.add(c.id)));
+                            setRevealedClozeIds(allIds);
+                          }}
+                          className="px-2.5 py-1 rounded-xl bg-purple-500/15 border border-purple-500/30 text-purple-300 text-xs font-semibold hover:bg-purple-500/25 transition"
+                        >
+                          Reveal All
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setRevealedClozeIds(new Set())}
+                          className="px-2.5 py-1 rounded-xl bg-elevated border border-edge text-ink-muted text-xs font-semibold hover:text-ink transition"
+                        >
+                          Hide All
+                        </button>
+                      </div>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => directPdfInputRef.current?.click()}
+                        className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-accent/15 border border-accent/30 text-accent text-xs font-semibold hover:bg-accent/25 transition"
+                      >
+                        <Upload size={12} />
+                        <span>Link Local PDF</span>
+                      </button>
+                    )}
                   </div>
 
                   {/* Search input */}
@@ -1004,7 +1186,7 @@ export function BTRSplitWorkstation({
                         onClick={() => setActiveNoteCategory(cat)}
                         className={`px-2 py-0.5 rounded-lg text-[10.5px] font-bold shrink-0 transition ${
                           activeNoteCategory === cat
-                            ? "bg-purple-600 text-white shadow-xs"
+                            ? "bg-accent text-white shadow-xs"
                             : "bg-canvas border border-edge text-ink-muted hover:text-ink hover:bg-elevated"
                         }`}
                       >
@@ -1015,151 +1197,132 @@ export function BTRSplitWorkstation({
                 </div>
 
                 {/* Digital Note Sections */}
-                {filteredNotes.map((section) => (
-                  <div
-                    key={section.id}
-                    className="flex flex-col gap-3 p-4 rounded-2xl bg-surface border border-edge shadow-xs"
-                  >
-                    <div className="flex items-center justify-between border-b border-edge pb-2">
-                      <div className="flex items-center gap-2">
-                        <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-md bg-purple-500/15 text-purple-300 border border-purple-500/25">
-                          {section.category}
-                        </span>
-                        <h4 className="text-xs font-bold text-ink">{section.title}</h4>
-                      </div>
-                    </div>
+                {filteredNotes.map((section) => {
+                  const isSolutionRevealed = revealedSolutions.has(section.id) || pdfMode === "annotated";
 
-                    <p className="text-xs text-ink-muted leading-relaxed">{section.summary}</p>
-
-                    {/* Pearls Bullets */}
-                    <div className="space-y-1.5">
-                      {section.pearls.map((pearl, pIdx) => (
-                        <div key={pIdx} className="flex items-start gap-2 text-xs text-ink leading-snug">
-                          <span className="text-purple-400 shrink-0 font-bold">•</span>
-                          <span>{pearl}</span>
+                  return (
+                    <div
+                      key={section.id}
+                      className="flex flex-col gap-3 p-4 rounded-2xl bg-surface border border-edge shadow-xs"
+                    >
+                      <div className="flex items-center justify-between border-b border-edge pb-2">
+                        <div className="flex items-center gap-2">
+                          <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-md bg-accent/15 text-accent border border-accent/25">
+                            {section.category}
+                          </span>
+                          <h4 className="text-xs font-bold text-ink">{section.title}</h4>
                         </div>
-                      ))}
-                    </div>
+                        {pdfMode === "unannotated" && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setRevealedSolutions((prev) => {
+                                const next = new Set(prev);
+                                if (next.has(section.id)) next.delete(section.id);
+                                else next.add(section.id);
+                                return next;
+                              });
+                            }}
+                            className={`px-2.5 py-0.5 rounded-lg text-[10.5px] font-bold transition flex items-center gap-1 ${
+                              isSolutionRevealed
+                                ? "bg-emerald-500/15 text-emerald-300 border border-emerald-500/30"
+                                : "bg-amber-500/15 text-amber-300 border border-amber-500/30 hover:bg-amber-500/25"
+                            }`}
+                          >
+                            <Eye size={11} />
+                            <span>{isSolutionRevealed ? "Solution Visible" : "Reveal Solution"}</span>
+                          </button>
+                        )}
+                      </div>
 
-                    {/* High Yield Table */}
-                    {section.table && (
-                      <div className="overflow-x-auto rounded-xl border border-edge bg-canvas/60 mt-2">
-                        <table className="w-full text-left text-xs border-collapse">
-                          <thead>
-                            <tr className="border-b border-edge bg-elevated/70 text-ink font-bold">
-                              {section.table.headers.map((h, hIdx) => (
-                                <th key={hIdx} className="p-2 sm:px-3 sm:py-2 border-r last:border-r-0 border-edge font-mono text-[11px]">
-                                  {h}
-                                </th>
-                              ))}
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {section.table.rows.map((row, rIdx) => (
-                              <tr
-                                key={rIdx}
-                                className="border-b last:border-b-0 border-edge-soft hover:bg-surface/50 transition"
-                              >
-                                {row.map((cell, cIdx) => (
-                                  <td
-                                    key={cIdx}
-                                    className={`p-2 sm:px-3 sm:py-2 text-[11.5px] border-r last:border-r-0 border-edge-soft leading-snug ${
-                                      cIdx === 0 ? "font-semibold text-accent" : "text-ink"
-                                    }`}
-                                  >
-                                    {cell}
-                                  </td>
+                      <p className="text-xs text-ink-muted leading-relaxed">{section.summary}</p>
+
+                      {/* Pearls Bullets */}
+                      {(isSolutionRevealed || pdfMode !== "unannotated") && (
+                        <div className="space-y-1.5 animate-in fade-in">
+                          {section.pearls.map((pearl, pIdx) => (
+                            <div key={pIdx} className="flex items-start gap-2 text-xs text-ink leading-snug">
+                              <span className="text-accent shrink-0 font-bold">•</span>
+                              <span>{pearl}</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* High Yield Table */}
+                      {section.table && (isSolutionRevealed || pdfMode !== "unannotated") && (
+                        <div className="overflow-x-auto rounded-xl border border-edge bg-canvas/60 mt-2 animate-in fade-in">
+                          <table className="w-full text-left text-xs border-collapse">
+                            <thead>
+                              <tr className="border-b border-edge bg-elevated/70 text-ink font-bold">
+                                {section.table.headers.map((h, hIdx) => (
+                                  <th key={hIdx} className="p-2 sm:px-3 sm:py-2 border-r last:border-r-0 border-edge font-mono text-[11px]">
+                                    {h}
+                                  </th>
                                 ))}
                               </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
-                    )}
+                            </thead>
+                            <tbody>
+                              {section.table.rows.map((row, rIdx) => (
+                                <tr
+                                  key={rIdx}
+                                  className="border-b last:border-b-0 border-edge-soft hover:bg-surface/50 transition"
+                                >
+                                  {row.map((cell, cIdx) => (
+                                    <td
+                                      key={cIdx}
+                                      className={`p-2 sm:px-3 sm:py-2 text-[11.5px] border-r last:border-r-0 border-edge-soft leading-snug ${
+                                        cIdx === 0 ? "font-semibold text-accent" : "text-ink"
+                                      }`}
+                                    >
+                                      {cell}
+                                    </td>
+                                  ))}
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      )}
 
-                    {/* Cloze Active Recall Cards */}
-                    {section.clozeItems && section.clozeItems.length > 0 && (
-                      <div className="space-y-2 mt-2 pt-2 border-t border-edge-soft">
-                        <span className="text-[10px] font-bold uppercase tracking-wider text-purple-400">
-                          Active Recall Cloze Self-Test:
-                        </span>
-                        {section.clozeItems.map((item) => {
-                          const isRevealed = revealedClozeIds.has(item.id);
-                          return (
-                            <div
-                              key={item.id}
-                              onClick={() => {
-                                setRevealedClozeIds((prev) => {
-                                  const next = new Set(prev);
-                                  if (next.has(item.id)) next.delete(item.id);
-                                  else next.add(item.id);
-                                  return next;
-                                });
-                              }}
-                              className="p-3 rounded-xl bg-purple-500/10 border border-purple-500/25 text-xs text-ink cursor-pointer hover:bg-purple-500/15 transition flex items-start justify-between gap-3"
-                            >
-                              <span className="leading-relaxed">
-                                {isRevealed
-                                  ? item.textWithBlanks.replace(/\{([^}]+)\}/g, "$1")
-                                  : item.textWithBlanks.replace(/\{([^}]+)\}/g, "[ ___ ? ___ ]")}
-                              </span>
-                              <span className="shrink-0 text-purple-400 font-bold text-[10px] flex items-center gap-1 mt-0.5">
-                                {isRevealed ? <EyeOff size={12} /> : <Eye size={12} />}
-                                {isRevealed ? "Hide" : "Reveal"}
-                              </span>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="relative w-full h-full flex flex-col">
-                <iframe
-                  key={`${pdfUrl}-${pdfPage}`}
-                  title="BTR PDF Workbook"
-                  src={`${pdfUrl}#page=${pdfPage}&toolbar=1`}
-                  className="w-full flex-1 border-none bg-canvas"
-                  onError={() => setPdfLoadError(true)}
-                />
-                {/* PDF Footer Quick Bar */}
-                <div className="h-7 border-t border-edge-soft px-3 flex items-center justify-between bg-surface/90 text-[11px] text-ink-muted shrink-0">
-                  <span className="truncate max-w-[200px] font-mono text-[10.5px]">
-                    {activePdf?.filename || "Workbook PDF"}
-                  </span>
-                  <div className="flex items-center gap-2 font-medium">
-                    <button
-                      type="button"
-                      onClick={() => directPdfInputRef.current?.click()}
-                      className="hover:text-accent transition"
-                    >
-                      Re-link PDF
-                    </button>
-                    <span>•</span>
-                    <button
-                      type="button"
-                      onClick={handleOpenPdfInSystemViewer}
-                      className="hover:text-accent transition flex items-center gap-1"
-                    >
-                      <ExternalLink size={10} /> Preview
-                    </button>
-                    <span>•</span>
-                    <button
-                      type="button"
-                      onClick={() => setPdfMode("digital_summary")}
-                      className="text-purple-400 hover:text-purple-300 font-semibold transition"
-                    >
-                      Digital Deck
-                    </button>
-                  </div>
-                </div>
-                <BTRCanvasMarkup
-                  storageKey={`${subject.id}_${pdfMode}_p${pdfPage}`}
-                  enabled={isMarkupEnabled}
-                  onToggleEnabled={() => setIsMarkupEnabled(!isMarkupEnabled)}
-                />
+                      {/* Cloze Active Recall Cards */}
+                      {section.clozeItems && section.clozeItems.length > 0 && (
+                        <div className="space-y-2 mt-2 pt-2 border-t border-edge-soft">
+                          <span className="text-[10px] font-bold uppercase tracking-wider text-purple-400">
+                            Active Recall Cloze Self-Test:
+                          </span>
+                          {section.clozeItems.map((item) => {
+                            const isRevealed = revealedClozeIds.has(item.id);
+                            return (
+                              <div
+                                key={item.id}
+                                onClick={() => {
+                                  setRevealedClozeIds((prev) => {
+                                    const next = new Set(prev);
+                                    if (next.has(item.id)) next.delete(item.id);
+                                    else next.add(item.id);
+                                    return next;
+                                  });
+                                }}
+                                className="p-3 rounded-xl bg-purple-500/10 border border-purple-500/25 text-xs text-ink cursor-pointer hover:bg-purple-500/15 transition flex items-start justify-between gap-3"
+                              >
+                                <span className="leading-relaxed">
+                                  {isRevealed
+                                    ? item.textWithBlanks.replace(/\{([^}]+)\}/g, "$1")
+                                    : item.textWithBlanks.replace(/\{([^}]+)\}/g, "[ ___ ? ___ ]")}
+                                </span>
+                                <span className="shrink-0 text-purple-400 font-bold text-[10px] flex items-center gap-1 mt-0.5">
+                                  {isRevealed ? <EyeOff size={12} /> : <Eye size={12} />}
+                                  {isRevealed ? "Hide" : "Reveal"}
+                                </span>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             )}
           </div>
