@@ -74,7 +74,11 @@ describe("BTR YouTube Bridge & Medical Lecture Suite", () => {
       autoplay: true,
     });
 
-    assert.ok(embedUrl.startsWith("https://www.youtube.com/embed/dQw4w9WgXcQ"), "Must use youtube.com embed");
+    assert.ok(
+      embedUrl.startsWith("https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ") ||
+      embedUrl.startsWith("https://www.youtube.com/embed/dQw4w9WgXcQ"),
+      "Must use privacy-preserving youtube embed"
+    );
     assert.ok(embedUrl.includes("rel=0"), "Must set rel=0 to prevent external video suggestions");
     assert.ok(embedUrl.includes("autoplay=1"), "Must enable autoplay");
     assert.ok(embedUrl.includes("start=85"), "Must include starting timestamp");

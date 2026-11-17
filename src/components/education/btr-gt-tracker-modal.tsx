@@ -17,6 +17,9 @@ import {
   FileText,
   Target,
   X,
+  Trophy,
+  ChevronRight,
+  TrendingUp,
 } from "lucide-react";
 import {
   type ScheduledGrandTest,
@@ -51,6 +54,11 @@ export function BTRGTTrackerModal({
   const [selectedPlatform, setSelectedPlatform] = useState<MedicalTestPlatform | "all">("all");
   const [selectedStatus, setSelectedStatus] = useState<"all" | "live" | "upcoming" | "completed">("all");
   const [selectedPattern, setSelectedPattern] = useState<ExamMarkingPattern | "all">("all");
+  const [trackerMode, setTrackerMode] = useState<"radar" | "marrow">("radar");
+  const [marrowTab, setMarrowTab] = useState<"grand" | "mini" | "subject">("grand");
+  const [marrowYear, setMarrowYear] = useState<string>("2026 - 27");
+  const [marrowTypeFilter, setMarrowTypeFilter] = useState<string>("All");
+  const [selectedArchiveYear, setSelectedArchiveYear] = useState<string | null>(null);
 
   // Ingestion Modal State
   const [showIngestModal, setShowIngestModal] = useState(false);
@@ -84,6 +92,241 @@ export function BTRGTTrackerModal({
     () => getNextUpcomingGT(tests, now),
     [tests, now]
   );
+
+  const MARROW_PREVIOUS_YEARS = [
+    "Year 2025 - 26",
+    "Year 2024 - 25",
+    "Year 2023 - 24",
+    "Year 2022 - 23",
+    "Year 2021 - 22",
+    "Year 2020 - 21",
+    "Year 2019 - 20",
+    "Year 2018 - 19",
+    "Year 2017 - 18",
+  ];
+
+  interface MarrowGTItem {
+    id: string;
+    title: string;
+    dateLabel: string;
+    isAttempted?: boolean;
+    rank?: string;
+    isMock?: boolean;
+    isPro?: boolean;
+    badge?: string;
+    pattern: "ini_cet" | "neet_pg";
+    durationMCQ?: string;
+  }
+
+  interface MarrowMonthGroup {
+    month: string;
+    tests: MarrowGTItem[];
+  }
+
+  const marrowScheduleGroups = useMemo<MarrowMonthGroup[]>(() => {
+    return [
+      {
+        month: "SEP",
+        tests: [
+          {
+            id: "marrow-gt-1-inicet-sep",
+            title: "Grand Test 1 - INICET Pattern",
+            dateLabel: "Attempted on 19 Sep 2026",
+            isAttempted: true,
+            rank: "8,743",
+            pattern: "ini_cet" as const,
+            durationMCQ: "180 mins • 200 MCQs",
+          },
+          {
+            id: "marrow-inicet-mock-nov-session",
+            title: "National INI-CET Mock 2026 Nov Session",
+            dateLabel: "Ended on 7 Oct",
+            isAttempted: false,
+            isMock: true,
+            badge: "Mock Test",
+            pattern: "ini_cet" as const,
+            durationMCQ: "180 mins • 200 MCQs",
+          },
+        ],
+      },
+      {
+        month: "OCT",
+        tests: [
+          {
+            id: "marrow-neetpg-recall-2026",
+            title: "NEET PG Recall 2026",
+            dateLabel: "Ended on 19 Oct",
+            isAttempted: false,
+            pattern: "neet_pg" as const,
+            durationMCQ: "210 mins • 180 MCQs",
+          },
+        ],
+      },
+      {
+        month: "NOV (Current Month)",
+        tests: [
+          {
+            id: "marrow-gt-1-first-step",
+            title: "Grand Test 1 - The First Step",
+            dateLabel: "Ended on 9 Nov",
+            isAttempted: false,
+            pattern: "neet_pg" as const,
+            durationMCQ: "210 mins • 180 MCQs",
+          },
+          {
+            id: "marrow-gt-2-neetpg-nov",
+            title: "Grand Test 2 - New NEET-PG Pattern",
+            dateLabel: "Live on 25 Nov - 10:00 AM",
+            isAttempted: false,
+            isPro: true,
+            badge: "PRO",
+            pattern: "neet_pg" as const,
+            durationMCQ: "210 mins • 180 MCQs",
+          },
+        ],
+      },
+      {
+        month: "DEC (Upcoming Month)",
+        tests: [
+          {
+            id: "marrow-inicet-nov-recall-dec",
+            title: "INI-CET Nov 2026 Recall",
+            dateLabel: "Live on 9 Dec - 10:00 AM",
+            isAttempted: false,
+            isPro: true,
+            badge: "PRO",
+            pattern: "ini_cet" as const,
+            durationMCQ: "180 mins • 200 MCQs",
+          },
+          {
+            id: "marrow-gt-3-neetpg-dec",
+            title: "Grand Test 3 - New NEET-PG Pattern",
+            dateLabel: "Live on 23 Dec - 10:00 AM",
+            isAttempted: false,
+            isPro: true,
+            badge: "PRO",
+            pattern: "neet_pg" as const,
+            durationMCQ: "210 mins • 180 MCQs",
+          },
+        ],
+      },
+      {
+        month: "JAN",
+        tests: [
+          {
+            id: "marrow-gt-4-neetpg-jan",
+            title: "Grand Test 4 - New NEET-PG Pattern",
+            dateLabel: "Live on 13 Jan - 10:00 AM",
+            isAttempted: false,
+            isPro: true,
+            badge: "PRO",
+            pattern: "neet_pg" as const,
+            durationMCQ: "210 mins • 180 MCQs",
+          },
+          {
+            id: "marrow-gt-1-inicet-jan",
+            title: "Grand Test 1 - INICET pattern",
+            dateLabel: "Live on 27 Jan - 10:00 AM",
+            isAttempted: false,
+            isPro: true,
+            badge: "PRO",
+            pattern: "ini_cet" as const,
+            durationMCQ: "180 mins • 200 MCQs",
+          },
+        ],
+      },
+      {
+        month: "FEB",
+        tests: [
+          {
+            id: "marrow-gt-5-neetpg-feb",
+            title: "Grand Test 5 - New NEET-PG Pattern",
+            dateLabel: "Live on 10 Feb - 10:00 AM",
+            isAttempted: false,
+            isPro: true,
+            badge: "PRO",
+            pattern: "neet_pg" as const,
+            durationMCQ: "210 mins • 180 MCQs",
+          },
+          {
+            id: "marrow-gt-2-inicet-feb",
+            title: "Grand Test 2 - INICET pattern",
+            dateLabel: "Live on 24 Feb - 10:00 AM",
+            isAttempted: false,
+            isPro: true,
+            badge: "PRO",
+            pattern: "ini_cet" as const,
+            durationMCQ: "180 mins • 200 MCQs",
+          },
+        ],
+      },
+      {
+        month: "MAR",
+        tests: [
+          {
+            id: "marrow-gt-6-neetpg-mar",
+            title: "Grand Test 6 - New NEET-PG Pattern",
+            dateLabel: "Live on 10 Mar - 10:00 AM",
+            isAttempted: false,
+            isPro: true,
+            badge: "PRO",
+            pattern: "neet_pg" as const,
+            durationMCQ: "210 mins • 180 MCQs",
+          },
+          {
+            id: "marrow-gt-3-inicet-mar",
+            title: "Grand Test 3 - INICET Pattern",
+            dateLabel: "Live on 24 Mar - 10:00 AM",
+            isAttempted: false,
+            isPro: true,
+            badge: "PRO",
+            pattern: "ini_cet" as const,
+            durationMCQ: "180 mins • 200 MCQs",
+          },
+        ],
+      },
+      {
+        month: "APR",
+        tests: [
+          {
+            id: "marrow-gt-7-neetpg-apr",
+            title: "Grand Test 7 - New NEET-PG Pattern",
+            dateLabel: "Live on 7 Apr - 10:00 AM",
+            isAttempted: false,
+            isPro: true,
+            badge: "PRO",
+            pattern: "neet_pg" as const,
+            durationMCQ: "210 mins • 180 MCQs",
+          },
+          {
+            id: "marrow-nat-mock-ini-may-2027",
+            title: "National INI-CET Mock 2027 May Session",
+            dateLabel: "Live on 21 Apr - 10:00 AM",
+            isAttempted: false,
+            isMock: true,
+            badge: "Mock Test",
+            pattern: "ini_cet" as const,
+            durationMCQ: "180 mins • 200 MCQs",
+          },
+        ],
+      },
+      {
+        month: "MAY",
+        tests: [
+          {
+            id: "marrow-gt-8-neetpg-may",
+            title: "Grand Test 8 - New NEET-PG Pattern",
+            dateLabel: "Live on 5 May - 10:00 AM",
+            isAttempted: false,
+            isPro: true,
+            badge: "PRO",
+            pattern: "neet_pg" as const,
+            durationMCQ: "210 mins • 180 MCQs",
+          },
+        ],
+      },
+    ];
+  }, []);
 
   // Filtered List
   const filteredTests = useMemo(() => {
@@ -276,6 +519,42 @@ export function BTRGTTrackerModal({
           </div>
         </div>
 
+        {/* Tracker View Tabs */}
+        <div className="flex items-center gap-2 px-6 pt-3 border-b border-white/10 bg-[#0a0f24]">
+          <button
+            type="button"
+            onClick={() => {
+              setTrackerMode("radar");
+              setSelectedPlatform("all");
+            }}
+            className={`flex items-center gap-2 pb-3 px-3 text-xs font-bold border-b-2 transition ${
+              trackerMode === "radar"
+                ? "border-accent text-white"
+                : "border-transparent text-ink-muted hover:text-white"
+            }`}
+          >
+            <Radio size={13} className={trackerMode === "radar" ? "text-accent animate-pulse" : ""} />
+            <span>Cross-Platform Radar</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              setTrackerMode("marrow");
+              setSelectedPlatform("marrow");
+            }}
+            className={`flex items-center gap-2 pb-3 px-3 text-xs font-bold border-b-2 transition ${
+              trackerMode === "marrow"
+                ? "border-[#1cb0b8] text-[#1cb0b8]"
+                : "border-transparent text-ink-muted hover:text-white"
+            }`}
+          >
+            <span className="flex h-2 w-2 rounded-full bg-[#1cb0b8]" />
+            <span>Marrow Official Calendar</span>
+            <span className="text-[10px] rounded px-1.5 py-0.5 bg-[#1cb0b8]/20 text-[#1cb0b8] font-mono">2026 - 27 (16 GTs)</span>
+          </button>
+        </div>
+
         {/* Toast alert */}
         {toastMessage && (
           <div className="mx-6 mt-3 flex items-center gap-2 p-2.5 rounded-xl bg-accent/20 border border-accent/40 text-xs font-medium text-accent animate-in fade-in duration-200">
@@ -284,6 +563,276 @@ export function BTRGTTrackerModal({
           </div>
         )}
 
+        {trackerMode === "marrow" ? (
+          <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-5 bg-[#0a0e1c] text-ink">
+            {/* Marrow Sub-Tabs: Grand Tests (16) | Mini Tests (10) | Subject Tests (26) */}
+            <div className="border-b border-white/10 flex items-center gap-1">
+              <button
+                type="button"
+                onClick={() => setMarrowTab("grand")}
+                className={`px-5 py-2.5 text-xs font-bold transition-all border-b-2 ${
+                  marrowTab === "grand"
+                    ? "border-[#1cb0b8] text-[#1cb0b8] bg-[#1cb0b8]/10"
+                    : "border-transparent text-ink-muted hover:text-white"
+                }`}
+              >
+                Grand Tests (16)
+              </button>
+              <button
+                type="button"
+                onClick={() => setMarrowTab("mini")}
+                className={`px-5 py-2.5 text-xs font-bold transition-all border-b-2 ${
+                  marrowTab === "mini"
+                    ? "border-[#1cb0b8] text-[#1cb0b8] bg-[#1cb0b8]/10"
+                    : "border-transparent text-ink-muted hover:text-white"
+                }`}
+              >
+                Mini Tests (10)
+              </button>
+              <button
+                type="button"
+                onClick={() => setMarrowTab("subject")}
+                className={`px-5 py-2.5 text-xs font-bold transition-all border-b-2 ${
+                  marrowTab === "subject"
+                    ? "border-[#1cb0b8] text-[#1cb0b8] bg-[#1cb0b8]/10"
+                    : "border-transparent text-ink-muted hover:text-white"
+                }`}
+              >
+                Subject Tests (26)
+              </button>
+            </div>
+
+            {/* Subheader: YEAR 2026 - 27 & Test Type Filter */}
+            <div className="flex flex-wrap items-center justify-between gap-3 text-xs py-1">
+              <div className="flex items-center gap-2">
+                <span className="font-bold text-ink-muted uppercase tracking-wider text-[11px]">YEAR</span>
+                <select
+                  value={marrowYear}
+                  onChange={(e) => setMarrowYear(e.target.value)}
+                  className="bg-white/5 border border-white/15 rounded-lg px-2.5 py-1 text-xs font-bold text-white focus:outline-hidden"
+                >
+                  <option value="2026 - 27">2026 - 27 (Current)</option>
+                  <option value="2025 - 26">2025 - 26</option>
+                  <option value="2024 - 25">2024 - 25</option>
+                  <option value="2023 - 24">2023 - 24</option>
+                </select>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <span className="text-ink-muted">Test Type</span>
+                <select
+                  value={marrowTypeFilter}
+                  onChange={(e) => setMarrowTypeFilter(e.target.value)}
+                  className="bg-white/5 border border-white/15 rounded-lg px-2.5 py-1 text-xs font-medium text-white focus:outline-hidden"
+                >
+                  <option value="All">All</option>
+                  <option value="neet_pg">NEET-PG Pattern</option>
+                  <option value="ini_cet">INICET Pattern</option>
+                  <option value="mock">National Mocks</option>
+                </select>
+              </div>
+            </div>
+
+            {/* Two-Column Responsive Split */}
+            <div className="flex flex-col lg:flex-row gap-6">
+              {/* LEFT: Timeline of tests grouped by month (70%) */}
+              <div className="w-full lg:w-[70%] space-y-6">
+                {marrowScheduleGroups.map((group) => {
+                  const filteredTestsInGroup = group.tests.filter((t) => {
+                    if (marrowTypeFilter === "All") return true;
+                    if (marrowTypeFilter === "mock") return t.isMock;
+                    return t.pattern === marrowTypeFilter;
+                  });
+                  if (filteredTestsInGroup.length === 0) return null;
+
+                  return (
+                    <div key={group.month} className="space-y-3">
+                      <div className="text-[11px] font-bold text-ink-muted tracking-wider uppercase flex items-center gap-2">
+                        <span>{group.month}</span>
+                        <div className="flex-1 h-px bg-white/5" />
+                      </div>
+
+                      <div className="space-y-2.5">
+                        {filteredTestsInGroup.map((item) => (
+                          <div
+                            key={item.id}
+                            className={`flex items-center justify-between p-3.5 rounded-2xl border transition-all duration-150 ${
+                              item.isAttempted
+                                ? "bg-emerald-950/20 border-emerald-500/30"
+                                : item.isMock
+                                ? "bg-amber-950/15 border-amber-500/25"
+                                : "bg-white/[0.03] border-white/10 hover:border-white/20"
+                            }`}
+                          >
+                            <div className="flex items-start gap-3.5">
+                              {/* Left status indicator: green checkmark or hollow circle */}
+                              <div className="mt-0.5">
+                                {item.isAttempted ? (
+                                  <div className="flex h-5 w-5 items-center justify-center rounded-full bg-emerald-500 text-canvas">
+                                    <Check size={12} strokeWidth={3} />
+                                  </div>
+                                ) : (
+                                  <div className="h-5 w-5 rounded-full border-2 border-white/20" />
+                                )}
+                              </div>
+
+                              <div>
+                                <div className="flex items-center gap-2">
+                                  {item.isMock && (
+                                    <Trophy size={14} className="text-amber-400 shrink-0" />
+                                  )}
+                                  <h4 className="text-sm font-bold text-white leading-snug">
+                                    {item.title}
+                                  </h4>
+                                </div>
+                                <p className="text-xs text-ink-muted mt-0.5">
+                                  {item.dateLabel}
+                                  {item.durationMCQ && ` • ${item.durationMCQ}`}
+                                </p>
+                              </div>
+                            </div>
+
+                            {/* Right side: Rank pill or PRO / Mock Test badge + Action */}
+                            <div className="flex items-center gap-2.5 shrink-0">
+                              {item.rank && (
+                                <div className="flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/35 text-xs font-bold">
+                                  <Trophy size={11} className="text-amber-400" />
+                                  <span>Rank {item.rank}</span>
+                                </div>
+                              )}
+
+                              {item.badge === "Mock Test" && (
+                                <span className="px-2.5 py-0.5 rounded-md bg-sky-500/15 text-sky-300 border border-sky-500/30 text-[10px] font-bold">
+                                  Mock Test
+                                </span>
+                              )}
+
+                              {item.badge === "PRO" && (
+                                <span className="px-2 py-0.5 rounded bg-amber-400/10 text-amber-300 border border-amber-400/20 text-[10px] font-bold font-mono">
+                                  PRO
+                                </span>
+                              )}
+
+                              {onOpenScoreLogger && (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    onClose();
+                                    onOpenScoreLogger({
+                                      platform: "marrow",
+                                      testName: item.title,
+                                      examPattern: item.pattern,
+                                    });
+                                  }}
+                                  className="text-[11px] font-semibold text-accent hover:underline px-1.5 py-0.5"
+                                  title="Log my GT results"
+                                >
+                                  {item.isAttempted ? "Review" : "Log"}
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* RIGHT: GT Performance Analytics & Previous Year Tests (30%) */}
+              <div className="w-full lg:w-[30%] space-y-4">
+                {/* GT Performance Analytics Card */}
+                <div className="rounded-2xl p-4 border border-white/10 bg-gradient-to-br from-[#121c38] to-[#0c1226] shadow-lg flex flex-col gap-3">
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#1cb0b8]/20 text-[#1cb0b8] border border-[#1cb0b8]/30">
+                      <TrendingUp size={20} />
+                    </div>
+                    <div>
+                      <h4 className="text-sm font-bold text-white">GT Performance Analytics</h4>
+                      <p className="text-[11px] text-ink-muted">Active Cycle: 2026 - 27</p>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2 text-xs py-1">
+                    <div className="p-2 rounded-xl bg-white/5 border border-white/10">
+                      <span className="text-[10px] text-ink-muted block">Attempted</span>
+                      <span className="text-base font-bold text-white">1 / 16</span>
+                    </div>
+                    <div className="p-2 rounded-xl bg-white/5 border border-white/10">
+                      <span className="text-[10px] text-ink-muted block">Benchmark Rank</span>
+                      <span className="text-base font-bold text-emerald-400">8,743</span>
+                    </div>
+                  </div>
+
+                  {onOpenScoreLogger && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        onClose();
+                        onOpenScoreLogger({
+                          platform: "marrow",
+                          testName: "Grand Test 1 - INICET Pattern",
+                          examPattern: "ini_cet",
+                        });
+                      }}
+                      className="flex items-center justify-between text-xs font-bold text-[#1cb0b8] hover:text-[#23d0da] transition pt-1"
+                    >
+                      <span>View progress</span>
+                      <ChevronRight size={14} />
+                    </button>
+                  )}
+                </div>
+
+                {/* PREVIOUS YEAR TESTS Accordion/List */}
+                <div className="rounded-2xl p-4 border border-white/10 bg-white/[0.02] flex flex-col gap-2.5">
+                  <span className="text-[11px] font-bold text-ink-muted uppercase tracking-wider">
+                    PREVIOUS YEAR TESTS
+                  </span>
+                  <div className="space-y-1">
+                    {MARROW_PREVIOUS_YEARS.map((yr) => (
+                      <button
+                        key={yr}
+                        type="button"
+                        onClick={() => setSelectedArchiveYear(selectedArchiveYear === yr ? null : yr)}
+                        className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-medium transition ${
+                          selectedArchiveYear === yr
+                            ? "bg-[#1cb0b8]/20 text-[#1cb0b8] border border-[#1cb0b8]/40"
+                            : "hover:bg-white/5 text-white/80 hover:text-white"
+                        }`}
+                      >
+                        <span>{yr}</span>
+                        <ChevronRight
+                          size={13}
+                          className={`text-ink-muted transition-transform ${
+                            selectedArchiveYear === yr ? "rotate-90 text-[#1cb0b8]" : ""
+                          }`}
+                        />
+                      </button>
+                    ))}
+                  </div>
+
+                  {selectedArchiveYear && (
+                    <div className="p-3 rounded-xl bg-white/5 border border-white/10 text-xs text-ink-muted space-y-1.5 animate-in fade-in duration-150">
+                      <span className="font-bold text-white block">Archived Mocks for {selectedArchiveYear}:</span>
+                      <p className="text-[11px] leading-relaxed">
+                        Contains full recall Grand Tests from the {selectedArchiveYear} academic year with complete video discussions.
+                      </p>
+                      <a
+                        href="https://www.marrow.com/test/grand"
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-[11px] text-[#1cb0b8] hover:underline flex items-center gap-1 font-bold pt-1"
+                      >
+                        <span>Launch in Marrow Portal</span>
+                        <ExternalLink size={10} />
+                      </a>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        ) : (
         <div className="flex-1 overflow-y-auto p-6 space-y-6">
           {/* Spotlight Hero Banner: Next / Live Grand Test */}
           {nextGT && nextGTStatus && (
@@ -625,6 +1174,7 @@ export function BTRGTTrackerModal({
             )}
           </div>
         </div>
+        )}
 
         {/* Modal Footer */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-t border-white/10 px-6 py-4 bg-[#0e142c]/70 text-xs text-ink-muted">

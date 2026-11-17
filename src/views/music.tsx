@@ -84,6 +84,7 @@ import {
 } from "@/lib/music/search-fallback";
 import {
   musicSimilarTracks,
+  playMusic,
   playMusicOnSpeaker,
   returnMusicToComputer,
   stopMusicCasting,
@@ -239,6 +240,7 @@ function MusicViewContent({ active }: { active: boolean }) {
   const [quickListen, setQuickListen] = useState<MusicTrack[] | null>(null);
   useEffect(() => { if (!active) setQuickListen(null); }, [active]);
   const [tab, setTab] = useState<MusicTabId>("forYou");
+  const [selectedMood, setSelectedMood] = useState<string>("all");
   const [search, setSearch] = useState<SearchState | null>(null);
   const [searching, setSearching] = useState(false);
   const [notice, setNotice] = useState<Notice | null>(null);
@@ -1402,6 +1404,44 @@ function MusicViewContent({ active }: { active: boolean }) {
                     />
                   )}
                 </section>
+
+                {tab === "forYou" && (
+                  <div className="music-mood-dials flex items-center gap-2 overflow-x-auto no-scrollbar py-2 px-1 -mx-1 shrink-0">
+                    {[
+                      { id: "all", label: "All Vibes", icon: "✨" },
+                      { id: "morning", label: "Morning Coffee", icon: "☕" },
+                      { id: "focus", label: "Deep Work & Flow", icon: "⚡" },
+                      { id: "workout", label: "High-Energy Cardio", icon: "🥊" },
+                      { id: "lofi", label: "Late Night Lo-Fi", icon: "🌙" },
+                      { id: "radio", label: "Infinite Smart Flow", icon: "📻" },
+                    ].map((mood) => {
+                      const isActive = selectedMood === mood.id;
+                      return (
+                        <button
+                          key={mood.id}
+                          type="button"
+                          onClick={() => {
+                            setSelectedMood(mood.id);
+                            if (mood.id === "radio" && player.current) {
+                              void playMusic({
+                                ...player.current,
+                                title: `${player.current.title} (Smart Radio Flow)`,
+                              });
+                            }
+                          }}
+                          className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all border ${
+                            isActive
+                              ? "bg-accent text-white border-accent shadow-xs scale-102"
+                              : "bg-surface-elevated/70 hover:bg-surface-raised text-ink-muted hover:text-ink border-edge-soft"
+                          }`}
+                        >
+                          <span className="text-xs">{mood.icon}</span>
+                          <span>{mood.label}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
 
                 <div
                   id={musicTabPanelId(tab)}

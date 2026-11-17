@@ -67,7 +67,11 @@ import {
 import { karaokeScrollTop } from "@/lib/music/karaoke-scroll";
 import { MusicKaraoke } from "./music-karaoke";
 import { loadMusicAudioDevices, useMusicAudioSettings } from "@/lib/music/audio-settings";
-import { setMusicAppearance, useMusicAppearance } from "@/lib/music/appearance";
+import {
+  setMusicAppearance,
+  useMusicAppearance,
+  useMusicArtworkPalette,
+} from "@/lib/music/appearance";
 import { musicSourceName } from "@/lib/music/recovery";
 import type { MusicExploreRequest } from "@/lib/music/navigation";
 import { MusicServiceLogo } from "./music-service-logo";
@@ -146,6 +150,7 @@ export function MusicNowPlaying({
   const [outputs, setOutputs] = useState<Array<{ name: string; description: string }>>([]);
   const current = player.current;
   const { profile: recording, display } = useRecordingProfile(current);
+  const artworkPalette = useMusicArtworkPalette(display?.artwork, appearance.artworkColors);
 
   useEffect(() => {
     const id = display?.id ?? null;
@@ -423,6 +428,23 @@ export function MusicNowPlaying({
         style={{ insetInlineStart: inset } as CSSProperties}
         aria-label={t("music.now.title")}
       >
+        {/* Ambient Fluid Chromatic Mesh Aura */}
+        {appearance.artworkColors && artworkPalette && artworkPalette.length > 0 && (
+          <div className="music-now-ambient-aura" aria-hidden="true">
+            <div
+              className="music-now-ambient-orb orb-1"
+              style={{ background: artworkPalette[0] || "var(--music-art-accent, var(--color-accent))" }}
+            />
+            <div
+              className="music-now-ambient-orb orb-2"
+              style={{ background: artworkPalette[1] || artworkPalette[0] || "var(--color-accent)" }}
+            />
+            <div
+              className="music-now-ambient-orb orb-3"
+              style={{ background: artworkPalette[2] || artworkPalette[0] || "var(--color-surface)" }}
+            />
+          </div>
+        )}
         {shifting && <span className="music-now-veil" aria-hidden="true" />}
         <header className="music-now-header">
           <button
@@ -499,12 +521,28 @@ export function MusicNowPlaying({
               {video ? (
                 createPortal(<MusicVideoSurface track={current} expanded />, host)
               ) : (
-                <Poster
-                  src={display.artwork}
-                  seed={`track:${current.connectorId}:${current.id}`}
-                  ratio="square"
-                  className="w-full [--poster-radius:0px]"
-                />
+                <div className="music-vinyl-stage group/vinyl">
+                  {/* Sliding Vinyl Record */}
+                  <div className={`music-vinyl-disc ${player.phase === "playing" ? "playing" : ""}`}>
+                    <div className="music-vinyl-grooves" />
+                    <div className="music-vinyl-label">
+                      {display.artwork && (
+                        <img src={display.artwork} alt="" className="music-vinyl-label-art" />
+                      )}
+                      <div className="music-vinyl-center-hole" />
+                    </div>
+                  </div>
+                  {/* Album Cover Jacket with Glass Sheen */}
+                  <div className="music-vinyl-jacket">
+                    <Poster
+                      src={display.artwork}
+                      seed={`track:${current.connectorId}:${current.id}`}
+                      ratio="square"
+                      className="w-full [--poster-radius:8px]"
+                    />
+                    <div className="music-jacket-sheen" />
+                  </div>
+                </div>
               )}
             </div>
             {video && <MusicVideoFullscreen track={current} />}
@@ -747,20 +785,37 @@ export function MusicNowPlaying({
                         </button>
                       </div>
                       <ol ref={lyricsRef} className="music-now-lyrics">
-                        {lyrics.map((line, index) => (
-                          <li
-                            key={`${line.at}:${index}`}
-                            data-active={index === activeLyric ? "1" : undefined}
-                          >
-                            {line.text ? (
-                              <button type="button" onClick={() => seekMusic(line.at)}>
-                                {line.text}
-                              </button>
-                            ) : (
-                              <span className="music-now-lyric-rest" aria-hidden="true" />
-                            )}
-                          </li>
-                        ))}
+                        {lyrics.map((line, index) => {
+                          const isBreak = !line.text || line.text.trim() === "♪" || line.text.trim() === "...";
+                          return (
+                            <li
+                              key={`${line.at}:${index}`}
+                              data-active={index === activeLyric ? "1" : undefined}
+                            >
+                              {isBreak ? (
+                                <div
+                                  className="music-now-lyric-instrumental"
+                                  onClick={() => seekMusic(line.at)}
+                                  role="button"
+                                  tabIndex={0}
+                                  title="Instrumental Break — Click to seek"
+                                >
+                                  <span className="music-inst-bars">
+                                    <span className="music-inst-bar bar-1" />
+                                    <span className="music-inst-bar bar-2" />
+                                    <span className="music-inst-bar bar-3" />
+                                    <span className="music-inst-bar bar-4" />
+                                  </span>
+                                  <span className="music-inst-label">Instrumental Solo</span>
+                                </div>
+                              ) : (
+                                <button type="button" onClick={() => seekMusic(line.at)}>
+                                  {line.text}
+                                </button>
+                              )}
+                            </li>
+                          );
+                        })}
                       </ol>
                     </>
                   ) : (

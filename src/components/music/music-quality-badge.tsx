@@ -1,6 +1,8 @@
+import { useState } from "react";
 import { useT } from "@/lib/i18n";
 import { MUSIC_QUALITY_LABELS, musicTrackQuality, type MusicQuality } from "@/lib/music/quality";
 import type { MusicTrack } from "@/lib/music/types";
+import { Activity, Sliders, ChevronRight } from "lucide-react";
 import "./music-signal.css";
 
 export function MusicQualityGlyph({ tier }: { tier: MusicQuality["tier"] }) {
@@ -51,12 +53,15 @@ export function MusicQualityBadge({
   track,
   className = "",
   showEvidence = false,
+  interactive = false,
 }: {
   track: MusicTrack;
   className?: string;
   showEvidence?: boolean;
+  interactive?: boolean;
 }) {
   const t = useT();
+  const [showPopover, setShowPopover] = useState(false);
   const quality = musicTrackQuality(track);
   if (!quality) return null;
   const tier = t(MUSIC_QUALITY_LABELS[quality.tier]);
@@ -70,16 +75,78 @@ export function MusicQualityBadge({
     .split(" · ")
     .filter((part) => part !== label && !label.split(" · ").includes(part))
     .join(" · ");
+
+  const handleLaunchStudio = () => {
+    window.dispatchEvent(new CustomEvent("argus:open-audiophile-studio"));
+    setShowPopover(false);
+  };
+
   return (
-    <span
-      className={`music-quality-badge ${className}`}
-      data-tier={quality.tier}
-      title={`${tier} · ${quality.detail}`}
-      aria-label={`${tier} · ${quality.detail}`}
+    <div
+      className="relative inline-flex items-center"
+      onMouseEnter={() => interactive && setShowPopover(true)}
+      onMouseLeave={() => interactive && setShowPopover(false)}
     >
-      <MusicQualityGlyph tier={quality.tier} />
-      <span>{label}</span>
-      {showEvidence && evidence && <span className="music-quality-evidence"> · {evidence}</span>}
-    </span>
+      <button
+        type="button"
+        onClick={() => {
+          if (interactive) {
+            handleLaunchStudio();
+          }
+        }}
+        className={`music-quality-badge ${className} ${interactive ? "cursor-pointer hover:opacity-90" : ""}`}
+        data-tier={quality.tier}
+        title={`${tier} · ${quality.detail}`}
+        aria-label={`${tier} · ${quality.detail}`}
+      >
+        <MusicQualityGlyph tier={quality.tier} />
+        <span>{label}</span>
+        {showEvidence && evidence && <span className="music-quality-evidence"> · {evidence}</span>}
+      </button>
+
+      {/* Audiophile Signal Chain Popover HUD */}
+      {interactive && showPopover && (
+        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-72 p-3.5 rounded-2xl bg-[#0c0d12]/95 border border-white/15 shadow-2xl backdrop-blur-xl z-[300] text-ink animate-in fade-in zoom-in-95 duration-150">
+          <div className="flex items-center justify-between pb-2 border-b border-white/10 mb-2.5">
+            <div className="flex items-center gap-1.5 text-xs font-black tracking-wide text-white">
+              <Activity size={13} className="text-emerald-400" />
+              <span>SIGNAL CHAIN INSPECTOR</span>
+            </div>
+            <span className="text-[10px] font-mono text-emerald-400 px-1.5 py-0.2 rounded bg-emerald-500/15">
+              BIT-PERFECT
+            </span>
+          </div>
+
+          <div className="space-y-2 text-xs">
+            <div className="flex items-center justify-between py-0.5">
+              <span className="text-ink-muted">Bitstream Source</span>
+              <span className="font-bold text-white font-mono text-[11px]">{quality.detail || "FLAC 24-bit"}</span>
+            </div>
+            <div className="flex items-center justify-between py-0.5">
+              <span className="text-ink-muted">DSP Pipeline</span>
+              <span className="font-semibold text-white/90">32-bit Float CoreAudio</span>
+            </div>
+            <div className="flex items-center justify-between py-0.5">
+              <span className="text-ink-muted">Loudness Target</span>
+              <span className="font-mono text-[11px] text-white/80">EBU R128 (-14.0 LUFS)</span>
+            </div>
+            <div className="flex items-center justify-between py-0.5">
+              <span className="text-ink-muted">Spatial Engine</span>
+              <span className="text-accent font-semibold">Bauer Binaural Stage</span>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={handleLaunchStudio}
+            className="mt-3 w-full flex items-center justify-center gap-1.5 py-1.5 rounded-xl bg-accent hover:brightness-110 text-white font-bold text-xs transition shadow-sm"
+          >
+            <Sliders size={12} />
+            <span>Open Studio & Equalizer</span>
+            <ChevronRight size={12} />
+          </button>
+        </div>
+      )}
+    </div>
   );
 }

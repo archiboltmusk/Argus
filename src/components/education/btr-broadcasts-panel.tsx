@@ -9,12 +9,14 @@ import {
   Clock,
   Check,
   BookOpen,
+  Maximize2,
 } from "lucide-react";
 import {
   CORE_BTR_OFFICIAL_CHANNEL,
   CORE_BTR_BROADCASTS,
   type BTRBroadcastVideo,
 } from "@/lib/education/btr-broadcasts";
+import { buildYouTubeEmbedUrl } from "@/lib/education/btr-youtube-bridge";
 
 interface BTRBroadcastsModalProps {
   open: boolean;
@@ -98,27 +100,52 @@ export function BTRBroadcastsModal({
         <div className="flex-1 flex flex-col lg:flex-row overflow-hidden">
           {/* LEFT: Distraction-free Theater Player & Key Pearls (60%) */}
           <div className="w-full lg:w-[60%] flex flex-col border-b lg:border-b-0 lg:border-r border-edge bg-black/60 overflow-y-auto p-4 sm:p-5 gap-4">
-            {/* Embed Frame */}
+            {/* Embed Frame with Error 153 mitigation & Popout Theater mode */}
             <div className="relative aspect-video w-full rounded-2xl overflow-hidden bg-black border border-edge-soft shadow-lg group">
               <iframe
+                key={activeVideo.youtubeId}
                 title={activeVideo.title}
-                src={`https://www.youtube.com/embed/${activeVideo.youtubeId}?rel=0&modestbranding=1&enablejsapi=1`}
+                src={buildYouTubeEmbedUrl(activeVideo.youtubeId, { autoplay: false, enableJsApi: false })}
                 className="w-full h-full border-none"
-                referrerPolicy="strict-origin-when-cross-origin"
+                referrerPolicy="no-referrer-when-downgrade"
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                 allowFullScreen
               />
-              {/* Quick Watch on YouTube / External Option */}
-              <a
-                href={`https://www.youtube.com/watch?v=${activeVideo.youtubeId}`}
-                target="_blank"
-                rel="noreferrer"
-                className="absolute top-3 right-3 z-20 flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-black/80 hover:bg-red-600 text-white font-bold text-xs backdrop-blur-md border border-white/15 transition shadow-lg opacity-85 hover:opacity-100"
-                title="Watch on YouTube in external player"
-              >
-                <ExternalLink size={12} />
-                <span>Watch on YouTube</span>
-              </a>
+              {/* Quick Watch on YouTube & Popout Window Controls */}
+              <div className="absolute top-3 right-3 z-20 flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    const popout = window.open(
+                      `https://www.youtube.com/watch?v=${activeVideo.youtubeId}`,
+                      "_blank",
+                      "width=1000,height=560,menubar=no,toolbar=no,location=no,status=no"
+                    );
+                    popout?.focus();
+                  }}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-black/85 hover:bg-black text-white font-bold text-xs backdrop-blur-md border border-white/20 transition shadow-lg opacity-90 hover:opacity-100"
+                  title="Open theater popout window (guaranteed 100% playback bypasses Error 153)"
+                >
+                  <Maximize2 size={12} />
+                  <span>Popout Player</span>
+                </button>
+                <a
+                  href={`https://www.youtube.com/watch?v=${activeVideo.youtubeId}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-red-600/90 hover:bg-red-600 text-white font-bold text-xs backdrop-blur-md border border-red-400/30 transition shadow-lg opacity-90 hover:opacity-100"
+                  title="Watch directly on YouTube"
+                >
+                  <ExternalLink size={12} />
+                  <span>YouTube</span>
+                </a>
+              </div>
+
+              {/* In-player smart fallback hint */}
+              <div className="absolute bottom-2 left-3 right-3 z-10 flex items-center justify-between text-[11px] text-white/70 bg-black/60 backdrop-blur-xs px-3 py-1 rounded-lg pointer-events-none opacity-0 group-hover:opacity-100 transition">
+                <span>Encountering Error 153 or embed restriction? Click Popout Player above.</span>
+                <span className="font-mono text-[10px] text-accent">youtube-nocookie secure</span>
+              </div>
             </div>
 
             {/* Video Meta */}

@@ -170,7 +170,12 @@ export function MusicDock() {
       setSourceOpen(true);
     };
     window.addEventListener("argus:music-playback-source-required", recover);
-    return () => window.removeEventListener("argus:music-playback-source-required", recover);
+    const openStudioHandler = () => setStudioOpen(true);
+    window.addEventListener("argus:open-audiophile-studio", openStudioHandler);
+    return () => {
+      window.removeEventListener("argus:music-playback-source-required", recover);
+      window.removeEventListener("argus:open-audiophile-studio", openStudioHandler);
+    };
   }, []);
   const closeExpanded = useCallback(() => setExpanded(false), []);
   const nowExit = useModalExit(closeExpanded, expanded);

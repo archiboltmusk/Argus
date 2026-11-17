@@ -121,18 +121,30 @@ export function buildYouTubeEmbedUrl(
   const {
     startSec = 0,
     autoplay = true,
-    modestBranding = true,
-    enableJsApi = true,
+    enableJsApi = false,
   } = options;
 
   const params = new URLSearchParams();
   if (autoplay) params.set("autoplay", "1");
   if (startSec > 0) params.set("start", Math.floor(startSec).toString());
-  if (modestBranding) params.set("modestbranding", "1");
-  if (enableJsApi) params.set("enablejsapi", "1");
-  params.set("rel", "0"); // Don't show unrelated external videos on pause
+  params.set("rel", "0");
+  params.set("playsinline", "1");
 
-  return `https://www.youtube.com/embed/${videoId}?${params.toString()}`;
+  // YouTube Error 153 mitigation:
+  // Passing enablejsapi=1 without a valid HTTP/S origin or with mismatched referrers
+  // triggers YouTube Error 153 ("Video player configuration error").
+  // youtube-nocookie.com + explicit origin bypasses cross-cookie restrictions.
+  if (typeof window !== "undefined" && window.location.origin) {
+    const origin = window.location.origin;
+    if (origin.startsWith("http://") || origin.startsWith("https://")) {
+      if (enableJsApi) {
+        params.set("enablejsapi", "1");
+        params.set("origin", origin);
+      }
+    }
+  }
+
+  return `https://www.youtube-nocookie.com/embed/${videoId}?${params.toString()}`;
 }
 
 /**
