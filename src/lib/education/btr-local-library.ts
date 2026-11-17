@@ -53,6 +53,8 @@ export interface BTRLocalLibraryState {
   masterPdfs?: BTRSpecialItem[];
   megaBtrVideos?: BTRSpecialItem[];
   tndVideos?: BTRSpecialItem[];
+  tndPdfs?: BTRSpecialItem[];
+  grandTests?: BTRSpecialItem[];
 }
 
 const VIDEO_EXTS = new Set(["mp4", "mkv", "webm", "avi", "mov", "m4v", "flv", "ts"]);
@@ -294,6 +296,8 @@ export function getPreindexedDefaultLibrary(): BTRLocalLibraryState {
     masterPdfs: USER_LOCAL_BTR_MANIFEST.masterPdfs,
     megaBtrVideos: USER_LOCAL_BTR_MANIFEST.megaBtrVideos,
     tndVideos: USER_LOCAL_BTR_MANIFEST.tndVideos,
+    tndPdfs: USER_LOCAL_BTR_MANIFEST.tndPdfs,
+    grandTests: USER_LOCAL_BTR_MANIFEST.grandTests,
   };
 }
 
