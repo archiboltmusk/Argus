@@ -125,6 +125,15 @@ export function useQualityUpgrade(params: {
     setUpgradeOffer(null);
   }, [upgradeOffer]);
 
+  // Auto-dismiss the upgrade offer after 12 seconds so hands-free viewing is uninterrupted
+  useEffect(() => {
+    if (!upgradeOffer) return;
+    const timer = window.setTimeout(() => {
+      dismissUpgrade();
+    }, 12000);
+    return () => window.clearTimeout(timer);
+  }, [upgradeOffer, dismissUpgrade]);
+
   return {
     upgradeOffer,
     acceptUpgrade,

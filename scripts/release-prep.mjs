@@ -58,12 +58,21 @@ console.log(`Current branch: ${branch}`);
 // 2. Check release notes
 const releaseNotesPath = resolve(process.cwd(), `docs/releases/${cleanTag}.md`);
 if (!existsSync(releaseNotesPath)) {
-  console.log(`Creating release notes template at: docs/releases/${cleanTag}.md`);
-  const template = `- **Subtitle Enhancements**: Positioned embedded and widescreen subtitles in the lower letterbox bar.
-- **Playback Compatibility**: Automatic filter for unplayable audio and video formats.
-- **Pipeline Reliability**: Hardened release automation and multi-platform packaging.
-`;
-  writeFileSync(releaseNotesPath, template, "utf8");
+  console.log(`Generating release notes at: docs/releases/${cleanTag}.md`);
+  const lastTag = runCapture("git describe --tags --abbrev=0") || "HEAD~10";
+  const rawCommits = runCapture(`git log ${lastTag}..HEAD --oneline`) || "";
+  const commitLines = rawCommits
+    .split("\n")
+    .map((l) => l.replace(/^[a-f0-9]+\s+/, "").trim())
+    .filter((l) => l && !l.startsWith("chore(release)") && !l.includes("[release]"));
+
+  let body = "";
+  if (commitLines.length > 0) {
+    body = commitLines.map((c) => `- **${c.split(":")[0] ?? "Update"}**: ${c.split(":").slice(1).join(":").trim() || c}`).join("\n") + "\n";
+  } else {
+    body = `- **General**: Maintenance, stability improvements, and platform packaging fixes.\n`;
+  }
+  writeFileSync(releaseNotesPath, body, "utf8");
 } else {
   console.log(`Release notes verified: docs/releases/${cleanTag}.md`);
 }

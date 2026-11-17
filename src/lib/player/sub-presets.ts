@@ -82,6 +82,25 @@ export const SEED_PRESETS: SubPreset[] = [
       subLineSpacing: 0,
     },
   },
+  {
+    id: "oled",
+    name: "OLED Warm",
+    values: {
+      subStyle: "shadow",
+      subFontFamily: "inter",
+      subFontSize: 28,
+      subFontColor: "#FFD180",
+      subBorderColor: "#000000",
+      subBorderSize: 1,
+      subMarginY: 10,
+      subAlignX: "center",
+      subAssOverride: "scale",
+      subBoxOpacity: 0.5,
+      subBoxColor: "#000000",
+      subOpacity: 0.9,
+      subLineSpacing: 0,
+    },
+  },
 ];
 
 export function loadSubPresets(): SubPreset[] {
