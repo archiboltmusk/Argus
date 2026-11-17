@@ -166,3 +166,21 @@ test("SubtitleParser: handles overlapping cues and parses SRT/VTT robustly", () 
   assert.ok(activeSingle);
   assert.ok(activeSingle.text.includes("Character"));
 });
+
+test("SubtitleGenerationUpgrades: supports multilingual profiles and language options", async () => {
+  const { SUBTITLE_LANGUAGES, GENERATION_PROFILES } = await import(
+    "../src/lib/subtitles/live-transcription-service"
+  );
+  assert.ok(SUBTITLE_LANGUAGES.length >= 10);
+  assert.ok(SUBTITLE_LANGUAGES.some((l) => l.code === "auto"));
+  assert.ok(SUBTITLE_LANGUAGES.some((l) => l.code === "hi"));
+  assert.ok(SUBTITLE_LANGUAGES.some((l) => l.code === "ja"));
+  assert.ok(SUBTITLE_LANGUAGES.some((l) => l.code === "en"));
+
+  assert.equal(GENERATION_PROFILES.length, 4);
+  const ids = GENERATION_PROFILES.map((p) => p.id);
+  assert.ok(ids.includes("verbatim"));
+  assert.ok(ids.includes("translate"));
+  assert.ok(ids.includes("bilingual"));
+  assert.ok(ids.includes("academic"));
+});

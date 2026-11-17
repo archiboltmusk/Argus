@@ -502,12 +502,14 @@ pub async fn generate(
                         .await;
                     }
 
+                    let latest_text = out.last().map(|s| s.text.clone()).unwrap_or_default();
                     let _ = app.emit("asr://live-cues", serde_json::json!({
                         "chunk": chunk_idx,
                         "total": total_chunks,
                         "srt": current_srt,
                         "count": out.len(),
                         "filePath": out_path,
+                        "latestText": latest_text,
                     }));
                 }
             }
@@ -703,7 +705,7 @@ pub async fn asr_generate_subtitles(
             &url,
             &hdrs,
             dur,
-            lang.as_deref().filter(|s| !s.is_empty()),
+            lang.as_deref().filter(|s| !s.is_empty() && *s != "auto"),
             is_translate,
             "0:a:0",
             output_path.as_deref(),

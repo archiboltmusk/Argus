@@ -25,7 +25,11 @@ export function LiveTranscriptionPill({ visible }: { visible: boolean }) {
       </div>
 
       <span className="font-semibold text-white">
-        {session.translate ? tr("Live EN") : tr("Whisper")}
+        {session.mode === "translate"
+          ? tr("English Translation")
+          : session.mode === "academic"
+          ? tr("Lecture Dialogue")
+          : tr("Generating Subtitles")}
       </span>
 
       <span className="text-zinc-400">·</span>
