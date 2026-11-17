@@ -42,17 +42,24 @@ export function useSubStyleApply(params: {
     if (engine !== "mpv") return;
     if (!bridgeReady) return;
     if (!mediaReady) return;
-    const isLetterboxed =
-      videoWidth && videoHeight && videoWidth > 0 && videoHeight > 0
-        ? videoWidth / videoHeight > window.innerWidth / Math.max(1, window.innerHeight) + 0.03
-        : true;
-    void applySubStyle(settings, {
-      assNativeActive,
-      imageNativeActive,
-      assScale,
-      sdhFilterAllowed,
-      isLetterboxed,
-    });
+
+    const applyCurrent = () => {
+      const isLetterboxed =
+        videoWidth && videoHeight && videoWidth > 0 && videoHeight > 0
+          ? videoWidth / videoHeight > window.innerWidth / Math.max(1, window.innerHeight) + 0.03
+          : true;
+      void applySubStyle(settings, {
+        assNativeActive,
+        imageNativeActive,
+        assScale,
+        sdhFilterAllowed,
+        isLetterboxed,
+      });
+    };
+
+    applyCurrent();
+    window.addEventListener("resize", applyCurrent);
+    return () => window.removeEventListener("resize", applyCurrent);
   }, [
     engine,
     bridgeReady,
