@@ -48,6 +48,8 @@ import { BTRDailyDripModal } from "@/components/education/btr-daily-drip-modal";
 import { BTRPdfSearchModal } from "@/components/education/btr-pdf-search-modal";
 import { BTRVignetteModal } from "@/components/education/btr-vignette-modal";
 import { BTRCrossAppTestsModal } from "@/components/education/btr-cross-app-tests-modal";
+import { BTRGTTrackerModal } from "@/components/education/btr-gt-tracker-modal";
+import { getNextUpcomingGT } from "@/lib/education/gt-tracker-engine";
 import { BTRCustomModuleModal } from "@/components/education/btr-custom-module-modal";
 import { BTRSubjectExplorer } from "@/components/education/btr-subject-explorer";
 import { BTRPearlModal } from "@/components/education/btr-pearl-modal";
@@ -490,6 +492,12 @@ export function CoreBTRWarRoom({
   const [showPdfSearchModal, setShowPdfSearchModal] = useState(false);
   const [showVignetteModal, setShowVignetteModal] = useState(false);
   const [showCrossAppModal, setShowCrossAppModal] = useState(false);
+  const [showGTTrackerModal, setShowGTTrackerModal] = useState(false);
+
+  // Live Next GT Tracker state
+  const { test: nextGT, statusInfo: nextGTStatus } = useMemo(() => {
+    return getNextUpcomingGT();
+  }, [showGTTrackerModal]);
 
   // CoreBTR App Experience State (Matching Dr. Zainab Vora Official Suite)
   const [selectedSubjectDetail, setSelectedSubjectDetail] = useState<BTRSubject | null>(null);
@@ -763,6 +771,10 @@ export function CoreBTRWarRoom({
     }
     if (dest === "matrix") {
       setShowTwentyModal(true);
+      return;
+    }
+    if (dest === "gt_tracker") {
+      setShowGTTrackerModal(true);
       return;
     }
     if (dest === "cross_app_tests") {
@@ -1192,6 +1204,25 @@ export function CoreBTRWarRoom({
                       </div>
                       <span className="text-[10.5px] text-ink-muted">{countdowns.neetPg.targetDateStr}</span>
                     </div>
+
+                    {/* Next GT Live Radar Tracker */}
+                    <button
+                      type="button"
+                      onClick={() => setShowGTTrackerModal(true)}
+                      className="flex flex-col items-center justify-center rounded-2xl bg-canvas/80 border border-emerald-500/40 hover:border-emerald-500 px-4 py-3 min-w-[160px] shadow-sm transition hover:scale-[1.02] text-center cursor-pointer group"
+                      title="Open Cross-Platform Next Grand Test Tracker"
+                    >
+                      <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-emerald-400">
+                        <Radio size={11} className={nextGTStatus?.isLive ? "animate-pulse" : ""} />
+                        <span>{nextGTStatus?.isLive ? "GT LIVE NOW" : "NEXT GT MOCK"}</span>
+                      </div>
+                      <div className="text-sm font-black text-ink tracking-tight mt-0.5 line-clamp-1 max-w-[150px] group-hover:text-accent transition">
+                        {nextGT ? nextGT.testName.replace(/All-India|National/gi, "").trim() : "View GT Radar"}
+                      </div>
+                      <span className="text-[10.5px] font-semibold text-emerald-400/90 mt-0.5">
+                        {nextGTStatus ? nextGTStatus.countdownLabel : "Track 5 Platforms"}
+                      </span>
+                    </button>
                   </div>
                 </div>
 
@@ -3211,6 +3242,15 @@ export function CoreBTRWarRoom({
 
       {/* Universal Cross-App Medical Test Center (Marrow, Prep, DAMS, Cerebellum) */}
       <BTRCrossAppTestsModal open={showCrossAppModal} onClose={() => setShowCrossAppModal(false)} />
+
+      {/* Cross-Platform Next GT Tracker (Marrow, Cerebellum, Prep, CoreBTR, DAMS) */}
+      <BTRGTTrackerModal
+        open={showGTTrackerModal}
+        onClose={() => setShowGTTrackerModal(false)}
+        onOpenScoreLogger={(_prefill) => {
+          setShowCrossAppModal(true);
+        }}
+      />
 
       {/* Create Custom Module Modal */}
       <BTRCustomModuleModal

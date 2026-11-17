@@ -38,6 +38,7 @@ export type BTRAppDestination =
   | "cases"
   | "volatiles"
   | "gt_analytics"
+  | "gt_tracker"
   | "cross_app_tests"
   | "strategy";
 
@@ -110,6 +111,13 @@ export function BTRAppDock({
       badgeColor: "bg-[#1767be]/20 text-[#4da2ff] border-[#1767be]/30",
     },
     { id: "volatiles", label: "Super-Volatiles", icon: BookmarkCheck, badge: "100", badgeColor: "bg-[#feb122]/15 text-[#feb122] border-[#feb122]/30" },
+    {
+      id: "gt_tracker",
+      label: "Next GT Tracker",
+      icon: Timer,
+      badge: "Live Radar",
+      badgeColor: "bg-emerald-500/20 text-emerald-400 border-emerald-500/30",
+    },
     {
       id: "cross_app_tests",
       label: "Cross-App Ingestion",
