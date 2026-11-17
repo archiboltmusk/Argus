@@ -79,6 +79,7 @@ import { CORE_BTR_BROADCASTS } from "@/lib/education/btr-broadcasts";
 import { BTRTriLinkSearchModal } from "@/components/education/btr-tri-link-search-modal";
 import { BTRBranchingTreeModal } from "@/components/education/btr-branching-tree-modal";
 import { BTRVoiceVivaModal } from "@/components/education/btr-voice-viva-modal";
+import { BTRWarRoomClashModal } from "@/components/education/btr-war-room-clash-modal";
 import { T_MINUS_7_PLANS, buildCountdownQuestionsForDay } from "@/lib/education/btr-countdown-deck";
 import {
   getBackendTests,
@@ -500,7 +501,9 @@ export function CoreBTRWarRoom({
     subject: BTRSubject;
     unannotatedPdf?: BTRLocalMediaFile;
     annotatedPdf?: BTRLocalMediaFile;
+    initialTimestampSec?: number;
   } | null>(null);
+  const [inspectedCountdownDay, setInspectedCountdownDay] = useState<number | null>(7);
   const [showAnkiModal, setShowAnkiModal] = useState(false);
   const [showErrorModal, setShowErrorModal] = useState(false);
   const [showBroadcastsModal, setShowBroadcastsModal] = useState(false);
@@ -517,6 +520,7 @@ export function CoreBTRWarRoom({
   const [showTriLinkSearchModal, setShowTriLinkSearchModal] = useState(false);
   const [showBranchingTreeModal, setShowBranchingTreeModal] = useState(false);
   const [showVoiceVivaModal, setShowVoiceVivaModal] = useState(false);
+  const [showWarRoomClashModal, setShowWarRoomClashModal] = useState(false);
 
   // Live Next GT Tracker state
   const { test: nextGT, statusInfo: nextGTStatus } = useMemo(() => {
@@ -1199,7 +1203,7 @@ export function CoreBTRWarRoom({
                   <Sparkles size={13} className="text-purple-400" />
                   <span>Next-Gen AI Clinical Lab</span>
                 </span>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
                   {/* Card 1: Tri-Link Unified Search */}
                   <div className="p-4 rounded-2xl bg-gradient-to-br from-purple-500/10 via-elevated/70 to-blue-500/10 border border-edge flex flex-col justify-between gap-3 shadow-xs hover:border-purple-400/40 transition group">
                     <div>
@@ -1275,6 +1279,32 @@ export function CoreBTRWarRoom({
                     >
                       <span>Simulate Cases</span>
                       <Play size={13} className="fill-white" />
+                    </button>
+                  </div>
+
+                  {/* Card 4: War Room Head-to-Head Mock Mesh */}
+                  <div className="p-4 rounded-2xl bg-gradient-to-br from-rose-500/10 via-elevated/70 to-orange-500/10 border border-edge flex flex-col justify-between gap-3 shadow-xs hover:border-rose-400/40 transition group">
+                    <div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded-md bg-rose-500/15 text-rose-300 border border-rose-500/30">
+                          Zero-Cloud LAN P2P
+                        </span>
+                        <Zap size={14} className="text-rose-300" />
+                      </div>
+                      <h4 className="text-sm font-bold text-white mt-2">
+                        War Room P2P Duel Mesh
+                      </h4>
+                      <p className="text-xs text-white/70 mt-1">
+                        Split-second buzzer mock test duel against local peers or AI sparring partner.
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setShowWarRoomClashModal(true)}
+                      className="w-full py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs transition shadow-xs flex items-center justify-center gap-1.5"
+                    >
+                      <span>Open War Room Arena</span>
+                      <Zap size={13} />
                     </button>
                   </div>
                 </div>
@@ -1768,6 +1798,7 @@ export function CoreBTRWarRoom({
                   subject={workstationSession.subject}
                   unannotatedPdf={workstationSession.unannotatedPdf}
                   annotatedPdf={workstationSession.annotatedPdf}
+                  initialTimestampSec={workstationSession.initialTimestampSec}
                 />
               ) : (
                 <div className="flex flex-col items-center justify-center p-12 text-center rounded-3xl border border-edge-soft bg-surface/40 min-h-[500px]">
@@ -2838,42 +2869,104 @@ export function CoreBTRWarRoom({
 
             {/* 7-Day Protocol Grid */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-7 gap-2.5">
-              {T_MINUS_7_PLANS.map((plan) => (
-                <div
-                  key={plan.dayNumber}
-                  className="rounded-2xl bg-canvas/80 border border-edge p-3 flex flex-col justify-between gap-3 hover:border-amber-400/40 transition group"
-                >
-                  <div className="flex flex-col gap-1.5">
-                    <div className="flex items-center justify-between">
-                      <span className="text-[10px] font-bold font-mono px-1.5 py-0.5 rounded bg-white/10 text-white/90">
-                        Day -{plan.dayNumber}
-                      </span>
-                      <span className="text-[9.5px] font-semibold text-amber-300/80 truncate max-w-[80px]">
-                        {plan.focusSpecialty}
+              {T_MINUS_7_PLANS.map((plan) => {
+                const isSelected = inspectedCountdownDay === plan.dayNumber;
+                return (
+                  <div
+                    key={plan.dayNumber}
+                    onClick={() => setInspectedCountdownDay(plan.dayNumber)}
+                    className={`rounded-2xl p-3 flex flex-col justify-between gap-3 transition cursor-pointer group ${
+                      isSelected
+                        ? "bg-amber-500/15 border-2 border-amber-400 ring-2 ring-amber-400/30 shadow-md"
+                        : "bg-canvas/80 border border-edge hover:border-amber-400/40"
+                    }`}
+                  >
+                    <div className="flex flex-col gap-1.5">
+                      <div className="flex items-center justify-between">
+                        <span className={`text-[10px] font-bold font-mono px-1.5 py-0.5 rounded ${
+                          isSelected ? "bg-amber-400 text-black" : "bg-white/10 text-white/90"
+                        }`}>
+                          Day -{plan.dayNumber}
+                        </span>
+                        <span className="text-[9.5px] font-semibold text-amber-300/80 truncate max-w-[80px]">
+                          {plan.focusSpecialty}
+                        </span>
+                      </div>
+                      <h5 className="text-xs font-bold text-white line-clamp-2 mt-1">
+                        {plan.dayTitle.split(": ")[1] || plan.dayTitle}
+                      </h5>
+                      <p className="text-[10px] text-ink-muted line-clamp-2 leading-snug">
+                        {plan.strategicObjective}
+                      </p>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        const qs = buildCountdownQuestionsForDay(plan.dayNumber);
+                        onStartQBankDrill?.(plan.dayTitle, qs);
+                      }}
+                      className="w-full py-1.5 rounded-xl bg-amber-500/20 hover:bg-amber-500 text-amber-200 hover:text-black font-bold text-[11px] border border-amber-500/30 transition shadow-xs flex items-center justify-center gap-1"
+                    >
+                      <span>Launch Drill</span>
+                      <Play size={10} className="fill-current" />
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Inspected Day Master Pills Panel */}
+            {inspectedCountdownDay !== null && (() => {
+              const activePlan = T_MINUS_7_PLANS.find((p) => p.dayNumber === inspectedCountdownDay) || T_MINUS_7_PLANS[0];
+              return (
+                <div className="p-4 rounded-2xl bg-canvas/90 border border-amber-500/30 flex flex-col gap-3 animate-in fade-in duration-150">
+                  <div className="flex items-center justify-between border-b border-edge-soft pb-2.5">
+                    <div className="flex items-center gap-2">
+                      <Flame size={16} className="text-amber-400 fill-amber-400" />
+                      <h4 className="text-sm font-bold text-white">
+                        {activePlan.dayTitle} • Master Retention Pills
+                      </h4>
+                      <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                        {activePlan.focusSpecialty}
                       </span>
                     </div>
-                    <h5 className="text-xs font-bold text-white line-clamp-2 mt-1">
-                      {plan.dayTitle.split(": ")[1] || plan.dayTitle}
-                    </h5>
-                    <p className="text-[10px] text-ink-muted line-clamp-2 leading-snug">
-                      {plan.strategicObjective}
-                    </p>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const qs = buildCountdownQuestionsForDay(activePlan.dayNumber);
+                        onStartQBankDrill?.(activePlan.dayTitle, qs);
+                      }}
+                      className="px-3.5 py-1 rounded-xl bg-amber-500 hover:bg-amber-400 text-black font-bold text-xs shadow-xs transition flex items-center gap-1.5"
+                    >
+                      <Play size={11} className="fill-black" />
+                      <span>Launch 20-Q Drill</span>
+                    </button>
                   </div>
 
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const qs = buildCountdownQuestionsForDay(plan.dayNumber);
-                      onStartQBankDrill?.(plan.dayTitle, qs);
-                    }}
-                    className="w-full py-1.5 rounded-xl bg-amber-500/20 hover:bg-amber-500 text-amber-200 hover:text-black font-bold text-[11px] border border-amber-500/30 transition shadow-xs flex items-center justify-center gap-1"
-                  >
-                    <span>Launch Drill</span>
-                    <Play size={10} className="fill-current" />
-                  </button>
+                  <p className="text-xs text-ink-muted">
+                    <strong className="text-white">Strategic Objective: </strong>
+                    {activePlan.strategicObjective}
+                  </p>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mt-1">
+                    {activePlan.mustMemorizePills.map((pill, pIdx) => (
+                      <div
+                        key={pIdx}
+                        className="flex items-start gap-2 p-2.5 rounded-xl bg-elevated/70 border border-edge text-xs text-white leading-relaxed font-medium"
+                      >
+                        <span className="h-5 w-5 rounded-lg bg-amber-500/20 text-amber-300 font-mono text-[10px] font-bold flex items-center justify-center shrink-0 mt-0.5">
+                          {pIdx + 1}
+                        </span>
+                        <span>{pill}</span>
+                      </div>
+                    ))}
+                  </div>
                 </div>
-              ))}
-            </div>
+              );
+            })()}
           </div>
 
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 rounded-2xl bg-surface/50 border border-edge-soft p-4">
@@ -3710,6 +3803,33 @@ export function CoreBTRWarRoom({
         isOpen={showTriLinkSearchModal}
         onClose={() => setShowTriLinkSearchModal(false)}
         onStartQBankDrill={onStartQBankDrill}
+        onSelectVideoTimestamp={(chapterTitle, timestampSec) => {
+          setShowTriLinkSearchModal(false);
+          // Match subject from catalog or libraryState
+          let matchedSubj = CORE_BTR_SUBJECTS.find(
+            (s) =>
+              chapterTitle.toLowerCase().includes(s.name.toLowerCase()) ||
+              s.name.toLowerCase().includes(chapterTitle.toLowerCase())
+          );
+          if (!matchedSubj) matchedSubj = CORE_BTR_SUBJECTS[0];
+
+          const mapped = libraryState.mappings[matchedSubj.id];
+          const fallbackVid = Object.values(libraryState.mappings).find(
+            (m) => m.videos && m.videos.length > 0
+          )?.videos[0];
+          const matchedVid = mapped?.videos[0] || fallbackVid;
+
+          if (matchedVid) {
+            setWorkstationSession({
+              video: matchedVid,
+              subject: matchedSubj,
+              unannotatedPdf: mapped?.unannotatedPdf,
+              annotatedPdf: mapped?.annotatedPdf,
+              initialTimestampSec: timestampSec,
+            });
+            setActiveDestination("workstation");
+          }
+        }}
       />
 
       {/* Multi-Step Branching Clinical Decisions Modal */}
@@ -3722,6 +3842,13 @@ export function CoreBTRWarRoom({
       <BTRVoiceVivaModal
         isOpen={showVoiceVivaModal}
         onClose={() => setShowVoiceVivaModal(false)}
+      />
+
+      {/* Zero-Cloud Local-Network War Room Head-to-Head Clash Modal */}
+      <BTRWarRoomClashModal
+        isOpen={showWarRoomClashModal}
+        onClose={() => setShowWarRoomClashModal(false)}
+        onStartQBankDrill={onStartQBankDrill}
       />
     </div>
   );

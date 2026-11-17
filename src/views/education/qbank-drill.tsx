@@ -124,6 +124,13 @@ export function QBankRunner({
     });
   }, [currentSectionConfig, session.activeQuestionIndex, sectionElapsedTimer]);
 
+  const totalExamDurationSeconds = useMemo(() => {
+    if (sectionalGatedMode) {
+      return sectionConfigs.reduce((acc, c) => acc + c.timeLimitSeconds, 0);
+    }
+    return Math.max(900, Math.round(activeQuestions.length * 50.4));
+  }, [sectionalGatedMode, sectionConfigs, activeQuestions.length]);
+
   // Timer
   useEffect(() => {
     if (examFinished) return;
@@ -1314,7 +1321,7 @@ export function QBankRunner({
 
             <div className="flex items-center gap-1.5 rounded-xl bg-white/5 border border-white/10 px-3 py-1 font-mono text-xs font-bold text-white">
               <Timer size={13} className="text-ink-muted" />
-              <span>Time Left: {formatTimer(7200 - elapsedTimer)}</span>
+              <span>Time Left: {formatTimer(Math.max(0, totalExamDurationSeconds - elapsedTimer))}</span>
             </div>
 
             <button
@@ -1519,13 +1526,37 @@ export function QBankRunner({
                       activeQuestionIndex: Math.max(0, prev.activeQuestionIndex - 1),
                     }))
                   }
-                  disabled={session.activeQuestionIndex === 0}
+                  disabled={
+                    session.activeQuestionIndex === 0 ||
+                    (sectionalGatedMode &&
+                      currentSectionConfig !== undefined &&
+                      session.activeQuestionIndex <= currentSectionConfig.startIndex)
+                  }
+                  title={
+                    sectionalGatedMode &&
+                    currentSectionConfig !== undefined &&
+                    session.activeQuestionIndex <= currentSectionConfig.startIndex
+                      ? "Cannot backtrack to locked sections under NBE 2024 scheme"
+                      : undefined
+                  }
                   className="px-4 py-1.5 rounded-xl bg-white/5 border border-white/10 text-white/80 hover:text-white text-xs font-bold transition disabled:opacity-30"
                 >
                   Previous
                 </button>
 
-                {session.activeQuestionIndex < activeQuestions.length - 1 ? (
+                {sectionalGatedMode &&
+                currentSectionConfig &&
+                session.activeQuestionIndex >= currentSectionConfig.endIndex ? (
+                  <button
+                    type="button"
+                    onClick={handleAdvanceSection}
+                    className="px-5 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold shadow-md transition"
+                  >
+                    {sectionalPacingState.currentSectionId === "D"
+                      ? "Submit Test"
+                      : `Lock Sec ${sectionalPacingState.currentSectionId} & Next`}
+                  </button>
+                ) : session.activeQuestionIndex < activeQuestions.length - 1 ? (
                   <button
                     type="button"
                     onClick={() =>

@@ -238,6 +238,22 @@ export function BTRVoiceVivaModal({ isOpen, onClose }: BTRVoiceVivaModalProps) {
           </div>
 
           <div className="flex items-center gap-2">
+            <select
+              value={caseIndex}
+              onChange={(e) => {
+                stopAudio();
+                setTranscript("");
+                setEvaluation(null);
+                setCaseIndex(Number(e.target.value));
+              }}
+              className="text-xs bg-canvas border border-edge rounded-xl px-2.5 py-1 text-ink font-semibold focus:outline-none"
+            >
+              {HY_VIVA_CASES.map((c, i) => (
+                <option key={c.id} value={i}>
+                  {c.title}
+                </option>
+              ))}
+            </select>
             <button
               type="button"
               onClick={handleNextCase}

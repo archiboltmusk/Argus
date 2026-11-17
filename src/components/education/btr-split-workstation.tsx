@@ -37,6 +37,7 @@ interface BTRSplitWorkstationProps {
   subject: BTRSubject;
   unannotatedPdf?: BTRLocalMediaFile;
   annotatedPdf?: BTRLocalMediaFile;
+  initialTimestampSec?: number;
   embedded?: boolean;
 }
 
@@ -47,6 +48,7 @@ export function BTRSplitWorkstation({
   subject,
   unannotatedPdf,
   annotatedPdf,
+  initialTimestampSec,
   embedded = false,
 }: BTRSplitWorkstationProps) {
   const { openPlayer } = useView();
@@ -59,6 +61,15 @@ export function BTRSplitWorkstation({
     setActiveVideo(initialVideo);
     setVideoError(false);
   }, [initialVideo]);
+
+  useEffect(() => {
+    if (initialTimestampSec && initialTimestampSec > 0) {
+      if (videoRef.current) {
+        videoRef.current.currentTime = initialTimestampSec;
+      }
+      setCurrentTime(initialTimestampSec);
+    }
+  }, [initialTimestampSec, activeVideo]);
 
   // Playback state
   const [isPlaying, setIsPlaying] = useState(false);
