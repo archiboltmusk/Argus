@@ -401,3 +401,15 @@ test("large question stems are fingerprinted rather than duplicated into every a
     key,
   );
 });
+
+test("every shipped simulation can finish after its authored goals, including medication-only cases", () => {
+  for (const caseData of CLINICAL_SIMULATOR_CASES) {
+    let state = initialSimulation(caseData);
+    for (const intervention of caseData.availableInterventions.filter((item) => item.isCorrect)) {
+      state = transitionSimulation(caseData, state, { type: "perform", id: intervention.id });
+    }
+    assert.equal(state.resolved, false);
+    state = transitionSimulation(caseData, state, { type: "reassess" });
+    assert.equal(state.resolved, true, caseData.id);
+  }
+});

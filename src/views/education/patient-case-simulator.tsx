@@ -275,10 +275,10 @@ export function PatientCaseSimulator({ onClose }: { onClose: () => void }) {
                   SCENARIO GOALS COMPLETED AFTER REASSESSMENT
                 </h4>
                 <p className="text-xs mt-1 text-emerald-200/90">
-                  {
-                    performedInterventions.find((i) => i.isCorrect && i.category === "procedure")
-                      ?.feedback
-                  }
+                  {performedInterventions
+                    .filter((i) => i.isCorrect)
+                    .map((i) => i.feedback)
+                    .join(" ")}
                 </p>
                 <div className="mt-3 rounded-lg bg-surface/90 p-3 border border-emerald-500/20">
                   <span className="text-xs font-bold text-emerald-400">

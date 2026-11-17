@@ -67,9 +67,7 @@ export function transitionSimulation(
     // A successful action alone does not finish a case: require an explicit reassessment.
     const goals =
       caseData.requiredInterventions ??
-      caseData.availableInterventions
-        .filter((item) => item.isCorrect && item.category === "procedure")
-        .map((item) => item.id);
+      caseData.availableInterventions.filter((item) => item.isCorrect).map((item) => item.id);
     state.resolved = goals.length > 0 && goals.every((id) => state.performed.includes(id));
     description = state.resolved
       ? "Reassessed: scenario goals completed"
