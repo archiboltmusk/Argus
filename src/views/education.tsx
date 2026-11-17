@@ -430,10 +430,10 @@ export function EducationView() {
             <span>ARGUS EDUCATION</span>
             <span className="edu-eyebrow-badge">Open Masterclasses</span>
           </div>
-          <h1>{t("Knowledge without gates. Your curriculum.")}</h1>
+          <h1>{t("Medical Education & Revision Hub")}</h1>
           <p>
             {t(
-              "Democratizing education with clinical vignette simulations, high-yield university lecture series, and active recall spaced repetition.",
+              "Video lectures, clinical practice questions, and daily flashcard review for all 19 medical subjects.",
             )}
           </p>
         </div>
@@ -445,10 +445,10 @@ export function EducationView() {
             onClick={() => setShowWateringDeck(true)}
             disabled={dueNotes.length === 0}
             className="edu-pill-button"
-            title={t("Daily Active Recall Spaced Repetition Session")}
+            title={t("Daily Flashcard Review")}
           >
             <Sparkles size={15} className="text-accent" />
-            <span>{t("Water the Tree")}</span>
+            <span>{t("Daily Flashcards")}</span>
             {dueNotes.length > 0 && (
               <span className="flex h-4 min-w-4 items-center justify-center rounded-full bg-accent text-canvas px-1.5 text-[10px] font-black">
                 {dueNotes.length}
@@ -460,10 +460,10 @@ export function EducationView() {
             type="button"
             onClick={() => startQBankDrill(true)}
             className="edu-pill-button primary"
-            title={t("Launch High-Yield Clinical Vignette QBank Drill")}
+            title={t("Practice High-Yield Medical Questions")}
           >
             <Zap size={15} className="fill-canvas text-canvas" />
-            <span>{t("Clinical QBank Drill")}</span>
+            <span>{t("Practice Questions")}</span>
           </button>
 
           <div className="relative">
@@ -661,7 +661,7 @@ export function EducationView() {
                         className="edu-hero-btn-primary"
                       >
                         <Flame size={16} fill="currentColor" />
-                        <span>{t("Launch CoreBTR War Room")}</span>
+                        <span>{t("Open CoreBTR")}</span>
                       </button>
 
                       <button
@@ -670,7 +670,7 @@ export function EducationView() {
                         className="edu-hero-btn-secondary"
                       >
                         <Target size={15} className="text-white/80" />
-                        <span>{t("Socratic Checkpoints")}</span>
+                        <span>{t("Review Questions")}</span>
                       </button>
 
                       <button
@@ -679,7 +679,7 @@ export function EducationView() {
                         className="edu-hero-btn-secondary"
                       >
                         <Zap size={15} className="text-white/80" />
-                        <span>{t("Clinical Drill")}</span>
+                        <span>{t("Question Bank")}</span>
                       </button>
                     </div>
                   </div>

@@ -464,17 +464,17 @@ export function BTRGTTrackerModal({
             <div className="flex items-center gap-2 mb-1">
               <span className="flex items-center gap-1.5 rounded-full bg-accent/20 px-3 py-0.5 text-xs font-bold text-accent border border-accent/30 tracking-wide">
                 <Flame size={13} className="fill-accent text-accent" />
-                <span>CROSS-PLATFORM GT TRACKER</span>
+                <span>GRAND TEST SCHEDULE</span>
               </span>
               <span className="text-xs text-ink-muted">
                 Marrow • Cerebellum • PrepLadder • CoreBTR • DAMS
               </span>
             </div>
             <h2 className="text-xl md:text-2xl font-black tracking-tight text-white">
-              All-India Grand Test (GT) Schedule & Live Radar
+              Grand Test Schedule & Calendar
             </h2>
             <p className="text-xs text-ink-muted mt-0.5 max-w-2xl">
-              Track upcoming test windows, countdowns, national percentile benchmarks, and sync schedule to your calendar.
+              Track upcoming test dates, start times, and sync to your calendar.
             </p>
           </div>
 
@@ -483,20 +483,20 @@ export function BTRGTTrackerModal({
               type="button"
               onClick={handleExportCalendar}
               className="flex items-center gap-1.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 px-3 py-2 text-xs font-semibold text-white transition shadow-sm"
-              title="Download RFC 5545 iCalendar file with alarms"
+              title="Download calendar file for Google or Apple Calendar"
             >
               <Download size={14} className="text-accent" />
-              <span>Export .ICS</span>
+              <span>Add to Calendar</span>
             </button>
 
             <button
               type="button"
               onClick={() => setShowIngestModal(true)}
               className="flex items-center gap-1.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 px-3 py-2 text-xs font-semibold text-white transition shadow-sm"
-              title="Import from screenshot or announcement text"
+              title="Import from screenshot or schedule image"
             >
               <Upload size={14} className="text-ink-muted" />
-              <span>Import Screenshot</span>
+              <span>Import Image</span>
             </button>
 
             <button
@@ -505,7 +505,7 @@ export function BTRGTTrackerModal({
               className="flex items-center gap-1.5 rounded-xl bg-accent px-3 py-2 text-xs font-bold text-white hover:brightness-110 transition shadow-sm"
             >
               <Plus size={14} />
-              <span>Add Custom Mock</span>
+              <span>Add Test</span>
             </button>
 
             <button
@@ -534,7 +534,7 @@ export function BTRGTTrackerModal({
             }`}
           >
             <Radio size={13} className={trackerMode === "radar" ? "text-accent animate-pulse" : ""} />
-            <span>Cross-Platform Radar</span>
+            <span>All Coaching Tests</span>
           </button>
 
           <button
@@ -550,7 +550,7 @@ export function BTRGTTrackerModal({
             }`}
           >
             <span className="flex h-2 w-2 rounded-full bg-[#1cb0b8]" />
-            <span>Marrow Official Calendar</span>
+            <span>Marrow Schedule</span>
             <span className="text-[10px] rounded px-1.5 py-0.5 bg-[#1cb0b8]/20 text-[#1cb0b8] font-mono">2026 - 27 (16 GTs)</span>
           </button>
         </div>
@@ -874,7 +874,7 @@ export function BTRGTTrackerModal({
                     <div className="flex items-start gap-2 rounded-xl bg-amber-500/10 border border-amber-500/25 p-3 text-xs text-amber-200">
                       <Sparkles size={14} className="text-amber-400 shrink-0 mt-0.5" />
                       <div>
-                        <span className="font-bold text-amber-300">Dr. Zainab High-Yield Tip: </span>
+                        <span className="font-bold text-amber-300">Dr. Zainab's Advice: </span>
                         <span>{nextGT.drZainabKeyAdvice}</span>
                       </div>
                     </div>
@@ -907,7 +907,7 @@ export function BTRGTTrackerModal({
                       className="flex items-center justify-center gap-1.5 rounded-xl bg-accent px-5 py-2.5 text-xs font-bold text-white hover:brightness-110 transition shadow-md"
                     >
                       <ExternalLink size={14} />
-                      <span>Open Official Portal</span>
+                      <span>Open Website</span>
                     </a>
                   )}
 
@@ -938,7 +938,7 @@ export function BTRGTTrackerModal({
                       className="flex items-center justify-center gap-1.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 px-4 py-2 text-xs font-semibold text-white transition"
                     >
                       <FileText size={14} className="text-ink-muted" />
-                      <span>Log My Percentile</span>
+                      <span>Log My Score</span>
                     </button>
                   )}
                 </div>
@@ -1080,7 +1080,7 @@ export function BTRGTTrackerModal({
 
                           {gt.isNationalBenchmark && (
                             <span className="rounded bg-amber-500/20 text-amber-300 border border-amber-500/30 px-2 py-0.5 text-[10px] font-bold">
-                              National Benchmark
+                              National Test
                             </span>
                           )}
 
@@ -1180,7 +1180,7 @@ export function BTRGTTrackerModal({
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-t border-white/10 px-6 py-4 bg-[#0e142c]/70 text-xs text-ink-muted">
           <div className="flex items-center gap-2">
             <Sparkles size={14} className="text-accent" />
-            <span>Synchronized with official Marrow, Cerebellum, Prepladder & CoreBTR 2026-2027 calendars.</span>
+            <span>Official test schedules for Marrow, Cerebellum, PrepLadder, and CoreBTR.</span>
           </div>
           <button
             type="button"

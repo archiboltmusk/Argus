@@ -798,7 +798,7 @@ export function MusicNowPlaying({
                                   onClick={() => seekMusic(line.at)}
                                   role="button"
                                   tabIndex={0}
-                                  title="Instrumental Break — Click to seek"
+                                  title="Instrumental — Click to seek"
                                 >
                                   <span className="music-inst-bars">
                                     <span className="music-inst-bar bar-1" />
@@ -806,7 +806,7 @@ export function MusicNowPlaying({
                                     <span className="music-inst-bar bar-3" />
                                     <span className="music-inst-bar bar-4" />
                                   </span>
-                                  <span className="music-inst-label">Instrumental Solo</span>
+                                  <span className="music-inst-label">Instrumental</span>
                                 </div>
                               ) : (
                                 <button type="button" onClick={() => seekMusic(line.at)}>

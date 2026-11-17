@@ -1218,10 +1218,10 @@ export function CoreBTRWarRoom({
                         <Search size={14} className="text-purple-300" />
                       </div>
                       <h4 className="text-sm font-bold text-white mt-2">
-                        Tri-Link Medical Search
+                        Fast Medical Search
                       </h4>
                       <p className="text-xs text-white/70 mt-1">
-                        Instant cross-index search across 5,602 Qs, 61 video chapters, and Top-100 Vault.
+                        Search across all questions, video chapters, and high-yield notes.
                       </p>
                     </div>
                     <button
@@ -1229,25 +1229,25 @@ export function CoreBTRWarRoom({
                       onClick={() => setShowTriLinkSearchModal(true)}
                       className="w-full py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs transition shadow-xs flex items-center justify-center gap-1.5"
                     >
-                      <span>Open Search (⌘K)</span>
+                      <span>Search Everything (⌘K)</span>
                       <ArrowRight size={13} />
                     </button>
                   </div>
 
-                  {/* Card 2: Socratic Voice Viva */}
+                  {/* Card 2: Voice Practice */}
                   <div className="p-4 rounded-2xl bg-gradient-to-br from-emerald-500/10 via-elevated/70 to-teal-500/10 border border-edge flex flex-col justify-between gap-3 shadow-xs hover:border-emerald-400/40 transition group">
                     <div>
                       <div className="flex items-center justify-between">
                         <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded-md bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
-                          Socratic Voice Oral
+                          Voice Practice
                         </span>
                         <Mic size={14} className="text-emerald-300" />
                       </div>
                       <h4 className="text-sm font-bold text-white mt-2">
-                        AI Clinical Attending Viva
+                        Voice Viva Practice
                       </h4>
                       <p className="text-xs text-white/70 mt-1">
-                        Hands-free bedside oral examination with speech recognition & instant 5-star appraisal.
+                        Practice medical viva questions aloud using your microphone and get instant feedback.
                       </p>
                     </div>
                     <button
@@ -1255,25 +1255,25 @@ export function CoreBTRWarRoom({
                       onClick={() => setShowVoiceVivaModal(true)}
                       className="w-full py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs transition shadow-xs flex items-center justify-center gap-1.5"
                     >
-                      <span>Start Voice Viva</span>
+                      <span>Start Voice Practice</span>
                       <Mic size={13} />
                     </button>
                   </div>
 
-                  {/* Card 3: Multi-Step Decision Branching Trees */}
+                  {/* Card 3: Interactive Patient Cases */}
                   <div className="p-4 rounded-2xl bg-gradient-to-br from-amber-500/10 via-elevated/70 to-rose-500/10 border border-edge flex flex-col justify-between gap-3 shadow-xs hover:border-amber-400/40 transition group">
                     <div>
                       <div className="flex items-center justify-between">
                         <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded-md bg-amber-500/15 text-amber-300 border border-amber-500/30">
-                          Decision Trees
+                          Patient Scenarios
                         </span>
                         <GitBranch size={14} className="text-amber-300" />
                       </div>
                       <h4 className="text-sm font-bold text-white mt-2">
-                        Branching Clinical Trees
+                        Interactive Patient Cases
                       </h4>
                       <p className="text-xs text-white/70 mt-1">
-                        Consequence-driven sequential cases with live vitals monitor and fatal trap autopsies.
+                        Step-by-step clinical cases where your diagnosis and management choices guide the outcome.
                       </p>
                     </div>
                     <button
@@ -1281,7 +1281,7 @@ export function CoreBTRWarRoom({
                       onClick={() => setShowBranchingTreeModal(true)}
                       className="w-full py-2 rounded-xl bg-amber-600 hover:bg-amber-500 text-white font-bold text-xs transition shadow-xs flex items-center justify-center gap-1.5"
                     >
-                      <span>Simulate Cases</span>
+                      <span>Start Patient Cases</span>
                       <Play size={13} className="fill-white" />
                     </button>
                   </div>
@@ -1291,15 +1291,15 @@ export function CoreBTRWarRoom({
                     <div>
                       <div className="flex items-center justify-between">
                         <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded-md bg-rose-500/15 text-rose-300 border border-rose-500/30">
-                          Zero-Cloud LAN P2P
+                          Quiz Battle
                         </span>
                         <Zap size={14} className="text-rose-300" />
                       </div>
                       <h4 className="text-sm font-bold text-white mt-2">
-                        War Room P2P Duel Mesh
+                        Head-to-Head Quiz
                       </h4>
                       <p className="text-xs text-white/70 mt-1">
-                        Split-second buzzer mock test duel against local peers or AI sparring partner.
+                        Timed question challenge with friends on your Wi-Fi or practice against AI.
                       </p>
                     </div>
                     <button
@@ -1307,7 +1307,7 @@ export function CoreBTRWarRoom({
                       onClick={() => setShowWarRoomClashModal(true)}
                       className="w-full py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs transition shadow-xs flex items-center justify-center gap-1.5"
                     >
-                      <span>Open War Room Arena</span>
+                      <span>Start Quiz Challenge</span>
                       <Zap size={13} />
                     </button>
                   </div>
@@ -1442,10 +1442,10 @@ export function CoreBTRWarRoom({
                       </span>
                     </div>
                     <h2 className="text-2xl md:text-3xl font-extrabold tracking-tight text-ink">
-                      NEET-PG 2027 Strategic Command & War Room
+                      NEET-PG 2027 Revision Dashboard
                     </h2>
                     <p className="mt-1 text-sm text-ink-muted max-w-2xl leading-relaxed">
-                      Phased syllabus execution, unannotated workbooks, 100 super-volatile tables, and synced local video lecture playback.
+                      Video lectures, study notes, high-yield facts, and test schedules for all 19 medical subjects.
                     </p>
                   </div>
 

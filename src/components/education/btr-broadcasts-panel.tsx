@@ -84,21 +84,21 @@ export function BTRBroadcastsModal({
           </button>
         </header>
 
-        {/* Daily 3 PM Core Drop Banner */}
+        {/* Daily 3 PM Video Banner */}
         <div className="shrink-0 bg-gradient-to-r from-accent/20 via-emerald-600/15 to-transparent border-b border-edge-soft px-6 py-2.5 flex items-center justify-between text-xs">
           <div className="flex items-center gap-2 text-ink">
             <Flame size={14} className="text-amber-400" />
-            <span className="font-bold">Daily 3:00 PM Core Drop:</span>
+            <span className="font-bold">Daily 3:00 PM Video:</span>
             <span className="text-ink-muted hidden sm:inline">
-              New micro-strategy sessions and high-yield mini-quizzes drop daily at 3 PM IST.
+              New short study sessions and quizzes posted daily at 3 PM.
             </span>
           </div>
-          <span className="font-mono text-[11px] font-bold text-accent">Active Broadcast Feed</span>
+          <span className="font-mono text-[11px] font-bold text-accent">Latest Videos</span>
         </div>
 
         {/* Content Body: Split between active player and playlist */}
         <div className="flex-1 flex flex-col lg:flex-row overflow-hidden">
-          {/* LEFT: Distraction-free Theater Player & Key Pearls (60%) */}
+          {/* LEFT: Player & Key Points (60%) */}
           <div className="w-full lg:w-[60%] flex flex-col border-b lg:border-b-0 lg:border-r border-edge bg-black/60 overflow-y-auto p-4 sm:p-5 gap-4">
             {/* Embed Frame with Error 153 mitigation & Popout Theater mode */}
             <div className="relative aspect-video w-full rounded-2xl overflow-hidden bg-black border border-edge-soft shadow-lg group">
@@ -124,7 +124,7 @@ export function BTRBroadcastsModal({
                     popout?.focus();
                   }}
                   className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-black/85 hover:bg-black text-white font-bold text-xs backdrop-blur-md border border-white/20 transition shadow-lg opacity-90 hover:opacity-100"
-                  title="Open theater popout window (guaranteed 100% playback bypasses Error 153)"
+                  title="Open in a new window"
                 >
                   <Maximize2 size={12} />
                   <span>Popout Player</span>
@@ -143,8 +143,8 @@ export function BTRBroadcastsModal({
 
               {/* In-player smart fallback hint */}
               <div className="absolute bottom-2 left-3 right-3 z-10 flex items-center justify-between text-[11px] text-white/70 bg-black/60 backdrop-blur-xs px-3 py-1 rounded-lg pointer-events-none opacity-0 group-hover:opacity-100 transition">
-                <span>Encountering Error 153 or embed restriction? Click Popout Player above.</span>
-                <span className="font-mono text-[10px] text-accent">youtube-nocookie secure</span>
+                <span>Video not playing? Click Popout Player above to watch.</span>
+                <span className="font-mono text-[10px] text-accent">HD Video</span>
               </div>
             </div>
 
@@ -167,7 +167,7 @@ export function BTRBroadcastsModal({
                   className="mt-1 flex items-center justify-center gap-2 py-2 px-3 rounded-xl bg-accent text-white font-bold text-xs hover:brightness-110 shadow-xs transition"
                 >
                   <BookOpen size={13} />
-                  <span>Open in Dual Workstation with Notes</span>
+                  <span>Open with Side-by-Side Notes</span>
                 </button>
               )}
             </div>
@@ -176,9 +176,9 @@ export function BTRBroadcastsModal({
             <div className="rounded-2xl bg-surface/80 border border-edge p-4 flex flex-col gap-2.5">
               <div className="flex items-center justify-between text-xs">
                 <span className="font-bold text-ink flex items-center gap-1.5">
-                  <Sparkles size={13} className="text-accent" /> High-Yield Pearls & Takeaways:
+                  <Sparkles size={13} className="text-accent" /> Key Study Points:
                 </span>
-                <span className="text-[10px] text-ink-muted">Click any to copy</span>
+                <span className="text-[10px] text-ink-muted">Click to copy</span>
               </div>
               <div className="flex flex-col gap-2">
                 {activeVideo.keyPearls.map((pearl, i) => (
