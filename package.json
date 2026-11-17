@@ -92,7 +92,8 @@
     "remark-gfm": "^4.0.1",
     "skinview3d": "^3.4.2",
     "tailwindcss": "^4.3.5",
-    "tldts": "7.4.19"
+    "tldts": "7.4.19",
+    "ts-fsrs": "5.4.2"
   },
   "devDependencies": {
     "@resvg/resvg-js": "^2.6.2",

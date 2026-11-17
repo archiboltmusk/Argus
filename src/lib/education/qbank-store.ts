@@ -1,15 +1,30 @@
 import { useSyncExternalStore } from "react";
-import type { ClinicalQuestion, QBankPack, QuestionDepthLevel, SubjectCategory } from "./qbank-types";
+import type {
+  ClinicalQuestion,
+  QBankPack,
+  QuestionDepthLevel,
+  SubjectCategory,
+} from "./qbank-types";
 import { CLINICAL_QBANK_STARTER } from "./qbank-data";
 import { classifyInicetQuestion } from "./inicet-classifier";
 import { cleanExplanationPayload } from "./explanation-cleaner";
+
+import { parseQuestionCore, type ImportReport } from "./question-integrity";
+
+export type QBankImportResult = {
+  success: boolean;
+  pack?: QBankPack;
+  error?: string;
+  report?: ImportReport;
+};
 
 const PACKS_KEY = "argus.qbank.packs.v1";
 
 const STARTER_PACK: QBankPack = {
   id: "argus-starter-pack",
   title: "Argus High-Yield AIIMS & NEET PG Starter Pack",
-  description: "Core clinical questions with Socratic distractor analysis, trap radar, and bottom lines.",
+  description:
+    "Core clinical questions with Socratic distractor analysis, trap radar, and bottom lines.",
   author: "Argus Medical Collective",
   version: "1.0.0",
   subject: "Mixed",
@@ -42,14 +57,10 @@ function readPacks(): QBankPack[] {
 }
 
 function commitPacks(packs: QBankPack[]): void {
-  packsCache = packs;
-  try {
-    if (typeof localStorage !== "undefined") {
-      localStorage.setItem(PACKS_KEY, JSON.stringify(packs));
-    }
-  } catch (e) {
-    console.warn("[qbank-store] failed to save packs", e);
+  if (typeof localStorage !== "undefined") {
+    localStorage.setItem(PACKS_KEY, JSON.stringify(packs));
   }
+  packsCache = packs;
   for (const l of listeners) l();
 }
 
@@ -97,73 +108,18 @@ export function getInicetHighYieldQuestions(): ClinicalQuestion[] {
  * - Character answers: "A", "B", "C" or index answers 0, 1, 2
  * - Varied field names: prompt, stem, query, vignette, options, choices, answer, solution, etc.
  */
-export function sanitizePolyglotQuestion(raw: any, index: number, packId: string): ClinicalQuestion {
-  // 1. Extract Vignette / Question
-  const vignette =
-    raw.vignette ||
-    raw.question ||
-    raw.prompt ||
-    raw.stem ||
-    raw.query ||
-    raw.item ||
-    raw.text ||
-    "Clinical vignette content missing.";
-
-  // 2. Extract Options
-  let options: string[] = [];
-  let optionCorrectFromFlag: number | null = null;
-
-  if (Array.isArray(raw.options)) {
-    options = raw.options.map((opt: any, idx: number) => {
-      if (opt && typeof opt === "object") {
-        if (opt.correct === true) optionCorrectFromFlag = idx;
-        return String(opt.text || opt.label || JSON.stringify(opt));
-      }
-      return String(opt);
-    });
-  } else if (Array.isArray(raw.choices)) {
-    options = raw.choices.map((c: any, idx: number) => {
-      if (typeof c === "object") {
-        if (c.correct === true) optionCorrectFromFlag = idx;
-        return c.text || c.choice || JSON.stringify(c);
-      }
-      return String(c);
-    });
-  } else if (raw.options && typeof raw.options === "object") {
-    // {"A": "Option 1", "B": "Option 2"}
-    options = ["A", "B", "C", "D", "E"]
-      .filter((k) => raw.options[k] !== undefined)
-      .map((k) => String(raw.options[k]));
-  } else if (raw.choices && typeof raw.choices === "object") {
-    options = Object.values(raw.choices).map(String);
-  }
-
-  if (options.length < 2) {
-    options = ["Option A", "Option B", "Option C", "Option D"];
-  }
-
-  // 3. Extract Correct Index
-  let correctIndex = optionCorrectFromFlag ?? 0;
-  if (optionCorrectFromFlag === null) {
-    const rawAns = raw.correctIndex ?? raw.answer_idx ?? raw.answer ?? raw.correct_answer ?? raw.correct ?? raw.label;
-    if (typeof rawAns === "number" && rawAns >= 0 && rawAns < options.length) {
-      correctIndex = rawAns;
-    } else if (typeof rawAns === "string") {
-      const trimmed = rawAns.trim();
-      const firstChar = trimmed[0]?.toUpperCase();
-      if (trimmed.length === 1 && firstChar >= "A" && firstChar <= "E") {
-        correctIndex = firstChar.charCodeAt(0) - 65;
-      } else if (trimmed.length >= 2 && trimmed[1] === "." && firstChar >= "A" && firstChar <= "E") {
-        // e.g. "D. The absolute contraindication..."
-        correctIndex = firstChar.charCodeAt(0) - 65;
-      } else {
-        // String match against options
-        const foundIdx = options.findIndex((opt) => opt.toLowerCase().includes(trimmed.toLowerCase()));
-        if (foundIdx !== -1) correctIndex = foundIdx;
-      }
-    }
-  }
-
+export function sanitizePolyglotQuestion(
+  raw: any,
+  index: number,
+  packId: string,
+): ClinicalQuestion {
+  const { vignette, options, answerSpec } = parseQuestionCore(raw);
+  const correctIndex =
+    answerSpec.kind === "single"
+      ? answerSpec.correctIndex
+      : answerSpec.kind === "multiple"
+        ? answerSpec.correctIndices[0]
+        : answerSpec.correctMatches[0];
   // 4. Extract Explanation / Rationale & Distractor Breakdown
   let rawExplanation =
     raw.explanation?.correctRationale ||
@@ -172,10 +128,10 @@ export function sanitizePolyglotQuestion(raw: any, index: number, packId: string
     raw.rationale ||
     raw.solution ||
     raw.analysis ||
-    "Diagnostic rationale confirmed by clinical presentation.";
+    "Explanation not supplied. This answer has not been independently verified.";
 
   if (typeof rawExplanation !== "string") {
-    rawExplanation = JSON.stringify(rawExplanation);
+    rawExplanation = "Explanation not supplied. This answer has not been independently verified.";
   }
 
   // 5. Extract Distractor Breakdown
@@ -207,16 +163,35 @@ export function sanitizePolyglotQuestion(raw: any, index: number, packId: string
     raw.bottomLine ||
     raw.takeaway ||
     raw.pearl ||
-    (cleaned.reference ? `Reference: ${cleaned.reference}` : "Core high-yield principle for clinical recall.");
+    (cleaned.reference
+      ? `Reference: ${cleaned.reference}`
+      : "Core high-yield principle for clinical recall.");
 
   // 7. Extract Subject
   const validSubjects: SubjectCategory[] = [
-    "Pathology", "Pharmacology", "Medicine", "Surgery", "OBGYN", "Microbiology",
-    "Radiology", "Biochemistry", "Anatomy", "Physiology", "Pediatrics",
-    "Orthopedics", "Ophthalmology", "ENT", "Dermatology", "Psychiatry", "Anesthesia", "FMT", "PSM"
+    "Pathology",
+    "Pharmacology",
+    "Medicine",
+    "Surgery",
+    "OBGYN",
+    "Microbiology",
+    "Radiology",
+    "Biochemistry",
+    "Anatomy",
+    "Physiology",
+    "Pediatrics",
+    "Orthopedics",
+    "Ophthalmology",
+    "ENT",
+    "Dermatology",
+    "Psychiatry",
+    "Anesthesia",
+    "FMT",
+    "PSM",
   ];
   const rawSubject = raw.subject || raw.category || raw.system || "Medicine";
-  const matchedSubject = validSubjects.find((s) => s.toLowerCase() === String(rawSubject).toLowerCase()) || "Medicine";
+  const matchedSubject =
+    validSubjects.find((s) => s.toLowerCase() === String(rawSubject).toLowerCase()) || "Medicine";
   const imgUrl = raw.imageUrl || raw.image || raw.figure;
 
   // Run INICET cognitive depth and pattern classifier
@@ -235,25 +210,65 @@ export function sanitizePolyglotQuestion(raw: any, index: number, packId: string
   }
 
   return {
-    id: raw.id || `q_${packId}_${index}_${Math.random().toString(36).slice(2, 6)}`,
+    id: raw.id || `q_${packId}_${index}`,
     subject: matchedSubject,
-    topic: raw.topic || raw.theme || "Clinical Case",
+    topic:
+      typeof (raw.topic ?? raw.theme) === "string" ? (raw.topic ?? raw.theme) : "Clinical Case",
     vignette,
-    imageUrl: imgUrl,
+    imageUrl: typeof imgUrl === "string" ? imgUrl : undefined,
     options,
-    correctIndex: Math.min(correctIndex, options.length - 1),
-    examinerTrap,
+    correctIndex: correctIndex,
+    answerSpec,
+    assertionReason:
+      typeof raw.assertionReason?.assertion === "string" &&
+      typeof raw.assertionReason?.reason === "string"
+        ? { assertion: raw.assertionReason.assertion, reason: raw.assertionReason.reason }
+        : undefined,
+    provenance: {
+      kind: ["original", "recalled", "generated"].includes(raw.provenance?.kind)
+        ? raw.provenance.kind
+        : "unknown",
+      source:
+        typeof raw.provenance?.source === "string"
+          ? raw.provenance.source
+          : cleaned.reference || undefined,
+      edition: typeof raw.provenance?.edition === "string" ? raw.provenance.edition : undefined,
+      publishedAt:
+        typeof raw.provenance?.publishedAt === "string" ? raw.provenance.publishedAt : undefined,
+      status: "unverified",
+    },
+    learningLink:
+      typeof raw.learningLink?.url === "string" && /^https?:\/\//.test(raw.learningLink.url)
+        ? {
+            url: raw.learningLink.url,
+            timestampSec:
+              Number.isFinite(raw.learningLink.timestampSec) && raw.learningLink.timestampSec >= 0
+                ? raw.learningLink.timestampSec
+                : undefined,
+            relatedQuestionId:
+              typeof raw.learningLink.relatedQuestionId === "string"
+                ? raw.learningLink.relatedQuestionId
+                : undefined,
+          }
+        : undefined,
+    examinerTrap: typeof examinerTrap === "string" ? examinerTrap : "Trap not supplied.",
     explanation: {
       correctRationale,
       distractorBreakdown,
-      bottomLine,
+      bottomLine: typeof bottomLine === "string" ? bottomLine : "Takeaway not supplied.",
     },
-    highYieldTags: Array.from(new Set(tags)),
+    highYieldTags: Array.from(new Set(tags.filter((tag) => typeof tag === "string"))),
     depthLevel: raw.depthLevel || classification.depthLevel,
-    format: raw.format || classification.format,
+    format:
+      answerSpec.kind === "multiple"
+        ? "MultipleTrueFalse"
+        : answerSpec.kind === "matching"
+          ? "MatchingMatrix"
+          : raw.format || "SingleBestAnswer",
     clinicalScore: raw.clinicalScore ?? classification.score,
-    author: raw.author,
-    sourceExam: raw.sourceExam || raw.exam,
+    author: typeof raw.author === "string" ? raw.author : undefined,
+    sourceExam:
+      typeof (raw.sourceExam ?? raw.exam) === "string" ? (raw.sourceExam ?? raw.exam) : undefined,
     packId,
   };
 }
@@ -261,7 +276,28 @@ export function sanitizePolyglotQuestion(raw: any, index: number, packId: string
 /**
  * Universal JSON / JSONL importer
  */
-export function importQBankPack(rawText: string, customTitle?: string): { success: boolean; pack?: QBankPack; error?: string } {
+export function importQBankPack(rawText: string, customTitle?: string): QBankImportResult {
+  const report: ImportReport = { accepted: 0, rejected: [] };
+  const normalize = (items: unknown[], packId: string): ClinicalQuestion[] => {
+    const ids = new Set<string>();
+    return items.flatMap((raw, index) => {
+      try {
+        if ((raw as { __argusParseFailure?: boolean } | null)?.__argusParseFailure)
+          throw new Error("Invalid JSON on this JSONL line.");
+        const question = sanitizePolyglotQuestion(raw, index, packId);
+        if (ids.has(question.id)) throw new Error("Duplicate question id.");
+        ids.add(question.id);
+        report.accepted++;
+        return [question];
+      } catch (error) {
+        report.rejected.push({
+          item: index + 1,
+          reason: error instanceof Error ? error.message : "Invalid question.",
+        });
+        return [];
+      }
+    });
+  };
   try {
     let parsed: any = null;
 
@@ -270,9 +306,18 @@ export function importQBankPack(rawText: string, customTitle?: string): { succes
       parsed = JSON.parse(rawText);
     } catch {
       // If failed, try parsing as JSON Lines (JSONL) (common in MedQA / AI datasets)
-      const lines = rawText.split("\n").map((l) => l.trim()).filter(Boolean);
+      const lines = rawText
+        .split("\n")
+        .map((l) => l.trim())
+        .filter(Boolean);
       if (lines.length > 0) {
-        parsed = lines.map((line) => JSON.parse(line));
+        parsed = lines.map((line) => {
+          try {
+            return JSON.parse(line);
+          } catch {
+            return { __argusParseFailure: true };
+          }
+        });
       }
     }
 
@@ -292,16 +337,22 @@ export function importQBankPack(rawText: string, customTitle?: string): { succes
         totalQuestions: parsed.questions.length,
         createdAt: parsed.createdAt || Date.now(),
         updatedAt: Date.now(),
-        questions: parsed.questions.map((q: any, i: number) => sanitizePolyglotQuestion(q, i, parsed.id)),
+        questions: normalize(parsed.questions, parsed.id),
       };
 
+      pack.importReport = report;
+      pack.totalQuestions = pack.questions.length;
+      if (!pack.totalQuestions)
+        return { success: false, error: "No valid questions. Review the rejected items.", report };
       const existing = readPacks().filter((p) => p.id !== pack.id);
       commitPacks([...existing, pack]);
-      return { success: true, pack };
+      return { success: true, pack, report };
     }
 
     // Case 2: Array of raw questions or object with data array / tests container
-    let questionsArray = Array.isArray(parsed) ? parsed : parsed.data || parsed.results || parsed.items || parsed.questions;
+    let questionsArray = Array.isArray(parsed)
+      ? parsed
+      : parsed.data || parsed.results || parsed.items || parsed.questions;
 
     // Handle nested format like archiboltmusk/qbank: { "tests": [ { "id": "...", "questions": [...] } ] }
     if (!questionsArray && parsed.tests && Array.isArray(parsed.tests)) {
@@ -327,38 +378,45 @@ export function importQBankPack(rawText: string, customTitle?: string): { succes
       const pack: QBankPack = {
         id: packId,
         title: customTitle || parsed.title || `Imported Dataset (${questionsArray.length} Qs)`,
-        description: parsed.description || `Polyglot imported pool of ${questionsArray.length} clinical questions.`,
+        description:
+          parsed.description ||
+          `Polyglot imported pool of ${questionsArray.length} clinical questions.`,
         author: parsed.author || "Open Data Contributor",
         version: "1.0.0",
         subject: "Mixed",
         totalQuestions: questionsArray.length,
         createdAt: Date.now(),
         updatedAt: Date.now(),
-        questions: questionsArray.map((q: any, i: number) => sanitizePolyglotQuestion(q, i, packId)),
+        questions: normalize(questionsArray, packId),
       };
 
+      pack.importReport = report;
+      pack.totalQuestions = pack.questions.length;
+      if (!pack.totalQuestions)
+        return { success: false, error: "No valid questions. Review the rejected items.", report };
       const existing = readPacks();
       commitPacks([...existing, pack]);
-      return { success: true, pack };
+      return { success: true, pack, report };
     }
 
-    return { success: false, error: "Unrecognized format. Expected JSON array or QBankPack object." };
+    return {
+      success: false,
+      error: "Unrecognized format. Expected JSON array or QBankPack object.",
+    };
   } catch (err: any) {
-    return { success: false, error: err?.message || "Invalid syntax." };
+    return { success: false, error: err?.message || "Invalid syntax.", report };
   }
 }
 
 /**
  * Fetch and import directly from a GitHub Raw URL or web URL
  */
-export async function importFromGitHubUrl(url: string, title?: string): Promise<{ success: boolean; pack?: QBankPack; error?: string }> {
+export async function importFromGitHubUrl(url: string, title?: string): Promise<QBankImportResult> {
   try {
     let cleanUrl = url.trim();
     // Convert standard github.com/blob/ links to raw.githubusercontent.com
     if (cleanUrl.includes("github.com") && cleanUrl.includes("/blob/")) {
-      cleanUrl = cleanUrl
-        .replace("github.com", "raw.githubusercontent.com")
-        .replace("/blob/", "/");
+      cleanUrl = cleanUrl.replace("github.com", "raw.githubusercontent.com").replace("/blob/", "/");
     }
 
     const res = await fetch(cleanUrl);
@@ -379,6 +437,7 @@ export async function importFromGitHubUrl(url: string, title?: string): Promise<
  * Add a single community question into the local user contributions pack
  */
 export function addSingleQuestion(question: Omit<ClinicalQuestion, "id">): ClinicalQuestion {
+  parseQuestionCore(question);
   const packs = readPacks();
   let userPack = packs.find((p) => p.id === "user-custom-pack");
 
@@ -403,9 +462,12 @@ export function addSingleQuestion(question: Omit<ClinicalQuestion, "id">): Clini
     };
     commitPacks([userPack, ...packs]);
   } else {
-    userPack.questions = [created, ...userPack.questions];
-    userPack.totalQuestions = userPack.questions.length;
-    userPack.updatedAt = Date.now();
+    userPack = {
+      ...userPack,
+      questions: [created, ...userPack.questions],
+      totalQuestions: userPack.questions.length + 1,
+      updatedAt: Date.now(),
+    };
     commitPacks(packs.map((p) => (p.id === userPack!.id ? userPack! : p)));
   }
 
@@ -423,4 +485,72 @@ export function deletePack(packId: string): void {
   if (packId === "argus-starter-pack") return;
   const packs = readPacks();
   commitPacks(packs.filter((p) => p.id !== packId));
+}
+
+/** A local reviewer must explicitly supply a reference and an explanation. */
+export function reviewQBankQuestion(
+  packId: string,
+  questionId: string,
+  review: {
+    source: string;
+    edition: string;
+    reviewer: string;
+    rationale: string;
+    reason: string;
+    correctIndex?: number;
+  },
+): void {
+  if (
+    ![review.source, review.reviewer, review.rationale, review.reason].every((value) =>
+      value.trim(),
+    )
+  ) {
+    throw new Error("A source, reviewer, rationale and change reason are required.");
+  }
+  const packs = readPacks();
+  const pack = packs.find((item) => item.id === packId);
+  const previous = pack?.questions.find((question) => question.id === questionId);
+  if (!pack || !previous || packId === STARTER_PACK.id)
+    throw new Error("Choose a question from an editable imported pack.");
+  const date = new Date().toISOString();
+  const single = !previous.answerSpec || previous.answerSpec.kind === "single";
+  const correctIndex = single
+    ? (review.correctIndex ?? previous.correctIndex)
+    : previous.correctIndex;
+  const question: ClinicalQuestion = {
+    ...previous,
+    correctIndex,
+    answerSpec: single ? { kind: "single", correctIndex } : previous.answerSpec,
+    explanation: { ...previous.explanation, correctRationale: review.rationale.trim() },
+    provenance: {
+      ...previous.provenance,
+      kind: previous.provenance?.kind ?? "unknown",
+      status: "reviewed",
+      source: review.source.trim(),
+      edition: review.edition.trim(),
+      reviewer: review.reviewer.trim(),
+      reviewedAt: date,
+      corrections: [
+        ...(previous.provenance?.corrections ?? []),
+        {
+          date,
+          reason: review.reason.trim(),
+          reviewer: review.reviewer.trim(),
+          previous: {
+            correctIndex: previous.correctIndex,
+            answerSpec: previous.answerSpec,
+            rationale: previous.explanation.correctRationale,
+            source: previous.provenance?.source,
+          },
+        },
+      ],
+    },
+  };
+  parseQuestionCore(question);
+  const updated = {
+    ...pack,
+    updatedAt: Date.now(),
+    questions: pack.questions.map((item) => (item.id === questionId ? question : item)),
+  };
+  commitPacks(packs.map((item) => (item.id === packId ? updated : item)));
 }

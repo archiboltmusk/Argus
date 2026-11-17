@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, type MouseEvent } from "react";
+import { useState, useEffect, useCallback, useRef, type MouseEvent } from "react";
 import {
   CheckCircle2,
   XCircle,
@@ -12,51 +12,142 @@ import {
   Flag,
   ChevronRight,
 } from "lucide-react";
-import type { ClinicalQuestion, QBankSessionState, GrandTestResult } from "@/lib/education/qbank-types";
+import type {
+  ClinicalQuestion,
+  QBankSessionState,
+  GrandTestResult,
+} from "@/lib/education/qbank-types";
+import { getAllQuestions } from "@/lib/education/qbank-store";
 import { CLINICAL_QBANK_STARTER } from "@/lib/education/qbank-data";
-import { saveStudyNote } from "@/lib/education/notes";
+import {
+  answerSpecFor,
+  hasAnswer,
+  isCorrectAnswer,
+  correctAnswerLabel,
+} from "@/lib/education/question-integrity";
+import {
+  attemptKey,
+  loadAttempt,
+  saveAttempt,
+  elapsedSeconds,
+  reportQuestion,
+  newAttempt,
+} from "@/lib/education/attempts";
+import { getStudyNotes, saveStudyNote } from "@/lib/education/notes";
 
 export type QBankRunnerProps = {
   questions?: ClinicalQuestion[];
   examMode?: boolean; // In exam mode, explanations are hidden until submission
+  durationMinutes?: number; // Optional custom practice deadline, independent of official exam rules.
   onFinish?: (result: GrandTestResult) => void;
   onClose: () => void;
 };
 
-export function QBankRunner({
+export function QBankRunner(props: QBankRunnerProps) {
+  const [retest, setRetest] = useState<ClinicalQuestion | null>(null);
+  const questions = retest ? [retest] : (props.questions ?? CLINICAL_QBANK_STARTER);
+  if (!questions.length)
+    return (
+      <div role="alert">
+        No valid questions are available. <button onClick={props.onClose}>Close</button>
+      </div>
+    );
+  return (
+    <>
+      <QBankSession
+        key={attemptKey(questions, props.examMode ?? false, props.durationMinutes)}
+        {...props}
+        questions={questions}
+        onRetest={setRetest}
+      />
+      {retest && (
+        <button className="p-2 text-indigo-300" onClick={() => setRetest(null)}>
+          Return to original drill
+        </button>
+      )}
+    </>
+  );
+}
+
+function QBankSession({
   questions = CLINICAL_QBANK_STARTER,
   examMode = false,
+  durationMinutes,
   onFinish,
   onClose,
-}: QBankRunnerProps) {
-  const [session, setSession] = useState<QBankSessionState>({
-    activeQuestionIndex: 0,
-    selectedAnswers: {},
-    eliminatedOptions: {},
-    isSubmitted: {},
-    bookmarks: [],
-    timeSpentSec: {},
+  onRetest,
+}: QBankRunnerProps & { onRetest: (question: ClinicalQuestion) => void }) {
+  const [storageKey] = useState(() => attemptKey(questions, examMode, durationMinutes));
+  const [session, setSessionState] = useState<QBankSessionState>(() => {
+    const restored = loadAttempt(storageKey, questions);
+    if (durationMinutes && !restored.deadlineAt)
+      restored.deadlineAt = (restored.startedAt ?? Date.now()) + durationMinutes * 60000;
+    return restored;
   });
+  const sessionRef = useRef(session);
 
-  const [guessedQuestions, setGuessedQuestions] = useState<Record<string, boolean>>({});
-  const [markedForReview, setMarkedForReview] = useState<string[]>([]);
-  const [examFinished, setExamFinished] = useState(false);
-  const [elapsedTimer, setElapsedTimer] = useState(0);
-  const [resultData, setResultData] = useState<GrandTestResult | null>(null);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const setSession = (change: (previous: QBankSessionState) => QBankSessionState) => {
+    let next = change(sessionRef.current);
+    const previous = sessionRef.current;
+    const now = Date.now();
+    if (next.startedAt === previous.startedAt && !previous.finishedAt) {
+      const previousId = questions[previous.activeQuestionIndex]?.id;
+      if (previousId)
+        next = {
+          ...next,
+          timeSpentSec: {
+            ...next.timeSpentSec,
+            [previousId]:
+              (previous.timeSpentSec[previousId] ?? 0) +
+              Math.max(0, (now - (previous.activeSince ?? previous.startedAt ?? now)) / 1000),
+          },
+        };
+    }
+    next = { ...next, activeSince: now };
+    sessionRef.current = next;
+    try {
+      saveAttempt(storageKey, questions, next);
+      setSaveError(null);
+    } catch {
+      setSaveError("Progress is not saved. Free storage and retry before closing.");
+    }
+    setSessionState(next);
+  };
+  const guessedQuestions = session.guessedQuestions ?? {};
+  const markedForReview = session.markedForReview ?? [];
+  const examFinished = !!session.result;
+  const resultData = session.result ?? null;
+  const [elapsedTimer, setElapsedTimer] = useState(() => elapsedSeconds(session));
   const [activeTab, setActiveTab] = useState<"analysis" | "questions">("analysis");
-
-  // Timer
+  const [dispute, setDispute] = useState("");
+  const [disputeNotice, setDisputeNotice] = useState("");
   useEffect(() => {
-    if (examFinished) return;
-    const interval = setInterval(() => {
-      setElapsedTimer((t) => t + 1);
-    }, 1000);
+    const interval = setInterval(() => setElapsedTimer(elapsedSeconds(sessionRef.current)), 1000);
     return () => clearInterval(interval);
-  }, [examFinished]);
+  }, []);
+  useEffect(() => {
+    try {
+      saveAttempt(storageKey, questions, sessionRef.current);
+    } catch {
+      setSaveError("Progress is not saved. Free storage and retry before closing.");
+    }
+  }, [storageKey, questions]);
 
   const activeQuestion = questions[session.activeQuestionIndex] ?? questions[0];
   const qId = activeQuestion.id;
+  const retestQuestion = activeQuestion.learningLink?.relatedQuestionId
+    ? getAllQuestions().find(
+        (question) =>
+          question.id === activeQuestion.learningLink?.relatedQuestionId && question.id !== qId,
+      )
+    : undefined;
+  useEffect(() => {
+    setDispute("");
+    setDisputeNotice("");
+  }, [qId]);
   const selectedIdx = session.selectedAnswers[qId];
+  const answerSpec = answerSpecFor(activeQuestion);
   const eliminated = session.eliminatedOptions[qId] || [];
   const submitted = examMode ? examFinished : !!session.isSubmitted[qId];
   const isBookmarked = session.bookmarks.includes(qId);
@@ -65,12 +156,25 @@ export function QBankRunner({
 
   // Handle Option Select
   const handleSelectOption = (idx: number) => {
-    if (submitted) return;
+    if (submitted || (session.deadlineAt !== undefined && Date.now() >= session.deadlineAt)) return;
     setSession((prev) => ({
       ...prev,
       selectedAnswers: {
         ...prev.selectedAnswers,
-        [qId]: idx,
+        [qId]:
+          answerSpec.kind === "multiple"
+            ? (Array.isArray(prev.selectedAnswers[qId])
+                ? (prev.selectedAnswers[qId] as number[])
+                : []
+              ).includes(idx)
+              ? (prev.selectedAnswers[qId] as number[]).filter((key) => key !== idx)
+              : [
+                  ...(Array.isArray(prev.selectedAnswers[qId])
+                    ? (prev.selectedAnswers[qId] as number[])
+                    : []),
+                  idx,
+                ]
+            : idx,
       },
     }));
   };
@@ -87,9 +191,12 @@ export function QBankRunner({
 
   // Toggle Mark for Review
   const handleToggleMarkReview = () => {
-    setMarkedForReview((prev) =>
-      prev.includes(qId) ? prev.filter((id) => id !== qId) : [...prev, qId]
-    );
+    setSession((prev) => ({
+      ...prev,
+      markedForReview: (prev.markedForReview ?? []).includes(qId)
+        ? prev.markedForReview!.filter((id) => id !== qId)
+        : [...(prev.markedForReview ?? []), qId],
+    }));
   };
 
   // Strike out / Eliminate distractors
@@ -113,15 +220,15 @@ export function QBankRunner({
 
   // Toggle Guessing Flag
   const handleToggleGuess = () => {
-    setGuessedQuestions((prev) => ({
+    setSession((prev) => ({
       ...prev,
-      [qId]: !prev[qId],
+      guessedQuestions: { ...prev.guessedQuestions, [qId]: !prev.guessedQuestions?.[qId] },
     }));
   };
 
   // Submit single question (in practice mode)
   const handleSubmitSingle = () => {
-    if (selectedIdx === undefined) return;
+    if (!hasAnswer(selectedIdx)) return;
     setSession((prev) => ({
       ...prev,
       isSubmitted: {
@@ -134,24 +241,28 @@ export function QBankRunner({
   // Toggle Bookmark into FSRS Vault
   const handleToggleBookmark = () => {
     const isNowBookmarked = !isBookmarked;
+    if (isNowBookmarked && !getStudyNotes(qId).length) {
+      try {
+        saveStudyNote({
+          itemId: activeQuestion.id,
+          itemTitle: `[QBank FSRS] ${activeQuestion.subject}: ${activeQuestion.topic}`,
+          timestampSec: 0,
+          timestampLabel: "QBank",
+          markdown: `**Vignette:** ${activeQuestion.vignette}\n\n**Answer:** ${correctAnswerLabel(activeQuestion)}\n\n**Rationale:** ${activeQuestion.explanation.correctRationale}\n\n**Source:** ${activeQuestion.provenance?.source ?? "Not supplied (unverified)"}`,
+          highYield: true,
+          topic: activeQuestion.topic,
+        });
+      } catch {
+        setSaveError("Could not save recall note. Free storage before trying again.");
+        return;
+      }
+    }
     setSession((prev) => ({
       ...prev,
       bookmarks: isNowBookmarked
         ? [...prev.bookmarks, qId]
         : prev.bookmarks.filter((id) => id !== qId),
     }));
-
-    if (isNowBookmarked) {
-      saveStudyNote({
-        itemId: activeQuestion.id,
-        itemTitle: `[QBank FSRS] ${activeQuestion.subject}: ${activeQuestion.topic}`,
-        timestampSec: 0,
-        timestampLabel: "QBank",
-        markdown: `**Vignette:** ${activeQuestion.vignette}\n\n**Examiner Trap:** ${activeQuestion.examinerTrap}\n\n**Rule:** ${activeQuestion.explanation.bottomLine}`,
-        highYield: true,
-        topic: activeQuestion.topic,
-      });
-    }
   };
 
   // Complete Exam and calculate CoreBTR analytics
@@ -162,9 +273,9 @@ export function QBankRunner({
 
     questions.forEach((q) => {
       const sel = session.selectedAnswers[q.id];
-      if (sel !== undefined) {
+      if (hasAnswer(sel)) {
         attempted++;
-        if (sel === q.correctIndex) {
+        if (isCorrectAnswer(q, sel)) {
           correct++;
         } else {
           incorrect++;
@@ -179,7 +290,9 @@ export function QBankRunner({
 
     const result: GrandTestResult = {
       id: `gt_${Date.now()}`,
-      examTitle: examMode ? "CoreBTR National Grand Test Simulation" : "CoreBTR Custom Module Drill",
+      examTitle: examMode
+        ? "CoreBTR National Grand Test Simulation"
+        : "CoreBTR Custom Module Drill",
       timestamp: Date.now(),
       totalQuestions: questions.length,
       attempted,
@@ -188,13 +301,18 @@ export function QBankRunner({
       score,
       maxScore,
       accuracyPct,
-      timeSpentMinutes: Math.max(1, Math.round(elapsedTimer / 60)),
+      timeSpentMinutes: Math.max(1, Math.round(elapsedSeconds(sessionRef.current) / 60)),
     };
 
-    setResultData(result);
-    setExamFinished(true);
+    if (sessionRef.current.result) return;
+    setSession((previous) => ({ ...previous, result, finishedAt: Date.now() }));
     onFinish?.(result);
   }, [questions, session.selectedAnswers, examMode, elapsedTimer, onFinish]);
+
+  useEffect(() => {
+    if (!session.deadlineAt || examFinished) return;
+    if (Date.now() >= session.deadlineAt) handleFinishExam();
+  }, [elapsedTimer, session.deadlineAt, examFinished, handleFinishExam]);
 
   const formatTimer = (sec: number) => {
     const m = Math.floor(sec / 60);
@@ -214,7 +332,7 @@ export function QBankRunner({
     const totalGuesses = Object.values(guessedQuestions).filter(Boolean).length;
     let correctGuesses = 0;
     questions.forEach((q) => {
-      if (guessedQuestions[q.id] && session.selectedAnswers[q.id] === q.correctIndex) {
+      if (guessedQuestions[q.id] && isCorrectAnswer(q, session.selectedAnswers[q.id])) {
         correctGuesses++;
       }
     });
@@ -235,9 +353,9 @@ export function QBankRunner({
       subjectMap[q.subject].qIds.push(q.id);
 
       const sel = session.selectedAnswers[q.id];
-      if (sel === undefined) {
+      if (!hasAnswer(sel)) {
         subjectMap[q.subject].notAnswered++;
-      } else if (sel === q.correctIndex) {
+      } else if (isCorrectAnswer(q, sel)) {
         subjectMap[q.subject].correct++;
       } else {
         subjectMap[q.subject].incorrect++;
@@ -246,13 +364,43 @@ export function QBankRunner({
 
     return (
       <div className="flex flex-col h-full w-full max-w-4xl mx-auto bg-[#0b0c16] rounded-3xl border border-indigo-500/30 shadow-2xl overflow-hidden text-white select-none animate-in zoom-in-95 duration-200">
+        <div className="flex items-center gap-3 p-3">
+          {session.deadlineAt && (
+            <p className="text-xs text-indigo-300">
+              Custom practice deadline: remaining time continues while the app is closed.
+            </p>
+          )}
+          {saveError && (
+            <p role="alert" className="text-red-300">
+              {saveError}
+              <button onClick={() => setSession((prev) => ({ ...prev }))}>Retry save</button>
+            </p>
+          )}
+          <button
+            className="text-xs text-indigo-300"
+            onClick={() => {
+              setSession(() => ({
+                ...newAttempt(),
+                deadlineAt: durationMinutes ? Date.now() + durationMinutes * 60000 : undefined,
+              }));
+
+              setElapsedTimer(0);
+            }}
+          >
+            Start a new attempt
+          </button>
+          <span className="text-xs text-gray-400">
+            Practice scoring: +4 correct, −1 incorrect; multiple and matching responses require
+            exact answers.
+          </span>
+        </div>
         {/* Top Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-white/10 bg-[#121324]">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-[#1767be]/25 bg-[#1d204b]">
           <div className="flex items-center gap-3">
             <button
               type="button"
               onClick={onClose}
-              className="p-1.5 rounded-xl hover:bg-white/10 text-white/70 hover:text-white transition"
+              className="p-1.5 rounded-xl hover:bg-[#1767be]/15 text-[#4da2ff] border border-[#1767be]/30 hover:text-white transition"
             >
               <X size={18} />
             </button>
@@ -271,7 +419,7 @@ export function QBankRunner({
               onClick={() => setActiveTab("analysis")}
               className={`px-4 py-1.5 rounded-xl text-xs font-bold transition ${
                 activeTab === "analysis"
-                  ? "bg-indigo-600 text-white shadow-sm"
+                  ? "bg-[#1767be] text-white shadow-sm"
                   : "text-white/60 hover:text-white"
               }`}
             >
@@ -282,7 +430,7 @@ export function QBankRunner({
               onClick={() => setActiveTab("questions")}
               className={`px-4 py-1.5 rounded-xl text-xs font-bold transition ${
                 activeTab === "questions"
-                  ? "bg-indigo-600 text-white shadow-sm"
+                  ? "bg-[#1767be] text-white shadow-sm"
                   : "text-white/60 hover:text-white"
               }`}
             >
@@ -321,7 +469,8 @@ export function QBankRunner({
                   <div className="flex items-center gap-2">
                     <span className="h-3 w-3 rounded-full bg-amber-500 shrink-0" />
                     <span className="text-white/70">
-                      <strong className="text-white font-bold">{notAnsweredCount}</strong> Not Answered
+                      <strong className="text-white font-bold">{notAnsweredCount}</strong> Not
+                      Answered
                     </span>
                   </div>
                 </div>
@@ -350,7 +499,8 @@ export function QBankRunner({
                   <div className="p-3.5 rounded-2xl bg-white/5 border border-white/10 flex flex-col">
                     <span className="text-[11px] text-white/50">Marks</span>
                     <strong className="text-base font-black text-white mt-0.5">
-                      {resultData.score > 0 ? `+${resultData.score}` : resultData.score} / {resultData.maxScore}
+                      {resultData.score > 0 ? `+${resultData.score}` : resultData.score} /{" "}
+                      {resultData.maxScore}
                     </strong>
                   </div>
 
@@ -363,7 +513,7 @@ export function QBankRunner({
 
                   <div className="p-3.5 rounded-2xl bg-white/5 border border-white/10 flex flex-col">
                     <span className="text-[11px] text-white/50">Guess Accuracy</span>
-                    <strong className="text-base font-black text-indigo-400 mt-0.5">
+                    <strong className="text-base font-black text-[#4da2ff] mt-0.5">
                       {guessAccuracy}%
                     </strong>
                   </div>
@@ -425,20 +575,23 @@ export function QBankRunner({
                         <div className="flex flex-wrap items-center justify-between gap-2 pt-1 text-xs">
                           <div className="flex items-center gap-4">
                             <span className="text-white/60">
-                              <span className="text-emerald-400 font-bold">{stats.correct}</span> Correct
+                              <span className="text-emerald-400 font-bold">{stats.correct}</span>{" "}
+                              Correct
                             </span>
                             <span className="text-white/60">
-                              <span className="text-rose-400 font-bold">{stats.incorrect}</span> Incorrect
+                              <span className="text-rose-400 font-bold">{stats.incorrect}</span>{" "}
+                              Incorrect
                             </span>
                             <span className="text-white/60">
-                              <span className="text-amber-400 font-bold">{stats.notAnswered}</span> Not Answered
+                              <span className="text-amber-400 font-bold">{stats.notAnswered}</span>{" "}
+                              Not Answered
                             </span>
                           </div>
 
                           <button
                             type="button"
                             onClick={() => setActiveTab("questions")}
-                            className="text-xs font-bold text-indigo-400 hover:text-indigo-300 transition flex items-center gap-1"
+                            className="text-xs font-bold text-[#4da2ff] hover:text-indigo-300 transition flex items-center gap-1"
                           >
                             <span>view questions ({stats.total})</span>
                             <ChevronRight size={12} />
@@ -455,8 +608,8 @@ export function QBankRunner({
             <div className="flex flex-col gap-3">
               {questions.map((q, idx) => {
                 const sel = session.selectedAnswers[q.id];
-                const isCorrect = sel === q.correctIndex;
-                const isUnanswered = sel === undefined;
+                const isCorrect = isCorrectAnswer(q, sel);
+                const isUnanswered = !hasAnswer(sel);
 
                 return (
                   <div
@@ -487,15 +640,50 @@ export function QBankRunner({
                               : "text-rose-400"
                         }`}
                       >
-                        {isCorrect ? "Correct (+4)" : isUnanswered ? "Unanswered (0)" : "Incorrect (-1)"}
+                        {isCorrect
+                          ? "Correct (+4)"
+                          : isUnanswered
+                            ? "Unanswered (0)"
+                            : "Incorrect (-1)"}
                       </span>
                     </div>
 
                     <p className="text-xs text-white/90 leading-relaxed mb-3">{q.vignette}</p>
+                    {!isCorrect && !isUnanswered && (
+                      <label className="text-xs">
+                        Mistake reason{" "}
+                        <select
+                          aria-label={`Mistake reason for question ${idx + 1}`}
+                          className="bg-[#24262d] p-2 ml-2"
+                          value={session.mistakes?.[q.id] ?? ""}
+                          onChange={(event) => {
+                            const value = event.target.value as NonNullable<
+                              QBankSessionState["mistakes"]
+                            >[string];
+                            setSession((prev) => ({
+                              ...prev,
+                              mistakes: { ...prev.mistakes, [q.id]: value },
+                            }));
+                          }}
+                        >
+                          <option value="">Choose reason</option>
+                          {["knowledge", "misread", "reasoning", "guessing", "time"].map(
+                            (reason) => (
+                              <option key={reason}>{reason}</option>
+                            ),
+                          )}
+                        </select>
+                      </label>
+                    )}
+                    {session.confidence?.[q.id] === "confident" && !isCorrect && (
+                      <p className="text-amber-300 text-xs">
+                        Confident but wrong — prioritized in your next study plan.
+                      </p>
+                    )}
 
                     <div className="text-xs font-medium text-emerald-300 bg-emerald-500/10 p-2.5 rounded-xl border border-emerald-500/20">
-                      <strong>Correct Option: {String.fromCharCode(65 + q.correctIndex)}) </strong>
-                      {q.options[q.correctIndex]}
+                      <strong>Correct answer: </strong>
+                      {correctAnswerLabel(q)}
                     </div>
                   </div>
                 );
@@ -518,7 +706,7 @@ export function QBankRunner({
     );
   }
 
-  // Active Question Solving View (matching official CoreBTR App standard)
+  // Active Question Solving View (matching screenshot media_1794864389397_6b81d4d2.jpg)
   return (
     <div className="flex flex-col h-full w-full max-w-3xl mx-auto bg-[#0d1b4b] rounded-3xl border border-[#1767be]/35 shadow-2xl overflow-hidden text-white select-none animate-in zoom-in-95 duration-150">
       {/* Top Question Status Bar */}
@@ -535,7 +723,16 @@ export function QBankRunner({
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-1.5 rounded-xl bg-white/5 border border-white/10 px-3 py-1 text-xs font-mono font-bold text-white">
             <Timer size={13} className="text-[#4da2ff]" />
-            <span>{formatTimer(elapsedTimer)}</span>
+            <span>
+              {formatTimer(
+                session.deadlineAt
+                  ? Math.max(
+                      0,
+                      Math.ceil((session.deadlineAt - (session.finishedAt ?? Date.now())) / 1000),
+                    )
+                  : elapsedTimer,
+              )}
+            </span>
           </div>
 
           <button
@@ -573,7 +770,7 @@ export function QBankRunner({
           <button
             type="button"
             onClick={handleResetAnswer}
-            disabled={selectedIdx === undefined || submitted}
+            disabled={!hasAnswer(selectedIdx) || submitted}
             className="flex items-center gap-1.5 hover:text-white transition disabled:opacity-30 cursor-pointer"
           >
             <RotateCcw size={12} />
@@ -593,71 +790,260 @@ export function QBankRunner({
 
         {/* Options List with Direct Distractor Strike-Out Cross ✕ */}
         <div className="flex flex-col gap-2.5">
-          {activeQuestion.options.map((option, idx) => {
-            const isSelected = selectedIdx === idx;
-            const isElim = eliminated.includes(idx);
-            const isCorrect = idx === activeQuestion.correctIndex;
-
-            let optionBorder = "border-[#1767be]/20 bg-[#1d204b]/40 hover:bg-[#1d204b]/80 hover:border-[#1767be]/40 text-white";
-            if (submitted) {
-              if (isCorrect) {
-                optionBorder = "border-emerald-500 bg-emerald-500/15 text-emerald-300 font-bold";
-              } else if (isSelected && !isCorrect) {
-                optionBorder = "border-rose-500 bg-rose-500/15 text-rose-300 line-through";
-              } else {
-                optionBorder = "opacity-40 border-white/5 text-white/50";
-              }
-            } else if (isSelected) {
-              optionBorder = "border-[#1767be] bg-[#1767be]/25 text-white font-bold ring-1 ring-[#4da2ff]";
-            } else if (isElim) {
-              optionBorder = "opacity-40 line-through bg-black/30 border-white/5 text-white/40";
-            }
-
-            return (
-              <div
-                key={idx}
-                onClick={() => handleSelectOption(idx)}
-                className={`flex items-center justify-between gap-3 p-3.5 rounded-2xl border transition cursor-pointer select-none ${optionBorder}`}
+          {saveError && (
+            <div role="alert" className="p-3 text-red-300">
+              {saveError}{" "}
+              <button onClick={() => setSession((prev) => ({ ...prev }))}>Retry save</button>
+            </div>
+          )}
+          <div className="text-xs text-gray-400 py-2">
+            Source:{" "}
+            {activeQuestion.provenance?.source ?? activeQuestion.sourceExam ?? "Not supplied"} ·{" "}
+            {activeQuestion.provenance?.edition ?? "Edition unspecified"} ·{" "}
+            {activeQuestion.provenance?.status === "reviewed" && activeQuestion.provenance.reviewer
+              ? `Reviewed by ${activeQuestion.provenance.reviewer}`
+              : "Unverified"}
+          </div>
+          {activeQuestion.assertionReason && (
+            <div className="text-sm py-2">
+              <p>
+                <strong>Assertion:</strong> {activeQuestion.assertionReason.assertion}
+              </p>
+              <p>
+                <strong>Reason:</strong> {activeQuestion.assertionReason.reason}
+              </p>
+            </div>
+          )}
+          {!submitted && (
+            <label className="text-sm">
+              Confidence{" "}
+              <select
+                aria-label="Answer confidence"
+                className="ml-2 bg-[#24262d] p-2 rounded"
+                value={session.confidence?.[qId] ?? "unsure"}
+                onChange={(event) => {
+                  const value = event.target.value as "unsure" | "confident";
+                  setSession((prev) => ({
+                    ...prev,
+                    confidence: { ...prev.confidence, [qId]: value },
+                  }));
+                }}
               >
-                <div className="flex items-center gap-3 flex-1">
-                  <div
-                    className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-bold font-mono transition ${
-                      submitted && isCorrect
-                        ? "bg-emerald-500 text-white"
-                        : submitted && isSelected && !isCorrect
-                          ? "bg-rose-500 text-white"
-                          : isSelected
-                            ? "bg-[#1767be] text-white"
-                            : "bg-[#1767be]/15 text-[#4da2ff] border border-[#1767be]/30"
-                    }`}
-                  >
-                    {String.fromCharCode(65 + idx)}
-                  </div>
-                  <span className="text-[13.5px] leading-snug">{option}</span>
-                </div>
+                <option value="unsure">Unsure</option>
+                <option value="confident">Confident</option>
+              </select>
+            </label>
+          )}
+          {submitted && !isCorrectAnswer(activeQuestion, selectedIdx) && (
+            <label className="text-sm">
+              Why did you miss this?{" "}
+              <select
+                aria-label="Mistake reason"
+                className="ml-2 bg-[#24262d] p-2 rounded"
+                value={session.mistakes?.[qId] ?? ""}
+                onChange={(event) => {
+                  const value = event.target.value as NonNullable<
+                    QBankSessionState["mistakes"]
+                  >[string];
+                  setSession((prev) => ({ ...prev, mistakes: { ...prev.mistakes, [qId]: value } }));
+                }}
+              >
+                <option value="">Choose reason</option>
+                {["knowledge", "misread", "reasoning", "guessing", "time"].map((reason) => (
+                  <option key={reason} value={reason}>
+                    {reason}
+                  </option>
+                ))}
+              </select>
+            </label>
+          )}
+          {submitted &&
+            activeQuestion.learningLink &&
+            /^https?:\/\//.test(activeQuestion.learningLink.url) && (
+              <a
+                className="block text-indigo-300"
+                href={
+                  activeQuestion.learningLink.url +
+                  (activeQuestion.learningLink.timestampSec !== undefined
+                    ? `#t=${activeQuestion.learningLink.timestampSec}`
+                    : "")
+                }
+                target="_blank"
+                rel="noreferrer"
+              >
+                Review source lesson
+              </a>
+            )}
+          {submitted && retestQuestion && (
+            <button className="text-indigo-300 text-sm" onClick={() => onRetest(retestQuestion)}>
+              Retest with a related question
+            </button>
+          )}
+          <details className="text-xs text-gray-400 py-2">
+            <summary>Report a question issue (saved locally)</summary>
+            <textarea
+              aria-label="Question issue"
+              className="block bg-[#24262d] p-2 w-full"
+              value={dispute}
+              onChange={(event) => setDispute(event.target.value)}
+            />
+            <button
+              onClick={() => {
+                try {
+                  reportQuestion(qId, dispute);
+                  setDispute("");
+                  setDisputeNotice(
+                    "Report saved on this device. It has not been sent to a reviewer.",
+                  );
+                } catch {
+                  setDisputeNotice(
+                    "Could not save report. Check the description and available storage.",
+                  );
+                }
+              }}
+            >
+              Save report
+            </button>
+            <p role="status">{disputeNotice}</p>
+          </details>
+          {answerSpec.kind === "multiple" && (
+            <p className="text-sm text-indigo-300">
+              Select every correct option. Exact-match grading; no partial credit.
+            </p>
+          )}
+          {answerSpec.kind === "matching" &&
+            answerSpec.prompts.map((prompt, index) => (
+              <label key={index} className="block py-2 text-sm">
+                {prompt}
+                <select
+                  aria-label={prompt}
+                  disabled={
+                    submitted ||
+                    (session.deadlineAt !== undefined && Date.now() >= session.deadlineAt)
+                  }
+                  className="ml-3 bg-[#24262d] p-2 rounded"
+                  value={
+                    typeof selectedIdx === "object" && !Array.isArray(selectedIdx)
+                      ? (selectedIdx[String(index)] ?? "")
+                      : ""
+                  }
+                  onChange={(event) => {
+                    const value = event.target.value;
+                    setSession((prev) => {
+                      const response = {
+                        ...(typeof prev.selectedAnswers[qId] === "object" &&
+                        !Array.isArray(prev.selectedAnswers[qId])
+                          ? (prev.selectedAnswers[qId] as Record<string, number>)
+                          : {}),
+                      };
+                      if (value === "") delete response[String(index)];
+                      else response[String(index)] = Number(value);
+                      return {
+                        ...prev,
+                        selectedAnswers: { ...prev.selectedAnswers, [qId]: response },
+                      };
+                    });
+                  }}
+                >
+                  <option value="">Choose a match</option>
+                  {activeQuestion.options.map((option, key) => (
+                    <option key={key} value={key}>
+                      {option}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            ))}
+          {answerSpec.kind !== "matching" &&
+            activeQuestion.options.map((option, idx) => {
+              const isSelected = Array.isArray(selectedIdx)
+                ? selectedIdx.includes(idx)
+                : selectedIdx === idx;
+              const isElim = eliminated.includes(idx);
+              const isCorrect =
+                answerSpec.kind === "multiple"
+                  ? answerSpec.correctIndices.includes(idx)
+                  : idx === activeQuestion.correctIndex;
 
-                {/* Right Action: Distractor Elimination Cross ✕ */}
-                <div className="flex items-center gap-2">
-                  {submitted && isCorrect && <CheckCircle2 size={16} className="text-emerald-400" />}
-                  {submitted && isSelected && !isCorrect && <XCircle size={16} className="text-rose-400" />}
-                  {!submitted && (
-                    <button
-                      type="button"
-                      onClick={(e) => handleToggleEliminate(e, idx)}
-                      className={`p-1 rounded-md transition text-xs font-mono font-bold ${
-                        isElim
-                          ? "text-rose-400 bg-rose-500/20 border border-rose-500/30"
-                          : "text-white/40 hover:text-rose-400 hover:bg-white/10"
+              let optionBorder =
+                "border-[#1767be]/20 bg-[#1d204b]/40 hover:bg-[#1d204b]/80 hover:border-[#1767be]/40 text-white";
+              if (submitted) {
+                if (isCorrect) {
+                  optionBorder = "border-emerald-500 bg-emerald-500/15 text-emerald-300 font-bold";
+                } else if (isSelected && !isCorrect) {
+                  optionBorder = "border-rose-500 bg-rose-500/15 text-rose-300 line-through";
+                } else {
+                  optionBorder = "opacity-40 border-white/5 text-white/50";
+                }
+              } else if (isSelected) {
+                optionBorder =
+                  "border-[#1767be] bg-[#1767be]/25 text-white font-bold ring-1 ring-[#4da2ff]";
+              } else if (isElim) {
+                optionBorder = "opacity-40 line-through bg-black/30 border-white/5 text-white/40";
+              }
+
+              return (
+                <div
+                  key={idx}
+                  role="button"
+                  tabIndex={submitted ? -1 : 0}
+                  aria-pressed={isSelected}
+                  aria-label={`${String.fromCharCode(65 + idx)}: ${option}`}
+                  onKeyDown={(event) => {
+                    if (
+                      event.target === event.currentTarget &&
+                      (event.key === "Enter" || event.key === " ")
+                    ) {
+                      event.preventDefault();
+                      handleSelectOption(idx);
+                    }
+                  }}
+                  onClick={() => handleSelectOption(idx)}
+                  className={`flex items-center justify-between gap-3 p-3.5 rounded-2xl border transition cursor-pointer select-none ${optionBorder}`}
+                >
+                  <div className="flex items-center gap-3 flex-1">
+                    <div
+                      className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-bold font-mono transition ${
+                        submitted && isCorrect
+                          ? "bg-emerald-500 text-white"
+                          : submitted && isSelected && !isCorrect
+                            ? "bg-rose-500 text-white"
+                            : isSelected
+                              ? "bg-[#1767be] text-white"
+                              : "bg-[#1767be]/15 text-[#4da2ff] border border-[#1767be]/30"
                       }`}
-                      title={isElim ? "Restore distractor" : "Strike-out distractor"}
                     >
-                      ✕
-                    </button>
-                  )}
+                      {String.fromCharCode(65 + idx)}
+                    </div>
+                    <span className="text-[13.5px] leading-snug">{option}</span>
+                  </div>
+
+                  {/* Right Action: Distractor Elimination Cross ✕ */}
+                  <div className="flex items-center gap-2">
+                    {submitted && isCorrect && (
+                      <CheckCircle2 size={16} className="text-emerald-400" />
+                    )}
+                    {submitted && isSelected && !isCorrect && (
+                      <XCircle size={16} className="text-rose-400" />
+                    )}
+                    {!submitted && (
+                      <button
+                        type="button"
+                        onClick={(e) => handleToggleEliminate(e, idx)}
+                        className={`p-1 rounded-md transition text-xs font-mono font-bold ${
+                          isElim
+                            ? "text-rose-400 bg-rose-500/20 border border-rose-500/30"
+                            : "text-white/40 hover:text-rose-400 hover:bg-white/10"
+                        }`}
+                        title={isElim ? "Restore distractor" : "Strike-out distractor"}
+                      >
+                        ✕
+                      </button>
+                    )}
+                  </div>
                 </div>
-              </div>
-            );
-          })}
+              );
+            })}
         </div>
 
         {/* Checkbox: I'm guessing this answer (matching official app screenshot) */}
@@ -677,7 +1063,7 @@ export function QBankRunner({
             <button
               type="button"
               onClick={handleSubmitSingle}
-              disabled={selectedIdx === undefined}
+              disabled={!hasAnswer(selectedIdx)}
               className="rounded-xl bg-[#1767be] hover:bg-[#155bb0] px-5 py-2 text-xs font-bold text-white shadow-md disabled:opacity-30 transition"
             >
               Confirm Answer & Reveal Rationale
@@ -691,14 +1077,18 @@ export function QBankRunner({
             <div className="flex items-start gap-2.5 rounded-xl bg-[#feb122]/10 border border-[#feb122]/30 p-3 text-xs text-[#feb122]">
               <AlertTriangle size={15} className="shrink-0 mt-0.5" />
               <div>
-                <span className="font-bold uppercase tracking-wider text-[10px]">Examiner Trap Radar</span>
-                <p className="text-[12px] text-white/90 leading-relaxed mt-0.5">{activeQuestion.examinerTrap}</p>
+                <span className="font-bold uppercase tracking-wider text-[10px]">
+                  Examiner Trap Radar
+                </span>
+                <p className="text-[12px] text-white/90 leading-relaxed mt-0.5">
+                  {activeQuestion.examinerTrap}
+                </p>
               </div>
             </div>
 
             <div className="flex flex-col gap-1.5">
               <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-400 flex items-center gap-1">
-                <CheckCircle2 size={13} /> Why Option {String.fromCharCode(65 + activeQuestion.correctIndex)} is Correct
+                <CheckCircle2 size={13} /> Correct answer: {correctAnswerLabel(activeQuestion)}
               </span>
               <div className="text-[13px] text-white/90 leading-relaxed whitespace-pre-line">
                 {activeQuestion.explanation.correctRationale}

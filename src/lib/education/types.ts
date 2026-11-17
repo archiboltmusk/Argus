@@ -3,6 +3,7 @@ export type FSRSRating = "again" | "hard" | "good" | "easy";
 export type FSRSState = "new" | "learning" | "review" | "relearning";
 
 export type FSRSCardData = {
+  learningSteps?: number;
   due: number; // Unix timestamp in ms
   stability: number; // in days
   difficulty: number; // 1 to 10
@@ -23,12 +24,7 @@ export type OcclusionBox = {
   label?: string; // Optional answer / label
 };
 
-export type CourseCategory =
-  | "all"
-  | "medical"
-  | "engineering"
-  | "science"
-  | "humanities";
+export type CourseCategory = "all" | "medical" | "engineering" | "science" | "humanities";
 
 export type CuratedCourse = {
   id: string;
@@ -53,6 +49,13 @@ export type StudyNote = {
   createdAt: number;
   occlusions?: OcclusionBox[];
   fsrs?: FSRSCardData;
+  reviewHistory?: {
+    reviewedAt: number;
+    rating: FSRSRating;
+    before: FSRSCardData;
+    after: FSRSCardData;
+    engine: string;
+  }[];
   highYield?: boolean;
   topic?: string;
 };

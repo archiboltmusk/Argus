@@ -21,8 +21,10 @@ import {
   deletePack,
   addSingleQuestion,
 } from "@/lib/education/qbank-store";
+import { QuestionReview } from "./question-review";
 import { readEducationalFileText } from "@/lib/education/json-gz-importer";
 import { VERIFIED_COMMUNITY_DATASETS } from "@/lib/education/community-catalogs";
+import type { ImportReport } from "@/lib/education/question-integrity";
 import type { QBankPack, SubjectCategory } from "@/lib/education/qbank-types";
 
 export type QBankManagerProps = {
@@ -57,7 +59,10 @@ export function QBankManager({ onStartPackDrill, onClose }: QBankManagerProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [activeTab, setActiveTab] = useState<"packs" | "directory" | "author">("packs");
-  const [importStatus, setImportStatus] = useState<{ success?: boolean; message?: string } | null>(null);
+  const [importStatus, setImportStatus] = useState<{ success?: boolean; message?: string } | null>(
+    null,
+  );
+  const [importReport, setImportReport] = useState<ImportReport | null>(null);
   const [copiedPackId, setCopiedPackId] = useState<string | null>(null);
 
   // URL Import State
@@ -82,6 +87,7 @@ export function QBankManager({ onStartPackDrill, onClose }: QBankManagerProps) {
     try {
       const content = await readEducationalFileText(file);
       const res = importQBankPack(content);
+      setImportReport(res.report ?? null);
       if (res.success) {
         setImportStatus({
           success: true,
@@ -93,7 +99,7 @@ export function QBankManager({ onStartPackDrill, onClose }: QBankManagerProps) {
     } catch (err: any) {
       setImportStatus({ success: false, message: err?.message || "Failed to process file." });
     }
-    setTimeout(() => setImportStatus(null), 4000);
+
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
@@ -102,6 +108,7 @@ export function QBankManager({ onStartPackDrill, onClose }: QBankManagerProps) {
     setFetchingRemote(true);
     setImportStatus(null);
     const res = await importFromGitHubUrl(remoteUrl.trim(), customTitle.trim() || undefined);
+    setImportReport(res.report ?? null);
     setFetchingRemote(false);
 
     if (res.success) {
@@ -115,12 +122,12 @@ export function QBankManager({ onStartPackDrill, onClose }: QBankManagerProps) {
     } else {
       setImportStatus({ success: false, message: res.error || "Failed to fetch remote JSON." });
     }
-    setTimeout(() => setImportStatus(null), 4000);
   };
 
   const handleInstallFromCatalog = async (url: string, title: string) => {
     setFetchingRemote(true);
     const res = await importFromGitHubUrl(url, title);
+    setImportReport(res.report ?? null);
     setFetchingRemote(false);
     if (res.success) {
       setImportStatus({
@@ -131,7 +138,6 @@ export function QBankManager({ onStartPackDrill, onClose }: QBankManagerProps) {
     } else {
       setImportStatus({ success: false, message: res.error || "Failed to install catalog pack." });
     }
-    setTimeout(() => setImportStatus(null), 4000);
   };
 
   const handleCopyPack = (packId: string) => {
@@ -142,25 +148,34 @@ export function QBankManager({ onStartPackDrill, onClose }: QBankManagerProps) {
   };
 
   const handleSaveQuestion = () => {
-    if (!topic.trim() || !vignette.trim() || options.some((o) => !o.trim())) {
-      alert("Please fill in the topic, vignette, and all 4 options.");
+    if (!topic.trim() || !vignette.trim() || !rationale.trim() || options.some((o) => !o.trim())) {
+      alert("Please fill in the topic, vignette, rationale, and all 4 options.");
       return;
     }
 
-    addSingleQuestion({
-      subject,
-      topic: topic.trim(),
-      vignette: vignette.trim(),
-      options: options.map((o) => o.trim()),
-      correctIndex,
-      examinerTrap: trap.trim() || "Watch out for extreme qualifiers (always, never).",
-      explanation: {
-        correctRationale: rationale.trim() || "Correct answer principle.",
-        distractorBreakdown: [],
-        bottomLine: bottomLine.trim() || "High-yield core takeaway.",
-      },
-      highYieldTags: ["Community Contributed", subject],
-    });
+    try {
+      addSingleQuestion({
+        subject,
+        topic: topic.trim(),
+        vignette: vignette.trim(),
+        options: options.map((o) => o.trim()),
+        correctIndex,
+        examinerTrap: trap.trim() || "Watch out for extreme qualifiers (always, never).",
+        explanation: {
+          correctRationale: rationale.trim(),
+          distractorBreakdown: [],
+          bottomLine: bottomLine.trim() || "High-yield core takeaway.",
+        },
+        highYieldTags: ["Community Contributed", subject],
+        provenance: { kind: "original", status: "unverified" },
+      });
+    } catch (error) {
+      setImportStatus({
+        success: false,
+        message: error instanceof Error ? error.message : "Could not save question.",
+      });
+      return;
+    }
 
     setTopic("");
     setVignette("");
@@ -199,7 +214,9 @@ export function QBankManager({ onStartPackDrill, onClose }: QBankManagerProps) {
               type="button"
               onClick={() => setActiveTab("packs")}
               className={`px-3 py-1 rounded-lg font-medium transition ${
-                activeTab === "packs" ? "bg-surface text-ink shadow-sm" : "text-ink-subtle hover:text-ink"
+                activeTab === "packs"
+                  ? "bg-surface text-ink shadow-sm"
+                  : "text-ink-subtle hover:text-ink"
               }`}
             >
               Installed ({packs.length})
@@ -208,7 +225,9 @@ export function QBankManager({ onStartPackDrill, onClose }: QBankManagerProps) {
               type="button"
               onClick={() => setActiveTab("directory")}
               className={`flex items-center gap-1 px-3 py-1 rounded-lg font-medium transition ${
-                activeTab === "directory" ? "bg-surface text-ink shadow-sm" : "text-ink-subtle hover:text-ink"
+                activeTab === "directory"
+                  ? "bg-surface text-ink shadow-sm"
+                  : "text-ink-subtle hover:text-ink"
               }`}
             >
               <Globe size={13} /> Open Repos
@@ -217,7 +236,9 @@ export function QBankManager({ onStartPackDrill, onClose }: QBankManagerProps) {
               type="button"
               onClick={() => setActiveTab("author")}
               className={`flex items-center gap-1 px-3 py-1 rounded-lg font-medium transition ${
-                activeTab === "author" ? "bg-accent text-white shadow-sm" : "text-ink-subtle hover:text-ink"
+                activeTab === "author"
+                  ? "bg-accent text-white shadow-sm"
+                  : "text-ink-subtle hover:text-ink"
               }`}
             >
               <Plus size={13} /> Author
@@ -236,6 +257,26 @@ export function QBankManager({ onStartPackDrill, onClose }: QBankManagerProps) {
 
       {/* Main Content */}
       <div className="flex-1 overflow-y-auto p-6 flex flex-col gap-5">
+        <QuestionReview packs={packs} />
+        {importReport && (
+          <details
+            className="p-3 text-sm border border-edge rounded-xl"
+            open={importReport.rejected.length > 0}
+          >
+            <summary>
+              Import report: {importReport.accepted} accepted · {importReport.rejected.length}{" "}
+              rejected
+            </summary>
+            <p>Rejected items were excluded. Correct their source data and reimport.</p>
+            <ul className="max-h-48 overflow-auto">
+              {importReport.rejected.map((item) => (
+                <li key={item.item}>
+                  Item {item.item}: {item.reason}
+                </li>
+              ))}
+            </ul>
+          </details>
+        )}
         {importStatus && (
           <div
             className={`flex items-center gap-2 p-3 rounded-xl text-xs font-medium border ${
@@ -279,7 +320,9 @@ export function QBankManager({ onStartPackDrill, onClose }: QBankManagerProps) {
 
             {/* Local File Upload Bar */}
             <div className="flex items-center justify-between bg-canvas/30 p-3 rounded-xl border border-edge/60 text-xs">
-              <span className="text-ink-muted">Have a local file? Upload JSON, JSONL, or compressed (.json.gz):</span>
+              <span className="text-ink-muted">
+                Have a local file? Upload JSON, JSONL, or compressed (.json.gz):
+              </span>
               <div>
                 <input
                   type="file"
@@ -327,10 +370,27 @@ export function QBankManager({ onStartPackDrill, onClose }: QBankManagerProps) {
                           )}
                         </div>
                         <p className="text-[12px] text-ink-muted mt-0.5">{pack.description}</p>
+                        {pack.importReport && (
+                          <details className="text-xs text-ink-muted mt-2">
+                            <summary>
+                              Import quality: {pack.importReport.accepted} accepted,{" "}
+                              {pack.importReport.rejected.length} rejected
+                            </summary>
+                            <ul>
+                              {pack.importReport.rejected.map((item) => (
+                                <li key={item.item}>
+                                  Item {item.item}: {item.reason}
+                                </li>
+                              ))}
+                            </ul>
+                          </details>
+                        )}
                         <div className="flex items-center gap-3 text-[11px] text-ink-subtle mt-1.5">
                           <span>Source: {pack.author}</span>
                           <span>•</span>
-                          <span className="font-semibold text-accent">{pack.totalQuestions} Questions</span>
+                          <span className="font-semibold text-accent">
+                            {pack.totalQuestions} Questions
+                          </span>
                           <span>•</span>
                           <span>Subject: {pack.subject || "Mixed"}</span>
                         </div>
@@ -364,7 +424,11 @@ export function QBankManager({ onStartPackDrill, onClose }: QBankManagerProps) {
                           className="flex items-center gap-1 rounded-lg bg-raised hover:bg-edge px-2 py-1 text-xs font-medium text-ink transition"
                           title="Export Pack JSON"
                         >
-                          {isCopied ? <Check size={12} className="text-emerald-500" /> : <Download size={12} />}
+                          {isCopied ? (
+                            <Check size={12} className="text-emerald-500" />
+                          ) : (
+                            <Download size={12} />
+                          )}
                           <span>{isCopied ? "Copied!" : "Export"}</span>
                         </button>
                         {!isStarter && (
@@ -390,7 +454,8 @@ export function QBankManager({ onStartPackDrill, onClose }: QBankManagerProps) {
             <div>
               <h4 className="text-sm font-bold text-ink">Verified Open Medical Repositories</h4>
               <p className="text-[11px] text-ink-subtle">
-                Public GitHub and HuggingFace clinical datasets. Click install to pull them directly into your local Argus QBank.
+                Public GitHub and HuggingFace clinical datasets. Click install to pull them directly
+                into your local Argus QBank.
               </p>
             </div>
 
@@ -407,18 +472,25 @@ export function QBankManager({ onStartPackDrill, onClose }: QBankManagerProps) {
                         {item.subject}
                       </span>
                     </div>
-                    <p className="text-[11.5px] text-ink-muted mt-1 leading-snug">{item.description}</p>
+                    <p className="text-[11.5px] text-ink-muted mt-1 leading-snug">
+                      {item.description}
+                    </p>
                     <div className="flex items-center gap-2 text-[10.5px] text-ink-subtle mt-2">
                       <span>Source: {item.author}</span>
                       <span>•</span>
-                      <span className="font-semibold text-emerald-500">~{item.totalQuestions} Questions</span>
+                      <span className="font-semibold text-emerald-500">
+                        ~{item.totalQuestions} Questions
+                      </span>
                     </div>
                   </div>
 
                   <div className="flex items-center justify-between pt-2 border-t border-edge/40">
                     <div className="flex items-center gap-1">
                       {item.tags.map((t) => (
-                        <span key={t} className="rounded bg-raised px-1.5 py-0.5 text-[9px] font-mono text-ink-subtle">
+                        <span
+                          key={t}
+                          className="rounded bg-raised px-1.5 py-0.5 text-[9px] font-mono text-ink-subtle"
+                        >
                           {t}
                         </span>
                       ))}
@@ -491,7 +563,9 @@ export function QBankManager({ onStartPackDrill, onClose }: QBankManagerProps) {
 
             {/* Options */}
             <div className="flex flex-col gap-2">
-              <label className="text-xs font-medium text-ink-subtle">Options (Select radio for correct answer)</label>
+              <label className="text-xs font-medium text-ink-subtle">
+                Options (Select radio for correct answer)
+              </label>
               {options.map((opt, i) => (
                 <div key={i} className="flex items-center gap-2">
                   <input
@@ -534,7 +608,9 @@ export function QBankManager({ onStartPackDrill, onClose }: QBankManagerProps) {
             {/* Explanation & Bottom Line */}
             <div className="grid grid-cols-2 gap-3">
               <div className="flex flex-col gap-1">
-                <label className="text-xs font-medium text-ink-subtle">Why the answer is correct</label>
+                <label className="text-xs font-medium text-ink-subtle">
+                  Why the answer is correct
+                </label>
                 <textarea
                   rows={2}
                   value={rationale}

@@ -1,118 +1,69 @@
-import type { FSRSCardData, FSRSRating } from "./types";
+import { createEmptyCard, fsrs, Rating, State, type Card } from "ts-fsrs";
+import type { FSRSCardData, FSRSRating, FSRSState } from "./types";
 
-/**
- * Modern Free Spaced Repetition Scheduler (FSRS) implementation.
- * Calculates next due intervals, stability, and difficulty.
- */
-
-const DEFAULT_WEIGHTS = {
-  w: [0.4, 0.6, 2.4, 5.8, 4.93, 0.94, 0.86, 0.01, 1.49, 0.14, 0.94, 2.18, 0.05, 0.34, 1.26, 0.29, 2.61],
-  requestRetention: 0.9,
-  maximumInterval: 365,
+// Pin the synchronous FSRS-6 implementation; opening an existing deck never reschedules it.
+const scheduler = fsrs({ request_retention: 0.9, maximum_interval: 365, enable_fuzz: false });
+const states: Record<FSRSState, State> = {
+  new: State.New,
+  learning: State.Learning,
+  review: State.Review,
+  relearning: State.Relearning,
 };
+const stateNames: FSRSState[] = ["new", "learning", "review", "relearning"];
+const ratings = {
+  again: Rating.Again,
+  hard: Rating.Hard,
+  good: Rating.Good,
+  easy: Rating.Easy,
+} as const;
+export const FSRS_ENGINE = "ts-fsrs@5.4.2";
 
-export function createInitialCard(now = Date.now()): FSRSCardData {
+export function fromCard(card: Card): FSRSCardData {
   return {
-    due: now,
-    stability: 0,
-    difficulty: 5.0,
-    elapsedDays: 0,
-    scheduledDays: 0,
-    reps: 0,
-    lapses: 0,
-    state: "new",
+    due: card.due.getTime(),
+    stability: card.stability,
+    difficulty: card.difficulty,
+    elapsedDays: card.elapsed_days,
+    scheduledDays: card.scheduled_days,
+    learningSteps: card.learning_steps,
+    reps: card.reps,
+    lapses: card.lapses,
+    state: stateNames[card.state],
+    lastReview: card.last_review?.getTime(),
   };
 }
-
+export function toCard(card: FSRSCardData): Card {
+  if (
+    ![card.due, card.stability, card.difficulty, card.reps, card.lapses].every(Number.isFinite) ||
+    !(card.state in states)
+  ) {
+    throw new Error("Invalid review card. Restore it from an exported deck before reviewing.");
+  }
+  return {
+    due: new Date(card.due),
+    stability: card.stability,
+    difficulty: card.difficulty,
+    elapsed_days: card.elapsedDays,
+    scheduled_days: card.scheduledDays,
+    learning_steps: card.learningSteps ?? 0,
+    reps: card.reps,
+    lapses: card.lapses,
+    state: states[card.state],
+    last_review: card.lastReview !== undefined ? new Date(card.lastReview) : undefined,
+  };
+}
+export function createInitialCard(now = Date.now()): FSRSCardData {
+  return fromCard(createEmptyCard(new Date(now)));
+}
 export function scheduleReview(
   card: FSRSCardData,
   rating: FSRSRating,
   now = Date.now(),
 ): FSRSCardData {
-  const ONE_DAY_MS = 24 * 60 * 60 * 1000;
-  const isFirstReview = card.reps === 0 || card.state === "new";
-
-  let stability = card.stability;
-  let difficulty = card.difficulty;
-  let reps = card.reps + 1;
-  let lapses = card.lapses;
-  let scheduledDays = 1;
-  let nextState = card.state;
-
-  if (isFirstReview) {
-    switch (rating) {
-      case "again":
-        stability = 0.5;
-        difficulty = 7.0;
-        scheduledDays = 1;
-        nextState = "learning";
-        lapses += 1;
-        break;
-      case "hard":
-        stability = 1.2;
-        difficulty = 6.0;
-        scheduledDays = 1;
-        nextState = "learning";
-        break;
-      case "good":
-        stability = 3.0;
-        difficulty = 5.0;
-        scheduledDays = 3;
-        nextState = "review";
-        break;
-      case "easy":
-        stability = 7.0;
-        difficulty = 4.0;
-        scheduledDays = 7;
-        nextState = "review";
-        break;
-    }
-  } else {
-    // Updating existing card
-    switch (rating) {
-      case "again":
-        lapses += 1;
-        difficulty = Math.min(10, difficulty + 1.5);
-        stability = Math.max(0.4, stability * 0.3);
-        scheduledDays = 1;
-        nextState = "relearning";
-        break;
-      case "hard":
-        difficulty = Math.min(10, difficulty + 0.5);
-        stability = Math.max(1, stability * 1.2);
-        scheduledDays = Math.max(1, Math.round(stability * 1.2));
-        nextState = "review";
-        break;
-      case "good":
-        stability = Math.max(1, stability * 2.2);
-        scheduledDays = Math.min(DEFAULT_WEIGHTS.maximumInterval, Math.round(stability));
-        nextState = "review";
-        break;
-      case "easy":
-        difficulty = Math.max(1, difficulty - 1.0);
-        stability = Math.max(1, stability * 3.5);
-        scheduledDays = Math.min(DEFAULT_WEIGHTS.maximumInterval, Math.round(stability * 1.3));
-        nextState = "review";
-        break;
-    }
-  }
-
-  const due = now + scheduledDays * ONE_DAY_MS;
-
-  return {
-    due,
-    stability,
-    difficulty,
-    elapsedDays: card.lastReview ? Math.max(0, Math.round((now - card.lastReview) / ONE_DAY_MS)) : 0,
-    scheduledDays,
-    reps,
-    lapses,
-    state: nextState,
-    lastReview: now,
-  };
+  if (card.lastReview !== undefined && now < card.lastReview)
+    throw new Error("Review time is before the previous review.");
+  return fromCard(scheduler.next(toCard(card), new Date(now), ratings[rating]).card);
 }
-
 export function isCardDue(card?: FSRSCardData, now = Date.now()): boolean {
-  if (!card) return true;
-  return card.due <= now;
+  return !card || card.due <= now;
 }

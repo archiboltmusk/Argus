@@ -1,4 +1,5 @@
 import { gunzipSync, strFromU8 } from "fflate";
+import type { ImportReport } from "./question-integrity";
 import { importQBankPack } from "./qbank-store";
 import { importNotesFromJson } from "./notes";
 
@@ -8,13 +9,16 @@ export type EducationalJsonImportResult = {
   count: number;
   title?: string;
   error?: string;
+  report?: ImportReport;
 };
 
 /**
  * Universal decompressor for plain text, ArrayBuffer, Uint8Array or Blob.
  * Handles both plain UTF-8 JSON / JSONL and Gzip-compressed (.json.gz, .gz).
  */
-export async function readEducationalFileText(file: File | Blob | ArrayBuffer | Uint8Array | string): Promise<string> {
+export async function readEducationalFileText(
+  file: File | Blob | ArrayBuffer | Uint8Array | string,
+): Promise<string> {
   if (typeof file === "string") {
     return file;
   }
@@ -36,7 +40,10 @@ export async function readEducationalFileText(file: File | Blob | ArrayBuffer | 
   const u8 = new Uint8Array(buffer);
 
   // Check gzip magic bytes: 0x1f, 0x8b
-  const isGzip = (u8.length >= 2 && u8[0] === 0x1f && u8[1] === 0x8b) || filename.endsWith(".gz") || filename.endsWith(".json.gz");
+  const isGzip =
+    (u8.length >= 2 && u8[0] === 0x1f && u8[1] === 0x8b) ||
+    filename.endsWith(".gz") ||
+    filename.endsWith(".json.gz");
 
   if (isGzip) {
     try {
@@ -68,7 +75,7 @@ export async function readEducationalFileText(file: File | Blob | ArrayBuffer | 
  */
 export async function importEducationalFile(
   fileOrText: File | Blob | ArrayBuffer | Uint8Array | string,
-  customTitle?: string
+  customTitle?: string,
 ): Promise<EducationalJsonImportResult> {
   try {
     const text = await readEducationalFileText(fileOrText);
@@ -84,7 +91,16 @@ export async function importEducationalFile(
       const parsed = JSON.parse(trimmed);
       if (Array.isArray(parsed) && parsed.length > 0) {
         const first = parsed[0];
-        if (first && (first.timestampSec !== undefined || first.markdown !== undefined || first.snapshotDataUrl !== undefined)) {
+        if (
+          first &&
+          !first.options &&
+          !first.choices &&
+          (first.timestampSec !== undefined ||
+            first.markdown !== undefined ||
+            first.snapshotDataUrl !== undefined ||
+            first.front !== undefined ||
+            first.content !== undefined)
+        ) {
           isNotesFormat = true;
         }
       } else if (parsed && Array.isArray(parsed.notes)) {
@@ -114,8 +130,19 @@ export async function importEducationalFile(
         type: "qbank",
         count: qbankRes.pack.totalQuestions,
         title: qbankRes.pack.title,
+        report: qbankRes.report,
       };
     }
+
+    // A rejected question must never silently become an unverified flashcard.
+    if (qbankRes.report)
+      return {
+        success: false,
+        type: "qbank",
+        count: 0,
+        error: qbankRes.error,
+        report: qbankRes.report,
+      };
 
     // Try Notes / Flashcards / Image Occlusion if not already tried
     const notesRes = importNotesFromJson(trimmed);

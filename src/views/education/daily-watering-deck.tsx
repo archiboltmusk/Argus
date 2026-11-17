@@ -1,10 +1,5 @@
-import { useState, useMemo } from "react";
-import {
-  CheckCircle,
-  Eye,
-  Zap,
-  ArrowRight,
-} from "lucide-react";
+import { useState } from "react";
+import { CheckCircle, Eye, Zap, ArrowRight } from "lucide-react";
 import type { StudyNote, FSRSRating } from "@/lib/education/types";
 import { reviewStudyNote } from "@/lib/education/notes";
 import { ImageOcclusionCanvas } from "@/views/player/image-occlusion-canvas";
@@ -15,27 +10,30 @@ export type DailyWateringDeckProps = {
   onClose: () => void;
 };
 
-export function DailyWateringDeck({
-  notes,
-  onOpenNoteContext,
-  onClose,
-}: DailyWateringDeckProps) {
+export function DailyWateringDeck({ notes, onOpenNoteContext, onClose }: DailyWateringDeckProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [showAnswer, setShowAnswer] = useState(false);
   const [reviewedCount, setReviewedCount] = useState(0);
+  const [error, setError] = useState<string | null>(null);
 
-  const dueNotes = useMemo(() => {
+  const [dueNotes] = useState(() => {
     return notes.filter((n) => {
       if (!n.fsrs) return true;
       return n.fsrs.due <= Date.now();
     });
-  }, [notes]);
+  });
 
   const current = dueNotes[currentIndex] ?? null;
 
   const handleRate = (rating: FSRSRating) => {
     if (!current) return;
-    reviewStudyNote(current.id, rating);
+    try {
+      reviewStudyNote(current.id, rating);
+      setError(null);
+    } catch {
+      setError("Review was not saved. Free storage and try again.");
+      return;
+    }
     setReviewedCount((c) => c + 1);
     setShowAnswer(false);
     if (currentIndex < dueNotes.length - 1) {
@@ -52,7 +50,8 @@ export function DailyWateringDeck({
         <div>
           <h3 className="text-lg font-bold text-ink">Tree Watered for Today!</h3>
           <p className="text-xs text-ink-muted mt-1 max-w-[340px]">
-            You have reviewed all {reviewedCount} due concepts using the FSRS spaced repetition engine. Your memory traces are reinforced.
+            You have reviewed all {reviewedCount} due concepts using the FSRS spaced repetition
+            engine. Your memory traces are reinforced.
           </p>
         </div>
         <button
@@ -68,6 +67,11 @@ export function DailyWateringDeck({
 
   return (
     <div className="flex flex-col gap-4 max-w-[640px] mx-auto bg-surface rounded-2xl border border-edge shadow-2xl p-6 text-ink animate-in zoom-in-95 duration-150">
+      {error && (
+        <p role="alert" className="text-red-300">
+          {error}
+        </p>
+      )}
       {/* Top Deck Info */}
       <div className="flex items-center justify-between border-b border-edge/60 pb-3">
         <div className="flex items-center gap-2">
@@ -75,7 +79,9 @@ export function DailyWateringDeck({
             💧
           </div>
           <div>
-            <h4 className="text-sm font-semibold text-ink leading-tight">Daily Tree Watering (FSRS Recall)</h4>
+            <h4 className="text-sm font-semibold text-ink leading-tight">
+              Daily Tree Watering (FSRS Recall)
+            </h4>
             <p className="text-[11px] text-ink-subtle">
               Card {currentIndex + 1} of {dueNotes.length} due today
             </p>
