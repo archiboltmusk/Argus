@@ -117,11 +117,11 @@ export function ArgusLabView({ active = true }: { active?: boolean }) {
         <header className="mb-8 flex flex-col gap-5 border-b border-edge-soft pb-7 md:flex-row md:items-end md:justify-between">
           <div>
             <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-accent/25 bg-accent-soft px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-accent">
-              <Compass size={14} /> Local-first control plane & observatory
+              <Compass size={14} /> System status & device tools
             </div>
-            <h1 className="text-3xl font-bold tracking-tight text-ink sm:text-4xl">Argus Hub & Observatory</h1>
+            <h1 className="text-3xl font-bold tracking-tight text-ink sm:text-4xl">Argus System Dashboard</h1>
             <p className="mt-2.5 max-w-2xl text-sm leading-relaxed text-ink-muted sm:text-base">
-              Local-first performance telemetry, deterministic stream routing, ecosystem LAN sync, and open community add-ons. Zero external telemetry leakage.
+              Playback performance, stream routing, local network sync, and community add-ons. Completely private with zero external tracking.
             </p>
           </div>
           <div className="flex items-center gap-3 rounded-2xl border border-edge-soft bg-surface/80 px-4 py-3 shadow-sm backdrop-blur-md">
@@ -152,17 +152,17 @@ export function ArgusLabView({ active = true }: { active?: boolean }) {
         </div>
 
         {/* Standardized Fluid View Tabs matching Argus standard */}
-        <nav className="mb-8 flex items-center gap-6 overflow-x-auto border-b border-edge-soft pb-1 scrollbar-none" role="tablist" aria-label="Argus Hub sections">
+        <nav className="mb-8 flex items-center gap-6 overflow-x-auto border-b border-edge-soft pb-1 scrollbar-none" role="tablist" aria-label="Argus System sections">
           {([
             ["decision", "Decision Lab"],
-            ["telemetry", "Live Telemetry"],
-            ["directory", "Add-on Hub"],
-            ["ecosystem", "Ecosystem & LAN"],
+            ["telemetry", "Live Stats"],
+            ["directory", "Add-ons Directory"],
+            ["ecosystem", "Local Network & Devices"],
             ["trust", "Trust Center"],
             ...(!activeProfile || activeProfile.kid ? [] : [["community", "Community"]]),
-            ["contract", "Experience Contract"],
+            ["contract", "Playback Rules"],
             ["signals", "Local Signals"],
-            ["operations", "Hub Controls"],
+            ["operations", "System Actions"],
           ] as Array<[Tab, string]>).map(([id, label]) => (
             <button
               key={id}

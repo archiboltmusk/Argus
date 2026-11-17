@@ -110,7 +110,7 @@ export const FREE_RADAR_ITEMS: FreeRadarItem[] = [
   },
   {
     id: "itch-free",
-    title: "itch.io Free Indie Hub",
+    title: "itch.io Free Indie Games",
     source: "itch.io",
     badge: "100,000+ Indie Games",
     description: "Discover innovative indie games, game jam winners, visual novels, and experimental prototypes directly downloadable for macOS.",
@@ -179,7 +179,7 @@ export function GameFreeRadar({
         <div>
           <span className="text-xs uppercase font-bold text-accent tracking-wider flex items-center gap-1.5">
             <Gift size={15} />
-            100% Free Play Hub
+            100% Free Games
           </span>
           <h2 className="text-xl font-bold text-ink">Free Games, Giveaways & Open Web Catalogs</h2>
         </div>

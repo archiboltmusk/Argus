@@ -421,7 +421,7 @@ export function EducationView() {
   }, []);
 
   return (
-    <main className="edu-hub" aria-label={t("Education Hub")}>
+    <main className="edu-hub" aria-label={t("Medical Education")}>
       {/* 1. Masthead matching Argus Sports Standard */}
       <header className="edu-masthead">
         <div>
@@ -430,7 +430,7 @@ export function EducationView() {
             <span>ARGUS EDUCATION</span>
             <span className="edu-eyebrow-badge">Open Masterclasses</span>
           </div>
-          <h1>{t("Medical Education & Revision Hub")}</h1>
+          <h1>{t("Medical Education & Revision")}</h1>
           <p>
             {t(
               "Video lectures, clinical practice questions, and daily flashcard review for all 19 medical subjects.",

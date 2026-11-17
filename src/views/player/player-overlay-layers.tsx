@@ -698,11 +698,11 @@ export const PlayerOverlayLayers = memo(function PlayerOverlayLayers(p: PlayerOv
         <button
           type="button"
           onClick={() => setSportsSidebarOpen((v) => !v)}
-          aria-label={t("Sports scores & telemetry")}
+          aria-label={t("Sports scores & stats")}
           className={`pointer-events-auto group absolute bottom-24 right-0 z-20 flex h-16 items-center justify-center gap-1.5 rounded-l-xl border-y border-l border-edge-soft bg-elevated/65 pl-2.5 pr-2 text-ink shadow-lg backdrop-blur-md transition-all duration-300 hover:bg-elevated hover:pl-3 ${
             p.showChrome ? "opacity-90 hover:opacity-100" : "opacity-0 pointer-events-none"
           }`}
-          title={t("Live sports scores & cricket telemetry")}
+          title={t("Live sports scores & cricket stats")}
         >
           <Activity size={16} className="text-accent" />
           <span

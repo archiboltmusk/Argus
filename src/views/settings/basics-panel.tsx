@@ -195,7 +195,7 @@ export function BasicsPanel() {
         />
         <SRow
           title={t("Show sports odds")}
-          description={t("Displays betting lines and match odds on sports hub cards when available.")}
+          description={t("Displays betting lines and match odds on match cards when available.")}
           onClick={() => update({ sportsShowOdds: !settings.sportsShowOdds })}
           trailing={<Picked on={settings.sportsShowOdds} />}
         />

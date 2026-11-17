@@ -291,7 +291,7 @@ export function EconomicsAffordabilityModule() {
               <div className="p-5 rounded-xl border border-white/10 bg-white/[0.02] space-y-2">
                 <div className="text-xs font-bold uppercase tracking-wider text-white/70">3. Optional Enterprise Tiers</div>
                 <p className="text-xs text-white/80 leading-relaxed">
-                  High-volume professional research, intensive autonomous coding agents, and bespoke corporate analytics cross-subsidize the public tier.
+                  High-volume professional research, intensive autonomous coding agents, and custom corporate analytics cross-subsidize the public tier.
                 </p>
               </div>
             </div>

@@ -67,7 +67,7 @@ export function LocalCourseHub({ open, onClose, onPlayLecture }: LocalCourseHubP
   return (
     <div
       role="dialog"
-      aria-label="Local Courseware Hub"
+      aria-label="Local Courses"
       className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-xl animate-[argus-fade-in_200ms_ease-out]"
     >
       <div className="relative flex flex-col w-full max-w-4xl max-h-[85vh] rounded-2xl bg-[#0b0c14]/95 border border-white/15 shadow-[0_20px_60px_rgba(0,0,0,0.9)] text-white overflow-hidden">
@@ -80,14 +80,14 @@ export function LocalCourseHub({ open, onClose, onPlayLecture }: LocalCourseHubP
             <div>
               <div className="flex items-center gap-2">
                 <h2 className="text-base font-bold text-white tracking-wide">
-                  Local Courseware & Offline Vault
+                  Local Courses & Offline Downloads
                 </h2>
                 <span className="text-[10px] font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 px-2 py-0.5 rounded-full">
-                  OFFLINE 0-LATENCY
+                  OFFLINE
                 </span>
               </div>
               <p className="text-xs text-zinc-400">
-                Direct playback via <code className="text-emerald-300 font-mono text-[11px]">file://</code> with hardware-accelerated libmpv seeking
+                Play downloaded videos directly from your local storage without internet connection
               </p>
             </div>
           </div>

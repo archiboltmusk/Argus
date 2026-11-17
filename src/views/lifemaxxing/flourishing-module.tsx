@@ -96,7 +96,7 @@ export function FlourishingBreakthroughModule() {
         <div className="relative z-10 space-y-4">
           <div className="inline-flex items-center gap-2 rounded-full border border-emerald-400/30 bg-emerald-500/10 px-3.5 py-1 text-xs font-semibold tracking-wide text-emerald-300">
             <Unlock className="h-3.5 w-3.5 text-emerald-400" />
-            <span>ARGUS · The Human Flourishing Engine</span>
+            <span>ARGUS · Health & Lifelong Growth</span>
           </div>
 
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">

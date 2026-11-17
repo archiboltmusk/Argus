@@ -118,7 +118,7 @@ export function TasteBlendModal({ onClose, onSelectMeta, candidatePool }: TasteB
                   <div className="flex h-24 w-24 items-center justify-center rounded-full bg-gradient-to-tr from-pink-500 to-purple-600 text-2xl font-black text-white shadow-xl shadow-pink-500/25 ring-4 ring-pink-500/20">
                     {blendResult.compatibilityPercentage}%
                   </div>
-                  <span className="mt-1.5 text-[11px] font-semibold text-zinc-400">Match Synergy</span>
+                  <span className="mt-1.5 text-[11px] font-semibold text-zinc-400">Match Score</span>
                 </div>
               </div>
 

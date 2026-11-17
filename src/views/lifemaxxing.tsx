@@ -162,7 +162,7 @@ const TABS: TabMeta[] = [
   },
   {
     id: "flourishing",
-    label: "Universal Flourishing",
+    label: "Living Well",
     shortDesc: "Obstacle Diagnostic Matrix",
     icon: FileCheck,
     tag: "Impact"
@@ -204,7 +204,7 @@ export const LifemaxxingView: React.FC<{ active?: boolean }> = ({ active = true 
                 <span className="flourish-eyebrow-badge">Argus OS Standard</span>
               </div>
               <h1 className="text-3xl font-extrabold tracking-tight text-ink sm:text-4xl">
-                The Human Flourishing Operating System
+                Personal Growth & Health
               </h1>
               <p className="max-w-3xl text-sm leading-relaxed text-ink-muted sm:text-base">
                 Unlock the extraordinary in everyone. Universal access to knowledge, health intelligence, civic accountability, opportunity equalization, and human sovereignty—regardless of wealth, background, or circumstance.
@@ -242,7 +242,7 @@ export const LifemaxxingView: React.FC<{ active?: boolean }> = ({ active = true 
         </header>
 
         {/* Sub-navigation Tabs Rail */}
-        <nav className="flourish-tabs-bar" role="tablist" aria-label="ARGUS Flourishing Subsystems">
+        <nav className="flourish-tabs-bar" role="tablist" aria-label="ARGUS Health & Growth Modules">
           {TABS.filter((tab) => tab.id !== "community" || (activeProfile && !activeProfile.kid)).map((tab) => {
             const Icon = tab.icon;
             const isActive = activeTab === tab.id;
@@ -438,7 +438,7 @@ export const LifemaxxingView: React.FC<{ active?: boolean }> = ({ active = true 
         {/* Footer */}
         <footer className="mt-14 border-t border-edge-soft py-8 text-center text-xs text-ink-subtle">
           <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
-            <p>ARGUS: The Human Flourishing Operating System · Open-source, private, and sovereignty-preserving.</p>
+            <p>ARGUS: Personal Growth & Health · Open-source, private, and independent.</p>
             <div className="flex items-center gap-4 text-[11px]">
               <span>Truth over comfort</span>
               <span>Wisdom over stimulation</span>

@@ -159,7 +159,7 @@ export function MusicServicesBrowser({ onExploreTrack }: { onExploreTrack?: (tra
           <div>
             <div className="flex items-center gap-2">
               <Globe className="h-5 w-5 text-accent" />
-              <h3 className="text-xl font-bold">{currentService.name} Curated Stream Hub</h3>
+              <h3 className="text-xl font-bold">{currentService.name} Music & Streams</h3>
             </div>
             <p className="text-xs text-ink-subtle mt-0.5">
               {liveConnector?.playable ? `Native connector: ${liveConnector.health}` : "Native playback not verified for this service. Catalog matches may use a different provider."}

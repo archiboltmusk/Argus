@@ -282,7 +282,7 @@ export function LifeEvolutionModule() {
               <span className="text-xs font-mono uppercase text-amber-400 font-bold">Human Needs ↔ Available Skills ↔ Verified Opportunities</span>
               <h3 className="text-xl font-bold text-white mt-0.5">Contribution Intelligence</h3>
               <p className="text-xs md:text-sm text-white/70 mt-1 max-w-3xl leading-relaxed">
-                Human flourishing extends beyond personal achievement. Matching voluntary human competence with real community needs to leave the world better than we found it.
+                Living well extends beyond personal achievement. Matching voluntary human competence with real community needs leaves the world better than we found it.
               </p>
             </div>
 
