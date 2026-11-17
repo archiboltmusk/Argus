@@ -7,7 +7,6 @@ import {
   FileText,
   Play,
   BookOpen,
-  Share2,
   Check,
   Search,
   ExternalLink,
@@ -18,7 +17,6 @@ import {
   AlertCircle,
   Zap,
   Database,
-  Layers,
   Activity,
   Flame,
   Stethoscope,
@@ -76,7 +74,6 @@ import {
   recordConceptAttempt,
 } from "@/lib/education/prerequisite-graph";
 import { InteractiveCheckpointOverlay } from "./player/interactive-checkpoint-overlay";
-import { Row } from "@/components/row";
 import { USER_LOCAL_BTR_MANIFEST } from "@/lib/education/btr-library-manifest";
 import { resolveBTRPlayableUrl } from "@/lib/education/btr-local-library";
 import "./education/education-hub.css";
@@ -737,111 +734,86 @@ export function EducationView() {
                   </span>
                 </div>
 
-                <div className="-mx-2">
-                  <Row min={320} shape="landscape" alwaysActive scrollKey="education:local">
-                    {localCourseFolders.map((course) => {
-                      const firstLesson = course.lessons[0];
-                      const isShared = !!sharedTokens[course.folder];
-                      const isCopied = copiedShareFolder === course.folder;
-                      const isBtr = course.folder.includes("BTR") || course.title.toLowerCase().includes("btr");
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3.5 sm:gap-4.5">
+                  {localCourseFolders.map((course) => {
+                    const firstLesson = course.lessons[0];
+                    const isShared = !!sharedTokens[course.folder];
+                    const isCopied = copiedShareFolder === course.folder;
+                    const isBtr = course.folder.includes("BTR") || course.title.toLowerCase().includes("btr");
 
-                      return (
-                        <div
-                          key={course.folder}
-                          className="edu-obsidian-card group/card flex flex-col justify-between overflow-hidden p-0 transition-all duration-300 hover:scale-[1.02] border border-white/10 hover:border-accent/40 shadow-xl"
+                    return (
+                      <div
+                        key={course.folder}
+                        className="edu-poster-card group/card"
+                      >
+                        <img
+                          src={isBtr ? "https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?w=800&auto=format&fit=crop&q=80" : "https://images.unsplash.com/photo-1532187863486-abf9dbad1b69?w=800&auto=format&fit=crop&q=80"}
+                          alt={course.title}
+                          className="edu-poster-card-img filter brightness-65 group-hover/card:brightness-75"
+                        />
+                        <div className="edu-poster-card-scrim" />
+
+                        {/* Top Badges */}
+                        <div className="absolute top-2.5 start-2.5 end-2.5 flex items-center justify-between gap-1 z-10">
+                          <span className={`rounded-md px-2 py-0.5 text-[9.5px] font-black uppercase tracking-wider ${
+                            isBtr ? "bg-accent text-canvas" : "bg-black/75 text-accent border border-accent/30"
+                          }`}>
+                            {isBtr ? "CoreBTR" : "Local"}
+                          </span>
+                          <span className="rounded-md bg-black/75 px-2 py-0.5 text-[9.5px] font-mono text-white/90 border border-white/10 backdrop-blur-md">
+                            {course.lessons.length} vids
+                          </span>
+                        </div>
+
+                        {/* Center Hover Play Button */}
+                        <button
+                          type="button"
+                          onClick={() => firstLesson && openPlayer(localPlayerSrc(firstLesson))}
+                          className="absolute inset-0 m-auto flex h-12 w-12 items-center justify-center rounded-full bg-accent text-canvas shadow-xl backdrop-blur-md opacity-0 group-hover/card:opacity-100 group-hover/card:scale-110 transition z-10"
+                          title={t("Resume Lecture")}
                         >
-                          <div className="relative h-36 w-full overflow-hidden bg-gradient-to-br from-indigo-950/60 to-purple-950/60">
-                            {/* Ambient Artwork */}
-                            <img
-                              src={isBtr ? "https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?w=800&auto=format&fit=crop&q=80" : "https://images.unsplash.com/photo-1532187863486-abf9dbad1b69?w=800&auto=format&fit=crop&q=80"}
-                              alt={course.title}
-                              className="h-full w-full object-cover transition duration-500 group-hover/card:scale-105 filter brightness-60"
-                            />
-                            <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent" />
+                          <Play size={20} fill="currentColor" className="translate-x-0.5" />
+                        </button>
 
-                            <div className="absolute start-3.5 top-3.5 flex items-center gap-2">
-                              {isBtr ? (
-                                <span className="rounded-md bg-accent/90 px-2 py-0.5 text-[10px] font-black text-canvas shadow-md uppercase tracking-wider">
-                                  CoreBTR 2027
-                                </span>
-                              ) : (
-                                <span className="rounded-md bg-black/60 px-2 py-0.5 text-[10px] font-bold text-accent border border-accent/30 backdrop-blur-md uppercase tracking-wider">
-                                  Local
-                                </span>
-                              )}
-                              <span className="rounded-md bg-black/60 px-2 py-0.5 text-[10px] font-semibold text-white/90 backdrop-blur-md border border-white/10">
-                                {course.lessons.length} {t("videos")}
-                              </span>
-                            </div>
-
-                            {/* Floating Play Button Overlay */}
-                            <button
-                              type="button"
-                              onClick={() => firstLesson && openPlayer(localPlayerSrc(firstLesson))}
-                              className="absolute inset-0 m-auto flex h-12 w-12 items-center justify-center rounded-full bg-accent/90 text-canvas shadow-xl backdrop-blur-md transition transform group-hover/card:scale-110 group-hover/card:bg-accent"
-                              title={t("Resume Lecture")}
-                            >
-                              <Play size={20} fill="currentColor" className="translate-x-0.5" />
-                            </button>
-
-                            <div className="absolute bottom-2.5 start-3.5 end-3.5">
-                              <h3 className="text-sm font-extrabold text-white truncate drop-shadow">
-                                {course.title}
-                              </h3>
-                              <p className="text-[10.5px] font-mono text-white/60 truncate mt-0.5">
-                                {course.folder}
-                              </p>
-                            </div>
+                        {/* Bottom Metadata */}
+                        <div className="relative p-3.5 flex flex-col gap-1.5 z-10">
+                          <h3 className="text-sm font-bold text-white leading-tight truncate drop-shadow">
+                            {course.title}
+                          </h3>
+                          <div className="w-full bg-white/15 h-1 rounded-full overflow-hidden my-0.5">
+                            <div className="bg-gradient-to-r from-accent to-indigo-400 h-full rounded-full w-[42%]" />
                           </div>
-
-                          <div className="p-3.5 flex flex-col gap-2.5 bg-surface/90">
-                            {/* Progress bar simulation */}
-                            <div className="w-full bg-white/[0.08] h-1.5 rounded-full overflow-hidden">
-                              <div className="bg-gradient-to-r from-accent to-indigo-400 h-full rounded-full w-[42%]" />
-                            </div>
-
-                            <div className="flex items-center justify-between pt-1">
-                              {isBtr ? (
-                                <button
-                                  type="button"
-                                  onClick={() => setTab("btr")}
-                                  className="flex items-center gap-1.5 rounded-xl bg-accent px-3 py-1.5 text-[11.5px] font-bold text-canvas hover:brightness-110 transition shadow-sm"
-                                >
-                                  <Flame size={13} />
-                                  <span>{t("Launch War Room")}</span>
-                                </button>
-                              ) : (
-                                <button
-                                  type="button"
-                                  onClick={() => firstLesson && openPlayer(localPlayerSrc(firstLesson))}
-                                  className="flex items-center gap-1.5 rounded-xl bg-accent px-3 py-1.5 text-[11.5px] font-bold text-canvas hover:brightness-110 transition shadow-sm"
-                                >
-                                  <Play size={13} fill="currentColor" />
-                                  <span>{t("Resume Lecture")}</span>
-                                </button>
-                              )}
-
+                          <div className="flex items-center justify-between pt-1">
+                            {isBtr ? (
                               <button
                                 type="button"
-                                onClick={() => handleToggleShare(course.folder, course.title)}
-                                className={`flex items-center gap-1.5 rounded-xl px-2.5 py-1.5 text-[11px] font-semibold transition ${
-                                  isCopied
-                                    ? "bg-accent-soft text-accent font-bold"
-                                    : isShared
-                                    ? "bg-surface border border-edge text-ink"
-                                    : "text-ink-muted hover:bg-white/5 hover:text-white"
-                                }`}
-                                title={t("Stream over LAN to Stremio or TV")}
+                                onClick={() => setTab("btr")}
+                                className="text-[10.5px] font-bold text-accent flex items-center gap-1 hover:underline"
                               >
-                                {isCopied ? <Check size={13} /> : <Share2 size={13} />}
-                                <span>{isCopied ? t("Copied!") : isShared ? t("Copy Feed") : t("Share LAN")}</span>
+                                <Flame size={11} /> Launch Studio
                               </button>
-                            </div>
+                            ) : (
+                              <button
+                                type="button"
+                                onClick={() => firstLesson && openPlayer(localPlayerSrc(firstLesson))}
+                                className="text-[10.5px] font-bold text-accent flex items-center gap-1 hover:underline"
+                              >
+                                <Play size={10} fill="currentColor" /> Resume
+                              </button>
+                            )}
+                            <button
+                              type="button"
+                              onClick={() => handleToggleShare(course.folder, course.title)}
+                              className="text-[10px] text-white/60 hover:text-white"
+                              title="Share LAN"
+                            >
+                              {isCopied ? "Copied" : isShared ? "Feed" : "Share"}
+                            </button>
                           </div>
                         </div>
-                      );
-                    })}
-                  </Row>
+                      </div>
+                    );
+                  })}
                 </div>
               </section>
             )}
@@ -868,59 +840,58 @@ export function EducationView() {
                 </button>
               </div>
 
-              <div className="-mx-2">
-                <Row min={280} shape="landscape" alwaysActive scrollKey="education:btr-19-subjects">
-                  {BTR_19_SUBJECTS_CATALOG.map((subject) => (
-                    <div
-                      key={subject.id}
-                      onClick={() => {
-                        setSelectedBtrSubject(subject.id);
-                        setSelectedBtrDestination("subjects");
-                        setTab("btr");
-                      }}
-                      className="edu-obsidian-card group/sub flex flex-col justify-between overflow-hidden p-0 transition-all duration-300 hover:scale-[1.02] border border-edge hover:border-white/20 shadow-xl cursor-pointer"
-                    >
-                      <div className="relative h-32 w-full overflow-hidden bg-surface">
-                        <img
-                          src={subject.thumbnail}
-                          alt={subject.name}
-                          className="h-full w-full object-cover transition duration-500 group-hover/sub:scale-105 filter brightness-65"
-                        />
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent" />
-                        
-                        <div className="absolute top-2.5 start-2.5 flex items-center gap-1.5">
-                          <span className="rounded-md bg-white/15 px-2 py-0.5 text-[9.5px] font-bold text-white shadow-md uppercase tracking-wider border border-white/20">
-                            {subject.lessons} Lectures
-                          </span>
-                          <span className="rounded-md bg-black/60 px-2 py-0.5 text-[9.5px] font-semibold text-white/90 backdrop-blur-md border border-white/10">
-                            {subject.duration}
-                          </span>
-                        </div>
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3.5 sm:gap-4.5">
+                {BTR_19_SUBJECTS_CATALOG.map((subject) => (
+                  <div
+                    key={subject.id}
+                    onClick={() => {
+                      setSelectedBtrSubject(subject.id);
+                      setSelectedBtrDestination("subjects");
+                      setTab("btr");
+                    }}
+                    className="edu-poster-card group/sub"
+                  >
+                    <img
+                      src={subject.thumbnail}
+                      alt={subject.name}
+                      className="edu-poster-card-img filter brightness-75 group-hover/sub:brightness-90"
+                    />
+                    <div className="edu-poster-card-scrim" />
 
-                        <div className="absolute bottom-2 start-2.5 end-2.5">
-                          <h4 className="text-sm font-extrabold text-white truncate drop-shadow">
-                            {subject.name}
-                          </h4>
-                        </div>
-                      </div>
+                    {/* Top Badges */}
+                    <div className="absolute top-2.5 start-2.5 end-2.5 flex items-center justify-between gap-1 z-10">
+                      <span className="rounded-md bg-accent/90 px-2 py-0.5 text-[9.5px] font-black text-canvas shadow uppercase tracking-wider">
+                        {subject.id}
+                      </span>
+                      <span className="rounded-md bg-black/60 px-1.5 py-0.5 text-[9.5px] font-bold text-white/90 backdrop-blur-md border border-white/10">
+                        {subject.lessons} Lec
+                      </span>
+                    </div>
 
-                      <div className="p-3 flex flex-col gap-2 bg-surface/90">
-                        <p className="text-[11px] text-white/70 line-clamp-1 leading-snug">
-                          {subject.yieldTopic}
-                        </p>
-                        <div className="flex items-center justify-between pt-1 border-t border-white/[0.06]">
-                          <span className="text-[10px] font-bold text-amber-400 uppercase tracking-wider">
-                            Dr. Zainab Vora
-                          </span>
-                          <span className="text-[11px] font-bold text-ink-muted group-hover/sub:text-white group-hover/sub:translate-x-0.5 transition flex items-center gap-0.5">
-                            <span>Explore Studio</span>
-                            <ChevronRight size={12} />
-                          </span>
-                        </div>
+                    {/* Hover Center Indicator */}
+                    <div className="absolute inset-0 m-auto flex h-11 w-11 items-center justify-center rounded-full bg-accent text-canvas shadow-xl backdrop-blur-md opacity-0 group-hover/sub:opacity-100 group-hover/sub:scale-110 transition z-10">
+                      <Play size={18} fill="currentColor" className="translate-x-0.5" />
+                    </div>
+
+                    {/* Bottom Content */}
+                    <div className="relative p-3 flex flex-col gap-1 z-10">
+                      <h4 className="text-sm font-extrabold text-white leading-tight truncate drop-shadow">
+                        {subject.name}
+                      </h4>
+                      <p className="text-[10.5px] text-white/70 line-clamp-1 leading-snug">
+                        {subject.yieldTopic}
+                      </p>
+                      <div className="flex items-center justify-between pt-1 border-t border-white/10 text-[10px]">
+                        <span className="font-semibold text-amber-300">
+                          {subject.duration}
+                        </span>
+                        <span className="text-accent font-bold flex items-center gap-0.5 group-hover/sub:underline">
+                          Studio <ChevronRight size={10} />
+                        </span>
                       </div>
                     </div>
-                  ))}
-                </Row>
+                  </div>
+                ))}
               </div>
             </section>
 
@@ -941,60 +912,47 @@ export function EducationView() {
                 </span>
               </div>
 
-              <div className="-mx-2">
-                <Row min={260} shape="landscape" alwaysActive scrollKey="education:btr-master-volumes">
-                  {USER_LOCAL_BTR_MANIFEST.masterPdfs.map((pdf) => {
-                    const sizeMb = (pdf.sizeBytes / (1024 * 1024)).toFixed(1);
-                    return (
-                      <div
-                        key={pdf.id}
-                        className="edu-obsidian-card group/vol flex flex-col justify-between overflow-hidden p-0 transition-all duration-300 hover:scale-[1.02] border border-edge hover:border-white/20 shadow-xl"
-                      >
-                        <div className="relative h-36 w-full overflow-hidden bg-surface p-4 flex flex-col justify-between">
-                          <div className="flex items-center justify-between">
-                            <span className="rounded-md bg-white/10 px-2.5 py-0.5 text-[9.5px] font-semibold text-white/90 border border-white/10 uppercase tracking-wider">
-                              Master Edition
-                            </span>
-                            <span className="rounded-md bg-white/10 px-2 py-0.5 text-[10px] font-mono text-white/80 border border-white/10">
-                              {sizeMb} MB
-                            </span>
-                          </div>
-
-                          <div className="my-auto text-center py-2">
-                            <div className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-white/5 text-white border border-white/10 mb-1 group-hover/vol:scale-110 transition">
-                              <BookOpen size={22} />
-                            </div>
-                            <h4 className="text-sm font-extrabold text-white truncate drop-shadow px-2">
-                              {pdf.title}
-                            </h4>
-                          </div>
-
-                          <div className="flex items-center justify-between text-[10px] text-white/60">
-                            <span>Dr. Zainab Vora</span>
-                            <span className="text-emerald-400 font-bold">✓ Offline Verified</span>
-                          </div>
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3.5 sm:gap-4.5">
+                {USER_LOCAL_BTR_MANIFEST.masterPdfs.map((pdf) => {
+                  const sizeMb = (pdf.sizeBytes / (1024 * 1024)).toFixed(1);
+                  return (
+                    <div
+                      key={pdf.id}
+                      onClick={() => {
+                        const url = resolveBTRPlayableUrl(pdf.fullPath);
+                        window.open(url, "_blank");
+                      }}
+                      className="edu-poster-card group/vol edu-book-spine"
+                    >
+                      <div className="absolute inset-0 bg-gradient-to-br from-indigo-950 via-slate-900 to-black p-3.5 flex flex-col justify-between">
+                        <div className="flex items-center justify-between">
+                          <span className="rounded-md bg-amber-500/20 px-2 py-0.5 text-[9px] font-bold text-amber-300 border border-amber-500/30 uppercase tracking-wider">
+                            Master Vol
+                          </span>
+                          <span className="text-[9.5px] font-mono text-white/60">
+                            {sizeMb} MB
+                          </span>
                         </div>
 
-                        <div className="p-3.5 flex flex-col gap-2.5 bg-surface/90">
-                          <p className="text-[11px] font-mono text-white/60 truncate">
-                            {pdf.filename}
-                          </p>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              const url = resolveBTRPlayableUrl(pdf.fullPath);
-                              window.open(url, "_blank");
-                            }}
-                            className="w-full flex items-center justify-center gap-1.5 rounded-xl bg-white hover:bg-white/90 px-3 py-2 text-xs font-bold text-black shadow-md transition"
-                          >
-                            <FileText size={13} />
-                            <span>{t("Open Master Document")}</span>
-                          </button>
+                        <div className="text-center py-4 flex flex-col items-center">
+                          <div className="h-12 w-12 rounded-2xl bg-white/10 flex items-center justify-center text-accent mb-2 border border-white/10 group-hover/vol:scale-110 group-hover/vol:bg-accent group-hover/vol:text-canvas transition shadow-lg">
+                            <BookOpen size={22} />
+                          </div>
+                          <h4 className="text-xs sm:text-sm font-extrabold text-white line-clamp-2 px-1 text-center drop-shadow">
+                            {pdf.title}
+                          </h4>
+                        </div>
+
+                        <div className="pt-2 border-t border-white/10 flex items-center justify-between text-[10px]">
+                          <span className="text-emerald-400 font-medium">✓ Verified</span>
+                          <span className="text-white/80 font-bold flex items-center gap-1 group-hover/vol:text-accent">
+                            <FileText size={11} /> Read
+                          </span>
                         </div>
                       </div>
-                    );
-                  })}
-                </Row>
+                    </div>
+                  );
+                })}
               </div>
             </section>
 
@@ -1023,56 +981,54 @@ export function EducationView() {
                 </button>
               </div>
 
-              <div className="-mx-2">
-                <Row min={270} shape="landscape" alwaysActive scrollKey="education:btr-grand-tests">
-                  {USER_LOCAL_BTR_MANIFEST.grandTests.map((gt) => {
-                    const isHtml = gt.kind === "html_test";
-                    return (
-                      <div
-                        key={gt.id}
-                        className="edu-obsidian-card group/gt flex flex-col justify-between overflow-hidden p-0 transition-all duration-300 hover:scale-[1.02] border border-edge hover:border-white/20 shadow-xl"
-                      >
-                        <div className="relative h-32 w-full overflow-hidden bg-surface p-3.5 flex flex-col justify-between">
-                          <div className="flex items-center justify-between">
-                            <span className={`rounded-md px-2 py-0.5 text-[9.5px] font-black uppercase tracking-wider ${
-                              isHtml
-                                ? "bg-amber-500/15 text-amber-300 border border-amber-500/30"
-                                : "bg-white/10 text-white/90 border border-white/10"
-                            }`}>
-                              {isHtml ? "Interactive CBT" : "Annotated Solutions"}
-                            </span>
-                            <span className="rounded-md bg-white/10 px-2 py-0.5 text-[9.5px] font-mono text-white/80 border border-white/10">
-                              {(gt.sizeBytes / (1024 * 1024)).toFixed(1)} MB
-                            </span>
-                          </div>
-
-                          <div>
-                            <h4 className="text-sm font-extrabold text-white truncate drop-shadow">
-                              {gt.title}
-                            </h4>
-                            <p className="text-[10px] text-white/60 truncate mt-0.5">
-                              {gt.filename}
-                            </p>
-                          </div>
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3.5 sm:gap-4.5">
+                {USER_LOCAL_BTR_MANIFEST.grandTests.map((gt) => {
+                  const isHtml = gt.kind === "html_test";
+                  return (
+                    <div
+                      key={gt.id}
+                      onClick={() => {
+                        const url = resolveBTRPlayableUrl(gt.fullPath);
+                        window.open(url, "_blank");
+                      }}
+                      className="edu-poster-card group/gt"
+                    >
+                      <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-indigo-950/70 to-black p-3.5 flex flex-col justify-between">
+                        <div className="flex items-center justify-between">
+                          <span className={`rounded-md px-2 py-0.5 text-[9px] font-black uppercase tracking-wider ${
+                            isHtml
+                              ? "bg-amber-500/20 text-amber-300 border border-amber-500/30"
+                              : "bg-white/10 text-white/90 border border-white/10"
+                          }`}>
+                            {isHtml ? "CBT Sim" : "Annotated"}
+                          </span>
+                          <span className="text-[9.5px] font-mono text-white/60">
+                            {(gt.sizeBytes / (1024 * 1024)).toFixed(1)} MB
+                          </span>
                         </div>
 
-                        <div className="p-3 bg-surface/90 flex items-center justify-between gap-2 border-t border-white/[0.06]">
-                          <button
-                            type="button"
-                            onClick={() => {
-                              const url = resolveBTRPlayableUrl(gt.fullPath);
-                              window.open(url, "_blank");
-                            }}
-                            className="flex-1 flex items-center justify-center gap-1.5 rounded-xl bg-white hover:bg-white/90 px-3 py-1.5 text-xs font-bold text-black shadow-sm transition"
-                          >
-                            {isHtml ? <Play size={12} fill="currentColor" /> : <FileText size={12} />}
-                            <span>{isHtml ? t("Launch CBT Simulation") : t("View Solutions")}</span>
-                          </button>
+                        <div className="text-center py-3 flex flex-col items-center">
+                          <div className="h-12 w-12 rounded-2xl bg-accent/15 flex items-center justify-center text-accent mb-2 border border-accent/25 group-hover/gt:scale-110 group-hover/gt:bg-accent group-hover/gt:text-canvas transition shadow-lg">
+                            <Target size={22} />
+                          </div>
+                          <h4 className="text-xs sm:text-sm font-extrabold text-white line-clamp-2 px-1 text-center drop-shadow">
+                            {gt.title}
+                          </h4>
+                        </div>
+
+                        <div className="pt-2 border-t border-white/10 flex items-center justify-between text-[10px]">
+                          <span className="text-white/60 truncate max-w-[90px]">
+                            {gt.kind === "html_test" ? "Interactive" : "Solutions"}
+                          </span>
+                          <span className="text-accent font-bold flex items-center gap-1 group-hover/gt:underline">
+                            {isHtml ? <Play size={10} fill="currentColor" /> : <FileText size={10} />}
+                            <span>{isHtml ? "Launch" : "Open"}</span>
+                          </span>
                         </div>
                       </div>
-                    );
-                  })}
-                </Row>
+                    </div>
+                  );
+                })}
               </div>
             </section>
 
@@ -1089,31 +1045,40 @@ export function EducationView() {
                   </div>
                 </div>
 
-                <div className="-mx-2">
-                  <Row min={250} shape="landscape" alwaysActive scrollKey="education:feeds">
-                    {subscribedFeeds.map((feed) => (
-                      <div
-                        key={feed.id}
-                        onClick={() => openSettings("streaming")}
-                        className="edu-course-card group/card flex flex-col justify-between p-5"
-                      >
-                        <div className="flex items-center gap-3">
-                          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-accent-soft text-accent border border-accent/20 shrink-0">
-                            <Rss size={18} />
-                          </div>
-                          <div className="min-w-0">
-                            <h4 className="text-[14px] font-bold text-ink truncate">{feed.name}</h4>
-                            <p className="text-[11px] font-mono text-ink-subtle truncate max-w-[180px]">{feed.url}</p>
-                          </div>
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3.5 sm:gap-4.5">
+                  {subscribedFeeds.map((feed) => (
+                    <div
+                      key={feed.id}
+                      onClick={() => openSettings("streaming")}
+                      className="edu-poster-card group/card"
+                    >
+                      <div className="absolute inset-0 bg-gradient-to-br from-indigo-950/80 via-slate-900 to-black p-3.5 flex flex-col justify-between">
+                        <div className="flex items-center justify-between">
+                          <span className="rounded-md bg-accent/20 px-2 py-0.5 text-[9px] font-bold text-accent border border-accent/30 uppercase tracking-wider">
+                            Feed
+                          </span>
+                          <Rss size={13} className="text-accent" />
                         </div>
 
-                        <div className="flex items-center justify-between pt-3 border-t border-edge-soft text-xs text-ink-muted group-hover/card:text-ink">
-                          <span>{t("Configure in Streaming Settings")}</span>
-                          <ExternalLink size={14} className="text-ink-subtle shrink-0" />
+                        <div className="text-center py-4 flex flex-col items-center">
+                          <div className="h-11 w-11 rounded-2xl bg-white/5 flex items-center justify-center text-accent mb-2 border border-white/10 group-hover/card:scale-110 group-hover/card:bg-accent group-hover/card:text-canvas transition shadow-lg">
+                            <Rss size={20} />
+                          </div>
+                          <h4 className="text-xs sm:text-sm font-extrabold text-white line-clamp-2 px-1 text-center drop-shadow">
+                            {feed.name}
+                          </h4>
+                          <p className="text-[10px] font-mono text-white/50 truncate max-w-[130px] mt-1">
+                            {feed.url}
+                          </p>
+                        </div>
+
+                        <div className="pt-2 border-t border-white/10 flex items-center justify-between text-[10px] text-white/70">
+                          <span>Settings</span>
+                          <ExternalLink size={12} className="text-accent group-hover/card:translate-x-0.5 transition" />
                         </div>
                       </div>
-                    ))}
-                  </Row>
+                    </div>
+                  ))}
                 </div>
               </section>
             )}
@@ -1169,83 +1134,70 @@ export function EducationView() {
                 </div>
               </div>
 
-              {/* Course Cards Carousel */}
-              <div className="-mx-2">
-                <Row
-                  min={290}
-                  shape="landscape"
-                  alwaysActive
-                  scrollKey={`education:courses:${activeCategory}`}
-                >
-                  {filteredCurated.map((course) => {
-                    const isSubscribed = (settings.videoFeeds || []).some((f) => f.url === course.feedUrl);
+              {/* Course Cards Vertical Poster Grid */}
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3.5 sm:gap-4.5">
+                {filteredCurated.map((course) => {
+                  const isSubscribed = (settings.videoFeeds || []).some((f) => f.url === course.feedUrl);
 
-                    return (
-                      <div
-                        key={course.id}
-                        className="edu-course-card group/card"
-                      >
-                        <img
-                          src={course.thumbnail}
-                          alt={course.title}
-                          loading="lazy"
-                          draggable={false}
-                          className="absolute inset-0 h-full w-full object-cover transition duration-500 group-hover/card:scale-105"
-                        />
-                        <div className="edu-card-overlay">
-                          {/* Top Badges */}
-                          <div className="absolute start-3.5 top-3.5 flex items-center gap-1.5">
-                            <span className="edu-card-badge">
-                              <Layers size={11} strokeWidth={2.4} />
-                              <span>{course.provider}</span>
-                            </span>
-                            {course.totalLessons && (
-                              <span className="edu-card-badge text-accent border-accent/25">
-                                {course.totalLessons} {t("Lectures")}
-                              </span>
-                            )}
-                          </div>
+                  return (
+                    <div
+                      key={course.id}
+                      className="edu-poster-card group/card"
+                    >
+                      <img
+                        src={course.thumbnail}
+                        alt={course.title}
+                        loading="lazy"
+                        draggable={false}
+                        className="edu-poster-card-img filter brightness-75 group-hover/card:brightness-90"
+                      />
+                      <div className="edu-poster-card-scrim" />
 
-                          <h3 className="text-[14.5px] font-bold text-white line-clamp-1 leading-snug drop-shadow-md">
-                            {course.title}
-                          </h3>
-                          <p className="text-[12px] text-white/70 line-clamp-2 leading-relaxed drop-shadow">
-                            {course.description}
-                          </p>
+                      {/* Top Badges */}
+                      <div className="absolute top-2.5 start-2.5 end-2.5 flex items-center justify-between gap-1 z-10">
+                        <span className="rounded-md bg-black/60 px-2 py-0.5 text-[9px] font-extrabold text-white border border-white/15 backdrop-blur-md uppercase tracking-wider truncate max-w-[110px]">
+                          {course.provider}
+                        </span>
+                        {course.totalLessons && (
+                          <span className="rounded-md bg-accent/90 px-1.5 py-0.5 text-[9px] font-black text-canvas shadow">
+                            {course.totalLessons} Lec
+                          </span>
+                        )}
+                      </div>
 
-                          <div className="mt-2 flex items-center justify-between pt-2 border-t border-white/10">
-                            <div className="flex items-center gap-1.5">
-                              {course.tags.slice(0, 2).map((tag) => (
-                                <span
-                                  key={tag}
-                                  className="rounded-md bg-white/10 px-2 py-0.5 text-[10px] font-medium text-white/80 backdrop-blur-sm"
-                                >
-                                  #{tag}
-                                </span>
-                              ))}
-                            </div>
+                      {/* Bottom Details */}
+                      <div className="relative p-3 flex flex-col gap-1.5 z-10">
+                        <h3 className="text-xs sm:text-sm font-bold text-white line-clamp-1 leading-snug drop-shadow-md">
+                          {course.title}
+                        </h3>
+                        <p className="text-[10.5px] text-white/70 line-clamp-2 leading-tight drop-shadow">
+                          {course.description}
+                        </p>
 
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleSubscribeFeed(course);
-                              }}
-                              className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-[11px] font-semibold transition ${
-                                isSubscribed
-                                  ? "bg-white/20 text-white backdrop-blur-md"
-                                  : "bg-accent hover:brightness-110 text-canvas shadow-sm"
-                              }`}
-                            >
-                              <Rss size={12} />
-                              <span>{isSubscribed ? t("Subscribed") : t("Add to Library")}</span>
-                            </button>
-                          </div>
+                        <div className="mt-1 flex items-center justify-between pt-1.5 border-t border-white/10">
+                          <span className="text-[9.5px] font-medium text-white/60">
+                            #{course.tags[0] || "lecture"}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleSubscribeFeed(course);
+                            }}
+                            className={`flex items-center gap-1 rounded-md px-2 py-0.5 text-[10px] font-bold transition ${
+                              isSubscribed
+                                ? "bg-white/20 text-white backdrop-blur-md"
+                                : "bg-accent hover:brightness-110 text-canvas shadow-sm"
+                            }`}
+                          >
+                            <Rss size={10} />
+                            <span>{isSubscribed ? t("Saved") : t("Enroll")}</span>
+                          </button>
                         </div>
                       </div>
-                    );
-                  })}
-                </Row>
+                    </div>
+                  );
+                })}
               </div>
             </section>
           </>

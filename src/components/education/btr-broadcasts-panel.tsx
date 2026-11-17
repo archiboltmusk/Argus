@@ -99,14 +99,26 @@ export function BTRBroadcastsModal({
           {/* LEFT: Distraction-free Theater Player & Key Pearls (60%) */}
           <div className="w-full lg:w-[60%] flex flex-col border-b lg:border-b-0 lg:border-r border-edge bg-black/60 overflow-y-auto p-4 sm:p-5 gap-4">
             {/* Embed Frame */}
-            <div className="relative aspect-video w-full rounded-2xl overflow-hidden bg-black border border-edge-soft shadow-lg">
+            <div className="relative aspect-video w-full rounded-2xl overflow-hidden bg-black border border-edge-soft shadow-lg group">
               <iframe
                 title={activeVideo.title}
-                src={`https://www.youtube-nocookie.com/embed/${activeVideo.youtubeId}?rel=0&modestbranding=1`}
+                src={`https://www.youtube.com/embed/${activeVideo.youtubeId}?rel=0&modestbranding=1&enablejsapi=1`}
                 className="w-full h-full border-none"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                referrerPolicy="strict-origin-when-cross-origin"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                 allowFullScreen
               />
+              {/* Quick Watch on YouTube / External Option */}
+              <a
+                href={`https://www.youtube.com/watch?v=${activeVideo.youtubeId}`}
+                target="_blank"
+                rel="noreferrer"
+                className="absolute top-3 right-3 z-20 flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-black/80 hover:bg-red-600 text-white font-bold text-xs backdrop-blur-md border border-white/15 transition shadow-lg opacity-85 hover:opacity-100"
+                title="Watch on YouTube in external player"
+              >
+                <ExternalLink size={12} />
+                <span>Watch on YouTube</span>
+              </a>
             </div>
 
             {/* Video Meta */}

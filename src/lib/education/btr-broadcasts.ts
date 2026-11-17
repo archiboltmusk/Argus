@@ -26,7 +26,7 @@ export const CORE_BTR_OFFICIAL_CHANNEL = {
 export const CORE_BTR_BROADCASTS: BTRBroadcastVideo[] = [
   {
     id: "drop-volatiles-recap",
-    youtubeId: "dQw4w9WgXcQ", // fallback player reference
+    youtubeId: "uBGl2BujkPQ",
     title: "Daily Core Drop #01: Super-Volatiles 10-Minute Rapid Sieve",
     category: "core_drop",
     categoryLabel: "Core Drop (3:00 PM)",
@@ -42,7 +42,7 @@ export const CORE_BTR_BROADCASTS: BTRBroadcastVideo[] = [
   },
   {
     id: "inicet-may-recall-trends",
-    youtubeId: "M7lc1UVf-VE",
+    youtubeId: "qPix_X-9t7E",
     title: "INI-CET Recall Master Analysis: Integrated Systems & Clinical Vignettes",
     category: "inicet_recall",
     categoryLabel: "INI-CET Recall",
@@ -57,7 +57,7 @@ export const CORE_BTR_BROADCASTS: BTRBroadcastVideo[] = [
   },
   {
     id: "btr-phase-roadmap",
-    youtubeId: "kJQP7kiw5Fk",
+    youtubeId: "OZG8M_ldA1M",
     title: "How to Complete 4 Cycles of BTR Before NEET-PG 2027",
     category: "neetpg_strategy",
     categoryLabel: "Master Strategy",
@@ -72,7 +72,7 @@ export const CORE_BTR_BROADCASTS: BTRBroadcastVideo[] = [
   },
   {
     id: "drop-biostats-formulas",
-    youtubeId: "L_LUpnjgPso",
+    youtubeId: "lUe_RI_m-Vg",
     title: "Daily Core Drop #02: Biostatistics 2x2 Table & Odds Ratio vs Relative Risk",
     category: "core_drop",
     categoryLabel: "Core Drop (3:00 PM)",
@@ -88,7 +88,7 @@ export const CORE_BTR_BROADCASTS: BTRBroadcastVideo[] = [
   },
   {
     id: "topper-blueprint-air12",
-    youtubeId: "fJ9rUzIMcZQ",
+    youtubeId: "D-SzmURNBH0",
     title: "Topper Blueprint: From 120 Correct in First GT to Rank 24 in INI-CET",
     category: "topper_blueprint",
     categoryLabel: "Topper Blueprint",
@@ -103,7 +103,7 @@ export const CORE_BTR_BROADCASTS: BTRBroadcastVideo[] = [
   },
   {
     id: "mega-btr-revision-marathon",
-    youtubeId: "9bZkp7q19f0",
+    youtubeId: "Jvtb0a2RXaY",
     title: "Mega BTR Marathon Orientation: 19 Subjects in 72 Hours Protocol",
     category: "mega_revision",
     categoryLabel: "Mega BTR Blitz",

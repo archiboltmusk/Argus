@@ -132,7 +132,7 @@ export function buildYouTubeEmbedUrl(
   if (enableJsApi) params.set("enablejsapi", "1");
   params.set("rel", "0"); // Don't show unrelated external videos on pause
 
-  return `https://www.youtube-nocookie.com/embed/${videoId}?${params.toString()}`;
+  return `https://www.youtube.com/embed/${videoId}?${params.toString()}`;
 }
 
 /**
