@@ -602,7 +602,7 @@ export function EducationView() {
                         onClick={() => startQBankDrill(true)}
                         className="edu-hero-btn-secondary"
                       >
-                        <Zap size={15} className="text-amber-400 fill-amber-400" />
+                        <Zap size={15} className="text-indigo-400 fill-indigo-400" />
                         <span>{t("Clinical Drill")}</span>
                       </button>
                     </div>
@@ -945,17 +945,17 @@ export function EducationView() {
         {/* TAB: INTERACTIVE CHECKPOINTS & SOCRATIC AUTO-PAUSE (REDESIGNED) */}
         {tab === "checkpoints" && (
           <div className="flex flex-col gap-9">
-            {/* 1. Mastery Status & Progress HUD Ribbon */}
-            <div className="relative overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-r from-[#0d0f24] via-[#12142e] to-[#181938] p-6 shadow-2xl backdrop-blur-2xl">
+            {/* 1. Mastery Status & Progress HUD Ribbon - Unified CoreBTR Indigo */}
+            <div className="relative overflow-hidden rounded-3xl border border-white/10 bg-[#121428] p-6 shadow-2xl backdrop-blur-2xl">
               <div className="relative z-10 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
                 <div className="flex flex-col gap-2 max-w-2xl">
                   <div className="flex items-center gap-2">
-                    <span className="flex items-center gap-1.5 rounded-full bg-accent/20 px-3 py-0.5 text-[11px] font-extrabold uppercase tracking-widest text-accent border border-accent/30">
+                    <span className="flex items-center gap-1.5 rounded-full bg-indigo-500/20 px-3 py-0.5 text-[11px] font-extrabold uppercase tracking-widest text-indigo-300 border border-indigo-500/30">
                       <Sparkles size={12} />
-                      {t("Active Learning Engine 2.0")}
+                      {t("Active Learning Engine")}
                     </span>
-                    <span className="flex items-center gap-1 text-[11px] font-bold text-amber-400 bg-amber-400/10 px-2.5 py-0.5 rounded-full border border-amber-400/20">
-                      <Flame size={12} />
+                    <span className="flex items-center gap-1 text-[11px] font-bold text-indigo-200 bg-indigo-500/15 px-2.5 py-0.5 rounded-full border border-indigo-500/30">
+                      <Flame size={12} className="text-indigo-400" />
                       5 Day Retention Streak
                     </span>
                   </div>
@@ -972,12 +972,12 @@ export function EducationView() {
                 {/* Quick Stats Pill */}
                 <div className="flex items-center gap-3 shrink-0">
                   <div className="flex items-center gap-3 rounded-2xl bg-white/[0.04] border border-white/10 px-4 py-3 backdrop-blur-xl">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-500/15 text-indigo-300 border border-indigo-500/30">
                       <Award size={20} />
                     </div>
                     <div>
                       <div className="text-[11px] uppercase font-bold text-white/50 tracking-wider">{t("Checkpoints")}</div>
-                      <div className="text-lg font-black text-white">3 / 4 <span className="text-xs font-semibold text-emerald-400">(75%)</span></div>
+                      <div className="text-lg font-black text-white">3 / 4 <span className="text-xs font-semibold text-indigo-300">(75%)</span></div>
                     </div>
                   </div>
 
@@ -987,7 +987,7 @@ export function EducationView() {
                       const firstCourse = CURATED_COURSES[0];
                       if (firstCourse) openPlayer(localPlayerSrc(firstCourse as any));
                     }}
-                    className="flex items-center gap-2 rounded-2xl bg-accent hover:brightness-110 px-5 py-3 text-xs font-bold text-canvas shadow-lg shadow-accent/30 transition transform hover:-translate-y-0.5"
+                    className="flex items-center gap-2 rounded-2xl bg-indigo-600 hover:bg-indigo-500 px-5 py-3 text-xs font-bold text-white shadow-lg shadow-indigo-600/30 transition transform hover:-translate-y-0.5"
                   >
                     <Play size={15} fill="currentColor" />
                     <span>{t("Launch Socratic Player")}</span>
@@ -1136,15 +1136,15 @@ export function EducationView() {
                 </div>
               </div>
 
-              {/* System Knowledge Tracks */}
+              {/* System Knowledge Tracks - Unified CoreBTR Indigo Theme (No Rainbow) */}
               <div className="flex flex-col gap-6">
                 {/* TRACK 1: Cardiovascular Hemodynamics */}
                 {(conceptSystemFilter === "all" || conceptSystemFilter === "cardio") && (
                   <div className="edu-knowledge-track flex flex-col gap-4">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
-                        <span className="h-2 w-2 rounded-full bg-cyan-400 shadow-[0_0_8px_#22d3ee]" />
-                        <h5 className="text-sm font-extrabold text-cyan-400 uppercase tracking-wider">
+                        <span className="h-2 w-2 rounded-full bg-indigo-500 shadow-[0_0_8px_rgba(99,102,241,0.5)]" />
+                        <h5 className="text-sm font-extrabold text-indigo-400 uppercase tracking-wider">
                           Cardiovascular Hemodynamics & Mechanics
                         </h5>
                       </div>
@@ -1161,11 +1161,11 @@ export function EducationView() {
                         return (
                           <div
                             key={concept.id}
-                            className="relative rounded-2xl border border-white/[0.08] bg-[#12142b]/80 p-4 flex flex-col justify-between gap-3 shadow-lg hover:border-cyan-400/40 transition group"
+                            className="relative rounded-2xl border border-white/[0.08] bg-[#12142b]/90 p-4 flex flex-col justify-between gap-3 shadow-lg hover:border-indigo-500/40 transition group"
                           >
                             <div className="flex flex-col gap-1.5">
                               <div className="flex items-center justify-between">
-                                <span className="rounded bg-cyan-500/15 border border-cyan-500/30 px-2 py-0.5 text-[9.5px] font-bold text-cyan-300 uppercase">
+                                <span className="rounded bg-indigo-500/15 border border-indigo-500/30 px-2 py-0.5 text-[9.5px] font-bold text-indigo-300 uppercase">
                                   {idx === 0 ? "Level 3: Target" : idx === 1 ? "Level 2: Mechanism" : idx === 2 ? "Level 1: Law" : "Root Cause"}
                                 </span>
                                 {stats?.mastered ? (
@@ -1173,8 +1173,8 @@ export function EducationView() {
                                     <CheckCircle2 size={12} /> Mastered
                                   </span>
                                 ) : (
-                                  <span className="text-amber-400 text-[10px] font-semibold">
-                                    Active Gap
+                                  <span className="text-slate-400 text-[10px] font-medium">
+                                    Needs Drill
                                   </span>
                                 )}
                               </div>
@@ -1189,7 +1189,7 @@ export function EducationView() {
                             {/* Active Recall Occlusion Key Box */}
                             <div className="edu-occlusion-card">
                               <div className="flex items-center justify-between mb-1">
-                                <strong className="text-[9.5px] uppercase font-bold text-cyan-300">
+                                <strong className="text-[9.5px] uppercase font-bold text-indigo-300">
                                   {t("Foundational Key")}
                                 </strong>
                                 <button
@@ -1208,7 +1208,7 @@ export function EducationView() {
                                 <button
                                   type="button"
                                   onClick={() => toggleConceptReveal(concept.id)}
-                                  className="mt-1 w-full text-center text-[10px] font-bold text-cyan-300 hover:text-white transition"
+                                  className="mt-1 w-full text-center text-[10px] font-bold text-indigo-300 hover:text-white transition"
                                 >
                                   {t("👁 Reveal Active Recall Key")}
                                 </button>
@@ -1237,7 +1237,7 @@ export function EducationView() {
                               <button
                                 type="button"
                                 onClick={() => launchConceptMicroQuiz(concept.id)}
-                                className="flex items-center gap-1 rounded-lg bg-cyan-500/20 hover:bg-cyan-500 text-cyan-300 hover:text-black px-2 py-1 text-[10px] font-bold transition border border-cyan-500/30"
+                                className="flex items-center gap-1 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white px-2.5 py-1 text-[10px] font-bold transition shadow-sm"
                               >
                                 <Zap size={10} fill="currentColor" />
                                 <span>Quiz</span>
@@ -1255,8 +1255,8 @@ export function EducationView() {
                   <div className="edu-knowledge-track flex flex-col gap-4">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
-                        <span className="h-2 w-2 rounded-full bg-amber-400 shadow-[0_0_8px_#fbbf24]" />
-                        <h5 className="text-sm font-extrabold text-amber-400 uppercase tracking-wider">
+                        <span className="h-2 w-2 rounded-full bg-indigo-500 shadow-[0_0_8px_rgba(99,102,241,0.5)]" />
+                        <h5 className="text-sm font-extrabold text-indigo-400 uppercase tracking-wider">
                           Upper Limb Neuroanatomy & Palsy Localization
                         </h5>
                       </div>
@@ -1273,11 +1273,11 @@ export function EducationView() {
                         return (
                           <div
                             key={concept.id}
-                            className="relative rounded-2xl border border-white/[0.08] bg-[#12142b]/80 p-4 flex flex-col justify-between gap-3 shadow-lg hover:border-amber-400/40 transition group"
+                            className="relative rounded-2xl border border-white/[0.08] bg-[#12142b]/90 p-4 flex flex-col justify-between gap-3 shadow-lg hover:border-indigo-500/40 transition group"
                           >
                             <div className="flex flex-col gap-1.5">
                               <div className="flex items-center justify-between">
-                                <span className="rounded bg-amber-500/15 border border-amber-500/30 px-2 py-0.5 text-[9.5px] font-bold text-amber-300 uppercase">
+                                <span className="rounded bg-indigo-500/15 border border-indigo-500/30 px-2 py-0.5 text-[9.5px] font-bold text-indigo-300 uppercase">
                                   {idx === 0 ? "Clinical Syndrome" : "Root Anatomical Basis"}
                                 </span>
                                 {stats?.mastered ? (
@@ -1285,8 +1285,8 @@ export function EducationView() {
                                     <CheckCircle2 size={12} /> Mastered
                                   </span>
                                 ) : (
-                                  <span className="text-amber-400 text-[10px] font-semibold">
-                                    Active Gap
+                                  <span className="text-slate-400 text-[10px] font-medium">
+                                    Needs Drill
                                   </span>
                                 )}
                               </div>
@@ -1300,7 +1300,7 @@ export function EducationView() {
 
                             <div className="edu-occlusion-card">
                               <div className="flex items-center justify-between mb-1">
-                                <strong className="text-[9.5px] uppercase font-bold text-amber-300">
+                                <strong className="text-[9.5px] uppercase font-bold text-indigo-300">
                                   {t("Foundational Key")}
                                 </strong>
                                 <button
@@ -1318,7 +1318,7 @@ export function EducationView() {
                                 <button
                                   type="button"
                                   onClick={() => toggleConceptReveal(concept.id)}
-                                  className="mt-1 w-full text-center text-[10px] font-bold text-amber-300 hover:text-white transition"
+                                  className="mt-1 w-full text-center text-[10px] font-bold text-indigo-300 hover:text-white transition"
                                 >
                                   {t("👁 Reveal Active Recall Key")}
                                 </button>
@@ -1346,7 +1346,7 @@ export function EducationView() {
                               <button
                                 type="button"
                                 onClick={() => launchConceptMicroQuiz(concept.id)}
-                                className="flex items-center gap-1 rounded-lg bg-amber-500/20 hover:bg-amber-500 text-amber-300 hover:text-black px-2 py-1 text-[10px] font-bold transition border border-amber-500/30"
+                                className="flex items-center gap-1 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white px-2.5 py-1 text-[10px] font-bold transition shadow-sm"
                               >
                                 <Zap size={10} fill="currentColor" />
                                 <span>Quiz</span>
@@ -1364,8 +1364,8 @@ export function EducationView() {
                   <div className="edu-knowledge-track flex flex-col gap-4">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
-                        <span className="h-2 w-2 rounded-full bg-rose-400 shadow-[0_0_8px_#f43f5e]" />
-                        <h5 className="text-sm font-extrabold text-rose-400 uppercase tracking-wider">
+                        <span className="h-2 w-2 rounded-full bg-indigo-500 shadow-[0_0_8px_rgba(99,102,241,0.5)]" />
+                        <h5 className="text-sm font-extrabold text-indigo-400 uppercase tracking-wider">
                           Renal, Acid-Base & Physicochemical Buffers
                         </h5>
                       </div>
@@ -1382,11 +1382,11 @@ export function EducationView() {
                         return (
                           <div
                             key={concept.id}
-                            className="relative rounded-2xl border border-white/[0.08] bg-[#12142b]/80 p-4 flex flex-col justify-between gap-3 shadow-lg hover:border-rose-400/40 transition group"
+                            className="relative rounded-2xl border border-white/[0.08] bg-[#12142b]/90 p-4 flex flex-col justify-between gap-3 shadow-lg hover:border-indigo-500/40 transition group"
                           >
                             <div className="flex flex-col gap-1.5">
                               <div className="flex items-center justify-between">
-                                <span className="rounded bg-rose-500/15 border border-rose-500/30 px-2 py-0.5 text-[9.5px] font-bold text-rose-300 uppercase">
+                                <span className="rounded bg-indigo-500/15 border border-indigo-500/30 px-2 py-0.5 text-[9.5px] font-bold text-indigo-300 uppercase">
                                   {idx === 0 ? "Clinical Disturbance" : "Physicochemical Buffer Law"}
                                 </span>
                                 {stats?.mastered ? (
@@ -1394,8 +1394,8 @@ export function EducationView() {
                                     <CheckCircle2 size={12} /> Mastered
                                   </span>
                                 ) : (
-                                  <span className="text-amber-400 text-[10px] font-semibold">
-                                    Active Gap
+                                  <span className="text-slate-400 text-[10px] font-medium">
+                                    Needs Drill
                                   </span>
                                 )}
                               </div>
@@ -1409,7 +1409,7 @@ export function EducationView() {
 
                             <div className="edu-occlusion-card">
                               <div className="flex items-center justify-between mb-1">
-                                <strong className="text-[9.5px] uppercase font-bold text-rose-300">
+                                <strong className="text-[9.5px] uppercase font-bold text-indigo-300">
                                   {t("Foundational Key")}
                                 </strong>
                                 <button
@@ -1427,7 +1427,7 @@ export function EducationView() {
                                 <button
                                   type="button"
                                   onClick={() => toggleConceptReveal(concept.id)}
-                                  className="mt-1 w-full text-center text-[10px] font-bold text-rose-300 hover:text-white transition"
+                                  className="mt-1 w-full text-center text-[10px] font-bold text-indigo-300 hover:text-white transition"
                                 >
                                   {t("👁 Reveal Active Recall Key")}
                                 </button>
@@ -1455,7 +1455,7 @@ export function EducationView() {
                               <button
                                 type="button"
                                 onClick={() => launchConceptMicroQuiz(concept.id)}
-                                className="flex items-center gap-1 rounded-lg bg-rose-500/20 hover:bg-rose-500 text-rose-300 hover:text-black px-2 py-1 text-[10px] font-bold transition border border-rose-500/30"
+                                className="flex items-center gap-1 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white px-2.5 py-1 text-[10px] font-bold transition shadow-sm"
                               >
                                 <Zap size={10} fill="currentColor" />
                                 <span>Quiz</span>
