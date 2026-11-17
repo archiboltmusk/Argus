@@ -350,3 +350,54 @@ test("letter-plus-text keys must agree, and rejected questions cannot fall throu
   assert.equal(result.report?.rejected.length, 1);
   assert.equal(getStudyNotes().length, before);
 });
+
+test("new attempts keep completed history and corrected content cannot inherit old error priorities", async () => {
+  const { listAttempts } = await import("../src/lib/education/attempts.ts");
+  const questions = [{ ...CLINICAL_QBANK_STARTER[0], id: "history-question" }];
+  const key = attemptKey(questions, false);
+  const old = newAttempt(100);
+  old.selectedAnswers[questions[0].id] =
+    (questions[0].correctIndex + 1) % questions[0].options.length;
+  old.isSubmitted[questions[0].id] = true;
+  old.result = {
+    id: "history-result",
+    examTitle: "Practice",
+    timestamp: 101,
+    totalQuestions: 1,
+    attempted: 1,
+    correct: 0,
+    incorrect: 1,
+    score: -1,
+    maxScore: 4,
+    accuracyPct: 0,
+    timeSpentMinutes: 1,
+  };
+  saveAttempt(key, questions, old);
+  saveAttempt(key, questions, newAttempt(200));
+  assert.ok(listAttempts(questions).some((attempt) => attempt.result?.id === "history-result"));
+  const corrected = questions.map((question) => ({
+    ...question,
+    correctIndex: Number(old.selectedAnswers[question.id]),
+  }));
+  assert.ok(
+    listAttempts(corrected).every(
+      (attempt) => attempt.selectedAnswers[questions[0].id] === undefined,
+    ),
+  );
+  localStorage.setItem(key, "broken-json");
+  saveAttempt(key, questions, newAttempt(300));
+  assert.equal(loadAttempt(key, questions).startedAt, 300);
+});
+
+test("large question stems are fingerprinted rather than duplicated into every attempt", () => {
+  const questions = [
+    { ...CLINICAL_QBANK_STARTER[0], id: "large-stem", vignette: "clinical-context ".repeat(10000) },
+  ];
+  const key = attemptKey(questions, false);
+  saveAttempt(key, questions, newAttempt());
+  assert.ok(localStorage.getItem(key)!.length < 2000);
+  assert.notEqual(
+    attemptKey([{ ...questions[0], imageUrl: "https://example.invalid/new-image.jpg" }], false),
+    key,
+  );
+});

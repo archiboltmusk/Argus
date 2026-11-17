@@ -298,7 +298,7 @@ export function EducationView() {
           success: true,
           message:
             res.type === "qbank"
-              ? `Successfully imported QBank Pack "${res.title}" with ${res.count} questions!`
+              ? `Imported "${res.title}": ${res.count} accepted, ${res.report?.rejected.length ?? 0} rejected. View item-level reports in Manage Question Packs.`
               : `Successfully imported ${res.count} study cards and notes into your deck!`,
         });
       } else {
@@ -412,7 +412,7 @@ export function EducationView() {
   );
 
   const startStudyPlan = (minutes: StudyBudget) => {
-    const plan = buildStudyPlan(getAllQuestions(), notes, listAttempts(), minutes);
+    const plan = buildStudyPlan(getAllQuestions(), notes, listAttempts(getAllQuestions()), minutes);
     setDrillDurationMinutes(minutes - plan.reviews.length);
     if (plan.reviews.length) {
       setPlannedNotes(plan.reviews);
@@ -1899,7 +1899,7 @@ function NotesDrawer({ notes, onClose }: { notes: StudyNote[]; onClose: () => vo
       if (res.success) {
         setDrawerNotice({
           success: true,
-          message: `Imported ${res.count} cards / questions (${res.type})!`,
+          message: `Imported ${res.count} cards / questions (${res.type}). ${res.report?.rejected.length ?? 0} rejected; question reports are saved with the pack.`,
         });
       } else {
         setDrawerNotice({
