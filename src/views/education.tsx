@@ -502,7 +502,7 @@ export function EducationView() {
         </div>
       </header>
 
-      {/* 2. Sleek Floating Segmented Glass Rail */}
+      {/* 2. Standardized View Tabs Rail */}
       <nav className="edu-view-tabs" aria-label={t("Education sub-navigation")}>
         {[
           { key: "courses", label: "Courses & Catalogs", icon: BookOpen },
@@ -522,10 +522,10 @@ export function EducationView() {
               onClick={() => setTab(item.key as typeof tab)}
               className="flex items-center gap-2"
             >
-              <Icon size={14} className={isSelected ? "text-white" : "text-accent"} />
+              <Icon size={14} className={isSelected ? "text-ink" : "text-ink-muted"} />
               <span>{t(item.label)}</span>
               {item.badge && (
-                <span className={`font-mono text-[9px] font-bold px-1.5 py-0.2 rounded ${isSelected ? "bg-white/20 text-white" : "bg-accent/20 text-accent"}`}>
+                <span className="edu-tab-badge">
                   {item.badge}
                 </span>
               )}
@@ -591,10 +591,10 @@ export function EducationView() {
                   <div className="edu-hero-content">
                     <div className="edu-hero-badge-ribbon">
                       <span className="edu-hero-kicker">
-                        <Flame size={13} className="text-[#feb122]" />
+                        <Flame size={13} className="text-amber-400" />
                         <span>CoreBTR • Dr. Zainab Vora</span>
                       </span>
-                      <span className="rounded-full bg-[#1767be]/20 px-3 py-1 text-[11px] font-semibold text-[#4da2ff] border border-[#1767be]/40">
+                      <span className="rounded-full bg-white/10 px-3 py-1 text-[11px] font-semibold text-white/90 border border-white/15">
                         NEET-PG • INI-CET • FMGE
                       </span>
                       {hasBtrLocal && (
@@ -630,7 +630,7 @@ export function EducationView() {
                         onClick={() => setTab("checkpoints")}
                         className="edu-hero-btn-secondary"
                       >
-                        <Target size={15} className="text-[#4da2ff]" />
+                        <Target size={15} className="text-white/80" />
                         <span>{t("Socratic Checkpoints")}</span>
                       </button>
 
@@ -639,7 +639,7 @@ export function EducationView() {
                         onClick={() => startQBankDrill(true)}
                         className="edu-hero-btn-secondary"
                       >
-                        <Zap size={15} className="text-[#4da2ff]" />
+                        <Zap size={15} className="text-white/80" />
                         <span>{t("Clinical Drill")}</span>
                       </button>
                     </div>
@@ -715,7 +715,7 @@ export function EducationView() {
                               alt={course.title}
                               className="h-full w-full object-cover transition duration-500 group-hover/card:scale-105 filter brightness-60"
                             />
-                            <div className="absolute inset-0 bg-gradient-to-t from-[#0e1022] via-[#0e1022]/40 to-transparent" />
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent" />
 
                             <div className="absolute start-3.5 top-3.5 flex items-center gap-2">
                               {isBtr ? (
@@ -752,7 +752,7 @@ export function EducationView() {
                             </div>
                           </div>
 
-                          <div className="p-3.5 flex flex-col gap-2.5 bg-[#0e1022]/90">
+                          <div className="p-3.5 flex flex-col gap-2.5 bg-surface/90">
                             {/* Progress bar simulation */}
                             <div className="w-full bg-white/[0.08] h-1.5 rounded-full overflow-hidden">
                               <div className="bg-gradient-to-r from-accent to-indigo-400 h-full rounded-full w-[42%]" />
@@ -808,8 +808,8 @@ export function EducationView() {
             <section className="flex flex-col gap-4">
               <div className="edu-section-head flex-col sm:flex-row sm:items-center justify-between">
                 <div>
-                  <div className="flex items-center gap-2 text-[#4da2ff] text-[11px] font-extrabold uppercase tracking-widest">
-                    <Flame size={13} className="text-[#feb122]" />
+                  <div className="flex items-center gap-2 text-ink-muted text-[11px] font-extrabold uppercase tracking-widest">
+                    <Flame size={13} className="text-amber-400" />
                     <span>{t("CoreBTR 19-Subject Integrated System")}</span>
                   </div>
                   <h2 className="text-xl font-black tracking-tight text-white mt-0.5">
@@ -819,7 +819,7 @@ export function EducationView() {
                 <button
                   type="button"
                   onClick={() => setTab("btr")}
-                  className="text-xs font-bold text-[#4da2ff] hover:text-white flex items-center gap-1 transition"
+                  className="text-xs font-bold text-ink-muted hover:text-white flex items-center gap-1 transition"
                 >
                   <span>{t("Open 19-Subject Studio")}</span>
                   <ChevronRight size={14} />
@@ -836,18 +836,18 @@ export function EducationView() {
                         setSelectedBtrDestination("subjects");
                         setTab("btr");
                       }}
-                      className="edu-obsidian-card group/sub flex flex-col justify-between overflow-hidden p-0 transition-all duration-300 hover:scale-[1.02] border border-[#1767be]/30 hover:border-[#4da2ff] shadow-xl cursor-pointer"
+                      className="edu-obsidian-card group/sub flex flex-col justify-between overflow-hidden p-0 transition-all duration-300 hover:scale-[1.02] border border-edge hover:border-white/20 shadow-xl cursor-pointer"
                     >
-                      <div className="relative h-32 w-full overflow-hidden bg-[#0d1b4b]">
+                      <div className="relative h-32 w-full overflow-hidden bg-surface">
                         <img
                           src={subject.thumbnail}
                           alt={subject.name}
                           className="h-full w-full object-cover transition duration-500 group-hover/sub:scale-105 filter brightness-65"
                         />
-                        <div className="absolute inset-0 bg-gradient-to-t from-[#0d1b4b] via-[#0d1b4b]/40 to-transparent" />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent" />
                         
                         <div className="absolute top-2.5 start-2.5 flex items-center gap-1.5">
-                          <span className="rounded-md bg-[#1767be]/90 px-2 py-0.5 text-[9.5px] font-black text-white shadow-md uppercase tracking-wider">
+                          <span className="rounded-md bg-white/15 px-2 py-0.5 text-[9.5px] font-bold text-white shadow-md uppercase tracking-wider border border-white/20">
                             {subject.lessons} Lectures
                           </span>
                           <span className="rounded-md bg-black/60 px-2 py-0.5 text-[9.5px] font-semibold text-white/90 backdrop-blur-md border border-white/10">
@@ -862,15 +862,15 @@ export function EducationView() {
                         </div>
                       </div>
 
-                      <div className="p-3 flex flex-col gap-2 bg-[#0d1b4b]/95">
+                      <div className="p-3 flex flex-col gap-2 bg-surface/90">
                         <p className="text-[11px] text-white/70 line-clamp-1 leading-snug">
                           {subject.yieldTopic}
                         </p>
                         <div className="flex items-center justify-between pt-1 border-t border-white/[0.06]">
-                          <span className="text-[10px] font-bold text-[#feb122] uppercase tracking-wider">
+                          <span className="text-[10px] font-bold text-amber-400 uppercase tracking-wider">
                             Dr. Zainab Vora
                           </span>
-                          <span className="text-[11px] font-bold text-[#4da2ff] group-hover/sub:translate-x-0.5 transition flex items-center gap-0.5">
+                          <span className="text-[11px] font-bold text-ink-muted group-hover/sub:text-white group-hover/sub:translate-x-0.5 transition flex items-center gap-0.5">
                             <span>Explore Studio</span>
                             <ChevronRight size={12} />
                           </span>
@@ -886,8 +886,8 @@ export function EducationView() {
             <section className="flex flex-col gap-4">
               <div className="edu-section-head flex-col sm:flex-row sm:items-center justify-between">
                 <div>
-                  <div className="flex items-center gap-2 text-[#4da2ff] text-[11px] font-extrabold uppercase tracking-widest">
-                    <BookOpen size={13} className="text-[#feb122]" />
+                  <div className="flex items-center gap-2 text-ink-muted text-[11px] font-extrabold uppercase tracking-widest">
+                    <BookOpen size={13} className="text-amber-400" />
                     <span>{t("CoreBTR Master Volumes & Active Recall Workbooks")}</span>
                   </div>
                   <h2 className="text-xl font-black tracking-tight text-white mt-0.5">
@@ -906,11 +906,11 @@ export function EducationView() {
                     return (
                       <div
                         key={pdf.id}
-                        className="edu-obsidian-card group/vol flex flex-col justify-between overflow-hidden p-0 transition-all duration-300 hover:scale-[1.02] border border-[#1767be]/30 hover:border-[#4da2ff] shadow-xl"
+                        className="edu-obsidian-card group/vol flex flex-col justify-between overflow-hidden p-0 transition-all duration-300 hover:scale-[1.02] border border-edge hover:border-white/20 shadow-xl"
                       >
-                        <div className="relative h-36 w-full overflow-hidden bg-gradient-to-br from-[#0d1b4b] via-[#1d204b] to-[#090e24] p-4 flex flex-col justify-between">
+                        <div className="relative h-36 w-full overflow-hidden bg-surface p-4 flex flex-col justify-between">
                           <div className="flex items-center justify-between">
-                            <span className="rounded-md bg-[#1767be]/30 px-2.5 py-0.5 text-[9.5px] font-black text-[#4da2ff] border border-[#1767be]/50 uppercase tracking-wider">
+                            <span className="rounded-md bg-white/10 px-2.5 py-0.5 text-[9.5px] font-semibold text-white/90 border border-white/10 uppercase tracking-wider">
                               Master Edition
                             </span>
                             <span className="rounded-md bg-white/10 px-2 py-0.5 text-[10px] font-mono text-white/80 border border-white/10">
@@ -919,7 +919,7 @@ export function EducationView() {
                           </div>
 
                           <div className="my-auto text-center py-2">
-                            <div className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-[#1767be]/20 text-[#4da2ff] border border-[#1767be]/40 mb-1 group-hover/vol:scale-110 transition">
+                            <div className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-white/5 text-white border border-white/10 mb-1 group-hover/vol:scale-110 transition">
                               <BookOpen size={22} />
                             </div>
                             <h4 className="text-sm font-extrabold text-white truncate drop-shadow px-2">
@@ -933,7 +933,7 @@ export function EducationView() {
                           </div>
                         </div>
 
-                        <div className="p-3.5 flex flex-col gap-2.5 bg-[#0d1b4b]/95">
+                        <div className="p-3.5 flex flex-col gap-2.5 bg-surface/90">
                           <p className="text-[11px] font-mono text-white/60 truncate">
                             {pdf.filename}
                           </p>
@@ -943,7 +943,7 @@ export function EducationView() {
                               const url = resolveBTRPlayableUrl(pdf.fullPath);
                               window.open(url, "_blank");
                             }}
-                            className="w-full flex items-center justify-center gap-1.5 rounded-xl bg-[#1767be] hover:bg-[#155bb0] px-3 py-2 text-xs font-bold text-white shadow-md transition"
+                            className="w-full flex items-center justify-center gap-1.5 rounded-xl bg-white hover:bg-white/90 px-3 py-2 text-xs font-bold text-black shadow-md transition"
                           >
                             <FileText size={13} />
                             <span>{t("Open Master Document")}</span>
@@ -960,8 +960,8 @@ export function EducationView() {
             <section className="flex flex-col gap-4">
               <div className="edu-section-head flex-col sm:flex-row sm:items-center justify-between">
                 <div>
-                  <div className="flex items-center gap-2 text-[#4da2ff] text-[11px] font-extrabold uppercase tracking-widest">
-                    <Target size={13} className="text-[#feb122]" />
+                  <div className="flex items-center gap-2 text-ink-muted text-[11px] font-extrabold uppercase tracking-widest">
+                    <Target size={13} className="text-amber-400" />
                     <span>{t("Official Grand Tests & CBT Exam Simulators")}</span>
                   </div>
                   <h2 className="text-xl font-black tracking-tight text-white mt-0.5">
@@ -974,7 +974,7 @@ export function EducationView() {
                     setSelectedBtrDestination("tests");
                     setTab("btr");
                   }}
-                  className="text-xs font-bold text-[#4da2ff] hover:text-white flex items-center gap-1 transition"
+                  className="text-xs font-bold text-ink-muted hover:text-white flex items-center gap-1 transition"
                 >
                   <span>{t("Open Full Test Center")}</span>
                   <ChevronRight size={14} />
@@ -988,14 +988,14 @@ export function EducationView() {
                     return (
                       <div
                         key={gt.id}
-                        className="edu-obsidian-card group/gt flex flex-col justify-between overflow-hidden p-0 transition-all duration-300 hover:scale-[1.02] border border-[#1767be]/30 hover:border-[#4da2ff] shadow-xl"
+                        className="edu-obsidian-card group/gt flex flex-col justify-between overflow-hidden p-0 transition-all duration-300 hover:scale-[1.02] border border-edge hover:border-white/20 shadow-xl"
                       >
-                        <div className="relative h-32 w-full overflow-hidden bg-[#0d1b4b] p-3.5 flex flex-col justify-between">
+                        <div className="relative h-32 w-full overflow-hidden bg-surface p-3.5 flex flex-col justify-between">
                           <div className="flex items-center justify-between">
                             <span className={`rounded-md px-2 py-0.5 text-[9.5px] font-black uppercase tracking-wider ${
                               isHtml
-                                ? "bg-[#feb122]/20 text-[#feb122] border border-[#feb122]/40"
-                                : "bg-[#1767be]/30 text-[#4da2ff] border border-[#1767be]/50"
+                                ? "bg-amber-500/15 text-amber-300 border border-amber-500/30"
+                                : "bg-white/10 text-white/90 border border-white/10"
                             }`}>
                               {isHtml ? "Interactive CBT" : "Annotated Solutions"}
                             </span>
@@ -1014,14 +1014,14 @@ export function EducationView() {
                           </div>
                         </div>
 
-                        <div className="p-3 bg-[#0d1b4b]/95 flex items-center justify-between gap-2 border-t border-white/[0.06]">
+                        <div className="p-3 bg-surface/90 flex items-center justify-between gap-2 border-t border-white/[0.06]">
                           <button
                             type="button"
                             onClick={() => {
                               const url = resolveBTRPlayableUrl(gt.fullPath);
                               window.open(url, "_blank");
                             }}
-                            className="flex-1 flex items-center justify-center gap-1.5 rounded-xl bg-[#1767be] hover:bg-[#155bb0] px-3 py-1.5 text-xs font-bold text-white shadow-sm transition"
+                            className="flex-1 flex items-center justify-center gap-1.5 rounded-xl bg-white hover:bg-white/90 px-3 py-1.5 text-xs font-bold text-black shadow-sm transition"
                           >
                             {isHtml ? <Play size={12} fill="currentColor" /> : <FileText size={12} />}
                             <span>{isHtml ? t("Launch CBT Simulation") : t("View Solutions")}</span>
@@ -1212,17 +1212,17 @@ export function EducationView() {
         {/* TAB: INTERACTIVE CHECKPOINTS & SOCRATIC AUTO-PAUSE (REDESIGNED) */}
         {tab === "checkpoints" && (
           <div className="flex flex-col gap-9">
-            {/* 1. Mastery Status & Progress HUD Ribbon - Unified CoreBTR Indigo */}
+            {/* 1. Mastery Status & Progress HUD Ribbon */}
             <div className="edu-hud-glass p-6 shadow-2xl">
               <div className="relative z-10 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
                 <div className="flex flex-col gap-2 max-w-2xl">
                   <div className="flex items-center gap-2">
-                    <span className="flex items-center gap-1.5 rounded-full bg-[#1767be]/20 px-3 py-0.5 text-[11px] font-extrabold uppercase tracking-widest text-[#4da2ff] border border-[#1767be]/30">
+                    <span className="flex items-center gap-1.5 rounded-full bg-accent/15 px-3 py-0.5 text-[11px] font-extrabold uppercase tracking-widest text-accent border border-accent/25">
                       <Sparkles size={12} />
                       {t("Active Learning Engine")}
                     </span>
-                    <span className="flex items-center gap-1 text-[11px] font-bold text-[#feb122] bg-[#feb122]/15 px-2.5 py-0.5 rounded-full border border-[#feb122]/30">
-                      <Flame size={12} className="text-[#feb122]" />
+                    <span className="flex items-center gap-1 text-[11px] font-bold text-amber-300 bg-amber-500/15 px-2.5 py-0.5 rounded-full border border-amber-500/30">
+                      <Flame size={12} className="text-amber-400" />
                       5 Day Retention Streak
                     </span>
                   </div>
@@ -1239,12 +1239,12 @@ export function EducationView() {
                 {/* Quick Stats Pill */}
                 <div className="flex items-center gap-3 shrink-0">
                   <div className="flex items-center gap-3 rounded-2xl bg-white/[0.04] border border-white/10 px-4 py-3 backdrop-blur-xl">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#1767be]/15 text-[#4da2ff] border border-[#1767be]/30">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-accent/15 text-accent border border-accent/25">
                       <Award size={20} />
                     </div>
                     <div>
                       <div className="text-[11px] uppercase font-bold text-white/50 tracking-wider">{t("Checkpoints")}</div>
-                      <div className="text-lg font-black text-white">3 / 4 <span className="text-xs font-semibold text-[#4da2ff]">(75%)</span></div>
+                      <div className="text-lg font-black text-white">3 / 4 <span className="text-xs font-semibold text-ink-muted">(75%)</span></div>
                     </div>
                   </div>
 
@@ -1254,7 +1254,7 @@ export function EducationView() {
                       const firstCourse = CURATED_COURSES[0];
                       if (firstCourse) openPlayer(localPlayerSrc(firstCourse as any));
                     }}
-                    className="flex items-center gap-2 rounded-2xl bg-[#1767be] hover:bg-[#155bb0] px-5 py-3 text-xs font-bold text-white shadow-lg shadow-[#1767be]/30 transition transform hover:-translate-y-0.5"
+                    className="flex items-center gap-2 rounded-2xl bg-white hover:bg-white/90 px-5 py-3 text-xs font-bold text-black shadow-lg shadow-white/10 transition transform hover:-translate-y-0.5"
                   >
                     <Play size={15} fill="currentColor" />
                     <span>{t("Launch Socratic Player")}</span>
@@ -1293,7 +1293,7 @@ export function EducationView() {
                             alt={course?.title || courseKey}
                             className="h-full w-full object-cover transition duration-500 group-hover:scale-105 filter brightness-75"
                           />
-                          <div className="absolute inset-0 bg-gradient-to-t from-[#0e1022] via-[#0e1022]/40 to-transparent" />
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent" />
                           <div className="absolute top-2.5 start-2.5 flex items-center gap-1.5">
                             <span className="rounded-md bg-black/60 px-2 py-0.5 text-[10px] font-bold text-accent border border-accent/30 backdrop-blur-md uppercase tracking-wider">
                               {course?.category || "Medical"}
@@ -1365,7 +1365,7 @@ export function EducationView() {
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-white/[0.06] pb-5">
                 <div>
                   <div className="flex items-center gap-2">
-                    <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#1767be]/20 text-[#4da2ff] border border-[#1767be]/30">
+                    <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-accent/15 text-accent border border-accent/25">
                       <GitBranch size={16} />
                     </span>
                     <h4 className="font-extrabold text-white text-lg">
@@ -1393,7 +1393,7 @@ export function EducationView() {
                       onClick={() => setConceptSystemFilter(sys.id as any)}
                       className={`rounded-lg px-3 py-1 text-[11.5px] font-bold transition ${
                         conceptSystemFilter === sys.id
-                          ? "bg-[#1767be] text-white shadow-sm"
+                          ? "bg-white text-black shadow-sm"
                           : "text-white/60 hover:text-white hover:bg-white/5"
                       }`}
                     >
@@ -1403,15 +1403,15 @@ export function EducationView() {
                 </div>
               </div>
 
-              {/* System Knowledge Tracks - Unified CoreBTR Indigo Theme (No Rainbow) */}
+              {/* System Knowledge Tracks */}
               <div className="flex flex-col gap-6">
                 {/* TRACK 1: Cardiovascular Hemodynamics */}
                 {(conceptSystemFilter === "all" || conceptSystemFilter === "cardio") && (
                   <div className="edu-knowledge-track flex flex-col gap-4">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
-                        <span className="h-2 w-2 rounded-full bg-[#1767be] shadow-[0_0_8px_rgba(23,103,190,0.6)]" />
-                        <h5 className="text-sm font-extrabold text-[#4da2ff] uppercase tracking-wider">
+                        <span className="h-2 w-2 rounded-full bg-accent" />
+                        <h5 className="text-sm font-extrabold text-white uppercase tracking-wider">
                           Cardiovascular Hemodynamics & Mechanics
                         </h5>
                       </div>
@@ -1428,15 +1428,15 @@ export function EducationView() {
                         return (
                           <div
                             key={concept.id}
-                            className="relative rounded-2xl border border-[#1767be]/30 bg-[#0d1b4b]/95 p-4 flex flex-col justify-between gap-3 shadow-xl hover:border-[#4da2ff] transition group"
+                            className="relative rounded-2xl border border-edge bg-surface p-4 flex flex-col justify-between gap-3 shadow-xl hover:border-white/20 transition group"
                           >
                             <div className="flex flex-col gap-1.5">
                               <div className="flex items-center justify-between">
-                                <span className="rounded bg-[#1767be]/20 border border-[#1767be]/40 px-2 py-0.5 text-[9.5px] font-bold text-[#4da2ff] uppercase">
+                                <span className="rounded bg-white/10 border border-white/15 px-2 py-0.5 text-[9.5px] font-bold text-white/90 uppercase">
                                   {idx === 0 ? "Level 3: Target" : idx === 1 ? "Level 2: Mechanism" : idx === 2 ? "Level 1: Law" : "Root Cause"}
                                 </span>
                                 {stats?.mastered ? (
-                                  <span className="text-[#10b981] text-[10px] font-bold flex items-center gap-1">
+                                  <span className="text-emerald-400 text-[10px] font-bold flex items-center gap-1">
                                     <CheckCircle2 size={12} /> Mastered
                                   </span>
                                 ) : (
@@ -1454,9 +1454,9 @@ export function EducationView() {
                             </div>
 
                             {/* Active Recall Occlusion Key Box */}
-                            <div className="edu-occlusion-card bg-[#1d204b]/60 border border-[#1767be]/30">
+                            <div className="edu-occlusion-card bg-elevated border border-edge">
                               <div className="flex items-center justify-between mb-1">
-                                <strong className="text-[9.5px] uppercase font-bold text-[#4da2ff]">
+                                <strong className="text-[9.5px] uppercase font-bold text-ink-muted">
                                   {t("Foundational Key")}
                                 </strong>
                                 <button
@@ -1475,7 +1475,7 @@ export function EducationView() {
                                 <button
                                   type="button"
                                   onClick={() => toggleConceptReveal(concept.id)}
-                                  className="mt-1 w-full text-center text-[10px] font-bold text-[#4da2ff] hover:text-white transition"
+                                  className="mt-1 w-full text-center text-[10px] font-bold text-ink hover:text-white transition"
                                 >
                                   {t("👁 Reveal Active Recall Key")}
                                 </button>
@@ -1488,7 +1488,7 @@ export function EducationView() {
                                 <button
                                   type="button"
                                   onClick={() => handleRateConcept(concept.id, true)}
-                                  className="rounded px-2 py-0.5 text-[10px] font-bold bg-[#10b981]/15 hover:bg-[#10b981]/25 text-[#10b981] border border-[#10b981]/30 transition"
+                                  className="rounded px-2 py-0.5 text-[10px] font-bold bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-300 border border-emerald-500/30 transition"
                                 >
                                   ✓ Got It
                                 </button>
@@ -1504,7 +1504,7 @@ export function EducationView() {
                               <button
                                 type="button"
                                 onClick={() => launchConceptMicroQuiz(concept.id)}
-                                className="flex items-center gap-1 rounded-lg bg-[#1767be] hover:bg-[#155bb0] text-white px-2.5 py-1 text-[10px] font-bold transition shadow-xs"
+                                className="flex items-center gap-1 rounded-lg bg-white hover:bg-white/90 text-black px-2.5 py-1 text-[10px] font-bold transition shadow-xs"
                               >
                                 <Zap size={10} fill="currentColor" />
                                 <span>Quiz</span>
@@ -1522,8 +1522,8 @@ export function EducationView() {
                   <div className="edu-knowledge-track flex flex-col gap-4">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
-                        <span className="h-2 w-2 rounded-full bg-[#1767be] shadow-[0_0_8px_rgba(23,103,190,0.6)]" />
-                        <h5 className="text-sm font-extrabold text-[#4da2ff] uppercase tracking-wider">
+                        <span className="h-2 w-2 rounded-full bg-accent" />
+                        <h5 className="text-sm font-extrabold text-white uppercase tracking-wider">
                           Upper Limb Neuroanatomy & Palsy Localization
                         </h5>
                       </div>
@@ -1540,15 +1540,15 @@ export function EducationView() {
                         return (
                           <div
                             key={concept.id}
-                            className="relative rounded-2xl border border-[#1767be]/30 bg-[#0d1b4b]/95 p-4 flex flex-col justify-between gap-3 shadow-lg shadow-xl hover:border-[#4da2ff] transition group"
+                            className="relative rounded-2xl border border-edge bg-surface p-4 flex flex-col justify-between gap-3 shadow-xl hover:border-white/20 transition group"
                           >
                             <div className="flex flex-col gap-1.5">
                               <div className="flex items-center justify-between">
-                                <span className="rounded bg-[#1767be]/20 border border-[#1767be]/40 px-2 py-0.5 text-[9.5px] font-bold text-[#4da2ff] uppercase">
+                                <span className="rounded bg-white/10 border border-white/15 px-2 py-0.5 text-[9.5px] font-bold text-white/90 uppercase">
                                   {idx === 0 ? "Clinical Syndrome" : "Root Anatomical Basis"}
                                 </span>
                                 {stats?.mastered ? (
-                                  <span className="text-[#10b981] text-[10px] font-bold flex items-center gap-1">
+                                  <span className="text-emerald-400 text-[10px] font-bold flex items-center gap-1">
                                     <CheckCircle2 size={12} /> Mastered
                                   </span>
                                 ) : (
@@ -1565,9 +1565,9 @@ export function EducationView() {
                               </p>
                             </div>
 
-                            <div className="edu-occlusion-card bg-[#1d204b]/60 border border-[#1767be]/30">
+                            <div className="edu-occlusion-card bg-elevated border border-edge">
                               <div className="flex items-center justify-between mb-1">
-                                <strong className="text-[9.5px] uppercase font-bold text-[#4da2ff]">
+                                <strong className="text-[9.5px] uppercase font-bold text-ink-muted">
                                   {t("Foundational Key")}
                                 </strong>
                                 <button
@@ -1585,7 +1585,7 @@ export function EducationView() {
                                 <button
                                   type="button"
                                   onClick={() => toggleConceptReveal(concept.id)}
-                                  className="mt-1 w-full text-center text-[10px] font-bold text-[#4da2ff] hover:text-white transition"
+                                  className="mt-1 w-full text-center text-[10px] font-bold text-ink-muted hover:text-white transition"
                                 >
                                   {t("👁 Reveal Active Recall Key")}
                                 </button>
@@ -1597,7 +1597,7 @@ export function EducationView() {
                                 <button
                                   type="button"
                                   onClick={() => handleRateConcept(concept.id, true)}
-                                  className="rounded px-2 py-0.5 text-[10px] font-bold bg-[#10b981]/15 hover:bg-[#10b981]/25 text-[#10b981] border border-[#10b981]/30 transition"
+                                  className="rounded px-2 py-0.5 text-[10px] font-bold bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-300 border border-emerald-500/30 transition"
                                 >
                                   ✓ Got It
                                 </button>
@@ -1613,7 +1613,7 @@ export function EducationView() {
                               <button
                                 type="button"
                                 onClick={() => launchConceptMicroQuiz(concept.id)}
-                                className="flex items-center gap-1 rounded-lg bg-[#1767be] hover:bg-[#155bb0] text-white px-2.5 py-1 text-[10px] font-bold transition shadow-xs"
+                                className="flex items-center gap-1 rounded-lg bg-white hover:bg-white/90 text-black px-2.5 py-1 text-[10px] font-bold transition shadow-xs"
                               >
                                 <Zap size={10} fill="currentColor" />
                                 <span>Quiz</span>
@@ -1631,8 +1631,8 @@ export function EducationView() {
                   <div className="edu-knowledge-track flex flex-col gap-4">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
-                        <span className="h-2 w-2 rounded-full bg-[#1767be] shadow-[0_0_8px_rgba(23,103,190,0.6)]" />
-                        <h5 className="text-sm font-extrabold text-[#4da2ff] uppercase tracking-wider">
+                        <span className="h-2 w-2 rounded-full bg-accent" />
+                        <h5 className="text-sm font-extrabold text-ink-muted uppercase tracking-wider">
                           Renal, Acid-Base & Physicochemical Buffers
                         </h5>
                       </div>
@@ -1649,15 +1649,15 @@ export function EducationView() {
                         return (
                           <div
                             key={concept.id}
-                            className="relative rounded-2xl border border-[#1767be]/30 bg-[#0d1b4b]/95 p-4 flex flex-col justify-between gap-3 shadow-lg shadow-xl hover:border-[#4da2ff] transition group"
+                            className="relative rounded-2xl border border-edge bg-surface p-4 flex flex-col justify-between gap-3 shadow-xl hover:border-white/20 transition group"
                           >
                             <div className="flex flex-col gap-1.5">
                               <div className="flex items-center justify-between">
-                                <span className="rounded bg-[#1767be]/20 border border-[#1767be]/40 px-2 py-0.5 text-[9.5px] font-bold text-[#4da2ff] uppercase">
+                                <span className="rounded bg-white/10 border border-white/15 px-2 py-0.5 text-[9.5px] font-bold text-white/90 uppercase">
                                   {idx === 0 ? "Clinical Disturbance" : "Physicochemical Buffer Law"}
                                 </span>
                                 {stats?.mastered ? (
-                                  <span className="text-[#10b981] text-[10px] font-bold flex items-center gap-1">
+                                  <span className="text-emerald-400 text-[10px] font-bold flex items-center gap-1">
                                     <CheckCircle2 size={12} /> Mastered
                                   </span>
                                 ) : (
@@ -1674,9 +1674,9 @@ export function EducationView() {
                               </p>
                             </div>
 
-                            <div className="edu-occlusion-card bg-[#1d204b]/60 border border-[#1767be]/30">
+                            <div className="edu-occlusion-card bg-elevated border border-edge">
                               <div className="flex items-center justify-between mb-1">
-                                <strong className="text-[9.5px] uppercase font-bold text-[#4da2ff]">
+                                <strong className="text-[9.5px] uppercase font-bold text-ink-muted">
                                   {t("Foundational Key")}
                                 </strong>
                                 <button
@@ -1694,7 +1694,7 @@ export function EducationView() {
                                 <button
                                   type="button"
                                   onClick={() => toggleConceptReveal(concept.id)}
-                                  className="mt-1 w-full text-center text-[10px] font-bold text-[#4da2ff] hover:text-white transition"
+                                  className="mt-1 w-full text-center text-[10px] font-bold text-ink-muted hover:text-white transition"
                                 >
                                   {t("👁 Reveal Active Recall Key")}
                                 </button>
@@ -1706,7 +1706,7 @@ export function EducationView() {
                                 <button
                                   type="button"
                                   onClick={() => handleRateConcept(concept.id, true)}
-                                  className="rounded px-2 py-0.5 text-[10px] font-bold bg-[#10b981]/15 hover:bg-[#10b981]/25 text-[#10b981] border border-[#10b981]/30 transition"
+                                  className="rounded px-2 py-0.5 text-[10px] font-bold bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-300 border border-emerald-500/30 transition"
                                 >
                                   ✓ Got It
                                 </button>
@@ -1722,7 +1722,7 @@ export function EducationView() {
                               <button
                                 type="button"
                                 onClick={() => launchConceptMicroQuiz(concept.id)}
-                                className="flex items-center gap-1 rounded-lg bg-[#1767be] hover:bg-[#155bb0] text-white px-2.5 py-1 text-[10px] font-bold transition shadow-xs"
+                                className="flex items-center gap-1 rounded-lg bg-white hover:bg-white/90 text-black px-2.5 py-1 text-[10px] font-bold transition shadow-xs"
                               >
                                 <Zap size={10} fill="currentColor" />
                                 <span>Quiz</span>

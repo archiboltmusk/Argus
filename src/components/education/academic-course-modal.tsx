@@ -59,7 +59,7 @@ export function AcademicCourseModal({
         {/* Header */}
         <div className="flex items-center justify-between border-b border-white/10 px-6 py-4 bg-[#14151a]">
           <div className="flex items-center gap-3">
-            <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#1767be]/15 text-[#4da2ff] border border-[#1767be]/25">
+            <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/10 text-white/90 border border-edge">
               <GraduationCap size={20} />
             </span>
             <div>
@@ -67,7 +67,7 @@ export function AcademicCourseModal({
                 <h2 className="text-[17px] font-bold text-white tracking-tight">
                   {t("Academic Courseware & Lecture Engine")}
                 </h2>
-                <span className="flex items-center gap-1 rounded-full bg-[#1767be]/15 border border-[#1767be]/30 px-2 py-0.5 text-[10.5px] font-bold text-[#4da2ff]">
+                <span className="flex items-center gap-1 rounded-full bg-white/10 border border-edge px-2 py-0.5 text-[10.5px] font-bold text-ink-muted">
                   Stanford Online
                 </span>
               </div>
@@ -109,7 +109,7 @@ export function AcademicCourseModal({
             onClick={() => setAudioOnlyFocus((v) => !v)}
             className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[11.5px] font-semibold border transition-all ${
               audioOnlyFocus
-                ? "bg-indigo-500 text-white border-[#1767be] shadow-sm"
+                ? "bg-indigo-500 text-white border-edge shadow-sm"
                 : "bg-white/5 text-zinc-300 border-white/10 hover:bg-white/10 hover:text-white"
             }`}
           >
@@ -123,7 +123,7 @@ export function AcademicCourseModal({
           <div className="border-b border-white/10 bg-gradient-to-r from-indigo-950/40 via-[#161722] to-[#121318] p-6">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div className="space-y-1">
-                <div className="flex items-center gap-2 text-[11px] font-bold text-[#4da2ff] uppercase tracking-wider">
+                <div className="flex items-center gap-2 text-[11px] font-bold text-ink-muted uppercase tracking-wider">
                   <FastForward size={12} />
                   <span>{t("Course-Level Resume Point")}</span>
                 </div>
@@ -161,7 +161,7 @@ export function AcademicCourseModal({
                 key={lec.id}
                 className={`group flex flex-col gap-2.5 rounded-xl border p-4 transition-all ${
                   isTarget
-                    ? "bg-[#181926] border-[#1767be]/40 shadow-sm"
+                    ? "bg-[#181926] border-edge shadow-sm"
                     : "bg-[#14151b] border-white/5 hover:border-white/20 hover:bg-[#181922]"
                 }`}
               >
@@ -171,7 +171,7 @@ export function AcademicCourseModal({
                       {lec.lectureNumber}
                     </span>
                     <div>
-                      <h4 className="text-[14px] font-bold text-white group-hover:text-[#4da2ff] transition-colors">
+                      <h4 className="text-[14px] font-bold text-white group-hover:text-ink-muted transition-colors">
                         {lec.title}
                       </h4>
                       <div className="flex items-center gap-3 text-[11.5px] text-zinc-400 mt-1">
@@ -186,7 +186,7 @@ export function AcademicCourseModal({
                           </span>
                         )}
                         {lec.lastPositionSec > 0 && !lec.completed && (
-                          <span className="text-[#4da2ff] font-medium">
+                          <span className="text-ink-muted font-medium">
                             Progress: {formatTime(lec.lastPositionSec)}
                           </span>
                         )}
@@ -217,7 +217,7 @@ export function AcademicCourseModal({
                           onClick={() => onLaunchLecture(lec, note.timestampSec, audioOnlyFocus)}
                           className="flex items-start gap-2 rounded-lg bg-black/30 border border-white/5 p-2 text-start hover:border-indigo-400/30 transition-all text-[11.5px]"
                         >
-                          <span className="text-[10.5px] font-mono text-[#4da2ff] font-bold shrink-0 mt-0.5">
+                          <span className="text-[10.5px] font-mono text-ink-muted font-bold shrink-0 mt-0.5">
                             {formatTime(note.timestampSec)}
                           </span>
                           <div className="min-w-0">

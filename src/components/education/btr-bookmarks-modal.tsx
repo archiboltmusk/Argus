@@ -84,16 +84,16 @@ export function BTRBookmarksModal({
 
   return (
     <div className="fixed inset-0 z-[260] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-150">
-      <div className="relative w-full max-w-2xl rounded-3xl bg-[#0d1b4b] border border-[#1767be]/30 shadow-2xl p-6 flex flex-col gap-5 text-white max-h-[85vh]">
+      <div className="relative w-full max-w-2xl rounded-3xl bg-surface border border-edge shadow-2xl p-6 flex flex-col gap-5 text-white max-h-[85vh]">
         {/* Header */}
-        <div className="flex items-center justify-between pb-3 border-b border-[#1767be]/20">
+        <div className="flex items-center justify-between pb-3 border-b border-edge">
           <div className="flex items-center gap-3">
             <div className="h-9 w-9 rounded-xl bg-amber-500/20 border border-amber-500/30 text-amber-400 flex items-center justify-center">
               <Bookmark size={18} />
             </div>
             <div>
               <h3 className="text-base font-black text-white">Your Bookmarked Vault</h3>
-              <p className="text-xs text-[#4da2ff]">
+              <p className="text-xs text-ink-muted">
                 Starred questions & high-yield pearls saved for rapid last-mile revision.
               </p>
             </div>
@@ -110,13 +110,13 @@ export function BTRBookmarksModal({
 
         {/* Tabs & Launch Button */}
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center gap-1.5 p-1 rounded-2xl bg-[#1d204b] border border-white/10">
+          <div className="flex items-center gap-1.5 p-1 rounded-2xl bg-elevated border border-white/10">
             <button
               type="button"
               onClick={() => setActiveTab("questions")}
               className={`px-3 py-1.5 rounded-xl text-xs font-bold transition ${
                 activeTab === "questions"
-                  ? "bg-[#1767be] text-white shadow"
+                  ? "bg-white text-black font-semibold shadow"
                   : "text-white/60 hover:text-white"
               }`}
             >
@@ -127,7 +127,7 @@ export function BTRBookmarksModal({
               onClick={() => setActiveTab("pearls")}
               className={`px-3 py-1.5 rounded-xl text-xs font-bold transition ${
                 activeTab === "pearls"
-                  ? "bg-[#1767be] text-white shadow"
+                  ? "bg-white text-black font-semibold shadow"
                   : "text-white/60 hover:text-white"
               }`}
             >
@@ -154,11 +154,11 @@ export function BTRBookmarksModal({
               bookmarkedQuestions.map((q) => (
                 <div
                   key={q.id}
-                  className="p-4 rounded-2xl bg-[#1d204b] border border-white/10 hover:border-[#1767be]/40 transition flex flex-col gap-2 group"
+                  className="p-4 rounded-2xl bg-elevated border border-white/10 hover:border-edge transition flex flex-col gap-2 group"
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <span className="font-mono text-[10px] font-bold px-2 py-0.5 rounded-md bg-[#1767be]/20 text-[#4da2ff]">
+                      <span className="font-mono text-[10px] font-bold px-2 py-0.5 rounded-md bg-white/10 text-white/90">
                         {q.code}
                       </span>
                       <span className="text-xs font-bold text-white/80">
@@ -202,11 +202,11 @@ export function BTRBookmarksModal({
                   onClose();
                   onSelectPearl?.(pearl);
                 }}
-                className="p-4 rounded-2xl bg-[#1d204b] border border-white/10 hover:border-[#1767be]/40 hover:bg-[#25285a] transition cursor-pointer select-none flex flex-col gap-2 group"
+                className="p-4 rounded-2xl bg-elevated border border-white/10 hover:border-edge hover:bg-raised transition cursor-pointer select-none flex flex-col gap-2 group"
               >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <span className="font-mono text-[10px] font-bold px-2 py-0.5 rounded-md bg-[#1767be]/20 text-[#4da2ff]">
+                    <span className="font-mono text-[10px] font-bold px-2 py-0.5 rounded-md bg-white/10 text-white/90">
                       {pearl.code}
                     </span>
                     <span className="text-xs font-bold text-white/80 uppercase">
@@ -225,11 +225,11 @@ export function BTRBookmarksModal({
                     >
                       <Trash2 size={13} />
                     </button>
-                    <ChevronRight size={14} className="text-white/40 group-hover:text-[#4da2ff] transition" />
+                    <ChevronRight size={14} className="text-white/40 group-hover:text-ink-muted transition" />
                   </div>
                 </div>
 
-                <h4 className="text-xs font-bold text-white group-hover:text-[#4da2ff] transition">
+                <h4 className="text-xs font-bold text-white group-hover:text-ink-muted transition">
                   {pearl.title}
                 </h4>
 
@@ -247,7 +247,7 @@ export function BTRBookmarksModal({
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-between pt-3 border-t border-[#1767be]/20 text-xs text-white/50">
+        <div className="flex items-center justify-between pt-3 border-t border-edge text-xs text-white/50">
           <span>Bookmarks sync with FSRS Spaced Repetition queue.</span>
           <button
             type="button"

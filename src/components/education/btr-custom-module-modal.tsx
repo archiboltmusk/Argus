@@ -140,7 +140,7 @@ export function BTRCustomModuleModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-md animate-in fade-in duration-200">
-      <div className="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-3xl bg-[#0d1b4b] border border-[#1767be]/40 text-white shadow-2xl flex flex-col p-6 gap-6">
+      <div className="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-3xl bg-surface border border-edge text-white shadow-2xl flex flex-col p-6 gap-6">
         {/* Top Header */}
         <div className="flex items-center justify-between pb-4 border-b border-white/10">
           <div className="flex items-center gap-3">
@@ -155,7 +155,7 @@ export function BTRCustomModuleModal({
               <h2 className="text-lg font-black tracking-tight text-white flex items-center gap-2">
                 Create Custom Module
                 {subjectName && (
-                  <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-[#1767be]/20 text-[#4da2ff] border border-[#1767be]/30">
+                  <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-white/10 text-white/90 border border-white/15">
                     {subjectName}
                   </span>
                 )}
@@ -166,17 +166,17 @@ export function BTRCustomModuleModal({
             </div>
           </div>
 
-          <div className="flex items-center gap-2 text-xs font-mono font-bold text-[#4da2ff] bg-[#1767be]/15 px-3 py-1.5 rounded-xl border border-[#1767be]/30">
+          <div className="flex items-center gap-2 text-xs font-mono font-bold text-ink-muted bg-white/10 px-3 py-1.5 rounded-xl border border-edge">
             <SlidersHorizontal size={14} />
             <span>Target: {questionCount} Qs</span>
           </div>
         </div>
 
         {/* Previous Custom Module Card (matching official app screenshot) */}
-        <div className="flex flex-col gap-2 p-4 rounded-2xl bg-[#1d204b]/60 border border-white/10">
+        <div className="flex flex-col gap-2 p-4 rounded-2xl bg-elevated border border-white/10">
           <div className="flex items-center justify-between text-xs">
             <span className="font-semibold text-white/70">Your previous custom module</span>
-            <span className="flex items-center gap-1 font-mono text-[10.5px] font-bold text-[#4da2ff] bg-[#1767be]/20 px-2.5 py-0.5 rounded-full border border-[#1767be]/30">
+            <span className="flex items-center gap-1 font-mono text-[10.5px] font-bold text-ink-muted bg-white/10 px-2.5 py-0.5 rounded-full border border-edge">
               <CheckCircle2 size={11} /> Completed
             </span>
           </div>
@@ -201,14 +201,14 @@ export function BTRCustomModuleModal({
         <div className="flex flex-col gap-3">
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold uppercase tracking-wider text-white/70 flex items-center gap-1.5">
-              <BookOpen size={13} className="text-[#4da2ff]" />
+              <BookOpen size={13} className="text-ink-muted" />
               <span>Target Subjects ({selectedSubjects.length} of 19 Selected)</span>
             </span>
             <div className="flex items-center gap-2">
               <button
                 type="button"
                 onClick={handleSelectAllSubjects}
-                className="text-[11px] font-bold text-[#4da2ff] hover:text-white transition"
+                className="text-[11px] font-bold text-ink-muted hover:text-white transition"
               >
                 Select All 19
               </button>
@@ -222,7 +222,7 @@ export function BTRCustomModuleModal({
               </button>
             </div>
           </div>
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5 p-3 rounded-2xl bg-[#1d204b]/50 border border-white/10 max-h-48 overflow-y-auto">
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5 p-3 rounded-2xl bg-elevated border border-white/10 max-h-48 overflow-y-auto">
             {ALL_19_SUBJECTS.map((sub) => {
               const isSelected = selectedSubjects.includes(sub);
               return (
@@ -232,12 +232,12 @@ export function BTRCustomModuleModal({
                   onClick={() => toggleSubject(sub)}
                   className={`flex items-center justify-between px-2.5 py-1.5 rounded-xl text-[11.5px] font-medium transition text-start border ${
                     isSelected
-                      ? "bg-[#1767be] text-white border-[#4da2ff]/40 shadow-xs"
+                      ? "bg-white text-black font-semibold border-white/20 shadow-xs"
                       : "bg-white/[0.03] text-white/70 border-white/5 hover:bg-white/[0.08]"
                   }`}
                 >
                   <span className="truncate">{sub}</span>
-                  {isSelected && <Check size={12} className="shrink-0 text-[#feb122]" />}
+                  {isSelected && <Check size={12} className="shrink-0 text-amber-400" />}
                 </button>
               );
             })}
@@ -249,7 +249,7 @@ export function BTRCustomModuleModal({
           <span className="text-xs font-bold uppercase tracking-wider text-white/70">
             Question Pool
           </span>
-          <div className="flex flex-col gap-2 rounded-2xl bg-[#1d204b]/50 border border-white/10 p-3">
+          <div className="flex flex-col gap-2 rounded-2xl bg-elevated border border-white/10 p-3">
             {[
               {
                 key: "qbank" as const,
@@ -278,7 +278,7 @@ export function BTRCustomModuleModal({
                   onChange={(e) =>
                     setPool((prev) => ({ ...prev, [item.key]: e.target.checked }))
                   }
-                  className="h-4 w-4 rounded accent-[#1767be] cursor-pointer"
+                  className="h-4 w-4 rounded accent-white cursor-pointer"
                 />
               </label>
             ))}
@@ -299,7 +299,7 @@ export function BTRCustomModuleModal({
             ].map((item) => (
               <label
                 key={item.key}
-                className="flex items-center justify-between p-3 rounded-xl bg-[#1d204b]/50 border border-white/10 hover:bg-[#1d204b]/80 cursor-pointer transition select-none"
+                className="flex items-center justify-between p-3 rounded-xl bg-elevated border border-white/10 hover:bg-elevated/80 cursor-pointer transition select-none"
               >
                 <span className="text-xs font-medium text-white/90">{item.label}</span>
                 <input
@@ -308,7 +308,7 @@ export function BTRCustomModuleModal({
                   onChange={(e) =>
                     setAttemptStatus((prev) => ({ ...prev, [item.key]: e.target.checked }))
                   }
-                  className="h-4 w-4 rounded accent-[#1767be] cursor-pointer"
+                  className="h-4 w-4 rounded accent-white cursor-pointer"
                 />
               </label>
             ))}
@@ -320,7 +320,7 @@ export function BTRCustomModuleModal({
           <span className="text-xs font-bold uppercase tracking-wider text-white/70">
             Other Filters
           </span>
-          <label className="flex items-center justify-between p-3.5 rounded-2xl bg-[#1d204b]/50 border border-white/10 hover:bg-[#1d204b]/80 cursor-pointer transition select-none">
+          <label className="flex items-center justify-between p-3.5 rounded-2xl bg-elevated border border-white/10 hover:bg-elevated/80 cursor-pointer transition select-none">
             <span className="text-xs font-medium text-white/90">
               Use only Bookmarked Questions (FSRS Spaced Repetition Vault)
             </span>
@@ -328,7 +328,7 @@ export function BTRCustomModuleModal({
               type="checkbox"
               checked={bookmarksOnly}
               onChange={(e) => setBookmarksOnly(e.target.checked)}
-              className="h-4 w-4 rounded accent-[#1767be] cursor-pointer"
+              className="h-4 w-4 rounded accent-white cursor-pointer"
             />
           </label>
         </div>
@@ -343,7 +343,7 @@ export function BTRCustomModuleModal({
               <button
                 type="button"
                 onClick={() => setSelectedTags([])}
-                className="text-[11px] font-semibold text-[#4da2ff] hover:text-white transition"
+                className="text-[11px] font-semibold text-ink-muted hover:text-white transition"
               >
                 Clear All
               </button>
@@ -360,11 +360,11 @@ export function BTRCustomModuleModal({
                   onClick={() => toggleTag(tag)}
                   className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition flex items-center gap-1.5 border ${
                     isSelected
-                      ? "bg-[#1767be] text-white border-[#4da2ff]/50 shadow-xs"
+                      ? "bg-white text-black font-semibold border-white/20 shadow-xs"
                       : "bg-white/5 text-white/70 border-white/10 hover:bg-white/10"
                   }`}
                 >
-                  {isSelected && <Check size={12} className="text-[#feb122]" />}
+                  {isSelected && <Check size={12} className="text-amber-400" />}
                   <span>{tag}</span>
                 </button>
               );
@@ -383,7 +383,7 @@ export function BTRCustomModuleModal({
                 onClick={() => setQuestionCount(num)}
                 className={`px-3 py-1 rounded-xl text-xs font-bold transition border ${
                   questionCount === num
-                    ? "bg-[#1767be] text-white border-[#4da2ff]/60"
+                    ? "bg-white text-black font-semibold border-white/20"
                     : "bg-white/5 text-white/70 border-white/10 hover:bg-white/10"
                 }`}
               >
@@ -397,7 +397,7 @@ export function BTRCustomModuleModal({
         <button
           type="button"
           onClick={handleStart}
-          className="w-full py-3.5 rounded-2xl bg-[#1767be] hover:bg-[#155bb0] text-white font-extrabold text-sm tracking-wide shadow-lg shadow-[#1767be]/40 transition flex items-center justify-center gap-2"
+          className="w-full py-3.5 rounded-2xl bg-white hover:bg-white/90 text-black font-semibold font-extrabold text-sm tracking-wide shadow-lg shadow-black/40 transition flex items-center justify-center gap-2"
         >
           <span>Start Custom Module ({questionCount} Qs)</span>
           <ChevronRight size={16} />

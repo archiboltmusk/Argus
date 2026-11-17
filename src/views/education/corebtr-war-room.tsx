@@ -840,10 +840,10 @@ export function CoreBTRWarRoom({
             {/* Goal Selector Chip (from official app) */}
             <div
               onClick={() => setShowGoalModal(true)}
-              className="flex items-center gap-1.5 rounded-xl bg-canvas border border-edge-soft px-3 py-1 text-xs font-semibold text-ink hover:border-[#1767be]/40 cursor-pointer transition select-none"
+              className="flex items-center gap-1.5 rounded-xl bg-canvas border border-edge-soft px-3 py-1 text-xs font-semibold text-ink hover:border-edge cursor-pointer transition select-none"
               title="Click to switch your examination goal"
             >
-              <span className="text-[#4da2ff] font-bold max-w-[140px] sm:max-w-none truncate">{currentGoal.name}</span>
+              <span className="text-ink-muted font-bold max-w-[140px] sm:max-w-none truncate">{currentGoal.name}</span>
               <span className="text-[10px] text-ink-muted">| My Goal</span>
               <ChevronDown size={12} className="text-ink-muted shrink-0" />
             </div>
@@ -862,21 +862,21 @@ export function CoreBTRWarRoom({
               href="https://www.instagram.com/corebtr/"
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center gap-1.5 rounded-xl bg-[#1767be]/15 border border-[#1767be]/30 px-2.5 py-1 text-xs font-bold text-[#4da2ff] hover:border-[#4da2ff]/50 hover:bg-[#1767be]/25 transition shadow-xs"
+              className="flex items-center gap-1.5 rounded-xl bg-white/10 border border-edge px-2.5 py-1 text-xs font-bold text-ink-muted hover:border-white/20 hover:bg-white/15 transition shadow-xs"
               title="Official Dr. Zainab Vora CoreBTR Instagram (@corebtr)"
             >
-              <InstagramIcon size={13} className="text-[#4da2ff]" />
+              <InstagramIcon size={13} className="text-ink-muted" />
               <span className="hidden sm:inline">@corebtr</span>
-              <ExternalLink size={10} className="text-[#4da2ff]/70" />
+              <ExternalLink size={10} className="text-ink-muted" />
             </a>
 
             {/* Global Search Omnibar */}
             <button
               type="button"
               onClick={() => setShowPdfSearchModal(true)}
-              className="flex items-center gap-2 rounded-xl bg-canvas border border-edge-soft px-3 py-1.5 text-xs text-ink-muted hover:text-ink hover:border-[#1767be]/40 transition shadow-xs w-36 sm:w-60"
+              className="flex items-center gap-2 rounded-xl bg-canvas border border-edge-soft px-3 py-1.5 text-xs text-ink-muted hover:text-ink hover:border-edge transition shadow-xs w-36 sm:w-60"
             >
-              <Search size={13} className="text-[#4da2ff] shrink-0" />
+              <Search size={13} className="text-ink-muted shrink-0" />
               <span className="truncate">Search PDFs, topics...</span>
               <kbd className="ml-auto hidden sm:inline-block font-mono text-[10px] bg-elevated px-1.5 py-0.5 rounded border border-edge text-ink-muted">
                 ⌘K
@@ -885,7 +885,7 @@ export function CoreBTRWarRoom({
 
             {/* User Avatar ST / AM */}
             <div
-              className="h-8 w-8 rounded-full bg-[#1767be] text-white font-bold text-xs flex items-center justify-center ring-2 ring-[#4da2ff]/30 shadow-xs cursor-pointer"
+              className="h-8 w-8 rounded-full bg-white text-black font-bold text-xs flex items-center justify-center ring-2 ring-white/30 shadow-xs cursor-pointer"
               title="Dr. Anupam Mahato"
             >
               AM
@@ -950,15 +950,15 @@ export function CoreBTRWarRoom({
           {activeDestination === "today" && (
             <div className="flex flex-col gap-6 animate-in fade-in duration-200">
               {/* BTR Triad Framework Selector (Believe • Trust • Revise) & Offline Banner */}
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 rounded-2xl bg-[#0d1b4b]/90 border border-[#1767be]/30 shadow-md">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 rounded-2xl bg-surface/90 border border-edge shadow-md">
                 <div className="flex items-center gap-2">
-                  <span className="text-[10px] font-extrabold uppercase tracking-widest text-[#4da2ff] bg-[#1767be]/20 px-2.5 py-1 rounded-lg border border-[#1767be]/30">
+                  <span className="text-[10px] font-extrabold uppercase tracking-widest text-ink-muted bg-white/10 px-2.5 py-1 rounded-lg border border-edge">
                     BTR Framework
                   </span>
                   <div className="flex items-center gap-1 text-xs font-bold text-white">
-                    <span className="text-[#feb122]">Believe</span>
+                    <span className="text-amber-400">Believe</span>
                     <span className="text-white/30">•</span>
-                    <span className="text-[#4da2ff]">Trust</span>
+                    <span className="text-ink-muted">Trust</span>
                     <span className="text-white/30">•</span>
                     <span className="text-white">Revise</span>
                   </div>
@@ -966,13 +966,13 @@ export function CoreBTRWarRoom({
 
                 <div className="flex items-center gap-2 text-xs">
                   <span className="flex items-center gap-1.5 text-white/80 bg-white/5 border border-white/10 px-3 py-1 rounded-xl font-mono text-[11px]">
-                    <span className="h-2 w-2 rounded-full bg-[#4da2ff] animate-pulse" />
+                    <span className="h-2 w-2 rounded-full bg-accent animate-pulse" />
                     <span>61 Videos & 32 PDFs Offline</span>
                   </span>
                   <button
                     type="button"
                     onClick={handleOpenFolderPicker}
-                    className="text-[#4da2ff] hover:underline text-xs font-semibold"
+                    className="text-ink-muted hover:underline text-xs font-semibold"
                   >
                     /Downloads/BTR
                   </button>
@@ -980,7 +980,7 @@ export function CoreBTRWarRoom({
               </div>
 
               {/* 1. Official CoreBTR Hero Rankers Banner (from official CoreBTR App) */}
-              <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-[#0d1b4b] via-[#1d204b] to-[#1767be] p-6 md:p-8 text-white shadow-xl flex flex-col md:flex-row items-center justify-between gap-6 border border-[#1767be]/40">
+              <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-surface via-elevated to-surface p-6 md:p-8 text-white shadow-xl flex flex-col md:flex-row items-center justify-between gap-6 border border-edge">
                 <div className="flex flex-col gap-2 relative z-10">
                   <div className="flex items-center gap-2">
                     <span className="px-2.5 py-0.5 rounded-full bg-white/20 text-white font-mono text-[10px] font-extrabold uppercase tracking-wider backdrop-blur-md">
@@ -999,7 +999,7 @@ export function CoreBTRWarRoom({
                   <h2 className="text-2xl md:text-3xl font-black tracking-tight leading-tight">
                     100+ STUDENTS IN TOP 200 RANKERS
                   </h2>
-                  <span className="text-sm md:text-base font-bold text-[#4da2ff]">
+                  <span className="text-sm md:text-base font-bold text-ink-muted">
                     INICET MAY 2026 are From CoreBTR
                   </span>
                   <p className="text-xs text-white/80 mt-1 max-w-lg">
@@ -1011,7 +1011,7 @@ export function CoreBTRWarRoom({
                   <button
                     type="button"
                     onClick={() => setShowCustomModuleModal(true)}
-                    className="px-5 py-2.5 rounded-2xl bg-white text-[#1d204b] font-extrabold text-xs shadow-lg hover:bg-white/90 transition"
+                    className="px-5 py-2.5 rounded-2xl bg-white text-black font-extrabold text-xs shadow-lg hover:bg-white/90 transition"
                   >
                     + Create Custom Module
                   </button>
@@ -1065,9 +1065,9 @@ export function CoreBTRWarRoom({
                       key={act.id}
                       type="button"
                       onClick={act.action}
-                      className="flex flex-col items-center justify-center gap-2 p-3.5 rounded-2xl bg-[#1d204b]/70 border border-[#1767be]/25 hover:border-[#4da2ff]/50 hover:bg-[#1d204b] transition shadow-xs group"
+                      className="flex flex-col items-center justify-center gap-2 p-3.5 rounded-2xl bg-elevated/70 border border-edge hover:border-white/20 hover:bg-elevated transition shadow-xs group"
                     >
-                      <div className="h-9 w-9 rounded-xl bg-[#1767be]/20 text-[#4da2ff] group-hover:bg-[#1767be] group-hover:text-white transition flex items-center justify-center">
+                      <div className="h-9 w-9 rounded-xl bg-white/10 text-white/90 group-hover:bg-white text-black group-hover:text-white transition flex items-center justify-center">
                         <Icon size={16} />
                       </div>
                       <span className="text-xs font-bold text-white">{act.label}</span>
@@ -1083,9 +1083,9 @@ export function CoreBTRWarRoom({
                 </span>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                   {/* Card A: Core Drop Surprise Test-6 */}
-                  <div className="p-4 rounded-2xl bg-[#1d204b]/70 border border-[#1767be]/30 flex flex-col justify-between gap-3 shadow-xs hover:border-[#4da2ff]/50 transition">
+                  <div className="p-4 rounded-2xl bg-elevated/70 border border-edge flex flex-col justify-between gap-3 shadow-xs hover:border-white/20 transition">
                     <div>
-                      <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded-md bg-[#feb122]/15 text-[#feb122] border border-[#feb122]/30">
+                      <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded-md bg-amber-500/15 text-amber-300 border border-amber-500/30">
                         Daily 3 PM Drop
                       </span>
                       <h4 className="text-sm font-bold text-white mt-2">
@@ -1098,7 +1098,7 @@ export function CoreBTRWarRoom({
                     <button
                       type="button"
                       onClick={() => onStartQBankDrill?.("Core Drop Surprise Test-6")}
-                      className="w-full py-2 rounded-xl bg-[#1767be] hover:bg-[#155bb0] text-white font-extrabold text-xs shadow transition flex items-center justify-center gap-1.5"
+                      className="w-full py-2 rounded-xl bg-white hover:bg-white/90 text-black font-semibold font-extrabold text-xs shadow transition flex items-center justify-center gap-1.5"
                     >
                       <Play size={12} fill="currentColor" />
                       <span>Attempt Now</span>
@@ -1106,13 +1106,13 @@ export function CoreBTRWarRoom({
                   </div>
 
                   {/* Card B: Facing a Tech Issue in the App? Report Now */}
-                  <div className="p-4 rounded-2xl bg-[#1d204b]/70 border border-[#1767be]/30 flex flex-col justify-between gap-3 shadow-xs hover:border-[#4da2ff]/50 transition">
+                  <div className="p-4 rounded-2xl bg-elevated/70 border border-edge flex flex-col justify-between gap-3 shadow-xs hover:border-white/20 transition">
                     <div>
                       <div className="flex items-center justify-between">
-                        <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded-md bg-[#1767be]/20 text-[#4da2ff] border border-[#1767be]/30">
+                        <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded-md bg-white/10 text-white/90 border border-white/15">
                           Tech Support
                         </span>
-                        <div className="h-6 w-6 rounded-lg bg-[#1767be]/20 text-[#4da2ff] flex items-center justify-center">
+                        <div className="h-6 w-6 rounded-lg bg-white/10 text-white/90 flex items-center justify-center">
                           <AlertTriangle size={13} />
                         </div>
                       </div>
@@ -1126,7 +1126,7 @@ export function CoreBTRWarRoom({
                     <button
                       type="button"
                       onClick={() => setShowTechIssueModal(true)}
-                      className="w-full py-2 rounded-xl bg-[#1d204b] hover:bg-[#252a60] text-white border border-[#1767be]/40 font-extrabold text-xs shadow transition flex items-center justify-center gap-1.5"
+                      className="w-full py-2 rounded-xl bg-elevated hover:bg-raised text-white border border-edge font-extrabold text-xs shadow transition flex items-center justify-center gap-1.5"
                     >
                       <span>Report Now</span>
                       <ChevronRight size={13} />
@@ -1134,9 +1134,9 @@ export function CoreBTRWarRoom({
                   </div>
 
                   {/* Card C: FMGE CoreBTR Plan */}
-                  <div className="p-4 rounded-2xl bg-[#1d204b]/70 border border-[#1767be]/30 flex flex-col justify-between gap-3 shadow-xs hover:border-[#4da2ff]/50 transition">
+                  <div className="p-4 rounded-2xl bg-elevated/70 border border-edge flex flex-col justify-between gap-3 shadow-xs hover:border-white/20 transition">
                     <div>
-                      <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded-md bg-[#1767be]/20 text-[#4da2ff] border border-[#1767be]/30">
+                      <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded-md bg-white/10 text-white/90 border border-white/15">
                         Exam Schedule
                       </span>
                       <h4 className="text-sm font-bold text-white mt-2">
@@ -1149,7 +1149,7 @@ export function CoreBTRWarRoom({
                     <button
                       type="button"
                       onClick={() => handleNavigate("plan")}
-                      className="w-full py-2 rounded-xl bg-[#1767be] hover:bg-[#155bb0] text-white font-extrabold text-xs shadow transition flex items-center justify-center gap-1.5"
+                      className="w-full py-2 rounded-xl bg-white hover:bg-white/90 text-black font-semibold font-extrabold text-xs shadow transition flex items-center justify-center gap-1.5"
                     >
                       <span>View FMGE Plan</span>
                       <ChevronRight size={13} />
@@ -1173,7 +1173,7 @@ export function CoreBTRWarRoom({
                       <span className="rounded-full bg-elevated px-3 py-1 text-xs font-semibold text-ink-muted border border-edge-soft">
                         Dr. Zainab Vora Curriculum
                       </span>
-                      <span className="rounded-full bg-[#1767be]/20 text-[#4da2ff] border border-[#1767be]/35 px-3 py-1 text-xs font-semibold">
+                      <span className="rounded-full bg-white/10 text-white/90 border border-white/15 px-3 py-1 text-xs font-semibold">
                         19 Subjects Integrated
                       </span>
                     </div>
@@ -1243,7 +1243,7 @@ export function CoreBTRWarRoom({
                           cy="50"
                           r="42"
                           fill="none"
-                          stroke="#1767be"
+                          stroke="currentColor" className="text-white/40"
                           strokeWidth="6"
                           strokeLinecap="round"
                           strokeDasharray={2 * Math.PI * 42}
@@ -1257,7 +1257,7 @@ export function CoreBTRWarRoom({
                           cy="50"
                           r="32"
                           fill="none"
-                          stroke="#4da2ff"
+                          stroke="currentColor" className="text-accent"
                           strokeWidth="6"
                           strokeLinecap="round"
                           strokeDasharray={2 * Math.PI * 32}
@@ -1285,7 +1285,7 @@ export function CoreBTRWarRoom({
                         <span className="text-base font-black text-ink leading-none">
                           {readiness.completionPercentage}%
                         </span>
-                        <span className="text-[8.5px] font-bold uppercase tracking-wider text-[#4da2ff] mt-0.5">
+                        <span className="text-[8.5px] font-bold uppercase tracking-wider text-ink-muted mt-0.5">
                           Readiness
                         </span>
                       </div>
@@ -1294,12 +1294,12 @@ export function CoreBTRWarRoom({
                     {/* Ring Legend & Telemetry */}
                     <div className="flex flex-col gap-1.5 text-xs">
                       <div className="flex items-center gap-2">
-                        <span className="h-2 w-2 rounded-full bg-[#1767be] shrink-0" />
+                        <span className="h-2 w-2 rounded-full bg-white text-black shrink-0" />
                         <span className="text-ink-muted">Mastery Readiness:</span>
                         <strong className="text-ink font-bold">{readiness.completionPercentage}%</strong>
                       </div>
                       <div className="flex items-center gap-2">
-                        <span className="h-2 w-2 rounded-full bg-[#4da2ff] shrink-0" />
+                        <span className="h-2 w-2 rounded-full bg-accent shrink-0" />
                         <span className="text-ink-muted">Subjects Mastered:</span>
                         <strong className="text-ink font-bold">{readiness.masteredCount + readiness.annotatedCount}/19</strong>
                       </div>
@@ -1326,15 +1326,15 @@ export function CoreBTRWarRoom({
 
                   {/* Right Telemetry Cards */}
                   <div className="grid grid-cols-2 gap-3 w-full md:w-auto">
-                    <div className="rounded-2xl bg-[#1d204b]/70 border border-[#1767be]/30 p-3.5 min-w-[140px] flex flex-col">
+                    <div className="rounded-2xl bg-elevated/70 border border-edge p-3.5 min-w-[140px] flex flex-col">
                       <span className="text-[10.5px] font-medium text-white/70">Grand Tests Logged</span>
                       <div className="text-xl font-black text-white mt-0.5">{gtRecords.length} tests</div>
-                      <span className="text-[10px] text-[#4da2ff]">Latest: {gtRecords[0]?.percentile ?? 0}%ile</span>
+                      <span className="text-[10px] text-ink-muted">Latest: {gtRecords[0]?.percentile ?? 0}%ile</span>
                     </div>
 
-                    <div className="rounded-2xl bg-[#1d204b]/70 border border-[#1767be]/30 p-3.5 min-w-[140px] flex flex-col">
+                    <div className="rounded-2xl bg-elevated/70 border border-edge p-3.5 min-w-[140px] flex flex-col">
                       <span className="text-[10.5px] font-medium text-white/70">Volatiles Active</span>
-                      <div className="text-xl font-black text-[#feb122] mt-0.5">100 Tables</div>
+                      <div className="text-xl font-black text-amber-400 mt-0.5">100 Tables</div>
                       <span className="text-[10px] text-white/60">FSRS Repetition active</span>
                     </div>
                   </div>
@@ -1344,14 +1344,14 @@ export function CoreBTRWarRoom({
               {/* Row 1: Priority Active Learning Cards */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {/* Priority Card A: Daily Volatile Drip (FSRS Spaced Repetition) */}
-                <div className="rounded-2xl border border-[#1767be]/30 bg-[#1d204b]/70 backdrop-blur-md p-5 flex flex-col justify-between gap-4 shadow-sm hover:border-[#4da2ff]/50 transition">
+                <div className="rounded-2xl border border-edge bg-elevated/70 backdrop-blur-md p-5 flex flex-col justify-between gap-4 shadow-sm hover:border-white/20 transition">
                   <div className="flex flex-col gap-2">
                     <div className="flex items-center justify-between">
-                      <span className="flex items-center gap-1.5 rounded-full bg-[#1767be]/20 px-2.5 py-0.5 text-[11px] font-bold text-[#4da2ff] border border-[#1767be]/30">
-                        <Droplets size={12} className="text-[#4da2ff]" />
+                      <span className="flex items-center gap-1.5 rounded-full bg-white/10 px-2.5 py-0.5 text-[11px] font-bold text-ink-muted border border-edge">
+                        <Droplets size={12} className="text-ink-muted" />
                         <span>FSRS Spaced Repetition</span>
                       </span>
-                      <span className="text-xs font-mono text-[#feb122] font-bold">
+                      <span className="text-xs font-mono text-amber-400 font-bold">
                         {summary.streakDays} Day Streak 🔥
                       </span>
                     </div>
@@ -1361,14 +1361,14 @@ export function CoreBTRWarRoom({
                     </p>
                   </div>
 
-                  <div className="flex items-center justify-between pt-2 border-t border-[#1767be]/20">
+                  <div className="flex items-center justify-between pt-2 border-t border-edge">
                     <span className="text-xs text-white/70">
-                      <strong className="text-[#4da2ff] font-bold font-mono">{summary.dueTodayCount}</strong> cards due today
+                      <strong className="text-ink-muted font-bold font-mono">{summary.dueTodayCount}</strong> cards due today
                     </span>
                     <button
                       type="button"
                       onClick={() => setShowDripModal(true)}
-                      className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-[#1767be] hover:bg-[#155bb0] text-white border border-[#1767be]/40 text-xs font-bold transition shadow-xs"
+                      className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-white hover:bg-white/90 text-black font-semibold border border-edge text-xs font-bold transition shadow-xs"
                     >
                       <span>Start 5-Min Drip</span>
                       <ChevronRight size={13} />
@@ -1377,15 +1377,15 @@ export function CoreBTRWarRoom({
                 </div>
 
                 {/* Priority Card B: Dual Split Workstation */}
-                <div className="rounded-2xl border border-[#1767be]/30 bg-[#1d204b]/70 backdrop-blur-md p-5 flex flex-col justify-between gap-4 shadow-sm hover:border-[#4da2ff]/50 transition">
+                <div className="rounded-2xl border border-edge bg-elevated/70 backdrop-blur-md p-5 flex flex-col justify-between gap-4 shadow-sm hover:border-white/20 transition">
                   <div className="flex flex-col gap-2">
                     <div className="flex items-center justify-between">
-                      <span className="flex items-center gap-1.5 rounded-full bg-[#1767be]/20 px-2.5 py-0.5 text-[11px] font-bold text-[#4da2ff] border border-[#1767be]/30">
-                        <Layers size={12} className="text-[#4da2ff]" />
+                      <span className="flex items-center gap-1.5 rounded-full bg-white/10 px-2.5 py-0.5 text-[11px] font-bold text-ink-muted border border-edge">
+                        <Layers size={12} className="text-ink-muted" />
                         <span>Dual-Pane Studio</span>
                       </span>
                       {workstationSession && (
-                        <span className="text-[10.5px] font-bold text-[#4da2ff] bg-[#1767be]/20 px-2 py-0.5 rounded border border-[#1767be]/30">
+                        <span className="text-[10.5px] font-bold text-ink-muted bg-white/10 px-2 py-0.5 rounded border border-edge">
                           ACTIVE
                         </span>
                       )}
@@ -1398,14 +1398,14 @@ export function CoreBTRWarRoom({
                     </p>
                   </div>
 
-                  <div className="flex items-center justify-between pt-2 border-t border-[#1767be]/20">
+                  <div className="flex items-center justify-between pt-2 border-t border-edge">
                     <span className="text-xs text-white/70">
                       {libraryState.totalVideosFound} local videos linked
                     </span>
                     <button
                       type="button"
                       onClick={() => handleNavigate("workstation")}
-                      className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-[#1767be] hover:bg-[#155bb0] text-white border border-[#1767be]/40 text-xs font-bold transition shadow-xs"
+                      className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-white hover:bg-white/90 text-black font-semibold border border-edge text-xs font-bold transition shadow-xs"
                     >
                       <span>{workstationSession ? "Resume Workstation" : "Launch Workstation"}</span>
                       <ChevronRight size={13} />
@@ -1417,11 +1417,11 @@ export function CoreBTRWarRoom({
               {/* Row 2: Official YouTube Drops & 20th Subject Matrix */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {/* Official Broadcast Card */}
-                <div className="rounded-2xl border border-[#1767be]/30 bg-[#1d204b]/70 backdrop-blur-md p-5 flex flex-col justify-between gap-4 shadow-sm hover:border-[#4da2ff]/50 transition">
+                <div className="rounded-2xl border border-edge bg-elevated/70 backdrop-blur-md p-5 flex flex-col justify-between gap-4 shadow-sm hover:border-white/20 transition">
                   <div className="flex flex-col gap-2">
                     <div className="flex items-center justify-between">
-                      <span className="flex items-center gap-1.5 rounded-full bg-[#1767be]/20 px-2.5 py-0.5 text-[11px] font-bold text-[#4da2ff] border border-[#1767be]/30">
-                        <Radio size={12} className="animate-pulse text-[#4da2ff]" />
+                      <span className="flex items-center gap-1.5 rounded-full bg-white/10 px-2.5 py-0.5 text-[11px] font-bold text-ink-muted border border-edge">
+                        <Radio size={12} className="animate-pulse text-ink-muted" />
                         <span>Daily 3 PM Core Drop</span>
                       </span>
                       <span className="text-[10.5px] font-semibold text-white/60">@corebtrbyzainabvora</span>
@@ -1434,14 +1434,14 @@ export function CoreBTRWarRoom({
                     </p>
                   </div>
 
-                  <div className="flex items-center justify-between pt-2 border-t border-[#1767be]/20">
-                    <span className="text-xs text-[#4da2ff] font-semibold">
+                  <div className="flex items-center justify-between pt-2 border-t border-edge">
+                    <span className="text-xs text-ink-muted font-semibold">
                       {CORE_BTR_BROADCASTS[0].durationLabel} • {CORE_BTR_BROADCASTS[0].categoryLabel}
                     </span>
                     <button
                       type="button"
                       onClick={() => setShowBroadcastsModal(true)}
-                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#1767be] hover:bg-[#155bb0] text-white border border-[#1767be]/40 text-xs font-bold transition shadow-xs"
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white hover:bg-white/90 text-black font-semibold border border-edge text-xs font-bold transition shadow-xs"
                     >
                       <span>Channel Broadcasts</span>
                       <ChevronRight size={13} />
@@ -1450,14 +1450,14 @@ export function CoreBTRWarRoom({
                 </div>
 
                 {/* 20th Subject Card */}
-                <div className="rounded-2xl border border-[#1767be]/30 bg-[#1d204b]/70 backdrop-blur-md p-5 flex flex-col justify-between gap-4 shadow-sm hover:border-[#4da2ff]/50 transition">
+                <div className="rounded-2xl border border-edge bg-elevated/70 backdrop-blur-md p-5 flex flex-col justify-between gap-4 shadow-sm hover:border-white/20 transition">
                   <div className="flex flex-col gap-2">
                     <div className="flex items-center justify-between">
-                      <span className="flex items-center gap-1.5 rounded-full bg-[#feb122]/15 px-2.5 py-0.5 text-[11px] font-bold text-[#feb122] border border-[#feb122]/30">
-                        <Calculator size={12} className="text-[#feb122]" />
+                      <span className="flex items-center gap-1.5 rounded-full bg-amber-500/15 px-2.5 py-0.5 text-[11px] font-bold text-amber-400 border border-amber-500/30">
+                        <Calculator size={12} className="text-amber-400" />
                         <span>&quot;20th Subject&quot; Matrix</span>
                       </span>
-                      <span className="text-[10.5px] font-semibold text-[#feb122]">High-Yield Numbers</span>
+                      <span className="text-[10.5px] font-semibold text-amber-400">High-Yield Numbers</span>
                     </div>
                     <h3 className="text-sm font-bold text-white">
                       Biostatistics, DOCs & Bio-Medical Waste
@@ -1467,14 +1467,14 @@ export function CoreBTRWarRoom({
                     </p>
                   </div>
 
-                  <div className="flex items-center justify-between pt-2 border-t border-[#1767be]/20">
+                  <div className="flex items-center justify-between pt-2 border-t border-edge">
                     <span className="text-xs text-white/70">
                       Sens, Spec, PPV, NPV formulas
                     </span>
                     <button
                       type="button"
                       onClick={() => setShowTwentyModal(true)}
-                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#1767be] hover:bg-[#155bb0] text-white border border-[#1767be]/40 text-xs font-bold transition shadow-xs"
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white hover:bg-white/90 text-black font-semibold border border-edge text-xs font-bold transition shadow-xs"
                     >
                       <span>Open Matrix</span>
                       <ChevronRight size={13} />
@@ -1494,42 +1494,42 @@ export function CoreBTRWarRoom({
                       label: "T&D Simulator",
                       sub: "17 Exam Papers",
                       icon: Target,
-                      color: "text-[#4da2ff] border-[#1767be]/30 bg-[#1d204b]/70 hover:border-[#4da2ff]/60 hover:bg-[#1d204b]",
+                      color: "text-ink-muted border-edge bg-elevated/70 hover:border-white/20 hover:bg-elevated",
                       action: () => setShowTnDModal(true),
                     },
                     {
                       label: "3-Tier Pyramids",
                       sub: "Base to Tie-Breakers",
                       icon: Triangle,
-                      color: "text-[#4da2ff] border-[#1767be]/30 bg-[#1d204b]/70 hover:border-[#4da2ff]/60 hover:bg-[#1d204b]",
+                      color: "text-ink-muted border-edge bg-elevated/70 hover:border-white/20 hover:bg-elevated",
                       action: () => setShowPyramidsModal(true),
                     },
                     {
                       label: "Mega BTR 72h",
                       sub: "Rapid Revision Blitz",
                       icon: Zap,
-                      color: "text-[#feb122] border-[#1767be]/30 bg-[#1d204b]/70 hover:border-[#feb122]/60 hover:bg-[#1d204b]",
+                      color: "text-amber-400 border-edge bg-elevated/70 hover:border-[#feb122]/60 hover:bg-elevated",
                       action: () => setShowMarathonModal(true),
                     },
                     {
                       label: "Spotter Image Bank",
                       sub: "Active Recall Mask",
                       icon: Eye,
-                      color: "text-[#4da2ff] border-[#1767be]/30 bg-[#1d204b]/70 hover:border-[#4da2ff]/60 hover:bg-[#1d204b]",
+                      color: "text-ink-muted border-edge bg-elevated/70 hover:border-white/20 hover:bg-elevated",
                       action: () => setShowSpotterModal(true),
                     },
                     {
                       label: "Two-Step Cases",
                       sub: "Clinical Vignettes",
                       icon: Stethoscope,
-                      color: "text-[#4da2ff] border-[#1767be]/30 bg-[#1d204b]/70 hover:border-[#4da2ff]/60 hover:bg-[#1d204b]",
+                      color: "text-ink-muted border-edge bg-elevated/70 hover:border-white/20 hover:bg-elevated",
                       action: () => setShowVignetteModal(true),
                     },
                     {
                       label: "Cross-PDF Search",
                       sub: "32 Workbooks",
                       icon: Search,
-                      color: "text-[#4da2ff] border-[#1767be]/30 bg-[#1d204b]/70 hover:border-[#4da2ff]/60 hover:bg-[#1d204b]",
+                      color: "text-ink-muted border-edge bg-elevated/70 hover:border-white/20 hover:bg-elevated",
                       action: () => setShowPdfSearchModal(true),
                     },
                   ].map((drill) => {
@@ -1639,7 +1639,7 @@ export function CoreBTRWarRoom({
                           onClick={() => setLibraryCategoryFilter(cat)}
                           className={`rounded-xl px-3.5 py-1.5 text-xs font-bold transition ${
                             libraryCategoryFilter === cat
-                              ? "bg-[#1767be] text-white shadow-sm"
+                              ? "bg-white text-black font-semibold shadow-sm"
                               : "text-ink-muted hover:text-ink hover:bg-elevated"
                           }`}
                         >
@@ -1656,14 +1656,14 @@ export function CoreBTRWarRoom({
                           placeholder="Search subjects, pearls..."
                           value={searchQuery}
                           onChange={(e) => setSearchQuery(e.target.value)}
-                          className="h-9 w-44 md:w-56 rounded-xl bg-surface border border-edge-soft pl-9 pr-3 text-xs text-ink placeholder:text-ink-muted focus:border-[#1767be] focus:outline-none transition"
+                          className="h-9 w-44 md:w-56 rounded-xl bg-surface border border-edge-soft pl-9 pr-3 text-xs text-ink placeholder:text-ink-muted focus:border-edge focus:outline-none transition"
                         />
                       </div>
 
                       <button
                         type="button"
                         onClick={() => setShowCustomModuleModal(true)}
-                        className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#1767be]/15 border border-[#1767be]/30 text-xs font-bold text-[#4da2ff] hover:bg-[#1767be]/25 transition"
+                        className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-white/10 border border-edge text-xs font-bold text-ink-muted hover:bg-white/15 transition"
                       >
                         <Plus size={13} />
                         <span>Custom Module</span>
@@ -1714,10 +1714,10 @@ export function CoreBTRWarRoom({
 
               const statusColor = {
                 unread: "bg-elevated text-ink-muted border-edge",
-                in_progress: "bg-[#1767be]/15 text-[#4da2ff] border-[#1767be]/30",
-                btr_annotated: "bg-[#1767be]/25 text-white border-[#1767be]/40",
-                td_completed: "bg-[#1767be]/30 text-[#4da2ff] border-[#1767be]/40",
-                mastered: "bg-[#1767be] text-white border-[#1767be]",
+                in_progress: "bg-white/10 text-white/90 border-edge",
+                btr_annotated: "bg-white/15 text-white border-edge",
+                td_completed: "bg-white/15 text-white border-edge",
+                mastered: "bg-white text-black font-semibold border-edge",
               }[currentStatus];
 
               const statusLabel = {
@@ -1752,7 +1752,7 @@ export function CoreBTRWarRoom({
                       onClick={() => setSelectedSubjectDetail(subj)}
                       className="cursor-pointer"
                     >
-                      <h3 className="text-base font-bold text-ink leading-snug group-hover:text-[#4da2ff] transition">
+                      <h3 className="text-base font-bold text-ink leading-snug group-hover:text-ink-muted transition">
                         {subj.name}
                       </h3>
                       {SUBJECT_METRICS_MAP[subj.id] && (
@@ -1760,7 +1760,7 @@ export function CoreBTRWarRoom({
                           <span className="text-[11px] text-ink-muted font-medium">
                             {SUBJECT_METRICS_MAP[subj.id].completed}/{SUBJECT_METRICS_MAP[subj.id].items} items
                           </span>
-                          <span className="text-[10px] text-[#4da2ff] font-bold bg-[#1767be]/10 px-1.5 py-0.2 rounded border border-[#1767be]/20">
+                          <span className="text-[10px] text-ink-muted font-bold bg-white text-black/10 px-1.5 py-0.2 rounded border border-edge">
                             {Math.round((SUBJECT_METRICS_MAP[subj.id].completed / SUBJECT_METRICS_MAP[subj.id].items) * 100)}% completed
                           </span>
                         </div>
@@ -1773,7 +1773,7 @@ export function CoreBTRWarRoom({
                     {/* Local Media Indicators */}
                     <div className="flex flex-wrap items-center gap-1.5 mt-1">
                       {videosCount > 0 ? (
-                        <span className="text-[10.5px] font-semibold text-[#4da2ff] bg-[#1767be]/15 border border-[#1767be]/30 px-2 py-0.5 rounded-lg flex items-center gap-1">
+                        <span className="text-[10.5px] font-semibold text-ink-muted bg-white/10 border border-edge px-2 py-0.5 rounded-lg flex items-center gap-1">
                           <Play size={10} fill="currentColor" /> {videosCount} Videos
                         </span>
                       ) : (
@@ -1789,7 +1789,7 @@ export function CoreBTRWarRoom({
                       )}
 
                       {hasAnnotated && (
-                        <span className="text-[10px] font-semibold text-[#4da2ff] bg-[#1767be]/15 border border-[#1767be]/30 px-2 py-0.5 rounded-md">
+                        <span className="text-[10px] font-semibold text-ink-muted bg-white/10 border border-edge px-2 py-0.5 rounded-md">
                           Annotated Notes
                         </span>
                       )}
@@ -1827,7 +1827,7 @@ export function CoreBTRWarRoom({
                               })
                             }
                             title="Open Side-by-Side Video & PDF Workstation"
-                            className="flex items-center gap-1 rounded-lg bg-[#1767be] px-2 py-1 text-[11px] font-bold text-white shadow-xs hover:bg-[#155bb0] transition"
+                            className="flex items-center gap-1 rounded-lg bg-white text-black px-2 py-1 text-[11px] font-bold text-white shadow-xs hover:bg-white/90 transition"
                           >
                             <Layers size={11} />
                             <span>Dual</span>
@@ -1836,7 +1836,7 @@ export function CoreBTRWarRoom({
                           <button
                             type="button"
                             onClick={() => handlePlayLecture(media.videos[0], subj)}
-                            className="flex items-center gap-1 rounded-lg bg-[#1767be] px-2 py-1 text-[11px] font-bold text-white shadow-xs hover:bg-[#155bb0] transition"
+                            className="flex items-center gap-1 rounded-lg bg-white text-black px-2 py-1 text-[11px] font-bold text-white shadow-xs hover:bg-white/90 transition"
                           >
                             <Play size={11} fill="currentColor" />
                             <span>Play</span>
@@ -1862,7 +1862,7 @@ export function CoreBTRWarRoom({
                       <button
                         type="button"
                         onClick={() => setSelectedSubjectDetail(subj)}
-                        className="flex items-center gap-1 rounded-lg bg-[#1767be]/15 border border-[#1767be]/30 px-2 py-1 text-[11px] font-bold text-[#4da2ff] hover:bg-[#1767be]/25 transition"
+                        className="flex items-center gap-1 rounded-lg bg-white/10 border border-edge px-2 py-1 text-[11px] font-bold text-ink-muted hover:bg-white/15 transition"
                       >
                         <span>QBank</span>
                         <ChevronRight size={11} />
@@ -1970,9 +1970,9 @@ export function CoreBTRWarRoom({
           {libraryState.megaBtrVideos && libraryState.megaBtrVideos.length > 0 && (
             <div className="flex flex-col gap-3">
               <div className="flex items-center gap-2">
-                <Flame size={16} className="text-[#feb122] fill-[#feb122]" />
+                <Flame size={16} className="text-amber-400 fill-[#feb122]" />
                 <h4 className="text-sm font-bold text-ink">Mega BTR & INI-CET Rapid Revisions</h4>
-                <span className="text-[11px] font-semibold text-[#4da2ff] rounded-full bg-[#1767be]/15 px-2 py-0.5 border border-[#1767be]/30">
+                <span className="text-[11px] font-semibold text-ink-muted rounded-full bg-white/10 px-2 py-0.5 border border-edge">
                   Full Marathons
                 </span>
               </div>
@@ -2044,7 +2044,7 @@ export function CoreBTRWarRoom({
               <div className="flex items-center gap-2">
                 <Target size={16} className="text-accent" />
                 <h4 className="text-sm font-bold text-ink">Test & Discussion (T&D) Vault</h4>
-                <span className="text-[11px] font-semibold text-[#4da2ff] rounded-full bg-[#1767be]/15 px-2 py-0.5 border border-[#1767be]/30">
+                <span className="text-[11px] font-semibold text-ink-muted rounded-full bg-white/10 px-2 py-0.5 border border-edge">
                   17 Subject Sessions
                 </span>
               </div>
@@ -2056,7 +2056,7 @@ export function CoreBTRWarRoom({
                     className="rounded-2xl bg-surface/80 border border-edge-soft p-3.5 flex items-center justify-between gap-3 shadow-xs hover:border-accent/40 transition"
                   >
                     <div className="flex items-center gap-2.5 min-w-0">
-                      <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#1767be]/15 text-[#4da2ff] border border-[#1767be]/30 shrink-0">
+                      <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/10 text-white/90 border border-white/15 shrink-0">
                         <Play size={13} fill="currentColor" />
                       </div>
                       <div className="min-w-0">
@@ -2246,7 +2246,7 @@ export function CoreBTRWarRoom({
             onClick={() => setTestsSubTab(t)}
             className={`px-4 py-2 rounded-xl text-xs font-bold transition ${
               testsSubTab === t
-                ? "bg-[#1767be] text-white shadow-sm"
+                ? "bg-white text-black font-semibold shadow-sm"
                 : "text-ink-muted hover:text-ink hover:bg-elevated"
             }`}
           >
@@ -2279,11 +2279,11 @@ export function CoreBTRWarRoom({
       {COREBTR_OFFICIAL_TESTS.filter((test) => testsSubTab === test.type).map((test) => (
         <div
           key={test.id}
-          className="p-5 rounded-2xl bg-surface border border-edge-soft hover:border-[#1767be]/40 hover:bg-elevated transition shadow-xs flex flex-col md:flex-row items-start md:items-center justify-between gap-4 select-none group"
+          className="p-5 rounded-2xl bg-surface border border-edge-soft hover:border-edge hover:bg-elevated transition shadow-xs flex flex-col md:flex-row items-start md:items-center justify-between gap-4 select-none group"
         >
           <div className="flex flex-col gap-1.5">
             <div className="flex items-center gap-2">
-              <span className="font-mono text-sm font-bold text-ink group-hover:text-[#4da2ff] transition">
+              <span className="font-mono text-sm font-bold text-ink group-hover:text-ink-muted transition">
                 {test.title}
               </span>
               {test.ended && (
@@ -2292,7 +2292,7 @@ export function CoreBTRWarRoom({
                 </span>
               )}
               {test.competitive && (
-                <span className="text-[10px] font-bold px-2 py-0.2 rounded-md bg-[#1767be]/15 text-[#4da2ff] border border-[#1767be]/25">
+                <span className="text-[10px] font-bold px-2 py-0.2 rounded-md bg-white/10 text-white/90 border border-edge">
                   Competitive
                 </span>
               )}
@@ -2300,7 +2300,7 @@ export function CoreBTRWarRoom({
 
             <div className="flex items-center gap-4 text-xs text-ink-muted">
               <span className="flex items-center gap-1">
-                <HelpCircle size={13} className="text-[#4da2ff]" />
+                <HelpCircle size={13} className="text-ink-muted" />
                 <span>{test.totalQuestions} questions</span>
               </span>
               <span>•</span>
@@ -2320,10 +2320,10 @@ export function CoreBTRWarRoom({
                   const url = resolveBTRPlayableUrl(fullPath);
                   window.open(url, "_blank");
                 }}
-                className="flex-1 md:flex-none px-4 py-2 rounded-xl bg-[#1767be]/15 border border-[#1767be]/40 hover:bg-[#1767be]/25 text-[#4da2ff] text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-xs"
+                className="flex-1 md:flex-none px-4 py-2 rounded-xl bg-white/10 border border-edge hover:bg-white/15 text-white text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-xs"
                 title="View Dr. Zainab Vora's annotated explanations and key takeaways"
               >
-                <FileText size={13} className="text-[#4da2ff]" />
+                <FileText size={13} className="text-ink-muted" />
                 <span>Solutions PDF</span>
               </button>
             )}
@@ -2333,14 +2333,14 @@ export function CoreBTRWarRoom({
               onClick={() => setShowCrossAppModal(true)}
               className="flex-1 md:flex-none px-4 py-2 rounded-xl bg-surface border border-edge-soft hover:bg-raised text-ink text-xs font-bold transition flex items-center justify-center gap-1.5"
             >
-              <Target size={13} className="text-[#4da2ff]" />
+              <Target size={13} className="text-ink-muted" />
               <span>Calibrate Score</span>
             </button>
 
             <button
               type="button"
               onClick={() => onStartQBankDrill?.(test.title)}
-              className="flex-1 md:flex-none px-5 py-2 rounded-xl bg-[#1767be] hover:bg-[#155bb0] text-white text-xs font-bold shadow-md shadow-[#1767be]/30 transition flex items-center justify-center gap-1.5"
+              className="flex-1 md:flex-none px-5 py-2 rounded-xl bg-white hover:bg-white/90 text-black font-semibold text-xs font-bold shadow-md shadow-black/30 transition flex items-center justify-center gap-1.5"
             >
               <Play size={12} fill="currentColor" />
               <span>Attempt Test</span>
@@ -2355,7 +2355,7 @@ export function CoreBTRWarRoom({
       <div className="mt-4 flex flex-col gap-3 pt-6 border-t border-edge-soft">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
           <div>
-            <div className="flex items-center gap-2 text-xs font-extrabold uppercase text-[#feb122] tracking-wider">
+            <div className="flex items-center gap-2 text-xs font-extrabold uppercase text-amber-400 tracking-wider">
               <Zap size={14} />
               <span>Interactive Computer-Based Exam (CBT) Simulators</span>
             </div>
@@ -2401,18 +2401,18 @@ export function CoreBTRWarRoom({
           ].map((cbt) => (
             <div
               key={cbt.id}
-              className="rounded-2xl border border-[#1767be]/30 bg-surface/90 hover:border-[#4da2ff] p-4 flex flex-col justify-between gap-3 shadow-md transition group"
+              className="rounded-2xl border border-edge bg-surface/90 hover:border-white/20 p-4 flex flex-col justify-between gap-3 shadow-md transition group"
             >
               <div className="flex flex-col gap-1.5">
                 <div className="flex items-center justify-between">
-                  <span className="rounded bg-[#1767be]/20 px-2 py-0.5 text-[10px] font-bold text-[#4da2ff] border border-[#1767be]/30 uppercase">
+                  <span className="rounded bg-white/10 px-2 py-0.5 text-[10px] font-bold text-ink-muted border border-edge uppercase">
                     {cbt.badge}
                   </span>
                   <span className="text-[10px] font-mono text-emerald-400 font-bold flex items-center gap-1">
                     ✓ Offline Ready
                   </span>
                 </div>
-                <h5 className="font-bold text-sm text-ink group-hover:text-[#4da2ff] transition">
+                <h5 className="font-bold text-sm text-ink group-hover:text-ink-muted transition">
                   {cbt.title}
                 </h5>
                 <p className="text-xs text-ink-muted leading-relaxed line-clamp-2">
@@ -2427,7 +2427,7 @@ export function CoreBTRWarRoom({
                   const url = resolveBTRPlayableUrl(fullPath);
                   window.open(url, "_blank");
                 }}
-                className="flex items-center justify-center gap-2 rounded-xl bg-[#1767be] hover:bg-[#155bb0] text-white py-2 px-4 text-xs font-bold shadow-md transition"
+                className="flex items-center justify-center gap-2 rounded-xl bg-white hover:bg-white/90 text-black font-semibold py-2 px-4 text-xs font-bold shadow-md transition"
               >
                 <Play size={12} fill="currentColor" />
                 <span>Launch Official CBT Exam Simulation</span>
@@ -2455,7 +2455,7 @@ export function CoreBTRWarRoom({
       </div>
 
       <div className="flex items-center gap-2">
-        <span className="text-xs font-bold px-3 py-1 rounded-xl bg-[#1767be] text-white">
+        <span className="text-xs font-bold px-3 py-1 rounded-xl bg-white text-black font-semibold">
           Completed Archive
         </span>
       </div>
@@ -2466,17 +2466,17 @@ export function CoreBTRWarRoom({
       {COREBTR_LIVE_SESSIONS.map((session) => (
         <div
           key={session.id}
-          className="p-4 rounded-2xl bg-surface border border-edge-soft hover:border-[#1767be]/40 hover:bg-elevated transition shadow-xs flex flex-col md:flex-row items-start md:items-center justify-between gap-4 group select-none"
+          className="p-4 rounded-2xl bg-surface border border-edge-soft hover:border-edge hover:bg-elevated transition shadow-xs flex flex-col md:flex-row items-start md:items-center justify-between gap-4 group select-none"
         >
           <div className="flex items-start gap-3.5">
-            <div className="h-12 w-12 rounded-2xl bg-[#1767be]/15 text-[#4da2ff] border border-[#1767be]/25 flex items-center justify-center font-bold shrink-0">
+            <div className="h-12 w-12 rounded-2xl bg-white/10 text-white/90 border border-edge flex items-center justify-center font-bold shrink-0">
               <Play size={18} fill="currentColor" />
             </div>
             <div className="flex flex-col">
-              <span className="text-xs font-semibold text-[#4da2ff]">
+              <span className="text-xs font-semibold text-ink-muted">
                 {session.instructor}
               </span>
-              <h4 className="text-sm font-bold text-ink group-hover:text-[#4da2ff] transition leading-snug">
+              <h4 className="text-sm font-bold text-ink group-hover:text-ink-muted transition leading-snug">
                 {session.title}
               </h4>
               <span className="text-xs text-ink-muted mt-1">
@@ -2489,7 +2489,7 @@ export function CoreBTRWarRoom({
             <button
               type="button"
               onClick={() => setActiveLiveStreamModal(session)}
-              className="px-4 py-2 rounded-xl bg-[#1767be] hover:bg-[#155bb0] text-white text-xs font-bold shadow-md transition flex items-center gap-1.5"
+              className="px-4 py-2 rounded-xl bg-white hover:bg-white/90 text-black font-semibold text-xs font-bold shadow-md transition flex items-center gap-1.5"
             >
               <Play size={12} fill="currentColor" />
               <span>Watch Discussion</span>
@@ -2515,9 +2515,9 @@ export function CoreBTRWarRoom({
 {activeDestination === "plan" && (
   <div className="flex flex-col gap-6 animate-in fade-in duration-150">
     {/* Custom Module Action Banner */}
-    <div className="p-6 rounded-3xl bg-gradient-to-r from-[#1d204b]/60 via-surface to-elevated border border-[#1767be]/30 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-sm">
+    <div className="p-6 rounded-3xl bg-gradient-to-r from-elevated via-surface to-elevated border border-edge flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-sm">
       <div className="flex flex-col gap-1">
-        <span className="text-[10px] font-bold uppercase tracking-wider text-[#4da2ff]">
+        <span className="text-[10px] font-bold uppercase tracking-wider text-ink-muted">
           High-Yield Algorithm
         </span>
         <h3 className="text-lg font-black text-ink">Custom Module Engine</h3>
@@ -2528,7 +2528,7 @@ export function CoreBTRWarRoom({
       <button
         type="button"
         onClick={() => setShowCustomModuleModal(true)}
-        className="px-5 py-2.5 rounded-2xl bg-[#1767be] hover:bg-[#155bb0] text-white font-extrabold text-xs shadow-lg shadow-[#1767be]/30 transition flex items-center gap-2"
+        className="px-5 py-2.5 rounded-2xl bg-white hover:bg-white/90 text-black font-semibold font-extrabold text-xs shadow-lg shadow-black/30 transition flex items-center gap-2"
       >
         <Plus size={15} />
         <span>+ Create Custom Module</span>
@@ -2708,7 +2708,7 @@ export function CoreBTRWarRoom({
                               e.stopPropagation();
                               reviewFSRSCard(card.id, 2);
                             }}
-                            className="px-2 py-0.5 rounded-lg text-[10px] font-bold bg-[#1767be]/20 text-[#4da2ff] border border-[#1767be]/30 hover:bg-[#1767be]/30 transition"
+                            className="px-2 py-0.5 rounded-lg text-[10px] font-bold bg-white/10 text-white/90 border border-white/15 hover:bg-white/15 transition"
                             title="Recalled with effort"
                           >
                             Hard
@@ -2719,7 +2719,7 @@ export function CoreBTRWarRoom({
                               e.stopPropagation();
                               reviewFSRSCard(card.id, 3);
                             }}
-                            className="px-2 py-0.5 rounded-lg text-[10px] font-bold bg-[#1767be] text-white border border-[#1767be] hover:bg-[#155bb0] transition"
+                            className="px-2 py-0.5 rounded-lg text-[10px] font-bold bg-white text-black font-semibold border border-edge hover:bg-white/90 transition"
                             title="Optimal recall"
                           >
                             Good
@@ -2730,7 +2730,7 @@ export function CoreBTRWarRoom({
                               e.stopPropagation();
                               reviewFSRSCard(card.id, 4);
                             }}
-                            className="px-2 py-0.5 rounded-lg text-[10px] font-bold bg-[#4da2ff]/20 text-[#4da2ff] border border-[#4da2ff]/35 hover:bg-[#4da2ff]/30 transition"
+                            className="px-2 py-0.5 rounded-lg text-[10px] font-bold bg-white/10 text-white/90 border border-white/15 hover:bg-white/15 transition"
                             title="Effortless recall"
                           >
                             Easy

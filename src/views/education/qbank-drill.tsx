@@ -295,9 +295,9 @@ export function QBankRunner({
     });
 
     return (
-      <div className="flex flex-col h-full w-full max-w-4xl mx-auto bg-[#0d1b4b] rounded-3xl border border-[#1767be]/35 shadow-2xl overflow-hidden text-white select-none animate-in zoom-in-95 duration-200">
+      <div className="flex flex-col h-full w-full max-w-4xl mx-auto bg-surface rounded-3xl border border-edge shadow-2xl overflow-hidden text-white select-none animate-in zoom-in-95 duration-200">
         {/* Top Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-[#1767be]/25 bg-[#1d204b]">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-edge bg-elevated">
           <div className="flex items-center gap-3">
             <button
               type="button"
@@ -320,7 +320,7 @@ export function QBankRunner({
                 type="button"
                 onClick={() => setActiveTab("analysis")}
                 className={`px-3 py-1 rounded-lg font-bold transition ${
-                  activeTab === "analysis" ? "bg-[#1767be] text-white shadow-xs" : "text-white/60 hover:text-white"
+                  activeTab === "analysis" ? "bg-white text-black font-semibold shadow-xs" : "text-white/60 hover:text-white"
                 }`}
               >
                 Analysis
@@ -329,7 +329,7 @@ export function QBankRunner({
                 type="button"
                 onClick={() => setActiveTab("questions")}
                 className={`px-3 py-1 rounded-lg font-bold transition ${
-                  activeTab === "questions" ? "bg-[#1767be] text-white shadow-xs" : "text-white/60 hover:text-white"
+                  activeTab === "questions" ? "bg-white text-black font-semibold shadow-xs" : "text-white/60 hover:text-white"
                 }`}
               >
                 Questions ({totalQ})
@@ -344,9 +344,9 @@ export function QBankRunner({
             <>
               {/* Recovery Sprint Alert Banner */}
               {incorrectCount > 0 && (
-                <div className="p-4 rounded-2xl bg-[#1d204b] border border-[#1767be]/40 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-md">
+                <div className="p-4 rounded-2xl bg-elevated border border-edge flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-md">
                   <div className="flex items-center gap-3">
-                    <div className="h-10 w-10 rounded-xl bg-[#feb122]/15 text-[#feb122] border border-[#feb122]/30 flex items-center justify-center shrink-0">
+                    <div className="h-10 w-10 rounded-xl bg-amber-500/15 text-amber-300 border border-amber-500/30 flex items-center justify-center shrink-0">
                       <Zap size={18} className="fill-[#feb122]" />
                     </div>
                     <div>
@@ -359,7 +359,7 @@ export function QBankRunner({
                   <button
                     type="button"
                     onClick={handleStartRecoverySprint}
-                    className="w-full sm:w-auto px-4 py-2 rounded-xl bg-[#1767be] hover:bg-[#155bb0] text-white font-extrabold text-xs shadow-md transition shrink-0"
+                    className="w-full sm:w-auto px-4 py-2 rounded-xl bg-white hover:bg-white/90 text-black font-semibold font-extrabold text-xs shadow-md transition shrink-0"
                   >
                     Start Recovery Sprint ({incorrectCount} Qs)
                   </button>
@@ -367,7 +367,7 @@ export function QBankRunner({
               )}
 
               {/* Accuracy & Breakdown Card (Matching App Store Screenshot) */}
-              <div className="p-5 rounded-2xl bg-[#1d204b]/70 border border-[#1767be]/30 flex flex-col gap-4">
+              <div className="p-5 rounded-2xl bg-elevated/70 border border-edge flex flex-col gap-4">
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-bold uppercase tracking-wider text-white/60">
                     Accuracy & Score
@@ -427,44 +427,44 @@ export function QBankRunner({
 
               {/* 6-Metric HUD Grid */}
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                <div className="p-3.5 rounded-2xl bg-[#1d204b]/60 border border-[#1767be]/25 flex flex-col">
+                <div className="p-3.5 rounded-2xl bg-elevated border border-edge flex flex-col">
                   <span className="text-[11px] text-white/60">Marks Obtained</span>
                   <strong className="text-base font-black text-white mt-0.5">
                     {resultData.score > 0 ? `+${resultData.score}` : resultData.score} / {resultData.maxScore}
                   </strong>
                 </div>
 
-                <div className="p-3.5 rounded-2xl bg-[#1d204b]/60 border border-[#1767be]/25 flex flex-col">
+                <div className="p-3.5 rounded-2xl bg-elevated border border-edge flex flex-col">
                   <span className="text-[11px] text-white/60">Total Time</span>
                   <strong className="text-base font-black text-white mt-0.5">
                     {resultData.timeSpentMinutes} min
                   </strong>
                 </div>
 
-                <div className="p-3.5 rounded-2xl bg-[#1d204b]/60 border border-[#1767be]/25 flex flex-col">
+                <div className="p-3.5 rounded-2xl bg-elevated border border-edge flex flex-col">
                   <span className="text-[11px] text-white/60">Guess Accuracy</span>
-                  <strong className="text-base font-black text-[#4da2ff] mt-0.5">
+                  <strong className="text-base font-black text-ink-muted mt-0.5">
                     {guessAccuracy}%
                   </strong>
                 </div>
 
-                <div className="p-3.5 rounded-2xl bg-[#1d204b]/60 border border-[#1767be]/25 flex flex-col">
+                <div className="p-3.5 rounded-2xl bg-elevated border border-edge flex flex-col">
                   <span className="text-[11px] text-white/60">Accuracy</span>
                   <strong className="text-base font-black text-emerald-400 mt-0.5">
                     {resultData.accuracyPct}%
                   </strong>
                 </div>
 
-                <div className="p-3.5 rounded-2xl bg-[#1d204b]/60 border border-[#1767be]/25 flex flex-col">
+                <div className="p-3.5 rounded-2xl bg-elevated border border-edge flex flex-col">
                   <span className="text-[11px] text-white/60">Avg Time / Question</span>
                   <strong className="text-base font-black text-white mt-0.5">
                     {avgTimePerQ} sec/ques
                   </strong>
                 </div>
 
-                <div className="p-3.5 rounded-2xl bg-[#1d204b]/60 border border-[#1767be]/25 flex flex-col">
+                <div className="p-3.5 rounded-2xl bg-elevated border border-edge flex flex-col">
                   <span className="text-[11px] text-white/60">Correct Guesses</span>
-                  <strong className="text-base font-black text-[#feb122] mt-0.5">
+                  <strong className="text-base font-black text-amber-400 mt-0.5">
                     {correctGuesses} out of {totalGuesses}
                   </strong>
                 </div>
@@ -487,7 +487,7 @@ export function QBankRunner({
                     return (
                       <div
                         key={subject}
-                        className="flex flex-col gap-2.5 p-4 rounded-2xl bg-[#1d204b]/60 border border-[#1767be]/25 hover:border-[#4da2ff]/40 transition"
+                        className="flex flex-col gap-2.5 p-4 rounded-2xl bg-elevated border border-edge hover:border-white/20 transition"
                       >
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-2">
@@ -517,7 +517,7 @@ export function QBankRunner({
                           <button
                             type="button"
                             onClick={() => setActiveTab("questions")}
-                            className="text-xs font-bold text-[#4da2ff] hover:underline transition flex items-center gap-1"
+                            className="text-xs font-bold text-ink-muted hover:underline transition flex items-center gap-1"
                           >
                             <span>view questions ({stats.total})</span>
                             <ChevronRight size={12} />
@@ -542,10 +542,10 @@ export function QBankRunner({
                     key={q.id}
                     className={`p-4 rounded-2xl border transition ${
                       isCorrect
-                        ? "bg-[#1d204b]/80 border-emerald-500/40"
+                        ? "bg-elevated/80 border-emerald-500/40"
                         : isUnanswered
-                          ? "bg-[#1d204b]/50 border-white/10"
-                          : "bg-[#1d204b]/80 border-rose-500/40"
+                          ? "bg-elevated border-white/10"
+                          : "bg-elevated/80 border-rose-500/40"
                     }`}
                   >
                     <div className="flex items-center justify-between mb-2">
@@ -553,7 +553,7 @@ export function QBankRunner({
                         <span className="font-mono text-xs font-bold text-white/70">
                           Q{idx + 1}
                         </span>
-                        <span className="text-xs font-semibold px-2 py-0.5 rounded bg-[#1767be]/20 text-[#4da2ff] border border-[#1767be]/30">
+                        <span className="text-xs font-semibold px-2 py-0.5 rounded bg-white/10 text-white/90 border border-white/15">
                           {q.subject}
                         </span>
                       </div>
@@ -584,11 +584,11 @@ export function QBankRunner({
         </div>
 
         {/* Bottom Done Button */}
-        <div className="p-4 border-t border-[#1767be]/25 bg-[#1d204b] flex justify-end">
+        <div className="p-4 border-t border-edge bg-elevated flex justify-end">
           <button
             type="button"
             onClick={onClose}
-            className="px-6 py-2.5 rounded-2xl bg-[#1767be] hover:bg-[#155bb0] text-white font-bold text-xs transition"
+            className="px-6 py-2.5 rounded-2xl bg-white hover:bg-white/90 text-black font-semibold font-bold text-xs transition"
           >
             Close & Return to CoreBTR
           </button>
@@ -601,10 +601,10 @@ export function QBankRunner({
   if (showQuestionPaper) {
     return (
       <div className="fixed inset-0 z-[400] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
-        <div className="relative w-full max-w-3xl max-h-[85vh] bg-[#0d1b4b] rounded-3xl border border-[#1767be]/35 shadow-2xl flex flex-col overflow-hidden text-white">
-          <div className="flex items-center justify-between px-6 py-4 border-b border-[#1767be]/25 bg-[#1d204b]">
+        <div className="relative w-full max-w-3xl max-h-[85vh] bg-surface rounded-3xl border border-edge shadow-2xl flex flex-col overflow-hidden text-white">
+          <div className="flex items-center justify-between px-6 py-4 border-b border-edge bg-elevated">
             <div className="flex items-center gap-2">
-              <FileText size={18} className="text-[#4da2ff]" />
+              <FileText size={18} className="text-ink-muted" />
               <h3 className="text-base font-bold text-white">Complete Question Paper</h3>
             </div>
             <button
@@ -617,8 +617,8 @@ export function QBankRunner({
           </div>
           <div className="flex-1 overflow-y-auto p-6 flex flex-col gap-6">
             {activeQuestions.map((q, i) => (
-              <div key={q.id} className="p-4 rounded-2xl bg-[#1d204b]/70 border border-[#1767be]/20 flex flex-col gap-2">
-                <span className="font-bold text-xs text-[#4da2ff]">Question {i + 1} • {q.subject}</span>
+              <div key={q.id} className="p-4 rounded-2xl bg-elevated/70 border border-edge flex flex-col gap-2">
+                <span className="font-bold text-xs text-ink-muted">Question {i + 1} • {q.subject}</span>
                 <p className="text-xs text-white/90 leading-relaxed">{q.vignette}</p>
                 <div className="grid grid-cols-2 gap-2 mt-2">
                   {q.options.map((opt, optIdx) => (
@@ -639,10 +639,10 @@ export function QBankRunner({
   if (showInstructions) {
     return (
       <div className="fixed inset-0 z-[400] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
-        <div className="relative w-full max-w-2xl max-h-[85vh] bg-[#0d1b4b] rounded-3xl border border-[#1767be]/35 shadow-2xl flex flex-col overflow-hidden text-white">
-          <div className="flex items-center justify-between px-6 py-4 border-b border-[#1767be]/25 bg-[#1d204b]">
+        <div className="relative w-full max-w-2xl max-h-[85vh] bg-surface rounded-3xl border border-edge shadow-2xl flex flex-col overflow-hidden text-white">
+          <div className="flex items-center justify-between px-6 py-4 border-b border-edge bg-elevated">
             <div className="flex items-center gap-2">
-              <Info size={18} className="text-[#4da2ff]" />
+              <Info size={18} className="text-ink-muted" />
               <h3 className="text-base font-bold text-white">TCS iON CBT Examination Instructions</h3>
             </div>
             <button
@@ -679,31 +679,31 @@ export function QBankRunner({
     const notVisitedCount = Math.max(0, activeQuestions.length - (session.activeQuestionIndex + 1));
 
     return (
-      <div className="flex flex-col h-full w-full max-w-5xl mx-auto bg-[#0d1b4b] rounded-3xl border border-[#1767be]/40 shadow-2xl overflow-hidden text-white select-none animate-in zoom-in-95 duration-150">
+      <div className="flex flex-col h-full w-full max-w-5xl mx-auto bg-surface rounded-3xl border border-edge shadow-2xl overflow-hidden text-white select-none animate-in zoom-in-95 duration-150">
         {/* TCS iON Official Masthead */}
-        <div className="flex items-center justify-between px-6 py-3 border-b border-[#1767be]/30 bg-[#1d204b]">
+        <div className="flex items-center justify-between px-6 py-3 border-b border-edge bg-elevated">
           <div className="flex items-center gap-3">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#1767be] text-white font-bold text-xs">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-white text-black font-semibold font-bold text-xs">
               CBT
             </div>
             <div>
               <h2 className="text-xs font-bold text-white tracking-tight">
                 National Board of Examinations • NEET-PG / INI-CET Computer-Based Test
               </h2>
-              <span className="text-[10px] text-[#4da2ff]">Subject: {activeQuestion.subject} • Official TCS iON Skin</span>
+              <span className="text-[10px] text-ink-muted">Subject: {activeQuestion.subject} • Official TCS iON Skin</span>
             </div>
           </div>
 
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-1.5 rounded-xl bg-white/5 border border-white/10 px-3 py-1 font-mono text-xs font-bold text-white">
-              <Timer size={13} className="text-[#4da2ff]" />
+              <Timer size={13} className="text-ink-muted" />
               <span>Time Left: {formatTimer(7200 - elapsedTimer)}</span>
             </div>
 
             <button
               type="button"
               onClick={() => setCbtMode(false)}
-              className="text-xs text-[#4da2ff] hover:underline font-semibold"
+              className="text-xs text-ink-muted hover:underline font-semibold"
               title="Switch to CoreBTR Obsidian View"
             >
               CoreBTR View
@@ -722,9 +722,9 @@ export function QBankRunner({
         {/* Two-Column Split Layout */}
         <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
           {/* Left Column: Active Question */}
-          <div className="flex-1 flex flex-col overflow-y-auto p-6 border-r border-[#1767be]/20">
+          <div className="flex-1 flex flex-col overflow-y-auto p-6 border-r border-edge">
             {/* Question Header */}
-            <div className="flex items-center justify-between border-b border-[#1767be]/20 pb-3 mb-4">
+            <div className="flex items-center justify-between border-b border-edge pb-3 mb-4">
               <span className="font-bold text-sm text-white">
                 Question No. {session.activeQuestionIndex + 1}
               </span>
@@ -734,7 +734,7 @@ export function QBankRunner({
             </div>
 
             {/* Vignette */}
-            <div className="text-[14.5px] leading-relaxed text-white font-medium p-4 rounded-2xl bg-[#1d204b]/50 border border-[#1767be]/20 mb-5">
+            <div className="text-[14.5px] leading-relaxed text-white font-medium p-4 rounded-2xl bg-elevated border border-edge mb-5">
               {activeQuestion.vignette}
             </div>
 
@@ -750,21 +750,21 @@ export function QBankRunner({
                     onClick={() => !isElim && handleSelectOption(idx)}
                     className={`flex items-center justify-between p-3.5 rounded-xl border transition cursor-pointer ${
                       isSelected
-                        ? "bg-[#1767be]/25 border-[#1767be] text-white font-bold ring-1 ring-[#4da2ff]"
+                        ? "bg-white/15 border-edge text-white font-bold ring-1 ring-white/40"
                         : isElim
                           ? "opacity-35 line-through bg-black/20 border-white/5 text-white/40"
-                          : "bg-[#1d204b]/40 border-[#1767be]/20 hover:bg-[#1d204b]/80 text-white"
+                          : "bg-elevated/40 border-edge hover:bg-elevated/80 text-white"
                     }`}
                   >
                     <div className="flex items-center gap-3">
                       <div
                         className={`h-4 w-4 rounded-full border flex items-center justify-center ${
-                          isSelected ? "border-[#4da2ff] bg-[#1767be]" : "border-white/40"
+                          isSelected ? "border-white/20 bg-white text-black" : "border-white/40"
                         }`}
                       >
                         {isSelected && <div className="h-2 w-2 rounded-full bg-white" />}
                       </div>
-                      <span className="text-xs font-mono font-bold text-[#4da2ff]">
+                      <span className="text-xs font-mono font-bold text-ink-muted">
                         {String.fromCharCode(65 + idx)})
                       </span>
                       <span className="text-xs leading-snug">{option}</span>
@@ -784,7 +784,7 @@ export function QBankRunner({
             </div>
 
             {/* Bottom Actions Bar */}
-            <div className="flex flex-wrap items-center justify-between gap-3 pt-4 border-t border-[#1767be]/20 mt-4">
+            <div className="flex flex-wrap items-center justify-between gap-3 pt-4 border-t border-edge mt-4">
               <div className="flex items-center gap-2">
                 <button
                   type="button"
@@ -792,7 +792,7 @@ export function QBankRunner({
                   className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition ${
                     isMarkedReview
                       ? "bg-purple-600 text-white"
-                      : "bg-[#1d204b] border border-[#1767be]/30 text-white hover:bg-[#252a60]"
+                      : "bg-elevated border border-edge text-white hover:bg-raised"
                   }`}
                 >
                   {isMarkedReview ? "Marked for Review" : "Mark for Review & Next"}
@@ -832,7 +832,7 @@ export function QBankRunner({
                         activeQuestionIndex: prev.activeQuestionIndex + 1,
                       }))
                     }
-                    className="px-5 py-1.5 rounded-xl bg-[#1767be] hover:bg-[#155bb0] text-white text-xs font-bold shadow-md transition"
+                    className="px-5 py-1.5 rounded-xl bg-white hover:bg-white/90 text-black font-semibold text-xs font-bold shadow-md transition"
                   >
                     Save & Next
                   </button>
@@ -853,8 +853,8 @@ export function QBankRunner({
           <div className="w-full md:w-72 shrink-0 bg-[#0a1334] p-4 flex flex-col justify-between gap-4 overflow-y-auto">
             <div className="flex flex-col gap-4">
               {/* Candidate Info */}
-              <div className="flex items-center gap-3 p-3 rounded-2xl bg-[#1d204b]/70 border border-[#1767be]/25">
-                <div className="h-10 w-10 rounded-full bg-[#1767be] text-white font-bold flex items-center justify-center shrink-0">
+              <div className="flex items-center gap-3 p-3 rounded-2xl bg-elevated/70 border border-edge">
+                <div className="h-10 w-10 rounded-full bg-white text-black font-semibold font-bold flex items-center justify-center shrink-0">
                   <User size={18} />
                 </div>
                 <div className="min-w-0">
@@ -892,7 +892,7 @@ export function QBankRunner({
               </div>
 
               {/* Question Palette Numbered Buttons */}
-              <div className="flex flex-col gap-2 pt-2 border-t border-[#1767be]/20">
+              <div className="flex flex-col gap-2 pt-2 border-t border-edge">
                 <span className="text-[11px] font-bold text-white/70">
                   Choose a Question:
                 </span>
@@ -929,7 +929,7 @@ export function QBankRunner({
             </div>
 
             {/* Bottom Palette Actions */}
-            <div className="flex flex-col gap-2 pt-3 border-t border-[#1767be]/20">
+            <div className="flex flex-col gap-2 pt-3 border-t border-edge">
               <div className="flex items-center gap-2">
                 <button
                   type="button"
@@ -963,14 +963,14 @@ export function QBankRunner({
 
   // MODE B: CORE BTR OBSIDIAN GLASS VIEW
   return (
-    <div className="flex flex-col h-full w-full max-w-3xl mx-auto bg-[#0d1b4b] rounded-3xl border border-[#1767be]/35 shadow-2xl overflow-hidden text-white select-none animate-in zoom-in-95 duration-150">
+    <div className="flex flex-col h-full w-full max-w-3xl mx-auto bg-surface rounded-3xl border border-edge shadow-2xl overflow-hidden text-white select-none animate-in zoom-in-95 duration-150">
       {/* Top Question Status Bar */}
-      <div className="flex items-center justify-between px-6 py-4 border-b border-[#1767be]/25 bg-[#1d204b]">
+      <div className="flex items-center justify-between px-6 py-4 border-b border-edge bg-elevated">
         <div className="flex items-center gap-3">
           <span className="font-mono text-sm font-black text-white">
             {session.activeQuestionIndex + 1}/{activeQuestions.length}
           </span>
-          <span className="rounded-lg bg-[#1767be]/20 px-2.5 py-0.5 text-xs font-bold text-[#4da2ff] border border-[#1767be]/30">
+          <span className="rounded-lg bg-white/10 px-2.5 py-0.5 text-xs font-bold text-ink-muted border border-edge">
             {activeQuestion.subject}
           </span>
         </div>
@@ -979,15 +979,15 @@ export function QBankRunner({
           <button
             type="button"
             onClick={() => setCbtMode(true)}
-            className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-white/5 border border-white/10 text-xs font-semibold text-white/80 hover:text-white hover:border-[#1767be]/40 transition"
+            className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-white/5 border border-white/10 text-xs font-semibold text-white/80 hover:text-white hover:border-edge transition"
             title="Switch to TCS iON Prometric Examination Skin"
           >
-            <Monitor size={13} className="text-[#4da2ff]" />
+            <Monitor size={13} className="text-ink-muted" />
             <span className="hidden sm:inline">TCS iON CBT Mode</span>
           </button>
 
           <div className="flex items-center gap-1.5 rounded-xl bg-white/5 border border-white/10 px-3 py-1 text-xs font-mono font-bold text-white">
-            <Timer size={13} className="text-[#4da2ff]" />
+            <Timer size={13} className="text-ink-muted" />
             <span>{formatTimer(elapsedTimer)}</span>
           </div>
 
@@ -996,7 +996,7 @@ export function QBankRunner({
             onClick={handleToggleBookmark}
             className={`p-1.5 rounded-xl transition ${
               isBookmarked
-                ? "bg-[#feb122]/20 text-[#feb122] border border-[#feb122]/40"
+                ? "bg-amber-500/15 text-amber-300 border border-amber-500/30"
                 : "text-white/60 hover:text-white hover:bg-white/5"
             }`}
             title="Bookmark into FSRS Vault"
@@ -1017,7 +1017,7 @@ export function QBankRunner({
       {/* Main Question Body */}
       <div className="flex-1 overflow-y-auto px-6 py-6 flex flex-col gap-5">
         {/* Vignette */}
-        <div className="text-[15px] leading-relaxed text-white font-medium p-4 rounded-2xl bg-[#1d204b]/60 border border-[#1767be]/25">
+        <div className="text-[15px] leading-relaxed text-white font-medium p-4 rounded-2xl bg-elevated border border-edge">
           {activeQuestion.vignette}
         </div>
 
@@ -1036,10 +1036,10 @@ export function QBankRunner({
             type="button"
             onClick={handleToggleMarkReview}
             className={`flex items-center gap-1.5 transition cursor-pointer ${
-              isMarkedReview ? "text-[#4da2ff] font-bold" : "hover:text-white"
+              isMarkedReview ? "text-ink-muted font-bold" : "hover:text-white"
             }`}
           >
-            <Flag size={12} className={isMarkedReview ? "fill-[#4da2ff]" : ""} />
+            <Flag size={12} className={isMarkedReview ? "fill-accent text-accent" : ""} />
             <span>{isMarkedReview ? "Marked for Review" : "Mark for Review"}</span>
           </button>
         </div>
@@ -1051,7 +1051,7 @@ export function QBankRunner({
             const isElim = eliminated.includes(idx);
             const isCorrect = idx === activeQuestion.correctIndex;
 
-            let optionBorder = "border-[#1767be]/20 bg-[#1d204b]/40 hover:bg-[#1d204b]/80 hover:border-[#1767be]/40 text-white";
+            let optionBorder = "border-edge bg-elevated/40 hover:bg-elevated/80 hover:border-edge text-white";
             if (submitted) {
               if (isCorrect) {
                 optionBorder = "border-emerald-500 bg-emerald-500/15 text-emerald-300 font-bold";
@@ -1061,7 +1061,7 @@ export function QBankRunner({
                 optionBorder = "opacity-40 border-white/5 text-white/50";
               }
             } else if (isSelected) {
-              optionBorder = "border-[#1767be] bg-[#1767be]/25 text-white font-bold ring-1 ring-[#4da2ff]";
+              optionBorder = "border-edge bg-white/15 text-white font-bold ring-1 ring-white/40";
             } else if (isElim) {
               optionBorder = "opacity-40 line-through bg-black/30 border-white/5 text-white/40";
             }
@@ -1080,8 +1080,8 @@ export function QBankRunner({
                         : submitted && isSelected && !isCorrect
                           ? "bg-rose-500 text-white"
                           : isSelected
-                            ? "bg-[#1767be] text-white"
-                            : "bg-[#1767be]/15 text-[#4da2ff] border border-[#1767be]/30"
+                            ? "bg-white text-black font-semibold"
+                            : "bg-white/10 text-white/90 border border-white/15"
                     }`}
                   >
                     {String.fromCharCode(65 + idx)}
@@ -1119,7 +1119,7 @@ export function QBankRunner({
             type="checkbox"
             checked={isGuess}
             onChange={handleToggleGuess}
-            className="h-4 w-4 rounded accent-[#1767be] cursor-pointer"
+            className="h-4 w-4 rounded accent-white cursor-pointer"
           />
           <span>I'm guessing this answer</span>
         </label>
@@ -1131,7 +1131,7 @@ export function QBankRunner({
               type="button"
               onClick={handleSubmitSingle}
               disabled={selectedIdx === undefined}
-              className="rounded-xl bg-[#1767be] hover:bg-[#155bb0] px-5 py-2 text-xs font-bold text-white shadow-md disabled:opacity-30 transition"
+              className="rounded-xl bg-white text-black hover:bg-white/90 px-5 py-2 text-xs font-bold text-white shadow-md disabled:opacity-30 transition"
             >
               Confirm Answer & Reveal Rationale
             </button>
@@ -1140,8 +1140,8 @@ export function QBankRunner({
 
         {/* Socratic Rationale */}
         {submitted && (
-          <div className="flex flex-col gap-4 rounded-2xl border border-[#1767be]/30 bg-[#1d204b]/95 p-5 animate-in fade-in duration-200">
-            <div className="flex items-start gap-2.5 rounded-xl bg-[#feb122]/10 border border-[#feb122]/30 p-3 text-xs text-[#feb122]">
+          <div className="flex flex-col gap-4 rounded-2xl border border-edge bg-elevated/95 p-5 animate-in fade-in duration-200">
+            <div className="flex items-start gap-2.5 rounded-xl bg-amber-500/10 border border-amber-500/30 p-3 text-xs text-amber-400">
               <AlertTriangle size={15} className="shrink-0 mt-0.5" />
               <div>
                 <span className="font-bold uppercase tracking-wider text-[10px]">Examiner Trap Radar</span>
@@ -1158,7 +1158,7 @@ export function QBankRunner({
               </div>
             </div>
 
-            <div className="flex items-center gap-2 rounded-xl bg-[#1767be]/15 border border-[#1767be]/30 p-2.5 text-xs text-[#4da2ff]">
+            <div className="flex items-center gap-2 rounded-xl bg-white/10 border border-edge p-2.5 text-xs text-ink-muted">
               <Lightbulb size={15} className="shrink-0" />
               <span>
                 <strong className="text-white font-bold">Bottom Line: </strong>
@@ -1170,7 +1170,7 @@ export function QBankRunner({
       </div>
 
       {/* Bottom Bar: Previous and Save & Next */}
-      <div className="flex items-center justify-between px-6 py-3.5 border-t border-[#1767be]/25 bg-[#1d204b]">
+      <div className="flex items-center justify-between px-6 py-3.5 border-t border-edge bg-elevated">
         <button
           type="button"
           onClick={() =>
@@ -1194,7 +1194,7 @@ export function QBankRunner({
                 activeQuestionIndex: prev.activeQuestionIndex + 1,
               }))
             }
-            className="px-6 py-2 rounded-xl text-xs font-bold text-white bg-[#1767be] hover:bg-[#155bb0] shadow-md shadow-[#1767be]/30 transition flex items-center gap-1.5"
+            className="px-6 py-2 rounded-xl text-xs font-bold text-white bg-white text-black hover:bg-white/90 shadow-md shadow-black/30 transition flex items-center gap-1.5"
           >
             <span>Save & Next</span>
             <ArrowRight size={13} />
@@ -1203,7 +1203,7 @@ export function QBankRunner({
           <button
             type="button"
             onClick={handleFinishExam}
-            className="px-6 py-2 rounded-xl text-xs font-bold text-white bg-[#1767be] hover:bg-[#155bb0] shadow-md shadow-[#1767be]/30 transition flex items-center gap-1.5"
+            className="px-6 py-2 rounded-xl text-xs font-bold text-white bg-white text-black hover:bg-white/90 shadow-md shadow-black/30 transition flex items-center gap-1.5"
           >
             <span>Submit Module</span>
             <CheckCircle2 size={13} />

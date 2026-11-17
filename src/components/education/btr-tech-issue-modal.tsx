@@ -81,7 +81,7 @@ Local Protocol Resolution: Enabled via Tauri convertFileSrc & Blob URLs
 
   return (
     <div className="fixed inset-0 z-[270] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-150">
-      <div className="relative w-full max-w-xl rounded-3xl bg-[#0d1b4b] border border-rose-500/30 shadow-2xl p-6 flex flex-col gap-5 text-white">
+      <div className="relative w-full max-w-xl rounded-3xl bg-surface border border-rose-500/30 shadow-2xl p-6 flex flex-col gap-5 text-white">
         {/* Header */}
         <div className="flex items-center justify-between pb-3 border-b border-rose-500/20">
           <div className="flex items-center gap-3">
@@ -117,7 +117,7 @@ Local Protocol Resolution: Enabled via Tauri convertFileSrc & Blob URLs
           </span>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-            <div className="p-3 rounded-2xl bg-[#1d204b] border border-white/10 flex items-center gap-3">
+            <div className="p-3 rounded-2xl bg-elevated border border-white/10 flex items-center gap-3">
               <CheckCircle2 size={16} className="text-emerald-400 shrink-0" />
               <div className="flex flex-col">
                 <span className="text-xs font-bold text-white">Video Engine</span>
@@ -127,7 +127,7 @@ Local Protocol Resolution: Enabled via Tauri convertFileSrc & Blob URLs
               </div>
             </div>
 
-            <div className="p-3 rounded-2xl bg-[#1d204b] border border-white/10 flex items-center gap-3">
+            <div className="p-3 rounded-2xl bg-elevated border border-white/10 flex items-center gap-3">
               <CheckCircle2 size={16} className="text-emerald-400 shrink-0" />
               <div className="flex flex-col">
                 <span className="text-xs font-bold text-white">Indexed Lectures</span>
@@ -137,7 +137,7 @@ Local Protocol Resolution: Enabled via Tauri convertFileSrc & Blob URLs
               </div>
             </div>
 
-            <div className="p-3 rounded-2xl bg-[#1d204b] border border-white/10 flex items-center gap-3">
+            <div className="p-3 rounded-2xl bg-elevated border border-white/10 flex items-center gap-3">
               <CheckCircle2 size={16} className="text-emerald-400 shrink-0" />
               <div className="flex flex-col">
                 <span className="text-xs font-bold text-white">PDF Workbooks</span>
@@ -147,7 +147,7 @@ Local Protocol Resolution: Enabled via Tauri convertFileSrc & Blob URLs
               </div>
             </div>
 
-            <div className="p-3 rounded-2xl bg-[#1d204b] border border-white/10 flex items-center gap-3">
+            <div className="p-3 rounded-2xl bg-elevated border border-white/10 flex items-center gap-3">
               <CheckCircle2 size={16} className="text-emerald-400 shrink-0" />
               <div className="flex flex-col">
                 <span className="text-xs font-bold text-white">Protocol Security</span>
@@ -169,7 +169,7 @@ Local Protocol Resolution: Enabled via Tauri convertFileSrc & Blob URLs
             <button
               type="button"
               onClick={handleTestVideoPlay}
-              className="flex-1 py-2.5 px-3 rounded-xl bg-[#1767be] hover:bg-[#155bb0] text-white font-bold text-xs shadow transition flex items-center justify-center gap-2"
+              className="flex-1 py-2.5 px-3 rounded-xl bg-white hover:bg-white/90 text-black font-semibold font-bold text-xs shadow transition flex items-center justify-center gap-2"
             >
               <Play size={13} fill="currentColor" />
               <span>Test Video Playback</span>
@@ -198,7 +198,7 @@ Local Protocol Resolution: Enabled via Tauri convertFileSrc & Blob URLs
           </div>
 
           {testVideoStatus && (
-            <span className="text-[11px] text-[#4da2ff] font-semibold">{testVideoStatus}</span>
+            <span className="text-[11px] text-ink-muted font-semibold">{testVideoStatus}</span>
           )}
         </div>
 

@@ -252,7 +252,7 @@ export function BTRGTTrackerModal({
               className="flex items-center gap-1.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 px-3 py-2 text-xs font-semibold text-white transition shadow-sm"
               title="Import from screenshot or announcement text"
             >
-              <Upload size={14} className="text-[#4da2ff]" />
+              <Upload size={14} className="text-ink-muted" />
               <span>Import Screenshot</span>
             </button>
 
@@ -388,7 +388,7 @@ export function BTRGTTrackerModal({
                       }}
                       className="flex items-center justify-center gap-1.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 px-4 py-2 text-xs font-semibold text-white transition"
                     >
-                      <FileText size={14} className="text-[#4da2ff]" />
+                      <FileText size={14} className="text-ink-muted" />
                       <span>Log My Percentile</span>
                     </button>
                   )}
@@ -649,7 +649,7 @@ export function BTRGTTrackerModal({
             <div className="flex items-center justify-between border-b border-white/10 pb-3">
               <div>
                 <h3 className="text-lg font-bold text-white flex items-center gap-2">
-                  <Upload size={18} className="text-[#4da2ff]" />
+                  <Upload size={18} className="text-ink-muted" />
                   <span>Import GT Schedule from Screenshot or Text</span>
                 </h3>
                 <p className="text-xs text-ink-muted">

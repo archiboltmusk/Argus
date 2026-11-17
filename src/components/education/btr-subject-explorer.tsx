@@ -85,7 +85,7 @@ export function BTRSubjectExplorer({
   return (
     <div className="flex flex-col gap-6 animate-in fade-in duration-200">
       {/* Top Header (Matching official CoreBTR App standard) */}
-      <div className="flex flex-col gap-3 pb-4 border-b border-[#1767be]/25">
+      <div className="flex flex-col gap-3 pb-4 border-b border-edge">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <button
@@ -98,7 +98,7 @@ export function BTRSubjectExplorer({
             </button>
             <div className="flex items-center gap-2">
               <h2 className="text-xl font-black text-white">{subject.name}</h2>
-              <span className="text-[10px] font-bold px-2 py-0.5 rounded-lg bg-[#1767be]/20 text-[#4da2ff] border border-[#1767be]/30">
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded-lg bg-white/10 text-white/90 border border-white/15">
                 Block {subject.blockNumber} • {subject.category}
               </span>
             </div>
@@ -108,7 +108,7 @@ export function BTRSubjectExplorer({
             <span className="text-xs text-white/70 font-medium">
               <strong className="text-white font-bold">{completedItems}</strong> out of {totalItems} items
             </span>
-            <span className="text-xs font-bold text-[#4da2ff] bg-[#1767be]/20 px-2.5 py-0.5 rounded-full border border-[#1767be]/30">
+            <span className="text-xs font-bold text-ink-muted bg-white/10 px-2.5 py-0.5 rounded-full border border-edge">
               {Math.round((completedItems / totalItems) * 100)}% completed
             </span>
             <button
@@ -122,8 +122,8 @@ export function BTRSubjectExplorer({
         </div>
 
         {/* Progress Bar */}
-        <div className="h-1.5 w-full bg-[#1d204b] rounded-full overflow-hidden">
-          <div className="h-full bg-gradient-to-r from-[#1767be] to-[#4da2ff] rounded-full w-[12%] transition-all duration-500" />
+        <div className="h-1.5 w-full bg-elevated rounded-full overflow-hidden">
+          <div className="h-full bg-gradient-to-r from-accent to-emerald-400 rounded-full w-[12%] transition-all duration-500" />
         </div>
 
         {/* Segmented Sub-Tabs: Videos | Questions | Pearls | Workbooks */}
@@ -135,8 +135,8 @@ export function BTRSubjectExplorer({
               onClick={() => setActiveTab(tab)}
               className={`px-5 py-2 rounded-2xl text-xs font-bold transition ${
                 activeTab === tab
-                  ? "bg-[#1767be] text-white shadow-sm"
-                  : "bg-[#1d204b]/70 hover:bg-[#1d204b] text-white/70 hover:text-white border border-[#1767be]/20"
+                  ? "bg-white text-black font-semibold shadow-sm"
+                  : "bg-elevated/70 hover:bg-elevated text-white/70 hover:text-white border border-edge"
               }`}
             >
               {tab === "Workbooks" ? "Workbooks & Notes" : tab}
@@ -159,10 +159,10 @@ export function BTRSubjectExplorer({
                 <div
                   key={topic.id}
                   onClick={() => onStartQBank(topic.name)}
-                  className="flex items-center justify-between p-4 rounded-2xl bg-[#1d204b]/70 border border-[#1767be]/25 hover:border-[#4da2ff]/50 hover:bg-[#1d204b] transition cursor-pointer select-none group"
+                  className="flex items-center justify-between p-4 rounded-2xl bg-elevated/70 border border-edge hover:border-white/20 hover:bg-elevated transition cursor-pointer select-none group"
                 >
                   <div className="flex flex-col">
-                    <span className="text-sm font-bold text-white group-hover:text-[#4da2ff] transition">
+                    <span className="text-sm font-bold text-white group-hover:text-ink-muted transition">
                       {topic.name}
                     </span>
                     <span className="text-xs text-white/60 mt-0.5">
@@ -170,7 +170,7 @@ export function BTRSubjectExplorer({
                     </span>
                   </div>
 
-                  <ChevronRight size={16} className="text-white/40 group-hover:text-[#4da2ff] transition" />
+                  <ChevronRight size={16} className="text-white/40 group-hover:text-ink-muted transition" />
                 </div>
               ))}
             </div>
@@ -191,15 +191,15 @@ export function BTRSubjectExplorer({
                 <div
                   key={mod.title}
                   onClick={mod.action}
-                  className="flex items-center justify-between p-4 rounded-2xl bg-[#1d204b]/70 border border-[#1767be]/25 hover:border-[#4da2ff]/50 hover:bg-[#1d204b] transition cursor-pointer select-none group"
+                  className="flex items-center justify-between p-4 rounded-2xl bg-elevated/70 border border-edge hover:border-white/20 hover:bg-elevated transition cursor-pointer select-none group"
                 >
                   <div className="flex flex-col">
-                    <span className="text-sm font-bold text-white group-hover:text-[#4da2ff] transition">
+                    <span className="text-sm font-bold text-white group-hover:text-ink-muted transition">
                       {mod.title}
                     </span>
                     <span className="text-xs text-white/60 mt-0.5">{mod.count}</span>
                   </div>
-                  <ChevronRight size={16} className="text-white/40 group-hover:text-[#4da2ff] transition" />
+                  <ChevronRight size={16} className="text-white/40 group-hover:text-ink-muted transition" />
                 </div>
               ))}
             </div>
@@ -210,7 +210,7 @@ export function BTRSubjectExplorer({
             <button
               type="button"
               onClick={onCreateCustomModule}
-              className="w-full py-3.5 rounded-2xl bg-[#1767be] hover:bg-[#155bb0] text-white font-extrabold text-xs shadow-md transition flex items-center justify-center gap-2"
+              className="w-full py-3.5 rounded-2xl bg-white hover:bg-white/90 text-black font-semibold font-extrabold text-xs shadow-md transition flex items-center justify-center gap-2"
             >
               <Plus size={16} />
               <span>+ Create Custom Module for {subject.name}</span>
@@ -223,7 +223,7 @@ export function BTRSubjectExplorer({
       {activeTab === "Pearls" && (
         <div className="flex flex-col gap-6">
           <div className="flex flex-wrap items-center justify-between gap-4">
-            <div className="flex items-center gap-1.5 rounded-xl bg-[#1d204b]/70 p-1 border border-[#1767be]/25 text-xs">
+            <div className="flex items-center gap-1.5 rounded-xl bg-elevated/70 p-1 border border-edge text-xs">
               {(["All", "Completed", "In Progress", "Not Viewed"] as const).map((filter) => (
                 <button
                   key={filter}
@@ -231,7 +231,7 @@ export function BTRSubjectExplorer({
                   onClick={() => setPearlsFilter(filter)}
                   className={`px-3 py-1 rounded-lg text-[11px] font-bold transition ${
                     pearlsFilter === filter
-                      ? "bg-[#1767be] text-white shadow-xs"
+                      ? "bg-white text-black font-semibold shadow-xs"
                       : "text-white/60 hover:text-white"
                   }`}
                 >
@@ -243,7 +243,7 @@ export function BTRSubjectExplorer({
             <button
               type="button"
               onClick={() => onStudyAllPearls?.(filteredPearls)}
-              className="px-4 py-2 rounded-xl bg-[#1767be] hover:bg-[#155bb0] text-white font-bold text-xs shadow-xs transition flex items-center gap-1.5"
+              className="px-4 py-2 rounded-xl bg-white hover:bg-white/90 text-black font-semibold font-bold text-xs shadow-xs transition flex items-center gap-1.5"
             >
               <Play size={13} fill="currentColor" />
               <span>Study All {filteredPearls.length} Pearls</span>
@@ -255,20 +255,20 @@ export function BTRSubjectExplorer({
               <div
                 key={pearl.id}
                 onClick={() => onSelectPearl(pearl)}
-                className="flex items-center justify-between p-4 rounded-2xl bg-[#1d204b]/70 border border-[#1767be]/25 hover:border-[#4da2ff]/50 hover:bg-[#1d204b] transition cursor-pointer select-none group"
+                className="flex items-center justify-between p-4 rounded-2xl bg-elevated/70 border border-edge hover:border-white/20 hover:bg-elevated transition cursor-pointer select-none group"
               >
                 <div className="flex flex-col gap-1 min-w-0 pr-4">
                   <div className="flex items-center gap-2">
-                    <span className="font-mono text-[10px] font-bold text-[#4da2ff]">
+                    <span className="font-mono text-[10px] font-bold text-ink-muted">
                       {pearl.code}
                     </span>
                     {pearl.is2VRecommended && (
-                      <span className="text-[10px] font-bold px-1.5 py-0.2 rounded bg-[#feb122]/15 text-[#feb122] border border-[#feb122]/30 flex items-center gap-1">
+                      <span className="text-[10px] font-bold px-1.5 py-0.2 rounded bg-amber-500/15 text-amber-300 border border-amber-500/30 flex items-center gap-1">
                         <Sparkles size={10} /> #2VRecommended
                       </span>
                     )}
                   </div>
-                  <h4 className="text-sm font-bold text-white group-hover:text-[#4da2ff] transition truncate">
+                  <h4 className="text-sm font-bold text-white group-hover:text-ink-muted transition truncate">
                     {pearl.title}
                   </h4>
                   <p className="text-xs text-white/60 line-clamp-1">
@@ -280,15 +280,15 @@ export function BTRSubjectExplorer({
                   <span
                     className={`text-[10.5px] font-bold px-2 py-0.5 rounded-full border ${
                       pearl.status === "Completed"
-                        ? "bg-[#1767be]/25 text-white border-[#1767be]/40"
+                        ? "bg-white/15 text-white border-edge"
                         : pearl.status === "In Progress"
-                          ? "bg-[#feb122]/15 text-[#feb122] border-[#feb122]/30"
+                          ? "bg-amber-500/15 text-amber-300 border-amber-500/30"
                           : "bg-white/5 text-white/50 border-white/10"
                     }`}
                   >
                     {pearl.status}
                   </span>
-                  <ChevronRight size={16} className="text-white/40 group-hover:text-[#4da2ff] transition" />
+                  <ChevronRight size={16} className="text-white/40 group-hover:text-ink-muted transition" />
                 </div>
               </div>
             ))}
@@ -306,7 +306,7 @@ export function BTRSubjectExplorer({
 
             <div className="flex items-center gap-2">
               {unannotatedPdf && (
-                <span className="text-xs text-[#4da2ff] font-semibold bg-[#1767be]/20 px-2.5 py-1 rounded-xl border border-[#1767be]/30">
+                <span className="text-xs text-ink-muted font-semibold bg-white/10 px-2.5 py-1 rounded-xl border border-edge">
                   Workbook Available
                 </span>
               )}
@@ -318,14 +318,14 @@ export function BTRSubjectExplorer({
               {videos.map((vid) => (
                 <div
                   key={vid.id}
-                  className="rounded-2xl bg-[#1d204b]/70 border border-[#1767be]/25 p-4 flex flex-col justify-between gap-3 shadow-xs hover:border-[#4da2ff]/50 hover:bg-[#1d204b] transition group"
+                  className="rounded-2xl bg-elevated/70 border border-edge p-4 flex flex-col justify-between gap-3 shadow-xs hover:border-white/20 hover:bg-elevated transition group"
                 >
                   <div className="flex items-start gap-3">
-                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#1767be]/20 text-[#4da2ff] border border-[#1767be]/30">
+                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white/10 text-white/90 border border-white/15">
                       <Play size={15} fill="currentColor" />
                     </div>
                     <div className="min-w-0">
-                      <h4 className="text-xs font-bold text-white truncate group-hover:text-[#4da2ff] transition">
+                      <h4 className="text-xs font-bold text-white truncate group-hover:text-ink-muted transition">
                         {vid.title}
                       </h4>
                       <span className="text-[10px] text-white/60 mt-0.5 block">
@@ -334,11 +334,11 @@ export function BTRSubjectExplorer({
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-2 pt-2 border-t border-[#1767be]/20">
+                  <div className="flex items-center gap-2 pt-2 border-t border-edge">
                     <button
                       type="button"
                       onClick={() => onLaunchWorkstation(vid, unannotatedPdf, annotatedPdf)}
-                      className="flex-1 py-1.5 rounded-xl bg-[#1767be] hover:bg-[#155bb0] text-white font-bold text-xs shadow-xs transition flex items-center justify-center gap-1.5"
+                      className="flex-1 py-1.5 rounded-xl bg-white hover:bg-white/90 text-black font-semibold font-bold text-xs shadow-xs transition flex items-center justify-center gap-1.5"
                     >
                       <Layers size={12} />
                       <span>Workstation</span>
@@ -346,7 +346,7 @@ export function BTRSubjectExplorer({
                     <button
                       type="button"
                       onClick={() => onPlayVideo(vid)}
-                      className="flex-1 py-1.5 rounded-xl bg-[#1d204b] hover:bg-[#252a60] border border-[#1767be]/35 text-white font-bold text-xs shadow-xs transition flex items-center justify-center gap-1.5"
+                      className="flex-1 py-1.5 rounded-xl bg-elevated hover:bg-raised border border-edge text-white font-bold text-xs shadow-xs transition flex items-center justify-center gap-1.5"
                     >
                       <Play size={12} fill="currentColor" />
                       <span>Play</span>
@@ -356,7 +356,7 @@ export function BTRSubjectExplorer({
               ))}
             </div>
           ) : (
-            <div className="flex flex-col items-center justify-center p-8 rounded-2xl bg-[#1d204b]/60 border border-[#1767be]/20 text-center gap-2">
+            <div className="flex flex-col items-center justify-center p-8 rounded-2xl bg-elevated border border-edge text-center gap-2">
               <FolderPlus size={24} className="text-white/40" />
               <span className="text-xs font-bold text-white">No local video files linked yet for {subject.name}</span>
               <span className="text-[11px] text-white/60 max-w-sm">
@@ -374,17 +374,17 @@ export function BTRSubjectExplorer({
             <span className="text-xs font-bold uppercase tracking-wider text-white/60">
               {subject.name} Workbooks & Annotated Lecture Notes
             </span>
-            <span className="text-xs text-[#4da2ff] font-semibold bg-[#1767be]/20 px-2.5 py-1 rounded-xl border border-[#1767be]/30">
+            <span className="text-xs text-ink-muted font-semibold bg-white/10 px-2.5 py-1 rounded-xl border border-edge">
               Offline PDF Engine
             </span>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Unannotated Workbook Card */}
-            <div className="p-5 rounded-2xl bg-[#1d204b]/70 border border-[#1767be]/30 flex flex-col justify-between gap-4 shadow-sm hover:border-[#4da2ff]/50 transition">
+            <div className="p-5 rounded-2xl bg-elevated/70 border border-edge flex flex-col justify-between gap-4 shadow-sm hover:border-white/20 transition">
               <div className="flex flex-col gap-2">
                 <div className="flex items-center justify-between">
-                  <span className="flex items-center gap-1.5 text-xs font-bold text-[#4da2ff] bg-[#1767be]/20 px-2.5 py-0.5 rounded-full border border-[#1767be]/30">
+                  <span className="flex items-center gap-1.5 text-xs font-bold text-ink-muted bg-white/10 px-2.5 py-0.5 rounded-full border border-edge">
                     <BookOpen size={13} />
                     <span>Unannotated Workbook</span>
                   </span>
@@ -404,7 +404,7 @@ export function BTRSubjectExplorer({
                 </p>
               </div>
 
-              <div className="flex items-center gap-2 pt-2 border-t border-[#1767be]/20">
+              <div className="flex items-center gap-2 pt-2 border-t border-edge">
                 {unannotatedPdf ? (
                   <>
                     <button
@@ -419,7 +419,7 @@ export function BTRSubjectExplorer({
                       <button
                         type="button"
                         onClick={() => onLaunchWorkstation(videos[0], unannotatedPdf, annotatedPdf)}
-                        className="flex-1 py-2 rounded-xl bg-[#1767be] hover:bg-[#155bb0] text-white font-bold text-xs shadow-md transition flex items-center justify-center gap-1.5"
+                        className="flex-1 py-2 rounded-xl bg-white hover:bg-white/90 text-black font-semibold font-bold text-xs shadow-md transition flex items-center justify-center gap-1.5"
                       >
                         <Layers size={13} />
                         <span>Dual Workstation</span>
@@ -430,7 +430,7 @@ export function BTRSubjectExplorer({
                   <button
                     type="button"
                     onClick={() => onStartQBank()}
-                    className="w-full py-2 rounded-xl bg-[#1767be] hover:bg-[#155bb0] text-white font-bold text-xs transition flex items-center justify-center gap-1.5"
+                    className="w-full py-2 rounded-xl bg-white hover:bg-white/90 text-black font-semibold font-bold text-xs transition flex items-center justify-center gap-1.5"
                   >
                     <span>Practice Topic MCQs</span>
                   </button>
@@ -439,10 +439,10 @@ export function BTRSubjectExplorer({
             </div>
 
             {/* Annotated Notes Card */}
-            <div className="p-5 rounded-2xl bg-[#1d204b]/70 border border-[#1767be]/30 flex flex-col justify-between gap-4 shadow-sm hover:border-[#4da2ff]/50 transition">
+            <div className="p-5 rounded-2xl bg-elevated/70 border border-edge flex flex-col justify-between gap-4 shadow-sm hover:border-white/20 transition">
               <div className="flex flex-col gap-2">
                 <div className="flex items-center justify-between">
-                  <span className="flex items-center gap-1.5 text-xs font-bold text-[#feb122] bg-[#feb122]/15 px-2.5 py-0.5 rounded-full border border-[#feb122]/30">
+                  <span className="flex items-center gap-1.5 text-xs font-bold text-amber-400 bg-amber-500/15 px-2.5 py-0.5 rounded-full border border-amber-500/30">
                     <FileText size={13} />
                     <span>Annotated Master Notes</span>
                   </span>
@@ -462,12 +462,12 @@ export function BTRSubjectExplorer({
                 </p>
               </div>
 
-              <div className="flex items-center gap-2 pt-2 border-t border-[#1767be]/20">
+              <div className="flex items-center gap-2 pt-2 border-t border-edge">
                 {annotatedPdf ? (
                   <button
                     type="button"
                     onClick={() => handleOpenPdf(annotatedPdf)}
-                    className="w-full py-2 rounded-xl bg-[#1767be] hover:bg-[#155bb0] text-white font-bold text-xs shadow-md transition flex items-center justify-center gap-1.5"
+                    className="w-full py-2 rounded-xl bg-white hover:bg-white/90 text-black font-semibold font-bold text-xs shadow-md transition flex items-center justify-center gap-1.5"
                   >
                     <FileText size={13} />
                     <span>View Annotated Notes</span>
@@ -476,7 +476,7 @@ export function BTRSubjectExplorer({
                   <button
                     type="button"
                     onClick={() => onStartQBank()}
-                    className="w-full py-2 rounded-xl bg-[#1767be] hover:bg-[#155bb0] text-white font-bold text-xs transition flex items-center justify-center gap-1.5"
+                    className="w-full py-2 rounded-xl bg-white hover:bg-white/90 text-black font-semibold font-bold text-xs transition flex items-center justify-center gap-1.5"
                   >
                     <span>Explore PYTs</span>
                   </button>
@@ -486,7 +486,7 @@ export function BTRSubjectExplorer({
           </div>
 
           {/* High-Yield Must-Know Topic Pillars */}
-          <div className="flex flex-col gap-3 p-5 rounded-2xl bg-[#1d204b]/60 border border-[#1767be]/25">
+          <div className="flex flex-col gap-3 p-5 rounded-2xl bg-elevated border border-edge">
             <span className="text-xs font-bold uppercase tracking-wider text-white/60">
               High-Yield Pillars & Examiner Trap Radar ({subject.mustKnowTopics.length} Topics)
             </span>
@@ -495,10 +495,10 @@ export function BTRSubjectExplorer({
                 <div
                   key={idx}
                   onClick={() => onStartQBank(topic)}
-                  className="p-3 rounded-xl bg-[#1d204b]/80 border border-[#1767be]/20 hover:border-[#4da2ff]/40 text-xs text-white/90 hover:text-white transition flex items-center justify-between cursor-pointer group"
+                  className="p-3 rounded-xl bg-elevated/80 border border-edge hover:border-white/20 text-xs text-white/90 hover:text-white transition flex items-center justify-between cursor-pointer group"
                 >
                   <span className="truncate pr-2">{topic}</span>
-                  <ChevronRight size={13} className="text-white/40 group-hover:text-[#4da2ff] shrink-0" />
+                  <ChevronRight size={13} className="text-white/40 group-hover:text-ink-muted shrink-0" />
                 </div>
               ))}
             </div>
