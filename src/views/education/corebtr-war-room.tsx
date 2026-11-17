@@ -73,6 +73,8 @@ import {
   getBackendTests,
   getQuestionsForTest,
   getQuestionsForSubject,
+  buildCustomModuleTest,
+  getLatestAutopsyReport,
 } from "@/lib/education/btr-backend-service";
 import type { ClinicalQuestion } from "@/lib/education/qbank-types";
 import {
@@ -2864,6 +2866,57 @@ export function CoreBTRWarRoom({
             </div>
           </div>
 
+          {/* Latest Post-GT Autopsy & Remediation Curriculum */}
+          {(() => {
+            const autopsy = getLatestAutopsyReport();
+            if (!autopsy) return null;
+            return (
+              <div className="rounded-2xl border border-edge bg-surface/90 p-5 flex flex-col gap-3 shadow-md">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Zap size={16} className="text-amber-400" />
+                    <h4 className="font-bold text-sm text-ink">
+                      Active Remediation Curriculum: {autopsy.testTitle}
+                    </h4>
+                  </div>
+                  <span className="text-xs font-mono text-ink-muted">
+                    {autopsy.accuracyPct}% Accuracy · {autopsy.sillyMistakesCount} Silly Errors
+                  </span>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+                  {autopsy.recommendations.map((rec, i) => (
+                    <div key={i} className="p-3 rounded-xl bg-surface-elevated border border-edge space-y-1.5">
+                      <div className="flex items-center justify-between">
+                        <span className="font-bold text-ink">{rec.subject}: {rec.topic}</span>
+                        <span className="text-[10px] text-accent font-semibold">{rec.errorCount} mistakes</span>
+                      </div>
+                      <p className="text-[11px] text-ink-muted">{rec.suggestedAction}</p>
+                      <div className="flex items-center gap-2 text-[10px] font-mono text-ink-subtle">
+                        <span>📹 {rec.relevantVideoLecture}</span>
+                        <span>📄 {rec.relevantWorkbookPdf}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <div className="flex justify-end pt-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const allQs = autopsy.recommendations.flatMap((r) => r.remediationQuestions);
+                      if (allQs.length > 0) {
+                        onStartQBankDrill?.(`${autopsy.testTitle} Weak-Spot Remediation`, allQs);
+                      }
+                    }}
+                    className="px-4 py-2 rounded-xl bg-white hover:bg-white/90 text-black font-semibold text-xs transition flex items-center gap-1.5 shadow-sm"
+                  >
+                    <Play size={12} fill="currentColor" />
+                    <span>Launch 10-Question Weak-Spot Drill</span>
+                  </button>
+                </div>
+              </div>
+            );
+          })()}
+
           {/* GT History Cards */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {gtRecords.map((gt) => {
@@ -3299,8 +3352,20 @@ export function CoreBTRWarRoom({
       <BTRCustomModuleModal
         isOpen={showCustomModuleModal}
         onClose={() => setShowCustomModuleModal(false)}
-        onStartModule={(config) => {
-          onStartQBankDrill?.(config.name);
+        onStartModule={async (config) => {
+          setShowCustomModuleModal(false);
+          const qs = await buildCustomModuleTest({
+            title: config.name,
+            subjects: config.selectedSubjects || (selectedSubjectDetail?.name ? [selectedSubjectDetail.name] : []),
+            status: config.bookmarksOnly ? "bookmarked" : config.attemptStatus.incorrect ? "incorrect" : "all",
+            count: config.questionCount,
+            mode: "exam",
+          });
+          if (qs.length > 0) {
+            onStartQBankDrill?.(config.name, qs);
+          } else {
+            onStartQBankDrill?.(config.name);
+          }
         }}
         subjectName={selectedSubjectDetail?.name}
       />

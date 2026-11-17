@@ -54,3 +54,35 @@ export interface BTRGTAnalyticsSummary {
     accuracyPercent: number;
   }>;
 }
+
+export interface CustomModuleConfig {
+  title?: string;
+  subjects: string[]; // empty array = all subjects
+  status: "all" | "unattempted" | "incorrect" | "bookmarked";
+  count: number;
+  mode: "exam" | "study";
+  depthLevel?: string;
+}
+
+export interface RemediationRecommendation {
+  subject: string;
+  topic: string;
+  errorCount: number;
+  suggestedAction: string;
+  relevantVideoLecture?: string;
+  relevantWorkbookPdf?: string;
+  remediationQuestions: ClinicalQuestion[];
+}
+
+export interface GTAutopsyReport {
+  id: string;
+  testTitle: string;
+  timestamp: number;
+  totalQuestions: number;
+  score: number;
+  accuracyPct: number;
+  sillyMistakesCount: number;
+  knowledgeGapsCount: number;
+  guessworkCount: number;
+  recommendations: RemediationRecommendation[];
+}

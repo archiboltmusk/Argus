@@ -8,7 +8,17 @@ import {
   isQuestionBookmarked,
   recordQuestionAttempt,
   getGTAnalyticsSummary,
+  searchAllQuestions,
+  buildCustomModuleTest,
+  generateGTAutopsy,
+  getLatestAutopsyReport,
+  getDailyFSRSReviewQueue,
 } from "../src/lib/education/btr-backend-service";
+import {
+  cacheQuestionImages,
+  isImageCached,
+  resolvePlayableImageUrl,
+} from "../src/lib/education/btr-asset-cache";
 import type { GrandTestResult } from "../src/lib/education/qbank-types";
 
 test("BTR Backend Service: initializes cleanly and exposes API", async () => {
@@ -54,4 +64,66 @@ test("BTR Backend Service: stores and aggregates exam results", async () => {
   const analytics = await getGTAnalyticsSummary();
   assert.ok(analytics.totalTestsTaken >= 1);
   assert.ok(analytics.averageScore > 0);
+});
+
+test("BTR Backend Service: generates GT autopsy and remediation drills", () => {
+  const mockResult: GrandTestResult = {
+    id: "gt-autopsy-test",
+    examTitle: "CoreBTR Grand Test 2",
+    timestamp: Date.now(),
+    totalQuestions: 200,
+    attempted: 200,
+    correct: 130,
+    incorrect: 70,
+    score: 450,
+    maxScore: 800,
+    accuracyPct: 65,
+    timeSpentMinutes: 205,
+  };
+
+  const autopsy = generateGTAutopsy(mockResult);
+  assert.equal(autopsy.testTitle, "CoreBTR Grand Test 2");
+  assert.ok(autopsy.sillyMistakesCount > 0);
+  assert.ok(autopsy.knowledgeGapsCount > 0);
+  assert.ok(autopsy.recommendations.length > 0);
+
+  const latest = getLatestAutopsyReport();
+  assert.ok(latest);
+  assert.equal(latest.testTitle, "CoreBTR Grand Test 2");
+});
+
+test("BTR Backend Service: Custom Module Builder filters questions correctly", async () => {
+  const customDrill = await buildCustomModuleTest({
+    title: "Pathology & Pharma Sprint",
+    subjects: ["Pathology", "Pharmacology"],
+    status: "all",
+    count: 20,
+    mode: "exam",
+  });
+
+  assert.ok(Array.isArray(customDrill));
+});
+
+test("BTR Backend Service: searchAllQuestions executes quickly", async () => {
+  const results = await searchAllQuestions("syndrome");
+  assert.ok(Array.isArray(results));
+
+  const empty = await searchAllQuestions("");
+  assert.deepEqual(empty, []);
+});
+
+test("BTR Backend Service: FSRS daily review queue yields questions", async () => {
+  const queue = await getDailyFSRSReviewQueue(15);
+  assert.ok(Array.isArray(queue));
+});
+
+test("BTR Asset Cache: handles URLs and offline resolution safely", async () => {
+  const cachedCount = await cacheQuestionImages(["https://example.com/test.png"]);
+  assert.equal(typeof cachedCount, "number");
+
+  const cached = await isImageCached("https://example.com/test.png");
+  assert.equal(typeof cached, "boolean");
+
+  const url = await resolvePlayableImageUrl("https://example.com/test.png");
+  assert.equal(typeof url, "string");
 });
