@@ -22,7 +22,7 @@ on:
 
 concurrency:
   group: desktop-${{ github.ref }}
-  cancel-in-progress: ${{ !startsWith(github.ref, 'refs/tags/') && github.ref != 'refs/heads/main' }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 env:
   CARGO_TERM_COLOR: always
@@ -55,18 +55,25 @@ jobs:
           TAG="${{ inputs.target_tag }}"
           [[ "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo "::error::An explicit stable version tag is required"; exit 1; }
           VERSION="${TAG#v}"
-          gh release download "$TAG" --repo "$REPO" -p latest.json -O latest.json
+          for attempt in 1 2 3 4 5; do
+            if gh release download "$TAG" --repo "$REPO" -p latest.json -O latest.json; then
+              break
+            fi
+            echo "Waiting for staged release asset to become available (attempt $attempt/5)..."
+            sleep 3
+          done
           node scripts/validate-update-manifest.mjs latest.json "$VERSION" darwin-aarch64
           echo "publish=true" >> "$GITHUB_OUTPUT"
           echo "tag=$TAG" >> "$GITHUB_OUTPUT"
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
   preflight:
+    if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v6
+      - uses: pnpm/action-setup@v5
+      - uses: actions/setup-node@v7
         with:
           node-version: "24"
           cache: "pnpm"
@@ -76,7 +83,7 @@ jobs:
 
   windows:
     name: Windows x64 (NSIS, MSI)
-    needs: [preflight, version]
+    needs: [version]
     if: github.event_name == 'pull_request' || needs.version.outputs.publish == 'true'
     runs-on: windows-latest
     timeout-minutes: 90
@@ -160,7 +167,7 @@ jobs:
 
   linux:
     name: Linux x64 (AppImage, deb)
-    needs: [preflight, version]
+    needs: [version]
     if: github.event_name == 'pull_request' || needs.version.outputs.publish == 'true'
     # 24.04 ships libmpv2 (mpv 0.37) and webkit2gtk-4.1. The AppImage therefore
     # needs glibc 2.39 or newer.
