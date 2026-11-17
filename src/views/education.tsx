@@ -544,8 +544,9 @@ export function EducationView() {
         {/* TAB 1: COURSES & CATALOGS */}
         {tab === "courses" && (
           <>
-            {/* Cinematic Featured Masterclass Hero (Matches Shows & Sports standard) */}
+            {/* Cinematic CoreBTR Brand Hero (matching corebtr.com standard) */}
             {(() => {
+              const hasBtrLocal = localCourseFolders.some((f) => f.folder.includes("BTR") || f.title.toLowerCase().includes("btr"));
               const featuredList = CURATED_COURSES.slice(0, 4);
               const activeHeroCourse = featuredList[heroIndex] || featuredList[0];
               if (!activeHeroCourse) return null;
@@ -553,7 +554,7 @@ export function EducationView() {
               return (
                 <div className="edu-cinematic-hero group">
                   <img
-                    src={activeHeroCourse.thumbnail}
+                    src={hasBtrLocal && heroIndex === 0 ? "https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?w=1200&auto=format&fit=crop&q=80" : activeHeroCourse.thumbnail}
                     alt={activeHeroCourse.title}
                     className="edu-cinematic-hero-bg"
                   />
@@ -562,30 +563,38 @@ export function EducationView() {
                   <div className="edu-hero-content">
                     <div className="edu-hero-badge-ribbon">
                       <span className="edu-hero-kicker">
-                        <GraduationCap size={13} />
-                        <span>{t("Masterclass Spotlight")}</span>
+                        <Flame size={13} className="text-[#feb122]" />
+                        <span>CoreBTR • Dr. Zainab Vora</span>
                       </span>
-                      <span className="rounded-full bg-white/10 px-3 py-1 text-[11px] font-semibold text-white/90 backdrop-blur-md border border-white/15">
-                        {activeHeroCourse.provider}
+                      <span className="rounded-full bg-[#1767be]/20 px-3 py-1 text-[11px] font-semibold text-[#4da2ff] border border-[#1767be]/40">
+                        NEET-PG • INI-CET • FMGE
                       </span>
-                      {activeHeroCourse.totalLessons && (
-                        <span className="rounded-full bg-accent/20 px-3 py-1 text-[11px] font-bold text-accent backdrop-blur-md border border-accent/30">
-                          {activeHeroCourse.totalLessons} {t("Lectures")}
+                      {hasBtrLocal && (
+                        <span className="rounded-full bg-white/10 px-3 py-1 text-[11px] font-bold text-white/90 border border-white/15">
+                          61 Videos Indexed in /Downloads/BTR
                         </span>
                       )}
                     </div>
 
-                    <h2 className="edu-hero-title">{activeHeroCourse.title}</h2>
-                    <p className="edu-hero-desc">{activeHeroCourse.description}</p>
+                    <h2 className="edu-hero-title">
+                      {hasBtrLocal && heroIndex === 0
+                        ? "Rapid Concept Revision for Medical PG Success"
+                        : activeHeroCourse.title}
+                    </h2>
+                    <p className="edu-hero-desc">
+                      {hasBtrLocal && heroIndex === 0
+                        ? "High-yield topic synthesis, integrated clinical systems, and 19-subject rapid recall engineered for NEET-PG, INI-CET & FMGE aspirants."
+                        : activeHeroCourse.description}
+                    </p>
 
                     <div className="edu-hero-actions">
                       <button
                         type="button"
-                        onClick={() => openPlayer(localPlayerSrc(activeHeroCourse as any))}
+                        onClick={() => setTab("btr")}
                         className="edu-hero-btn-primary"
                       >
-                        <Play size={16} fill="currentColor" />
-                        <span>{t("Start Masterclass")}</span>
+                        <Flame size={16} fill="currentColor" />
+                        <span>{t("Launch CoreBTR War Room")}</span>
                       </button>
 
                       <button
@@ -593,8 +602,8 @@ export function EducationView() {
                         onClick={() => setTab("checkpoints")}
                         className="edu-hero-btn-secondary"
                       >
-                        <Target size={15} className="text-accent" />
-                        <span>{t("Checkpoint Decks")}</span>
+                        <Target size={15} className="text-[#4da2ff]" />
+                        <span>{t("Socratic Checkpoints")}</span>
                       </button>
 
                       <button
@@ -602,7 +611,7 @@ export function EducationView() {
                         onClick={() => startQBankDrill(true)}
                         className="edu-hero-btn-secondary"
                       >
-                        <Zap size={15} className="text-indigo-400 fill-indigo-400" />
+                        <Zap size={15} className="text-[#4da2ff]" />
                         <span>{t("Clinical Drill")}</span>
                       </button>
                     </div>
