@@ -70,6 +70,8 @@ import {
 } from "@/lib/education/prerequisite-graph";
 import { InteractiveCheckpointOverlay } from "./player/interactive-checkpoint-overlay";
 import { Row } from "@/components/row";
+import { USER_LOCAL_BTR_MANIFEST } from "@/lib/education/btr-library-manifest";
+import { resolveBTRPlayableUrl } from "@/lib/education/btr-local-library";
 import "./education/education-hub.css";
 
 const BTR_19_SUBJECTS_CATALOG = [
@@ -116,6 +118,8 @@ export function EducationView() {
   const [importNotice, setImportNotice] = useState<{ success: boolean; message: string } | null>(null);
   const [showToolsMenu, setShowToolsMenu] = useState(false);
   const [heroIndex, setHeroIndex] = useState(0);
+  const [selectedBtrSubject, setSelectedBtrSubject] = useState<string | undefined>();
+  const [selectedBtrDestination, setSelectedBtrDestination] = useState<any>("today");
   const [revealedConcepts, setRevealedConcepts] = useState<Record<string, boolean>>({});
   const [conceptStats, setConceptStats] = useState<Record<string, any>>(() => loadAllConceptStats());
   const [conceptSystemFilter, setConceptSystemFilter] = useState<"all" | "cardio" | "neuro" | "renal">("all");
@@ -560,6 +564,8 @@ export function EducationView() {
               startQBankDrill(true);
             }}
             onOpenNotes={() => setTab("notes")}
+            initialDestination={selectedBtrDestination}
+            initialSubjectId={selectedBtrSubject}
           />
         )}
 
@@ -825,7 +831,11 @@ export function EducationView() {
                   {BTR_19_SUBJECTS_CATALOG.map((subject) => (
                     <div
                       key={subject.id}
-                      onClick={() => setTab("btr")}
+                      onClick={() => {
+                        setSelectedBtrSubject(subject.id);
+                        setSelectedBtrDestination("subjects");
+                        setTab("btr");
+                      }}
                       className="edu-obsidian-card group/sub flex flex-col justify-between overflow-hidden p-0 transition-all duration-300 hover:scale-[1.02] border border-[#1767be]/30 hover:border-[#4da2ff] shadow-xl cursor-pointer"
                     >
                       <div className="relative h-32 w-full overflow-hidden bg-[#0d1b4b]">
@@ -861,13 +871,165 @@ export function EducationView() {
                             Dr. Zainab Vora
                           </span>
                           <span className="text-[11px] font-bold text-[#4da2ff] group-hover/sub:translate-x-0.5 transition flex items-center gap-0.5">
-                            <span>Explore</span>
+                            <span>Explore Studio</span>
                             <ChevronRight size={12} />
                           </span>
                         </div>
                       </div>
                     </div>
                   ))}
+                </Row>
+              </div>
+            </section>
+
+            {/* Section 1.6: CoreBTR Master Volumes & Question Vault (eBook-Grade Visuals) */}
+            <section className="flex flex-col gap-4">
+              <div className="edu-section-head flex-col sm:flex-row sm:items-center justify-between">
+                <div>
+                  <div className="flex items-center gap-2 text-[#4da2ff] text-[11px] font-extrabold uppercase tracking-widest">
+                    <BookOpen size={13} className="text-[#feb122]" />
+                    <span>{t("CoreBTR Master Volumes & Active Recall Workbooks")}</span>
+                  </div>
+                  <h2 className="text-xl font-black tracking-tight text-white mt-0.5">
+                    {t("High-Yield Master Textbooks & QBank Vault")}
+                  </h2>
+                </div>
+                <span className="text-xs text-ink-muted">
+                  4 Master Volumes + 128 Local Workbooks Indexed
+                </span>
+              </div>
+
+              <div className="-mx-2">
+                <Row min={260} shape="landscape" alwaysActive scrollKey="education:btr-master-volumes">
+                  {USER_LOCAL_BTR_MANIFEST.masterPdfs.map((pdf) => {
+                    const sizeMb = (pdf.sizeBytes / (1024 * 1024)).toFixed(1);
+                    return (
+                      <div
+                        key={pdf.id}
+                        className="edu-obsidian-card group/vol flex flex-col justify-between overflow-hidden p-0 transition-all duration-300 hover:scale-[1.02] border border-[#1767be]/30 hover:border-[#4da2ff] shadow-xl"
+                      >
+                        <div className="relative h-36 w-full overflow-hidden bg-gradient-to-br from-[#0d1b4b] via-[#1d204b] to-[#090e24] p-4 flex flex-col justify-between">
+                          <div className="flex items-center justify-between">
+                            <span className="rounded-md bg-[#1767be]/30 px-2.5 py-0.5 text-[9.5px] font-black text-[#4da2ff] border border-[#1767be]/50 uppercase tracking-wider">
+                              Master Edition
+                            </span>
+                            <span className="rounded-md bg-white/10 px-2 py-0.5 text-[10px] font-mono text-white/80 border border-white/10">
+                              {sizeMb} MB
+                            </span>
+                          </div>
+
+                          <div className="my-auto text-center py-2">
+                            <div className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-[#1767be]/20 text-[#4da2ff] border border-[#1767be]/40 mb-1 group-hover/vol:scale-110 transition">
+                              <BookOpen size={22} />
+                            </div>
+                            <h4 className="text-sm font-extrabold text-white truncate drop-shadow px-2">
+                              {pdf.title}
+                            </h4>
+                          </div>
+
+                          <div className="flex items-center justify-between text-[10px] text-white/60">
+                            <span>Dr. Zainab Vora</span>
+                            <span className="text-emerald-400 font-bold">✓ Offline Verified</span>
+                          </div>
+                        </div>
+
+                        <div className="p-3.5 flex flex-col gap-2.5 bg-[#0d1b4b]/95">
+                          <p className="text-[11px] font-mono text-white/60 truncate">
+                            {pdf.filename}
+                          </p>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const url = resolveBTRPlayableUrl(pdf.fullPath);
+                              window.open(url, "_blank");
+                            }}
+                            className="w-full flex items-center justify-center gap-1.5 rounded-xl bg-[#1767be] hover:bg-[#155bb0] px-3 py-2 text-xs font-bold text-white shadow-md transition"
+                          >
+                            <FileText size={13} />
+                            <span>{t("Open Master Document")}</span>
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </Row>
+              </div>
+            </section>
+
+            {/* Section 1.7: Official Grand Tests & CBT Mock Exams */}
+            <section className="flex flex-col gap-4">
+              <div className="edu-section-head flex-col sm:flex-row sm:items-center justify-between">
+                <div>
+                  <div className="flex items-center gap-2 text-[#4da2ff] text-[11px] font-extrabold uppercase tracking-widest">
+                    <Target size={13} className="text-[#feb122]" />
+                    <span>{t("Official Grand Tests & CBT Exam Simulators")}</span>
+                  </div>
+                  <h2 className="text-xl font-black tracking-tight text-white mt-0.5">
+                    {t("NEET-PG & INI-CET Grand Tests Suite")}
+                  </h2>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedBtrDestination("tests");
+                    setTab("btr");
+                  }}
+                  className="text-xs font-bold text-[#4da2ff] hover:text-white flex items-center gap-1 transition"
+                >
+                  <span>{t("Open Full Test Center")}</span>
+                  <ChevronRight size={14} />
+                </button>
+              </div>
+
+              <div className="-mx-2">
+                <Row min={270} shape="landscape" alwaysActive scrollKey="education:btr-grand-tests">
+                  {USER_LOCAL_BTR_MANIFEST.grandTests.map((gt) => {
+                    const isHtml = gt.kind === "html_test";
+                    return (
+                      <div
+                        key={gt.id}
+                        className="edu-obsidian-card group/gt flex flex-col justify-between overflow-hidden p-0 transition-all duration-300 hover:scale-[1.02] border border-[#1767be]/30 hover:border-[#4da2ff] shadow-xl"
+                      >
+                        <div className="relative h-32 w-full overflow-hidden bg-[#0d1b4b] p-3.5 flex flex-col justify-between">
+                          <div className="flex items-center justify-between">
+                            <span className={`rounded-md px-2 py-0.5 text-[9.5px] font-black uppercase tracking-wider ${
+                              isHtml
+                                ? "bg-[#feb122]/20 text-[#feb122] border border-[#feb122]/40"
+                                : "bg-[#1767be]/30 text-[#4da2ff] border border-[#1767be]/50"
+                            }`}>
+                              {isHtml ? "Interactive CBT" : "Annotated Solutions"}
+                            </span>
+                            <span className="rounded-md bg-white/10 px-2 py-0.5 text-[9.5px] font-mono text-white/80 border border-white/10">
+                              {(gt.sizeBytes / (1024 * 1024)).toFixed(1)} MB
+                            </span>
+                          </div>
+
+                          <div>
+                            <h4 className="text-sm font-extrabold text-white truncate drop-shadow">
+                              {gt.title}
+                            </h4>
+                            <p className="text-[10px] text-white/60 truncate mt-0.5">
+                              {gt.filename}
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="p-3 bg-[#0d1b4b]/95 flex items-center justify-between gap-2 border-t border-white/[0.06]">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const url = resolveBTRPlayableUrl(gt.fullPath);
+                              window.open(url, "_blank");
+                            }}
+                            className="flex-1 flex items-center justify-center gap-1.5 rounded-xl bg-[#1767be] hover:bg-[#155bb0] px-3 py-1.5 text-xs font-bold text-white shadow-sm transition"
+                          >
+                            {isHtml ? <Play size={12} fill="currentColor" /> : <FileText size={12} />}
+                            <span>{isHtml ? t("Launch CBT Simulation") : t("View Solutions")}</span>
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </Row>
               </div>
             </section>
@@ -1051,16 +1213,16 @@ export function EducationView() {
         {tab === "checkpoints" && (
           <div className="flex flex-col gap-9">
             {/* 1. Mastery Status & Progress HUD Ribbon - Unified CoreBTR Indigo */}
-            <div className="relative overflow-hidden rounded-3xl border border-white/10 bg-[#121428] p-6 shadow-2xl backdrop-blur-2xl">
+            <div className="edu-hud-glass p-6 shadow-2xl">
               <div className="relative z-10 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
                 <div className="flex flex-col gap-2 max-w-2xl">
                   <div className="flex items-center gap-2">
-                    <span className="flex items-center gap-1.5 rounded-full bg-indigo-500/20 px-3 py-0.5 text-[11px] font-extrabold uppercase tracking-widest text-[#4da2ff] border border-indigo-500/30">
+                    <span className="flex items-center gap-1.5 rounded-full bg-[#1767be]/20 px-3 py-0.5 text-[11px] font-extrabold uppercase tracking-widest text-[#4da2ff] border border-[#1767be]/30">
                       <Sparkles size={12} />
                       {t("Active Learning Engine")}
                     </span>
-                    <span className="flex items-center gap-1 text-[11px] font-bold text-indigo-200 bg-indigo-500/15 px-2.5 py-0.5 rounded-full border border-indigo-500/30">
-                      <Flame size={12} className="text-indigo-400" />
+                    <span className="flex items-center gap-1 text-[11px] font-bold text-[#feb122] bg-[#feb122]/15 px-2.5 py-0.5 rounded-full border border-[#feb122]/30">
+                      <Flame size={12} className="text-[#feb122]" />
                       5 Day Retention Streak
                     </span>
                   </div>
@@ -1077,7 +1239,7 @@ export function EducationView() {
                 {/* Quick Stats Pill */}
                 <div className="flex items-center gap-3 shrink-0">
                   <div className="flex items-center gap-3 rounded-2xl bg-white/[0.04] border border-white/10 px-4 py-3 backdrop-blur-xl">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-500/15 text-[#4da2ff] border border-indigo-500/30">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#1767be]/15 text-[#4da2ff] border border-[#1767be]/30">
                       <Award size={20} />
                     </div>
                     <div>
@@ -1092,7 +1254,7 @@ export function EducationView() {
                       const firstCourse = CURATED_COURSES[0];
                       if (firstCourse) openPlayer(localPlayerSrc(firstCourse as any));
                     }}
-                    className="flex items-center gap-2 rounded-2xl bg-indigo-600 hover:bg-indigo-500 px-5 py-3 text-xs font-bold text-white shadow-lg shadow-indigo-600/30 transition transform hover:-translate-y-0.5"
+                    className="flex items-center gap-2 rounded-2xl bg-[#1767be] hover:bg-[#155bb0] px-5 py-3 text-xs font-bold text-white shadow-lg shadow-[#1767be]/30 transition transform hover:-translate-y-0.5"
                   >
                     <Play size={15} fill="currentColor" />
                     <span>{t("Launch Socratic Player")}</span>
@@ -1199,11 +1361,11 @@ export function EducationView() {
             </div>
 
             {/* 3. Root-Cause Prerequisite Concept Mesh (Clinical Knowledge Graph) */}
-            <div className="relative overflow-hidden rounded-3xl border border-white/10 bg-[#0d0f22]/90 p-7 shadow-2xl backdrop-blur-2xl flex flex-col gap-6">
+            <div className="edu-hud-glass p-7 flex flex-col gap-6">
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-white/[0.06] pb-5">
                 <div>
                   <div className="flex items-center gap-2">
-                    <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-accent/20 text-accent border border-accent/30">
+                    <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#1767be]/20 text-[#4da2ff] border border-[#1767be]/30">
                       <GitBranch size={16} />
                     </span>
                     <h4 className="font-extrabold text-white text-lg">
@@ -1231,7 +1393,7 @@ export function EducationView() {
                       onClick={() => setConceptSystemFilter(sys.id as any)}
                       className={`rounded-lg px-3 py-1 text-[11.5px] font-bold transition ${
                         conceptSystemFilter === sys.id
-                          ? "bg-accent text-white shadow-sm"
+                          ? "bg-[#1767be] text-white shadow-sm"
                           : "text-white/60 hover:text-white hover:bg-white/5"
                       }`}
                     >

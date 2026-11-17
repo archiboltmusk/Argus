@@ -92,19 +92,10 @@ import {
   type BTRLocalLibraryState,
   type BTRLocalMediaFile,
 } from "@/lib/education/btr-local-library";
+import { USER_LOCAL_BTR_MANIFEST } from "@/lib/education/btr-library-manifest";
 
-// Official CoreBTR Tests Catalog (from screenshot media_1794864389397)
+// Official CoreBTR Tests Catalog (connected to /Users/anupam/Downloads/BTR)
 const COREBTR_OFFICIAL_TESTS = [
-  {
-    id: "gt_4",
-    title: "Baseline GRAND TEST - 4",
-    totalQuestions: 200,
-    durationMins: 210,
-    type: "Grand Tests",
-    status: "Live",
-    ended: true,
-    competitive: true,
-  },
   {
     id: "gt_inicet_mock",
     title: "National INICET Mock GT",
@@ -114,6 +105,73 @@ const COREBTR_OFFICIAL_TESTS = [
     status: "Live",
     ended: true,
     competitive: true,
+    solutionFile: "National_INICET_Mock_GT_annotated.pdf",
+  },
+  {
+    id: "gt_4",
+    title: "Baseline GRAND TEST - 4",
+    totalQuestions: 200,
+    durationMins: 210,
+    type: "Grand Tests",
+    status: "Live",
+    ended: true,
+    competitive: true,
+    solutionFile: "Baseline_Grand_Test-4_annotated.pdf",
+  },
+  {
+    id: "gt_9",
+    title: "Grand Test (GT) - 9",
+    totalQuestions: 200,
+    durationMins: 180,
+    type: "Grand Tests",
+    status: "Live",
+    ended: true,
+    competitive: true,
+    solutionFile: "CoreBTR_Grand_Test-9_non_annotated.pdf",
+  },
+  {
+    id: "gt_8",
+    title: "Grand Test (GT) - 8",
+    totalQuestions: 200,
+    durationMins: 180,
+    type: "Grand Tests",
+    status: "Live",
+    ended: true,
+    competitive: true,
+    solutionFile: "CoreBTR_Grand_Test-8_annotated.pdf",
+  },
+  {
+    id: "gt_7",
+    title: "Grand Test (GT) - 7",
+    totalQuestions: 200,
+    durationMins: 180,
+    type: "Grand Tests",
+    status: "Live",
+    ended: true,
+    competitive: true,
+    solutionFile: "CoreBTR_Grand_Test-7_annotated.pdf",
+  },
+  {
+    id: "gt_6",
+    title: "Grand Test (GT) - 6",
+    totalQuestions: 200,
+    durationMins: 180,
+    type: "Grand Tests",
+    status: "Live",
+    ended: true,
+    competitive: true,
+    solutionFile: "CoreBTR_Grand_Test-6_annotated.pdf",
+  },
+  {
+    id: "gt_5",
+    title: "Grand Test (GT) - 5",
+    totalQuestions: 200,
+    durationMins: 180,
+    type: "Grand Tests",
+    status: "Live",
+    ended: true,
+    competitive: true,
+    solutionFile: "CoreBTR_Grand_Test-5_annotated.pdf",
   },
   {
     id: "gt_3",
@@ -124,6 +182,7 @@ const COREBTR_OFFICIAL_TESTS = [
     status: "Live",
     ended: true,
     competitive: true,
+    solutionFile: "CoreBTR_Grand_Test-3_annotated.pdf",
   },
   {
     id: "gt_2",
@@ -134,6 +193,7 @@ const COREBTR_OFFICIAL_TESTS = [
     status: "In Progress",
     ended: true,
     competitive: true,
+    solutionFile: "CoreBTR_Grand_Test_2_Solutions_-_17.04.2026_annotated.pdf",
   },
   {
     id: "gt_1",
@@ -144,6 +204,7 @@ const COREBTR_OFFICIAL_TESTS = [
     status: "Not Attempted",
     ended: true,
     competitive: true,
+    solutionFile: "CoreBTR_Grand_Test_1_Solutions_-_04.04.2026_annotated.pdf",
   },
   {
     id: "mini_1",
@@ -375,12 +436,19 @@ function InstagramIcon({ size = 14, className }: { size?: number; className?: st
 interface CoreBTRWarRoomProps {
   onStartQBankDrill?: (subjectName?: string) => void;
   onOpenNotes?: () => void;
+  initialDestination?: BTRAppDestination;
+  initialSubjectId?: string;
 }
 
-export function CoreBTRWarRoom({ onStartQBankDrill, onOpenNotes }: CoreBTRWarRoomProps = {}) {
+export function CoreBTRWarRoom({
+  onStartQBankDrill,
+  onOpenNotes,
+  initialDestination = "today",
+  initialSubjectId,
+}: CoreBTRWarRoomProps = {}) {
   const { openPlayer } = useView();
 
-  const [activeDestination, setActiveDestination] = useState<BTRAppDestination>("today");
+  const [activeDestination, setActiveDestination] = useState<BTRAppDestination>(initialDestination);
   const [subjectsSubTab, setSubjectsSubTab] = useState<"tracker" | "files">("tracker");
   const summary = useMemo(() => getFSRSSummary(), []);
   const activeView = activeDestination;
@@ -390,6 +458,10 @@ export function CoreBTRWarRoom({ onStartQBankDrill, onOpenNotes }: CoreBTRWarRoo
   const [libraryState, setLibraryState] = useState<BTRLocalLibraryState>(loadBTRLocalLibrary());
   const [categoryFilter] = useState<BTRSubjectCategory | "ALL">("ALL");
   const [searchQuery, setSearchQuery] = useState("");
+
+  useEffect(() => {
+    if (initialDestination) setActiveDestination(initialDestination);
+  }, [initialDestination]);
 
   // Folder Import state
   const folderInputRef = useRef<HTMLInputElement>(null);
@@ -421,6 +493,13 @@ export function CoreBTRWarRoom({ onStartQBankDrill, onOpenNotes }: CoreBTRWarRoo
 
   // CoreBTR App Experience State (Matching Dr. Zainab Vora Official Suite)
   const [selectedSubjectDetail, setSelectedSubjectDetail] = useState<BTRSubject | null>(null);
+
+  useEffect(() => {
+    if (initialSubjectId) {
+      const found = CORE_BTR_SUBJECTS.find((s) => s.id === initialSubjectId);
+      if (found) setSelectedSubjectDetail(found);
+    }
+  }, [initialSubjectId]);
   const [testsSubTab, setTestsSubTab] = useState<"Grand Tests" | "Mini Tests" | "Core Drop Tests">("Grand Tests");
   const [testsFilter, setTestsFilter] = useState<"In Progress" | "Live" | "Upcoming" | "Not Attempted">("Live");
   const [showCustomModuleModal, setShowCustomModuleModal] = useState(false);
@@ -1197,6 +1276,19 @@ export function CoreBTRWarRoom({ onStartQBankDrill, onOpenNotes }: CoreBTRWarRoo
                         <span className="h-2 w-2 rounded-full bg-[#feb122] shrink-0" />
                         <span className="text-ink-muted">Videos Linked:</span>
                         <strong className="text-ink font-bold">{libraryState.totalVideosFound}/61</strong>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="h-2 w-2 rounded-full bg-emerald-400 shrink-0" />
+                        <span className="text-ink-muted">Offline Files Verified:</span>
+                        <strong className="text-ink font-bold">
+                          {USER_LOCAL_BTR_MANIFEST.masterPdfs.length +
+                            USER_LOCAL_BTR_MANIFEST.megaBtrVideos.length +
+                            USER_LOCAL_BTR_MANIFEST.tndVideos.length +
+                            USER_LOCAL_BTR_MANIFEST.tndPdfs.length +
+                            USER_LOCAL_BTR_MANIFEST.grandTests.length +
+                            USER_LOCAL_BTR_MANIFEST.subjectFiles.length}{" "}
+                          Files
+                        </strong>
                       </div>
                     </div>
                   </div>
@@ -2189,6 +2281,22 @@ export function CoreBTRWarRoom({ onStartQBankDrill, onOpenNotes }: CoreBTRWarRoo
           </div>
 
           <div className="flex items-center gap-2.5 w-full md:w-auto">
+            {test.solutionFile && (
+              <button
+                type="button"
+                onClick={() => {
+                  const fullPath = `/Users/anupam/Downloads/BTR/${test.solutionFile}`;
+                  const url = resolveBTRPlayableUrl(fullPath);
+                  window.open(url, "_blank");
+                }}
+                className="flex-1 md:flex-none px-4 py-2 rounded-xl bg-[#1767be]/15 border border-[#1767be]/40 hover:bg-[#1767be]/25 text-[#4da2ff] text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-xs"
+                title="View Dr. Zainab Vora's annotated explanations and key takeaways"
+              >
+                <FileText size={13} className="text-[#4da2ff]" />
+                <span>Solutions PDF</span>
+              </button>
+            )}
+
             <button
               type="button"
               onClick={() => setShowCrossAppModal(true)}
@@ -2210,6 +2318,94 @@ export function CoreBTRWarRoom({ onStartQBankDrill, onOpenNotes }: CoreBTRWarRoo
         </div>
       ))}
     </div>
+
+    {/* Interactive Computer-Based Test (CBT) Simulators from /Downloads/BTR */}
+    {testsSubTab === "Grand Tests" && (
+      <div className="mt-4 flex flex-col gap-3 pt-6 border-t border-edge-soft">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+          <div>
+            <div className="flex items-center gap-2 text-xs font-extrabold uppercase text-[#feb122] tracking-wider">
+              <Zap size={14} />
+              <span>Interactive Computer-Based Exam (CBT) Simulators</span>
+            </div>
+            <h4 className="text-base font-bold text-ink mt-0.5">
+              Full NEET-PG & INI-CET Interface Simulations
+            </h4>
+          </div>
+          <span className="text-[11px] font-mono text-ink-muted">
+            5 Interactive CBTs Verified in /Downloads/BTR
+          </span>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-1">
+          {[
+            {
+              id: "cbt-neet",
+              title: "NEET-PG All-India Mock Grand Test CBT",
+              desc: "Full 200-question timed interactive CBT simulation with question palette, review tags, and instant score analysis.",
+              filename: "NEET-PG_Mock_Grand_Test (2).html",
+              badge: "200 Questions • 3.5 Hours",
+            },
+            {
+              id: "cbt-btr",
+              title: "CoreBTR Grand Tests Multi-Session CBT",
+              desc: "Official CoreBTR Grand Test interactive interface with real clinical vignettes and high-yield image spotters.",
+              filename: "core_btr_Grand_Tests (1).html",
+              badge: "Grand Tests Suite",
+            },
+            {
+              id: "cbt-mini",
+              title: "CoreBTR Mini Tests Rapid Fire CBT",
+              desc: "Targeted 50-100 question mini tests across 19 subjects for rapid knowledge verification under board exam pressure.",
+              filename: "core_btr_Mini_Tests.html",
+              badge: "Mini Tests Suite",
+            },
+            {
+              id: "cbt-qbank",
+              title: "CoreBTR High-Yield QBank Interactive Simulator",
+              desc: "Comprehensive question bank test runner with topic-wise filters and active answer triage.",
+              filename: "Core btr Qbank -2.html",
+              badge: "QBank Simulator",
+            },
+          ].map((cbt) => (
+            <div
+              key={cbt.id}
+              className="rounded-2xl border border-[#1767be]/30 bg-surface/90 hover:border-[#4da2ff] p-4 flex flex-col justify-between gap-3 shadow-md transition group"
+            >
+              <div className="flex flex-col gap-1.5">
+                <div className="flex items-center justify-between">
+                  <span className="rounded bg-[#1767be]/20 px-2 py-0.5 text-[10px] font-bold text-[#4da2ff] border border-[#1767be]/30 uppercase">
+                    {cbt.badge}
+                  </span>
+                  <span className="text-[10px] font-mono text-emerald-400 font-bold flex items-center gap-1">
+                    ✓ Offline Ready
+                  </span>
+                </div>
+                <h5 className="font-bold text-sm text-ink group-hover:text-[#4da2ff] transition">
+                  {cbt.title}
+                </h5>
+                <p className="text-xs text-ink-muted leading-relaxed line-clamp-2">
+                  {cbt.desc}
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => {
+                  const fullPath = `/Users/anupam/Downloads/BTR/${cbt.filename}`;
+                  const url = resolveBTRPlayableUrl(fullPath);
+                  window.open(url, "_blank");
+                }}
+                className="flex items-center justify-center gap-2 rounded-xl bg-[#1767be] hover:bg-[#155bb0] text-white py-2 px-4 text-xs font-bold shadow-md transition"
+              >
+                <Play size={12} fill="currentColor" />
+                <span>Launch Official CBT Exam Simulation</span>
+              </button>
+            </div>
+          ))}
+        </div>
+      </div>
+    )}
   </div>
 )}
 

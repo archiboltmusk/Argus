@@ -613,6 +613,25 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  color: rgba(23, 103, 190, 0.6);
+  color: rgba(77, 162, 255, 0.7);
+  font-size: 14px;
+  font-weight: 800;
+  padding: 0 4px;
+}
+
+.edu-hud-glass {
+  position: relative;
+  overflow: hidden;
+  border-radius: 24px;
+  background: linear-gradient(135deg, rgba(13, 27, 75, 0.95) 0%, rgba(29, 32, 75, 0.9) 100%);
+  border: 1px solid rgba(23, 103, 190, 0.35);
+  box-shadow: 0 20px 50px -15px rgba(13, 27, 75, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(28px);
+  -webkit-backdrop-filter: blur(28px);
+}
+
+.edu-book-spine {
+  box-shadow: -4px 0 10px rgba(0, 0, 0, 0.5), inset 3px 0 6px rgba(255, 255, 255, 0.15);
+  border-left: 2px solid rgba(255, 255, 255, 0.2);
 }
 
