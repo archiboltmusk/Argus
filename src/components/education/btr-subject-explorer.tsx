@@ -27,6 +27,7 @@ interface BTRSubjectExplorerProps {
   unannotatedPdf?: BTRLocalMediaFile;
   annotatedPdf?: BTRLocalMediaFile;
   onSelectPearl: (pearl: BTRPearlItem) => void;
+  onStudyAllPearls?: (pearls: BTRPearlItem[]) => void;
 }
 
 export function BTRSubjectExplorer({
@@ -40,6 +41,7 @@ export function BTRSubjectExplorer({
   unannotatedPdf,
   annotatedPdf,
   onSelectPearl,
+  onStudyAllPearls,
 }: BTRSubjectExplorerProps) {
   const [activeTab, setActiveTab] = useState<"Videos" | "Questions" | "Pearls">("Questions");
   const [pearlsFilter, setPearlsFilter] = useState<"All" | "Completed" | "In Progress" | "Not Viewed">("All");
@@ -272,7 +274,11 @@ export function BTRSubjectExplorer({
               type="button"
               onClick={() => {
                 if (filteredPearls.length > 0) {
-                  onSelectPearl(filteredPearls[0]);
+                  if (onStudyAllPearls) {
+                    onStudyAllPearls(filteredPearls);
+                  } else {
+                    onSelectPearl(filteredPearls[0]);
+                  }
                 }
               }}
               className="w-full py-3.5 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white font-extrabold text-sm shadow-lg shadow-indigo-600/30 transition flex items-center justify-center gap-2"

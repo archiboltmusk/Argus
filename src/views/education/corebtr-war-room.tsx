@@ -56,6 +56,13 @@ import {
   BTRLiveStreamModal,
   type BTRLiveSessionData,
 } from "@/components/education/btr-live-stream-modal";
+import {
+  BTRGoalSelectorModal,
+  type BTRGoalOption,
+  BTR_GOAL_PRESETS,
+} from "@/components/education/btr-goal-selector-modal";
+import { BTRTechIssueModal } from "@/components/education/btr-tech-issue-modal";
+import { BTRBookmarksModal } from "@/components/education/btr-bookmarks-modal";
 import { BTRAppDock, type BTRAppDestination } from "@/components/education/btr-app-dock";
 import { BTRMiniPlayerDock } from "@/components/education/btr-mini-player-dock";
 import { getFSRSSummary, reviewFSRSCard } from "@/lib/education/btr-fsrs-engine";
@@ -418,7 +425,12 @@ export function CoreBTRWarRoom({ onStartQBankDrill, onOpenNotes }: CoreBTRWarRoo
   const [testsFilter, setTestsFilter] = useState<"In Progress" | "Live" | "Upcoming" | "Not Attempted">("Live");
   const [showCustomModuleModal, setShowCustomModuleModal] = useState(false);
   const [selectedPearlModal, setSelectedPearlModal] = useState<BTRPearlItem | null>(null);
+  const [activePearlsDeck, setActivePearlsDeck] = useState<BTRPearlItem[] | null>(null);
   const [activeLiveStreamModal, setActiveLiveStreamModal] = useState<BTRLiveSessionData | null>(null);
+  const [showGoalModal, setShowGoalModal] = useState(false);
+  const [currentGoal, setCurrentGoal] = useState<BTRGoalOption>(BTR_GOAL_PRESETS[0]);
+  const [showTechIssueModal, setShowTechIssueModal] = useState(false);
+  const [showBookmarksModal, setShowBookmarksModal] = useState(false);
   const [libraryCategoryFilter, setLibraryCategoryFilter] = useState<
     "All Subjects" | "Short Subjects" | "Intermediate Subjects" | "Long Subjects" | "Integrated Systems"
   >("All Subjects");
@@ -735,10 +747,14 @@ export function CoreBTRWarRoom({ onStartQBankDrill, onOpenNotes }: CoreBTRWarRoo
         <header className="h-14 shrink-0 flex items-center justify-between border-b border-edge px-4 sm:px-6 bg-surface/80 backdrop-blur-md z-10">
           <div className="flex items-center gap-3">
             {/* Goal Selector Chip (from official app) */}
-            <div className="flex items-center gap-1.5 rounded-xl bg-canvas border border-edge-soft px-3 py-1 text-xs font-semibold text-ink hover:border-indigo-500/40 cursor-pointer transition select-none">
-              <span className="text-indigo-400 font-bold">NEET, INI-CET & FMGE</span>
+            <div
+              onClick={() => setShowGoalModal(true)}
+              className="flex items-center gap-1.5 rounded-xl bg-canvas border border-edge-soft px-3 py-1 text-xs font-semibold text-ink hover:border-indigo-500/40 cursor-pointer transition select-none"
+              title="Click to switch your examination goal"
+            >
+              <span className="text-indigo-400 font-bold max-w-[140px] sm:max-w-none truncate">{currentGoal.name}</span>
               <span className="text-[10px] text-ink-muted">| My Goal</span>
-              <ChevronDown size={12} className="text-ink-muted" />
+              <ChevronDown size={12} className="text-ink-muted shrink-0" />
             </div>
 
             {/* Doctor Greeting (from official app) */}
@@ -895,7 +911,7 @@ export function CoreBTRWarRoom({ onStartQBankDrill, onOpenNotes }: CoreBTRWarRoo
                     id: "bookmarks",
                     label: "Bookmarks",
                     icon: Bookmark,
-                    action: () => handleNavigate("volatiles"),
+                    action: () => setShowBookmarksModal(true),
                   },
                   {
                     id: "custom_module",
@@ -968,7 +984,35 @@ export function CoreBTRWarRoom({ onStartQBankDrill, onOpenNotes }: CoreBTRWarRoo
                     </button>
                   </div>
 
-                  {/* Card B: FMGE CoreBTR Plan */}
+                  {/* Card B: Facing a Tech Issue in the App? Report Now (from screenshot media_1794864389464) */}
+                  <div className="p-4 rounded-2xl bg-gradient-to-br from-rose-500/15 via-surface to-elevated border border-rose-500/30 flex flex-col justify-between gap-3 shadow-xs">
+                    <div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded-md bg-rose-500/20 text-rose-400 border border-rose-500/30">
+                          Tech Support
+                        </span>
+                        <div className="h-6 w-6 rounded-lg bg-rose-500/20 text-rose-400 flex items-center justify-center">
+                          <AlertTriangle size={13} />
+                        </div>
+                      </div>
+                      <h4 className="text-sm font-bold text-ink mt-2">
+                        Facing a Tech Issue in the App?
+                      </h4>
+                      <p className="text-xs text-ink-muted mt-0.5">
+                        [This option is specifically for reporting Tech Issues in the CoreBTR App]
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setShowTechIssueModal(true)}
+                      className="w-full py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-extrabold text-xs shadow transition flex items-center justify-center gap-1.5"
+                    >
+                      <span>Report Now</span>
+                      <ChevronRight size={13} />
+                    </button>
+                  </div>
+
+                  {/* Card C: FMGE CoreBTR Plan (from screenshot media_1794864389464) */}
                   <div className="p-4 rounded-2xl bg-gradient-to-br from-indigo-500/15 via-surface to-elevated border border-indigo-500/30 flex flex-col justify-between gap-3 shadow-xs">
                     <div>
                       <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded-md bg-indigo-500/20 text-indigo-400 border border-indigo-500/30">
@@ -978,7 +1022,7 @@ export function CoreBTRWarRoom({ onStartQBankDrill, onOpenNotes }: CoreBTRWarRoo
                         FMGE CoreBTR Plan
                       </h4>
                       <p className="text-xs text-ink-muted mt-0.5">
-                        3rd May - 14th June • High-Yield Rapid Revision
+                        (3rd May - 14th June) • High-Yield Rapid Revision
                       </p>
                     </div>
                     <button
@@ -989,31 +1033,6 @@ export function CoreBTRWarRoom({ onStartQBankDrill, onOpenNotes }: CoreBTRWarRoo
                       <span>View FMGE Plan</span>
                       <ChevronRight size={13} />
                     </button>
-                  </div>
-
-                  {/* Card C: Instagram @corebtr Highlights */}
-                  <div className="p-4 rounded-2xl bg-gradient-to-br from-fuchsia-500/15 via-surface to-elevated border border-fuchsia-500/30 flex flex-col justify-between gap-3 shadow-xs">
-                    <div>
-                      <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded-md bg-fuchsia-500/20 text-fuchsia-400 border border-fuchsia-500/30">
-                        Social Feed
-                      </span>
-                      <h4 className="text-sm font-bold text-ink mt-2 flex items-center gap-1.5">
-                        <InstagramIcon size={14} className="text-fuchsia-400" />
-                        <span>CoreBTR on Instagram</span>
-                      </h4>
-                      <p className="text-xs text-ink-muted mt-0.5">
-                        Follow @corebtr for Dr. Zainab Vora pearls & updates
-                      </p>
-                    </div>
-                    <a
-                      href="https://www.instagram.com/corebtr/"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="w-full py-2 rounded-xl bg-gradient-to-r from-fuchsia-600 to-rose-600 text-white font-extrabold text-xs shadow transition flex items-center justify-center gap-1.5"
-                    >
-                      <span>Open @corebtr</span>
-                      <ExternalLink size={12} />
-                    </a>
                   </div>
                 </div>
               </div>
@@ -1438,7 +1457,14 @@ export function CoreBTRWarRoom({ onStartQBankDrill, onOpenNotes }: CoreBTRWarRoo
                   videos={libraryState.mappings[selectedSubjectDetail.id]?.videos || []}
                   unannotatedPdf={libraryState.mappings[selectedSubjectDetail.id]?.unannotatedPdf}
                   annotatedPdf={libraryState.mappings[selectedSubjectDetail.id]?.annotatedPdf}
-                  onSelectPearl={(pearl) => setSelectedPearlModal(pearl)}
+                  onSelectPearl={(pearl) => {
+                    setSelectedPearlModal(pearl);
+                    setActivePearlsDeck(null);
+                  }}
+                  onStudyAllPearls={(pearls) => {
+                    setActivePearlsDeck(pearls);
+                    setSelectedPearlModal(pearls[0]);
+                  }}
                 />
               ) : (
                 <>
@@ -2970,10 +2996,41 @@ export function CoreBTRWarRoom({ onStartQBankDrill, onOpenNotes }: CoreBTRWarRoo
         subjectName={selectedSubjectDetail?.name}
       />
 
-      {/* High-Yield Pearl Study Modal */}
+      {/* High-Yield Pearl Study Modal (Single Pearl or Full Deck Study Mode) */}
       <BTRPearlModal
         pearl={selectedPearlModal}
-        onClose={() => setSelectedPearlModal(null)}
+        pearls={activePearlsDeck || undefined}
+        onClose={() => {
+          setSelectedPearlModal(null);
+          setActivePearlsDeck(null);
+        }}
+      />
+
+      {/* Goal Selector Modal */}
+      <BTRGoalSelectorModal
+        open={showGoalModal}
+        onClose={() => setShowGoalModal(false)}
+        selectedGoalId={currentGoal.id}
+        onSelectGoal={(goal) => setCurrentGoal(goal)}
+      />
+
+      {/* Tech Issue & Diagnostics Doctor Modal */}
+      <BTRTechIssueModal
+        open={showTechIssueModal}
+        onClose={() => setShowTechIssueModal(false)}
+        libraryState={libraryState}
+        onRescanFolder={handleOpenFolderPicker}
+      />
+
+      {/* Bookmarked Questions & Pearls Modal */}
+      <BTRBookmarksModal
+        open={showBookmarksModal}
+        onClose={() => setShowBookmarksModal(false)}
+        onStartQBankDrill={onStartQBankDrill}
+        onSelectPearl={(pearl) => {
+          setSelectedPearlModal(pearl);
+          setActivePearlsDeck(null);
+        }}
       />
 
       {/* CoreBTR Live Discussion Player Modal */}
