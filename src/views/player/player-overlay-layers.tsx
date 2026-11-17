@@ -33,6 +33,10 @@ import { ShellLayer } from "./shell-layer";
 import { StageOverlays } from "./stage-overlays";
 import { ToolsLayer } from "./tools-layer";
 import { TextSyncOverlay } from "./text-sync-overlay";
+import { TranscriptDrawer } from "@/components/player/subtitle-menu/transcript-drawer";
+import { SubtitleWordPopover } from "@/components/player/subtitle-word-popover";
+import { updateTranscriptPlaybackTime } from "@/lib/subtitles/transcript-store";
+import type { MedicalPearl } from "@/lib/subtitles/medical-pearls-glossary";
 import { Toaster } from "@/views/addons/toaster";
 import type { ToastInfo } from "@/views/addons/addons-types";
 import type { usePlayerCast } from "./hooks/use-player-cast";
@@ -217,11 +221,16 @@ export type PlayerOverlayLayersProps = {
 
 export const PlayerOverlayLayers = memo(function PlayerOverlayLayers(p: PlayerOverlayLayersProps) {
   const [sportsSidebarOpen, setSportsSidebarOpen] = useState(false);
+  const [activePearl, setActivePearl] = useState<MedicalPearl | null>(null);
   const rawT = useT();
   const t = typeof rawT === "function" ? rawT : ((k: string) => k);
   const settingsHook = useSettings();
   const settings = settingsHook?.settings;
   const regionalAudioAttempted = useRef<string | null>(null);
+
+  useEffect(() => {
+    updateTranscriptPlaybackTime(p.snap.positionSec);
+  }, [p.snap.positionSec]);
 
   useEffect(() => {
     if (!settings?.autoSelectRegionalDub || !settings?.preferredRegionalAudio) return;
@@ -709,6 +718,19 @@ export const PlayerOverlayLayers = memo(function PlayerOverlayLayers(p: PlayerOv
         open={sportsSidebarOpen}
         onClose={() => setSportsSidebarOpen(false)}
       />
+
+      <TranscriptDrawer
+        onSeek={(sec) => p.seekTo(sec)}
+        onOpenPearlModal={(pearl) => setActivePearl(pearl)}
+      />
+
+      {activePearl && (
+        <SubtitleWordPopover
+          pearl={activePearl}
+          mediaTitle={p.src.meta?.name ?? p.src.title}
+          onClose={() => setActivePearl(null)}
+        />
+      )}
     </>
   );
 });

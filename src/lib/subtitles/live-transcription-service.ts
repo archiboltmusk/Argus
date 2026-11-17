@@ -254,6 +254,17 @@ class LiveTranscriptionManager {
           latestSnippet: snippet,
         });
 
+        if (event.payload.srt) {
+          try {
+            const { parseSubtitle } = await import("./parser");
+            const { setTranscriptCues } = await import("./transcript-store");
+            const parsed = parseSubtitle(event.payload.srt);
+            if (parsed.length > 0) {
+              setTranscriptCues(parsed);
+            }
+          } catch {}
+        }
+
         // Mount track in player as soon as the first dialogue cues are available
         if (!this.trackMounted && this.onAddTrackCallback && filePath) {
           this.trackMounted = true;

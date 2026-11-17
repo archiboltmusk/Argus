@@ -179,6 +179,7 @@ export function MenuBody(props: SubtitleMenuProps & { onClose: () => void }) {
         hasSecondary={secondaryTrack != null}
         delaySec={delaySec}
         delayNonZero={delayNonZero}
+        onDelay={props.onDelay}
         onEnterSync={props.onEnterSync}
         onOpenStyleBar={onOpenStyleBar}
         onClose={onClose}

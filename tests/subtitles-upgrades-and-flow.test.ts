@@ -184,3 +184,64 @@ test("SubtitleGenerationUpgrades: supports multilingual profiles and language op
   assert.ok(ids.includes("bilingual"));
   assert.ok(ids.includes("academic"));
 });
+
+test("ReadingSpeedRegulator: pads rapid subtitle duration for comfortable reading pace", async () => {
+  const { regulateReadingSpeed } = await import(
+    "../src/lib/subtitles/reading-speed-regulator"
+  );
+
+  const rapidCues = [
+    // 10 words in 0.5 seconds -> way too fast, needs at least ~3 seconds at 200 WPM
+    { start: 1.0, end: 1.5, text: "The quick brown fox jumps over the lazy dog today." },
+    { start: 6.0, end: 8.0, text: "Second line comes much later." },
+  ];
+
+  const regulated = regulateReadingSpeed(rapidCues, { maxWordsPerMinute: 200, minDurationSec: 2.0 });
+  assert.ok(regulated[0].end > 2.5); // End time padded
+  assert.ok(regulated[0].end <= 5.9); // Does not collide with next cue at 6.0s
+});
+
+test("MedicalPearlsGlossary: matches high-yield exam takeaways and clinical definitions", async () => {
+  const { findMatchingPearl } = await import(
+    "../src/lib/subtitles/medical-pearls-glossary"
+  );
+
+  const pearl1 = findMatchingPearl("Patients with Horner syndrome present with ptosis.");
+  assert.ok(pearl1);
+  assert.equal(pearl1?.term, "Horner Syndrome");
+  assert.ok(pearl1?.pearl.includes("Ptosis"));
+
+  const pearl2 = findMatchingPearl("Start Warfarin with heparin bridging.");
+  assert.ok(pearl2);
+  assert.equal(pearl2?.term, "Warfarin");
+  assert.ok(pearl2?.pearl.includes("VKORC1"));
+
+  assert.equal(findMatchingPearl("Unrelated sentence with no medical keywords"), null);
+});
+
+test("TranscriptStore: manages live cues, search queries, and playback tracking", async () => {
+  const {
+    openTranscriptDrawer,
+    closeTranscriptDrawer,
+    setTranscriptCues,
+    updateTranscriptPlaybackTime,
+    setTranscriptSearchQuery,
+    useTranscriptState,
+  } = await import("../src/lib/subtitles/transcript-store");
+
+  const cues = [
+    { start: 0.0, end: 5.0, text: "Welcome to today's CoreBTR session." },
+    { start: 5.5, end: 12.0, text: "We will review the rule of 10s in pheochromocytoma." },
+  ];
+
+  setTranscriptCues(cues);
+  openTranscriptDrawer();
+
+  // Test playback time tracking
+  updateTranscriptPlaybackTime(7.0); // should be cue index 1
+
+  // Test search query
+  setTranscriptSearchQuery("pheochromocytoma");
+
+  closeTranscriptDrawer();
+});
