@@ -154,7 +154,9 @@ test("CoreBTR Local Library: creates valid PlayerSrc for native zero-latency pla
     "/BTR/Anatomy/Anatomy_Unannotated_Workbook.pdf"
   );
 
-  assert.ok(playerSrc.url.startsWith("file://"));
+  assert.ok(playerSrc.url.startsWith("/") || playerSrc.url.startsWith("file://"));
+  assert.equal(playerSrc.url, "/BTR/Anatomy/Anat_L01.mp4");
+  assert.equal(playerSrc.notWebReady, true);
   assert.equal(playerSrc.meta.type, "other");
   assert.ok(playerSrc.title.length > 0);
   assert.ok(playerSrc.subtitle?.includes("Core BTR 2027"));
