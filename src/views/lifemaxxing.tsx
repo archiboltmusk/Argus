@@ -200,8 +200,8 @@ export const LifemaxxingView: React.FC<{ active?: boolean }> = ({ active = true 
             <div className="space-y-3">
               <div className="flourish-eyebrow">
                 <Sparkles className="w-4 h-4 text-accent" />
-                <span>ARGUS Flourishing OS v2.0</span>
-                <span className="flourish-eyebrow-badge">Obsidian Glass Standard</span>
+                <span>Consolidated Vision Blueprint v1.0</span>
+                <span className="flourish-eyebrow-badge">Argus OS Standard</span>
               </div>
               <h1 className="text-3xl font-extrabold tracking-tight text-ink sm:text-4xl">
                 The Human Flourishing Operating System
