@@ -8,6 +8,7 @@ import {
   Radio,
   Clock,
   Check,
+  BookOpen,
 } from "lucide-react";
 import {
   CORE_BTR_OFFICIAL_CHANNEL,
@@ -18,9 +19,14 @@ import {
 interface BTRBroadcastsModalProps {
   open: boolean;
   onClose: () => void;
+  onOpenInWorkstation?: (video: BTRBroadcastVideo) => void;
 }
 
-export function BTRBroadcastsModal({ open, onClose }: BTRBroadcastsModalProps) {
+export function BTRBroadcastsModal({
+  open,
+  onClose,
+  onOpenInWorkstation,
+}: BTRBroadcastsModalProps) {
   const [activeVideo, setActiveVideo] = useState<BTRBroadcastVideo>(CORE_BTR_BROADCASTS[0]);
   const [activeFilter, setActiveFilter] = useState<string>("ALL");
   const [copiedPearl, setCopiedPearl] = useState<string | null>(null);
@@ -115,6 +121,16 @@ export function BTRBroadcastsModal({ open, onClose }: BTRBroadcastsModalProps) {
               </div>
               <h3 className="text-base font-bold text-ink leading-snug">{activeVideo.title}</h3>
               <p className="text-xs text-ink-muted leading-relaxed">{activeVideo.description}</p>
+              {onOpenInWorkstation && (
+                <button
+                  type="button"
+                  onClick={() => onOpenInWorkstation(activeVideo)}
+                  className="mt-1 flex items-center justify-center gap-2 py-2 px-3 rounded-xl bg-accent text-white font-bold text-xs hover:brightness-110 shadow-xs transition"
+                >
+                  <BookOpen size={13} />
+                  <span>Open in Dual Workstation with Notes</span>
+                </button>
+              )}
             </div>
 
             {/* Key Pearls from this Drop */}

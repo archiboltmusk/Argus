@@ -18,6 +18,8 @@ import {
   PenTool,
   BrainCircuit,
   CheckCircle2,
+  Video,
+  Link,
 } from "lucide-react";
 import { getChaptersForVideo, type BTRLectureChapter } from "@/lib/education/btr-chapters-engine";
 import {
@@ -25,6 +27,12 @@ import {
   resolveBTRPlayableUrl,
   createBTRVideoPlayerSrc,
 } from "@/lib/education/btr-local-library";
+import {
+  extractYouTubeId,
+  buildYouTubeEmbedUrl,
+  createYouTubeMediaFile,
+} from "@/lib/education/btr-youtube-bridge";
+import { CORE_BTR_BROADCASTS } from "@/lib/education/btr-broadcasts";
 import type { BTRSubject } from "@/lib/education/corebtr-schedule";
 import { useView } from "@/lib/view";
 import { BTRCanvasMarkup } from "./btr-canvas-markup";
@@ -102,6 +110,14 @@ export function BTRSplitWorkstation({
   const [completedCheckpoints, setCompletedCheckpoints] = useState<Set<string>>(new Set());
   const [socraticAnsweredIndex, setSocraticAnsweredIndex] = useState<number | null>(null);
   const [enableAutoCheckpoints, setEnableAutoCheckpoints] = useState<boolean>(true);
+
+  // YouTube Bridge State
+  const [showYouTubeModal, setShowYouTubeModal] = useState<boolean>(false);
+  const [customYouTubeInput, setCustomYouTubeInput] = useState<string>("");
+  const activeYouTubeId = useMemo(
+    () => extractYouTubeId(activeVideo.fullPath || activeVideo.streamUrl || ""),
+    [activeVideo]
+  );
 
   const handleGrabFrame = useCallback(() => {
     const vid = videoRef.current;
@@ -272,6 +288,21 @@ export function BTRSplitWorkstation({
 
         {/* Global Workstation Controls */}
         <div className="flex items-center gap-2.5">
+          {/* Connect / Paste YouTube Lecture Link */}
+          <button
+            type="button"
+            onClick={() => setShowYouTubeModal(true)}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition shadow-xs ${
+              activeYouTubeId
+                ? "bg-red-600/20 border border-red-500/40 text-red-400 hover:bg-red-600/30"
+                : "bg-red-600/10 border border-red-500/25 text-red-400 hover:bg-red-600/20"
+            }`}
+            title="Connect YouTube Lecture or Paste YouTube Video Link"
+          >
+            <Video size={13} />
+            <span>{activeYouTubeId ? "YouTube HD" : "Connect YouTube"}</span>
+          </button>
+
           {/* Capture Video Frame to FSRS Vault */}
           <button
             type="button"
@@ -354,23 +385,49 @@ export function BTRSplitWorkstation({
                     This video format (MKV, 10-bit HEVC, or sandboxed disk path) is not supported by standard webview HTML5 decoders.
                   </p>
                 </div>
-                <div className="flex flex-col sm:flex-row items-center gap-3 w-full">
+                <div className="flex flex-col sm:flex-row items-center gap-2.5 w-full">
                   <button
                     type="button"
                     onClick={handleLaunchNativePlayer}
-                    className="w-full flex items-center justify-center gap-2 rounded-xl bg-accent px-4 py-2.5 text-xs font-bold text-white shadow-md hover:brightness-110 transition"
+                    className="w-full flex items-center justify-center gap-1.5 rounded-xl bg-accent px-3 py-2 text-xs font-bold text-white shadow-md hover:brightness-110 transition"
                   >
-                    <ExternalLink size={14} />
-                    <span>Play in Native Engine (MPV)</span>
+                    <ExternalLink size={13} />
+                    <span>Native MPV</span>
                   </button>
                   <button
                     type="button"
                     onClick={() => directFileInputRef.current?.click()}
-                    className="w-full flex items-center justify-center gap-2 rounded-xl bg-elevated border border-edge-soft px-4 py-2.5 text-xs font-bold text-ink hover:bg-raised transition"
+                    className="w-full flex items-center justify-center gap-1.5 rounded-xl bg-elevated border border-edge-soft px-3 py-2 text-xs font-bold text-ink hover:bg-raised transition"
                   >
-                    <Upload size={14} />
-                    <span>Pick Local File</span>
+                    <Upload size={13} />
+                    <span>Local File</span>
                   </button>
+                  <button
+                    type="button"
+                    onClick={() => setShowYouTubeModal(true)}
+                    className="w-full flex items-center justify-center gap-1.5 rounded-xl bg-red-600/20 border border-red-500/40 px-3 py-2 text-xs font-bold text-red-300 hover:bg-red-600/30 transition"
+                  >
+                    <Video size={13} />
+                    <span>YouTube</span>
+                  </button>
+                </div>
+              </div>
+            ) : activeYouTubeId ? (
+              <div className="relative w-full h-full flex flex-col items-center justify-center bg-black">
+                <iframe
+                  key={`${activeYouTubeId}-${Math.floor(currentTime)}`}
+                  title={activeVideo.title || "YouTube Medical Lecture"}
+                  src={buildYouTubeEmbedUrl(activeYouTubeId, {
+                    startSec: currentTime,
+                    autoplay: true,
+                  })}
+                  className="w-full h-full border-none"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                  allowFullScreen
+                />
+                <div className="absolute top-3 left-3 z-10 flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-red-600/90 text-white font-bold text-[10px] tracking-wider uppercase shadow-lg backdrop-blur-xs">
+                  <span className="h-1.5 w-1.5 rounded-full bg-white animate-pulse" />
+                  <span>YouTube Connected</span>
                 </div>
               </div>
             ) : (
@@ -821,6 +878,109 @@ export function BTRSplitWorkstation({
         timestampSec={currentTime}
         timestampLabel={formatTime(currentTime)}
       />
+
+      {/* Connect YouTube Lecture Modal */}
+      {showYouTubeModal && (
+        <div className="fixed inset-0 z-[350] flex items-center justify-center bg-black/80 backdrop-blur-md p-4 animate-in fade-in duration-150">
+          <div className="w-full max-w-xl rounded-3xl bg-surface border border-edge p-6 shadow-2xl flex flex-col gap-4 text-ink">
+            <div className="flex items-center justify-between border-b border-edge pb-3">
+              <div className="flex items-center gap-2.5">
+                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-red-600/20 text-red-500 border border-red-500/30">
+                  <Video size={18} />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-ink">Connect YouTube Medical Lecture</h3>
+                  <p className="text-xs text-ink-muted">
+                    Watch any YouTube lecture side-by-side with your active PDF workbook.
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowYouTubeModal(false)}
+                className="p-1.5 rounded-xl bg-elevated border border-edge text-ink-muted hover:text-ink transition"
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            {/* Custom URL Input */}
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                if (!customYouTubeInput.trim()) return;
+                const ytMedia = createYouTubeMediaFile(
+                  customYouTubeInput.trim(),
+                  `YouTube: ${subject.name} Lecture`,
+                  subject.id
+                );
+                setActiveVideo(ytMedia);
+                setVideoError(false);
+                setShowYouTubeModal(false);
+                setCustomYouTubeInput("");
+              }}
+              className="flex flex-col gap-2.5"
+            >
+              <label className="text-xs font-bold text-ink-muted">
+                Paste YouTube Video Link or Video ID:
+              </label>
+              <div className="flex items-center gap-2">
+                <div className="relative flex-1">
+                  <Link size={14} className="absolute left-3 top-3 text-ink-muted" />
+                  <input
+                    type="text"
+                    value={customYouTubeInput}
+                    onChange={(e) => setCustomYouTubeInput(e.target.value)}
+                    placeholder="https://www.youtube.com/watch?v=... or youtu.be/..."
+                    className="w-full rounded-xl bg-canvas border border-edge pl-9 pr-3 py-2 text-xs text-ink focus:outline-none focus:border-red-500"
+                  />
+                </div>
+                <button
+                  type="submit"
+                  disabled={!customYouTubeInput.trim()}
+                  className="px-4 py-2 rounded-xl bg-red-600 hover:bg-red-500 disabled:opacity-40 text-white font-bold text-xs transition shadow-xs"
+                >
+                  Load Lecture
+                </button>
+              </div>
+            </form>
+
+            {/* Quick Pick: Official Dr. Zainab Core Drops */}
+            <div className="flex flex-col gap-2 pt-2 border-t border-edge-soft">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-ink-muted">
+                Or Quick-Load Official Dr. Zainab Core Drops:
+              </span>
+              <div className="flex flex-col gap-1.5 max-h-48 overflow-y-auto">
+                {CORE_BTR_BROADCASTS.map((broadcast) => (
+                  <button
+                    key={broadcast.id}
+                    type="button"
+                    onClick={() => {
+                      const ytMedia = createYouTubeMediaFile(
+                        broadcast.youtubeId,
+                        broadcast.title,
+                        subject.id
+                      );
+                      setActiveVideo(ytMedia);
+                      setVideoError(false);
+                      setShowYouTubeModal(false);
+                    }}
+                    className="flex items-center justify-between p-2 rounded-xl bg-canvas hover:bg-elevated border border-edge-soft text-left text-xs transition"
+                  >
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className="h-1.5 w-1.5 rounded-full bg-red-500 shrink-0" />
+                      <span className="font-semibold text-ink truncate">{broadcast.title}</span>
+                    </div>
+                    <span className="text-[10px] text-ink-muted font-mono shrink-0 ml-2">
+                      {broadcast.durationLabel}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

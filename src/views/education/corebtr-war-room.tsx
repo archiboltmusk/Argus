@@ -82,6 +82,7 @@ import { BTRBranchingTreeModal } from "@/components/education/btr-branching-tree
 import { BTRVoiceVivaModal } from "@/components/education/btr-voice-viva-modal";
 import { BTRWarRoomClashModal } from "@/components/education/btr-war-room-clash-modal";
 import { BTRECGModal } from "@/components/education/btr-ecg-modal";
+import { createYouTubeMediaFile } from "@/lib/education/btr-youtube-bridge";
 import { T_MINUS_7_PLANS, buildCountdownQuestionsForDay } from "@/lib/education/btr-countdown-deck";
 import {
   getBackendTests,
@@ -3575,7 +3576,29 @@ export function CoreBTRWarRoom({
       <BTRErrorLogModal open={showErrorModal} onClose={() => setShowErrorModal(false)} />
 
       {/* Official YouTube Channel Broadcasts & 3 PM Core Drops */}
-      <BTRBroadcastsModal open={showBroadcastsModal} onClose={() => setShowBroadcastsModal(false)} />
+      <BTRBroadcastsModal
+        open={showBroadcastsModal}
+        onClose={() => setShowBroadcastsModal(false)}
+        onOpenInWorkstation={(broadcast) => {
+          setShowBroadcastsModal(false);
+          const ytMedia = createYouTubeMediaFile(
+            broadcast.youtubeId,
+            broadcast.title,
+            "medicine"
+          );
+          const defaultSubj =
+            CORE_BTR_SUBJECTS.find((s) => s.id === "medicine") || CORE_BTR_SUBJECTS[0];
+          const mapped = libraryState.mappings[defaultSubj.id];
+          setWorkstationSession({
+            video: ytMedia,
+            subject: defaultSubj,
+            unannotatedPdf: mapped?.unannotatedPdf,
+            annotatedPdf: mapped?.annotatedPdf,
+            initialTimestampSec: 0,
+          });
+          setActiveDestination("workstation");
+        }}
+      />
 
       {/* "20th Subject" Master Matrix (Biostats, DOCs, BMW 2016, Scores) */}
       <BTRTwentyMatrixModal open={showTwentyModal} onClose={() => setShowTwentyModal(false)} />
