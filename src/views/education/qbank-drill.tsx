@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, type MouseEvent } from "react";
+import { useState, useEffect, useCallback, useMemo, type MouseEvent } from "react";
 import {
   CheckCircle2,
   XCircle,
@@ -22,6 +22,7 @@ import {
   Headphones,
   Activity,
   AlertOctagon,
+  Lock,
 } from "lucide-react";
 import type { ClinicalQuestion, QBankSessionState, GrandTestResult } from "@/lib/education/qbank-types";
 import { CLINICAL_QBANK_STARTER } from "@/lib/education/qbank-data";
@@ -46,10 +47,19 @@ import {
   type CandidateResponseTelemetry,
 } from "@/lib/education/btr-cognitive-decoder";
 import { BTRAudioPodModal } from "@/components/education/btr-audio-pod-modal";
+import {
+  buildNEETPGSectionConfigs,
+  initSectionalPacingState,
+  computePacingRadar,
+  lockAndAdvanceSection,
+  type ExamSectionConfig,
+  type SectionalPacingState,
+} from "@/lib/education/btr-sectional-pacing";
 
 export type QBankRunnerProps = {
   questions?: ClinicalQuestion[];
   examMode?: boolean; // In exam mode, explanations are hidden until submission
+  sectionalMode?: boolean; // 2024 NEET-PG 4-section time-boxed pacing simulator
   onFinish?: (result: GrandTestResult) => void;
   onClose: () => void;
 };
@@ -57,6 +67,7 @@ export type QBankRunnerProps = {
 export function QBankRunner({
   questions = CLINICAL_QBANK_STARTER,
   examMode = false,
+  sectionalMode = false,
   onFinish,
   onClose,
 }: QBankRunnerProps) {
@@ -88,14 +99,42 @@ export function QBankRunner({
   const [sessionBiases, setSessionBiases] = useState<ReturnType<typeof aggregateSessionBiases> | null>(null);
   const [showAudioPodModal, setShowAudioPodModal] = useState(false);
 
+  // Sectional Pacing State (NEET-PG 2024 Scheme)
+  const [sectionalGatedMode, setSectionalGatedMode] = useState<boolean>(sectionalMode);
+  const [sectionalPacingState, setSectionalPacingState] = useState<SectionalPacingState>(initSectionalPacingState);
+  const [sectionElapsedTimer, setSectionElapsedTimer] = useState<number>(0);
+
+  const sectionConfigs: ExamSectionConfig[] = useMemo(() => {
+    return buildNEETPGSectionConfigs(activeQuestions.length);
+  }, [activeQuestions.length]);
+
+  const currentSectionConfig = useMemo(() => {
+    return (
+      sectionConfigs.find((c) => c.sectionId === sectionalPacingState.currentSectionId) ||
+      sectionConfigs[0]
+    );
+  }, [sectionConfigs, sectionalPacingState.currentSectionId]);
+
+  const pacingTelemetry = useMemo(() => {
+    if (!currentSectionConfig) return null;
+    return computePacingRadar({
+      sectionConfig: currentSectionConfig,
+      currentQuestionIndex: session.activeQuestionIndex,
+      sectionElapsedSeconds: sectionElapsedTimer,
+    });
+  }, [currentSectionConfig, session.activeQuestionIndex, sectionElapsedTimer]);
+
   // Timer
   useEffect(() => {
     if (examFinished) return;
     const interval = setInterval(() => {
       setElapsedTimer((t) => t + 1);
+      if (sectionalGatedMode) {
+        setSectionElapsedTimer((t) => t + 1);
+      }
     }, 1000);
     return () => clearInterval(interval);
-  }, [examFinished]);
+  }, [examFinished, sectionalGatedMode]);
 
   const activeQuestion = activeQuestions[session.activeQuestionIndex] ?? activeQuestions[0];
   const qId = activeQuestion?.id || "q_0";
@@ -373,6 +412,37 @@ export function QBankRunner({
     examMode,
     elapsedTimer,
     onFinish,
+  ]);
+
+  const handleAdvanceSection = useCallback(() => {
+    const res = lockAndAdvanceSection(sectionalPacingState, sectionConfigs);
+    setSectionalPacingState(res.nextState);
+    setSectionElapsedTimer(0);
+    if (res.isFinished) {
+      handleFinishExam();
+    } else if (res.nextQuestionIndex >= 0) {
+      setSession((prev) => ({
+        ...prev,
+        activeQuestionIndex: res.nextQuestionIndex,
+      }));
+    }
+  }, [sectionalPacingState, sectionConfigs, handleFinishExam]);
+
+  // Auto-lock section when time limit expires under Sectional Mode
+  useEffect(() => {
+    if (!sectionalGatedMode || examFinished || !currentSectionConfig) return;
+    if (
+      currentSectionConfig.timeLimitSeconds > 0 &&
+      sectionElapsedTimer >= currentSectionConfig.timeLimitSeconds
+    ) {
+      handleAdvanceSection();
+    }
+  }, [
+    sectionalGatedMode,
+    examFinished,
+    currentSectionConfig,
+    sectionElapsedTimer,
+    handleAdvanceSection,
   ]);
 
   // Restart focused Recovery Sprint on missed questions
@@ -1219,6 +1289,21 @@ export function QBankRunner({
           <div className="flex items-center gap-4">
             <button
               type="button"
+              onClick={() => setSectionalGatedMode((prev) => !prev)}
+              className={`flex items-center gap-1.5 px-3 py-1 rounded-xl text-xs font-bold transition shadow-xs ${
+                sectionalGatedMode
+                  ? "bg-purple-600/30 border border-purple-500/50 text-purple-200"
+                  : "bg-white/5 border border-white/10 text-white/60 hover:text-white"
+              }`}
+              title="Toggle NEET-PG 2024 4-Section Time-Boxed Lockout"
+            >
+              <Activity size={13} />
+              <span className="hidden sm:inline">NBE 2024 Sections:</span>
+              <span>{sectionalGatedMode ? "ON" : "OFF"}</span>
+            </button>
+
+            <button
+              type="button"
               onClick={() => setShowAudioPodModal(true)}
               className="flex items-center gap-1.5 px-3 py-1 rounded-xl text-xs font-bold bg-amber-500/15 border border-amber-500/30 text-amber-300 hover:bg-amber-500/25 transition shadow-xs"
               title="Hands-Free Active Recall Audio Pod"
@@ -1250,6 +1335,71 @@ export function QBankRunner({
             </button>
           </div>
         </div>
+
+        {/* NBE 2024 Official Sectional Pacing & Lockout Sub-Header */}
+        {sectionalGatedMode && (
+          <div className="flex flex-wrap items-center justify-between px-6 py-2.5 bg-black/50 border-b border-edge text-xs">
+            {/* 4 Section Tabs */}
+            <div className="flex items-center gap-1.5 sm:gap-2">
+              {sectionConfigs.map((sec) => {
+                const isCurrent = sec.sectionId === sectionalPacingState.currentSectionId;
+                const isLocked = sectionalPacingState.sectionStates[sec.sectionId]?.isLocked;
+                return (
+                  <div
+                    key={sec.sectionId}
+                    className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold transition ${
+                      isCurrent
+                        ? "bg-white text-black font-semibold shadow-xs"
+                        : isLocked
+                          ? "bg-white/5 text-white/40 line-through"
+                          : "bg-white/10 text-white/70"
+                    }`}
+                  >
+                    {isLocked && <Lock size={11} className="text-white/40" />}
+                    <span>Sec {sec.sectionId}</span>
+                    <span className="text-[10px] opacity-75">
+                      (Q{sec.startIndex + 1}-{sec.endIndex + 1})
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Pacing Radar Telemetry */}
+            {pacingTelemetry && (
+              <div className="flex items-center gap-3">
+                <div
+                  className={`flex items-center gap-2 px-3 py-1 rounded-lg font-mono text-[11px] font-bold border ${
+                    pacingTelemetry.pacingStatus === "optimal"
+                      ? "bg-emerald-500/15 border-emerald-500/30 text-emerald-300"
+                      : pacingTelemetry.pacingStatus === "rushing"
+                        ? "bg-amber-500/15 border-amber-500/30 text-amber-300"
+                        : "bg-rose-500/20 border-rose-500/40 text-rose-300 animate-pulse"
+                  }`}
+                  title={pacingTelemetry.pacingMessage}
+                >
+                  <Activity size={12} />
+                  <span>Sec Time Left: {formatTimer(pacingTelemetry.sectionTimeRemainingSeconds)}</span>
+                  <span>•</span>
+                  <span>
+                    Pacing: {pacingTelemetry.driftSeconds <= 0 ? "" : "+"}
+                    {pacingTelemetry.driftSeconds}s ({pacingTelemetry.pacingStatus.replace(/_/g, " ")})
+                  </span>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={handleAdvanceSection}
+                  className="px-3 py-1 rounded-lg bg-purple-600 hover:bg-purple-500 text-white text-[11px] font-bold shadow-xs transition"
+                >
+                  {sectionalPacingState.currentSectionId === "D"
+                    ? "Final Submission"
+                    : `Lock Sec ${sectionalPacingState.currentSectionId} & Next`}
+                </button>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Two-Column Split Layout */}
         <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
@@ -1452,27 +1602,48 @@ export function QBankRunner({
                   {activeQuestions.map((q, idx) => {
                     const status = getQuestionPaletteStatus(idx);
                     const isCurrent = idx === session.activeQuestionIndex;
+                    const qSection = sectionConfigs.find(
+                      (c) => idx >= c.startIndex && idx <= c.endIndex
+                    );
+                    const isSectionLocked =
+                      sectionalGatedMode && qSection
+                        ? qSection.sectionId !== sectionalPacingState.currentSectionId
+                        : false;
 
                     let bgClass = "bg-white/10 text-white/70";
-                    if (status === "answered") bgClass = "bg-emerald-600 text-white font-bold";
+                    if (isSectionLocked)
+                      bgClass = "bg-black/40 text-white/20 border border-white/5 cursor-not-allowed";
+                    else if (status === "answered") bgClass = "bg-emerald-600 text-white font-bold";
                     else if (status === "not_answered") bgClass = "bg-rose-600 text-white font-bold";
-                    else if (status === "marked" || status === "ans_marked") bgClass = "bg-purple-600 text-white font-bold";
+                    else if (status === "marked" || status === "ans_marked")
+                      bgClass = "bg-purple-600 text-white font-bold";
 
                     return (
                       <button
                         key={q.id}
                         type="button"
+                        disabled={isSectionLocked}
+                        title={
+                          isSectionLocked
+                            ? `Locked in Section ${qSection?.sectionId} under NBE 2024 scheme`
+                            : undefined
+                        }
                         onClick={() =>
+                          !isSectionLocked &&
                           setSession((prev) => ({
                             ...prev,
                             activeQuestionIndex: idx,
                           }))
                         }
-                        className={`h-8 rounded-lg font-mono text-xs font-bold transition flex items-center justify-center ${bgClass} ${
-                          isCurrent ? "ring-2 ring-white scale-105" : "hover:brightness-110"
+                        className={`h-8 rounded-lg font-mono text-xs font-bold transition flex items-center justify-center relative ${bgClass} ${
+                          isCurrent
+                            ? "ring-2 ring-white scale-105"
+                            : isSectionLocked
+                              ? "opacity-40"
+                              : "hover:brightness-110"
                         }`}
                       >
-                        {idx + 1}
+                        {isSectionLocked ? <Lock size={11} className="text-white/40" /> : idx + 1}
                       </button>
                     );
                   })}

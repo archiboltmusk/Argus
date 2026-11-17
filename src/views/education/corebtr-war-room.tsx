@@ -35,6 +35,9 @@ import {
   HelpCircle,
   Award,
   Headphones,
+  Mic,
+  GitBranch,
+  ArrowRight,
 } from "lucide-react";
 import { useView } from "@/lib/view";
 import { BTRSplitWorkstation } from "@/components/education/btr-split-workstation";
@@ -73,6 +76,10 @@ import { BTRAppDock, type BTRAppDestination } from "@/components/education/btr-a
 import { BTRMiniPlayerDock } from "@/components/education/btr-mini-player-dock";
 import { getFSRSSummary, reviewFSRSCard } from "@/lib/education/btr-fsrs-engine";
 import { CORE_BTR_BROADCASTS } from "@/lib/education/btr-broadcasts";
+import { BTRTriLinkSearchModal } from "@/components/education/btr-tri-link-search-modal";
+import { BTRBranchingTreeModal } from "@/components/education/btr-branching-tree-modal";
+import { BTRVoiceVivaModal } from "@/components/education/btr-voice-viva-modal";
+import { T_MINUS_7_PLANS, buildCountdownQuestionsForDay } from "@/lib/education/btr-countdown-deck";
 import {
   getBackendTests,
   getQuestionsForTest,
@@ -507,6 +514,9 @@ export function CoreBTRWarRoom({
   const [showVignetteModal, setShowVignetteModal] = useState(false);
   const [showCrossAppModal, setShowCrossAppModal] = useState(false);
   const [showGTTrackerModal, setShowGTTrackerModal] = useState(false);
+  const [showTriLinkSearchModal, setShowTriLinkSearchModal] = useState(false);
+  const [showBranchingTreeModal, setShowBranchingTreeModal] = useState(false);
+  const [showVoiceVivaModal, setShowVoiceVivaModal] = useState(false);
 
   // Live Next GT Tracker state
   const { test: nextGT, statusInfo: nextGTStatus } = useMemo(() => {
@@ -859,7 +869,7 @@ export function CoreBTRWarRoom({
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key === "k") {
         e.preventDefault();
-        setShowPdfSearchModal(true);
+        setShowTriLinkSearchModal(true);
       }
     };
     window.addEventListener("keydown", handleKeyDown);
@@ -917,14 +927,15 @@ export function CoreBTRWarRoom({
               <ExternalLink size={10} className="text-ink-muted" />
             </a>
 
-            {/* Global Search Omnibar */}
+            {/* Global Tri-Link Multimodal Search Omnibar */}
             <button
               type="button"
-              onClick={() => setShowPdfSearchModal(true)}
+              onClick={() => setShowTriLinkSearchModal(true)}
               className="flex items-center gap-2 rounded-xl bg-canvas border border-edge-soft px-3 py-1.5 text-xs text-ink-muted hover:text-ink hover:border-edge transition shadow-xs w-36 sm:w-60"
+              title="Tri-Link Search across 5,602 Qs, 61 Video Chapters, & Frontier Vault (⌘K)"
             >
               <Search size={13} className="text-ink-muted shrink-0" />
-              <span className="truncate">Search PDFs, topics...</span>
+              <span className="truncate">Tri-Link search (⌘K)...</span>
               <kbd className="ml-auto hidden sm:inline-block font-mono text-[10px] bg-elevated px-1.5 py-0.5 rounded border border-edge text-ink-muted">
                 ⌘K
               </kbd>
@@ -1180,6 +1191,93 @@ export function CoreBTRWarRoom({
                     </button>
                   );
                 })}
+              </div>
+
+              {/* Next-Gen AI Clinical Lab & Multimodal Suite */}
+              <div className="flex flex-col gap-3">
+                <span className="text-xs font-bold uppercase tracking-wider text-white/60 flex items-center gap-2">
+                  <Sparkles size={13} className="text-purple-400" />
+                  <span>Next-Gen AI Clinical Lab</span>
+                </span>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                  {/* Card 1: Tri-Link Unified Search */}
+                  <div className="p-4 rounded-2xl bg-gradient-to-br from-purple-500/10 via-elevated/70 to-blue-500/10 border border-edge flex flex-col justify-between gap-3 shadow-xs hover:border-purple-400/40 transition group">
+                    <div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded-md bg-purple-500/15 text-purple-300 border border-purple-500/30">
+                          Multimodal Omni-Search
+                        </span>
+                        <Search size={14} className="text-purple-300" />
+                      </div>
+                      <h4 className="text-sm font-bold text-white mt-2">
+                        Tri-Link Medical Search
+                      </h4>
+                      <p className="text-xs text-white/70 mt-1">
+                        Instant cross-index search across 5,602 Qs, 61 video chapters, and Top-100 Vault.
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setShowTriLinkSearchModal(true)}
+                      className="w-full py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs transition shadow-xs flex items-center justify-center gap-1.5"
+                    >
+                      <span>Open Search (⌘K)</span>
+                      <ArrowRight size={13} />
+                    </button>
+                  </div>
+
+                  {/* Card 2: Socratic Voice Viva */}
+                  <div className="p-4 rounded-2xl bg-gradient-to-br from-emerald-500/10 via-elevated/70 to-teal-500/10 border border-edge flex flex-col justify-between gap-3 shadow-xs hover:border-emerald-400/40 transition group">
+                    <div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded-md bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
+                          Socratic Voice Oral
+                        </span>
+                        <Mic size={14} className="text-emerald-300" />
+                      </div>
+                      <h4 className="text-sm font-bold text-white mt-2">
+                        AI Clinical Attending Viva
+                      </h4>
+                      <p className="text-xs text-white/70 mt-1">
+                        Hands-free bedside oral examination with speech recognition & instant 5-star appraisal.
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setShowVoiceVivaModal(true)}
+                      className="w-full py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs transition shadow-xs flex items-center justify-center gap-1.5"
+                    >
+                      <span>Start Voice Viva</span>
+                      <Mic size={13} />
+                    </button>
+                  </div>
+
+                  {/* Card 3: Multi-Step Decision Branching Trees */}
+                  <div className="p-4 rounded-2xl bg-gradient-to-br from-amber-500/10 via-elevated/70 to-rose-500/10 border border-edge flex flex-col justify-between gap-3 shadow-xs hover:border-amber-400/40 transition group">
+                    <div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded-md bg-amber-500/15 text-amber-300 border border-amber-500/30">
+                          Decision Trees
+                        </span>
+                        <GitBranch size={14} className="text-amber-300" />
+                      </div>
+                      <h4 className="text-sm font-bold text-white mt-2">
+                        Branching Clinical Trees
+                      </h4>
+                      <p className="text-xs text-white/70 mt-1">
+                        Consequence-driven sequential cases with live vitals monitor and fatal trap autopsies.
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setShowBranchingTreeModal(true)}
+                      className="w-full py-2 rounded-xl bg-amber-600 hover:bg-amber-500 text-white font-bold text-xs transition shadow-xs flex items-center justify-center gap-1.5"
+                    >
+                      <span>Simulate Cases</span>
+                      <Play size={13} className="fill-white" />
+                    </button>
+                  </div>
+                </div>
               </div>
 
               {/* 3. Official What's On Cards Row (Distraction-free CoreBTR Obsidian Style) */}
@@ -2716,7 +2814,68 @@ export function CoreBTRWarRoom({
 
   {/* VIEW: SUPER-VOLATILES VAULT (ACTIVE RECALL BLUR MASK) */}
   {activeDestination === "volatiles" && (
-        <div className="flex flex-col gap-5">
+        <div className="flex flex-col gap-6">
+          {/* T-MINUS 7 DAYS SUPER-VOLATILE REVISION ENGINE */}
+          <div className="rounded-3xl border border-edge bg-gradient-to-br from-amber-500/10 via-elevated to-purple-500/10 p-5 shadow-lg flex flex-col gap-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 rounded-2xl bg-amber-500/20 border border-amber-500/30 text-amber-300 flex items-center justify-center shrink-0">
+                  <Flame size={20} className="fill-amber-400" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-base font-black text-white">T-Minus 7 Days Super-Volatile Protocol</h3>
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40 font-mono">
+                      AIR-100 Deciders
+                    </span>
+                  </div>
+                  <p className="text-xs text-ink-muted">
+                    Day-by-day high-stakes retention lock: BNS 2024, PSM formulas, cytogenetics, antidotes, FIGO 2023, anatomical spaces, and cardinal repeats.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* 7-Day Protocol Grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-7 gap-2.5">
+              {T_MINUS_7_PLANS.map((plan) => (
+                <div
+                  key={plan.dayNumber}
+                  className="rounded-2xl bg-canvas/80 border border-edge p-3 flex flex-col justify-between gap-3 hover:border-amber-400/40 transition group"
+                >
+                  <div className="flex flex-col gap-1.5">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] font-bold font-mono px-1.5 py-0.5 rounded bg-white/10 text-white/90">
+                        Day -{plan.dayNumber}
+                      </span>
+                      <span className="text-[9.5px] font-semibold text-amber-300/80 truncate max-w-[80px]">
+                        {plan.focusSpecialty}
+                      </span>
+                    </div>
+                    <h5 className="text-xs font-bold text-white line-clamp-2 mt-1">
+                      {plan.dayTitle.split(": ")[1] || plan.dayTitle}
+                    </h5>
+                    <p className="text-[10px] text-ink-muted line-clamp-2 leading-snug">
+                      {plan.strategicObjective}
+                    </p>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const qs = buildCountdownQuestionsForDay(plan.dayNumber);
+                      onStartQBankDrill?.(plan.dayTitle, qs);
+                    }}
+                    className="w-full py-1.5 rounded-xl bg-amber-500/20 hover:bg-amber-500 text-amber-200 hover:text-black font-bold text-[11px] border border-amber-500/30 transition shadow-xs flex items-center justify-center gap-1"
+                  >
+                    <span>Launch Drill</span>
+                    <Play size={10} className="fill-current" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 rounded-2xl bg-surface/50 border border-edge-soft p-4">
             <div className="flex items-center gap-2">
               <Zap size={18} className="text-accent" />
@@ -3544,6 +3703,25 @@ export function CoreBTRWarRoom({
           const score = rating === "again" ? 1 : rating === "hard" ? 2 : rating === "good" ? 3 : 4;
           reviewFSRSCard(qid, score);
         }}
+      />
+
+      {/* Tri-Link Multimodal Omni-Search Modal */}
+      <BTRTriLinkSearchModal
+        isOpen={showTriLinkSearchModal}
+        onClose={() => setShowTriLinkSearchModal(false)}
+        onStartQBankDrill={onStartQBankDrill}
+      />
+
+      {/* Multi-Step Branching Clinical Decisions Modal */}
+      <BTRBranchingTreeModal
+        isOpen={showBranchingTreeModal}
+        onClose={() => setShowBranchingTreeModal(false)}
+      />
+
+      {/* Socratic Clinical Voice Viva Oral Modal */}
+      <BTRVoiceVivaModal
+        isOpen={showVoiceVivaModal}
+        onClose={() => setShowVoiceVivaModal(false)}
       />
     </div>
   );
