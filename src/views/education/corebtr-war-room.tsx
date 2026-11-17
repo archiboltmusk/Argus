@@ -771,21 +771,21 @@ export function CoreBTRWarRoom({ onStartQBankDrill, onOpenNotes }: CoreBTRWarRoo
               href="https://www.instagram.com/corebtr/"
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-fuchsia-600/15 via-rose-600/15 to-amber-600/15 border border-fuchsia-500/30 px-2.5 py-1 text-xs font-bold text-fuchsia-300 hover:border-fuchsia-400/50 hover:brightness-110 transition shadow-xs"
+              className="flex items-center gap-1.5 rounded-xl bg-[#1767be]/15 border border-[#1767be]/30 px-2.5 py-1 text-xs font-bold text-[#4da2ff] hover:border-[#4da2ff]/50 hover:bg-[#1767be]/25 transition shadow-xs"
               title="Official Dr. Zainab Vora CoreBTR Instagram (@corebtr)"
             >
-              <InstagramIcon size={13} className="text-fuchsia-400" />
+              <InstagramIcon size={13} className="text-[#4da2ff]" />
               <span className="hidden sm:inline">@corebtr</span>
-              <ExternalLink size={10} className="text-fuchsia-400/70" />
+              <ExternalLink size={10} className="text-[#4da2ff]/70" />
             </a>
 
             {/* Global Search Omnibar */}
             <button
               type="button"
               onClick={() => setShowPdfSearchModal(true)}
-              className="flex items-center gap-2 rounded-xl bg-canvas border border-edge-soft px-3 py-1.5 text-xs text-ink-muted hover:text-ink hover:border-indigo-500/40 transition shadow-xs w-36 sm:w-60"
+              className="flex items-center gap-2 rounded-xl bg-canvas border border-edge-soft px-3 py-1.5 text-xs text-ink-muted hover:text-ink hover:border-[#1767be]/40 transition shadow-xs w-36 sm:w-60"
             >
-              <Search size={13} className="text-indigo-400 shrink-0" />
+              <Search size={13} className="text-[#4da2ff] shrink-0" />
               <span className="truncate">Search PDFs, topics...</span>
               <kbd className="ml-auto hidden sm:inline-block font-mono text-[10px] bg-elevated px-1.5 py-0.5 rounded border border-edge text-ink-muted">
                 ⌘K
@@ -794,7 +794,7 @@ export function CoreBTRWarRoom({ onStartQBankDrill, onOpenNotes }: CoreBTRWarRoo
 
             {/* User Avatar ST / AM */}
             <div
-              className="h-8 w-8 rounded-full bg-indigo-600 text-white font-bold text-xs flex items-center justify-center ring-2 ring-indigo-500/30 shadow-xs cursor-pointer"
+              className="h-8 w-8 rounded-full bg-[#1767be] text-white font-bold text-xs flex items-center justify-center ring-2 ring-[#4da2ff]/30 shadow-xs cursor-pointer"
               title="Dr. Anupam Mahato"
             >
               AM
@@ -858,8 +858,38 @@ export function CoreBTRWarRoom({ onStartQBankDrill, onOpenNotes }: CoreBTRWarRoo
           {/* VIEW: TODAY COMMAND CENTER (Matching Official CoreBTR Home Screen) */}
           {activeDestination === "today" && (
             <div className="flex flex-col gap-6 animate-in fade-in duration-200">
-              {/* 1. Official CoreBTR Hero Rankers Banner (from screenshot media_1794864389464) */}
-              <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-sky-600 via-indigo-600 to-indigo-800 p-6 md:p-8 text-white shadow-xl flex flex-col md:flex-row items-center justify-between gap-6 border border-indigo-400/30">
+              {/* BTR Triad Framework Selector (Believe • Trust • Revise) & Offline Banner */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 rounded-2xl bg-[#0d1b4b]/90 border border-[#1767be]/30 shadow-md">
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] font-extrabold uppercase tracking-widest text-[#4da2ff] bg-[#1767be]/20 px-2.5 py-1 rounded-lg border border-[#1767be]/30">
+                    BTR Framework
+                  </span>
+                  <div className="flex items-center gap-1 text-xs font-bold text-white">
+                    <span className="text-[#feb122]">Believe</span>
+                    <span className="text-white/30">•</span>
+                    <span className="text-[#4da2ff]">Trust</span>
+                    <span className="text-white/30">•</span>
+                    <span className="text-white">Revise</span>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2 text-xs">
+                  <span className="flex items-center gap-1.5 text-white/80 bg-white/5 border border-white/10 px-3 py-1 rounded-xl font-mono text-[11px]">
+                    <span className="h-2 w-2 rounded-full bg-[#4da2ff] animate-pulse" />
+                    <span>61 Videos & 32 PDFs Offline</span>
+                  </span>
+                  <button
+                    type="button"
+                    onClick={handleOpenFolderPicker}
+                    className="text-[#4da2ff] hover:underline text-xs font-semibold"
+                  >
+                    /Downloads/BTR
+                  </button>
+                </div>
+              </div>
+
+              {/* 1. Official CoreBTR Hero Rankers Banner (from official CoreBTR App) */}
+              <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-[#0d1b4b] via-[#1d204b] to-[#1767be] p-6 md:p-8 text-white shadow-xl flex flex-col md:flex-row items-center justify-between gap-6 border border-[#1767be]/40">
                 <div className="flex flex-col gap-2 relative z-10">
                   <div className="flex items-center gap-2">
                     <span className="px-2.5 py-0.5 rounded-full bg-white/20 text-white font-mono text-[10px] font-extrabold uppercase tracking-wider backdrop-blur-md">
@@ -878,7 +908,7 @@ export function CoreBTRWarRoom({ onStartQBankDrill, onOpenNotes }: CoreBTRWarRoo
                   <h2 className="text-2xl md:text-3xl font-black tracking-tight leading-tight">
                     100+ STUDENTS IN TOP 200 RANKERS
                   </h2>
-                  <span className="text-sm md:text-base font-bold text-sky-200">
+                  <span className="text-sm md:text-base font-bold text-[#4da2ff]">
                     INICET MAY 2026 are From CoreBTR
                   </span>
                   <p className="text-xs text-white/80 mt-1 max-w-lg">
@@ -890,21 +920,21 @@ export function CoreBTRWarRoom({ onStartQBankDrill, onOpenNotes }: CoreBTRWarRoo
                   <button
                     type="button"
                     onClick={() => setShowCustomModuleModal(true)}
-                    className="px-5 py-2.5 rounded-2xl bg-white text-indigo-900 font-extrabold text-xs shadow-lg hover:bg-sky-50 transition"
+                    className="px-5 py-2.5 rounded-2xl bg-white text-[#1d204b] font-extrabold text-xs shadow-lg hover:bg-white/90 transition"
                   >
                     + Create Custom Module
                   </button>
                   <button
                     type="button"
                     onClick={() => handleNavigate("subjects")}
-                    className="px-4 py-2.5 rounded-2xl bg-white/20 hover:bg-white/30 text-white font-bold text-xs backdrop-blur-md transition"
+                    className="px-4 py-2.5 rounded-2xl bg-white/15 hover:bg-white/25 text-white font-bold text-xs backdrop-blur-md transition border border-white/20"
                   >
                     Explore Library
                   </button>
                 </div>
               </div>
 
-              {/* 2. Official Quick Actions 5-Pill Grid (from screenshot media_1794864389464) */}
+              {/* 2. Official Quick Actions 5-Pill Grid */}
               <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
                 {[
                   {
@@ -944,84 +974,84 @@ export function CoreBTRWarRoom({ onStartQBankDrill, onOpenNotes }: CoreBTRWarRoo
                       key={act.id}
                       type="button"
                       onClick={act.action}
-                      className="flex flex-col items-center justify-center gap-2 p-3.5 rounded-2xl bg-surface border border-edge-soft hover:border-indigo-500/40 hover:bg-elevated transition shadow-xs group"
+                      className="flex flex-col items-center justify-center gap-2 p-3.5 rounded-2xl bg-[#1d204b]/70 border border-[#1767be]/25 hover:border-[#4da2ff]/50 hover:bg-[#1d204b] transition shadow-xs group"
                     >
-                      <div className="h-9 w-9 rounded-xl bg-indigo-500/10 text-indigo-400 group-hover:bg-indigo-600 group-hover:text-white transition flex items-center justify-center">
+                      <div className="h-9 w-9 rounded-xl bg-[#1767be]/20 text-[#4da2ff] group-hover:bg-[#1767be] group-hover:text-white transition flex items-center justify-center">
                         <Icon size={16} />
                       </div>
-                      <span className="text-xs font-bold text-ink">{act.label}</span>
+                      <span className="text-xs font-bold text-white">{act.label}</span>
                     </button>
                   );
                 })}
               </div>
 
-              {/* 3. Official What's On Cards Row (from screenshot media_1794864389464) */}
+              {/* 3. Official What's On Cards Row (Distraction-free CoreBTR Obsidian Style) */}
               <div className="flex flex-col gap-3">
-                <span className="text-xs font-bold uppercase tracking-wider text-ink-muted">
+                <span className="text-xs font-bold uppercase tracking-wider text-white/60">
                   What&apos;s On
                 </span>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                   {/* Card A: Core Drop Surprise Test-6 */}
-                  <div className="p-4 rounded-2xl bg-gradient-to-br from-amber-500/15 via-surface to-elevated border border-amber-500/30 flex flex-col justify-between gap-3 shadow-xs">
+                  <div className="p-4 rounded-2xl bg-[#1d204b]/70 border border-[#1767be]/30 flex flex-col justify-between gap-3 shadow-xs hover:border-[#4da2ff]/50 transition">
                     <div>
-                      <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded-md bg-amber-500/20 text-amber-400 border border-amber-500/30">
+                      <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded-md bg-[#feb122]/15 text-[#feb122] border border-[#feb122]/30">
                         Daily 3 PM Drop
                       </span>
-                      <h4 className="text-sm font-bold text-ink mt-2">
+                      <h4 className="text-sm font-bold text-white mt-2">
                         Core Drop - Surprise Test-6
                       </h4>
-                      <p className="text-xs text-ink-muted mt-0.5">
+                      <p className="text-xs text-white/70 mt-0.5">
                         25 Qs • 15 Minutes • with Video Solutions
                       </p>
                     </div>
                     <button
                       type="button"
                       onClick={() => onStartQBankDrill?.("Core Drop Surprise Test-6")}
-                      className="w-full py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-black font-extrabold text-xs shadow transition flex items-center justify-center gap-1.5"
+                      className="w-full py-2 rounded-xl bg-[#1767be] hover:bg-[#155bb0] text-white font-extrabold text-xs shadow transition flex items-center justify-center gap-1.5"
                     >
                       <Play size={12} fill="currentColor" />
                       <span>Attempt Now</span>
                     </button>
                   </div>
 
-                  {/* Card B: Facing a Tech Issue in the App? Report Now (from screenshot media_1794864389464) */}
-                  <div className="p-4 rounded-2xl bg-gradient-to-br from-rose-500/15 via-surface to-elevated border border-rose-500/30 flex flex-col justify-between gap-3 shadow-xs">
+                  {/* Card B: Facing a Tech Issue in the App? Report Now */}
+                  <div className="p-4 rounded-2xl bg-[#1d204b]/70 border border-[#1767be]/30 flex flex-col justify-between gap-3 shadow-xs hover:border-[#4da2ff]/50 transition">
                     <div>
                       <div className="flex items-center justify-between">
-                        <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded-md bg-rose-500/20 text-rose-400 border border-rose-500/30">
+                        <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded-md bg-[#1767be]/20 text-[#4da2ff] border border-[#1767be]/30">
                           Tech Support
                         </span>
-                        <div className="h-6 w-6 rounded-lg bg-rose-500/20 text-rose-400 flex items-center justify-center">
+                        <div className="h-6 w-6 rounded-lg bg-[#1767be]/20 text-[#4da2ff] flex items-center justify-center">
                           <AlertTriangle size={13} />
                         </div>
                       </div>
-                      <h4 className="text-sm font-bold text-ink mt-2">
+                      <h4 className="text-sm font-bold text-white mt-2">
                         Facing a Tech Issue in the App?
                       </h4>
-                      <p className="text-xs text-ink-muted mt-0.5">
+                      <p className="text-xs text-white/70 mt-0.5">
                         [This option is specifically for reporting Tech Issues in the CoreBTR App]
                       </p>
                     </div>
                     <button
                       type="button"
                       onClick={() => setShowTechIssueModal(true)}
-                      className="w-full py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-extrabold text-xs shadow transition flex items-center justify-center gap-1.5"
+                      className="w-full py-2 rounded-xl bg-[#1d204b] hover:bg-[#252a60] text-white border border-[#1767be]/40 font-extrabold text-xs shadow transition flex items-center justify-center gap-1.5"
                     >
                       <span>Report Now</span>
                       <ChevronRight size={13} />
                     </button>
                   </div>
 
-                  {/* Card C: FMGE CoreBTR Plan (from screenshot media_1794864389464) */}
-                  <div className="p-4 rounded-2xl bg-gradient-to-br from-indigo-500/15 via-surface to-elevated border border-indigo-500/30 flex flex-col justify-between gap-3 shadow-xs">
+                  {/* Card C: FMGE CoreBTR Plan */}
+                  <div className="p-4 rounded-2xl bg-[#1d204b]/70 border border-[#1767be]/30 flex flex-col justify-between gap-3 shadow-xs hover:border-[#4da2ff]/50 transition">
                     <div>
-                      <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded-md bg-indigo-500/20 text-indigo-400 border border-indigo-500/30">
+                      <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded-md bg-[#1767be]/20 text-[#4da2ff] border border-[#1767be]/30">
                         Exam Schedule
                       </span>
-                      <h4 className="text-sm font-bold text-ink mt-2">
+                      <h4 className="text-sm font-bold text-white mt-2">
                         FMGE CoreBTR Plan
                       </h4>
-                      <p className="text-xs text-ink-muted mt-0.5">
+                      <p className="text-xs text-white/70 mt-0.5">
                         (3rd May - 14th June) • High-Yield Rapid Revision
                       </p>
                     </div>
@@ -1052,7 +1082,7 @@ export function CoreBTRWarRoom({ onStartQBankDrill, onOpenNotes }: CoreBTRWarRoo
                       <span className="rounded-full bg-elevated px-3 py-1 text-xs font-semibold text-ink-muted border border-edge-soft">
                         Dr. Zainab Vora Curriculum
                       </span>
-                      <span className="rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 px-3 py-1 text-xs font-semibold">
+                      <span className="rounded-full bg-[#1767be]/20 text-[#4da2ff] border border-[#1767be]/35 px-3 py-1 text-xs font-semibold">
                         19 Subjects Integrated
                       </span>
                     </div>
@@ -1097,13 +1127,13 @@ export function CoreBTRWarRoom({ onStartQBankDrill, onOpenNotes }: CoreBTRWarRoo
                         <circle cx="50" cy="50" r="32" fill="none" stroke="currentColor" strokeWidth="6" className="text-elevated/70" />
                         <circle cx="50" cy="50" r="22" fill="none" stroke="currentColor" strokeWidth="6" className="text-elevated/70" />
 
-                        {/* Outer Ring: Overall Readiness % (Emerald) */}
+                        {/* Outer Ring: Overall Readiness % (Electric Blue) */}
                         <circle
                           cx="50"
                           cy="50"
                           r="42"
                           fill="none"
-                          stroke="#10b981"
+                          stroke="#1767be"
                           strokeWidth="6"
                           strokeLinecap="round"
                           strokeDasharray={2 * Math.PI * 42}
@@ -1111,13 +1141,13 @@ export function CoreBTRWarRoom({ onStartQBankDrill, onOpenNotes }: CoreBTRWarRoo
                           className="transition-all duration-1000 ease-out"
                         />
 
-                        {/* Middle Ring: Mastered Subjects (Cyan, 19 target) */}
+                        {/* Middle Ring: Mastered Subjects (Light Medical Blue, 19 target) */}
                         <circle
                           cx="50"
                           cy="50"
                           r="32"
                           fill="none"
-                          stroke="#06b6d4"
+                          stroke="#4da2ff"
                           strokeWidth="6"
                           strokeLinecap="round"
                           strokeDasharray={2 * Math.PI * 32}
@@ -1125,13 +1155,13 @@ export function CoreBTRWarRoom({ onStartQBankDrill, onOpenNotes }: CoreBTRWarRoo
                           className="transition-all duration-1000 ease-out"
                         />
 
-                        {/* Inner Ring: Linked BTR Videos (Amber, 61 target) */}
+                        {/* Inner Ring: Linked BTR Videos (Warm Gold, 61 target) */}
                         <circle
                           cx="50"
                           cy="50"
                           r="22"
                           fill="none"
-                          stroke="#f59e0b"
+                          stroke="#feb122"
                           strokeWidth="6"
                           strokeLinecap="round"
                           strokeDasharray={2 * Math.PI * 22}
@@ -1145,7 +1175,7 @@ export function CoreBTRWarRoom({ onStartQBankDrill, onOpenNotes }: CoreBTRWarRoo
                         <span className="text-base font-black text-ink leading-none">
                           {readiness.completionPercentage}%
                         </span>
-                        <span className="text-[8.5px] font-bold uppercase tracking-wider text-emerald-400 mt-0.5">
+                        <span className="text-[8.5px] font-bold uppercase tracking-wider text-[#4da2ff] mt-0.5">
                           Readiness
                         </span>
                       </div>
@@ -1154,17 +1184,17 @@ export function CoreBTRWarRoom({ onStartQBankDrill, onOpenNotes }: CoreBTRWarRoo
                     {/* Ring Legend & Telemetry */}
                     <div className="flex flex-col gap-1.5 text-xs">
                       <div className="flex items-center gap-2">
-                        <span className="h-2 w-2 rounded-full bg-emerald-400 shrink-0" />
+                        <span className="h-2 w-2 rounded-full bg-[#1767be] shrink-0" />
                         <span className="text-ink-muted">Mastery Readiness:</span>
                         <strong className="text-ink font-bold">{readiness.completionPercentage}%</strong>
                       </div>
                       <div className="flex items-center gap-2">
-                        <span className="h-2 w-2 rounded-full bg-cyan-400 shrink-0" />
+                        <span className="h-2 w-2 rounded-full bg-[#4da2ff] shrink-0" />
                         <span className="text-ink-muted">Subjects Mastered:</span>
                         <strong className="text-ink font-bold">{readiness.masteredCount + readiness.annotatedCount}/19</strong>
                       </div>
                       <div className="flex items-center gap-2">
-                        <span className="h-2 w-2 rounded-full bg-amber-400 shrink-0" />
+                        <span className="h-2 w-2 rounded-full bg-[#feb122] shrink-0" />
                         <span className="text-ink-muted">Videos Linked:</span>
                         <strong className="text-ink font-bold">{libraryState.totalVideosFound}/61</strong>
                       </div>
@@ -1173,16 +1203,16 @@ export function CoreBTRWarRoom({ onStartQBankDrill, onOpenNotes }: CoreBTRWarRoo
 
                   {/* Right Telemetry Cards */}
                   <div className="grid grid-cols-2 gap-3 w-full md:w-auto">
-                    <div className="rounded-2xl bg-canvas/80 border border-edge-soft p-3.5 min-w-[140px] flex flex-col">
-                      <span className="text-[10.5px] font-medium text-ink-muted">Grand Tests Logged</span>
-                      <div className="text-xl font-black text-ink mt-0.5">{gtRecords.length} tests</div>
-                      <span className="text-[10px] text-accent">Latest: {gtRecords[0]?.percentile ?? 0}%ile</span>
+                    <div className="rounded-2xl bg-[#1d204b]/70 border border-[#1767be]/30 p-3.5 min-w-[140px] flex flex-col">
+                      <span className="text-[10.5px] font-medium text-white/70">Grand Tests Logged</span>
+                      <div className="text-xl font-black text-white mt-0.5">{gtRecords.length} tests</div>
+                      <span className="text-[10px] text-[#4da2ff]">Latest: {gtRecords[0]?.percentile ?? 0}%ile</span>
                     </div>
 
-                    <div className="rounded-2xl bg-canvas/80 border border-edge-soft p-3.5 min-w-[140px] flex flex-col">
-                      <span className="text-[10.5px] font-medium text-ink-muted">Volatiles Active</span>
-                      <div className="text-xl font-black text-amber-400 mt-0.5">100 Tables</div>
-                      <span className="text-[10px] text-ink-muted">FSRS Repetition active</span>
+                    <div className="rounded-2xl bg-[#1d204b]/70 border border-[#1767be]/30 p-3.5 min-w-[140px] flex flex-col">
+                      <span className="text-[10.5px] font-medium text-white/70">Volatiles Active</span>
+                      <div className="text-xl font-black text-[#feb122] mt-0.5">100 Tables</div>
+                      <span className="text-[10px] text-white/60">FSRS Repetition active</span>
                     </div>
                   </div>
                 </div>
@@ -1191,31 +1221,31 @@ export function CoreBTRWarRoom({ onStartQBankDrill, onOpenNotes }: CoreBTRWarRoo
               {/* Row 1: Priority Active Learning Cards */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {/* Priority Card A: Daily Volatile Drip (FSRS Spaced Repetition) */}
-                <div className="rounded-2xl border border-cyan-500/30 bg-gradient-to-br from-cyan-950/20 via-surface to-elevated/40 p-5 flex flex-col justify-between gap-4 shadow-sm hover:border-cyan-400/50 transition">
+                <div className="rounded-2xl border border-[#1767be]/30 bg-[#1d204b]/70 backdrop-blur-md p-5 flex flex-col justify-between gap-4 shadow-sm hover:border-[#4da2ff]/50 transition">
                   <div className="flex flex-col gap-2">
                     <div className="flex items-center justify-between">
-                      <span className="flex items-center gap-1.5 rounded-full bg-cyan-500/15 px-2.5 py-0.5 text-[11px] font-bold text-cyan-300 border border-cyan-500/30">
-                        <Droplets size={12} className="text-cyan-400" />
+                      <span className="flex items-center gap-1.5 rounded-full bg-[#1767be]/20 px-2.5 py-0.5 text-[11px] font-bold text-[#4da2ff] border border-[#1767be]/30">
+                        <Droplets size={12} className="text-[#4da2ff]" />
                         <span>FSRS Spaced Repetition</span>
                       </span>
-                      <span className="text-xs font-mono text-cyan-300 font-bold">
+                      <span className="text-xs font-mono text-[#feb122] font-bold">
                         {summary.streakDays} Day Streak 🔥
                       </span>
                     </div>
-                    <h3 className="text-base font-bold text-ink">Daily Volatile Drip</h3>
-                    <p className="text-xs text-ink-muted leading-relaxed">
+                    <h3 className="text-base font-bold text-white">Daily Volatile Drip</h3>
+                    <p className="text-xs text-white/70 leading-relaxed">
                       10 super-volatile cards calculated for optimal memory stability. Active recall with spaced repetition intervals.
                     </p>
                   </div>
 
-                  <div className="flex items-center justify-between pt-2 border-t border-edge-soft">
-                    <span className="text-xs text-ink-muted">
-                      <strong className="text-cyan-300 font-bold font-mono">{summary.dueTodayCount}</strong> cards due today
+                  <div className="flex items-center justify-between pt-2 border-t border-[#1767be]/20">
+                    <span className="text-xs text-white/70">
+                      <strong className="text-[#4da2ff] font-bold font-mono">{summary.dueTodayCount}</strong> cards due today
                     </span>
                     <button
                       type="button"
                       onClick={() => setShowDripModal(true)}
-                      className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-cyan-600/20 text-cyan-300 border border-cyan-500/40 text-xs font-bold hover:bg-cyan-600/30 transition shadow-xs"
+                      className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-[#1767be] hover:bg-[#155bb0] text-white border border-[#1767be]/40 text-xs font-bold transition shadow-xs"
                     >
                       <span>Start 5-Min Drip</span>
                       <ChevronRight size={13} />
@@ -1224,35 +1254,35 @@ export function CoreBTRWarRoom({ onStartQBankDrill, onOpenNotes }: CoreBTRWarRoo
                 </div>
 
                 {/* Priority Card B: Dual Split Workstation */}
-                <div className="rounded-2xl border border-emerald-500/30 bg-gradient-to-br from-emerald-950/20 via-surface to-elevated/40 p-5 flex flex-col justify-between gap-4 shadow-sm hover:border-emerald-400/50 transition">
+                <div className="rounded-2xl border border-[#1767be]/30 bg-[#1d204b]/70 backdrop-blur-md p-5 flex flex-col justify-between gap-4 shadow-sm hover:border-[#4da2ff]/50 transition">
                   <div className="flex flex-col gap-2">
                     <div className="flex items-center justify-between">
-                      <span className="flex items-center gap-1.5 rounded-full bg-emerald-500/15 px-2.5 py-0.5 text-[11px] font-bold text-emerald-300 border border-emerald-500/30">
-                        <Layers size={12} className="text-emerald-400" />
+                      <span className="flex items-center gap-1.5 rounded-full bg-[#1767be]/20 px-2.5 py-0.5 text-[11px] font-bold text-[#4da2ff] border border-[#1767be]/30">
+                        <Layers size={12} className="text-[#4da2ff]" />
                         <span>Dual-Pane Studio</span>
                       </span>
                       {workstationSession && (
-                        <span className="text-[10.5px] font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/25">
+                        <span className="text-[10.5px] font-bold text-[#4da2ff] bg-[#1767be]/20 px-2 py-0.5 rounded border border-[#1767be]/30">
                           ACTIVE
                         </span>
                       )}
                     </div>
-                    <h3 className="text-base font-bold text-ink">Dual Split Workstation</h3>
-                    <p className="text-xs text-ink-muted leading-relaxed">
+                    <h3 className="text-base font-bold text-white">Dual Split Workstation</h3>
+                    <p className="text-xs text-white/70 leading-relaxed">
                       {workstationSession
                         ? `Loaded: ${workstationSession.subject.shortCode} • ${workstationSession.video.title || workstationSession.video.filename}`
                         : "Synchronized local video lectures with companion unannotated workbook viewing and A-B loop active recall."}
                     </p>
                   </div>
 
-                  <div className="flex items-center justify-between pt-2 border-t border-edge-soft">
-                    <span className="text-xs text-ink-muted">
+                  <div className="flex items-center justify-between pt-2 border-t border-[#1767be]/20">
+                    <span className="text-xs text-white/70">
                       {libraryState.totalVideosFound} local videos linked
                     </span>
                     <button
                       type="button"
                       onClick={() => handleNavigate("workstation")}
-                      className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-emerald-600/20 text-emerald-300 border border-emerald-500/40 text-xs font-bold hover:bg-emerald-600/30 transition shadow-xs"
+                      className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-[#1767be] hover:bg-[#155bb0] text-white border border-[#1767be]/40 text-xs font-bold transition shadow-xs"
                     >
                       <span>{workstationSession ? "Resume Workstation" : "Launch Workstation"}</span>
                       <ChevronRight size={13} />
@@ -1264,31 +1294,31 @@ export function CoreBTRWarRoom({ onStartQBankDrill, onOpenNotes }: CoreBTRWarRoo
               {/* Row 2: Official YouTube Drops & 20th Subject Matrix */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {/* Official Broadcast Card */}
-                <div className="rounded-2xl border border-red-500/30 bg-gradient-to-br from-red-950/20 via-surface to-elevated/40 p-5 flex flex-col justify-between gap-4 shadow-sm hover:border-red-400/50 transition">
+                <div className="rounded-2xl border border-[#1767be]/30 bg-[#1d204b]/70 backdrop-blur-md p-5 flex flex-col justify-between gap-4 shadow-sm hover:border-[#4da2ff]/50 transition">
                   <div className="flex flex-col gap-2">
                     <div className="flex items-center justify-between">
-                      <span className="flex items-center gap-1.5 rounded-full bg-red-500/15 px-2.5 py-0.5 text-[11px] font-bold text-red-400 border border-red-500/30">
-                        <Radio size={12} className="animate-pulse text-red-500" />
+                      <span className="flex items-center gap-1.5 rounded-full bg-[#1767be]/20 px-2.5 py-0.5 text-[11px] font-bold text-[#4da2ff] border border-[#1767be]/30">
+                        <Radio size={12} className="animate-pulse text-[#4da2ff]" />
                         <span>Daily 3 PM Core Drop</span>
                       </span>
-                      <span className="text-[10.5px] font-semibold text-ink-muted">@corebtrbyzainabvora</span>
+                      <span className="text-[10.5px] font-semibold text-white/60">@corebtrbyzainabvora</span>
                     </div>
-                    <h3 className="text-sm font-bold text-ink truncate">
+                    <h3 className="text-sm font-bold text-white truncate">
                       {CORE_BTR_BROADCASTS[0].title}
                     </h3>
-                    <p className="text-xs text-ink-muted line-clamp-2 leading-relaxed">
+                    <p className="text-xs text-white/70 line-clamp-2 leading-relaxed">
                       {CORE_BTR_BROADCASTS[0].description}
                     </p>
                   </div>
 
-                  <div className="flex items-center justify-between pt-2 border-t border-edge-soft">
-                    <span className="text-xs text-red-400 font-semibold">
+                  <div className="flex items-center justify-between pt-2 border-t border-[#1767be]/20">
+                    <span className="text-xs text-[#4da2ff] font-semibold">
                       {CORE_BTR_BROADCASTS[0].durationLabel} • {CORE_BTR_BROADCASTS[0].categoryLabel}
                     </span>
                     <button
                       type="button"
                       onClick={() => setShowBroadcastsModal(true)}
-                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-red-600/20 text-red-300 border border-red-500/40 text-xs font-bold hover:bg-red-600/30 transition shadow-xs"
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#1767be] hover:bg-[#155bb0] text-white border border-[#1767be]/40 text-xs font-bold transition shadow-xs"
                     >
                       <span>Channel Broadcasts</span>
                       <ChevronRight size={13} />
@@ -1297,31 +1327,31 @@ export function CoreBTRWarRoom({ onStartQBankDrill, onOpenNotes }: CoreBTRWarRoo
                 </div>
 
                 {/* 20th Subject Card */}
-                <div className="rounded-2xl border border-amber-500/30 bg-gradient-to-br from-amber-950/20 via-surface to-elevated/40 p-5 flex flex-col justify-between gap-4 shadow-sm hover:border-amber-400/50 transition">
+                <div className="rounded-2xl border border-[#1767be]/30 bg-[#1d204b]/70 backdrop-blur-md p-5 flex flex-col justify-between gap-4 shadow-sm hover:border-[#4da2ff]/50 transition">
                   <div className="flex flex-col gap-2">
                     <div className="flex items-center justify-between">
-                      <span className="flex items-center gap-1.5 rounded-full bg-amber-500/15 px-2.5 py-0.5 text-[11px] font-bold text-amber-300 border border-amber-500/30">
-                        <Calculator size={12} className="text-amber-400" />
+                      <span className="flex items-center gap-1.5 rounded-full bg-[#feb122]/15 px-2.5 py-0.5 text-[11px] font-bold text-[#feb122] border border-[#feb122]/30">
+                        <Calculator size={12} className="text-[#feb122]" />
                         <span>&quot;20th Subject&quot; Matrix</span>
                       </span>
-                      <span className="text-[10.5px] font-semibold text-amber-400">High-Yield Numbers</span>
+                      <span className="text-[10.5px] font-semibold text-[#feb122]">High-Yield Numbers</span>
                     </div>
-                    <h3 className="text-sm font-bold text-ink">
+                    <h3 className="text-sm font-bold text-white">
                       Biostatistics, DOCs & Bio-Medical Waste
                     </h3>
-                    <p className="text-xs text-ink-muted leading-relaxed">
+                    <p className="text-xs text-white/70 leading-relaxed">
                       Instant 2x2 Sensitivity/Specificity calculator, Drug of Choice master directory, GCS, CURB-65 & BMW 2016 rules.
                     </p>
                   </div>
 
-                  <div className="flex items-center justify-between pt-2 border-t border-edge-soft">
-                    <span className="text-xs text-ink-muted">
+                  <div className="flex items-center justify-between pt-2 border-t border-[#1767be]/20">
+                    <span className="text-xs text-white/70">
                       Sens, Spec, PPV, NPV formulas
                     </span>
                     <button
                       type="button"
                       onClick={() => setShowTwentyModal(true)}
-                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-500/20 text-amber-300 border border-amber-500/40 text-xs font-bold hover:bg-amber-500/30 transition shadow-xs"
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#1767be] hover:bg-[#155bb0] text-white border border-[#1767be]/40 text-xs font-bold transition shadow-xs"
                     >
                       <span>Open Matrix</span>
                       <ChevronRight size={13} />
@@ -1330,9 +1360,9 @@ export function CoreBTRWarRoom({ onStartQBankDrill, onOpenNotes }: CoreBTRWarRoo
                 </div>
               </div>
 
-              {/* Row 3: High-Yield Tool Launchers Grid */}
+              {/* Row 3: High-Yield Tool Launchers Grid (Unified CoreBTR Obsidian Style) */}
               <div className="flex flex-col gap-3">
-                <span className="text-xs font-bold uppercase tracking-wider text-ink-muted">
+                <span className="text-xs font-bold uppercase tracking-wider text-white/60">
                   Interactive High-Yield Revision Drills
                 </span>
                 <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
@@ -1341,42 +1371,42 @@ export function CoreBTRWarRoom({ onStartQBankDrill, onOpenNotes }: CoreBTRWarRoo
                       label: "T&D Simulator",
                       sub: "17 Exam Papers",
                       icon: Target,
-                      color: "text-emerald-400 border-emerald-500/30 bg-emerald-500/10",
+                      color: "text-[#4da2ff] border-[#1767be]/30 bg-[#1d204b]/70 hover:border-[#4da2ff]/60 hover:bg-[#1d204b]",
                       action: () => setShowTnDModal(true),
                     },
                     {
                       label: "3-Tier Pyramids",
                       sub: "Base to Tie-Breakers",
                       icon: Triangle,
-                      color: "text-amber-400 border-amber-500/30 bg-amber-500/10",
+                      color: "text-[#4da2ff] border-[#1767be]/30 bg-[#1d204b]/70 hover:border-[#4da2ff]/60 hover:bg-[#1d204b]",
                       action: () => setShowPyramidsModal(true),
                     },
                     {
                       label: "Mega BTR 72h",
                       sub: "Rapid Revision Blitz",
                       icon: Zap,
-                      color: "text-yellow-400 border-yellow-500/30 bg-yellow-500/10",
+                      color: "text-[#feb122] border-[#1767be]/30 bg-[#1d204b]/70 hover:border-[#feb122]/60 hover:bg-[#1d204b]",
                       action: () => setShowMarathonModal(true),
                     },
                     {
                       label: "Spotter Image Bank",
                       sub: "Active Recall Mask",
                       icon: Eye,
-                      color: "text-purple-400 border-purple-500/30 bg-purple-500/10",
+                      color: "text-[#4da2ff] border-[#1767be]/30 bg-[#1d204b]/70 hover:border-[#4da2ff]/60 hover:bg-[#1d204b]",
                       action: () => setShowSpotterModal(true),
                     },
                     {
                       label: "Two-Step Cases",
                       sub: "Clinical Vignettes",
                       icon: Stethoscope,
-                      color: "text-teal-400 border-teal-500/30 bg-teal-500/10",
+                      color: "text-[#4da2ff] border-[#1767be]/30 bg-[#1d204b]/70 hover:border-[#4da2ff]/60 hover:bg-[#1d204b]",
                       action: () => setShowVignetteModal(true),
                     },
                     {
                       label: "Cross-PDF Search",
                       sub: "32 Workbooks",
                       icon: Search,
-                      color: "text-blue-400 border-blue-500/30 bg-blue-500/10",
+                      color: "text-[#4da2ff] border-[#1767be]/30 bg-[#1d204b]/70 hover:border-[#4da2ff]/60 hover:bg-[#1d204b]",
                       action: () => setShowPdfSearchModal(true),
                     },
                   ].map((drill) => {
@@ -1389,8 +1419,8 @@ export function CoreBTRWarRoom({ onStartQBankDrill, onOpenNotes }: CoreBTRWarRoo
                         className={`flex flex-col items-center justify-center p-3.5 rounded-2xl border text-center transition hover:scale-[1.02] shadow-xs ${drill.color}`}
                       >
                         <DrillIcon size={18} className="mb-1.5" />
-                        <span className="text-xs font-bold text-ink leading-tight">{drill.label}</span>
-                        <span className="text-[10px] text-ink-muted mt-0.5">{drill.sub}</span>
+                        <span className="text-xs font-bold text-white leading-tight">{drill.label}</span>
+                        <span className="text-[10px] text-white/60 mt-0.5">{drill.sub}</span>
                       </button>
                     );
                   })}
@@ -1561,10 +1591,10 @@ export function CoreBTRWarRoom({ onStartQBankDrill, onOpenNotes }: CoreBTRWarRoo
 
               const statusColor = {
                 unread: "bg-elevated text-ink-muted border-edge",
-                in_progress: "bg-amber-500/15 text-amber-400 border-amber-500/30",
-                btr_annotated: "bg-blue-500/15 text-blue-400 border-blue-500/30",
-                td_completed: "bg-purple-500/15 text-purple-400 border-purple-500/30",
-                mastered: "bg-emerald-500/15 text-emerald-400 border-emerald-500/30",
+                in_progress: "bg-[#1767be]/15 text-[#4da2ff] border-[#1767be]/30",
+                btr_annotated: "bg-[#1767be]/25 text-white border-[#1767be]/40",
+                td_completed: "bg-[#1767be]/30 text-[#4da2ff] border-[#1767be]/40",
+                mastered: "bg-[#1767be] text-white border-[#1767be]",
               }[currentStatus];
 
               const statusLabel = {
@@ -1620,7 +1650,7 @@ export function CoreBTRWarRoom({ onStartQBankDrill, onOpenNotes }: CoreBTRWarRoo
                     {/* Local Media Indicators */}
                     <div className="flex flex-wrap items-center gap-1.5 mt-1">
                       {videosCount > 0 ? (
-                        <span className="text-[10.5px] font-semibold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-lg flex items-center gap-1">
+                        <span className="text-[10.5px] font-semibold text-[#4da2ff] bg-[#1767be]/15 border border-[#1767be]/30 px-2 py-0.5 rounded-lg flex items-center gap-1">
                           <Play size={10} fill="currentColor" /> {videosCount} Videos
                         </span>
                       ) : (
@@ -1636,7 +1666,7 @@ export function CoreBTRWarRoom({ onStartQBankDrill, onOpenNotes }: CoreBTRWarRoo
                       )}
 
                       {hasAnnotated && (
-                        <span className="text-[10px] font-semibold text-blue-400 bg-blue-500/10 border border-blue-500/20 px-2 py-0.5 rounded-md">
+                        <span className="text-[10px] font-semibold text-[#4da2ff] bg-[#1767be]/15 border border-[#1767be]/30 px-2 py-0.5 rounded-md">
                           Annotated Notes
                         </span>
                       )}
@@ -1674,7 +1704,7 @@ export function CoreBTRWarRoom({ onStartQBankDrill, onOpenNotes }: CoreBTRWarRoo
                               })
                             }
                             title="Open Side-by-Side Video & PDF Workstation"
-                            className="flex items-center gap-1 rounded-lg bg-emerald-600 px-2 py-1 text-[11px] font-bold text-white shadow-xs hover:brightness-110 transition"
+                            className="flex items-center gap-1 rounded-lg bg-[#1767be] px-2 py-1 text-[11px] font-bold text-white shadow-xs hover:bg-[#155bb0] transition"
                           >
                             <Layers size={11} />
                             <span>Dual</span>
@@ -1683,7 +1713,7 @@ export function CoreBTRWarRoom({ onStartQBankDrill, onOpenNotes }: CoreBTRWarRoo
                           <button
                             type="button"
                             onClick={() => handlePlayLecture(media.videos[0], subj)}
-                            className="flex items-center gap-1 rounded-lg bg-accent px-2 py-1 text-[11px] font-bold text-white shadow-xs hover:brightness-110 transition"
+                            className="flex items-center gap-1 rounded-lg bg-[#1767be] px-2 py-1 text-[11px] font-bold text-white shadow-xs hover:bg-[#155bb0] transition"
                           >
                             <Play size={11} fill="currentColor" />
                             <span>Play</span>
@@ -1817,9 +1847,9 @@ export function CoreBTRWarRoom({ onStartQBankDrill, onOpenNotes }: CoreBTRWarRoo
           {libraryState.megaBtrVideos && libraryState.megaBtrVideos.length > 0 && (
             <div className="flex flex-col gap-3">
               <div className="flex items-center gap-2">
-                <Flame size={16} className="text-accent fill-accent" />
+                <Flame size={16} className="text-[#feb122] fill-[#feb122]" />
                 <h4 className="text-sm font-bold text-ink">Mega BTR & INI-CET Rapid Revisions</h4>
-                <span className="text-[11px] font-semibold text-emerald-400 rounded-full bg-emerald-500/15 px-2 py-0.5 border border-emerald-500/25">
+                <span className="text-[11px] font-semibold text-[#4da2ff] rounded-full bg-[#1767be]/15 px-2 py-0.5 border border-[#1767be]/30">
                   Full Marathons
                 </span>
               </div>
@@ -1891,7 +1921,7 @@ export function CoreBTRWarRoom({ onStartQBankDrill, onOpenNotes }: CoreBTRWarRoo
               <div className="flex items-center gap-2">
                 <Target size={16} className="text-accent" />
                 <h4 className="text-sm font-bold text-ink">Test & Discussion (T&D) Vault</h4>
-                <span className="text-[11px] font-semibold text-purple-400 rounded-full bg-purple-500/15 px-2 py-0.5 border border-purple-500/25">
+                <span className="text-[11px] font-semibold text-[#4da2ff] rounded-full bg-[#1767be]/15 px-2 py-0.5 border border-[#1767be]/30">
                   17 Subject Sessions
                 </span>
               </div>
@@ -1903,7 +1933,7 @@ export function CoreBTRWarRoom({ onStartQBankDrill, onOpenNotes }: CoreBTRWarRoo
                     className="rounded-2xl bg-surface/80 border border-edge-soft p-3.5 flex items-center justify-between gap-3 shadow-xs hover:border-accent/40 transition"
                   >
                     <div className="flex items-center gap-2.5 min-w-0">
-                      <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-purple-500/15 text-purple-400 border border-purple-500/25 shrink-0">
+                      <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#1767be]/15 text-[#4da2ff] border border-[#1767be]/30 shrink-0">
                         <Play size={13} fill="currentColor" />
                       </div>
                       <div className="min-w-0">
@@ -2440,7 +2470,7 @@ export function CoreBTRWarRoom({ onStartQBankDrill, onOpenNotes }: CoreBTRWarRoo
                               e.stopPropagation();
                               reviewFSRSCard(card.id, 1);
                             }}
-                            className="px-2 py-0.5 rounded-lg text-[10px] font-bold bg-rose-500/15 text-rose-400 border border-rose-500/30 hover:bg-rose-500/25 transition"
+                            className="px-2 py-0.5 rounded-lg text-[10px] font-bold bg-white/5 text-white/70 border border-white/10 hover:bg-white/10 hover:text-white transition"
                             title="Forgot completely"
                           >
                             Again
@@ -2451,7 +2481,7 @@ export function CoreBTRWarRoom({ onStartQBankDrill, onOpenNotes }: CoreBTRWarRoo
                               e.stopPropagation();
                               reviewFSRSCard(card.id, 2);
                             }}
-                            className="px-2 py-0.5 rounded-lg text-[10px] font-bold bg-amber-500/15 text-amber-400 border border-amber-500/30 hover:bg-amber-500/25 transition"
+                            className="px-2 py-0.5 rounded-lg text-[10px] font-bold bg-[#1767be]/20 text-[#4da2ff] border border-[#1767be]/30 hover:bg-[#1767be]/30 transition"
                             title="Recalled with effort"
                           >
                             Hard
@@ -2462,7 +2492,7 @@ export function CoreBTRWarRoom({ onStartQBankDrill, onOpenNotes }: CoreBTRWarRoo
                               e.stopPropagation();
                               reviewFSRSCard(card.id, 3);
                             }}
-                            className="px-2 py-0.5 rounded-lg text-[10px] font-bold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/25 transition"
+                            className="px-2 py-0.5 rounded-lg text-[10px] font-bold bg-[#1767be] text-white border border-[#1767be] hover:bg-[#155bb0] transition"
                             title="Optimal recall"
                           >
                             Good
@@ -2473,7 +2503,7 @@ export function CoreBTRWarRoom({ onStartQBankDrill, onOpenNotes }: CoreBTRWarRoo
                               e.stopPropagation();
                               reviewFSRSCard(card.id, 4);
                             }}
-                            className="px-2 py-0.5 rounded-lg text-[10px] font-bold bg-cyan-500/15 text-cyan-400 border border-cyan-500/30 hover:bg-cyan-500/25 transition"
+                            className="px-2 py-0.5 rounded-lg text-[10px] font-bold bg-[#4da2ff]/20 text-[#4da2ff] border border-[#4da2ff]/35 hover:bg-[#4da2ff]/30 transition"
                             title="Effortless recall"
                           >
                             Easy

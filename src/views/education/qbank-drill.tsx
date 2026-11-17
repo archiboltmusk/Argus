@@ -518,23 +518,23 @@ export function QBankRunner({
     );
   }
 
-  // Active Question Solving View (matching screenshot media_1794864389397_6b81d4d2.jpg)
+  // Active Question Solving View (matching official CoreBTR App standard)
   return (
-    <div className="flex flex-col h-full w-full max-w-3xl mx-auto bg-[#0d0e1b] rounded-3xl border border-indigo-500/30 shadow-2xl overflow-hidden text-white select-none animate-in zoom-in-95 duration-150">
+    <div className="flex flex-col h-full w-full max-w-3xl mx-auto bg-[#0d1b4b] rounded-3xl border border-[#1767be]/35 shadow-2xl overflow-hidden text-white select-none animate-in zoom-in-95 duration-150">
       {/* Top Question Status Bar */}
-      <div className="flex items-center justify-between px-6 py-4 border-b border-white/10 bg-[#121324]">
+      <div className="flex items-center justify-between px-6 py-4 border-b border-[#1767be]/25 bg-[#1d204b]">
         <div className="flex items-center gap-3">
           <span className="font-mono text-sm font-black text-white">
             {session.activeQuestionIndex + 1}/{questions.length}
           </span>
-          <span className="rounded-lg bg-indigo-500/15 px-2.5 py-0.5 text-xs font-bold text-indigo-300 border border-indigo-500/30">
+          <span className="rounded-lg bg-[#1767be]/20 px-2.5 py-0.5 text-xs font-bold text-[#4da2ff] border border-[#1767be]/30">
             {activeQuestion.subject}
           </span>
         </div>
 
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-1.5 rounded-xl bg-white/5 border border-white/10 px-3 py-1 text-xs font-mono font-bold text-white">
-            <Timer size={13} className="text-indigo-400" />
+            <Timer size={13} className="text-[#4da2ff]" />
             <span>{formatTimer(elapsedTimer)}</span>
           </div>
 
@@ -543,12 +543,12 @@ export function QBankRunner({
             onClick={handleToggleBookmark}
             className={`p-1.5 rounded-xl transition ${
               isBookmarked
-                ? "bg-amber-500/20 text-amber-400 border border-amber-500/40"
+                ? "bg-[#feb122]/20 text-[#feb122] border border-[#feb122]/40"
                 : "text-white/60 hover:text-white hover:bg-white/5"
             }`}
             title="Bookmark into FSRS Vault"
           >
-            <Bookmark size={15} className={isBookmarked ? "fill-amber-400" : ""} />
+            <Bookmark size={15} className={isBookmarked ? "fill-[#feb122]" : ""} />
           </button>
 
           <button
@@ -564,7 +564,7 @@ export function QBankRunner({
       {/* Main Question Body */}
       <div className="flex-1 overflow-y-auto px-6 py-6 flex flex-col gap-5">
         {/* Vignette */}
-        <div className="text-[15px] leading-relaxed text-white font-medium p-4 rounded-2xl bg-white/5 border border-white/10">
+        <div className="text-[15px] leading-relaxed text-white font-medium p-4 rounded-2xl bg-[#1d204b]/60 border border-[#1767be]/25">
           {activeQuestion.vignette}
         </div>
 
@@ -583,10 +583,10 @@ export function QBankRunner({
             type="button"
             onClick={handleToggleMarkReview}
             className={`flex items-center gap-1.5 transition cursor-pointer ${
-              isMarkedReview ? "text-indigo-400 font-bold" : "hover:text-white"
+              isMarkedReview ? "text-[#4da2ff] font-bold" : "hover:text-white"
             }`}
           >
-            <Flag size={12} className={isMarkedReview ? "fill-indigo-400" : ""} />
+            <Flag size={12} className={isMarkedReview ? "fill-[#4da2ff]" : ""} />
             <span>{isMarkedReview ? "Marked for Review" : "Mark for Review"}</span>
           </button>
         </div>
@@ -598,7 +598,7 @@ export function QBankRunner({
             const isElim = eliminated.includes(idx);
             const isCorrect = idx === activeQuestion.correctIndex;
 
-            let optionBorder = "border-white/10 bg-white/5 hover:bg-white/10 text-white";
+            let optionBorder = "border-[#1767be]/20 bg-[#1d204b]/40 hover:bg-[#1d204b]/80 hover:border-[#1767be]/40 text-white";
             if (submitted) {
               if (isCorrect) {
                 optionBorder = "border-emerald-500 bg-emerald-500/15 text-emerald-300 font-bold";
@@ -608,7 +608,7 @@ export function QBankRunner({
                 optionBorder = "opacity-40 border-white/5 text-white/50";
               }
             } else if (isSelected) {
-              optionBorder = "border-indigo-500 bg-indigo-600/20 text-white font-bold ring-1 ring-indigo-500";
+              optionBorder = "border-[#1767be] bg-[#1767be]/25 text-white font-bold ring-1 ring-[#4da2ff]";
             } else if (isElim) {
               optionBorder = "opacity-40 line-through bg-black/30 border-white/5 text-white/40";
             }
@@ -627,8 +627,8 @@ export function QBankRunner({
                         : submitted && isSelected && !isCorrect
                           ? "bg-rose-500 text-white"
                           : isSelected
-                            ? "bg-indigo-600 text-white"
-                            : "bg-white/10 text-white/70"
+                            ? "bg-[#1767be] text-white"
+                            : "bg-[#1767be]/15 text-[#4da2ff] border border-[#1767be]/30"
                     }`}
                   >
                     {String.fromCharCode(65 + idx)}
@@ -666,7 +666,7 @@ export function QBankRunner({
             type="checkbox"
             checked={isGuess}
             onChange={handleToggleGuess}
-            className="h-4 w-4 rounded accent-indigo-500 cursor-pointer"
+            className="h-4 w-4 rounded accent-[#1767be] cursor-pointer"
           />
           <span>I'm guessing this answer</span>
         </label>
@@ -678,7 +678,7 @@ export function QBankRunner({
               type="button"
               onClick={handleSubmitSingle}
               disabled={selectedIdx === undefined}
-              className="rounded-xl bg-indigo-600 hover:bg-indigo-500 px-5 py-2 text-xs font-bold text-white shadow-md disabled:opacity-30 transition"
+              className="rounded-xl bg-[#1767be] hover:bg-[#155bb0] px-5 py-2 text-xs font-bold text-white shadow-md disabled:opacity-30 transition"
             >
               Confirm Answer & Reveal Rationale
             </button>
@@ -687,8 +687,8 @@ export function QBankRunner({
 
         {/* Socratic Rationale */}
         {submitted && (
-          <div className="flex flex-col gap-4 rounded-2xl border border-indigo-500/30 bg-[#121326] p-5 animate-in fade-in duration-200">
-            <div className="flex items-start gap-2.5 rounded-xl bg-amber-500/10 border border-amber-500/30 p-3 text-xs text-amber-400">
+          <div className="flex flex-col gap-4 rounded-2xl border border-[#1767be]/30 bg-[#1d204b]/95 p-5 animate-in fade-in duration-200">
+            <div className="flex items-start gap-2.5 rounded-xl bg-[#feb122]/10 border border-[#feb122]/30 p-3 text-xs text-[#feb122]">
               <AlertTriangle size={15} className="shrink-0 mt-0.5" />
               <div>
                 <span className="font-bold uppercase tracking-wider text-[10px]">Examiner Trap Radar</span>
@@ -705,7 +705,7 @@ export function QBankRunner({
               </div>
             </div>
 
-            <div className="flex items-center gap-2 rounded-xl bg-sky-500/10 border border-sky-500/20 p-2.5 text-xs text-sky-400">
+            <div className="flex items-center gap-2 rounded-xl bg-[#1767be]/15 border border-[#1767be]/30 p-2.5 text-xs text-[#4da2ff]">
               <Lightbulb size={15} className="shrink-0" />
               <span>
                 <strong className="text-white font-bold">Bottom Line: </strong>
@@ -717,7 +717,7 @@ export function QBankRunner({
       </div>
 
       {/* Bottom Bar: Previous and Save & Next */}
-      <div className="flex items-center justify-between px-6 py-3.5 border-t border-white/10 bg-[#121324]">
+      <div className="flex items-center justify-between px-6 py-3.5 border-t border-[#1767be]/25 bg-[#1d204b]">
         <button
           type="button"
           onClick={() =>
@@ -741,7 +741,7 @@ export function QBankRunner({
                 activeQuestionIndex: prev.activeQuestionIndex + 1,
               }))
             }
-            className="px-6 py-2 rounded-xl text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-500 shadow-md shadow-indigo-600/30 transition flex items-center gap-1.5"
+            className="px-6 py-2 rounded-xl text-xs font-bold text-white bg-[#1767be] hover:bg-[#155bb0] shadow-md shadow-[#1767be]/30 transition flex items-center gap-1.5"
           >
             <span>Save & Next</span>
             <ArrowRight size={13} />
@@ -750,7 +750,7 @@ export function QBankRunner({
           <button
             type="button"
             onClick={handleFinishExam}
-            className="px-6 py-2 rounded-xl text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-500 shadow-md shadow-emerald-600/30 transition flex items-center gap-1.5"
+            className="px-6 py-2 rounded-xl text-xs font-bold text-white bg-[#1767be] hover:bg-[#155bb0] shadow-md shadow-[#1767be]/30 transition flex items-center gap-1.5"
           >
             <span>Submit Module</span>
             <CheckCircle2 size={13} />
