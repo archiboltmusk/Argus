@@ -17,10 +17,12 @@ export function ThumbPreview({
   time,
   dur,
   canFetch = true,
+  chapterTitle,
 }: {
   time: number;
   dur: number;
   canFetch?: boolean;
+  chapterTitle?: string | null;
 }) {
   const bucket = Math.round(time / BUCKET_SECONDS);
   const liveBucketRef = useRef(bucket);
@@ -81,7 +83,7 @@ export function ThumbPreview({
   if (!src && !loading) {
     return (
       <div
-        className="pointer-events-none absolute -top-9 flex -translate-x-1/2 items-center gap-1 rounded-md border border-white/10 bg-black/90 px-2 py-1 font-mono text-[12px] font-semibold tabular-nums text-white shadow-lg backdrop-blur-md"
+        className="pointer-events-none absolute -top-9 flex -translate-x-1/2 items-center gap-1.5 whitespace-nowrap rounded-md border border-white/10 bg-black/90 px-2.5 py-1 text-[12px] font-semibold text-white shadow-lg backdrop-blur-md"
         style={{ left: `${pct}%` }}
       >
         {segLabel && (
@@ -89,14 +91,25 @@ export function ThumbPreview({
             {segLabel}
           </span>
         )}
-        {label}
+        {chapterTitle && (
+          <>
+            <span className="max-w-[120px] truncate text-white/80 font-medium">
+              {chapterTitle}
+            </span>
+            <span className="text-white/40">·</span>
+          </>
+        )}
+        <span className="font-mono tabular-nums">{label}</span>
+        <span className="font-mono text-white/45 text-[11px] tabular-nums">
+          (-{fmtTime(Math.max(0, dur - time))})
+        </span>
       </div>
     );
   }
 
   return (
     <div
-      className="pointer-events-none absolute -translate-x-1/2"
+      className="pointer-events-none absolute -translate-x-1/2 flex flex-col items-center"
       style={{ left: `${pct}%`, bottom: "calc(100% + 8px)" }}
     >
       <div
@@ -123,15 +136,26 @@ export function ThumbPreview({
           <Spinner size={20} className="text-white/70" />
         </div>
       </div>
-      <div className="mt-1 flex items-center justify-center gap-1">
+      <div className="mt-1 flex max-w-[220px] items-center justify-center gap-1.5 text-center">
         {segLabel && (
           <span className="rounded bg-accent px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-canvas">
             {segLabel}
           </span>
         )}
-        <span className="inline-block rounded-md bg-black/85 px-1.5 py-0.5 font-mono text-[11px] text-white">
-          {label}
-        </span>
+        <div className="flex items-center gap-1 overflow-hidden rounded-md bg-black/85 px-2 py-0.5 font-mono text-[11px] text-white shadow-md">
+          {chapterTitle && (
+            <>
+              <span className="max-w-[100px] truncate text-white/80 font-medium">
+                {chapterTitle}
+              </span>
+              <span className="text-white/40">·</span>
+            </>
+          )}
+          <span className="tabular-nums">{label}</span>
+          <span className="text-white/45 tabular-nums">
+            (-{fmtTime(Math.max(0, dur - time))})
+          </span>
+        </div>
       </div>
     </div>
   );
