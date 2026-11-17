@@ -101,6 +101,13 @@ class LiveTranscriptionManager {
       const fileName = `whisper-live-${Date.now()}.srt`;
       const filePath = await pathMod.join(dir, fileName);
 
+      try {
+        const { mkdir } = await import("@tauri-apps/plugin-fs");
+        await mkdir(dir, { recursive: true });
+      } catch {
+        // Rust also guarantees recursive dir creation
+      }
+
       this.updateState({
         isActive: true,
         status: "preparing",

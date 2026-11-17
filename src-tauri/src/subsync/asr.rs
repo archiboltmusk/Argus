@@ -83,12 +83,13 @@ impl AsrEngine for NullEngine {
     }
 }
 
-pub async fn pcm_window(
+async fn run_ffmpeg_pcm(
     url: &str,
     headers: &HashMap<String, String>,
     start_sec: f32,
     len_sec: f32,
-    map_spec: &str,
+    map_spec: Option<&str>,
+    use_speechnorm: bool,
 ) -> Result<Vec<f32>, String> {
     let ff = crate::transcode::locate_ffmpeg().ok_or("ffmpeg not found")?;
     let mut cmd = Command::new(&ff);
@@ -115,18 +116,31 @@ pub async fn pcm_window(
     if !blob.is_empty() {
         cmd.arg("-headers").arg(blob);
     }
+    // Fast seek before input URL
     cmd.arg("-ss")
         .arg(start_sec.to_string())
         .arg("-accurate_seek")
-        .arg("-t")
-        .arg(len_sec.to_string())
         .arg("-i")
         .arg(url)
-        .arg("-vn")
-        .arg("-map")
-        .arg(map_spec)
-        .arg("-af")
-        .arg("highpass=f=100,lowpass=f=6000,speechnorm=e=4:r=0.0005:l=1")
+        // Duration MUST be placed AFTER -i as an output option to slice exactly len_sec from seek point
+        .arg("-t")
+        .arg(len_sec.to_string())
+        .arg("-vn");
+
+    if let Some(spec) = map_spec {
+        if !spec.is_empty() {
+            cmd.arg("-map").arg(spec);
+        }
+    }
+
+    let filter = if use_speechnorm {
+        "highpass=f=100,lowpass=f=6000,speechnorm=e=4:r=0.0005:l=1,aresample=16000"
+    } else {
+        "highpass=f=100,lowpass=f=6000,aresample=16000"
+    };
+
+    cmd.arg("-af")
+        .arg(filter)
         .arg("-ac")
         .arg("1")
         .arg("-ar")
@@ -137,7 +151,7 @@ pub async fn pcm_window(
         .arg("pcm_f32le")
         .arg("-");
     cmd.stdout(std::process::Stdio::piped());
-    cmd.stderr(std::process::Stdio::null());
+    cmd.stderr(std::process::Stdio::piped());
     cmd.kill_on_drop(true);
     #[cfg(windows)]
     cmd.creation_flags(0x0800_0000 | 0x0000_4000);
@@ -147,7 +161,8 @@ pub async fn pcm_window(
         .map_err(|_| "ffmpeg-timeout".to_string())?
         .map_err(|error| format!("run ffmpeg: {}", error))?;
     if !output.status.success() {
-        return Err(format!("ffmpeg-exit-status: {}", output.status));
+        let err_text = String::from_utf8_lossy(&output.stderr);
+        return Err(format!("ffmpeg-exit-status: {} ({})", output.status, err_text.trim()));
     }
     let buf = output.stdout;
 
@@ -163,6 +178,29 @@ pub async fn pcm_window(
         i += 4;
     }
     Ok(pcm)
+}
+
+pub async fn pcm_window(
+    url: &str,
+    headers: &HashMap<String, String>,
+    start_sec: f32,
+    len_sec: f32,
+    map_spec: &str,
+) -> Result<Vec<f32>, String> {
+    match run_ffmpeg_pcm(url, headers, start_sec, len_sec, Some(map_spec), true).await {
+        Ok(pcm) if !pcm.is_empty() => Ok(pcm),
+        Err(err) => {
+            eprintln!("[ASR] pcm_window initial attempt failed: {}. Retrying with auto stream map and standard filter...", err);
+            match run_ffmpeg_pcm(url, headers, start_sec, len_sec, None, false).await {
+                Ok(pcm) => Ok(pcm),
+                Err(err2) => Err(format!("initial: {}, fallback: {}", err, err2)),
+            }
+        }
+        Ok(_) => {
+            // Empty buffer, retry with auto stream map
+            run_ffmpeg_pcm(url, headers, start_sec, len_sec, None, false).await
+        }
+    }
 }
 
 pub fn probe_windows(dur: f32, n: usize, len: f32) -> Vec<(f32, f32)> {
@@ -447,6 +485,9 @@ pub async fn generate(
                     // Write directly to disk from Rust on EVERY chunk!
                     // This guarantees subtitles remain continuous even when minimized!
                     if let Some(path) = out_path {
+                        if let Some(parent) = std::path::Path::new(path).parent() {
+                            let _ = std::fs::create_dir_all(parent);
+                        }
                         if let Err(e) = std::fs::write(path, &current_srt) {
                             eprintln!("[ASR] error writing srt: {}", e);
                         }
@@ -677,6 +718,9 @@ pub async fn asr_generate_subtitles(
         }
 
         if let Some(ref path) = output_path {
+            if let Some(parent) = std::path::Path::new(path).parent() {
+                let _ = std::fs::create_dir_all(parent);
+            }
             let _ = std::fs::write(path, &srt);
         }
 
