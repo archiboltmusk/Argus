@@ -124,7 +124,7 @@ import { USER_LOCAL_BTR_MANIFEST } from "@/lib/education/btr-library-manifest";
 // Official CoreBTR Tests Catalog (connected to /Users/anupam/Downloads/BTR)
 const COREBTR_OFFICIAL_TESTS = [
   {
-    id: "gt_inicet_mock",
+    id: "national_inicet_mock_gt",
     title: "National INICET Mock GT",
     totalQuestions: 200,
     durationMins: 180,
@@ -135,7 +135,7 @@ const COREBTR_OFFICIAL_TESTS = [
     solutionFile: "National_INICET_Mock_GT_annotated.pdf",
   },
   {
-    id: "gt_4",
+    id: "baseline_grand_test___4",
     title: "Baseline GRAND TEST - 4",
     totalQuestions: 200,
     durationMins: 210,
@@ -146,7 +146,7 @@ const COREBTR_OFFICIAL_TESTS = [
     solutionFile: "Baseline_Grand_Test-4_annotated.pdf",
   },
   {
-    id: "gt_9",
+    id: "grand_test_gt___9",
     title: "Grand Test (GT) - 9",
     totalQuestions: 200,
     durationMins: 180,
@@ -157,7 +157,7 @@ const COREBTR_OFFICIAL_TESTS = [
     solutionFile: "CoreBTR_Grand_Test-9_non_annotated.pdf",
   },
   {
-    id: "gt_8",
+    id: "grand_test_gt___8",
     title: "Grand Test (GT) - 8",
     totalQuestions: 200,
     durationMins: 180,
@@ -168,7 +168,7 @@ const COREBTR_OFFICIAL_TESTS = [
     solutionFile: "CoreBTR_Grand_Test-8_annotated.pdf",
   },
   {
-    id: "gt_7",
+    id: "grand_test_gt___7",
     title: "Grand Test (GT) - 7",
     totalQuestions: 200,
     durationMins: 180,
@@ -179,7 +179,7 @@ const COREBTR_OFFICIAL_TESTS = [
     solutionFile: "CoreBTR_Grand_Test-7_annotated.pdf",
   },
   {
-    id: "gt_6",
+    id: "grand_test_gt___6",
     title: "Grand Test (GT) - 6",
     totalQuestions: 200,
     durationMins: 180,
@@ -190,7 +190,7 @@ const COREBTR_OFFICIAL_TESTS = [
     solutionFile: "CoreBTR_Grand_Test-6_annotated.pdf",
   },
   {
-    id: "gt_5",
+    id: "grand_test_gt___5",
     title: "Grand Test (GT) - 5",
     totalQuestions: 200,
     durationMins: 180,
@@ -201,7 +201,7 @@ const COREBTR_OFFICIAL_TESTS = [
     solutionFile: "CoreBTR_Grand_Test-5_annotated.pdf",
   },
   {
-    id: "gt_3",
+    id: "grand_test_gt___3",
     title: "Grand Test (GT) - 3",
     totalQuestions: 200,
     durationMins: 180,
@@ -212,7 +212,7 @@ const COREBTR_OFFICIAL_TESTS = [
     solutionFile: "CoreBTR_Grand_Test-3_annotated.pdf",
   },
   {
-    id: "gt_2",
+    id: "grand_test_gt___2",
     title: "Grand Test (GT) - 2",
     totalQuestions: 200,
     durationMins: 180,
@@ -223,7 +223,7 @@ const COREBTR_OFFICIAL_TESTS = [
     solutionFile: "CoreBTR_Grand_Test_2_Solutions_-_17.04.2026_annotated.pdf",
   },
   {
-    id: "gt_1",
+    id: "grand_test_gt___1",
     title: "Grand Test (GT) - 1",
     totalQuestions: 200,
     durationMins: 180,
@@ -724,6 +724,7 @@ export function CoreBTRWarRoom({
           const scanned = (await invoke("argus_scan_folder", {
             folder,
             minSizeMb: 0,
+            includePdfs: true,
           })) as Array<{ path: string; filename: string; size: number }>;
 
           const fileList = scanned.map((s) => ({
@@ -2587,10 +2588,28 @@ export function CoreBTRWarRoom({
             {test.solutionFile && (
               <button
                 type="button"
-                onClick={() => {
-                  const fullPath = `/Users/anupam/Downloads/BTR/${test.solutionFile}`;
-                  const url = resolveBTRPlayableUrl(fullPath);
-                  window.open(url, "_blank");
+                onClick={async () => {
+                  const filename = test.solutionFile;
+                  const match = libraryState.grandTests?.find((item) => item.filename === filename);
+                  try {
+                    const { isTauri } = await import("@tauri-apps/api/core");
+                    if (isTauri()) {
+                      const { openPath } = await import("@tauri-apps/plugin-opener");
+                      if (match && !match.fullPath.startsWith("blob:")) {
+                        try { await openPath(match.fullPath); return; } catch { /* Locate a moved PDF. */ }
+                      }
+                      const { open } = await import("@tauri-apps/plugin-dialog");
+                      const selected = await open({ title: `Locate ${filename}`, filters: [{ name: "PDF", extensions: ["pdf"] }] });
+                      if (typeof selected === "string") await openPath(selected);
+                    } else if (match?.fullPath.startsWith("blob:")) {
+                      window.open(match.fullPath, "_blank", "noopener");
+                    } else {
+                      setScanNotice(`Select the folder containing ${filename} to open these solutions.`);
+                      folderInputRef.current?.click();
+                    }
+                  } catch (err) {
+                    setScanNotice(`Could not open ${filename}: ${String(err)}`);
+                  }
                 }}
                 className="flex-1 md:flex-none px-4 py-2 rounded-xl bg-white/10 border border-edge hover:bg-white/15 text-white text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-xs"
                 title="View Dr. Zainab Vora's annotated explanations and key takeaways"
@@ -2616,7 +2635,7 @@ export function CoreBTRWarRoom({
                 if (qs.length > 0) {
                   onStartQBankDrill?.(test.title, qs);
                 } else {
-                  onStartQBankDrill?.(test.title);
+                  setScanNotice("This test has no linked questions in the installed bank.");
                 }
               }}
               className="flex-1 md:flex-none px-5 py-2 rounded-xl bg-white hover:bg-white/90 text-black font-semibold text-xs font-bold shadow-md shadow-black/30 transition flex items-center justify-center gap-1.5"
@@ -3771,14 +3790,15 @@ export function CoreBTRWarRoom({
           const qs = await buildCustomModuleTest({
             title: config.name,
             subjects: config.selectedSubjects || (selectedSubjectDetail?.name ? [selectedSubjectDetail.name] : []),
-            status: config.bookmarksOnly ? "bookmarked" : config.attemptStatus.incorrect ? "incorrect" : "all",
+            status: config.bookmarksOnly ? "bookmarked" : "all",
+            attemptStatus: config.attemptStatus,
             count: config.questionCount,
             mode: "exam",
           });
           if (qs.length > 0) {
             onStartQBankDrill?.(config.name, qs);
           } else {
-            onStartQBankDrill?.(config.name);
+            setScanNotice("No questions match these module filters. Change the subject or attempt status.");
           }
         }}
         subjectName={selectedSubjectDetail?.name}

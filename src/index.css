@@ -137,6 +137,20 @@ html[data-os="linux"][data-mpv-embed="1"] [data-argus-player] * {
   backdrop-filter: none !important;
 }
 
+/* Native video sits behind the webview. Menus need their own opaque paint. */
+.player-menu-surface {
+  color-scheme: dark;
+  --color-canvas: #12161c;
+  --color-surface: #191e26;
+  --color-elevated: #202630;
+  --color-raised: #343e4c;
+  --color-ink: #ffffff;
+  --color-ink-muted: #d8dfe8;
+  --color-ink-subtle: #bac5d2;
+  background-color: var(--color-elevated);
+  color: var(--color-ink);
+}
+
 /* #31: avoid Library backdrop-filter layers on WebKitGTK. The captured
    WebProcess stack waits on the compositor, which repeatedly traverses its
    layer tree. Keep accelerated compositing enabled for the native player;

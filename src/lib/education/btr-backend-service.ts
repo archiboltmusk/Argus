@@ -135,6 +135,10 @@ export async function initBTRBackendDatabase(): Promise<boolean> {
             buildSearchIndex();
           };
 
+          await new Promise<void>((resolve, reject) => {
+            tx.oncomplete = () => resolve();
+            tx.onabort = () => reject(tx.error);
+          });
           isHydrated = true;
           return true;
         }
@@ -272,11 +276,15 @@ export async function getQuestionsForSubject(subjectName: string, limit = 50): P
   for (const q of memoryQuestionsCache.values()) {
     if (q.subject.toLowerCase().includes(normTarget) || q.topic.toLowerCase().includes(normTarget)) {
       results.push(q);
-      if (results.length >= limit) break;
+
     }
   }
 
-  return results;
+  for (let i = results.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [results[i], results[j]] = [results[j], results[i]];
+  }
+  return results.slice(0, limit);
 }
 
 /**
@@ -367,6 +375,14 @@ export async function buildCustomModuleTest(config: CustomModuleConfig): Promise
 
     // Status filter
     const state = memoryUserStateCache.get(q.id);
+    if (config.attemptStatus) {
+      const filters = config.attemptStatus;
+      const attempts = state?.attempts || 0;
+      const incorrect = state?.incorrects || 0;
+      if (!(filters.correct && attempts > incorrect) &&
+          !(filters.incorrect && incorrect > 0) &&
+          !((filters.notAttemptedYet || filters.notAnswered) && attempts === 0)) continue;
+    }
     if (config.status === "unattempted" && (state?.attempts || 0) > 0) continue;
     if (config.status === "incorrect" && (state?.incorrects || 0) === 0) continue;
     if (config.status === "bookmarked" && !state?.isBookmarked) continue;

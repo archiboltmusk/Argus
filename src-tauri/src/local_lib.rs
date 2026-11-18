@@ -80,6 +80,7 @@ pub(crate) fn adjacent_subtitles(video: &std::path::Path) -> Vec<String> {
 pub async fn argus_scan_folder(
     folder: String,
     min_size_mb: Option<u64>,
+    include_pdfs: Option<bool>,
 ) -> Result<Vec<ScannedFile>, String> {
     tauri::async_runtime::spawn_blocking(move || {
         let root = PathBuf::from(&folder);
@@ -104,7 +105,7 @@ pub async fn argus_scan_folder(
                 .map(|s| s.to_ascii_lowercase());
             if !ext
                 .as_deref()
-                .map(|e| VIDEO_EXTS.contains(&e))
+                .map(|e| VIDEO_EXTS.contains(&e) || (include_pdfs == Some(true) && e == "pdf"))
                 .unwrap_or(false)
             {
                 continue;
