@@ -62,6 +62,7 @@ export interface CustomModuleConfig {
   count: number;
   mode: "exam" | "study";
   depthLevel?: string;
+  attemptStatus?: { correct: boolean; incorrect: boolean; notAnswered: boolean; notAttemptedYet: boolean };
 }
 
 export interface RemediationRecommendation {

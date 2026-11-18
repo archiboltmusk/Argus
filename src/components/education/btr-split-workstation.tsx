@@ -1,3 +1,4 @@
+import { isTauri } from "@tauri-apps/api/core";
 import { useState, useRef, useEffect, useMemo, useCallback } from "react";
 import {
   X,
@@ -282,9 +283,14 @@ export function BTRSplitWorkstation({
 
   // Open PDF in Native macOS Viewer / Preview
   const handleOpenPdfInSystemViewer = async () => {
-    const targetPath = activePdf?.fullPath?.replace(/^file:\/\//, "");
-    if (!targetPath) return;
+    let targetPath = activePdf?.fullPath?.replace(/^file:\/\//, "");
     try {
+      if (customPdfBlob || !targetPath || !/^(?:\/|[A-Za-z]:[\\/])/.test(targetPath)) {
+        const { open: choosePdf } = await import("@tauri-apps/plugin-dialog");
+        const selected = await choosePdf({ filters: [{ name: "PDF", extensions: ["pdf"] }] });
+        if (typeof selected !== "string") return;
+        targetPath = selected;
+      }
       const { openPath } = await import("@tauri-apps/plugin-opener");
       await openPath(targetPath);
     } catch (e) {
@@ -454,8 +460,8 @@ export function BTRSplitWorkstation({
         <div className="w-full lg:w-[55%] flex flex-col border-b lg:border-b-0 lg:border-r border-edge bg-black/60 relative">
           {/* Video Container */}
           <div className="relative flex-1 flex items-center justify-center bg-black min-h-[300px] overflow-hidden">
-            {audioOnlyMode ? (
-              <div className="flex flex-col items-center justify-center gap-4 p-8 text-center">
+            {audioOnlyMode && (
+              <div className="absolute inset-0 z-10 bg-black flex flex-col items-center justify-center gap-4 p-8 text-center">
                 <div className="flex h-20 w-20 items-center justify-center rounded-3xl bg-amber-500/20 border border-amber-500/30 text-amber-400">
                   <Headphones size={36} />
                 </div>
@@ -471,7 +477,8 @@ export function BTRSplitWorkstation({
                   </div>
                 )}
               </div>
-            ) : videoError ? (
+            )}
+            {videoError ? (
               <div className="flex flex-col items-center justify-center gap-4 p-8 text-center max-w-lg">
                 <div className="flex h-16 w-16 items-center justify-center rounded-3xl bg-amber-500/15 border border-amber-500/30 text-amber-400">
                   <AlertTriangle size={32} />
@@ -578,13 +585,12 @@ export function BTRSplitWorkstation({
                   setVideoError(false);
                 }}
                 onError={() => {
-                  // If local webview cannot decode e.g. MKV or file scheme, seamlessly auto-connect to verified YouTube stream
-                  const ytVideo = getSubjectYouTubeLecture(subject.id);
-                  setActiveVideo(ytVideo);
-                  setAutoFallbackTriggered(true);
-                  setVideoError(false);
+                  setIsPlaying(false);
+                  setVideoError(true);
                 }}
-                onPlay={() => setIsPlaying(true)}
+                controls
+                playsInline
+                onPlaying={() => setIsPlaying(true)}
                 onPause={() => setIsPlaying(false)}
               />
             )}
@@ -638,8 +644,7 @@ export function BTRSplitWorkstation({
                       onClick={() => {
                         setActiveCheckpoint(null);
                         if (videoRef.current) {
-                          videoRef.current.play();
-                          setIsPlaying(true);
+                          void videoRef.current.play().catch(() => setVideoError(true));
                         }
                       }}
                       className="text-ink-muted hover:text-ink text-xs p-1 rounded-lg"
@@ -724,8 +729,7 @@ export function BTRSplitWorkstation({
                       onClick={() => {
                         setActiveCheckpoint(null);
                         if (videoRef.current) {
-                          videoRef.current.play();
-                          setIsPlaying(true);
+                          void videoRef.current.play().catch(() => setVideoError(true));
                         }
                       }}
                       className="px-4 py-2 rounded-xl bg-accent text-white font-bold text-xs hover:brightness-110 transition flex items-center gap-1.5 shadow-md"
@@ -783,7 +787,7 @@ export function BTRSplitWorkstation({
                   onClick={() => {
                     if (videoRef.current) {
                       if (isPlaying) videoRef.current.pause();
-                      else videoRef.current.play();
+                      else void videoRef.current.play().catch(() => setVideoError(true));
                     }
                   }}
                   className="flex h-9 w-9 items-center justify-center rounded-xl bg-accent text-white hover:brightness-110 shadow-sm"
@@ -967,6 +971,7 @@ export function BTRSplitWorkstation({
                 onClick={() => {
                   setPdfMode("pdf");
                   setPdfLoadError(false);
+                  if (isTauri()) void handleOpenPdfInSystemViewer();
                 }}
                 className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold transition ${
                   pdfMode === "pdf"
@@ -991,7 +996,7 @@ export function BTRSplitWorkstation({
                 <span className="hidden md:inline">Pick PDF</span>
               </button>
 
-              {activePdf?.fullPath && (
+              {(activePdf?.fullPath || customPdfBlob) && (
                 <button
                   type="button"
                   onClick={handleOpenPdfInSystemViewer}

@@ -59,6 +59,7 @@
     "clipboard-manager:allow-write-text",
     "dialog:default",
     "dialog:allow-open",
+    { "identifier": "opener:allow-open-path", "allow": [{ "path": "**/*.pdf" }, { "path": "**/*.PDF" }] },
     "dialog:allow-save",
     "dialog:allow-confirm",
     "dialog:allow-ask",

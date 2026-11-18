@@ -56,9 +56,10 @@ import { QBankRunner } from "./education/qbank-drill";
 import { QBankManager } from "./education/qbank-manager";
 import { PatientCaseSimulator } from "./education/patient-case-simulator";
 import { getAllQuestions, getInicetHighYieldQuestions } from "@/lib/education/qbank-store";
-import { CLINICAL_QBANK_STARTER } from "@/lib/education/qbank-data";
+
 import type { ClinicalQuestion } from "@/lib/education/qbank-types";
 import {
+  buildCustomModuleTest,
   getBackendTests,
   getQuestionsForTest,
   getQuestionsForSubject,
@@ -409,13 +410,21 @@ export function EducationView() {
         console.warn("[education] Failed to load backend questions, falling back to starter pack", err);
       }
     }
-    if (testTitleOrSubject === true) {
-      const highYield = getInicetHighYieldQuestions();
-      setActiveDrillQuestions(highYield.length > 0 ? highYield : CLINICAL_QBANK_STARTER);
-    } else {
-      const allImported = getAllQuestions();
-      setActiveDrillQuestions(allImported.length > 0 ? allImported : CLINICAL_QBANK_STARTER);
+    if (typeof testTitleOrSubject === "string") {
+      setImportNotice({ success: false, message: `No questions available for ${testTitleOrSubject}.` });
+      return;
     }
+    const bundled = await buildCustomModuleTest({ subjects: [], count: Infinity, status: "all", mode: "study" });
+    const imported = testTitleOrSubject ? getInicetHighYieldQuestions() : getAllQuestions();
+    const candidates = testTitleOrSubject
+      ? bundled.filter((q) => q.depthLevel === "L3_MultiStepClinical" || q.depthLevel === "L4_InicetTrap")
+      : bundled;
+    const pool = Array.from(new Map([...imported, ...candidates].map((q) => [q.id, q])).values());
+    for (let i = pool.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [pool[i], pool[j]] = [pool[j], pool[i]];
+    }
+    setActiveDrillQuestions(pool.slice(0, 50));
     setActiveTestId(undefined);
     setShowQBank(true);
   }, []);

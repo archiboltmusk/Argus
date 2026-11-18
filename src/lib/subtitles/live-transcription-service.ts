@@ -277,8 +277,10 @@ class LiveTranscriptionManager {
             : "Whisper AI (Dialogue)";
 
           try {
-            await this.onAddTrackCallback(filePath, isTranslate ? "en" : (options.lang || "en"), trackLabel);
+            const mounted = await this.onAddTrackCallback(filePath, isTranslate ? "en" : (options.lang || "en"), trackLabel);
+            this.trackMounted = mounted !== false;
           } catch (err) {
+            this.trackMounted = false;
             console.warn("[LiveTranscriptionManager] onAddTrackCallback error:", err);
           }
         }

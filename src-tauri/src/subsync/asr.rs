@@ -102,19 +102,16 @@ async fn run_ffmpeg_pcm(
     if url.starts_with("http://") || url.starts_with("https://") {
         cmd.arg("-reconnect")
             .arg("1")
-            .arg("-reconnect_at_eof")
-            .arg("1")
             .arg("-reconnect_streamed")
             .arg("1")
             .arg("-reconnect_delay_max")
             .arg("5");
-    }
-
-    cmd.arg("-user_agent")
-        .arg(url_guard::user_agent(headers).unwrap_or_else(|| "Argus".into()));
-    let blob = url_guard::safe_header_blob(headers);
-    if !blob.is_empty() {
-        cmd.arg("-headers").arg(blob);
+        cmd.arg("-user_agent")
+            .arg(url_guard::user_agent(headers).unwrap_or_else(|| "Argus".into()));
+        let blob = url_guard::safe_header_blob(headers);
+        if !blob.is_empty() {
+            cmd.arg("-headers").arg(blob);
+        }
     }
     // Fast seek before input URL
     cmd.arg("-ss")
@@ -391,7 +388,7 @@ pub async fn generate(
     let mut start = 0.0f32;
     let total_chunks = (dur / chunk).ceil().max(1.0) as usize;
     let mut chunk_idx = 0;
-    let mut consecutive_failures = 0;
+
 
     while start < dur {
         if cancel_signal.load(Ordering::Relaxed) {
@@ -418,6 +415,7 @@ pub async fn generate(
 
         // Fetch audio chunk with up to 3 retries
         let mut pcm_opt = None;
+        let mut extraction_error = String::new();
         for attempt in 1..=3 {
             if cancel_signal.load(Ordering::Relaxed) {
                 return Err("cancelled".into());
@@ -425,11 +423,12 @@ pub async fn generate(
             match pcm_window(url, headers, start, len + overlap, map_spec).await {
                 Ok(p) => {
                     pcm_opt = Some(p);
-                    consecutive_failures = 0;
+
                     break;
                 }
                 Err(err) => {
                     eprintln!("[ASR] chunk {} at {:.1}s attempt {} failed: {}", chunk_idx, start, attempt, err);
+                    extraction_error = err;
                     if attempt < 3 {
                         tokio::time::sleep(Duration::from_millis(500 * attempt as u64)).await;
                     }
@@ -440,20 +439,14 @@ pub async fn generate(
         let pcm = match pcm_opt {
             Some(p) => p,
             None => {
-                consecutive_failures += 1;
-                // Only abort if 10 consecutive chunks completely fail (e.g. stream terminated)
-                if consecutive_failures >= 10 {
-                    eprintln!("[ASR] 10 consecutive chunk failures; ending transcription early");
-                    break;
-                }
-                // Skip this single bad/silent chunk so the remaining movie is NOT chopped!
-                start += chunk;
-                continue;
+                return Err(format!("Audio extraction failed at {start:.0}s after three attempts: {extraction_error}"));
             }
         };
 
         if pcm.len() > ASR_SAMPLE_RATE as usize {
-            if let Ok(segs) = engine.transcribe(&pcm, lang, translate) {
+            {
+                let segs = engine.transcribe(&pcm, lang, translate)
+                    .map_err(|err| format!("Speech recognition failed at {start:.0}s: {err}"))?;
                 let mut added_any = false;
                 for mut seg in segs {
                     seg.t0 += start;
@@ -694,8 +687,10 @@ pub async fn asr_generate_subtitles(
         let engine = load_engine(&model_path)?;
         let hdrs = headers.unwrap_or_default();
         let dur = match duration_sec {
-            Some(d) if d > 30.0 => d,
-            _ => probe_media_duration(&url, &hdrs).await.unwrap_or(7200.0),
+            Some(d) if d.is_finite() && d > 0.0 => d,
+            _ => probe_media_duration(&url, &hdrs).await
+                .filter(|d| d.is_finite() && *d > 0.0)
+                .ok_or("Could not determine media duration. Wait for playback to load and retry.")?,
         };
 
         let is_translate = translate.unwrap_or(false);
@@ -723,7 +718,7 @@ pub async fn asr_generate_subtitles(
             if let Some(parent) = std::path::Path::new(path).parent() {
                 let _ = std::fs::create_dir_all(parent);
             }
-            let _ = std::fs::write(path, &srt);
+            std::fs::write(path, &srt).map_err(|err| format!("Saving subtitles failed: {err}"))?;
         }
 
         Ok(srt)

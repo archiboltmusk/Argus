@@ -270,6 +270,10 @@ export function indexBTRFiles(
 
   const state: BTRLocalLibraryState = {
     rootFolderPath,
+    grandTests: files.filter((file) => getFileExtension(file.name) === "pdf").map((file) => ({
+      id: file.relativePath || file.name, title: file.name, filename: file.name,
+      fullPath: file.blobUrl || file.fullPath || file.path || file.name, sizeBytes: file.size || 0,
+    })),
     lastScannedAt: new Date().toISOString(),
     totalVideosFound,
     totalPdfsFound,
