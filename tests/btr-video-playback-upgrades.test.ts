@@ -26,6 +26,21 @@ test("BTR Video Playback: resolveBTRPlayableUrl resolves blobs, remote streams, 
   const fileUrl = "file:///Users/anupam/Downloads/BTR/Radiology/01_General.mp4";
   const resolved = resolveBTRPlayableUrl(fileUrl);
   assert.equal(resolved, "/Users/anupam/Downloads/BTR/Radiology/01_General.mp4");
+
+  // 5. When running in Tauri environment, delegates to convertFileSrc
+  const origWindow = (globalThis as unknown as { window?: unknown }).window;
+  try {
+    (globalThis as unknown as { window: unknown }).window = {
+      isTauri: true,
+      __TAURI_INTERNALS__: {
+        convertFileSrc: (p: string) => `http://asset.localhost/${encodeURIComponent(p)}`,
+      },
+    };
+    const tauriResolved = resolveBTRPlayableUrl("/Users/anupam/Downloads/BTR/Anatomy_annotated.pdf");
+    assert.equal(tauriResolved, "http://asset.localhost/%2FUsers%2Fanupam%2FDownloads%2FBTR%2FAnatomy_annotated.pdf");
+  } finally {
+    (globalThis as unknown as { window?: unknown }).window = origWindow;
+  }
 });
 
 test("BTR Video Playback: createBTRVideoPlayerSrc sets notWebReady=true for local disk files", () => {

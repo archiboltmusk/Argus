@@ -1065,3 +1065,204 @@
     opacity: 0;
   }
 }
+
+/* ==========================================================================
+   Argus Audiophile Upgrades: Ambient Mesh Aura, Tactile Vinyl & Kinetic Lyrics
+   ========================================================================== */
+
+/* 1. Ambient Fluid Chromatic Mesh Aura */
+.music-now-ambient-aura {
+  position: absolute;
+  inset: -25%;
+  pointer-events: none;
+  z-index: 0;
+  overflow: hidden;
+  filter: blur(100px);
+  opacity: 0.55;
+  transition: opacity 1s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.music-now-ambient-orb {
+  position: absolute;
+  border-radius: 50%;
+  mix-blend-mode: screen;
+  will-change: transform;
+}
+.music-now-ambient-orb.orb-1 {
+  width: 55vw;
+  height: 55vw;
+  top: -10%;
+  left: -10%;
+  animation: music-aura-drift-1 28s infinite alternate ease-in-out;
+}
+.music-now-ambient-orb.orb-2 {
+  width: 50vw;
+  height: 50vw;
+  bottom: -15%;
+  right: -5%;
+  animation: music-aura-drift-2 32s infinite alternate ease-in-out;
+}
+.music-now-ambient-orb.orb-3 {
+  width: 45vw;
+  height: 45vw;
+  top: 30%;
+  left: 25%;
+  animation: music-aura-drift-3 24s infinite alternate ease-in-out;
+}
+@keyframes music-aura-drift-1 {
+  0% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(15vw, 12vh) scale(1.15); }
+  100% { transform: translate(-8vw, 18vh) scale(0.92); }
+}
+@keyframes music-aura-drift-2 {
+  0% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(-18vw, -14vh) scale(1.18); }
+  100% { transform: translate(10vw, -8vh) scale(0.88); }
+}
+@keyframes music-aura-drift-3 {
+  0% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(12vw, -16vh) scale(1.22); }
+  100% { transform: translate(-15vw, 10vh) scale(0.95); }
+}
+
+/* 2. Tactile Vinyl Record & Jacket Stage */
+.music-vinyl-stage {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.music-vinyl-jacket {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  z-index: 2;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 20px 45px -10px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(255, 255, 255, 0.08);
+  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.4s ease;
+}
+.music-vinyl-stage:hover .music-vinyl-jacket {
+  transform: translateX(-16px) scale(0.98);
+}
+.music-jacket-sheen {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.16) 0%, transparent 45%, rgba(0, 0, 0, 0.35) 100%);
+  pointer-events: none;
+}
+.music-vinyl-disc {
+  position: absolute;
+  width: 95%;
+  height: 95%;
+  border-radius: 50%;
+  background: radial-gradient(circle at center, #0a0a0c 0%, #111114 60%, #0d0d10 100%);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.9), inset 0 0 0 1px rgba(255, 255, 255, 0.12);
+  z-index: 1;
+  right: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transform: translateX(0);
+  transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.music-vinyl-stage:hover .music-vinyl-disc,
+.music-vinyl-disc.playing {
+  transform: translateX(28%);
+}
+.music-vinyl-disc.playing {
+  animation: vinyl-spin 4s linear infinite;
+}
+@keyframes vinyl-spin {
+  from { transform: translateX(28%) rotate(0deg); }
+  to { transform: translateX(28%) rotate(360deg); }
+}
+.music-vinyl-grooves {
+  position: absolute;
+  inset: 6px;
+  border-radius: 50%;
+  background: repeating-radial-gradient(circle at center, rgba(255, 255, 255, 0.04) 0px, transparent 1px, transparent 4px, rgba(255, 255, 255, 0.03) 5px);
+  pointer-events: none;
+}
+.music-vinyl-label {
+  position: relative;
+  width: 36%;
+  height: 36%;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 0 12px rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.music-vinyl-label-art {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.music-vinyl-center-hole {
+  position: absolute;
+  width: 18%;
+  height: 18%;
+  border-radius: 50%;
+  background: #000;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+/* 3. Kinetic Synchronized Lyrics Upgrade */
+.music-now-lyrics [data-active="1"] {
+  transform: scale(1.03) translateX(8px);
+}
+.music-now-lyrics [data-active="1"] button {
+  color: #ffffff;
+  font-size: 24px;
+  font-weight: 800;
+  text-shadow: 0 0 20px rgba(255, 255, 255, 0.45), 0 2px 8px rgba(0, 0, 0, 0.6);
+  background: rgba(255, 255, 255, 0.08);
+  border-left: 3px solid var(--color-accent);
+}
+.music-now-lyric-instrumental {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 18px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  cursor: pointer;
+  width: 100%;
+  transition: all 0.25s ease;
+}
+.music-now-lyric-instrumental:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: var(--color-accent);
+}
+.music-inst-bars {
+  display: flex;
+  align-items: flex-end;
+  gap: 3px;
+  height: 16px;
+}
+.music-inst-bar {
+  width: 3px;
+  background: var(--color-accent);
+  border-radius: 2px;
+  animation: music-inst-pulse 1.2s infinite ease-in-out;
+}
+.music-inst-bar.bar-1 { height: 40%; animation-delay: 0s; }
+.music-inst-bar.bar-2 { height: 90%; animation-delay: 0.2s; }
+.music-inst-bar.bar-3 { height: 60%; animation-delay: 0.4s; }
+.music-inst-bar.bar-4 { height: 100%; animation-delay: 0.15s; }
+@keyframes music-inst-pulse {
+  0%, 100% { transform: scaleY(0.4); }
+  50% { transform: scaleY(1); }
+}
+.music-inst-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-ink-muted);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}

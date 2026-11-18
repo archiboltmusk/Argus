@@ -157,7 +157,7 @@ export function BTRCrossAppTestsModal({
         {/* Header */}
         <header className="flex h-16 items-center justify-between border-b border-edge px-6 bg-surface/90 backdrop-blur-md shrink-0">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-indigo-500/20 text-indigo-400 border border-indigo-500/30">
+            <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white/10 text-white/90 border border-white/15">
               <Target size={20} />
             </div>
             <div>

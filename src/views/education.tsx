@@ -7,7 +7,6 @@ import {
   FileText,
   Play,
   BookOpen,
-  Share2,
   Check,
   Search,
   ExternalLink,
@@ -18,7 +17,6 @@ import {
   AlertCircle,
   Zap,
   Database,
-  Layers,
   Activity,
   Flame,
   Stethoscope,
@@ -60,7 +58,15 @@ import { PatientCaseSimulator } from "./education/patient-case-simulator";
 import { getAllQuestions, getInicetHighYieldQuestions } from "@/lib/education/qbank-store";
 import { buildStudyPlan, type StudyBudget } from "@/lib/education/study-plan";
 import { listAttempts } from "@/lib/education/attempts";
-import { CLINICAL_QBANK_STARTER } from "@/lib/education/qbank-data";
+
+import type { ClinicalQuestion } from "@/lib/education/qbank-types";
+import {
+  buildCustomModuleTest,
+  getBackendTests,
+  getQuestionsForTest,
+  getQuestionsForSubject,
+  saveExamResult,
+} from "@/lib/education/btr-backend-service";
 import {
   CURATED_COURSE_CHECKPOINTS,
   type LectureCheckpoint,
@@ -71,8 +77,31 @@ import {
   recordConceptAttempt,
 } from "@/lib/education/prerequisite-graph";
 import { InteractiveCheckpointOverlay } from "./player/interactive-checkpoint-overlay";
-import { Row } from "@/components/row";
+import { USER_LOCAL_BTR_MANIFEST } from "@/lib/education/btr-library-manifest";
+import { resolveBTRPlayableUrl } from "@/lib/education/btr-local-library";
 import "./education/education-hub.css";
+
+const BTR_19_SUBJECTS_CATALOG = [
+  { id: "anatomy", name: "Anatomy", yieldTopic: "Brachial Plexus, Cranial Nerves & Embryology", duration: "18h 30m", lessons: 4, thumbnail: "https://images.unsplash.com/photo-1532187863486-abf9dbad1b69?w=800&auto=format&fit=crop&q=80" },
+  { id: "physiology", name: "Physiology", yieldTopic: "Cardiac Output, Frank-Starling & Action Potentials", duration: "14h 15m", lessons: 3, thumbnail: "https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?w=800&auto=format&fit=crop&q=80" },
+  { id: "biochemistry", name: "Biochemistry", yieldTopic: "Inborn Errors, Enzyme Kinetics & Vitamins", duration: "12h 45m", lessons: 3, thumbnail: "https://images.unsplash.com/photo-1507668077129-56e32842fceb?w=800&auto=format&fit=crop&q=80" },
+  { id: "pathology", name: "Pathology", yieldTopic: "Hematopathology, Neoplasia & Amyloidosis", duration: "22h 00m", lessons: 5, thumbnail: "https://images.unsplash.com/photo-1579154204601-01588f351e67?w=800&auto=format&fit=crop&q=80" },
+  { id: "pharmacology", name: "Pharmacology", yieldTopic: "Autonomic Nervous System & Antimicrobials", duration: "19h 20m", lessons: 4, thumbnail: "https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=800&auto=format&fit=crop&q=80" },
+  { id: "microbiology", name: "Microbiology", yieldTopic: "Bacteriology Culture Media & Virology PCR", duration: "15h 10m", lessons: 3, thumbnail: "https://images.unsplash.com/photo-1583912267670-6575ad4736f8?w=800&auto=format&fit=crop&q=80" },
+  { id: "forensic", name: "Forensic Medicine", yieldTopic: "Toxicology Antidotes & Thanatology Rules", duration: "8h 40m", lessons: 2, thumbnail: "https://images.unsplash.com/photo-1516549655169-df83a0774514?w=800&auto=format&fit=crop&q=80" },
+  { id: "psm", name: "Community Medicine (PSM)", yieldTopic: "Biostatistics 2x2, Vaccines & National Health", duration: "16h 00m", lessons: 4, thumbnail: "https://images.unsplash.com/photo-1576091160550-2173dba999ef?w=800&auto=format&fit=crop&q=80" },
+  { id: "medicine", name: "General Medicine", yieldTopic: "Cardiology ECGs, Neurology & Rheumatology", duration: "32h 40m", lessons: 7, thumbnail: "https://images.unsplash.com/photo-1582719508461-905c673771fd?w=800&auto=format&fit=crop&q=80" },
+  { id: "surgery", name: "General Surgery", yieldTopic: "Trauma ATLS, Breast & Thyroid Carcinomas", duration: "24h 10m", lessons: 5, thumbnail: "https://images.unsplash.com/photo-1551076805-e1869033e561?w=800&auto=format&fit=crop&q=80" },
+  { id: "obgyn", name: "Obstetrics & Gynecology", yieldTopic: "CTG Interpretations, High-Risk Labor & Cervix", duration: "21h 30m", lessons: 5, thumbnail: "https://images.unsplash.com/photo-1584515979956-d9f6e5d09982?w=800&auto=format&fit=crop&q=80" },
+  { id: "pediatrics", name: "Pediatrics", yieldTopic: "Developmental Milestones & Neonatal Resuscitation", duration: "13h 50m", lessons: 3, thumbnail: "https://images.unsplash.com/photo-1502086223501-7ea6ecd79368?w=800&auto=format&fit=crop&q=80" },
+  { id: "orthopedics", name: "Orthopedics", yieldTopic: "Eponymous Fractures & Pediatric Limp", duration: "9h 20m", lessons: 2, thumbnail: "https://images.unsplash.com/photo-1588776814546-1ffcf47267a5?w=800&auto=format&fit=crop&q=80" },
+  { id: "dermatology", name: "Dermatology", yieldTopic: "Blistering Disorders & Leprosy Classification", duration: "7h 30m", lessons: 2, thumbnail: "https://images.unsplash.com/photo-1616394584738-fc6e612e71b9?w=800&auto=format&fit=crop&q=80" },
+  { id: "psychiatry", name: "Psychiatry", yieldTopic: "Psychopharmacology & Schizophrenia Criteria", duration: "6h 45m", lessons: 2, thumbnail: "https://images.unsplash.com/photo-1527137342181-19aab11a8ee8?w=800&auto=format&fit=crop&q=80" },
+  { id: "radiology", name: "Radiology", yieldTopic: "Chest X-Ray Signs & Contrast CT Imaging", duration: "11h 15m", lessons: 3, thumbnail: "https://images.unsplash.com/photo-1516549655169-df83a0774514?w=800&auto=format&fit=crop&q=80" },
+  { id: "ent", name: "ENT", yieldTopic: "Audiometry Tuning Fork Tests & Stridor", duration: "8h 10m", lessons: 2, thumbnail: "https://images.unsplash.com/photo-1579684385127-1ef15d508118?w=800&auto=format&fit=crop&q=80" },
+  { id: "ophthalmology", name: "Ophthalmology", yieldTopic: "Diabetic Retinopathy & Glaucoma Fields", duration: "9h 00m", lessons: 2, thumbnail: "https://images.unsplash.com/photo-1584017911766-d451b3d0e843?w=800&auto=format&fit=crop&q=80" },
+  { id: "anesthesia", name: "Anesthesia", yieldTopic: "Difficult Airway Algorithm & Local Anesthetics", duration: "7h 50m", lessons: 2, thumbnail: "https://images.unsplash.com/photo-1579684385127-1ef15d508118?w=800&auto=format&fit=crop&q=80" },
+];
 
 export function EducationView() {
   const t = useT();
@@ -81,12 +110,8 @@ export function EducationView() {
   const localEntries = useLocalLibrary();
   const notes = useStudyNotes();
 
-  const [tab, setTab] = useState<
-    "courses" | "btr" | "checkpoints" | "qbank" | "simulator" | "notes"
-  >("courses");
-  const [activeDrillCheckpoint, setActiveDrillCheckpoint] = useState<LectureCheckpoint | null>(
-    null,
-  );
+  const [tab, setTab] = useState<"courses" | "btr" | "checkpoints" | "qbank" | "simulator" | "notes">("btr");
+  const [activeDrillCheckpoint, setActiveDrillCheckpoint] = useState<LectureCheckpoint | null>(null);
   const [activeCategory, setActiveCategory] = useState<CourseCategory>("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [showNotesDrawer, setShowNotesDrawer] = useState(false);
@@ -109,6 +134,8 @@ export function EducationView() {
   );
   const [showToolsMenu, setShowToolsMenu] = useState(false);
   const [heroIndex, setHeroIndex] = useState(0);
+  const [selectedBtrSubject, setSelectedBtrSubject] = useState<string | undefined>();
+  const [selectedBtrDestination, setSelectedBtrDestination] = useState<any>("today");
   const [revealedConcepts, setRevealedConcepts] = useState<Record<string, boolean>>({});
   const [conceptStats, setConceptStats] = useState<Record<string, any>>(() =>
     loadAllConceptStats(),
@@ -424,20 +451,63 @@ export function EducationView() {
     }
   };
 
-  const startQBankDrill = useCallback((highYieldOnly = false) => {
+  const [activeTestId, setActiveTestId] = useState<string | undefined>(undefined);
+
+  const startQBankDrill = useCallback(async (testTitleOrSubject?: string | boolean, questionsOverride?: ClinicalQuestion[]) => {
     setDrillDurationMinutes(undefined);
-    if (highYieldOnly) {
-      const highYield = getInicetHighYieldQuestions();
-      setActiveDrillQuestions(highYield.length > 0 ? highYield : CLINICAL_QBANK_STARTER);
-    } else {
-      const allImported = getAllQuestions();
-      setActiveDrillQuestions(allImported.length > 0 ? allImported : CLINICAL_QBANK_STARTER);
+    if (questionsOverride && questionsOverride.length > 0) {
+      setActiveDrillQuestions(questionsOverride);
+      setActiveTestId(typeof testTitleOrSubject === "string" ? testTitleOrSubject : undefined);
+      setShowQBank(true);
+      return;
     }
+    if (typeof testTitleOrSubject === "string" && testTitleOrSubject.trim()) {
+      try {
+        const tests = await getBackendTests();
+        const test = tests.find(
+          (t) => t.title.toLowerCase() === testTitleOrSubject.toLowerCase() || t.id === testTitleOrSubject
+        );
+        if (test) {
+          const qs = await getQuestionsForTest(test.id);
+          if (qs.length > 0) {
+            setActiveDrillQuestions(qs);
+            setActiveTestId(test.id);
+            setShowQBank(true);
+            return;
+          }
+        }
+        const subjQs = await getQuestionsForSubject(testTitleOrSubject);
+        if (subjQs.length > 0) {
+          setActiveDrillQuestions(subjQs);
+          setActiveTestId(undefined);
+          setShowQBank(true);
+          return;
+        }
+      } catch (err) {
+        console.warn("[education] Failed to load backend questions", err);
+      }
+    }
+    if (typeof testTitleOrSubject === "string") {
+      setImportNotice({ success: false, message: `No questions available for ${testTitleOrSubject}.` });
+      return;
+    }
+    const bundled = await buildCustomModuleTest({ subjects: [], count: Infinity, status: "all", mode: "study" });
+    const imported = testTitleOrSubject ? getInicetHighYieldQuestions() : getAllQuestions();
+    const candidates = testTitleOrSubject
+      ? bundled.filter((q) => q.depthLevel === "L3_MultiStepClinical" || q.depthLevel === "L4_InicetTrap")
+      : bundled;
+    const pool = Array.from(new Map([...imported, ...candidates].map((q) => [q.id, q])).values());
+    for (let i = pool.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [pool[i], pool[j]] = [pool[j], pool[i]];
+    }
+    setActiveDrillQuestions(pool.slice(0, 50));
+    setActiveTestId(undefined);
     setShowQBank(true);
   }, []);
 
   return (
-    <main className="edu-hub" aria-label={t("Education Hub")}>
+    <main className="edu-hub" aria-label={t("Medical Education")}>
       {/* 1. Masthead matching Argus Sports Standard */}
       <header className="edu-masthead">
         <div>
@@ -446,10 +516,10 @@ export function EducationView() {
             <span>ARGUS EDUCATION</span>
             <span className="edu-eyebrow-badge">Open Masterclasses</span>
           </div>
-          <h1>{t("Knowledge without gates. Your curriculum.")}</h1>
+          <h1>{t("Medical Education & Revision")}</h1>
           <p>
             {t(
-              "Democratizing education with clinical vignette simulations, high-yield university lecture series, and active recall spaced repetition.",
+              "Video lectures, clinical practice questions, and daily flashcard review for all 19 medical subjects.",
             )}
           </p>
         </div>
@@ -461,10 +531,10 @@ export function EducationView() {
             onClick={() => setShowWateringDeck(true)}
             disabled={dueNotes.length === 0}
             className="edu-pill-button"
-            title={t("Daily Active Recall Spaced Repetition Session")}
+            title={t("Daily Flashcard Review")}
           >
             <Sparkles size={15} className="text-accent" />
-            <span>{t("Water the Tree")}</span>
+            <span>{t("Daily Flashcards")}</span>
             {dueNotes.length > 0 && (
               <span className="flex h-4 min-w-4 items-center justify-center rounded-full bg-accent text-canvas px-1.5 text-[10px] font-black">
                 {dueNotes.length}
@@ -476,10 +546,10 @@ export function EducationView() {
             type="button"
             onClick={() => startQBankDrill(true)}
             className="edu-pill-button primary"
-            title={t("Launch High-Yield Clinical Vignette QBank Drill")}
+            title={t("Practice High-Yield Medical Questions")}
           >
             <Zap size={15} className="fill-canvas text-canvas" />
-            <span>{t("Clinical QBank Drill")}</span>
+            <span>{t("Practice Questions")}</span>
           </button>
 
           <div className="relative">
@@ -557,7 +627,7 @@ export function EducationView() {
         </div>
       </header>
 
-      {/* 2. Sleek Floating Segmented Glass Rail */}
+      {/* 2. Standardized View Tabs Rail */}
       <nav className="edu-view-tabs" aria-label={t("Education sub-navigation")}>
         {[
           { key: "courses", label: "Courses & Catalogs", icon: BookOpen },
@@ -577,12 +647,10 @@ export function EducationView() {
               onClick={() => setTab(item.key as typeof tab)}
               className="flex items-center gap-2"
             >
-              <Icon size={14} className={isSelected ? "text-white" : "text-accent"} />
+              <Icon size={14} className={isSelected ? "text-ink" : "text-ink-muted"} />
               <span>{t(item.label)}</span>
               {item.badge && (
-                <span
-                  className={`font-mono text-[9px] font-bold px-1.5 py-0.2 rounded ${isSelected ? "bg-white/20 text-white" : "bg-accent/20 text-accent"}`}
-                >
+                <span className="edu-tab-badge">
                   {item.badge}
                 </span>
               )}
@@ -617,10 +685,12 @@ export function EducationView() {
         {/* TAB: CORE BTR NEET-PG 2027 STRATEGIC WAR ROOM */}
         {tab === "btr" && (
           <CoreBTRWarRoom
-            onStartQBankDrill={() => {
-              startQBankDrill(true);
+            onStartQBankDrill={(target, questions) => {
+              startQBankDrill(target, questions);
             }}
             onOpenNotes={() => setTab("notes")}
+            initialDestination={selectedBtrDestination}
+            initialSubjectId={selectedBtrSubject}
           />
         )}
 
@@ -652,10 +722,10 @@ export function EducationView() {
                   <div className="edu-hero-content">
                     <div className="edu-hero-badge-ribbon">
                       <span className="edu-hero-kicker">
-                        <Flame size={13} className="text-[#feb122]" />
+                        <Flame size={13} className="text-amber-400" />
                         <span>CoreBTR • Dr. Zainab Vora</span>
                       </span>
-                      <span className="rounded-full bg-[#1767be]/20 px-3 py-1 text-[11px] font-semibold text-[#4da2ff] border border-[#1767be]/40">
+                      <span className="rounded-full bg-white/10 px-3 py-1 text-[11px] font-semibold text-white/90 border border-white/15">
                         NEET-PG • INI-CET • FMGE
                       </span>
                       {hasBtrLocal && (
@@ -683,7 +753,7 @@ export function EducationView() {
                         className="edu-hero-btn-primary"
                       >
                         <Flame size={16} fill="currentColor" />
-                        <span>{t("Launch CoreBTR War Room")}</span>
+                        <span>{t("Open CoreBTR")}</span>
                       </button>
 
                       <button
@@ -691,8 +761,8 @@ export function EducationView() {
                         onClick={() => setTab("checkpoints")}
                         className="edu-hero-btn-secondary"
                       >
-                        <Target size={15} className="text-[#4da2ff]" />
-                        <span>{t("Socratic Checkpoints")}</span>
+                        <Target size={15} className="text-white/80" />
+                        <span>{t("Review Questions")}</span>
                       </button>
 
                       <button
@@ -700,8 +770,8 @@ export function EducationView() {
                         onClick={() => startQBankDrill(true)}
                         className="edu-hero-btn-secondary"
                       >
-                        <Zap size={15} className="text-[#4da2ff]" />
-                        <span>{t("Clinical Drill")}</span>
+                        <Zap size={15} className="text-white/80" />
+                        <span>{t("Question Bank")}</span>
                       </button>
                     </div>
                   </div>
@@ -760,127 +830,303 @@ export function EducationView() {
                   </span>
                 </div>
 
-                <div className="-mx-2">
-                  <Row min={320} shape="landscape" alwaysActive scrollKey="education:local">
-                    {localCourseFolders.map((course) => {
-                      const firstLesson = course.lessons[0];
-                      const isShared = !!sharedTokens[course.folder];
-                      const isCopied = copiedShareFolder === course.folder;
-                      const isBtr =
-                        course.folder.includes("BTR") || course.title.toLowerCase().includes("btr");
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3.5 sm:gap-4.5">
+                  {localCourseFolders.map((course) => {
+                    const firstLesson = course.lessons[0];
+                    const isShared = !!sharedTokens[course.folder];
+                    const isCopied = copiedShareFolder === course.folder;
+                    const isBtr = course.folder.includes("BTR") || course.title.toLowerCase().includes("btr");
 
-                      return (
-                        <div
-                          key={course.folder}
-                          className="edu-obsidian-card group/card flex flex-col justify-between overflow-hidden p-0 transition-all duration-300 hover:scale-[1.02] border border-white/10 hover:border-accent/40 shadow-xl"
+                    return (
+                      <div
+                        key={course.folder}
+                        className="edu-poster-card group/card"
+                      >
+                        <img
+                          src={isBtr ? "https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?w=800&auto=format&fit=crop&q=80" : "https://images.unsplash.com/photo-1532187863486-abf9dbad1b69?w=800&auto=format&fit=crop&q=80"}
+                          alt={course.title}
+                          className="edu-poster-card-img filter brightness-65 group-hover/card:brightness-75"
+                        />
+                        <div className="edu-poster-card-scrim" />
+
+                        {/* Top Badges */}
+                        <div className="absolute top-2.5 start-2.5 end-2.5 flex items-center justify-between gap-1 z-10">
+                          <span className={`rounded-md px-2 py-0.5 text-[9.5px] font-black uppercase tracking-wider ${
+                            isBtr ? "bg-accent text-canvas" : "bg-black/75 text-accent border border-accent/30"
+                          }`}>
+                            {isBtr ? "CoreBTR" : "Local"}
+                          </span>
+                          <span className="rounded-md bg-black/75 px-2 py-0.5 text-[9.5px] font-mono text-white/90 border border-white/10 backdrop-blur-md">
+                            {course.lessons.length} vids
+                          </span>
+                        </div>
+
+                        {/* Center Hover Play Button */}
+                        <button
+                          type="button"
+                          onClick={() => firstLesson && openPlayer(localPlayerSrc(firstLesson))}
+                          className="absolute inset-0 m-auto flex h-12 w-12 items-center justify-center rounded-full bg-accent text-canvas shadow-xl backdrop-blur-md opacity-0 group-hover/card:opacity-100 group-hover/card:scale-110 transition z-10"
+                          title={t("Resume Lecture")}
                         >
-                          <div className="relative h-36 w-full overflow-hidden bg-gradient-to-br from-indigo-950/60 to-purple-950/60">
-                            {/* Ambient Artwork */}
-                            <img
-                              src={
-                                isBtr
-                                  ? "https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?w=800&auto=format&fit=crop&q=80"
-                                  : "https://images.unsplash.com/photo-1532187863486-abf9dbad1b69?w=800&auto=format&fit=crop&q=80"
-                              }
-                              alt={course.title}
-                              className="h-full w-full object-cover transition duration-500 group-hover/card:scale-105 filter brightness-60"
-                            />
-                            <div className="absolute inset-0 bg-gradient-to-t from-[#0e1022] via-[#0e1022]/40 to-transparent" />
+                          <Play size={20} fill="currentColor" className="translate-x-0.5" />
+                        </button>
 
-                            <div className="absolute start-3.5 top-3.5 flex items-center gap-2">
-                              {isBtr ? (
-                                <span className="rounded-md bg-accent/90 px-2 py-0.5 text-[10px] font-black text-canvas shadow-md uppercase tracking-wider">
-                                  CoreBTR 2027
-                                </span>
-                              ) : (
-                                <span className="rounded-md bg-black/60 px-2 py-0.5 text-[10px] font-bold text-accent border border-accent/30 backdrop-blur-md uppercase tracking-wider">
-                                  Local
-                                </span>
-                              )}
-                              <span className="rounded-md bg-black/60 px-2 py-0.5 text-[10px] font-semibold text-white/90 backdrop-blur-md border border-white/10">
-                                {course.lessons.length} {t("videos")}
-                              </span>
-                            </div>
-
-                            {/* Floating Play Button Overlay */}
-                            <button
-                              type="button"
-                              onClick={() => firstLesson && openPlayer(localPlayerSrc(firstLesson))}
-                              className="absolute inset-0 m-auto flex h-12 w-12 items-center justify-center rounded-full bg-accent/90 text-canvas shadow-xl backdrop-blur-md transition transform group-hover/card:scale-110 group-hover/card:bg-accent"
-                              title={t("Resume Lecture")}
-                            >
-                              <Play size={20} fill="currentColor" className="translate-x-0.5" />
-                            </button>
-
-                            <div className="absolute bottom-2.5 start-3.5 end-3.5">
-                              <h3 className="text-sm font-extrabold text-white truncate drop-shadow">
-                                {course.title}
-                              </h3>
-                              <p className="text-[10.5px] font-mono text-white/60 truncate mt-0.5">
-                                {course.folder}
-                              </p>
-                            </div>
+                        {/* Bottom Metadata */}
+                        <div className="relative p-3.5 flex flex-col gap-1.5 z-10">
+                          <h3 className="text-sm font-bold text-white leading-tight truncate drop-shadow">
+                            {course.title}
+                          </h3>
+                          <div className="w-full bg-white/15 h-1 rounded-full overflow-hidden my-0.5">
+                            <div className="bg-gradient-to-r from-accent to-indigo-400 h-full rounded-full w-[42%]" />
                           </div>
-
-                          <div className="p-3.5 flex flex-col gap-2.5 bg-[#0e1022]/90">
-                            {/* Progress bar simulation */}
-                            <div className="w-full bg-white/[0.08] h-1.5 rounded-full overflow-hidden">
-                              <div className="bg-gradient-to-r from-accent to-indigo-400 h-full rounded-full w-[42%]" />
-                            </div>
-
-                            <div className="flex items-center justify-between pt-1">
-                              {isBtr ? (
-                                <button
-                                  type="button"
-                                  onClick={() => setTab("btr")}
-                                  className="flex items-center gap-1.5 rounded-xl bg-accent px-3 py-1.5 text-[11.5px] font-bold text-canvas hover:brightness-110 transition shadow-sm"
-                                >
-                                  <Flame size={13} />
-                                  <span>{t("Launch War Room")}</span>
-                                </button>
-                              ) : (
-                                <button
-                                  type="button"
-                                  onClick={() =>
-                                    firstLesson && openPlayer(localPlayerSrc(firstLesson))
-                                  }
-                                  className="flex items-center gap-1.5 rounded-xl bg-accent px-3 py-1.5 text-[11.5px] font-bold text-canvas hover:brightness-110 transition shadow-sm"
-                                >
-                                  <Play size={13} fill="currentColor" />
-                                  <span>{t("Resume Lecture")}</span>
-                                </button>
-                              )}
-
+                          <div className="flex items-center justify-between pt-1">
+                            {isBtr ? (
                               <button
                                 type="button"
-                                onClick={() => handleToggleShare(course.folder, course.title)}
-                                className={`flex items-center gap-1.5 rounded-xl px-2.5 py-1.5 text-[11px] font-semibold transition ${
-                                  isCopied
-                                    ? "bg-accent-soft text-accent font-bold"
-                                    : isShared
-                                      ? "bg-surface border border-edge text-ink"
-                                      : "text-ink-muted hover:bg-white/5 hover:text-white"
-                                }`}
-                                title={t("Stream over LAN to Stremio or TV")}
+                                onClick={() => setTab("btr")}
+                                className="text-[10.5px] font-bold text-accent flex items-center gap-1 hover:underline"
                               >
-                                {isCopied ? <Check size={13} /> : <Share2 size={13} />}
-                                <span>
-                                  {isCopied
-                                    ? t("Copied!")
-                                    : isShared
-                                      ? t("Copy Feed")
-                                      : t("Share LAN")}
-                                </span>
+                                <Flame size={11} /> Launch Studio
                               </button>
-                            </div>
+                            ) : (
+                              <button
+                                type="button"
+                                onClick={() => firstLesson && openPlayer(localPlayerSrc(firstLesson))}
+                                className="text-[10.5px] font-bold text-accent flex items-center gap-1 hover:underline"
+                              >
+                                <Play size={10} fill="currentColor" /> Resume
+                              </button>
+                            )}
+                            <button
+                              type="button"
+                              onClick={() => handleToggleShare(course.folder, course.title)}
+                              className="text-[10px] text-white/60 hover:text-white"
+                              title="Share LAN"
+                            >
+                              {isCopied ? "Copied" : isShared ? "Feed" : "Share"}
+                            </button>
                           </div>
                         </div>
-                      );
-                    })}
-                  </Row>
+                      </div>
+                    );
+                  })}
                 </div>
               </section>
             )}
+
+            {/* Section 1.5: CoreBTR High-Yield 19-Subject Curriculum */}
+            <section className="flex flex-col gap-4">
+              <div className="edu-section-head flex-col sm:flex-row sm:items-center justify-between">
+                <div>
+                  <div className="flex items-center gap-2 text-ink-muted text-[11px] font-extrabold uppercase tracking-widest">
+                    <Flame size={13} className="text-amber-400" />
+                    <span>{t("CoreBTR 19-Subject Integrated System")}</span>
+                  </div>
+                  <h2 className="text-xl font-black tracking-tight text-white mt-0.5">
+                    {t("High-Yield PG Board Curriculum")}
+                  </h2>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setTab("btr")}
+                  className="text-xs font-bold text-ink-muted hover:text-white flex items-center gap-1 transition"
+                >
+                  <span>{t("Open 19-Subject Studio")}</span>
+                  <ChevronRight size={14} />
+                </button>
+              </div>
+
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3.5 sm:gap-4.5">
+                {BTR_19_SUBJECTS_CATALOG.map((subject) => (
+                  <div
+                    key={subject.id}
+                    onClick={() => {
+                      setSelectedBtrSubject(subject.id);
+                      setSelectedBtrDestination("subjects");
+                      setTab("btr");
+                    }}
+                    className="edu-poster-card group/sub"
+                  >
+                    <img
+                      src={subject.thumbnail}
+                      alt={subject.name}
+                      className="edu-poster-card-img filter brightness-75 group-hover/sub:brightness-90"
+                    />
+                    <div className="edu-poster-card-scrim" />
+
+                    {/* Top Badges */}
+                    <div className="absolute top-2.5 start-2.5 end-2.5 flex items-center justify-between gap-1 z-10">
+                      <span className="rounded-md bg-accent/90 px-2 py-0.5 text-[9.5px] font-black text-canvas shadow uppercase tracking-wider">
+                        {subject.id}
+                      </span>
+                      <span className="rounded-md bg-black/60 px-1.5 py-0.5 text-[9.5px] font-bold text-white/90 backdrop-blur-md border border-white/10">
+                        {subject.lessons} Lec
+                      </span>
+                    </div>
+
+                    {/* Hover Center Indicator */}
+                    <div className="absolute inset-0 m-auto flex h-11 w-11 items-center justify-center rounded-full bg-accent text-canvas shadow-xl backdrop-blur-md opacity-0 group-hover/sub:opacity-100 group-hover/sub:scale-110 transition z-10">
+                      <Play size={18} fill="currentColor" className="translate-x-0.5" />
+                    </div>
+
+                    {/* Bottom Content */}
+                    <div className="relative p-3 flex flex-col gap-1 z-10">
+                      <h4 className="text-sm font-extrabold text-white leading-tight truncate drop-shadow">
+                        {subject.name}
+                      </h4>
+                      <p className="text-[10.5px] text-white/70 line-clamp-1 leading-snug">
+                        {subject.yieldTopic}
+                      </p>
+                      <div className="flex items-center justify-between pt-1 border-t border-white/10 text-[10px]">
+                        <span className="font-semibold text-amber-300">
+                          {subject.duration}
+                        </span>
+                        <span className="text-accent font-bold flex items-center gap-0.5 group-hover/sub:underline">
+                          Studio <ChevronRight size={10} />
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </section>
+
+            {/* Section 1.6: CoreBTR Master Volumes & Question Vault (eBook-Grade Visuals) */}
+            <section className="flex flex-col gap-4">
+              <div className="edu-section-head flex-col sm:flex-row sm:items-center justify-between">
+                <div>
+                  <div className="flex items-center gap-2 text-ink-muted text-[11px] font-extrabold uppercase tracking-widest">
+                    <BookOpen size={13} className="text-amber-400" />
+                    <span>{t("CoreBTR Master Volumes & Active Recall Workbooks")}</span>
+                  </div>
+                  <h2 className="text-xl font-black tracking-tight text-white mt-0.5">
+                    {t("High-Yield Master Textbooks & QBank Vault")}
+                  </h2>
+                </div>
+                <span className="text-xs text-ink-muted">
+                  4 Master Volumes + 128 Local Workbooks Indexed
+                </span>
+              </div>
+
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3.5 sm:gap-4.5">
+                {USER_LOCAL_BTR_MANIFEST.masterPdfs.map((pdf) => {
+                  const sizeMb = (pdf.sizeBytes / (1024 * 1024)).toFixed(1);
+                  return (
+                    <div
+                      key={pdf.id}
+                      onClick={() => {
+                        const url = resolveBTRPlayableUrl(pdf.fullPath);
+                        window.open(url, "_blank");
+                      }}
+                      className="edu-poster-card group/vol edu-book-spine"
+                    >
+                      <div className="absolute inset-0 bg-gradient-to-br from-indigo-950 via-slate-900 to-black p-3.5 flex flex-col justify-between">
+                        <div className="flex items-center justify-between">
+                          <span className="rounded-md bg-amber-500/20 px-2 py-0.5 text-[9px] font-bold text-amber-300 border border-amber-500/30 uppercase tracking-wider">
+                            Master Vol
+                          </span>
+                          <span className="text-[9.5px] font-mono text-white/60">
+                            {sizeMb} MB
+                          </span>
+                        </div>
+
+                        <div className="text-center py-4 flex flex-col items-center">
+                          <div className="h-12 w-12 rounded-2xl bg-white/10 flex items-center justify-center text-accent mb-2 border border-white/10 group-hover/vol:scale-110 group-hover/vol:bg-accent group-hover/vol:text-canvas transition shadow-lg">
+                            <BookOpen size={22} />
+                          </div>
+                          <h4 className="text-xs sm:text-sm font-extrabold text-white line-clamp-2 px-1 text-center drop-shadow">
+                            {pdf.title}
+                          </h4>
+                        </div>
+
+                        <div className="pt-2 border-t border-white/10 flex items-center justify-between text-[10px]">
+                          <span className="text-emerald-400 font-medium">✓ Verified</span>
+                          <span className="text-white/80 font-bold flex items-center gap-1 group-hover/vol:text-accent">
+                            <FileText size={11} /> Read
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </section>
+
+            {/* Section 1.7: Official Grand Tests & CBT Mock Exams */}
+            <section className="flex flex-col gap-4">
+              <div className="edu-section-head flex-col sm:flex-row sm:items-center justify-between">
+                <div>
+                  <div className="flex items-center gap-2 text-ink-muted text-[11px] font-extrabold uppercase tracking-widest">
+                    <Target size={13} className="text-amber-400" />
+                    <span>{t("Official Grand Tests & CBT Exam Simulators")}</span>
+                  </div>
+                  <h2 className="text-xl font-black tracking-tight text-white mt-0.5">
+                    {t("NEET-PG & INI-CET Grand Tests Suite")}
+                  </h2>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedBtrDestination("tests");
+                    setTab("btr");
+                  }}
+                  className="text-xs font-bold text-ink-muted hover:text-white flex items-center gap-1 transition"
+                >
+                  <span>{t("Open Full Test Center")}</span>
+                  <ChevronRight size={14} />
+                </button>
+              </div>
+
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3.5 sm:gap-4.5">
+                {USER_LOCAL_BTR_MANIFEST.grandTests.map((gt) => {
+                  const isHtml = gt.kind === "html_test";
+                  return (
+                    <div
+                      key={gt.id}
+                      onClick={() => {
+                        const url = resolveBTRPlayableUrl(gt.fullPath);
+                        window.open(url, "_blank");
+                      }}
+                      className="edu-poster-card group/gt"
+                    >
+                      <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-indigo-950/70 to-black p-3.5 flex flex-col justify-between">
+                        <div className="flex items-center justify-between">
+                          <span className={`rounded-md px-2 py-0.5 text-[9px] font-black uppercase tracking-wider ${
+                            isHtml
+                              ? "bg-amber-500/20 text-amber-300 border border-amber-500/30"
+                              : "bg-white/10 text-white/90 border border-white/10"
+                          }`}>
+                            {isHtml ? "CBT Sim" : "Annotated"}
+                          </span>
+                          <span className="text-[9.5px] font-mono text-white/60">
+                            {(gt.sizeBytes / (1024 * 1024)).toFixed(1)} MB
+                          </span>
+                        </div>
+
+                        <div className="text-center py-3 flex flex-col items-center">
+                          <div className="h-12 w-12 rounded-2xl bg-accent/15 flex items-center justify-center text-accent mb-2 border border-accent/25 group-hover/gt:scale-110 group-hover/gt:bg-accent group-hover/gt:text-canvas transition shadow-lg">
+                            <Target size={22} />
+                          </div>
+                          <h4 className="text-xs sm:text-sm font-extrabold text-white line-clamp-2 px-1 text-center drop-shadow">
+                            {gt.title}
+                          </h4>
+                        </div>
+
+                        <div className="pt-2 border-t border-white/10 flex items-center justify-between text-[10px]">
+                          <span className="text-white/60 truncate max-w-[90px]">
+                            {gt.kind === "html_test" ? "Interactive" : "Solutions"}
+                          </span>
+                          <span className="text-accent font-bold flex items-center gap-1 group-hover/gt:underline">
+                            {isHtml ? <Play size={10} fill="currentColor" /> : <FileText size={10} />}
+                            <span>{isHtml ? "Launch" : "Open"}</span>
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </section>
 
             {/* Section 2: Subscribed Feeds */}
             {subscribedFeeds.length > 0 && (
@@ -895,33 +1141,40 @@ export function EducationView() {
                   </div>
                 </div>
 
-                <div className="-mx-2">
-                  <Row min={250} shape="landscape" alwaysActive scrollKey="education:feeds">
-                    {subscribedFeeds.map((feed) => (
-                      <div
-                        key={feed.id}
-                        onClick={() => openSettings("streaming")}
-                        className="edu-course-card group/card flex flex-col justify-between p-5"
-                      >
-                        <div className="flex items-center gap-3">
-                          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-accent-soft text-accent border border-accent/20 shrink-0">
-                            <Rss size={18} />
-                          </div>
-                          <div className="min-w-0">
-                            <h4 className="text-[14px] font-bold text-ink truncate">{feed.name}</h4>
-                            <p className="text-[11px] font-mono text-ink-subtle truncate max-w-[180px]">
-                              {feed.url}
-                            </p>
-                          </div>
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3.5 sm:gap-4.5">
+                  {subscribedFeeds.map((feed) => (
+                    <div
+                      key={feed.id}
+                      onClick={() => openSettings("streaming")}
+                      className="edu-poster-card group/card"
+                    >
+                      <div className="absolute inset-0 bg-gradient-to-br from-indigo-950/80 via-slate-900 to-black p-3.5 flex flex-col justify-between">
+                        <div className="flex items-center justify-between">
+                          <span className="rounded-md bg-accent/20 px-2 py-0.5 text-[9px] font-bold text-accent border border-accent/30 uppercase tracking-wider">
+                            Feed
+                          </span>
+                          <Rss size={13} className="text-accent" />
                         </div>
 
-                        <div className="flex items-center justify-between pt-3 border-t border-edge-soft text-xs text-ink-muted group-hover/card:text-ink">
-                          <span>{t("Configure in Streaming Settings")}</span>
-                          <ExternalLink size={14} className="text-ink-subtle shrink-0" />
+                        <div className="text-center py-4 flex flex-col items-center">
+                          <div className="h-11 w-11 rounded-2xl bg-white/5 flex items-center justify-center text-accent mb-2 border border-white/10 group-hover/card:scale-110 group-hover/card:bg-accent group-hover/card:text-canvas transition shadow-lg">
+                            <Rss size={20} />
+                          </div>
+                          <h4 className="text-xs sm:text-sm font-extrabold text-white line-clamp-2 px-1 text-center drop-shadow">
+                            {feed.name}
+                          </h4>
+                          <p className="text-[10px] font-mono text-white/50 truncate max-w-[130px] mt-1">
+                            {feed.url}
+                          </p>
+                        </div>
+
+                        <div className="pt-2 border-t border-white/10 flex items-center justify-between text-[10px] text-white/70">
+                          <span>Settings</span>
+                          <ExternalLink size={12} className="text-accent group-hover/card:translate-x-0.5 transition" />
                         </div>
                       </div>
-                    ))}
-                  </Row>
+                    </div>
+                  ))}
                 </div>
               </section>
             )}
@@ -979,82 +1232,70 @@ export function EducationView() {
                 </div>
               </div>
 
-              {/* Course Cards Carousel */}
-              <div className="-mx-2">
-                <Row
-                  min={290}
-                  shape="landscape"
-                  alwaysActive
-                  scrollKey={`education:courses:${activeCategory}`}
-                >
-                  {filteredCurated.map((course) => {
-                    const isSubscribed = (settings.videoFeeds || []).some(
-                      (f) => f.url === course.feedUrl,
-                    );
+              {/* Course Cards Vertical Poster Grid */}
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3.5 sm:gap-4.5">
+                {filteredCurated.map((course) => {
+                  const isSubscribed = (settings.videoFeeds || []).some((f) => f.url === course.feedUrl);
 
-                    return (
-                      <div key={course.id} className="edu-course-card group/card">
-                        <img
-                          src={course.thumbnail}
-                          alt={course.title}
-                          loading="lazy"
-                          draggable={false}
-                          className="absolute inset-0 h-full w-full object-cover transition duration-500 group-hover/card:scale-105"
-                        />
-                        <div className="edu-card-overlay">
-                          {/* Top Badges */}
-                          <div className="absolute start-3.5 top-3.5 flex items-center gap-1.5">
-                            <span className="edu-card-badge">
-                              <Layers size={11} strokeWidth={2.4} />
-                              <span>{course.provider}</span>
-                            </span>
-                            {course.totalLessons && (
-                              <span className="edu-card-badge text-accent border-accent/25">
-                                {course.totalLessons} {t("Lectures")}
-                              </span>
-                            )}
-                          </div>
+                  return (
+                    <div
+                      key={course.id}
+                      className="edu-poster-card group/card"
+                    >
+                      <img
+                        src={course.thumbnail}
+                        alt={course.title}
+                        loading="lazy"
+                        draggable={false}
+                        className="edu-poster-card-img filter brightness-75 group-hover/card:brightness-90"
+                      />
+                      <div className="edu-poster-card-scrim" />
 
-                          <h3 className="text-[14.5px] font-bold text-white line-clamp-1 leading-snug drop-shadow-md">
-                            {course.title}
-                          </h3>
-                          <p className="text-[12px] text-white/70 line-clamp-2 leading-relaxed drop-shadow">
-                            {course.description}
-                          </p>
+                      {/* Top Badges */}
+                      <div className="absolute top-2.5 start-2.5 end-2.5 flex items-center justify-between gap-1 z-10">
+                        <span className="rounded-md bg-black/60 px-2 py-0.5 text-[9px] font-extrabold text-white border border-white/15 backdrop-blur-md uppercase tracking-wider truncate max-w-[110px]">
+                          {course.provider}
+                        </span>
+                        {course.totalLessons && (
+                          <span className="rounded-md bg-accent/90 px-1.5 py-0.5 text-[9px] font-black text-canvas shadow">
+                            {course.totalLessons} Lec
+                          </span>
+                        )}
+                      </div>
 
-                          <div className="mt-2 flex items-center justify-between pt-2 border-t border-white/10">
-                            <div className="flex items-center gap-1.5">
-                              {course.tags.slice(0, 2).map((tag) => (
-                                <span
-                                  key={tag}
-                                  className="rounded-md bg-white/10 px-2 py-0.5 text-[10px] font-medium text-white/80 backdrop-blur-sm"
-                                >
-                                  #{tag}
-                                </span>
-                              ))}
-                            </div>
+                      {/* Bottom Details */}
+                      <div className="relative p-3 flex flex-col gap-1.5 z-10">
+                        <h3 className="text-xs sm:text-sm font-bold text-white line-clamp-1 leading-snug drop-shadow-md">
+                          {course.title}
+                        </h3>
+                        <p className="text-[10.5px] text-white/70 line-clamp-2 leading-tight drop-shadow">
+                          {course.description}
+                        </p>
 
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleSubscribeFeed(course);
-                              }}
-                              className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-[11px] font-semibold transition ${
-                                isSubscribed
-                                  ? "bg-white/20 text-white backdrop-blur-md"
-                                  : "bg-accent hover:brightness-110 text-canvas shadow-sm"
-                              }`}
-                            >
-                              <Rss size={12} />
-                              <span>{isSubscribed ? t("Subscribed") : t("Add to Library")}</span>
-                            </button>
-                          </div>
+                        <div className="mt-1 flex items-center justify-between pt-1.5 border-t border-white/10">
+                          <span className="text-[9.5px] font-medium text-white/60">
+                            #{course.tags[0] || "lecture"}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleSubscribeFeed(course);
+                            }}
+                            className={`flex items-center gap-1 rounded-md px-2 py-0.5 text-[10px] font-bold transition ${
+                              isSubscribed
+                                ? "bg-white/20 text-white backdrop-blur-md"
+                                : "bg-accent hover:brightness-110 text-canvas shadow-sm"
+                            }`}
+                          >
+                            <Rss size={10} />
+                            <span>{isSubscribed ? t("Saved") : t("Enroll")}</span>
+                          </button>
                         </div>
                       </div>
-                    );
-                  })}
-                </Row>
+                    </div>
+                  );
+                })}
               </div>
             </section>
           </>
@@ -1063,17 +1304,18 @@ export function EducationView() {
         {/* TAB: INTERACTIVE CHECKPOINTS & SOCRATIC AUTO-PAUSE (REDESIGNED) */}
         {tab === "checkpoints" && (
           <div className="flex flex-col gap-9">
-            {/* 1. Mastery Status & Progress HUD Ribbon - Unified CoreBTR Indigo */}
-            <div className="relative overflow-hidden rounded-3xl border border-white/10 bg-[#121428] p-6 shadow-2xl backdrop-blur-2xl">
+            {/* 1. Mastery Status & Progress HUD Ribbon */}
+            <div className="edu-hud-glass p-6 shadow-2xl">
               <div className="relative z-10 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
                 <div className="flex flex-col gap-2 max-w-2xl">
                   <div className="flex items-center gap-2">
-                    <span className="flex items-center gap-1.5 rounded-full bg-indigo-500/20 px-3 py-0.5 text-[11px] font-extrabold uppercase tracking-widest text-indigo-300 border border-indigo-500/30">
+                    <span className="flex items-center gap-1.5 rounded-full bg-accent/15 px-3 py-0.5 text-[11px] font-extrabold uppercase tracking-widest text-accent border border-accent/25">
                       <Sparkles size={12} />
                       {t("Active Learning Engine")}
                     </span>
-                    <span className="flex items-center gap-1 text-[11px] font-bold text-indigo-200 bg-indigo-500/15 px-2.5 py-0.5 rounded-full border border-indigo-500/30">
-                      <Flame size={12} className="text-indigo-400" />5 Day Retention Streak
+                    <span className="flex items-center gap-1 text-[11px] font-bold text-amber-300 bg-amber-500/15 px-2.5 py-0.5 rounded-full border border-amber-500/30">
+                      <Flame size={12} className="text-amber-400" />
+                      5 Day Retention Streak
                     </span>
                   </div>
                   <h3 className="text-2xl font-black tracking-tight text-white">
@@ -1089,16 +1331,12 @@ export function EducationView() {
                 {/* Quick Stats Pill */}
                 <div className="flex items-center gap-3 shrink-0">
                   <div className="flex items-center gap-3 rounded-2xl bg-white/[0.04] border border-white/10 px-4 py-3 backdrop-blur-xl">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-500/15 text-indigo-300 border border-indigo-500/30">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-accent/15 text-accent border border-accent/25">
                       <Award size={20} />
                     </div>
                     <div>
-                      <div className="text-[11px] uppercase font-bold text-white/50 tracking-wider">
-                        {t("Checkpoints")}
-                      </div>
-                      <div className="text-lg font-black text-white">
-                        3 / 4 <span className="text-xs font-semibold text-indigo-300">(75%)</span>
-                      </div>
+                      <div className="text-[11px] uppercase font-bold text-white/50 tracking-wider">{t("Checkpoints")}</div>
+                      <div className="text-lg font-black text-white">3 / 4 <span className="text-xs font-semibold text-ink-muted">(75%)</span></div>
                     </div>
                   </div>
 
@@ -1108,7 +1346,7 @@ export function EducationView() {
                       const firstCourse = CURATED_COURSES[0];
                       if (firstCourse) openPlayer(localPlayerSrc(firstCourse as any));
                     }}
-                    className="flex items-center gap-2 rounded-2xl bg-indigo-600 hover:bg-indigo-500 px-5 py-3 text-xs font-bold text-white shadow-lg shadow-indigo-600/30 transition transform hover:-translate-y-0.5"
+                    className="flex items-center gap-2 rounded-2xl bg-white hover:bg-white/90 px-5 py-3 text-xs font-bold text-black shadow-lg shadow-white/10 transition transform hover:-translate-y-0.5"
                   >
                     <Play size={15} fill="currentColor" />
                     <span>{t("Launch Socratic Player")}</span>
@@ -1152,7 +1390,7 @@ export function EducationView() {
                             alt={course?.title || courseKey}
                             className="h-full w-full object-cover transition duration-500 group-hover:scale-105 filter brightness-75"
                           />
-                          <div className="absolute inset-0 bg-gradient-to-t from-[#0e1022] via-[#0e1022]/40 to-transparent" />
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent" />
                           <div className="absolute top-2.5 start-2.5 flex items-center gap-1.5">
                             <span className="rounded-md bg-black/60 px-2 py-0.5 text-[10px] font-bold text-accent border border-accent/30 backdrop-blur-md uppercase tracking-wider">
                               {course?.category || "Medical"}
@@ -1224,11 +1462,11 @@ export function EducationView() {
             </div>
 
             {/* 3. Root-Cause Prerequisite Concept Mesh (Clinical Knowledge Graph) */}
-            <div className="relative overflow-hidden rounded-3xl border border-white/10 bg-[#0d0f22]/90 p-7 shadow-2xl backdrop-blur-2xl flex flex-col gap-6">
+            <div className="edu-hud-glass p-7 flex flex-col gap-6">
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-white/[0.06] pb-5">
                 <div>
                   <div className="flex items-center gap-2">
-                    <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-accent/20 text-accent border border-accent/30">
+                    <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-accent/15 text-accent border border-accent/25">
                       <GitBranch size={16} />
                     </span>
                     <h4 className="font-extrabold text-white text-lg">
@@ -1256,7 +1494,7 @@ export function EducationView() {
                       onClick={() => setConceptSystemFilter(sys.id as any)}
                       className={`rounded-lg px-3 py-1 text-[11.5px] font-bold transition ${
                         conceptSystemFilter === sys.id
-                          ? "bg-accent text-white shadow-sm"
+                          ? "bg-white text-black shadow-sm"
                           : "text-white/60 hover:text-white hover:bg-white/5"
                       }`}
                     >
@@ -1266,15 +1504,15 @@ export function EducationView() {
                 </div>
               </div>
 
-              {/* System Knowledge Tracks - Unified CoreBTR Indigo Theme (No Rainbow) */}
+              {/* System Knowledge Tracks */}
               <div className="flex flex-col gap-6">
                 {/* TRACK 1: Cardiovascular Hemodynamics */}
                 {(conceptSystemFilter === "all" || conceptSystemFilter === "cardio") && (
                   <div className="edu-knowledge-track flex flex-col gap-4">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
-                        <span className="h-2 w-2 rounded-full bg-indigo-500 shadow-[0_0_8px_rgba(99,102,241,0.5)]" />
-                        <h5 className="text-sm font-extrabold text-indigo-400 uppercase tracking-wider">
+                        <span className="h-2 w-2 rounded-full bg-accent" />
+                        <h5 className="text-sm font-extrabold text-white uppercase tracking-wider">
                           Cardiovascular Hemodynamics & Mechanics
                         </h5>
                       </div>
@@ -1298,25 +1536,19 @@ export function EducationView() {
                         return (
                           <div
                             key={concept.id}
-                            className="relative rounded-2xl border border-white/[0.08] bg-[#12142b]/90 p-4 flex flex-col justify-between gap-3 shadow-lg hover:border-indigo-500/40 transition group"
+                            className="relative rounded-2xl border border-edge bg-surface p-4 flex flex-col justify-between gap-3 shadow-xl hover:border-white/20 transition group"
                           >
                             <div className="flex flex-col gap-1.5">
                               <div className="flex items-center justify-between">
-                                <span className="rounded bg-indigo-500/15 border border-indigo-500/30 px-2 py-0.5 text-[9.5px] font-bold text-indigo-300 uppercase">
-                                  {idx === 0
-                                    ? "Level 3: Target"
-                                    : idx === 1
-                                      ? "Level 2: Mechanism"
-                                      : idx === 2
-                                        ? "Level 1: Law"
-                                        : "Root Cause"}
+                                <span className="rounded bg-white/10 border border-white/15 px-2 py-0.5 text-[9.5px] font-bold text-white/90 uppercase">
+                                  {idx === 0 ? "Level 3: Target" : idx === 1 ? "Level 2: Mechanism" : idx === 2 ? "Level 1: Law" : "Root Cause"}
                                 </span>
                                 {stats?.mastered ? (
                                   <span className="text-emerald-400 text-[10px] font-bold flex items-center gap-1">
                                     <CheckCircle2 size={12} /> Mastered
                                   </span>
                                 ) : (
-                                  <span className="text-slate-400 text-[10px] font-medium">
+                                  <span className="text-white/50 text-[10px] font-medium">
                                     Needs Drill
                                   </span>
                                 )}
@@ -1324,15 +1556,15 @@ export function EducationView() {
                               <h6 className="font-extrabold text-white text-xs leading-snug">
                                 {concept.title}
                               </h6>
-                              <p className="text-[11px] text-white/60 line-clamp-2 leading-relaxed">
+                              <p className="text-[11px] text-white/70 line-clamp-2 leading-relaxed">
                                 {concept.description}
                               </p>
                             </div>
 
                             {/* Active Recall Occlusion Key Box */}
-                            <div className="edu-occlusion-card">
+                            <div className="edu-occlusion-card bg-elevated border border-edge">
                               <div className="flex items-center justify-between mb-1">
-                                <strong className="text-[9.5px] uppercase font-bold text-indigo-300">
+                                <strong className="text-[9.5px] uppercase font-bold text-ink-muted">
                                   {t("Foundational Key")}
                                 </strong>
                                 <button
@@ -1353,7 +1585,7 @@ export function EducationView() {
                                 <button
                                   type="button"
                                   onClick={() => toggleConceptReveal(concept.id)}
-                                  className="mt-1 w-full text-center text-[10px] font-bold text-indigo-300 hover:text-white transition"
+                                  className="mt-1 w-full text-center text-[10px] font-bold text-ink hover:text-white transition"
                                 >
                                   {t("👁 Reveal Active Recall Key")}
                                 </button>
@@ -1366,14 +1598,14 @@ export function EducationView() {
                                 <button
                                   type="button"
                                   onClick={() => handleRateConcept(concept.id, true)}
-                                  className="rounded px-2 py-0.5 text-[10px] font-bold bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 transition"
+                                  className="rounded px-2 py-0.5 text-[10px] font-bold bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-300 border border-emerald-500/30 transition"
                                 >
                                   ✓ Got It
                                 </button>
                                 <button
                                   type="button"
                                   onClick={() => handleRateConcept(concept.id, false)}
-                                  className="rounded px-2 py-0.5 text-[10px] font-bold bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30 transition"
+                                  className="rounded px-2 py-0.5 text-[10px] font-bold bg-white/5 hover:bg-white/10 text-white/70 border border-white/10 transition"
                                 >
                                   ✕ Weak
                                 </button>
@@ -1382,7 +1614,7 @@ export function EducationView() {
                               <button
                                 type="button"
                                 onClick={() => launchConceptMicroQuiz(concept.id)}
-                                className="flex items-center gap-1 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white px-2.5 py-1 text-[10px] font-bold transition shadow-sm"
+                                className="flex items-center gap-1 rounded-lg bg-white hover:bg-white/90 text-black px-2.5 py-1 text-[10px] font-bold transition shadow-xs"
                               >
                                 <Zap size={10} fill="currentColor" />
                                 <span>Quiz</span>
@@ -1400,8 +1632,8 @@ export function EducationView() {
                   <div className="edu-knowledge-track flex flex-col gap-4">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
-                        <span className="h-2 w-2 rounded-full bg-indigo-500 shadow-[0_0_8px_rgba(99,102,241,0.5)]" />
-                        <h5 className="text-sm font-extrabold text-indigo-400 uppercase tracking-wider">
+                        <span className="h-2 w-2 rounded-full bg-accent" />
+                        <h5 className="text-sm font-extrabold text-white uppercase tracking-wider">
                           Upper Limb Neuroanatomy & Palsy Localization
                         </h5>
                       </div>
@@ -1420,11 +1652,11 @@ export function EducationView() {
                         return (
                           <div
                             key={concept.id}
-                            className="relative rounded-2xl border border-white/[0.08] bg-[#12142b]/90 p-4 flex flex-col justify-between gap-3 shadow-lg hover:border-indigo-500/40 transition group"
+                            className="relative rounded-2xl border border-edge bg-surface p-4 flex flex-col justify-between gap-3 shadow-xl hover:border-white/20 transition group"
                           >
                             <div className="flex flex-col gap-1.5">
                               <div className="flex items-center justify-between">
-                                <span className="rounded bg-indigo-500/15 border border-indigo-500/30 px-2 py-0.5 text-[9.5px] font-bold text-indigo-300 uppercase">
+                                <span className="rounded bg-white/10 border border-white/15 px-2 py-0.5 text-[9.5px] font-bold text-white/90 uppercase">
                                   {idx === 0 ? "Clinical Syndrome" : "Root Anatomical Basis"}
                                 </span>
                                 {stats?.mastered ? (
@@ -1432,7 +1664,7 @@ export function EducationView() {
                                     <CheckCircle2 size={12} /> Mastered
                                   </span>
                                 ) : (
-                                  <span className="text-slate-400 text-[10px] font-medium">
+                                  <span className="text-white/50 text-[10px] font-medium">
                                     Needs Drill
                                   </span>
                                 )}
@@ -1445,9 +1677,9 @@ export function EducationView() {
                               </p>
                             </div>
 
-                            <div className="edu-occlusion-card">
+                            <div className="edu-occlusion-card bg-elevated border border-edge">
                               <div className="flex items-center justify-between mb-1">
-                                <strong className="text-[9.5px] uppercase font-bold text-indigo-300">
+                                <strong className="text-[9.5px] uppercase font-bold text-ink-muted">
                                   {t("Foundational Key")}
                                 </strong>
                                 <button
@@ -1467,7 +1699,7 @@ export function EducationView() {
                                 <button
                                   type="button"
                                   onClick={() => toggleConceptReveal(concept.id)}
-                                  className="mt-1 w-full text-center text-[10px] font-bold text-indigo-300 hover:text-white transition"
+                                  className="mt-1 w-full text-center text-[10px] font-bold text-ink-muted hover:text-white transition"
                                 >
                                   {t("👁 Reveal Active Recall Key")}
                                 </button>
@@ -1479,14 +1711,14 @@ export function EducationView() {
                                 <button
                                   type="button"
                                   onClick={() => handleRateConcept(concept.id, true)}
-                                  className="rounded px-2 py-0.5 text-[10px] font-bold bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 transition"
+                                  className="rounded px-2 py-0.5 text-[10px] font-bold bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-300 border border-emerald-500/30 transition"
                                 >
                                   ✓ Got It
                                 </button>
                                 <button
                                   type="button"
                                   onClick={() => handleRateConcept(concept.id, false)}
-                                  className="rounded px-2 py-0.5 text-[10px] font-bold bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30 transition"
+                                  className="rounded px-2 py-0.5 text-[10px] font-bold bg-white/5 hover:bg-white/10 text-white/70 border border-white/10 transition"
                                 >
                                   ✕ Weak
                                 </button>
@@ -1495,7 +1727,7 @@ export function EducationView() {
                               <button
                                 type="button"
                                 onClick={() => launchConceptMicroQuiz(concept.id)}
-                                className="flex items-center gap-1 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white px-2.5 py-1 text-[10px] font-bold transition shadow-sm"
+                                className="flex items-center gap-1 rounded-lg bg-white hover:bg-white/90 text-black px-2.5 py-1 text-[10px] font-bold transition shadow-xs"
                               >
                                 <Zap size={10} fill="currentColor" />
                                 <span>Quiz</span>
@@ -1513,8 +1745,8 @@ export function EducationView() {
                   <div className="edu-knowledge-track flex flex-col gap-4">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
-                        <span className="h-2 w-2 rounded-full bg-indigo-500 shadow-[0_0_8px_rgba(99,102,241,0.5)]" />
-                        <h5 className="text-sm font-extrabold text-indigo-400 uppercase tracking-wider">
+                        <span className="h-2 w-2 rounded-full bg-accent" />
+                        <h5 className="text-sm font-extrabold text-ink-muted uppercase tracking-wider">
                           Renal, Acid-Base & Physicochemical Buffers
                         </h5>
                       </div>
@@ -1533,21 +1765,19 @@ export function EducationView() {
                         return (
                           <div
                             key={concept.id}
-                            className="relative rounded-2xl border border-white/[0.08] bg-[#12142b]/90 p-4 flex flex-col justify-between gap-3 shadow-lg hover:border-indigo-500/40 transition group"
+                            className="relative rounded-2xl border border-edge bg-surface p-4 flex flex-col justify-between gap-3 shadow-xl hover:border-white/20 transition group"
                           >
                             <div className="flex flex-col gap-1.5">
                               <div className="flex items-center justify-between">
-                                <span className="rounded bg-indigo-500/15 border border-indigo-500/30 px-2 py-0.5 text-[9.5px] font-bold text-indigo-300 uppercase">
-                                  {idx === 0
-                                    ? "Clinical Disturbance"
-                                    : "Physicochemical Buffer Law"}
+                                <span className="rounded bg-white/10 border border-white/15 px-2 py-0.5 text-[9.5px] font-bold text-white/90 uppercase">
+                                  {idx === 0 ? "Clinical Disturbance" : "Physicochemical Buffer Law"}
                                 </span>
                                 {stats?.mastered ? (
                                   <span className="text-emerald-400 text-[10px] font-bold flex items-center gap-1">
                                     <CheckCircle2 size={12} /> Mastered
                                   </span>
                                 ) : (
-                                  <span className="text-slate-400 text-[10px] font-medium">
+                                  <span className="text-white/50 text-[10px] font-medium">
                                     Needs Drill
                                   </span>
                                 )}
@@ -1560,9 +1790,9 @@ export function EducationView() {
                               </p>
                             </div>
 
-                            <div className="edu-occlusion-card">
+                            <div className="edu-occlusion-card bg-elevated border border-edge">
                               <div className="flex items-center justify-between mb-1">
-                                <strong className="text-[9.5px] uppercase font-bold text-indigo-300">
+                                <strong className="text-[9.5px] uppercase font-bold text-ink-muted">
                                   {t("Foundational Key")}
                                 </strong>
                                 <button
@@ -1582,7 +1812,7 @@ export function EducationView() {
                                 <button
                                   type="button"
                                   onClick={() => toggleConceptReveal(concept.id)}
-                                  className="mt-1 w-full text-center text-[10px] font-bold text-indigo-300 hover:text-white transition"
+                                  className="mt-1 w-full text-center text-[10px] font-bold text-ink-muted hover:text-white transition"
                                 >
                                   {t("👁 Reveal Active Recall Key")}
                                 </button>
@@ -1594,14 +1824,14 @@ export function EducationView() {
                                 <button
                                   type="button"
                                   onClick={() => handleRateConcept(concept.id, true)}
-                                  className="rounded px-2 py-0.5 text-[10px] font-bold bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 transition"
+                                  className="rounded px-2 py-0.5 text-[10px] font-bold bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-300 border border-emerald-500/30 transition"
                                 >
                                   ✓ Got It
                                 </button>
                                 <button
                                   type="button"
                                   onClick={() => handleRateConcept(concept.id, false)}
-                                  className="rounded px-2 py-0.5 text-[10px] font-bold bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30 transition"
+                                  className="rounded px-2 py-0.5 text-[10px] font-bold bg-white/5 hover:bg-white/10 text-white/70 border border-white/10 transition"
                                 >
                                   ✕ Weak
                                 </button>
@@ -1610,7 +1840,7 @@ export function EducationView() {
                               <button
                                 type="button"
                                 onClick={() => launchConceptMicroQuiz(concept.id)}
-                                className="flex items-center gap-1 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white px-2.5 py-1 text-[10px] font-bold transition shadow-sm"
+                                className="flex items-center gap-1 rounded-lg bg-white hover:bg-white/90 text-black px-2.5 py-1 text-[10px] font-bold transition shadow-xs"
                               >
                                 <Zap size={10} fill="currentColor" />
                                 <span>Quiz</span>
@@ -1814,21 +2044,24 @@ export function EducationView() {
           document.body,
         )}
 
-      {showQBank &&
-        createPortal(
-          <div className="fixed inset-0 z-[200] flex items-center justify-center bg-canvas/80 backdrop-blur-md p-4">
-            <QBankRunner
-              questions={activeDrillQuestions}
-              durationMinutes={drillDurationMinutes}
-              onClose={() => {
-                setShowQBank(false);
-                setActiveDrillQuestions(undefined);
-                setDrillDurationMinutes(undefined);
-              }}
-            />
-          </div>,
-          document.body,
-        )}
+      {showQBank && createPortal(
+        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-canvas/80 backdrop-blur-md p-4">
+          <QBankRunner
+            questions={activeDrillQuestions}
+            durationMinutes={drillDurationMinutes}
+            onFinish={(result) => {
+              saveExamResult(result, activeTestId);
+            }}
+            onClose={() => {
+              setShowQBank(false);
+              setActiveDrillQuestions(undefined);
+              setActiveTestId(undefined);
+              setDrillDurationMinutes(undefined);
+            }}
+          />
+        </div>,
+        document.body,
+      )}
 
       {showWateringDeck && (
         <DailyWateringDeck

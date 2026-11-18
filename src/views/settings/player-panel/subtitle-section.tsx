@@ -403,6 +403,15 @@ export function SubtitleStylePanel() {
           </div>
         </SettingRow>
 
+        <ToggleRow
+          label={t("Keep subtitles in widescreen bars")}
+          sub={t(
+            "Places subtitles in the lower black bar during widescreen movies so they never cover faces or action.",
+          )}
+          value={settings.letterboxSubtitleDodging}
+          onChange={(v) => update({ letterboxSubtitleDodging: v })}
+        />
+
         <SettingRow
           label={t("Alignment")}
           desc={t("Where a subtitle line sits across the width of the video.")}

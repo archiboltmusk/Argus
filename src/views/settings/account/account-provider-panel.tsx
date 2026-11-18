@@ -317,7 +317,7 @@ export function AccountProviderPanel() {
         <p>
           <strong className="text-ink">{t("How Account Provider works:")}</strong>{" "}
           {t(
-            "Selecting a provider shifts your profiles, watch history, and addons into that provider's ecosystem. Both accounts remain authenticated so you can switch between them at any time without losing data.",
+            "Selecting a provider shifts your profiles, watch history, and addons into that provider's account. Both accounts remain signed in so you can switch between them at any time without losing data.",
           )}
         </p>
       </div>

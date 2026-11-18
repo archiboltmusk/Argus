@@ -83,12 +83,13 @@ impl AsrEngine for NullEngine {
     }
 }
 
-pub async fn pcm_window(
+async fn run_ffmpeg_pcm(
     url: &str,
     headers: &HashMap<String, String>,
     start_sec: f32,
     len_sec: f32,
-    map_spec: &str,
+    map_spec: Option<&str>,
+    use_speechnorm: bool,
 ) -> Result<Vec<f32>, String> {
     let ff = crate::transcode::locate_ffmpeg().ok_or("ffmpeg not found")?;
     let mut cmd = Command::new(&ff);
@@ -101,32 +102,42 @@ pub async fn pcm_window(
     if url.starts_with("http://") || url.starts_with("https://") {
         cmd.arg("-reconnect")
             .arg("1")
-            .arg("-reconnect_at_eof")
-            .arg("1")
             .arg("-reconnect_streamed")
             .arg("1")
             .arg("-reconnect_delay_max")
             .arg("5");
+        cmd.arg("-user_agent")
+            .arg(url_guard::user_agent(headers).unwrap_or_else(|| "Argus".into()));
+        let blob = url_guard::safe_header_blob(headers);
+        if !blob.is_empty() {
+            cmd.arg("-headers").arg(blob);
+        }
     }
-
-    cmd.arg("-user_agent")
-        .arg(url_guard::user_agent(headers).unwrap_or_else(|| "Argus".into()));
-    let blob = url_guard::safe_header_blob(headers);
-    if !blob.is_empty() {
-        cmd.arg("-headers").arg(blob);
-    }
+    // Fast seek before input URL
     cmd.arg("-ss")
         .arg(start_sec.to_string())
         .arg("-accurate_seek")
-        .arg("-t")
-        .arg(len_sec.to_string())
         .arg("-i")
         .arg(url)
-        .arg("-vn")
-        .arg("-map")
-        .arg(map_spec)
-        .arg("-af")
-        .arg("highpass=f=100,lowpass=f=6000,speechnorm=e=4:r=0.0005:l=1")
+        // Duration MUST be placed AFTER -i as an output option to slice exactly len_sec from seek point
+        .arg("-t")
+        .arg(len_sec.to_string())
+        .arg("-vn");
+
+    if let Some(spec) = map_spec {
+        if !spec.is_empty() {
+            cmd.arg("-map").arg(spec);
+        }
+    }
+
+    let filter = if use_speechnorm {
+        "highpass=f=100,lowpass=f=6000,speechnorm=e=4:r=0.0005:l=1,aresample=16000"
+    } else {
+        "highpass=f=100,lowpass=f=6000,aresample=16000"
+    };
+
+    cmd.arg("-af")
+        .arg(filter)
         .arg("-ac")
         .arg("1")
         .arg("-ar")
@@ -137,7 +148,7 @@ pub async fn pcm_window(
         .arg("pcm_f32le")
         .arg("-");
     cmd.stdout(std::process::Stdio::piped());
-    cmd.stderr(std::process::Stdio::null());
+    cmd.stderr(std::process::Stdio::piped());
     cmd.kill_on_drop(true);
     #[cfg(windows)]
     cmd.creation_flags(0x0800_0000 | 0x0000_4000);
@@ -147,7 +158,8 @@ pub async fn pcm_window(
         .map_err(|_| "ffmpeg-timeout".to_string())?
         .map_err(|error| format!("run ffmpeg: {}", error))?;
     if !output.status.success() {
-        return Err(format!("ffmpeg-exit-status: {}", output.status));
+        let err_text = String::from_utf8_lossy(&output.stderr);
+        return Err(format!("ffmpeg-exit-status: {} ({})", output.status, err_text.trim()));
     }
     let buf = output.stdout;
 
@@ -163,6 +175,29 @@ pub async fn pcm_window(
         i += 4;
     }
     Ok(pcm)
+}
+
+pub async fn pcm_window(
+    url: &str,
+    headers: &HashMap<String, String>,
+    start_sec: f32,
+    len_sec: f32,
+    map_spec: &str,
+) -> Result<Vec<f32>, String> {
+    match run_ffmpeg_pcm(url, headers, start_sec, len_sec, Some(map_spec), true).await {
+        Ok(pcm) if !pcm.is_empty() => Ok(pcm),
+        Err(err) => {
+            eprintln!("[ASR] pcm_window initial attempt failed: {}. Retrying with auto stream map and standard filter...", err);
+            match run_ffmpeg_pcm(url, headers, start_sec, len_sec, None, false).await {
+                Ok(pcm) => Ok(pcm),
+                Err(err2) => Err(format!("initial: {}, fallback: {}", err, err2)),
+            }
+        }
+        Ok(_) => {
+            // Empty buffer, retry with auto stream map
+            run_ffmpeg_pcm(url, headers, start_sec, len_sec, None, false).await
+        }
+    }
 }
 
 pub fn probe_windows(dur: f32, n: usize, len: f32) -> Vec<(f32, f32)> {
@@ -353,7 +388,7 @@ pub async fn generate(
     let mut start = 0.0f32;
     let total_chunks = (dur / chunk).ceil().max(1.0) as usize;
     let mut chunk_idx = 0;
-    let mut consecutive_failures = 0;
+
 
     while start < dur {
         if cancel_signal.load(Ordering::Relaxed) {
@@ -380,6 +415,7 @@ pub async fn generate(
 
         // Fetch audio chunk with up to 3 retries
         let mut pcm_opt = None;
+        let mut extraction_error = String::new();
         for attempt in 1..=3 {
             if cancel_signal.load(Ordering::Relaxed) {
                 return Err("cancelled".into());
@@ -387,11 +423,12 @@ pub async fn generate(
             match pcm_window(url, headers, start, len + overlap, map_spec).await {
                 Ok(p) => {
                     pcm_opt = Some(p);
-                    consecutive_failures = 0;
+
                     break;
                 }
                 Err(err) => {
                     eprintln!("[ASR] chunk {} at {:.1}s attempt {} failed: {}", chunk_idx, start, attempt, err);
+                    extraction_error = err;
                     if attempt < 3 {
                         tokio::time::sleep(Duration::from_millis(500 * attempt as u64)).await;
                     }
@@ -402,20 +439,14 @@ pub async fn generate(
         let pcm = match pcm_opt {
             Some(p) => p,
             None => {
-                consecutive_failures += 1;
-                // Only abort if 10 consecutive chunks completely fail (e.g. stream terminated)
-                if consecutive_failures >= 10 {
-                    eprintln!("[ASR] 10 consecutive chunk failures; ending transcription early");
-                    break;
-                }
-                // Skip this single bad/silent chunk so the remaining movie is NOT chopped!
-                start += chunk;
-                continue;
+                return Err(format!("Audio extraction failed at {start:.0}s after three attempts: {extraction_error}"));
             }
         };
 
         if pcm.len() > ASR_SAMPLE_RATE as usize {
-            if let Ok(segs) = engine.transcribe(&pcm, lang, translate) {
+            {
+                let segs = engine.transcribe(&pcm, lang, translate)
+                    .map_err(|err| format!("Speech recognition failed at {start:.0}s: {err}"))?;
                 let mut added_any = false;
                 for mut seg in segs {
                     seg.t0 += start;
@@ -447,6 +478,9 @@ pub async fn generate(
                     // Write directly to disk from Rust on EVERY chunk!
                     // This guarantees subtitles remain continuous even when minimized!
                     if let Some(path) = out_path {
+                        if let Some(parent) = std::path::Path::new(path).parent() {
+                            let _ = std::fs::create_dir_all(parent);
+                        }
                         if let Err(e) = std::fs::write(path, &current_srt) {
                             eprintln!("[ASR] error writing srt: {}", e);
                         }
@@ -461,12 +495,14 @@ pub async fn generate(
                         .await;
                     }
 
+                    let latest_text = out.last().map(|s| s.text.clone()).unwrap_or_default();
                     let _ = app.emit("asr://live-cues", serde_json::json!({
                         "chunk": chunk_idx,
                         "total": total_chunks,
                         "srt": current_srt,
                         "count": out.len(),
                         "filePath": out_path,
+                        "latestText": latest_text,
                     }));
                 }
             }
@@ -651,8 +687,10 @@ pub async fn asr_generate_subtitles(
         let engine = load_engine(&model_path)?;
         let hdrs = headers.unwrap_or_default();
         let dur = match duration_sec {
-            Some(d) if d > 30.0 => d,
-            _ => probe_media_duration(&url, &hdrs).await.unwrap_or(7200.0),
+            Some(d) if d.is_finite() && d > 0.0 => d,
+            _ => probe_media_duration(&url, &hdrs).await
+                .filter(|d| d.is_finite() && *d > 0.0)
+                .ok_or("Could not determine media duration. Wait for playback to load and retry.")?,
         };
 
         let is_translate = translate.unwrap_or(false);
@@ -662,7 +700,7 @@ pub async fn asr_generate_subtitles(
             &url,
             &hdrs,
             dur,
-            lang.as_deref().filter(|s| !s.is_empty()),
+            lang.as_deref().filter(|s| !s.is_empty() && *s != "auto"),
             is_translate,
             "0:a:0",
             output_path.as_deref(),
@@ -677,7 +715,10 @@ pub async fn asr_generate_subtitles(
         }
 
         if let Some(ref path) = output_path {
-            let _ = std::fs::write(path, &srt);
+            if let Some(parent) = std::path::Path::new(path).parent() {
+                let _ = std::fs::create_dir_all(parent);
+            }
+            std::fs::write(path, &srt).map_err(|err| format!("Saving subtitles failed: {err}"))?;
         }
 
         Ok(srt)

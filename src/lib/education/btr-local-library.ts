@@ -6,6 +6,7 @@
  */
 
 import type { PlayerSrc } from "@/lib/view";
+import { convertFileSrc, isTauri } from "@tauri-apps/api/core";
 import { CORE_BTR_SUBJECTS, type BTRSubject } from "./corebtr-schedule";
 import { USER_LOCAL_BTR_MANIFEST } from "./btr-library-manifest";
 
@@ -53,6 +54,8 @@ export interface BTRLocalLibraryState {
   masterPdfs?: BTRSpecialItem[];
   megaBtrVideos?: BTRSpecialItem[];
   tndVideos?: BTRSpecialItem[];
+  tndPdfs?: BTRSpecialItem[];
+  grandTests?: BTRSpecialItem[];
 }
 
 const VIDEO_EXTS = new Set(["mp4", "mkv", "webm", "avi", "mov", "m4v", "flv", "ts"]);
@@ -267,6 +270,10 @@ export function indexBTRFiles(
 
   const state: BTRLocalLibraryState = {
     rootFolderPath,
+    grandTests: files.filter((file) => getFileExtension(file.name) === "pdf").map((file) => ({
+      id: file.relativePath || file.name, title: file.name, filename: file.name,
+      fullPath: file.blobUrl || file.fullPath || file.path || file.name, sizeBytes: file.size || 0,
+    })),
     lastScannedAt: new Date().toISOString(),
     totalVideosFound,
     totalPdfsFound,
@@ -294,6 +301,8 @@ export function getPreindexedDefaultLibrary(): BTRLocalLibraryState {
     masterPdfs: USER_LOCAL_BTR_MANIFEST.masterPdfs,
     megaBtrVideos: USER_LOCAL_BTR_MANIFEST.megaBtrVideos,
     tndVideos: USER_LOCAL_BTR_MANIFEST.tndVideos,
+    tndPdfs: USER_LOCAL_BTR_MANIFEST.tndPdfs,
+    grandTests: USER_LOCAL_BTR_MANIFEST.grandTests,
   };
 }
 
@@ -349,17 +358,24 @@ export function resolveBTRPlayableUrl(
 
   const cleanPath = fullPath.replace(/^file:\/\//, "");
 
-  if (
-    typeof window !== "undefined" &&
-    ("__TAURI_INTERNALS__" in window || "__TAURI__" in window)
-  ) {
+  if (typeof window !== "undefined") {
     try {
-      // eslint-disable-next-line @typescript-eslint/no-require-imports
-      const { convertFileSrc } = require("@tauri-apps/api/core");
-      if (typeof convertFileSrc === "function") {
+      if (isTauri()) {
         return convertFileSrc(cleanPath);
       }
-    } catch {}
+      const tauriInternals = (
+        window as unknown as {
+          __TAURI_INTERNALS__?: {
+            convertFileSrc?: (path: string, protocol?: string) => string;
+          };
+        }
+      ).__TAURI_INTERNALS__;
+      if (typeof tauriInternals?.convertFileSrc === "function") {
+        return tauriInternals.convertFileSrc(cleanPath);
+      }
+    } catch {
+      // Fall through to cleanPath if convertFileSrc is unavailable
+    }
   }
 
   return cleanPath;

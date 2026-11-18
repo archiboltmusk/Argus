@@ -170,7 +170,12 @@ export function MusicDock() {
       setSourceOpen(true);
     };
     window.addEventListener("argus:music-playback-source-required", recover);
-    return () => window.removeEventListener("argus:music-playback-source-required", recover);
+    const openStudioHandler = () => setStudioOpen(true);
+    window.addEventListener("argus:open-audiophile-studio", openStudioHandler);
+    return () => {
+      window.removeEventListener("argus:music-playback-source-required", recover);
+      window.removeEventListener("argus:open-audiophile-studio", openStudioHandler);
+    };
   }, []);
   const closeExpanded = useCallback(() => setExpanded(false), []);
   const nowExit = useModalExit(closeExpanded, expanded);
@@ -1107,6 +1112,21 @@ export function MusicDock() {
         nextTrack={player.queue[player.queueIndex + 1]}
         isOpen={studioOpen}
         onClose={() => setStudioOpen(false)}
+        onSelectSource={(src) => {
+          if (current && src.streamUrl) {
+            void playMusic({
+              ...current,
+              playbackUrl: src.streamUrl,
+              quality: {
+                ...current.quality,
+                lossless: src.isLossless,
+                bitrateKbps: src.bitrateKbps,
+                sampleRateHz: 96000,
+                bitDepth: 24,
+              },
+            });
+          }
+        }}
       />
     </aside>
   );

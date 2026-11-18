@@ -4,12 +4,14 @@ import { useEffect, useRef, useState } from "react";
 import { useAutoSyncHandle } from "@/components/player/autosync/autosync-store";
 import { useT } from "@/lib/i18n";
 import { openSyncBar } from "@/lib/player/sub-sync";
+import { VisualWaveformSync } from "./visual-waveform-sync";
 
 type Props = {
   canAutoSync: boolean;
   canLiveSync: boolean;
   delaySec: number;
   delayNonZero: boolean;
+  onDelay?: (sec: number) => void;
   onLiveSync?: () => void | Promise<void>;
   onClose: () => void;
 };
@@ -19,12 +21,14 @@ export function SyncControl({
   canLiveSync,
   delaySec,
   delayNonZero,
+  onDelay,
   onLiveSync,
   onClose,
 }: Props) {
   const tr = useT();
   const autoSync = useAutoSyncHandle();
   const [open, setOpen] = useState(false);
+  const [showVisualSync, setShowVisualSync] = useState(false);
   const wrapRef = useRef<HTMLDivElement>(null);
 
   const busy = autoSync?.status === "analyzing";
@@ -122,6 +126,20 @@ export function SyncControl({
             type="button"
             onClick={() => {
               setOpen(false);
+              setShowVisualSync(true);
+            }}
+            className="flex w-full items-center gap-2.5 px-3 py-2 text-start text-[13px] text-ink transition-colors hover:bg-raised"
+          >
+            <AudioLines size={14} className="text-accent" />
+            <span className="flex-1">{tr("Visual waveform sync")}</span>
+            <span className="text-[9.5px] px-1 py-0.2 rounded font-bold uppercase bg-accent/15 text-accent">
+              {tr("Wave")}
+            </span>
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setOpen(false);
               openSyncBar(delaySec);
               onClose();
             }}
@@ -135,6 +153,18 @@ export function SyncControl({
               </span>
             )}
           </button>
+        </div>
+      )}
+
+      {showVisualSync && (
+        <div className="absolute end-0 top-[calc(100%+6px)] z-[70] w-[280px] shadow-2xl animate-menu-pop">
+          <VisualWaveformSync
+            delaySec={delaySec}
+            onDelayChange={(sec) => {
+              onDelay?.(sec);
+            }}
+            onClose={() => setShowVisualSync(false)}
+          />
         </div>
       )}
     </div>

@@ -11,6 +11,8 @@ type Props = {
   scale?: number;
   secondaryText?: string;
   elevateForHud?: boolean;
+  videoWidth?: number;
+  videoHeight?: number;
 };
 
 export const SubtitleOverlay = memo(function SubtitleOverlay({
@@ -18,6 +20,8 @@ export const SubtitleOverlay = memo(function SubtitleOverlay({
   startSec,
   scale = 1,
   secondaryText = "",
+  videoWidth,
+  videoHeight,
 }: Props) {
   const { settings } = useSettings();
   const kid = useActiveKid();
@@ -49,7 +53,45 @@ export const SubtitleOverlay = memo(function SubtitleOverlay({
   );
   const fontSize = useMemo(() => Math.round(baseFont * responsive), [baseFont, responsive]);
   const marginY = useMemo(() => clamp(settings.subMarginY, 0, 100), [settings.subMarginY]);
-  const cover = useSubtitleLiftCover(settings.subLiftAboveControls, marginY);
+
+  const isLetterboxed = useMemo(() => {
+    if (settings.letterboxSubtitleDodging === false) return false;
+    if (!videoWidth || !videoHeight || videoWidth <= 0 || videoHeight <= 0) return false;
+    const dispW = window.innerWidth;
+    const dispH = boxH > 0 ? boxH : window.innerHeight;
+    if (dispW <= 0 || dispH <= 0) return false;
+    const videoAspect = videoWidth / videoHeight;
+    const displayAspect = dispW / dispH;
+    return videoAspect > displayAspect + 0.04;
+  }, [settings.letterboxSubtitleDodging, videoWidth, videoHeight, boxH]);
+
+  const letterboxBarPercent = useMemo(() => {
+    if (!isLetterboxed || !videoWidth || !videoHeight) return 0;
+    const dispW = window.innerWidth;
+    const dispH = boxH > 0 ? boxH : window.innerHeight;
+    const videoAspect = videoWidth / videoHeight;
+    const displayAspect = dispW / dispH;
+    const activeVideoFraction = displayAspect / videoAspect;
+    const barFraction = Math.max(0, (1 - activeVideoFraction) / 2);
+    return barFraction * 100;
+  }, [isLetterboxed, videoWidth, videoHeight, boxH]);
+
+  const effectiveMarginY = useMemo(() => {
+    if (isLetterboxed && letterboxBarPercent >= 3) {
+      const centerOfBar = letterboxBarPercent / 2;
+      const userAdjust = ((marginY - 12) / 12) * (letterboxBarPercent * 0.35);
+      return Math.max(
+        1,
+        Math.min(
+          Math.round(letterboxBarPercent - 1.5),
+          Math.max(2, Math.round(centerOfBar + userAdjust)),
+        ),
+      );
+    }
+    return marginY;
+  }, [isLetterboxed, letterboxBarPercent, marginY]);
+
+  const cover = useSubtitleLiftCover(settings.subLiftAboveControls, effectiveMarginY);
   const hostH = boxH > 0 ? boxH : window.innerHeight;
   const lift =
     cover > 0
@@ -59,7 +101,7 @@ export const SubtitleOverlay = memo(function SubtitleOverlay({
             cover * window.innerHeight -
               hostGap +
               LIFT_GAP_PX * responsive -
-              (marginY / 100) * hostH,
+              (effectiveMarginY / 100) * hostH,
           ),
         )
       : 0;
@@ -157,7 +199,7 @@ export const SubtitleOverlay = memo(function SubtitleOverlay({
       {secondBlock && secondTop && (
         <div
           className={`pointer-events-none absolute inset-x-0 z-10 flex ${justify} px-[6%]`}
-          style={{ top: `${marginY}%`, opacity }}
+          style={{ top: `${effectiveMarginY}%`, opacity }}
         >
           {secondBlock}
         </div>
@@ -166,7 +208,7 @@ export const SubtitleOverlay = memo(function SubtitleOverlay({
         key={startSec}
         ref={wrapRef}
         className={`pointer-events-none absolute inset-x-0 z-10 flex flex-col gap-1.5 ${alignItems} px-[6%] transition-transform duration-300 ease-out motion-reduce:transition-none`}
-        style={{ bottom: `${marginY}%`, opacity, transform: `translateY(${-lift}px)` }}
+        style={{ bottom: `${effectiveMarginY}%`, opacity, transform: `translateY(${-lift}px)` }}
       >
         {secondBlock && !secondTop && secondBlock}
         {text && (

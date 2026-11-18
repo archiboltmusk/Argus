@@ -33,9 +33,16 @@ import {
   Tv,
   Timer,
   HelpCircle,
+  Award,
+  Headphones,
+  Mic,
+  GitBranch,
+  ArrowRight,
+  Activity,
 } from "lucide-react";
 import { useView } from "@/lib/view";
 import { BTRSplitWorkstation } from "@/components/education/btr-split-workstation";
+import { BTRAudioPodModal } from "@/components/education/btr-audio-pod-modal";
 import { BTRAnkiExportModal } from "@/components/education/btr-anki-export-modal";
 import { BTRErrorLogModal } from "@/components/education/btr-error-log-modal";
 import { BTRBroadcastsModal } from "@/components/education/btr-broadcasts-panel";
@@ -48,7 +55,10 @@ import { BTRDailyDripModal } from "@/components/education/btr-daily-drip-modal";
 import { BTRPdfSearchModal } from "@/components/education/btr-pdf-search-modal";
 import { BTRVignetteModal } from "@/components/education/btr-vignette-modal";
 import { BTRCrossAppTestsModal } from "@/components/education/btr-cross-app-tests-modal";
+import { BTRGTTrackerModal } from "@/components/education/btr-gt-tracker-modal";
+import { getNextUpcomingGT } from "@/lib/education/gt-tracker-engine";
 import { BTRCustomModuleModal } from "@/components/education/btr-custom-module-modal";
+import { BTRFrontierVaultModal } from "@/components/education/btr-frontier-vault-modal";
 import { BTRSubjectExplorer } from "@/components/education/btr-subject-explorer";
 import { BTRPearlModal } from "@/components/education/btr-pearl-modal";
 import { type BTRPearlItem } from "@/lib/education/btr-pearls-data";
@@ -67,6 +77,23 @@ import { BTRAppDock, type BTRAppDestination } from "@/components/education/btr-a
 import { BTRMiniPlayerDock } from "@/components/education/btr-mini-player-dock";
 import { getFSRSSummary, reviewFSRSCard } from "@/lib/education/btr-fsrs-engine";
 import { CORE_BTR_BROADCASTS } from "@/lib/education/btr-broadcasts";
+import { BTRTriLinkSearchModal } from "@/components/education/btr-tri-link-search-modal";
+import { BTRBranchingTreeModal } from "@/components/education/btr-branching-tree-modal";
+import { BTRVoiceVivaModal } from "@/components/education/btr-voice-viva-modal";
+import { BTRWarRoomClashModal } from "@/components/education/btr-war-room-clash-modal";
+import { BTRECGModal } from "@/components/education/btr-ecg-modal";
+import { createYouTubeMediaFile } from "@/lib/education/btr-youtube-bridge";
+import { T_MINUS_7_PLANS, buildCountdownQuestionsForDay } from "@/lib/education/btr-countdown-deck";
+import {
+  getBackendTests,
+  getQuestionsForTest,
+  getQuestionsForSubject,
+  buildCustomModuleTest,
+  getLatestAutopsyReport,
+  generateAIR100Prescription,
+  generateMicroSurgicalDrill,
+} from "@/lib/education/btr-backend-service";
+import type { ClinicalQuestion } from "@/lib/education/qbank-types";
 import {
   CORE_BTR_SUBJECTS,
   CORE_BTR_PHASES,
@@ -92,21 +119,12 @@ import {
   type BTRLocalLibraryState,
   type BTRLocalMediaFile,
 } from "@/lib/education/btr-local-library";
+import { USER_LOCAL_BTR_MANIFEST } from "@/lib/education/btr-library-manifest";
 
-// Official CoreBTR Tests Catalog (from screenshot media_1794864389397)
+// Official CoreBTR Tests Catalog (connected to /Users/anupam/Downloads/BTR)
 const COREBTR_OFFICIAL_TESTS = [
   {
-    id: "gt_4",
-    title: "Baseline GRAND TEST - 4",
-    totalQuestions: 200,
-    durationMins: 210,
-    type: "Grand Tests",
-    status: "Live",
-    ended: true,
-    competitive: true,
-  },
-  {
-    id: "gt_inicet_mock",
+    id: "national_inicet_mock_gt",
     title: "National INICET Mock GT",
     totalQuestions: 200,
     durationMins: 180,
@@ -114,9 +132,76 @@ const COREBTR_OFFICIAL_TESTS = [
     status: "Live",
     ended: true,
     competitive: true,
+    solutionFile: "National_INICET_Mock_GT_annotated.pdf",
   },
   {
-    id: "gt_3",
+    id: "baseline_grand_test___4",
+    title: "Baseline GRAND TEST - 4",
+    totalQuestions: 200,
+    durationMins: 210,
+    type: "Grand Tests",
+    status: "Live",
+    ended: true,
+    competitive: true,
+    solutionFile: "Baseline_Grand_Test-4_annotated.pdf",
+  },
+  {
+    id: "grand_test_gt___9",
+    title: "Grand Test (GT) - 9",
+    totalQuestions: 200,
+    durationMins: 180,
+    type: "Grand Tests",
+    status: "Live",
+    ended: true,
+    competitive: true,
+    solutionFile: "CoreBTR_Grand_Test-9_non_annotated.pdf",
+  },
+  {
+    id: "grand_test_gt___8",
+    title: "Grand Test (GT) - 8",
+    totalQuestions: 200,
+    durationMins: 180,
+    type: "Grand Tests",
+    status: "Live",
+    ended: true,
+    competitive: true,
+    solutionFile: "CoreBTR_Grand_Test-8_annotated.pdf",
+  },
+  {
+    id: "grand_test_gt___7",
+    title: "Grand Test (GT) - 7",
+    totalQuestions: 200,
+    durationMins: 180,
+    type: "Grand Tests",
+    status: "Live",
+    ended: true,
+    competitive: true,
+    solutionFile: "CoreBTR_Grand_Test-7_annotated.pdf",
+  },
+  {
+    id: "grand_test_gt___6",
+    title: "Grand Test (GT) - 6",
+    totalQuestions: 200,
+    durationMins: 180,
+    type: "Grand Tests",
+    status: "Live",
+    ended: true,
+    competitive: true,
+    solutionFile: "CoreBTR_Grand_Test-6_annotated.pdf",
+  },
+  {
+    id: "grand_test_gt___5",
+    title: "Grand Test (GT) - 5",
+    totalQuestions: 200,
+    durationMins: 180,
+    type: "Grand Tests",
+    status: "Live",
+    ended: true,
+    competitive: true,
+    solutionFile: "CoreBTR_Grand_Test-5_annotated.pdf",
+  },
+  {
+    id: "grand_test_gt___3",
     title: "Grand Test (GT) - 3",
     totalQuestions: 200,
     durationMins: 180,
@@ -124,9 +209,10 @@ const COREBTR_OFFICIAL_TESTS = [
     status: "Live",
     ended: true,
     competitive: true,
+    solutionFile: "CoreBTR_Grand_Test-3_annotated.pdf",
   },
   {
-    id: "gt_2",
+    id: "grand_test_gt___2",
     title: "Grand Test (GT) - 2",
     totalQuestions: 200,
     durationMins: 180,
@@ -134,9 +220,10 @@ const COREBTR_OFFICIAL_TESTS = [
     status: "In Progress",
     ended: true,
     competitive: true,
+    solutionFile: "CoreBTR_Grand_Test_2_Solutions_-_17.04.2026_annotated.pdf",
   },
   {
-    id: "gt_1",
+    id: "grand_test_gt___1",
     title: "Grand Test (GT) - 1",
     totalQuestions: 200,
     durationMins: 180,
@@ -144,6 +231,7 @@ const COREBTR_OFFICIAL_TESTS = [
     status: "Not Attempted",
     ended: true,
     competitive: true,
+    solutionFile: "CoreBTR_Grand_Test_1_Solutions_-_04.04.2026_annotated.pdf",
   },
   {
     id: "mini_1",
@@ -373,14 +461,21 @@ function InstagramIcon({ size = 14, className }: { size?: number; className?: st
 }
 
 interface CoreBTRWarRoomProps {
-  onStartQBankDrill?: (subjectName?: string) => void;
+  onStartQBankDrill?: (subjectName?: string, questions?: ClinicalQuestion[]) => void;
   onOpenNotes?: () => void;
+  initialDestination?: BTRAppDestination;
+  initialSubjectId?: string;
 }
 
-export function CoreBTRWarRoom({ onStartQBankDrill, onOpenNotes }: CoreBTRWarRoomProps = {}) {
+export function CoreBTRWarRoom({
+  onStartQBankDrill,
+  onOpenNotes,
+  initialDestination = "today",
+  initialSubjectId,
+}: CoreBTRWarRoomProps = {}) {
   const { openPlayer } = useView();
 
-  const [activeDestination, setActiveDestination] = useState<BTRAppDestination>("today");
+  const [activeDestination, setActiveDestination] = useState<BTRAppDestination>(initialDestination);
   const [subjectsSubTab, setSubjectsSubTab] = useState<"tracker" | "files">("tracker");
   const summary = useMemo(() => getFSRSSummary(), []);
   const activeView = activeDestination;
@@ -390,6 +485,10 @@ export function CoreBTRWarRoom({ onStartQBankDrill, onOpenNotes }: CoreBTRWarRoo
   const [libraryState, setLibraryState] = useState<BTRLocalLibraryState>(loadBTRLocalLibrary());
   const [categoryFilter] = useState<BTRSubjectCategory | "ALL">("ALL");
   const [searchQuery, setSearchQuery] = useState("");
+
+  useEffect(() => {
+    if (initialDestination) setActiveDestination(initialDestination);
+  }, [initialDestination]);
 
   // Folder Import state
   const folderInputRef = useRef<HTMLInputElement>(null);
@@ -405,7 +504,9 @@ export function CoreBTRWarRoom({ onStartQBankDrill, onOpenNotes }: CoreBTRWarRoo
     subject: BTRSubject;
     unannotatedPdf?: BTRLocalMediaFile;
     annotatedPdf?: BTRLocalMediaFile;
+    initialTimestampSec?: number;
   } | null>(null);
+  const [inspectedCountdownDay, setInspectedCountdownDay] = useState<number | null>(7);
   const [showAnkiModal, setShowAnkiModal] = useState(false);
   const [showErrorModal, setShowErrorModal] = useState(false);
   const [showBroadcastsModal, setShowBroadcastsModal] = useState(false);
@@ -418,12 +519,63 @@ export function CoreBTRWarRoom({ onStartQBankDrill, onOpenNotes }: CoreBTRWarRoo
   const [showPdfSearchModal, setShowPdfSearchModal] = useState(false);
   const [showVignetteModal, setShowVignetteModal] = useState(false);
   const [showCrossAppModal, setShowCrossAppModal] = useState(false);
+  const [showGTTrackerModal, setShowGTTrackerModal] = useState(false);
+  const [showTriLinkSearchModal, setShowTriLinkSearchModal] = useState(false);
+  const [showBranchingTreeModal, setShowBranchingTreeModal] = useState(false);
+  const [showVoiceVivaModal, setShowVoiceVivaModal] = useState(false);
+  const [showWarRoomClashModal, setShowWarRoomClashModal] = useState(false);
+  const [showECGModal, setShowECGModal] = useState(false);
+
+  // Live Next GT Tracker state
+  const { test: nextGT, statusInfo: nextGTStatus } = useMemo(() => {
+    return getNextUpcomingGT();
+  }, [showGTTrackerModal]);
 
   // CoreBTR App Experience State (Matching Dr. Zainab Vora Official Suite)
   const [selectedSubjectDetail, setSelectedSubjectDetail] = useState<BTRSubject | null>(null);
+
+  useEffect(() => {
+    if (initialSubjectId) {
+      const found = CORE_BTR_SUBJECTS.find((s) => s.id === initialSubjectId);
+      if (found) setSelectedSubjectDetail(found);
+    }
+  }, [initialSubjectId]);
   const [testsSubTab, setTestsSubTab] = useState<"Grand Tests" | "Mini Tests" | "Core Drop Tests">("Grand Tests");
   const [testsFilter, setTestsFilter] = useState<"In Progress" | "Live" | "Upcoming" | "Not Attempted">("Live");
   const [showCustomModuleModal, setShowCustomModuleModal] = useState(false);
+  const [showFrontierVaultModal, setShowFrontierVaultModal] = useState(false);
+  const [showAudioPodModal, setShowAudioPodModal] = useState(false);
+  const [audioPodQuestions, setAudioPodQuestions] = useState<ClinicalQuestion[]>([]);
+  const [isGeneratingDrill, setIsGeneratingDrill] = useState(false);
+
+  const handleOpenAudioPod = async (targetQuestions?: ClinicalQuestion[]) => {
+    if (targetQuestions && targetQuestions.length > 0) {
+      setAudioPodQuestions(targetQuestions);
+    } else {
+      const pool = await generateMicroSurgicalDrill({ count: 20 });
+      setAudioPodQuestions(pool);
+    }
+    setShowAudioPodModal(true);
+  };
+
+  const handleLaunchMicroSurgicalDrill = async (weakSubject?: string) => {
+    setIsGeneratingDrill(true);
+    try {
+      const drillQuestions = await generateMicroSurgicalDrill({
+        weakSubject,
+        count: 15,
+        prioritizeTrapsAndMissed: true,
+      });
+      if (drillQuestions.length > 0) {
+        onStartQBankDrill?.(
+          weakSubject ? `Micro-Surgical Remediation: ${weakSubject}` : "Micro-Surgical Weakness Drill",
+          drillQuestions
+        );
+      }
+    } finally {
+      setIsGeneratingDrill(false);
+    }
+  };
   const [selectedPearlModal, setSelectedPearlModal] = useState<BTRPearlItem | null>(null);
   const [activePearlsDeck, setActivePearlsDeck] = useState<BTRPearlItem[] | null>(null);
   const [activeLiveStreamModal, setActiveLiveStreamModal] = useState<BTRLiveSessionData | null>(null);
@@ -572,6 +724,7 @@ export function CoreBTRWarRoom({ onStartQBankDrill, onOpenNotes }: CoreBTRWarRoo
           const scanned = (await invoke("argus_scan_folder", {
             folder,
             minSizeMb: 0,
+            includePdfs: true,
           })) as Array<{ path: string; filename: string; size: number }>;
 
           const fileList = scanned.map((s) => ({
@@ -686,6 +839,10 @@ export function CoreBTRWarRoom({ onStartQBankDrill, onOpenNotes }: CoreBTRWarRoo
       setShowTwentyModal(true);
       return;
     }
+    if (dest === "gt_tracker") {
+      setShowGTTrackerModal(true);
+      return;
+    }
     if (dest === "cross_app_tests") {
       setShowCrossAppModal(true);
       return;
@@ -721,7 +878,7 @@ export function CoreBTRWarRoom({ onStartQBankDrill, onOpenNotes }: CoreBTRWarRoo
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key === "k") {
         e.preventDefault();
-        setShowPdfSearchModal(true);
+        setShowTriLinkSearchModal(true);
       }
     };
     window.addEventListener("keydown", handleKeyDown);
@@ -749,10 +906,10 @@ export function CoreBTRWarRoom({ onStartQBankDrill, onOpenNotes }: CoreBTRWarRoo
             {/* Goal Selector Chip (from official app) */}
             <div
               onClick={() => setShowGoalModal(true)}
-              className="flex items-center gap-1.5 rounded-xl bg-canvas border border-edge-soft px-3 py-1 text-xs font-semibold text-ink hover:border-indigo-500/40 cursor-pointer transition select-none"
+              className="flex items-center gap-1.5 rounded-xl bg-canvas border border-edge-soft px-3 py-1 text-xs font-semibold text-ink hover:border-edge cursor-pointer transition select-none"
               title="Click to switch your examination goal"
             >
-              <span className="text-indigo-400 font-bold max-w-[140px] sm:max-w-none truncate">{currentGoal.name}</span>
+              <span className="text-ink-muted font-bold max-w-[140px] sm:max-w-none truncate">{currentGoal.name}</span>
               <span className="text-[10px] text-ink-muted">| My Goal</span>
               <ChevronDown size={12} className="text-ink-muted shrink-0" />
             </div>
@@ -771,22 +928,23 @@ export function CoreBTRWarRoom({ onStartQBankDrill, onOpenNotes }: CoreBTRWarRoo
               href="https://www.instagram.com/corebtr/"
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center gap-1.5 rounded-xl bg-[#1767be]/15 border border-[#1767be]/30 px-2.5 py-1 text-xs font-bold text-[#4da2ff] hover:border-[#4da2ff]/50 hover:bg-[#1767be]/25 transition shadow-xs"
+              className="flex items-center gap-1.5 rounded-xl bg-white/10 border border-edge px-2.5 py-1 text-xs font-bold text-ink-muted hover:border-white/20 hover:bg-white/15 transition shadow-xs"
               title="Official Dr. Zainab Vora CoreBTR Instagram (@corebtr)"
             >
-              <InstagramIcon size={13} className="text-[#4da2ff]" />
+              <InstagramIcon size={13} className="text-ink-muted" />
               <span className="hidden sm:inline">@corebtr</span>
-              <ExternalLink size={10} className="text-[#4da2ff]/70" />
+              <ExternalLink size={10} className="text-ink-muted" />
             </a>
 
-            {/* Global Search Omnibar */}
+            {/* Global Tri-Link Multimodal Search Omnibar */}
             <button
               type="button"
-              onClick={() => setShowPdfSearchModal(true)}
-              className="flex items-center gap-2 rounded-xl bg-canvas border border-edge-soft px-3 py-1.5 text-xs text-ink-muted hover:text-ink hover:border-[#1767be]/40 transition shadow-xs w-36 sm:w-60"
+              onClick={() => setShowTriLinkSearchModal(true)}
+              className="flex items-center gap-2 rounded-xl bg-canvas border border-edge-soft px-3 py-1.5 text-xs text-ink-muted hover:text-ink hover:border-edge transition shadow-xs w-36 sm:w-60"
+              title="Tri-Link Search across 5,602 Qs, 61 Video Chapters, & Frontier Vault (⌘K)"
             >
-              <Search size={13} className="text-[#4da2ff] shrink-0" />
-              <span className="truncate">Search PDFs, topics...</span>
+              <Search size={13} className="text-ink-muted shrink-0" />
+              <span className="truncate">Tri-Link search (⌘K)...</span>
               <kbd className="ml-auto hidden sm:inline-block font-mono text-[10px] bg-elevated px-1.5 py-0.5 rounded border border-edge text-ink-muted">
                 ⌘K
               </kbd>
@@ -794,7 +952,7 @@ export function CoreBTRWarRoom({ onStartQBankDrill, onOpenNotes }: CoreBTRWarRoo
 
             {/* User Avatar ST / AM */}
             <div
-              className="h-8 w-8 rounded-full bg-[#1767be] text-white font-bold text-xs flex items-center justify-center ring-2 ring-[#4da2ff]/30 shadow-xs cursor-pointer"
+              className="h-8 w-8 rounded-full bg-white text-black font-bold text-xs flex items-center justify-center ring-2 ring-white/30 shadow-xs cursor-pointer"
               title="Dr. Anupam Mahato"
             >
               AM
@@ -859,15 +1017,15 @@ export function CoreBTRWarRoom({ onStartQBankDrill, onOpenNotes }: CoreBTRWarRoo
           {activeDestination === "today" && (
             <div className="flex flex-col gap-6 animate-in fade-in duration-200">
               {/* BTR Triad Framework Selector (Believe • Trust • Revise) & Offline Banner */}
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 rounded-2xl bg-[#0d1b4b]/90 border border-[#1767be]/30 shadow-md">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 rounded-2xl bg-surface/90 border border-edge shadow-md">
                 <div className="flex items-center gap-2">
-                  <span className="text-[10px] font-extrabold uppercase tracking-widest text-[#4da2ff] bg-[#1767be]/20 px-2.5 py-1 rounded-lg border border-[#1767be]/30">
+                  <span className="text-[10px] font-extrabold uppercase tracking-widest text-ink-muted bg-white/10 px-2.5 py-1 rounded-lg border border-edge">
                     BTR Framework
                   </span>
                   <div className="flex items-center gap-1 text-xs font-bold text-white">
-                    <span className="text-[#feb122]">Believe</span>
+                    <span className="text-amber-400">Believe</span>
                     <span className="text-white/30">•</span>
-                    <span className="text-[#4da2ff]">Trust</span>
+                    <span className="text-ink-muted">Trust</span>
                     <span className="text-white/30">•</span>
                     <span className="text-white">Revise</span>
                   </div>
@@ -875,13 +1033,13 @@ export function CoreBTRWarRoom({ onStartQBankDrill, onOpenNotes }: CoreBTRWarRoo
 
                 <div className="flex items-center gap-2 text-xs">
                   <span className="flex items-center gap-1.5 text-white/80 bg-white/5 border border-white/10 px-3 py-1 rounded-xl font-mono text-[11px]">
-                    <span className="h-2 w-2 rounded-full bg-[#4da2ff] animate-pulse" />
+                    <span className="h-2 w-2 rounded-full bg-accent animate-pulse" />
                     <span>61 Videos & 32 PDFs Offline</span>
                   </span>
                   <button
                     type="button"
                     onClick={handleOpenFolderPicker}
-                    className="text-[#4da2ff] hover:underline text-xs font-semibold"
+                    className="text-ink-muted hover:underline text-xs font-semibold"
                   >
                     /Downloads/BTR
                   </button>
@@ -889,7 +1047,7 @@ export function CoreBTRWarRoom({ onStartQBankDrill, onOpenNotes }: CoreBTRWarRoo
               </div>
 
               {/* 1. Official CoreBTR Hero Rankers Banner (from official CoreBTR App) */}
-              <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-[#0d1b4b] via-[#1d204b] to-[#1767be] p-6 md:p-8 text-white shadow-xl flex flex-col md:flex-row items-center justify-between gap-6 border border-[#1767be]/40">
+              <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-surface via-elevated to-surface p-6 md:p-8 text-white shadow-xl flex flex-col md:flex-row items-center justify-between gap-6 border border-edge">
                 <div className="flex flex-col gap-2 relative z-10">
                   <div className="flex items-center gap-2">
                     <span className="px-2.5 py-0.5 rounded-full bg-white/20 text-white font-mono text-[10px] font-extrabold uppercase tracking-wider backdrop-blur-md">
@@ -908,7 +1066,7 @@ export function CoreBTRWarRoom({ onStartQBankDrill, onOpenNotes }: CoreBTRWarRoo
                   <h2 className="text-2xl md:text-3xl font-black tracking-tight leading-tight">
                     100+ STUDENTS IN TOP 200 RANKERS
                   </h2>
-                  <span className="text-sm md:text-base font-bold text-[#4da2ff]">
+                  <span className="text-sm md:text-base font-bold text-ink-muted">
                     INICET MAY 2026 are From CoreBTR
                   </span>
                   <p className="text-xs text-white/80 mt-1 max-w-lg">
@@ -920,7 +1078,7 @@ export function CoreBTRWarRoom({ onStartQBankDrill, onOpenNotes }: CoreBTRWarRoo
                   <button
                     type="button"
                     onClick={() => setShowCustomModuleModal(true)}
-                    className="px-5 py-2.5 rounded-2xl bg-white text-[#1d204b] font-extrabold text-xs shadow-lg hover:bg-white/90 transition"
+                    className="px-5 py-2.5 rounded-2xl bg-white text-black font-extrabold text-xs shadow-lg hover:bg-white/90 transition"
                   >
                     + Create Custom Module
                   </button>
@@ -934,9 +1092,62 @@ export function CoreBTRWarRoom({ onStartQBankDrill, onOpenNotes }: CoreBTRWarRoo
                 </div>
               </div>
 
-              {/* 2. Official Quick Actions 5-Pill Grid */}
-              <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+              {/* Today's AIR < 100 Rank Maximization Prescription Card */}
+              <div className="p-6 rounded-3xl bg-gradient-to-r from-amber-500/10 via-surface to-elevated border border-amber-500/30 shadow-xl flex flex-col md:flex-row items-start md:items-center justify-between gap-6 relative overflow-hidden">
+                <div className="flex flex-col gap-2 relative z-10">
+                  <div className="flex items-center gap-2">
+                    <span className="px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40 font-mono text-[10px] font-extrabold uppercase tracking-wider">
+                      Today&apos;s Prescription • AIR &lt; 100
+                    </span>
+                    <span className="text-[11px] font-bold text-white/60">
+                      ~45 Min Precision Sprint
+                    </span>
+                  </div>
+
+                  <h3 className="text-xl md:text-2xl font-black text-white tracking-tight">
+                    Autonomous Rank Maximization Queue
+                  </h3>
+
+                  <div className="flex flex-wrap items-center gap-3 text-xs text-white/80 pt-1">
+                    <span className="flex items-center gap-1.5 bg-white/5 border border-white/10 px-3 py-1 rounded-xl">
+                      <Flame size={13} className="text-amber-400" />
+                      <span>{summary.dueTodayCount > 0 ? summary.dueTodayCount : 10} FSRS Due Cards</span>
+                    </span>
+                    <span className="flex items-center gap-1.5 bg-white/5 border border-white/10 px-3 py-1 rounded-xl">
+                      <Zap size={13} className="text-amber-400" />
+                      <span>1 Mini Test (Surprise Drop)</span>
+                    </span>
+                    <span className="flex items-center gap-1.5 bg-white/5 border border-white/10 px-3 py-1 rounded-xl">
+                      <Award size={13} className="text-amber-400" />
+                      <span>5 Top-100 Frontier Tie-Breakers</span>
+                    </span>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2 relative z-10 shrink-0 w-full md:w-auto">
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      const qs = await generateAIR100Prescription();
+                      onStartQBankDrill?.("Today's AIR < 100 Prescription", qs);
+                    }}
+                    className="w-full md:w-auto px-6 py-3 rounded-2xl bg-white hover:bg-white/90 text-black font-extrabold text-xs shadow-lg transition flex items-center justify-center gap-2"
+                  >
+                    <Play size={14} className="fill-black" />
+                    <span>Launch Today&apos;s Prescription (25 Qs)</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* 2. Official Quick Actions 7-Pill Grid */}
+              <div className="grid grid-cols-2 sm:grid-cols-7 gap-3">
                 {[
+                  {
+                    id: "audio_pod",
+                    label: "Audio Pod",
+                    icon: Headphones,
+                    action: () => handleOpenAudioPod(),
+                  },
                   {
                     id: "bookmarks",
                     label: "Bookmarks",
@@ -948,6 +1159,12 @@ export function CoreBTRWarRoom({ onStartQBankDrill, onOpenNotes }: CoreBTRWarRoo
                     label: "Custom Module",
                     icon: SlidersHorizontal,
                     action: () => setShowCustomModuleModal(true),
+                  },
+                  {
+                    id: "frontier_vault",
+                    label: "Top-100 Vault",
+                    icon: Award,
+                    action: () => setShowFrontierVaultModal(true),
                   },
                   {
                     id: "downloads",
@@ -974,15 +1191,154 @@ export function CoreBTRWarRoom({ onStartQBankDrill, onOpenNotes }: CoreBTRWarRoo
                       key={act.id}
                       type="button"
                       onClick={act.action}
-                      className="flex flex-col items-center justify-center gap-2 p-3.5 rounded-2xl bg-[#1d204b]/70 border border-[#1767be]/25 hover:border-[#4da2ff]/50 hover:bg-[#1d204b] transition shadow-xs group"
+                      className="flex flex-col items-center justify-center gap-2 p-3.5 rounded-2xl bg-elevated/70 border border-edge hover:border-white/20 hover:bg-elevated transition shadow-xs group"
                     >
-                      <div className="h-9 w-9 rounded-xl bg-[#1767be]/20 text-[#4da2ff] group-hover:bg-[#1767be] group-hover:text-white transition flex items-center justify-center">
+                      <div className="h-9 w-9 rounded-xl bg-white/10 text-white/90 group-hover:bg-white text-black group-hover:text-white transition flex items-center justify-center">
                         <Icon size={16} />
                       </div>
                       <span className="text-xs font-bold text-white">{act.label}</span>
                     </button>
                   );
                 })}
+              </div>
+
+              {/* Next-Gen AI Clinical Lab & Multimodal Suite */}
+              <div className="flex flex-col gap-3">
+                <span className="text-xs font-bold uppercase tracking-wider text-white/60 flex items-center gap-2">
+                  <Sparkles size={13} className="text-purple-400" />
+                  <span>Next-Gen AI Clinical Lab</span>
+                </span>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3">
+                  {/* Card 1: Tri-Link Unified Search */}
+                  <div className="p-4 rounded-2xl bg-gradient-to-br from-purple-500/10 via-elevated/70 to-blue-500/10 border border-edge flex flex-col justify-between gap-3 shadow-xs hover:border-purple-400/40 transition group">
+                    <div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded-md bg-purple-500/15 text-purple-300 border border-purple-500/30">
+                          Multimodal Omni-Search
+                        </span>
+                        <Search size={14} className="text-purple-300" />
+                      </div>
+                      <h4 className="text-sm font-bold text-white mt-2">
+                        Fast Medical Search
+                      </h4>
+                      <p className="text-xs text-white/70 mt-1">
+                        Search across all questions, video chapters, and high-yield notes.
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setShowTriLinkSearchModal(true)}
+                      className="w-full py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs transition shadow-xs flex items-center justify-center gap-1.5"
+                    >
+                      <span>Search Everything (⌘K)</span>
+                      <ArrowRight size={13} />
+                    </button>
+                  </div>
+
+                  {/* Card 2: Voice Practice */}
+                  <div className="p-4 rounded-2xl bg-gradient-to-br from-emerald-500/10 via-elevated/70 to-teal-500/10 border border-edge flex flex-col justify-between gap-3 shadow-xs hover:border-emerald-400/40 transition group">
+                    <div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded-md bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
+                          Voice Practice
+                        </span>
+                        <Mic size={14} className="text-emerald-300" />
+                      </div>
+                      <h4 className="text-sm font-bold text-white mt-2">
+                        Voice Viva Practice
+                      </h4>
+                      <p className="text-xs text-white/70 mt-1">
+                        Practice medical viva questions aloud using your microphone and get instant feedback.
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setShowVoiceVivaModal(true)}
+                      className="w-full py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs transition shadow-xs flex items-center justify-center gap-1.5"
+                    >
+                      <span>Start Voice Practice</span>
+                      <Mic size={13} />
+                    </button>
+                  </div>
+
+                  {/* Card 3: Interactive Patient Cases */}
+                  <div className="p-4 rounded-2xl bg-gradient-to-br from-amber-500/10 via-elevated/70 to-rose-500/10 border border-edge flex flex-col justify-between gap-3 shadow-xs hover:border-amber-400/40 transition group">
+                    <div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded-md bg-amber-500/15 text-amber-300 border border-amber-500/30">
+                          Patient Scenarios
+                        </span>
+                        <GitBranch size={14} className="text-amber-300" />
+                      </div>
+                      <h4 className="text-sm font-bold text-white mt-2">
+                        Interactive Patient Cases
+                      </h4>
+                      <p className="text-xs text-white/70 mt-1">
+                        Step-by-step clinical cases where your diagnosis and management choices guide the outcome.
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setShowBranchingTreeModal(true)}
+                      className="w-full py-2 rounded-xl bg-amber-600 hover:bg-amber-500 text-white font-bold text-xs transition shadow-xs flex items-center justify-center gap-1.5"
+                    >
+                      <span>Start Patient Cases</span>
+                      <Play size={13} className="fill-white" />
+                    </button>
+                  </div>
+
+                  {/* Card 4: War Room Head-to-Head Mock Mesh */}
+                  <div className="p-4 rounded-2xl bg-gradient-to-br from-rose-500/10 via-elevated/70 to-orange-500/10 border border-edge flex flex-col justify-between gap-3 shadow-xs hover:border-rose-400/40 transition group">
+                    <div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded-md bg-rose-500/15 text-rose-300 border border-rose-500/30">
+                          Quiz Battle
+                        </span>
+                        <Zap size={14} className="text-rose-300" />
+                      </div>
+                      <h4 className="text-sm font-bold text-white mt-2">
+                        Head-to-Head Quiz
+                      </h4>
+                      <p className="text-xs text-white/70 mt-1">
+                        Timed question challenge with friends on your Wi-Fi or practice against AI.
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setShowWarRoomClashModal(true)}
+                      className="w-full py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs transition shadow-xs flex items-center justify-center gap-1.5"
+                    >
+                      <span>Start Quiz Challenge</span>
+                      <Zap size={13} />
+                    </button>
+                  </div>
+
+                  {/* Card 5: Real-Time ECG & Rhythm Strip Simulator */}
+                  <div className="p-4 rounded-2xl bg-gradient-to-br from-emerald-500/10 via-elevated/70 to-cyan-500/10 border border-edge flex flex-col justify-between gap-3 shadow-xs hover:border-emerald-400/40 transition group">
+                    <div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded-md bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
+                          Telemetry Lab
+                        </span>
+                        <Activity size={14} className="text-emerald-300 animate-pulse" />
+                      </div>
+                      <h4 className="text-sm font-bold text-white mt-2">
+                        Real-Time ECG Strip Simulator
+                      </h4>
+                      <p className="text-xs text-white/70 mt-1">
+                        Mathematical cardiac wave synthesis with diagnostic calipers and STEMI / Arrhythmia presets.
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setShowECGModal(true)}
+                      className="w-full py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs transition shadow-xs flex items-center justify-center gap-1.5"
+                    >
+                      <span>Launch ECG Strip</span>
+                      <Activity size={13} />
+                    </button>
+                  </div>
+                </div>
               </div>
 
               {/* 3. Official What's On Cards Row (Distraction-free CoreBTR Obsidian Style) */}
@@ -992,9 +1348,9 @@ export function CoreBTRWarRoom({ onStartQBankDrill, onOpenNotes }: CoreBTRWarRoo
                 </span>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                   {/* Card A: Core Drop Surprise Test-6 */}
-                  <div className="p-4 rounded-2xl bg-[#1d204b]/70 border border-[#1767be]/30 flex flex-col justify-between gap-3 shadow-xs hover:border-[#4da2ff]/50 transition">
+                  <div className="p-4 rounded-2xl bg-elevated/70 border border-edge flex flex-col justify-between gap-3 shadow-xs hover:border-white/20 transition">
                     <div>
-                      <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded-md bg-[#feb122]/15 text-[#feb122] border border-[#feb122]/30">
+                      <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded-md bg-amber-500/15 text-amber-300 border border-amber-500/30">
                         Daily 3 PM Drop
                       </span>
                       <h4 className="text-sm font-bold text-white mt-2">
@@ -1007,7 +1363,7 @@ export function CoreBTRWarRoom({ onStartQBankDrill, onOpenNotes }: CoreBTRWarRoo
                     <button
                       type="button"
                       onClick={() => onStartQBankDrill?.("Core Drop Surprise Test-6")}
-                      className="w-full py-2 rounded-xl bg-[#1767be] hover:bg-[#155bb0] text-white font-extrabold text-xs shadow transition flex items-center justify-center gap-1.5"
+                      className="w-full py-2 rounded-xl bg-white hover:bg-white/90 text-black font-semibold font-extrabold text-xs shadow transition flex items-center justify-center gap-1.5"
                     >
                       <Play size={12} fill="currentColor" />
                       <span>Attempt Now</span>
@@ -1015,13 +1371,13 @@ export function CoreBTRWarRoom({ onStartQBankDrill, onOpenNotes }: CoreBTRWarRoo
                   </div>
 
                   {/* Card B: Facing a Tech Issue in the App? Report Now */}
-                  <div className="p-4 rounded-2xl bg-[#1d204b]/70 border border-[#1767be]/30 flex flex-col justify-between gap-3 shadow-xs hover:border-[#4da2ff]/50 transition">
+                  <div className="p-4 rounded-2xl bg-elevated/70 border border-edge flex flex-col justify-between gap-3 shadow-xs hover:border-white/20 transition">
                     <div>
                       <div className="flex items-center justify-between">
-                        <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded-md bg-[#1767be]/20 text-[#4da2ff] border border-[#1767be]/30">
+                        <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded-md bg-white/10 text-white/90 border border-white/15">
                           Tech Support
                         </span>
-                        <div className="h-6 w-6 rounded-lg bg-[#1767be]/20 text-[#4da2ff] flex items-center justify-center">
+                        <div className="h-6 w-6 rounded-lg bg-white/10 text-white/90 flex items-center justify-center">
                           <AlertTriangle size={13} />
                         </div>
                       </div>
@@ -1035,7 +1391,7 @@ export function CoreBTRWarRoom({ onStartQBankDrill, onOpenNotes }: CoreBTRWarRoo
                     <button
                       type="button"
                       onClick={() => setShowTechIssueModal(true)}
-                      className="w-full py-2 rounded-xl bg-[#1d204b] hover:bg-[#252a60] text-white border border-[#1767be]/40 font-extrabold text-xs shadow transition flex items-center justify-center gap-1.5"
+                      className="w-full py-2 rounded-xl bg-elevated hover:bg-raised text-white border border-edge font-extrabold text-xs shadow transition flex items-center justify-center gap-1.5"
                     >
                       <span>Report Now</span>
                       <ChevronRight size={13} />
@@ -1043,9 +1399,9 @@ export function CoreBTRWarRoom({ onStartQBankDrill, onOpenNotes }: CoreBTRWarRoo
                   </div>
 
                   {/* Card C: FMGE CoreBTR Plan */}
-                  <div className="p-4 rounded-2xl bg-[#1d204b]/70 border border-[#1767be]/30 flex flex-col justify-between gap-3 shadow-xs hover:border-[#4da2ff]/50 transition">
+                  <div className="p-4 rounded-2xl bg-elevated/70 border border-edge flex flex-col justify-between gap-3 shadow-xs hover:border-white/20 transition">
                     <div>
-                      <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded-md bg-[#1767be]/20 text-[#4da2ff] border border-[#1767be]/30">
+                      <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded-md bg-white/10 text-white/90 border border-white/15">
                         Exam Schedule
                       </span>
                       <h4 className="text-sm font-bold text-white mt-2">
@@ -1058,7 +1414,7 @@ export function CoreBTRWarRoom({ onStartQBankDrill, onOpenNotes }: CoreBTRWarRoo
                     <button
                       type="button"
                       onClick={() => handleNavigate("plan")}
-                      className="w-full py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-extrabold text-xs shadow transition flex items-center justify-center gap-1.5"
+                      className="w-full py-2 rounded-xl bg-white hover:bg-white/90 text-black font-semibold font-extrabold text-xs shadow transition flex items-center justify-center gap-1.5"
                     >
                       <span>View FMGE Plan</span>
                       <ChevronRight size={13} />
@@ -1082,15 +1438,15 @@ export function CoreBTRWarRoom({ onStartQBankDrill, onOpenNotes }: CoreBTRWarRoo
                       <span className="rounded-full bg-elevated px-3 py-1 text-xs font-semibold text-ink-muted border border-edge-soft">
                         Dr. Zainab Vora Curriculum
                       </span>
-                      <span className="rounded-full bg-[#1767be]/20 text-[#4da2ff] border border-[#1767be]/35 px-3 py-1 text-xs font-semibold">
+                      <span className="rounded-full bg-white/10 text-white/90 border border-white/15 px-3 py-1 text-xs font-semibold">
                         19 Subjects Integrated
                       </span>
                     </div>
                     <h2 className="text-2xl md:text-3xl font-extrabold tracking-tight text-ink">
-                      NEET-PG 2027 Strategic Command & War Room
+                      NEET-PG 2027 Revision Dashboard
                     </h2>
                     <p className="mt-1 text-sm text-ink-muted max-w-2xl leading-relaxed">
-                      Phased syllabus execution, unannotated workbooks, 100 super-volatile tables, and synced local video lecture playback.
+                      Video lectures, study notes, high-yield facts, and test schedules for all 19 medical subjects.
                     </p>
                   </div>
 
@@ -1113,6 +1469,25 @@ export function CoreBTRWarRoom({ onStartQBankDrill, onOpenNotes }: CoreBTRWarRoo
                       </div>
                       <span className="text-[10.5px] text-ink-muted">{countdowns.neetPg.targetDateStr}</span>
                     </div>
+
+                    {/* Next GT Live Radar Tracker */}
+                    <button
+                      type="button"
+                      onClick={() => setShowGTTrackerModal(true)}
+                      className="flex flex-col items-center justify-center rounded-2xl bg-canvas/80 border border-emerald-500/40 hover:border-emerald-500 px-4 py-3 min-w-[160px] shadow-sm transition hover:scale-[1.02] text-center cursor-pointer group"
+                      title="Open Cross-Platform Next Grand Test Tracker"
+                    >
+                      <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-emerald-400">
+                        <Radio size={11} className={nextGTStatus?.isLive ? "animate-pulse" : ""} />
+                        <span>{nextGTStatus?.isLive ? "GT LIVE NOW" : "NEXT GT MOCK"}</span>
+                      </div>
+                      <div className="text-sm font-black text-ink tracking-tight mt-0.5 line-clamp-1 max-w-[150px] group-hover:text-accent transition">
+                        {nextGT ? nextGT.testName.replace(/All-India|National/gi, "").trim() : "View GT Radar"}
+                      </div>
+                      <span className="text-[10.5px] font-semibold text-emerald-400/90 mt-0.5">
+                        {nextGTStatus ? nextGTStatus.countdownLabel : "Track 5 Platforms"}
+                      </span>
+                    </button>
                   </div>
                 </div>
 
@@ -1133,12 +1508,12 @@ export function CoreBTRWarRoom({ onStartQBankDrill, onOpenNotes }: CoreBTRWarRoo
                           cy="50"
                           r="42"
                           fill="none"
-                          stroke="#1767be"
+                          stroke="currentColor"
                           strokeWidth="6"
                           strokeLinecap="round"
                           strokeDasharray={2 * Math.PI * 42}
                           strokeDashoffset={2 * Math.PI * 42 * (1 - Math.min(100, readiness.completionPercentage) / 100)}
-                          className="transition-all duration-1000 ease-out"
+                          className="text-white/40 transition-all duration-1000 ease-out"
                         />
 
                         {/* Middle Ring: Mastered Subjects (Light Medical Blue, 19 target) */}
@@ -1147,12 +1522,12 @@ export function CoreBTRWarRoom({ onStartQBankDrill, onOpenNotes }: CoreBTRWarRoo
                           cy="50"
                           r="32"
                           fill="none"
-                          stroke="#4da2ff"
+                          stroke="currentColor"
                           strokeWidth="6"
                           strokeLinecap="round"
                           strokeDasharray={2 * Math.PI * 32}
                           strokeDashoffset={2 * Math.PI * 32 * (1 - Math.min(19, readiness.masteredCount + readiness.annotatedCount) / 19)}
-                          className="transition-all duration-1000 ease-out"
+                          className="text-accent transition-all duration-1000 ease-out"
                         />
 
                         {/* Inner Ring: Linked BTR Videos (Warm Gold, 61 target) */}
@@ -1161,12 +1536,12 @@ export function CoreBTRWarRoom({ onStartQBankDrill, onOpenNotes }: CoreBTRWarRoo
                           cy="50"
                           r="22"
                           fill="none"
-                          stroke="#feb122"
+                          stroke="currentColor"
                           strokeWidth="6"
                           strokeLinecap="round"
                           strokeDasharray={2 * Math.PI * 22}
                           strokeDashoffset={2 * Math.PI * 22 * (1 - Math.min(61, libraryState.totalVideosFound) / 61)}
-                          className="transition-all duration-1000 ease-out"
+                          className="text-amber-400 transition-all duration-1000 ease-out"
                         />
                       </svg>
 
@@ -1175,7 +1550,7 @@ export function CoreBTRWarRoom({ onStartQBankDrill, onOpenNotes }: CoreBTRWarRoo
                         <span className="text-base font-black text-ink leading-none">
                           {readiness.completionPercentage}%
                         </span>
-                        <span className="text-[8.5px] font-bold uppercase tracking-wider text-[#4da2ff] mt-0.5">
+                        <span className="text-[8.5px] font-bold uppercase tracking-wider text-ink-muted mt-0.5">
                           Readiness
                         </span>
                       </div>
@@ -1184,12 +1559,12 @@ export function CoreBTRWarRoom({ onStartQBankDrill, onOpenNotes }: CoreBTRWarRoo
                     {/* Ring Legend & Telemetry */}
                     <div className="flex flex-col gap-1.5 text-xs">
                       <div className="flex items-center gap-2">
-                        <span className="h-2 w-2 rounded-full bg-[#1767be] shrink-0" />
+                        <span className="h-2 w-2 rounded-full bg-white text-black shrink-0" />
                         <span className="text-ink-muted">Mastery Readiness:</span>
                         <strong className="text-ink font-bold">{readiness.completionPercentage}%</strong>
                       </div>
                       <div className="flex items-center gap-2">
-                        <span className="h-2 w-2 rounded-full bg-[#4da2ff] shrink-0" />
+                        <span className="h-2 w-2 rounded-full bg-accent shrink-0" />
                         <span className="text-ink-muted">Subjects Mastered:</span>
                         <strong className="text-ink font-bold">{readiness.masteredCount + readiness.annotatedCount}/19</strong>
                       </div>
@@ -1198,20 +1573,33 @@ export function CoreBTRWarRoom({ onStartQBankDrill, onOpenNotes }: CoreBTRWarRoo
                         <span className="text-ink-muted">Videos Linked:</span>
                         <strong className="text-ink font-bold">{libraryState.totalVideosFound}/61</strong>
                       </div>
+                      <div className="flex items-center gap-2">
+                        <span className="h-2 w-2 rounded-full bg-emerald-400 shrink-0" />
+                        <span className="text-ink-muted">Offline Files Verified:</span>
+                        <strong className="text-ink font-bold">
+                          {USER_LOCAL_BTR_MANIFEST.masterPdfs.length +
+                            USER_LOCAL_BTR_MANIFEST.megaBtrVideos.length +
+                            USER_LOCAL_BTR_MANIFEST.tndVideos.length +
+                            USER_LOCAL_BTR_MANIFEST.tndPdfs.length +
+                            USER_LOCAL_BTR_MANIFEST.grandTests.length +
+                            USER_LOCAL_BTR_MANIFEST.subjectFiles.length}{" "}
+                          Files
+                        </strong>
+                      </div>
                     </div>
                   </div>
 
                   {/* Right Telemetry Cards */}
                   <div className="grid grid-cols-2 gap-3 w-full md:w-auto">
-                    <div className="rounded-2xl bg-[#1d204b]/70 border border-[#1767be]/30 p-3.5 min-w-[140px] flex flex-col">
+                    <div className="rounded-2xl bg-elevated/70 border border-edge p-3.5 min-w-[140px] flex flex-col">
                       <span className="text-[10.5px] font-medium text-white/70">Grand Tests Logged</span>
                       <div className="text-xl font-black text-white mt-0.5">{gtRecords.length} tests</div>
-                      <span className="text-[10px] text-[#4da2ff]">Latest: {gtRecords[0]?.percentile ?? 0}%ile</span>
+                      <span className="text-[10px] text-ink-muted">Latest: {gtRecords[0]?.percentile ?? 0}%ile</span>
                     </div>
 
-                    <div className="rounded-2xl bg-[#1d204b]/70 border border-[#1767be]/30 p-3.5 min-w-[140px] flex flex-col">
+                    <div className="rounded-2xl bg-elevated/70 border border-edge p-3.5 min-w-[140px] flex flex-col">
                       <span className="text-[10.5px] font-medium text-white/70">Volatiles Active</span>
-                      <div className="text-xl font-black text-[#feb122] mt-0.5">100 Tables</div>
+                      <div className="text-xl font-black text-amber-400 mt-0.5">100 Tables</div>
                       <span className="text-[10px] text-white/60">FSRS Repetition active</span>
                     </div>
                   </div>
@@ -1221,14 +1609,14 @@ export function CoreBTRWarRoom({ onStartQBankDrill, onOpenNotes }: CoreBTRWarRoo
               {/* Row 1: Priority Active Learning Cards */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {/* Priority Card A: Daily Volatile Drip (FSRS Spaced Repetition) */}
-                <div className="rounded-2xl border border-[#1767be]/30 bg-[#1d204b]/70 backdrop-blur-md p-5 flex flex-col justify-between gap-4 shadow-sm hover:border-[#4da2ff]/50 transition">
+                <div className="rounded-2xl border border-edge bg-elevated/70 backdrop-blur-md p-5 flex flex-col justify-between gap-4 shadow-sm hover:border-white/20 transition">
                   <div className="flex flex-col gap-2">
                     <div className="flex items-center justify-between">
-                      <span className="flex items-center gap-1.5 rounded-full bg-[#1767be]/20 px-2.5 py-0.5 text-[11px] font-bold text-[#4da2ff] border border-[#1767be]/30">
-                        <Droplets size={12} className="text-[#4da2ff]" />
+                      <span className="flex items-center gap-1.5 rounded-full bg-white/10 px-2.5 py-0.5 text-[11px] font-bold text-ink-muted border border-edge">
+                        <Droplets size={12} className="text-ink-muted" />
                         <span>FSRS Spaced Repetition</span>
                       </span>
-                      <span className="text-xs font-mono text-[#feb122] font-bold">
+                      <span className="text-xs font-mono text-amber-400 font-bold">
                         {summary.streakDays} Day Streak 🔥
                       </span>
                     </div>
@@ -1238,14 +1626,14 @@ export function CoreBTRWarRoom({ onStartQBankDrill, onOpenNotes }: CoreBTRWarRoo
                     </p>
                   </div>
 
-                  <div className="flex items-center justify-between pt-2 border-t border-[#1767be]/20">
+                  <div className="flex items-center justify-between pt-2 border-t border-edge">
                     <span className="text-xs text-white/70">
-                      <strong className="text-[#4da2ff] font-bold font-mono">{summary.dueTodayCount}</strong> cards due today
+                      <strong className="text-ink-muted font-bold font-mono">{summary.dueTodayCount}</strong> cards due today
                     </span>
                     <button
                       type="button"
                       onClick={() => setShowDripModal(true)}
-                      className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-[#1767be] hover:bg-[#155bb0] text-white border border-[#1767be]/40 text-xs font-bold transition shadow-xs"
+                      className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-white hover:bg-white/90 text-black font-semibold border border-edge text-xs font-bold transition shadow-xs"
                     >
                       <span>Start 5-Min Drip</span>
                       <ChevronRight size={13} />
@@ -1254,15 +1642,15 @@ export function CoreBTRWarRoom({ onStartQBankDrill, onOpenNotes }: CoreBTRWarRoo
                 </div>
 
                 {/* Priority Card B: Dual Split Workstation */}
-                <div className="rounded-2xl border border-[#1767be]/30 bg-[#1d204b]/70 backdrop-blur-md p-5 flex flex-col justify-between gap-4 shadow-sm hover:border-[#4da2ff]/50 transition">
+                <div className="rounded-2xl border border-edge bg-elevated/70 backdrop-blur-md p-5 flex flex-col justify-between gap-4 shadow-sm hover:border-white/20 transition">
                   <div className="flex flex-col gap-2">
                     <div className="flex items-center justify-between">
-                      <span className="flex items-center gap-1.5 rounded-full bg-[#1767be]/20 px-2.5 py-0.5 text-[11px] font-bold text-[#4da2ff] border border-[#1767be]/30">
-                        <Layers size={12} className="text-[#4da2ff]" />
+                      <span className="flex items-center gap-1.5 rounded-full bg-white/10 px-2.5 py-0.5 text-[11px] font-bold text-ink-muted border border-edge">
+                        <Layers size={12} className="text-ink-muted" />
                         <span>Dual-Pane Studio</span>
                       </span>
                       {workstationSession && (
-                        <span className="text-[10.5px] font-bold text-[#4da2ff] bg-[#1767be]/20 px-2 py-0.5 rounded border border-[#1767be]/30">
+                        <span className="text-[10.5px] font-bold text-ink-muted bg-white/10 px-2 py-0.5 rounded border border-edge">
                           ACTIVE
                         </span>
                       )}
@@ -1275,14 +1663,14 @@ export function CoreBTRWarRoom({ onStartQBankDrill, onOpenNotes }: CoreBTRWarRoo
                     </p>
                   </div>
 
-                  <div className="flex items-center justify-between pt-2 border-t border-[#1767be]/20">
+                  <div className="flex items-center justify-between pt-2 border-t border-edge">
                     <span className="text-xs text-white/70">
                       {libraryState.totalVideosFound} local videos linked
                     </span>
                     <button
                       type="button"
                       onClick={() => handleNavigate("workstation")}
-                      className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-[#1767be] hover:bg-[#155bb0] text-white border border-[#1767be]/40 text-xs font-bold transition shadow-xs"
+                      className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-white hover:bg-white/90 text-black font-semibold border border-edge text-xs font-bold transition shadow-xs"
                     >
                       <span>{workstationSession ? "Resume Workstation" : "Launch Workstation"}</span>
                       <ChevronRight size={13} />
@@ -1294,11 +1682,11 @@ export function CoreBTRWarRoom({ onStartQBankDrill, onOpenNotes }: CoreBTRWarRoo
               {/* Row 2: Official YouTube Drops & 20th Subject Matrix */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {/* Official Broadcast Card */}
-                <div className="rounded-2xl border border-[#1767be]/30 bg-[#1d204b]/70 backdrop-blur-md p-5 flex flex-col justify-between gap-4 shadow-sm hover:border-[#4da2ff]/50 transition">
+                <div className="rounded-2xl border border-edge bg-elevated/70 backdrop-blur-md p-5 flex flex-col justify-between gap-4 shadow-sm hover:border-white/20 transition">
                   <div className="flex flex-col gap-2">
                     <div className="flex items-center justify-between">
-                      <span className="flex items-center gap-1.5 rounded-full bg-[#1767be]/20 px-2.5 py-0.5 text-[11px] font-bold text-[#4da2ff] border border-[#1767be]/30">
-                        <Radio size={12} className="animate-pulse text-[#4da2ff]" />
+                      <span className="flex items-center gap-1.5 rounded-full bg-white/10 px-2.5 py-0.5 text-[11px] font-bold text-ink-muted border border-edge">
+                        <Radio size={12} className="animate-pulse text-ink-muted" />
                         <span>Daily 3 PM Core Drop</span>
                       </span>
                       <span className="text-[10.5px] font-semibold text-white/60">@corebtrbyzainabvora</span>
@@ -1311,14 +1699,14 @@ export function CoreBTRWarRoom({ onStartQBankDrill, onOpenNotes }: CoreBTRWarRoo
                     </p>
                   </div>
 
-                  <div className="flex items-center justify-between pt-2 border-t border-[#1767be]/20">
-                    <span className="text-xs text-[#4da2ff] font-semibold">
+                  <div className="flex items-center justify-between pt-2 border-t border-edge">
+                    <span className="text-xs text-ink-muted font-semibold">
                       {CORE_BTR_BROADCASTS[0].durationLabel} • {CORE_BTR_BROADCASTS[0].categoryLabel}
                     </span>
                     <button
                       type="button"
                       onClick={() => setShowBroadcastsModal(true)}
-                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#1767be] hover:bg-[#155bb0] text-white border border-[#1767be]/40 text-xs font-bold transition shadow-xs"
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white hover:bg-white/90 text-black font-semibold border border-edge text-xs font-bold transition shadow-xs"
                     >
                       <span>Channel Broadcasts</span>
                       <ChevronRight size={13} />
@@ -1327,14 +1715,14 @@ export function CoreBTRWarRoom({ onStartQBankDrill, onOpenNotes }: CoreBTRWarRoo
                 </div>
 
                 {/* 20th Subject Card */}
-                <div className="rounded-2xl border border-[#1767be]/30 bg-[#1d204b]/70 backdrop-blur-md p-5 flex flex-col justify-between gap-4 shadow-sm hover:border-[#4da2ff]/50 transition">
+                <div className="rounded-2xl border border-edge bg-elevated/70 backdrop-blur-md p-5 flex flex-col justify-between gap-4 shadow-sm hover:border-white/20 transition">
                   <div className="flex flex-col gap-2">
                     <div className="flex items-center justify-between">
-                      <span className="flex items-center gap-1.5 rounded-full bg-[#feb122]/15 px-2.5 py-0.5 text-[11px] font-bold text-[#feb122] border border-[#feb122]/30">
-                        <Calculator size={12} className="text-[#feb122]" />
+                      <span className="flex items-center gap-1.5 rounded-full bg-amber-500/15 px-2.5 py-0.5 text-[11px] font-bold text-amber-400 border border-amber-500/30">
+                        <Calculator size={12} className="text-amber-400" />
                         <span>&quot;20th Subject&quot; Matrix</span>
                       </span>
-                      <span className="text-[10.5px] font-semibold text-[#feb122]">High-Yield Numbers</span>
+                      <span className="text-[10.5px] font-semibold text-amber-400">High-Yield Numbers</span>
                     </div>
                     <h3 className="text-sm font-bold text-white">
                       Biostatistics, DOCs & Bio-Medical Waste
@@ -1344,14 +1732,14 @@ export function CoreBTRWarRoom({ onStartQBankDrill, onOpenNotes }: CoreBTRWarRoo
                     </p>
                   </div>
 
-                  <div className="flex items-center justify-between pt-2 border-t border-[#1767be]/20">
+                  <div className="flex items-center justify-between pt-2 border-t border-edge">
                     <span className="text-xs text-white/70">
                       Sens, Spec, PPV, NPV formulas
                     </span>
                     <button
                       type="button"
                       onClick={() => setShowTwentyModal(true)}
-                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#1767be] hover:bg-[#155bb0] text-white border border-[#1767be]/40 text-xs font-bold transition shadow-xs"
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white hover:bg-white/90 text-black font-semibold border border-edge text-xs font-bold transition shadow-xs"
                     >
                       <span>Open Matrix</span>
                       <ChevronRight size={13} />
@@ -1371,42 +1759,42 @@ export function CoreBTRWarRoom({ onStartQBankDrill, onOpenNotes }: CoreBTRWarRoo
                       label: "T&D Simulator",
                       sub: "17 Exam Papers",
                       icon: Target,
-                      color: "text-[#4da2ff] border-[#1767be]/30 bg-[#1d204b]/70 hover:border-[#4da2ff]/60 hover:bg-[#1d204b]",
+                      color: "text-ink-muted border-edge bg-elevated/70 hover:border-white/20 hover:bg-elevated",
                       action: () => setShowTnDModal(true),
                     },
                     {
                       label: "3-Tier Pyramids",
                       sub: "Base to Tie-Breakers",
                       icon: Triangle,
-                      color: "text-[#4da2ff] border-[#1767be]/30 bg-[#1d204b]/70 hover:border-[#4da2ff]/60 hover:bg-[#1d204b]",
+                      color: "text-ink-muted border-edge bg-elevated/70 hover:border-white/20 hover:bg-elevated",
                       action: () => setShowPyramidsModal(true),
                     },
                     {
                       label: "Mega BTR 72h",
                       sub: "Rapid Revision Blitz",
                       icon: Zap,
-                      color: "text-[#feb122] border-[#1767be]/30 bg-[#1d204b]/70 hover:border-[#feb122]/60 hover:bg-[#1d204b]",
+                      color: "text-amber-400 border-edge bg-elevated/70 hover:border-[#feb122]/60 hover:bg-elevated",
                       action: () => setShowMarathonModal(true),
                     },
                     {
                       label: "Spotter Image Bank",
                       sub: "Active Recall Mask",
                       icon: Eye,
-                      color: "text-[#4da2ff] border-[#1767be]/30 bg-[#1d204b]/70 hover:border-[#4da2ff]/60 hover:bg-[#1d204b]",
+                      color: "text-ink-muted border-edge bg-elevated/70 hover:border-white/20 hover:bg-elevated",
                       action: () => setShowSpotterModal(true),
                     },
                     {
                       label: "Two-Step Cases",
                       sub: "Clinical Vignettes",
                       icon: Stethoscope,
-                      color: "text-[#4da2ff] border-[#1767be]/30 bg-[#1d204b]/70 hover:border-[#4da2ff]/60 hover:bg-[#1d204b]",
+                      color: "text-ink-muted border-edge bg-elevated/70 hover:border-white/20 hover:bg-elevated",
                       action: () => setShowVignetteModal(true),
                     },
                     {
                       label: "Cross-PDF Search",
                       sub: "32 Workbooks",
                       icon: Search,
-                      color: "text-[#4da2ff] border-[#1767be]/30 bg-[#1d204b]/70 hover:border-[#4da2ff]/60 hover:bg-[#1d204b]",
+                      color: "text-ink-muted border-edge bg-elevated/70 hover:border-white/20 hover:bg-elevated",
                       action: () => setShowPdfSearchModal(true),
                     },
                   ].map((drill) => {
@@ -1441,6 +1829,7 @@ export function CoreBTRWarRoom({ onStartQBankDrill, onOpenNotes }: CoreBTRWarRoo
                   subject={workstationSession.subject}
                   unannotatedPdf={workstationSession.unannotatedPdf}
                   annotatedPdf={workstationSession.annotatedPdf}
+                  initialTimestampSec={workstationSession.initialTimestampSec}
                 />
               ) : (
                 <div className="flex flex-col items-center justify-center p-12 text-center rounded-3xl border border-edge-soft bg-surface/40 min-h-[500px]">
@@ -1516,7 +1905,7 @@ export function CoreBTRWarRoom({ onStartQBankDrill, onOpenNotes }: CoreBTRWarRoo
                           onClick={() => setLibraryCategoryFilter(cat)}
                           className={`rounded-xl px-3.5 py-1.5 text-xs font-bold transition ${
                             libraryCategoryFilter === cat
-                              ? "bg-indigo-600 text-white shadow-sm"
+                              ? "bg-white text-black font-semibold shadow-sm"
                               : "text-ink-muted hover:text-ink hover:bg-elevated"
                           }`}
                         >
@@ -1533,14 +1922,14 @@ export function CoreBTRWarRoom({ onStartQBankDrill, onOpenNotes }: CoreBTRWarRoo
                           placeholder="Search subjects, pearls..."
                           value={searchQuery}
                           onChange={(e) => setSearchQuery(e.target.value)}
-                          className="h-9 w-44 md:w-56 rounded-xl bg-surface border border-edge-soft pl-9 pr-3 text-xs text-ink placeholder:text-ink-muted focus:border-indigo-500 focus:outline-none transition"
+                          className="h-9 w-44 md:w-56 rounded-xl bg-surface border border-edge-soft pl-9 pr-3 text-xs text-ink placeholder:text-ink-muted focus:border-edge focus:outline-none transition"
                         />
                       </div>
 
                       <button
                         type="button"
                         onClick={() => setShowCustomModuleModal(true)}
-                        className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-indigo-600/15 border border-indigo-500/30 text-xs font-bold text-indigo-300 hover:bg-indigo-600/25 transition"
+                        className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-white/10 border border-edge text-xs font-bold text-ink-muted hover:bg-white/15 transition"
                       >
                         <Plus size={13} />
                         <span>Custom Module</span>
@@ -1591,10 +1980,10 @@ export function CoreBTRWarRoom({ onStartQBankDrill, onOpenNotes }: CoreBTRWarRoo
 
               const statusColor = {
                 unread: "bg-elevated text-ink-muted border-edge",
-                in_progress: "bg-[#1767be]/15 text-[#4da2ff] border-[#1767be]/30",
-                btr_annotated: "bg-[#1767be]/25 text-white border-[#1767be]/40",
-                td_completed: "bg-[#1767be]/30 text-[#4da2ff] border-[#1767be]/40",
-                mastered: "bg-[#1767be] text-white border-[#1767be]",
+                in_progress: "bg-white/10 text-white/90 border-edge",
+                btr_annotated: "bg-white/15 text-white border-edge",
+                td_completed: "bg-white/15 text-white border-edge",
+                mastered: "bg-white text-black font-semibold border-edge",
               }[currentStatus];
 
               const statusLabel = {
@@ -1629,7 +2018,7 @@ export function CoreBTRWarRoom({ onStartQBankDrill, onOpenNotes }: CoreBTRWarRoo
                       onClick={() => setSelectedSubjectDetail(subj)}
                       className="cursor-pointer"
                     >
-                      <h3 className="text-base font-bold text-ink leading-snug group-hover:text-indigo-400 transition">
+                      <h3 className="text-base font-bold text-ink leading-snug group-hover:text-ink-muted transition">
                         {subj.name}
                       </h3>
                       {SUBJECT_METRICS_MAP[subj.id] && (
@@ -1637,7 +2026,7 @@ export function CoreBTRWarRoom({ onStartQBankDrill, onOpenNotes }: CoreBTRWarRoo
                           <span className="text-[11px] text-ink-muted font-medium">
                             {SUBJECT_METRICS_MAP[subj.id].completed}/{SUBJECT_METRICS_MAP[subj.id].items} items
                           </span>
-                          <span className="text-[10px] text-indigo-400 font-bold bg-indigo-500/10 px-1.5 py-0.2 rounded border border-indigo-500/20">
+                          <span className="text-[10px] text-ink-muted font-bold bg-white text-black/10 px-1.5 py-0.2 rounded border border-edge">
                             {Math.round((SUBJECT_METRICS_MAP[subj.id].completed / SUBJECT_METRICS_MAP[subj.id].items) * 100)}% completed
                           </span>
                         </div>
@@ -1650,7 +2039,7 @@ export function CoreBTRWarRoom({ onStartQBankDrill, onOpenNotes }: CoreBTRWarRoo
                     {/* Local Media Indicators */}
                     <div className="flex flex-wrap items-center gap-1.5 mt-1">
                       {videosCount > 0 ? (
-                        <span className="text-[10.5px] font-semibold text-[#4da2ff] bg-[#1767be]/15 border border-[#1767be]/30 px-2 py-0.5 rounded-lg flex items-center gap-1">
+                        <span className="text-[10.5px] font-semibold text-ink-muted bg-white/10 border border-edge px-2 py-0.5 rounded-lg flex items-center gap-1">
                           <Play size={10} fill="currentColor" /> {videosCount} Videos
                         </span>
                       ) : (
@@ -1666,7 +2055,7 @@ export function CoreBTRWarRoom({ onStartQBankDrill, onOpenNotes }: CoreBTRWarRoo
                       )}
 
                       {hasAnnotated && (
-                        <span className="text-[10px] font-semibold text-[#4da2ff] bg-[#1767be]/15 border border-[#1767be]/30 px-2 py-0.5 rounded-md">
+                        <span className="text-[10px] font-semibold text-ink-muted bg-white/10 border border-edge px-2 py-0.5 rounded-md">
                           Annotated Notes
                         </span>
                       )}
@@ -1704,7 +2093,7 @@ export function CoreBTRWarRoom({ onStartQBankDrill, onOpenNotes }: CoreBTRWarRoo
                               })
                             }
                             title="Open Side-by-Side Video & PDF Workstation"
-                            className="flex items-center gap-1 rounded-lg bg-[#1767be] px-2 py-1 text-[11px] font-bold text-white shadow-xs hover:bg-[#155bb0] transition"
+                            className="flex items-center gap-1 rounded-lg bg-white text-black px-2 py-1 text-[11px] font-bold text-white shadow-xs hover:bg-white/90 transition"
                           >
                             <Layers size={11} />
                             <span>Dual</span>
@@ -1713,7 +2102,7 @@ export function CoreBTRWarRoom({ onStartQBankDrill, onOpenNotes }: CoreBTRWarRoo
                           <button
                             type="button"
                             onClick={() => handlePlayLecture(media.videos[0], subj)}
-                            className="flex items-center gap-1 rounded-lg bg-[#1767be] px-2 py-1 text-[11px] font-bold text-white shadow-xs hover:bg-[#155bb0] transition"
+                            className="flex items-center gap-1 rounded-lg bg-white text-black px-2 py-1 text-[11px] font-bold text-white shadow-xs hover:bg-white/90 transition"
                           >
                             <Play size={11} fill="currentColor" />
                             <span>Play</span>
@@ -1738,8 +2127,15 @@ export function CoreBTRWarRoom({ onStartQBankDrill, onOpenNotes }: CoreBTRWarRoo
                     <div className="flex items-center gap-1.5">
                       <button
                         type="button"
-                        onClick={() => setSelectedSubjectDetail(subj)}
-                        className="flex items-center gap-1 rounded-lg bg-indigo-600/15 border border-indigo-500/30 px-2 py-1 text-[11px] font-bold text-indigo-300 hover:bg-indigo-600/25 transition"
+                        onClick={async () => {
+                          const qs = await getQuestionsForSubject(subj.name);
+                          if (qs.length > 0) {
+                            onStartQBankDrill?.(subj.name, qs);
+                          } else {
+                            setSelectedSubjectDetail(subj);
+                          }
+                        }}
+                        className="flex items-center gap-1 rounded-lg bg-white/10 border border-edge px-2 py-1 text-[11px] font-bold text-ink-muted hover:bg-white/15 transition"
                       >
                         <span>QBank</span>
                         <ChevronRight size={11} />
@@ -1847,9 +2243,9 @@ export function CoreBTRWarRoom({ onStartQBankDrill, onOpenNotes }: CoreBTRWarRoo
           {libraryState.megaBtrVideos && libraryState.megaBtrVideos.length > 0 && (
             <div className="flex flex-col gap-3">
               <div className="flex items-center gap-2">
-                <Flame size={16} className="text-[#feb122] fill-[#feb122]" />
+                <Flame size={16} className="text-amber-400 fill-[#feb122]" />
                 <h4 className="text-sm font-bold text-ink">Mega BTR & INI-CET Rapid Revisions</h4>
-                <span className="text-[11px] font-semibold text-[#4da2ff] rounded-full bg-[#1767be]/15 px-2 py-0.5 border border-[#1767be]/30">
+                <span className="text-[11px] font-semibold text-ink-muted rounded-full bg-white/10 px-2 py-0.5 border border-edge">
                   Full Marathons
                 </span>
               </div>
@@ -1921,7 +2317,7 @@ export function CoreBTRWarRoom({ onStartQBankDrill, onOpenNotes }: CoreBTRWarRoo
               <div className="flex items-center gap-2">
                 <Target size={16} className="text-accent" />
                 <h4 className="text-sm font-bold text-ink">Test & Discussion (T&D) Vault</h4>
-                <span className="text-[11px] font-semibold text-[#4da2ff] rounded-full bg-[#1767be]/15 px-2 py-0.5 border border-[#1767be]/30">
+                <span className="text-[11px] font-semibold text-ink-muted rounded-full bg-white/10 px-2 py-0.5 border border-edge">
                   17 Subject Sessions
                 </span>
               </div>
@@ -1933,7 +2329,7 @@ export function CoreBTRWarRoom({ onStartQBankDrill, onOpenNotes }: CoreBTRWarRoo
                     className="rounded-2xl bg-surface/80 border border-edge-soft p-3.5 flex items-center justify-between gap-3 shadow-xs hover:border-accent/40 transition"
                   >
                     <div className="flex items-center gap-2.5 min-w-0">
-                      <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#1767be]/15 text-[#4da2ff] border border-[#1767be]/30 shrink-0">
+                      <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/10 text-white/90 border border-white/15 shrink-0">
                         <Play size={13} fill="currentColor" />
                       </div>
                       <div className="min-w-0">
@@ -2123,7 +2519,7 @@ export function CoreBTRWarRoom({ onStartQBankDrill, onOpenNotes }: CoreBTRWarRoo
             onClick={() => setTestsSubTab(t)}
             className={`px-4 py-2 rounded-xl text-xs font-bold transition ${
               testsSubTab === t
-                ? "bg-indigo-600 text-white shadow-sm"
+                ? "bg-white text-black font-semibold shadow-sm"
                 : "text-ink-muted hover:text-ink hover:bg-elevated"
             }`}
           >
@@ -2156,11 +2552,11 @@ export function CoreBTRWarRoom({ onStartQBankDrill, onOpenNotes }: CoreBTRWarRoo
       {COREBTR_OFFICIAL_TESTS.filter((test) => testsSubTab === test.type).map((test) => (
         <div
           key={test.id}
-          className="p-5 rounded-2xl bg-surface border border-edge-soft hover:border-indigo-500/40 hover:bg-elevated transition shadow-xs flex flex-col md:flex-row items-start md:items-center justify-between gap-4 select-none group"
+          className="p-5 rounded-2xl bg-surface border border-edge-soft hover:border-edge hover:bg-elevated transition shadow-xs flex flex-col md:flex-row items-start md:items-center justify-between gap-4 select-none group"
         >
           <div className="flex flex-col gap-1.5">
             <div className="flex items-center gap-2">
-              <span className="font-mono text-sm font-bold text-ink group-hover:text-indigo-400 transition">
+              <span className="font-mono text-sm font-bold text-ink group-hover:text-ink-muted transition">
                 {test.title}
               </span>
               {test.ended && (
@@ -2169,7 +2565,7 @@ export function CoreBTRWarRoom({ onStartQBankDrill, onOpenNotes }: CoreBTRWarRoo
                 </span>
               )}
               {test.competitive && (
-                <span className="text-[10px] font-bold px-2 py-0.2 rounded-md bg-indigo-500/15 text-indigo-300 border border-indigo-500/25">
+                <span className="text-[10px] font-bold px-2 py-0.2 rounded-md bg-white/10 text-white/90 border border-edge">
                   Competitive
                 </span>
               )}
@@ -2177,7 +2573,7 @@ export function CoreBTRWarRoom({ onStartQBankDrill, onOpenNotes }: CoreBTRWarRoo
 
             <div className="flex items-center gap-4 text-xs text-ink-muted">
               <span className="flex items-center gap-1">
-                <HelpCircle size={13} className="text-indigo-400" />
+                <HelpCircle size={13} className="text-ink-muted" />
                 <span>{test.totalQuestions} questions</span>
               </span>
               <span>•</span>
@@ -2189,19 +2585,60 @@ export function CoreBTRWarRoom({ onStartQBankDrill, onOpenNotes }: CoreBTRWarRoo
           </div>
 
           <div className="flex items-center gap-2.5 w-full md:w-auto">
+            {test.solutionFile && (
+              <button
+                type="button"
+                onClick={async () => {
+                  const filename = test.solutionFile;
+                  const match = libraryState.grandTests?.find((item) => item.filename === filename);
+                  try {
+                    const { isTauri } = await import("@tauri-apps/api/core");
+                    if (isTauri()) {
+                      const { openPath } = await import("@tauri-apps/plugin-opener");
+                      if (match && !match.fullPath.startsWith("blob:")) {
+                        try { await openPath(match.fullPath); return; } catch { /* Locate a moved PDF. */ }
+                      }
+                      const { open } = await import("@tauri-apps/plugin-dialog");
+                      const selected = await open({ title: `Locate ${filename}`, filters: [{ name: "PDF", extensions: ["pdf"] }] });
+                      if (typeof selected === "string") await openPath(selected);
+                    } else if (match?.fullPath.startsWith("blob:")) {
+                      window.open(match.fullPath, "_blank", "noopener");
+                    } else {
+                      setScanNotice(`Select the folder containing ${filename} to open these solutions.`);
+                      folderInputRef.current?.click();
+                    }
+                  } catch (err) {
+                    setScanNotice(`Could not open ${filename}: ${String(err)}`);
+                  }
+                }}
+                className="flex-1 md:flex-none px-4 py-2 rounded-xl bg-white/10 border border-edge hover:bg-white/15 text-white text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-xs"
+                title="View Dr. Zainab Vora's annotated explanations and key takeaways"
+              >
+                <FileText size={13} className="text-ink-muted" />
+                <span>Solutions PDF</span>
+              </button>
+            )}
+
             <button
               type="button"
               onClick={() => setShowCrossAppModal(true)}
               className="flex-1 md:flex-none px-4 py-2 rounded-xl bg-surface border border-edge-soft hover:bg-raised text-ink text-xs font-bold transition flex items-center justify-center gap-1.5"
             >
-              <Target size={13} className="text-indigo-400" />
+              <Target size={13} className="text-ink-muted" />
               <span>Calibrate Score</span>
             </button>
 
             <button
               type="button"
-              onClick={() => onStartQBankDrill?.(test.title)}
-              className="flex-1 md:flex-none px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold shadow-md shadow-indigo-600/30 transition flex items-center justify-center gap-1.5"
+              onClick={async () => {
+                const qs = await getQuestionsForTest(test.id);
+                if (qs.length > 0) {
+                  onStartQBankDrill?.(test.title, qs);
+                } else {
+                  setScanNotice("This test has no linked questions in the installed bank.");
+                }
+              }}
+              className="flex-1 md:flex-none px-5 py-2 rounded-xl bg-white hover:bg-white/90 text-black font-semibold text-xs font-bold shadow-md shadow-black/30 transition flex items-center justify-center gap-1.5"
             >
               <Play size={12} fill="currentColor" />
               <span>Attempt Test</span>
@@ -2210,6 +2647,117 @@ export function CoreBTRWarRoom({ onStartQBankDrill, onOpenNotes }: CoreBTRWarRoo
         </div>
       ))}
     </div>
+
+    {/* Interactive Computer-Based Test (CBT) Simulators from /Downloads/BTR */}
+    {testsSubTab === "Grand Tests" && (
+      <div className="mt-4 flex flex-col gap-3 pt-6 border-t border-edge-soft">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+          <div>
+            <div className="flex items-center gap-2 text-xs font-extrabold uppercase text-amber-400 tracking-wider">
+              <Zap size={14} />
+              <span>Interactive Computer-Based Exam (CBT) Simulators</span>
+            </div>
+            <h4 className="text-base font-bold text-ink mt-0.5">
+              Full NEET-PG & INI-CET Interface Simulations
+            </h4>
+          </div>
+          <span className="text-[11px] font-mono text-ink-muted">
+            5 Interactive CBTs Verified in /Downloads/BTR
+          </span>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-1">
+          {[
+            {
+              id: "cbt-neet",
+              title: "NEET-PG All-India Mock Grand Test CBT",
+              desc: "Full 200-question timed interactive CBT simulation with question palette, review tags, and instant score analysis.",
+              filename: "NEET-PG_Mock_Grand_Test (2).html",
+              badge: "200 Questions • 3.5 Hours",
+            },
+            {
+              id: "cbt-btr",
+              title: "CoreBTR Grand Tests Multi-Session CBT",
+              desc: "Official CoreBTR Grand Test interactive interface with real clinical vignettes and high-yield image spotters.",
+              filename: "core_btr_Grand_Tests (1).html",
+              badge: "Grand Tests Suite",
+            },
+            {
+              id: "cbt-mini",
+              title: "CoreBTR Mini Tests Rapid Fire CBT",
+              desc: "Targeted 50-100 question mini tests across 19 subjects for rapid knowledge verification under board exam pressure.",
+              filename: "core_btr_Mini_Tests.html",
+              badge: "Mini Tests Suite",
+            },
+            {
+              id: "cbt-qbank",
+              title: "CoreBTR High-Yield QBank Interactive Simulator",
+              desc: "Comprehensive question bank test runner with topic-wise filters and active answer triage.",
+              filename: "Core btr Qbank -2.html",
+              badge: "QBank Simulator",
+            },
+          ].map((cbt) => (
+            <div
+              key={cbt.id}
+              className="rounded-2xl border border-edge bg-surface/90 hover:border-white/20 p-4 flex flex-col justify-between gap-3 shadow-md transition group"
+            >
+              <div className="flex flex-col gap-1.5">
+                <div className="flex items-center justify-between">
+                  <span className="rounded bg-white/10 px-2 py-0.5 text-[10px] font-bold text-ink-muted border border-edge uppercase">
+                    {cbt.badge}
+                  </span>
+                  <span className="text-[10px] font-mono text-emerald-400 font-bold flex items-center gap-1">
+                    ✓ Offline Ready
+                  </span>
+                </div>
+                <h5 className="font-bold text-sm text-ink group-hover:text-ink-muted transition">
+                  {cbt.title}
+                </h5>
+                <p className="text-xs text-ink-muted leading-relaxed line-clamp-2">
+                  {cbt.desc}
+                </p>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={async () => {
+                    const tests = await getBackendTests();
+                    const test = tests.find((t) => cbt.title.toLowerCase().includes(t.title.toLowerCase()) || t.title.toLowerCase().includes(cbt.title.toLowerCase()));
+                    if (test) {
+                      const qs = await getQuestionsForTest(test.id);
+                      if (qs.length > 0) {
+                        onStartQBankDrill?.(test.title, qs);
+                        return;
+                      }
+                    }
+                    onStartQBankDrill?.(cbt.title);
+                  }}
+                  className="flex-1 flex items-center justify-center gap-1.5 rounded-xl bg-white hover:bg-white/90 text-black font-semibold py-2 px-3 text-xs font-bold shadow-md transition"
+                >
+                  <Play size={12} fill="currentColor" />
+                  <span>Start in Argus</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    const fullPath = `/Users/anupam/Downloads/BTR/${cbt.filename}`;
+                    const url = resolveBTRPlayableUrl(fullPath);
+                    window.open(url, "_blank");
+                  }}
+                  className="flex items-center justify-center gap-1.5 rounded-xl bg-white/10 hover:bg-white/15 border border-edge text-white py-2 px-3 text-xs font-semibold transition"
+                  title="Launch original HTML standalone simulation"
+                >
+                  <ExternalLink size={12} />
+                  <span>HTML</span>
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    )}
   </div>
 )}
 
@@ -2228,7 +2776,7 @@ export function CoreBTRWarRoom({ onStartQBankDrill, onOpenNotes }: CoreBTRWarRoo
       </div>
 
       <div className="flex items-center gap-2">
-        <span className="text-xs font-bold px-3 py-1 rounded-xl bg-indigo-600 text-white">
+        <span className="text-xs font-bold px-3 py-1 rounded-xl bg-white text-black font-semibold">
           Completed Archive
         </span>
       </div>
@@ -2239,17 +2787,17 @@ export function CoreBTRWarRoom({ onStartQBankDrill, onOpenNotes }: CoreBTRWarRoo
       {COREBTR_LIVE_SESSIONS.map((session) => (
         <div
           key={session.id}
-          className="p-4 rounded-2xl bg-surface border border-edge-soft hover:border-indigo-500/40 hover:bg-elevated transition shadow-xs flex flex-col md:flex-row items-start md:items-center justify-between gap-4 group select-none"
+          className="p-4 rounded-2xl bg-surface border border-edge-soft hover:border-edge hover:bg-elevated transition shadow-xs flex flex-col md:flex-row items-start md:items-center justify-between gap-4 group select-none"
         >
           <div className="flex items-start gap-3.5">
-            <div className="h-12 w-12 rounded-2xl bg-indigo-600/15 text-indigo-400 border border-indigo-500/25 flex items-center justify-center font-bold shrink-0">
+            <div className="h-12 w-12 rounded-2xl bg-white/10 text-white/90 border border-edge flex items-center justify-center font-bold shrink-0">
               <Play size={18} fill="currentColor" />
             </div>
             <div className="flex flex-col">
-              <span className="text-xs font-semibold text-indigo-400">
+              <span className="text-xs font-semibold text-ink-muted">
                 {session.instructor}
               </span>
-              <h4 className="text-sm font-bold text-ink group-hover:text-indigo-400 transition leading-snug">
+              <h4 className="text-sm font-bold text-ink group-hover:text-ink-muted transition leading-snug">
                 {session.title}
               </h4>
               <span className="text-xs text-ink-muted mt-1">
@@ -2262,7 +2810,7 @@ export function CoreBTRWarRoom({ onStartQBankDrill, onOpenNotes }: CoreBTRWarRoo
             <button
               type="button"
               onClick={() => setActiveLiveStreamModal(session)}
-              className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold shadow-md transition flex items-center gap-1.5"
+              className="px-4 py-2 rounded-xl bg-white hover:bg-white/90 text-black font-semibold text-xs font-bold shadow-md transition flex items-center gap-1.5"
             >
               <Play size={12} fill="currentColor" />
               <span>Watch Discussion</span>
@@ -2288,9 +2836,9 @@ export function CoreBTRWarRoom({ onStartQBankDrill, onOpenNotes }: CoreBTRWarRoo
 {activeDestination === "plan" && (
   <div className="flex flex-col gap-6 animate-in fade-in duration-150">
     {/* Custom Module Action Banner */}
-    <div className="p-6 rounded-3xl bg-gradient-to-r from-indigo-900/40 via-surface to-elevated border border-indigo-500/30 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-sm">
+    <div className="p-6 rounded-3xl bg-gradient-to-r from-elevated via-surface to-elevated border border-edge flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-sm">
       <div className="flex flex-col gap-1">
-        <span className="text-[10px] font-bold uppercase tracking-wider text-indigo-400">
+        <span className="text-[10px] font-bold uppercase tracking-wider text-ink-muted">
           High-Yield Algorithm
         </span>
         <h3 className="text-lg font-black text-ink">Custom Module Engine</h3>
@@ -2301,7 +2849,7 @@ export function CoreBTRWarRoom({ onStartQBankDrill, onOpenNotes }: CoreBTRWarRoo
       <button
         type="button"
         onClick={() => setShowCustomModuleModal(true)}
-        className="px-5 py-2.5 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white font-extrabold text-xs shadow-lg shadow-indigo-600/30 transition flex items-center gap-2"
+        className="px-5 py-2.5 rounded-2xl bg-white hover:bg-white/90 text-black font-semibold font-extrabold text-xs shadow-lg shadow-black/30 transition flex items-center gap-2"
       >
         <Plus size={15} />
         <span>+ Create Custom Module</span>
@@ -2346,7 +2894,130 @@ export function CoreBTRWarRoom({ onStartQBankDrill, onOpenNotes }: CoreBTRWarRoo
 
   {/* VIEW: SUPER-VOLATILES VAULT (ACTIVE RECALL BLUR MASK) */}
   {activeDestination === "volatiles" && (
-        <div className="flex flex-col gap-5">
+        <div className="flex flex-col gap-6">
+          {/* T-MINUS 7 DAYS SUPER-VOLATILE REVISION ENGINE */}
+          <div className="rounded-3xl border border-edge bg-gradient-to-br from-amber-500/10 via-elevated to-purple-500/10 p-5 shadow-lg flex flex-col gap-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 rounded-2xl bg-amber-500/20 border border-amber-500/30 text-amber-300 flex items-center justify-center shrink-0">
+                  <Flame size={20} className="fill-amber-400" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-base font-black text-white">T-Minus 7 Days Super-Volatile Protocol</h3>
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40 font-mono">
+                      AIR-100 Deciders
+                    </span>
+                  </div>
+                  <p className="text-xs text-ink-muted">
+                    Day-by-day high-stakes retention lock: BNS 2024, PSM formulas, cytogenetics, antidotes, FIGO 2023, anatomical spaces, and cardinal repeats.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* 7-Day Protocol Grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-7 gap-2.5">
+              {T_MINUS_7_PLANS.map((plan) => {
+                const isSelected = inspectedCountdownDay === plan.dayNumber;
+                return (
+                  <div
+                    key={plan.dayNumber}
+                    onClick={() => setInspectedCountdownDay(plan.dayNumber)}
+                    className={`rounded-2xl p-3 flex flex-col justify-between gap-3 transition cursor-pointer group ${
+                      isSelected
+                        ? "bg-amber-500/15 border-2 border-amber-400 ring-2 ring-amber-400/30 shadow-md"
+                        : "bg-canvas/80 border border-edge hover:border-amber-400/40"
+                    }`}
+                  >
+                    <div className="flex flex-col gap-1.5">
+                      <div className="flex items-center justify-between">
+                        <span className={`text-[10px] font-bold font-mono px-1.5 py-0.5 rounded ${
+                          isSelected ? "bg-amber-400 text-black" : "bg-white/10 text-white/90"
+                        }`}>
+                          Day -{plan.dayNumber}
+                        </span>
+                        <span className="text-[9.5px] font-semibold text-amber-300/80 truncate max-w-[80px]">
+                          {plan.focusSpecialty}
+                        </span>
+                      </div>
+                      <h5 className="text-xs font-bold text-white line-clamp-2 mt-1">
+                        {plan.dayTitle.split(": ")[1] || plan.dayTitle}
+                      </h5>
+                      <p className="text-[10px] text-ink-muted line-clamp-2 leading-snug">
+                        {plan.strategicObjective}
+                      </p>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        const qs = buildCountdownQuestionsForDay(plan.dayNumber);
+                        onStartQBankDrill?.(plan.dayTitle, qs);
+                      }}
+                      className="w-full py-1.5 rounded-xl bg-amber-500/20 hover:bg-amber-500 text-amber-200 hover:text-black font-bold text-[11px] border border-amber-500/30 transition shadow-xs flex items-center justify-center gap-1"
+                    >
+                      <span>Launch Drill</span>
+                      <Play size={10} className="fill-current" />
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Inspected Day Master Pills Panel */}
+            {inspectedCountdownDay !== null && (() => {
+              const activePlan = T_MINUS_7_PLANS.find((p) => p.dayNumber === inspectedCountdownDay) || T_MINUS_7_PLANS[0];
+              return (
+                <div className="p-4 rounded-2xl bg-canvas/90 border border-amber-500/30 flex flex-col gap-3 animate-in fade-in duration-150">
+                  <div className="flex items-center justify-between border-b border-edge-soft pb-2.5">
+                    <div className="flex items-center gap-2">
+                      <Flame size={16} className="text-amber-400 fill-amber-400" />
+                      <h4 className="text-sm font-bold text-white">
+                        {activePlan.dayTitle} • Master Retention Pills
+                      </h4>
+                      <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                        {activePlan.focusSpecialty}
+                      </span>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const qs = buildCountdownQuestionsForDay(activePlan.dayNumber);
+                        onStartQBankDrill?.(activePlan.dayTitle, qs);
+                      }}
+                      className="px-3.5 py-1 rounded-xl bg-amber-500 hover:bg-amber-400 text-black font-bold text-xs shadow-xs transition flex items-center gap-1.5"
+                    >
+                      <Play size={11} className="fill-black" />
+                      <span>Launch 20-Q Drill</span>
+                    </button>
+                  </div>
+
+                  <p className="text-xs text-ink-muted">
+                    <strong className="text-white">Strategic Objective: </strong>
+                    {activePlan.strategicObjective}
+                  </p>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mt-1">
+                    {activePlan.mustMemorizePills.map((pill, pIdx) => (
+                      <div
+                        key={pIdx}
+                        className="flex items-start gap-2 p-2.5 rounded-xl bg-elevated/70 border border-edge text-xs text-white leading-relaxed font-medium"
+                      >
+                        <span className="h-5 w-5 rounded-lg bg-amber-500/20 text-amber-300 font-mono text-[10px] font-bold flex items-center justify-center shrink-0 mt-0.5">
+                          {pIdx + 1}
+                        </span>
+                        <span>{pill}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              );
+            })()}
+          </div>
+
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 rounded-2xl bg-surface/50 border border-edge-soft p-4">
             <div className="flex items-center gap-2">
               <Zap size={18} className="text-accent" />
@@ -2481,7 +3152,7 @@ export function CoreBTRWarRoom({ onStartQBankDrill, onOpenNotes }: CoreBTRWarRoo
                               e.stopPropagation();
                               reviewFSRSCard(card.id, 2);
                             }}
-                            className="px-2 py-0.5 rounded-lg text-[10px] font-bold bg-[#1767be]/20 text-[#4da2ff] border border-[#1767be]/30 hover:bg-[#1767be]/30 transition"
+                            className="px-2 py-0.5 rounded-lg text-[10px] font-bold bg-white/10 text-white/90 border border-white/15 hover:bg-white/15 transition"
                             title="Recalled with effort"
                           >
                             Hard
@@ -2492,7 +3163,7 @@ export function CoreBTRWarRoom({ onStartQBankDrill, onOpenNotes }: CoreBTRWarRoo
                               e.stopPropagation();
                               reviewFSRSCard(card.id, 3);
                             }}
-                            className="px-2 py-0.5 rounded-lg text-[10px] font-bold bg-[#1767be] text-white border border-[#1767be] hover:bg-[#155bb0] transition"
+                            className="px-2 py-0.5 rounded-lg text-[10px] font-bold bg-white text-black font-semibold border border-edge hover:bg-white/90 transition"
                             title="Optimal recall"
                           >
                             Good
@@ -2503,7 +3174,7 @@ export function CoreBTRWarRoom({ onStartQBankDrill, onOpenNotes }: CoreBTRWarRoo
                               e.stopPropagation();
                               reviewFSRSCard(card.id, 4);
                             }}
-                            className="px-2 py-0.5 rounded-lg text-[10px] font-bold bg-[#4da2ff]/20 text-[#4da2ff] border border-[#4da2ff]/35 hover:bg-[#4da2ff]/30 transition"
+                            className="px-2 py-0.5 rounded-lg text-[10px] font-bold bg-white/10 text-white/90 border border-white/15 hover:bg-white/15 transition"
                             title="Effortless recall"
                           >
                             Easy
@@ -2593,6 +3264,69 @@ export function CoreBTRWarRoom({ onStartQBankDrill, onOpenNotes }: CoreBTRWarRoo
               </button>
             </div>
           </div>
+
+          {/* Latest Post-GT Autopsy & Remediation Curriculum */}
+          {(() => {
+            const autopsy = getLatestAutopsyReport();
+            if (!autopsy) return null;
+            return (
+              <div className="rounded-2xl border border-edge bg-surface/90 p-5 flex flex-col gap-3 shadow-md">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Zap size={16} className="text-amber-400" />
+                    <h4 className="font-bold text-sm text-ink">
+                      Active Remediation Curriculum: {autopsy.testTitle}
+                    </h4>
+                  </div>
+                  <span className="text-xs font-mono text-ink-muted">
+                    {autopsy.accuracyPct}% Accuracy · {autopsy.sillyMistakesCount} Silly Errors
+                  </span>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+                  {autopsy.recommendations.map((rec, i) => (
+                    <div key={i} className="p-3 rounded-xl bg-surface-elevated border border-edge space-y-1.5">
+                      <div className="flex items-center justify-between">
+                        <span className="font-bold text-ink">{rec.subject}: {rec.topic}</span>
+                        <span className="text-[10px] text-accent font-semibold">{rec.errorCount} mistakes</span>
+                      </div>
+                      <p className="text-[11px] text-ink-muted">{rec.suggestedAction}</p>
+                      <div className="flex items-center gap-2 text-[10px] font-mono text-ink-subtle">
+                        <span>📹 {rec.relevantVideoLecture}</span>
+                        <span>📄 {rec.relevantWorkbookPdf}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <div className="flex flex-wrap items-center justify-end gap-2 pt-2">
+                  <button
+                    type="button"
+                    disabled={isGeneratingDrill}
+                    onClick={() => {
+                      const primaryWeakness = autopsy.recommendations[0]?.subject;
+                      handleLaunchMicroSurgicalDrill(primaryWeakness);
+                    }}
+                    className="px-4 py-2 rounded-xl bg-accent hover:brightness-110 text-white font-semibold text-xs transition flex items-center gap-1.5 shadow-sm"
+                  >
+                    <Zap size={12} fill="currentColor" />
+                    <span>{isGeneratingDrill ? "Synthesizing..." : "Launch Micro-Surgical Drill (15 Qs)"}</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const allQs = autopsy.recommendations.flatMap((r) => r.remediationQuestions);
+                      if (allQs.length > 0) {
+                        onStartQBankDrill?.(`${autopsy.testTitle} Weak-Spot Remediation`, allQs);
+                      }
+                    }}
+                    className="px-4 py-2 rounded-xl bg-white hover:bg-white/90 text-black font-semibold text-xs transition flex items-center gap-1.5 shadow-sm"
+                  >
+                    <Play size={12} fill="currentColor" />
+                    <span>Launch 10-Question Weak-Spot Drill</span>
+                  </button>
+                </div>
+              </div>
+            );
+          })()}
 
           {/* GT History Cards */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -2861,7 +3595,29 @@ export function CoreBTRWarRoom({ onStartQBankDrill, onOpenNotes }: CoreBTRWarRoo
       <BTRErrorLogModal open={showErrorModal} onClose={() => setShowErrorModal(false)} />
 
       {/* Official YouTube Channel Broadcasts & 3 PM Core Drops */}
-      <BTRBroadcastsModal open={showBroadcastsModal} onClose={() => setShowBroadcastsModal(false)} />
+      <BTRBroadcastsModal
+        open={showBroadcastsModal}
+        onClose={() => setShowBroadcastsModal(false)}
+        onOpenInWorkstation={(broadcast) => {
+          setShowBroadcastsModal(false);
+          const ytMedia = createYouTubeMediaFile(
+            broadcast.youtubeId,
+            broadcast.title,
+            "medicine"
+          );
+          const defaultSubj =
+            CORE_BTR_SUBJECTS.find((s) => s.id === "medicine") || CORE_BTR_SUBJECTS[0];
+          const mapped = libraryState.mappings[defaultSubj.id];
+          setWorkstationSession({
+            video: ytMedia,
+            subject: defaultSubj,
+            unannotatedPdf: mapped?.unannotatedPdf,
+            annotatedPdf: mapped?.annotatedPdf,
+            initialTimestampSec: 0,
+          });
+          setActiveDestination("workstation");
+        }}
+      />
 
       {/* "20th Subject" Master Matrix (Biostats, DOCs, BMW 2016, Scores) */}
       <BTRTwentyMatrixModal open={showTwentyModal} onClose={() => setShowTwentyModal(false)} />
@@ -3016,12 +3772,34 @@ export function CoreBTRWarRoom({ onStartQBankDrill, onOpenNotes }: CoreBTRWarRoo
       {/* Universal Cross-App Medical Test Center (Marrow, Prep, DAMS, Cerebellum) */}
       <BTRCrossAppTestsModal open={showCrossAppModal} onClose={() => setShowCrossAppModal(false)} />
 
+      {/* Cross-Platform Next GT Tracker (Marrow, Cerebellum, Prep, CoreBTR, DAMS) */}
+      <BTRGTTrackerModal
+        open={showGTTrackerModal}
+        onClose={() => setShowGTTrackerModal(false)}
+        onOpenScoreLogger={(_prefill) => {
+          setShowCrossAppModal(true);
+        }}
+      />
+
       {/* Create Custom Module Modal */}
       <BTRCustomModuleModal
         isOpen={showCustomModuleModal}
         onClose={() => setShowCustomModuleModal(false)}
-        onStartModule={(config) => {
-          onStartQBankDrill?.(config.name);
+        onStartModule={async (config) => {
+          setShowCustomModuleModal(false);
+          const qs = await buildCustomModuleTest({
+            title: config.name,
+            subjects: config.selectedSubjects || (selectedSubjectDetail?.name ? [selectedSubjectDetail.name] : []),
+            status: config.bookmarksOnly ? "bookmarked" : "all",
+            attemptStatus: config.attemptStatus,
+            count: config.questionCount,
+            mode: "exam",
+          });
+          if (qs.length > 0) {
+            onStartQBankDrill?.(config.name, qs);
+          } else {
+            setScanNotice("No questions match these module filters. Change the subject or attempt status.");
+          }
         }}
         subjectName={selectedSubjectDetail?.name}
       />
@@ -3069,6 +3847,86 @@ export function CoreBTRWarRoom({ onStartQBankDrill, onOpenNotes }: CoreBTRWarRoo
         onClose={() => setActiveLiveStreamModal(null)}
         session={activeLiveStreamModal}
         onStartQBankDrill={onStartQBankDrill}
+      />
+
+      {/* Top-100 Frontier Tie-Breakers Vault Modal */}
+      <BTRFrontierVaultModal
+        isOpen={showFrontierVaultModal}
+        onClose={() => setShowFrontierVaultModal(false)}
+        onStartDrill={(qs) => {
+          setShowFrontierVaultModal(false);
+          onStartQBankDrill?.("Top-100 Frontier Tie-Breaker Drill", qs);
+        }}
+      />
+
+      {/* Hands-Free Rapid-Fire Audio Pod Modal */}
+      <BTRAudioPodModal
+        isOpen={showAudioPodModal}
+        onClose={() => setShowAudioPodModal(false)}
+        questions={audioPodQuestions}
+        onReviewCard={(qid, rating) => {
+          const score = rating === "again" ? 1 : rating === "hard" ? 2 : rating === "good" ? 3 : 4;
+          reviewFSRSCard(qid, score);
+        }}
+      />
+
+      {/* Tri-Link Multimodal Omni-Search Modal */}
+      <BTRTriLinkSearchModal
+        isOpen={showTriLinkSearchModal}
+        onClose={() => setShowTriLinkSearchModal(false)}
+        onStartQBankDrill={onStartQBankDrill}
+        onSelectVideoTimestamp={(chapterTitle, timestampSec) => {
+          setShowTriLinkSearchModal(false);
+          // Match subject from catalog or libraryState
+          let matchedSubj = CORE_BTR_SUBJECTS.find(
+            (s) =>
+              chapterTitle.toLowerCase().includes(s.name.toLowerCase()) ||
+              s.name.toLowerCase().includes(chapterTitle.toLowerCase())
+          );
+          if (!matchedSubj) matchedSubj = CORE_BTR_SUBJECTS[0];
+
+          const mapped = libraryState.mappings[matchedSubj.id];
+          const fallbackVid = Object.values(libraryState.mappings).find(
+            (m) => m.videos && m.videos.length > 0
+          )?.videos[0];
+          const matchedVid = mapped?.videos[0] || fallbackVid;
+
+          if (matchedVid) {
+            setWorkstationSession({
+              video: matchedVid,
+              subject: matchedSubj,
+              unannotatedPdf: mapped?.unannotatedPdf,
+              annotatedPdf: mapped?.annotatedPdf,
+              initialTimestampSec: timestampSec,
+            });
+            setActiveDestination("workstation");
+          }
+        }}
+      />
+
+      {/* Multi-Step Branching Clinical Decisions Modal */}
+      <BTRBranchingTreeModal
+        isOpen={showBranchingTreeModal}
+        onClose={() => setShowBranchingTreeModal(false)}
+      />
+
+      {/* Socratic Clinical Voice Viva Oral Modal */}
+      <BTRVoiceVivaModal
+        isOpen={showVoiceVivaModal}
+        onClose={() => setShowVoiceVivaModal(false)}
+      />
+
+      {/* Zero-Cloud Local-Network War Room Head-to-Head Clash Modal */}
+      <BTRWarRoomClashModal
+        isOpen={showWarRoomClashModal}
+        onClose={() => setShowWarRoomClashModal(false)}
+        onStartQBankDrill={onStartQBankDrill}
+      />
+
+      {/* Real-Time Interactive ECG Strip & Telemetry Modal */}
+      <BTRECGModal
+        isOpen={showECGModal}
+        onClose={() => setShowECGModal(false)}
       />
     </div>
   );

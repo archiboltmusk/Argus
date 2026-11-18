@@ -18,6 +18,8 @@ export function useSubStyleApply(params: {
   assScale?: number;
   subTrackId?: string;
   sdhFilterAllowed: boolean;
+  videoWidth?: number;
+  videoHeight?: number;
 }) {
   const {
     engine,
@@ -32,18 +34,32 @@ export function useSubStyleApply(params: {
     assScale,
     subTrackId,
     sdhFilterAllowed,
+    videoWidth,
+    videoHeight,
   } = params;
 
   useEffect(() => {
     if (engine !== "mpv") return;
     if (!bridgeReady) return;
     if (!mediaReady) return;
-    void applySubStyle(settings, {
-      assNativeActive,
-      imageNativeActive,
-      assScale,
-      sdhFilterAllowed,
-    });
+
+    const applyCurrent = () => {
+      const isLetterboxed =
+        videoWidth && videoHeight && videoWidth > 0 && videoHeight > 0
+          ? videoWidth / videoHeight > window.innerWidth / Math.max(1, window.innerHeight) + 0.03
+          : true;
+      void applySubStyle(settings, {
+        assNativeActive,
+        imageNativeActive,
+        assScale,
+        sdhFilterAllowed,
+        isLetterboxed,
+      });
+    };
+
+    applyCurrent();
+    window.addEventListener("resize", applyCurrent);
+    return () => window.removeEventListener("resize", applyCurrent);
   }, [
     engine,
     bridgeReady,
@@ -54,6 +70,8 @@ export function useSubStyleApply(params: {
     assScale,
     subTrackId,
     sdhFilterAllowed,
+    videoWidth,
+    videoHeight,
     settings.subHideSdh,
     settings.subAssNormalizeSize,
     settings.subFontSize,
@@ -73,6 +91,7 @@ export function useSubStyleApply(params: {
     settings.subShadowBlur,
     settings.subMarginX,
     settings.subAssStyleOverrides,
+    settings.letterboxSubtitleDodging,
   ]);
 
   useEffect(() => () => resetRtxVideoState(), [bridgeKey]);

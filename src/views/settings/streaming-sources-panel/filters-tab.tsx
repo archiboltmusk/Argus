@@ -19,6 +19,14 @@ export function FiltersTab() {
           onChange={(value) => update({ streamFilterLevel: value })}
         />
       </Section>
+      <Section title={t("Device playback compatibility")}>
+        <ToggleRow
+          label={t("Filter unplayable formats for this device")}
+          sub={t("Hides video and audio formats that your current browser or screen cannot decode, preventing black screens and playback errors.")}
+          value={settings.filterUnsupportedDeviceStreams}
+          onChange={(value) => update({ filterUnsupportedDeviceStreams: value })}
+        />
+      </Section>
       <Section title={t("Prefer IMDb IDs for anime")}>
         <ToggleRow
           label={t("Prefer IMDb IDs for anime")}

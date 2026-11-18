@@ -137,7 +137,7 @@ export const UNIVERSAL_PERSONAS: Record<string, UniversalPersonaProfile> = {
       nistRiskControls: true,
       confidentialityIsolation: true,
     },
-    activeDomainPack: "NEET High-Yield Question Bank & Active Recall Hub",
+    activeDomainPack: "NEET High-Yield Question Bank & Practice Questions",
     recommendedActionRecord: {
       goalId: "neet-physics-mechanics",
       goalTitle: "Rotational Mechanics High-Yield Sprint",

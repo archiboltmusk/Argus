@@ -33,6 +33,10 @@ import { ShellLayer } from "./shell-layer";
 import { StageOverlays } from "./stage-overlays";
 import { ToolsLayer } from "./tools-layer";
 import { TextSyncOverlay } from "./text-sync-overlay";
+import { TranscriptDrawer } from "@/components/player/subtitle-menu/transcript-drawer";
+import { SubtitleWordPopover } from "@/components/player/subtitle-word-popover";
+import { updateTranscriptPlaybackTime } from "@/lib/subtitles/transcript-store";
+import type { MedicalPearl } from "@/lib/subtitles/medical-pearls-glossary";
 import { Toaster } from "@/views/addons/toaster";
 import type { ToastInfo } from "@/views/addons/addons-types";
 import type { usePlayerCast } from "./hooks/use-player-cast";
@@ -217,11 +221,16 @@ export type PlayerOverlayLayersProps = {
 
 export const PlayerOverlayLayers = memo(function PlayerOverlayLayers(p: PlayerOverlayLayersProps) {
   const [sportsSidebarOpen, setSportsSidebarOpen] = useState(false);
+  const [activePearl, setActivePearl] = useState<MedicalPearl | null>(null);
   const rawT = useT();
   const t = typeof rawT === "function" ? rawT : ((k: string) => k);
   const settingsHook = useSettings();
   const settings = settingsHook?.settings;
   const regionalAudioAttempted = useRef<string | null>(null);
+
+  useEffect(() => {
+    updateTranscriptPlaybackTime(p.snap.positionSec);
+  }, [p.snap.positionSec]);
 
   useEffect(() => {
     if (!settings?.autoSelectRegionalDub || !settings?.preferredRegionalAudio) return;
@@ -689,11 +698,11 @@ export const PlayerOverlayLayers = memo(function PlayerOverlayLayers(p: PlayerOv
         <button
           type="button"
           onClick={() => setSportsSidebarOpen((v) => !v)}
-          aria-label={t("Sports scores & telemetry")}
+          aria-label={t("Sports scores & stats")}
           className={`pointer-events-auto group absolute bottom-24 right-0 z-20 flex h-16 items-center justify-center gap-1.5 rounded-l-xl border-y border-l border-edge-soft bg-elevated/65 pl-2.5 pr-2 text-ink shadow-lg backdrop-blur-md transition-all duration-300 hover:bg-elevated hover:pl-3 ${
             p.showChrome ? "opacity-90 hover:opacity-100" : "opacity-0 pointer-events-none"
           }`}
-          title={t("Live sports scores & cricket telemetry")}
+          title={t("Live sports scores & cricket stats")}
         >
           <Activity size={16} className="text-accent" />
           <span
@@ -709,6 +718,19 @@ export const PlayerOverlayLayers = memo(function PlayerOverlayLayers(p: PlayerOv
         open={sportsSidebarOpen}
         onClose={() => setSportsSidebarOpen(false)}
       />
+
+      <TranscriptDrawer
+        onSeek={(sec) => p.seekTo(sec)}
+        onOpenPearlModal={(pearl) => setActivePearl(pearl)}
+      />
+
+      {activePearl && (
+        <SubtitleWordPopover
+          pearl={activePearl}
+          mediaTitle={p.src.meta?.name ?? p.src.title}
+          onClose={() => setActivePearl(null)}
+        />
+      )}
     </>
   );
 });

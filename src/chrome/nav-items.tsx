@@ -255,7 +255,7 @@ const NAV_ITEMS_ALL: NavItem[] = [
   },
   {
     id: "lifemaxxing",
-    label: "ARGUS Flourishing",
+    label: "Wellbeing",
     render: (active) => (
       <div className={`flex items-center justify-center transition-colors ${active ? "text-accent" : "text-ink-subtle hover:text-ink"}`}>
         <Sparkles size={24} strokeWidth={active ? 2.4 : 2} />
@@ -265,7 +265,7 @@ const NAV_ITEMS_ALL: NavItem[] = [
   },
   {
     id: "argus-lab",
-    label: "Argus Lab",
+    label: "System Lab",
     render: (active) => <Compass size={25} strokeWidth={active ? 2.4 : 2} className={active ? "text-accent" : "opacity-75"} />,
     view: "argus-lab",
   },

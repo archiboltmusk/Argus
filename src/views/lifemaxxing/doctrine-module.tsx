@@ -36,7 +36,7 @@ export function DoctrineConstitutionModule() {
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>
               <h2 className="text-2xl md:text-3xl font-extrabold tracking-tight text-white">
-                Human Flourishing Intelligence
+                Human Health & Growth Principles
               </h2>
               <p className="mt-1 text-sm md:text-base text-white/70 max-w-3xl leading-relaxed">
                 Protect human agency. Expand human capability. Reduce preventable suffering. Restore meaningful connection.
@@ -48,7 +48,7 @@ export function DoctrineConstitutionModule() {
             <div className="rounded-xl border border-amber-500/30 bg-amber-950/30 p-3.5 backdrop-blur-md max-w-sm">
               <div className="text-[10px] font-bold uppercase tracking-wider text-amber-400">The Central Creed</div>
               <p className="text-xs text-white/90 italic font-serif leading-relaxed mt-1">
-                &ldquo;We will not save humanity by controlling people. We will help humanity flourish by making wisdom, knowledge, opportunity, and meaningful human connection accessible to everyone.&rdquo;
+                &ldquo;We will not save humanity by controlling people. We will help people thrive by making wisdom, knowledge, opportunity, and meaningful human connection accessible to everyone.&rdquo;
               </p>
             </div>
           </div>

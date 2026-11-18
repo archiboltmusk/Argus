@@ -118,7 +118,7 @@ export function SportsSidebar({ open, onClose, preferredGame }: SportsSidebarPro
   return (
     <aside
       className="fixed inset-y-0 right-0 z-50 flex w-84 max-w-[92vw] flex-col border-l border-edge-soft bg-canvas/95 p-4 text-ink shadow-2xl backdrop-blur-2xl sm:w-96 motion-safe:animate-in motion-safe:slide-in-from-right duration-200"
-      aria-label={t("Live Sports Telemetry & Scores")}
+      aria-label={t("Live Sports & Scores")}
     >
       {/* Header */}
       <div className="flex items-center justify-between border-b border-edge-soft/60 pb-3">
@@ -127,7 +127,7 @@ export function SportsSidebar({ open, onClose, preferredGame }: SportsSidebarPro
             <Activity size={16} />
           </span>
           <div>
-            <h2 className="text-sm font-bold leading-tight">{t("Sports Hub")}</h2>
+            <h2 className="text-sm font-bold leading-tight">{t("Live Sports")}</h2>
             <span className="text-[10px] text-ink-subtle uppercase tracking-wider">
               {liveGames.length} {t("Live Matches")}
             </span>
@@ -265,7 +265,7 @@ export function SportsSidebar({ open, onClose, preferredGame }: SportsSidebarPro
             <div className="rounded-xl border border-edge-soft/80 bg-surface/80 p-3.5 space-y-2.5">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-bold uppercase tracking-wider text-ink flex items-center gap-1.5">
-                  🏏 {t("This Over Telemetry")}
+                  🏏 {t("This Over Summary")}
                 </span>
                 <span className="text-[10px] text-ink-subtle">Recent 6 balls</span>
               </div>
@@ -447,7 +447,7 @@ export function SportsSidebar({ open, onClose, preferredGame }: SportsSidebarPro
       ) : (
         <div className="flex flex-1 flex-col items-center justify-center p-6 text-center text-xs text-ink-muted">
           <Trophy size={28} className="opacity-40 mb-2" />
-          <p>{t("No live match telemetry active.")}</p>
+          <p>{t("No live match data available.")}</p>
         </div>
       )}
     </aside>

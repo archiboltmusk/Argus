@@ -28,7 +28,7 @@ on:
 
 concurrency:
   group: web-${{ github.ref }}
-  cancel-in-progress: ${{ !startsWith(github.ref, 'refs/tags/') && github.ref != 'refs/heads/main' }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 env:
   NODE_OPTIONS: --max-old-space-size=8192
@@ -59,7 +59,7 @@ jobs:
           ln -s "$PWD/dist-web" "$RUNNER_TEMP/site/${{ github.event.repository.name }}"
           python3 -m http.server 4173 --directory "$RUNNER_TEMP/site" >/dev/null 2>&1 &
           sleep 2
-          PLAYWRIGHT_DIR="$RUNNER_TEMP/pw" node scripts/web-smoke.mjs "http://127.0.0.1:4173/${{ github.event.repository.name }}/"
+          PLAYWRIGHT_DIR="$RUNNER_TEMP/pw" ARGUS_STARTUP_BUDGET_MS=3500 node scripts/web-smoke.mjs "http://127.0.0.1:4173/${{ github.event.repository.name }}/"
       - name: Controlled playback and first-frame budget (20 journeys)
         if: success() || failure()
         run: |

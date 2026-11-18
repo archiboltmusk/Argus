@@ -11,6 +11,7 @@ import { useSettings } from "@/lib/settings";
 import type { ScoredStream } from "@/lib/streams/types";
 import { hasCachedMarker } from "@/lib/streams/cached";
 import { filterStreamsByMode } from "@/lib/streams/mode";
+import { filterDeviceSupportedStreams } from "@/lib/streams/device-stream-filter";
 import { activeCustomFilter, applyCustomFilter } from "@/lib/streams/custom-filters";
 import type { SourceDescriptor } from "@/lib/together/protocol";
 import { buildMatchScores, matchBadge } from "@/lib/together/source-match";
@@ -144,12 +145,21 @@ export function StreamSwitcher({
 
   const keptStreams = useMemo<ScoredStream[]>(() => {
     const all = cache?.result.picker.all ?? [];
-    const kept = filterStreamsByMode(all, settings.streamMode);
+    let kept = filterStreamsByMode(all, settings.streamMode);
+    if (settings.filterUnsupportedDeviceStreams !== false) {
+      kept = filterDeviceSupportedStreams(kept);
+    }
     return applyCustomFilter(
       kept,
       activeCustomFilter(settings.customStreamFilters, settings.activeStreamFilterId),
     ).streams;
-  }, [cache, settings.streamMode, settings.customStreamFilters, settings.activeStreamFilterId]);
+  }, [
+    cache,
+    settings.streamMode,
+    settings.customStreamFilters,
+    settings.activeStreamFilterId,
+    settings.filterUnsupportedDeviceStreams,
+  ]);
   const rejectedStreams = useMemo<ScoredStream[]>(
     () =>
       (cache?.result.rejected ?? []).map((r) => ({

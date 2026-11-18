@@ -781,6 +781,7 @@ export const DEFAULT: Settings = {
   voiceClarifierProfileId: "ray-vintage",
   lanSwarmCache: true,
   letterboxSubtitleDodging: true,
+  filterUnsupportedDeviceStreams: true,
   syntheticChapters: true,
   hybridLegalFallback: true,
   indicDubbingOverlay: false,

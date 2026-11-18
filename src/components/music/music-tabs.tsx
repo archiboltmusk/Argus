@@ -15,7 +15,7 @@ export const MUSIC_TABS: readonly MusicTabId[] = ["forYou", "explore", "services
 const TAB_LABEL_KEY: Record<MusicTabId, string> = {
   forYou: "music.tab.forYou",
   explore: "music.tab.explore",
-  services: "Streaming Hub",
+  services: "Streaming Services",
   library: "music.tab.library",
 };
 

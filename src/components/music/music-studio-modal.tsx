@@ -2,11 +2,16 @@ import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import {
   AudioLines, Check, Disc3, Headphones, Layers, Mic2,
-  Radio, ShieldCheck, Volume2, X, Zap
+  Radio, ShieldCheck, Volume2, X, Zap, Play, Waves
 } from "lucide-react";
 import type { MusicTrack } from "@/lib/music/types";
 import { auditTrackFidelity, LOUDNESS_PRESETS, type LoudnessNormalizationMode } from "@/lib/music/hi-res-engine";
-import { POPULAR_HEADPHONE_PROFILES, getBauerCrossfeedConfig, applyHeadphoneProfile } from "@/lib/music/audiophile-dsp";
+import {
+  POPULAR_HEADPHONE_PROFILES,
+  getBauerCrossfeedConfig,
+  applyHeadphoneProfile,
+  calculateStereoWideningMatrix,
+} from "@/lib/music/audiophile-dsp";
 import { estimateTrackKey, evaluateHarmonicMix, type DjTransitionProfile } from "@/lib/music/smart-dj";
 import { resolveLosslessAudioSources, type FederatedMusicSource } from "@/lib/music/music-scrapers";
 import { useMusicAudioSettings, saveMusicAudioSettings } from "@/lib/music/audio-settings";
@@ -18,11 +23,13 @@ export function MusicStudioModal({
   nextTrack,
   isOpen,
   onClose,
+  onSelectSource,
 }: {
   track: MusicTrack | null;
   nextTrack?: MusicTrack | null;
   isOpen: boolean;
   onClose: () => void;
+  onSelectSource?: (src: FederatedMusicSource) => void;
 }) {
   const [activeTab, setActiveTab] = useState<StudioTab>("hifi");
   const audio = useMusicAudioSettings();
@@ -34,6 +41,7 @@ export function MusicStudioModal({
   // AutoEQ settings
   const [selectedHeadphone, setSelectedHeadphone] = useState<string>("sennheiser-hd600");
   const [crossfeedLevel, setCrossfeedLevel] = useState<number>(0.45);
+  const [stereoWidth, setStereoWidth] = useState<number>(1.0);
 
   // Smart DJ settings
   const [crossfadeSeconds, setCrossfadeSeconds] = useState<number>(5);
@@ -50,6 +58,7 @@ export function MusicStudioModal({
   const currentKey = track ? estimateTrackKey(track) : { key: "8B", camelot: "8B", bpm: 120 };
   const mixProfile: DjTransitionProfile | null = track && nextTrack ? evaluateHarmonicMix(track, nextTrack) : null;
   const crossfeedConfig = getBauerCrossfeedConfig(crossfeedLevel);
+  const wideningMatrix = calculateStereoWideningMatrix(stereoWidth);
 
   useEffect(() => {
     if (track) {
@@ -272,19 +281,46 @@ export function MusicStudioModal({
                 })}
               </div>
 
-              {/* Bauer Binaural Crossfeed Virtualizer */}
+              {/* Bauer Binaural Crossfeed Virtualizer (Ported from Monochrome DSP) */}
               <div className="rounded-2xl border border-white/10 p-5 bg-surface/40 space-y-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <h4 className="text-base font-semibold">Bauer Stereophonic-to-Binaural Crossfeed</h4>
+                    <h4 className="text-base font-semibold flex items-center gap-2">
+                      <Headphones className="h-4 w-4 text-accent" />
+                      <span>Bauer Stereophonic-to-Binaural Crossfeed (bs2b)</span>
+                    </h4>
                     <p className="text-xs text-ink-subtle">
-                      Feeds delayed low-frequency acoustic shadow between stereo channels to recreate room speaker soundstage.
+                      Feeds delayed low-frequency acoustic shadow between stereo channels to recreate room speaker soundstage and eliminate ear fatigue.
                     </p>
                   </div>
-                  <span className="rounded-full bg-accent/10 border border-accent/20 px-3 py-1 text-xs font-semibold text-accent">
-                    {crossfeedConfig.label} ({crossfeedConfig.feedDb} dB / {crossfeedConfig.delayMs} ms)
+                  <span className="rounded-full bg-accent/10 border border-accent/20 px-3 py-1 text-xs font-semibold text-accent font-mono">
+                    {crossfeedConfig.label} ({crossfeedConfig.cutoffHz}Hz · {crossfeedConfig.feedDb}dB · {crossfeedConfig.delayMs}ms)
                   </span>
                 </div>
+
+                {/* Quick Presets */}
+                <div className="flex flex-wrap items-center gap-2">
+                  {[
+                    { label: "Direct Stereo (Off)", level: 0 },
+                    { label: "Natural Room (500Hz)", level: 0.25 },
+                    { label: "Studio Standard (700Hz)", level: 0.5 },
+                    { label: "Strong Binaural (1000Hz)", level: 0.85 },
+                  ].map((p) => (
+                    <button
+                      key={p.label}
+                      type="button"
+                      onClick={() => handleApplyCrossfeed(p.level)}
+                      className={`px-3 py-1 text-xs rounded-lg font-medium transition ${
+                        Math.abs(crossfeedLevel - p.level) < 0.1
+                          ? "bg-accent text-white font-bold shadow-sm"
+                          : "bg-surface hover:bg-white/10 text-ink-subtle hover:text-ink border border-white/5"
+                      }`}
+                    >
+                      {p.label}
+                    </button>
+                  ))}
+                </div>
+
                 <input
                   type="range"
                   min="0"
@@ -294,6 +330,38 @@ export function MusicStudioModal({
                   onChange={(e) => handleApplyCrossfeed(parseFloat(e.target.value))}
                   className="w-full accent-accent cursor-pointer"
                 />
+              </div>
+
+              {/* Mid/Side Stereo Widener (Spatial Audio Matrix) */}
+              <div className="rounded-2xl border border-white/10 p-5 bg-surface/40 space-y-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h4 className="text-base font-semibold flex items-center gap-2">
+                      <Waves className="h-4 w-4 text-accent" />
+                      <span>Mid/Side Spatial Audio Widening</span>
+                    </h4>
+                    <p className="text-xs text-ink-subtle">
+                      Adjust holographic stereo separation matrix from mono centered focus (0.5x) to expansive room monitors (2.0x).
+                    </p>
+                  </div>
+                  <span className="rounded-full bg-accent/10 border border-accent/20 px-3 py-1 text-xs font-semibold text-accent font-mono">
+                    {wideningMatrix.effectiveWidth.toFixed(2)}x (Mid: {wideningMatrix.midGain} · Side: {wideningMatrix.sideGain})
+                  </span>
+                </div>
+
+                <div className="flex items-center gap-4">
+                  <span className="text-xs text-ink-subtle font-mono">0.5x Mono</span>
+                  <input
+                    type="range"
+                    min="0.5"
+                    max="2.0"
+                    step="0.05"
+                    value={stereoWidth}
+                    onChange={(e) => setStereoWidth(parseFloat(e.target.value))}
+                    className="w-full accent-accent cursor-pointer"
+                  />
+                  <span className="text-xs text-ink-subtle font-mono">2.0x Wide</span>
+                </div>
               </div>
             </div>
           )}
@@ -428,7 +496,7 @@ export function MusicStudioModal({
                   <Layers className="h-5 w-5 text-accent" /> Multi-Source Lossless Audio Federation
                 </h3>
                 <p className="text-xs text-ink-subtle mt-1">
-                  Argus federates streams across local files, Debrid FLAC archives, YouTube Music, and SoundCloud to pick the highest fidelity.
+                  Federates uncompressed Hi-Res FLAC from Monochrome API, Tidal Master proxies, torrent swarms, and debrid caches with bit-perfect fidelity.
                 </p>
               </div>
 
@@ -438,7 +506,10 @@ export function MusicStudioModal({
                   return (
                     <div
                       key={src.connectorId}
-                      onClick={() => setSelectedSourceId(src.connectorId)}
+                      onClick={() => {
+                        setSelectedSourceId(src.connectorId);
+                        if (onSelectSource) onSelectSource(src);
+                      }}
                       className={`flex items-center justify-between p-4 rounded-xl border cursor-pointer transition-all ${
                         isSelected
                           ? "border-accent bg-accent/10 shadow-sm"
@@ -447,7 +518,7 @@ export function MusicStudioModal({
                     >
                       <div className="flex items-center gap-3">
                         <div className={`flex h-10 w-10 items-center justify-center rounded-xl font-bold text-xs ${
-                          src.isLossless ? "bg-emerald-500/20 text-emerald-400" : "bg-amber-500/20 text-amber-400"
+                          src.isLossless ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30" : "bg-amber-500/20 text-amber-400"
                         }`}>
                           {src.format}
                         </div>
@@ -457,14 +528,40 @@ export function MusicStudioModal({
                             <span className="rounded bg-white/10 px-2 py-0.5 text-[10px] font-medium text-ink-subtle">
                               {src.provider}
                             </span>
+                            {src.seeders !== undefined && (
+                              <span className="rounded bg-accent/20 px-2 py-0.5 text-[10px] font-bold text-accent">
+                                {src.seeders} seeders
+                              </span>
+                            )}
                           </div>
-                          <p className="text-xs text-ink-subtle mt-0.5">{src.badge} · ~{src.bitrateKbps} kbps</p>
+                          <p className="text-xs text-ink-subtle mt-0.5">
+                            {src.badge} · ~{src.bitrateKbps} kbps
+                            {src.editionDetail ? ` · ${src.editionDetail}` : ""}
+                          </p>
                         </div>
                       </div>
 
                       <div className="flex items-center gap-3">
                         <span className="text-xs text-ink-subtle">{src.latencyMs}ms latency</span>
-                        {isSelected && <Check className="h-5 w-5 text-accent" />}
+                        {isSelected ? (
+                          <div className="flex items-center gap-1.5 text-accent font-semibold text-xs bg-accent/20 px-2.5 py-1 rounded-lg">
+                            <Check className="h-4 w-4" />
+                            <span>Active</span>
+                          </div>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSelectedSourceId(src.connectorId);
+                              if (onSelectSource) onSelectSource(src);
+                            }}
+                            className="flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-lg bg-surface hover:bg-accent hover:text-white transition border border-white/10"
+                          >
+                            <Play className="h-3 w-3 fill-current" />
+                            <span>Switch</span>
+                          </button>
+                        )}
                       </div>
                     </div>
                   );

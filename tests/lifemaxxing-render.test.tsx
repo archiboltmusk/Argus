@@ -7,6 +7,6 @@ import { LifemaxxingView } from "@/views/lifemaxxing";
 test("LifemaxxingView renders all submodules without crashing", () => {
   const html = ReactDOMServer.renderToString(<LifemaxxingView />);
   assert.ok(html.length > 500, "LifemaxxingView rendered output too small");
-  assert.ok(html.includes("Human Flourishing Operating System"), "Missing header title in render");
+  assert.ok(html.includes("Personal Growth"), "Missing header title in render");
   assert.ok(html.includes("Consolidated Vision Blueprint"), "Missing blueprint section");
 });

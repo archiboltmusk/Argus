@@ -28,6 +28,7 @@ import type { SubtitleMenuProps } from "./types";
 import { subtitleTrackLanguageLabel } from "@/lib/subtitles/track-label";
 import { groupByLang, isVeryNewRelease, variantTitle } from "./utils";
 import { useLiveTranscriptionSession } from "@/lib/subtitles/live-transcription-service";
+import { AISubtitleGeneratorPanel } from "./ai-subtitle-generator-panel";
 
 type SourceFilter = "all" | "embedded" | "external";
 const ALL_LANGS = "__all__";
@@ -134,7 +135,7 @@ export function MenuBody(props: SubtitleMenuProps & { onClose: () => void }) {
 
   const subContext = useSubtitleContext();
   const liveSession = useLiveTranscriptionSession();
-  const [translateToEn, setTranslateToEn] = useState(false);
+  const [aiGeneratorOpen, setAiGeneratorOpen] = useState(false);
   const [whisperAvailable, setWhisperAvailable] = useState<boolean>(false);
 
   useEffect(() => {
@@ -143,33 +144,6 @@ export function MenuBody(props: SubtitleMenuProps & { onClose: () => void }) {
       .then((ok) => setWhisperAvailable(!!ok))
       .catch(() => setWhisperAvailable(false));
   }, [isTauri]);
-
-  const generateWithWhisper = async () => {
-    if (!subContext?.mediaUrl) {
-      setLocalError(tr("No stream URL available to extract audio."));
-      return;
-    }
-    setLocalError(null);
-
-    await liveSession.start({
-      mediaUrl: subContext.mediaUrl,
-      headers: subContext.headers ?? null,
-      durationSec: subContext.durationSec ?? null,
-      lang: null,
-      translate: translateToEn,
-      onAddTrack: async (filePath, lang, name) => {
-        const ok = await props.onAddSubtitle(filePath, lang, name, {
-          format: "srt",
-          timingMeasurementStatus: "measured",
-        });
-        if (ok !== false) {
-          markImportedSub(name);
-          setActiveLang(ALL_LANGS);
-          setJustImported(name);
-        }
-      },
-    });
-  };
 
   const loadLocal = async () => {
     setLocalError(null);
@@ -205,6 +179,7 @@ export function MenuBody(props: SubtitleMenuProps & { onClose: () => void }) {
         hasSecondary={secondaryTrack != null}
         delaySec={delaySec}
         delayNonZero={delayNonZero}
+        onDelay={props.onDelay}
         onEnterSync={props.onEnterSync}
         onOpenStyleBar={onOpenStyleBar}
         onClose={onClose}
@@ -236,6 +211,31 @@ export function MenuBody(props: SubtitleMenuProps & { onClose: () => void }) {
             </span>
             {offSelected ? tr("Off") : tr("On")}
           </button>
+
+          {isTauri && whisperAvailable && (
+            <button
+              type="button"
+              onClick={() => {
+                setAiGeneratorOpen((v) => !v);
+                setSearchOpen(false);
+              }}
+              className={`mt-1 flex items-center gap-2 rounded-md px-2.5 py-1.5 text-start text-[12px] font-semibold transition-colors ${
+                aiGeneratorOpen
+                  ? "bg-accent/20 text-accent ring-1 ring-accent/30"
+                  : "text-accent/90 hover:bg-accent/10 hover:text-accent"
+              }`}
+            >
+              {liveSession.isActive ? (
+                <Loader2 size={13} className="animate-spin motion-reduce:[animation-duration:2.4s] shrink-0" />
+              ) : (
+                <Sparkles size={13} strokeWidth={2.2} className="shrink-0" />
+              )}
+              <span className="flex-1 truncate">{tr("AI Generator")}</span>
+              {liveSession.isActive && (
+                <span className="text-[10px] font-mono font-bold text-accent">{liveSession.progressPct}%</span>
+              )}
+            </button>
+          )}
 
           {secondaryTrack && (
             <div className="mt-1 flex items-center gap-1 rounded-md bg-accent/10 px-2 py-1.5 ring-1 ring-accent/25">
@@ -338,7 +338,27 @@ export function MenuBody(props: SubtitleMenuProps & { onClose: () => void }) {
 
         {/* Track list section */}
         <section className="flex min-h-0 min-w-0 flex-1 flex-col">
-          {!searchOpen && languageTracks.length > 0 && (activeGroup || allLangs) && (
+          {aiGeneratorOpen ? (
+            <AISubtitleGeneratorPanel
+              onClose={() => setAiGeneratorOpen(false)}
+              mediaUrl={subContext?.mediaUrl ?? null}
+              headers={subContext?.headers ?? null}
+              durationSec={subContext?.durationSec ?? null}
+              onAddSubtitle={async (filePath, lang, name, metadata) => {
+                const ok = await props.onAddSubtitle(filePath, lang, name, metadata || {
+                  format: "srt",
+                  timingMeasurementStatus: "measured",
+                });
+                if (ok !== false && name) {
+                  markImportedSub(name);
+                  setActiveLang(ALL_LANGS);
+                  setJustImported(name);
+                }
+              }}
+            />
+          ) : (
+            <>
+              {!searchOpen && languageTracks.length > 0 && (activeGroup || allLangs) && (
             <div className="flex flex-wrap items-center gap-1.5 border-b border-edge-soft bg-canvas/15 px-3 py-2">
               <Tab active={sourceFilter === "all"} onClick={() => setSourceFilter("all")}>
                 {tr("All")} <Count value={languageTracks.length} />
@@ -501,25 +521,40 @@ export function MenuBody(props: SubtitleMenuProps & { onClose: () => void }) {
             </div>
           )}
 
-          {(liveSession.isActive || liveSession.status === "transcribing" || liveSession.status === "preparing") && (
-            <div className="flex shrink-0 items-center justify-between gap-2 border-t border-edge-soft bg-cyan-950/40 px-3 py-1.5 text-[11.5px] text-cyan-300">
+          {(liveSession.isActive || liveSession.status === "transcribing" || liveSession.status === "preparing") && !aiGeneratorOpen && (
+            <div
+              onClick={() => setAiGeneratorOpen(true)}
+              className="flex shrink-0 items-center justify-between gap-2 border-t border-edge-soft bg-accent/10 px-3 py-1.5 text-[11.5px] text-accent cursor-pointer hover:bg-accent/15 transition-colors"
+            >
               <div className="flex items-center gap-2 overflow-hidden">
-                <Loader2 size={12} className="animate-spin motion-reduce:[animation-duration:2.4s] shrink-0 text-cyan-400" />
+                <Loader2 size={12} className="animate-spin motion-reduce:[animation-duration:2.4s] shrink-0 text-accent" />
                 <span className="truncate">
-                  {liveSession.translate ? tr("Translating speech to English") : tr("Live Whisper transcription")} ({liveSession.progressPct}% · {Math.floor(liveSession.currentSec / 60)}m / {Math.floor(liveSession.totalSec / 60)}m · {liveSession.cueCount} cues)
+                  {liveSession.mode === "translate"
+                    ? tr("Translating speech to English")
+                    : liveSession.mode === "academic"
+                    ? tr("Transcribing lecture dialogue")
+                    : tr("Transcribing spoken dialogue")} ({liveSession.progressPct}% · {Math.floor(liveSession.currentSec / 60)}m / {Math.floor(liveSession.totalSec / 60)}m · {liveSession.cueCount} cues)
                 </span>
               </div>
-              <button
-                type="button"
-                onClick={() => void liveSession.stop()}
-                className="shrink-0 px-2 py-0.5 rounded bg-red-500/20 hover:bg-red-500/30 text-red-300 text-[10px] font-bold uppercase transition-colors"
-              >
-                {tr("Stop")}
-              </button>
+              <div className="flex items-center gap-1.5 shrink-0">
+                <span className="text-[10px] font-bold uppercase text-accent hover:underline">
+                  {tr("View")}
+                </span>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    void liveSession.stop();
+                  }}
+                  className="px-2 py-0.5 rounded bg-red-500/20 hover:bg-red-500/30 text-red-300 text-[10px] font-bold uppercase transition-colors"
+                >
+                  {tr("Stop")}
+                </button>
+              </div>
             </div>
           )}
 
-          {localError && (
+          {localError && !aiGeneratorOpen && (
             <div className="flex shrink-0 items-center justify-between gap-2 border-t border-edge-soft bg-danger/10 px-3 py-1.5 text-[11.5px] text-danger">
               <span className="flex-1">{localError}</span>
               <button
@@ -533,62 +568,55 @@ export function MenuBody(props: SubtitleMenuProps & { onClose: () => void }) {
             </div>
           )}
 
-          <div className="flex shrink-0 items-stretch border-t border-edge-soft">
-            <button
-              onClick={() => {
-                setSearchFocusLang(null);
-                setSearchOpen((v) => !v);
-              }}
-              className="flex flex-1 items-center gap-2 px-3 py-2 text-start text-[12px] font-semibold text-ink-muted transition-colors hover:bg-canvas/40 hover:text-ink"
-            >
-              <SearchIcon size={12} strokeWidth={2.2} />
-              {searchOpen ? tr("Hide search") : tr("Find more subtitles")}
-            </button>
-            {isTauri && (
-              <>
-                {whisperAvailable && (
-                  <>
-                    <HoverTooltip label={tr("Toggle English translation for anime & foreign movies")} align="end">
+          {!aiGeneratorOpen && (
+            <div className="flex shrink-0 items-stretch border-t border-edge-soft">
+              <button
+                onClick={() => {
+                  setSearchFocusLang(null);
+                  setSearchOpen((v) => !v);
+                }}
+                className="flex flex-1 items-center gap-2 px-3 py-2 text-start text-[12px] font-semibold text-ink-muted transition-colors hover:bg-canvas/40 hover:text-ink"
+              >
+                <SearchIcon size={12} strokeWidth={2.2} />
+                {searchOpen ? tr("Hide search") : tr("Find more subtitles")}
+              </button>
+              {isTauri && (
+                <>
+                  {whisperAvailable && (
+                    <HoverTooltip label={tr("Generate offline subtitles with AI in any language")} align="end">
                       <button
                         type="button"
-                        onClick={() => setTranslateToEn(!translateToEn)}
-                        className={`flex h-full shrink-0 items-center px-2 py-2 text-[11px] font-bold border-s border-edge-soft transition-colors ${
-                          translateToEn
-                            ? "bg-cyan-500/20 text-cyan-300"
+                        onClick={() => setAiGeneratorOpen(true)}
+                        className={`flex h-full shrink-0 items-center gap-1.5 border-s border-edge-soft px-3 py-2 text-[12px] font-semibold transition-colors ${
+                          liveSession.isActive
+                            ? "bg-accent/15 text-accent"
                             : "text-ink-muted hover:text-ink hover:bg-canvas/40"
                         }`}
-                      >
-                        {translateToEn ? tr("EN Trans") : tr("Verbatim")}
-                      </button>
-                    </HoverTooltip>
-                    <HoverTooltip label={tr("Generate continuous offline subtitles with Whisper ASR")} align="end">
-                      <button
-                        disabled={liveSession.isActive}
-                        onClick={() => void generateWithWhisper()}
-                        className="flex h-full shrink-0 items-center gap-1.5 border-s border-edge-soft px-3 py-2 text-[12px] font-semibold text-accent transition-colors hover:bg-accent-soft/20 disabled:opacity-50"
                       >
                         {liveSession.isActive ? (
                           <Loader2 size={12} className="animate-spin motion-reduce:[animation-duration:2.4s]" />
                         ) : (
                           <Sparkles size={12} strokeWidth={2.2} />
                         )}
-                        {liveSession.isActive ? `${liveSession.progressPct}%` : tr("Generate")}
+                        {liveSession.isActive ? `${liveSession.progressPct}%` : tr("Generate with AI")}
                       </button>
                     </HoverTooltip>
-                  </>
-                )}
-                <HoverTooltip label={tr("Load a .srt or .ass from your computer")} align="end">
-                  <button
-                    onClick={() => void loadLocal()}
-                    className="flex h-full shrink-0 items-center gap-2 border-s border-edge-soft px-3 py-2 text-[12px] font-semibold text-ink-muted transition-colors hover:bg-canvas/40 hover:text-ink"
-                  >
-                    <FolderOpen size={12} strokeWidth={2.2} />
-                    {tr("Load file")}
-                  </button>
-                </HoverTooltip>
-              </>
-            )}
-          </div>
+                  )}
+                  <HoverTooltip label={tr("Load a .srt or .ass from your computer")} align="end">
+                    <button
+                      onClick={() => void loadLocal()}
+                      className="flex h-full shrink-0 items-center gap-2 border-s border-edge-soft px-3 py-2 text-[12px] font-semibold text-ink-muted transition-colors hover:bg-canvas/40 hover:text-ink"
+                    >
+                      <FolderOpen size={12} strokeWidth={2.2} />
+                      {tr("Load file")}
+                    </button>
+                  </HoverTooltip>
+                </>
+              )}
+            </div>
+          )}
+            </>
+          )}
         </section>
       </div>
     </div>

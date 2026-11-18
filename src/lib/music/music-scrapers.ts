@@ -1,5 +1,11 @@
 import type { MusicTrack } from "./types";
 import { musicTrackKey } from "./sources";
+import {
+  resolveMonochromeFlacStream,
+  resolveTidalProxyFlacStream,
+  resolveTorrentLosslessDiscography,
+  type TorrentLosslessRelease,
+} from "./monochrome-flac";
 
 export type FederatedMusicSource = {
   connectorId: string;
@@ -10,17 +16,72 @@ export type FederatedMusicSource = {
   format: "FLAC" | "ALAC" | "WAV" | "Opus" | "AAC" | "MP3";
   streamUrl: string;
   latencyMs: number;
-  provider: "Debrid / Stremio Addon" | "Local Lossless" | "YouTube Music" | "SoundCloud" | "Spotify";
+  provider:
+    | "Monochrome Hi-Res FLAC"
+    | "Tidal HiFi Master Proxy"
+    | "Torrent Lossless Swarm"
+    | "Debrid / Stremio Addon"
+    | "Local Lossless"
+    | "YouTube Music"
+    | "SoundCloud"
+    | "Spotify";
+  editionDetail?: string;
+  seeders?: number;
 };
 
 /**
  * Discovers and federates candidate audio streams from local storage, debrid caches,
- * and online music catalog scrapers, sorting by fidelity (Lossless FLAC first).
+ * online music catalog scrapers, and Monochrome's lossless API (tracks.monochrome.st),
+ * sorting by fidelity (Hi-Res Lossless FLAC first).
  */
-export async function resolveLosslessAudioSources(track: MusicTrack): Promise<FederatedMusicSource[]> {
+export async function resolveLosslessAudioSources(
+  track: MusicTrack,
+): Promise<FederatedMusicSource[]> {
   const sources: FederatedMusicSource[] = [];
 
-  // Local or High-Res FLAC stream candidate
+  // 1. Monochrome Hi-Res Lossless Stream (tracks.monochrome.st)
+  try {
+    const monoStream = await resolveMonochromeFlacStream(track);
+    if (monoStream) {
+      sources.push({
+        connectorId: "monochrome-flac",
+        name: "Monochrome Studio Master",
+        badge: monoStream.badge,
+        isLossless: true,
+        bitrateKbps: monoStream.bitrateKbps,
+        format: "FLAC",
+        streamUrl: monoStream.streamUrl,
+        latencyMs: 45,
+        provider: "Monochrome Hi-Res FLAC",
+        editionDetail: "Direct uncompressed FLAC stream from Monochrome API",
+      });
+    }
+  } catch (err) {
+    console.debug("[FederatedSources] Monochrome FLAC lookup error", err);
+  }
+
+  // 2. Tidal HiFi Master Proxy (tidal-proxy.monochrome.tf)
+  try {
+    const tidalStream = await resolveTidalProxyFlacStream(track);
+    if (tidalStream) {
+      sources.push({
+        connectorId: "tidal-proxy-flac",
+        name: "Tidal Studio Master (Monochrome Gateway)",
+        badge: tidalStream.badge,
+        isLossless: true,
+        bitrateKbps: tidalStream.bitrateKbps,
+        format: "FLAC",
+        streamUrl: tidalStream.streamUrl,
+        latencyMs: 65,
+        provider: "Tidal HiFi Master Proxy",
+        editionDetail: "24-bit bit-perfect master audio pass-through",
+      });
+    }
+  } catch (err) {
+    console.debug("[FederatedSources] Tidal proxy lookup error", err);
+  }
+
+  // 3. Local High-Res FLAC stream candidate
   if (track.connectorId === "local" || track.quality?.lossless) {
     sources.push({
       connectorId: "local",
@@ -30,12 +91,35 @@ export async function resolveLosslessAudioSources(track: MusicTrack): Promise<Fe
       bitrateKbps: 2450,
       format: "FLAC",
       streamUrl: track.playbackUrl ?? "",
-      latencyMs: 12,
+      latencyMs: 8,
       provider: "Local Lossless",
+      editionDetail: "Bit-perfect local disk playback",
     });
   }
 
-  // Debrid & Torrent cached music release (FLAC discography)
+  // 4. Torrent Lossless Swarm (Vinyl & SACD Rips via Debrid Cache)
+  try {
+    const torrentReleases: TorrentLosslessRelease[] = resolveTorrentLosslessDiscography(track);
+    for (const rel of torrentReleases.slice(0, 2)) {
+      sources.push({
+        connectorId: rel.id,
+        name: rel.title,
+        badge: `${rel.edition} (${rel.seeders} seeders)`,
+        isLossless: true,
+        bitrateKbps: rel.bitrateKbps,
+        format: "FLAC",
+        streamUrl: rel.debridStreamUrl,
+        latencyMs: 110,
+        provider: "Torrent Lossless Swarm",
+        editionDetail: `${rel.sourceTracker} · Instant Debrid Cache`,
+        seeders: rel.seeders,
+      });
+    }
+  } catch (err) {
+    console.debug("[FederatedSources] Torrent discography error", err);
+  }
+
+  // 5. Debrid & Stremio Addon cached release
   sources.push({
     connectorId: "debrid-music",
     name: "Cached Lossless Studio Master",
@@ -44,11 +128,12 @@ export async function resolveLosslessAudioSources(track: MusicTrack): Promise<Fe
     bitrateKbps: 1411,
     format: "FLAC",
     streamUrl: `debrid://music/${musicTrackKey(track)}`,
-    latencyMs: 140,
+    latencyMs: 130,
     provider: "Debrid / Stremio Addon",
+    editionDetail: "Multi-tracker debrid cache",
   });
 
-  // YouTube Music High-Bitrate AAC / Opus Stream
+  // 6. YouTube Music High-Bitrate AAC / Opus Stream
   sources.push({
     connectorId: "youtube",
     name: "YouTube Music Premium",
@@ -61,7 +146,7 @@ export async function resolveLosslessAudioSources(track: MusicTrack): Promise<Fe
     provider: "YouTube Music",
   });
 
-  // SoundCloud High Quality
+  // 7. SoundCloud High Quality
   sources.push({
     connectorId: "soundcloud",
     name: "SoundCloud HQ Audio",
@@ -70,7 +155,7 @@ export async function resolveLosslessAudioSources(track: MusicTrack): Promise<Fe
     bitrateKbps: 320,
     format: "MP3",
     streamUrl: `sc://${track.id}`,
-    latencyMs: 110,
+    latencyMs: 115,
     provider: "SoundCloud",
   });
 

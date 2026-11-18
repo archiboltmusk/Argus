@@ -5,6 +5,7 @@ import {
   AlertTriangle,
   Check,
   Trash2,
+  Download,
 } from "lucide-react";
 import {
   loadBTRErrorItems,
@@ -15,6 +16,7 @@ import {
   type GTErrorItem,
   type GTErrorCategory,
 } from "@/lib/education/btr-error-vault";
+import { downloadBTRErrorVaultAnkiDeck } from "@/lib/education/btr-anki-exporter";
 import { CORE_BTR_SUBJECTS } from "@/lib/education/corebtr-schedule";
 
 interface BTRErrorLogModalProps {
@@ -96,6 +98,16 @@ export function BTRErrorLogModal({ open, onClose }: BTRErrorLogModalProps) {
           </div>
 
           <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => downloadBTRErrorVaultAnkiDeck(filteredErrors)}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-xs font-bold hover:bg-emerald-500/25 transition shadow-xs"
+              title="Export Current Mistakes to Anki (.txt)"
+            >
+              <Download size={14} />
+              <span>Export to Anki</span>
+            </button>
+
             <button
               type="button"
               onClick={() => setShowAddForm(!showAddForm)}

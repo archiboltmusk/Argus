@@ -59,7 +59,8 @@ import { BackdropLayer } from "./play-picker/backdrop-layer";
 import { CinematicLoader } from "./play-picker/cinematic-loader";
 import { DebridDownModal } from "./play-picker/debrid-down-modal";
 import { P2pConfirmModal } from "./play-picker/p2p-confirm-modal";
-import { CachedFilterPill, LanguageFilterPill } from "./play-picker/filter-pills";
+import { CachedFilterPill, DeviceFilterPill, LanguageFilterPill } from "./play-picker/filter-pills";
+import { evaluateDeviceStreamSupport, filterDeviceSupportedStreams } from "@/lib/streams/device-stream-filter";
 import { PickerEmptyLadder } from "./play-picker/picker-empty-ladder";
 import { NoSourcesConfiguredModal } from "./play-picker/no-sources-modal";
 import {
@@ -312,6 +313,7 @@ export function PlayPicker({
     settings.requirePreferredLanguage === true && baseLangs.length > 0,
   );
   const [cachedOnly, setCachedOnly] = useState(false);
+  const [showUnsupportedDeviceStreams, setShowUnsupportedDeviceStreams] = useState(false);
 
   const { inviteKey, canInvite, inviteSentRef, hostSourceForMedia, expectHostSource } =
     useRoomInvite({
@@ -379,6 +381,17 @@ export function PlayPicker({
       const cached = all.filter(isCached);
       if (cached.length > 0) all = cached;
     }
+    if (
+      settings.filterUnsupportedDeviceStreams !== false &&
+      !showUnsupportedDeviceStreams &&
+      !isDownload
+    ) {
+      const supported = filterDeviceSupportedStreams(all, undefined, {
+        isDownload,
+        keepBestIfAllIncompatible: false,
+      });
+      if (supported.length > 0) all = supported;
+    }
     let fellBack = false;
     if (activeStreamFilter && !hostMatch) {
       const applied = applyCustomFilter(all, activeStreamFilter);
@@ -417,10 +430,20 @@ export function PlayPicker({
     hostMatch,
     activeStreamFilter,
     settings.streamMode,
+    settings.filterUnsupportedDeviceStreams,
+    showUnsupportedDeviceStreams,
+    isDownload,
     isSeasonDownload,
     meta.id,
     episode?.season,
   ]);
+
+  const deviceHiddenCount = useMemo(() => {
+    if (!result || isDownload || settings.filterUnsupportedDeviceStreams === false) return 0;
+    return result.picker.all.filter(
+      (s) => !evaluateDeviceStreamSupport(s, undefined, { isDownload }).supported,
+    ).length;
+  }, [result, isDownload, settings.filterUnsupportedDeviceStreams]);
 
   // Zero-wait: probe the best few direct links now so the first pick skips the probe wait.
   useEffect(() => {
@@ -1249,6 +1272,13 @@ export function PlayPicker({
                 debrids={debrids}
                 langFilterSlot={
                   <div className="ml-auto flex items-center gap-2">
+                    {deviceHiddenCount > 0 && settings.filterUnsupportedDeviceStreams !== false && (
+                      <DeviceFilterPill
+                        on={!showUnsupportedDeviceStreams}
+                        hiddenCount={deviceHiddenCount}
+                        onToggle={() => setShowUnsupportedDeviceStreams((v) => !v)}
+                      />
+                    )}
                     {uncachedHiddenCount > 0 && (
                       <CachedFilterPill
                         on={cachedOnly}

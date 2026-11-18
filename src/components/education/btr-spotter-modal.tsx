@@ -95,6 +95,10 @@ export function BTRSpotterModal({ open, onClose }: BTRSpotterModalProps) {
             </button>
           </div>
 
+          <figure className="rounded-xl bg-black p-2">
+            <img src={new URL(`../../assets/education/spotters/${current.id}.svg`, import.meta.url).href} alt={`Teaching illustration for ${current.modality} question ${currentIndex + 1}`} className="mx-auto h-48 max-w-full object-contain" />
+            <figcaption className="text-center text-xs text-white/75">Teaching diagram · schematic illustration</figcaption>
+          </figure>
           {/* Clinical Vignette Card */}
           <div className="rounded-2xl bg-canvas p-4 border border-edge flex flex-col gap-2">
             <span className="text-[10px] font-bold uppercase tracking-wider text-ink-muted">

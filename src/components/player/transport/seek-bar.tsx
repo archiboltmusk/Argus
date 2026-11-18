@@ -41,7 +41,10 @@ export function SeekBar({
   const [scrub, setScrub] = useState<number | null>(null);
   const [pending, setPending] = useState<number | null>(null);
   const [overDot, setOverDot] = useState(false);
+  const [fineRateLabel, setFineRateLabel] = useState<string | null>(null);
+  const [isSnapped, setIsSnapped] = useState(false);
   const pendingAtRef = useRef<number | null>(null);
+  const pointerDownRef = useRef<{ x: number; y: number; time: number } | null>(null);
   const positionRef = useRef(0);
   const { settings } = useSettings();
   const baseDot = Math.min(Math.max(settings.seekDotSize ?? 16, 8), 200);
@@ -73,6 +76,31 @@ export function SeekBar({
     [skipSegments, durationSec, dur],
   );
 
+  const snapThresholdSec = useMemo(() => {
+    const width = ref.current?.clientWidth ?? 1000;
+    return (dur / Math.max(width, 100)) * 12; // ~12px magnetic snap zone
+  }, [dur]);
+
+  const snapToBoundaries = useCallback(
+    (sec: number): { time: number; snapped: boolean } => {
+      const targets: number[] = [];
+      for (const c of chapters) {
+        if (c.startSec > 0 && c.startSec < dur) targets.push(c.startSec);
+      }
+      for (const s of skipSegments) {
+        if (s.startSec > 0 && s.startSec < dur) targets.push(s.startSec);
+        if (s.endSec > 0 && s.endSec < dur) targets.push(s.endSec);
+      }
+      for (const target of targets) {
+        if (Math.abs(sec - target) <= snapThresholdSec) {
+          return { time: target, snapped: true };
+        }
+      }
+      return { time: sec, snapped: false };
+    },
+    [chapters, skipSegments, dur, snapThresholdSec],
+  );
+
   const hoverChapter = useMemo(() => {
     if (hover == null || chapters.length === 0) return null;
     let found: Chapter | null = null;
@@ -87,6 +115,9 @@ export function SeekBar({
     setScrub(null);
     setHover(null);
     setOverDot(false);
+    setFineRateLabel(null);
+    setIsSnapped(false);
+    pointerDownRef.current = null;
   };
 
   useEffect(() => {
@@ -145,16 +176,52 @@ export function SeekBar({
     return () => cancelAnimationFrame(frameId);
   }, [pending]);
 
-  const fromEvent = (clientX: number): number => {
+  const fromEvent = (
+    clientX: number,
+    clientY?: number,
+  ): { time: number; snapped: boolean; rateLabel: string | null } => {
     const r = ref.current?.getBoundingClientRect();
-    if (!r) return 0;
-    const x = Math.max(0, Math.min(1, (clientX - r.left) / r.width));
-    return x * dur;
+    if (!r || r.width <= 0) return { time: 0, snapped: false, rateLabel: null };
+
+    let rate = 1;
+    let rateLabel: string | null = null;
+    if (clientY != null && pointerDownRef.current != null) {
+      const dy = Math.max(0, pointerDownRef.current.y - clientY);
+      if (dy >= 120) {
+        rate = 0.1;
+        rateLabel = "Fine (0.1×)";
+      } else if (dy >= 75) {
+        rate = 0.25;
+        rateLabel = "Fine (1/4×)";
+      } else if (dy >= 35) {
+        rate = 0.5;
+        rateLabel = "Fine (1/2×)";
+      }
+    }
+
+    let rawTime: number;
+    if (rate < 1 && pointerDownRef.current != null) {
+      const deltaX = clientX - pointerDownRef.current.x;
+      const initialTime = pointerDownRef.current.time;
+      rawTime = Math.max(0, Math.min(dur, initialTime + (deltaX / r.width) * dur * rate));
+    } else {
+      const x = Math.max(0, Math.min(1, (clientX - r.left) / r.width));
+      rawTime = x * dur;
+    }
+
+    const { time, snapped } = snapToBoundaries(rawTime);
+    return { time, snapped, rateLabel };
   };
 
   const onMove = (e: React.PointerEvent) => {
-    setHover(fromEvent(e.clientX));
-    if (scrub != null) setScrub(fromEvent(e.clientX));
+    const isScrubbing = scrub != null;
+    const { time, snapped, rateLabel } = fromEvent(e.clientX, isScrubbing ? e.clientY : undefined);
+    setHover(time);
+    setIsSnapped(snapped);
+    if (isScrubbing) {
+      setScrub(time);
+      setFineRateLabel(rateLabel);
+    }
     const r = ref.current?.getBoundingClientRect();
     if (r && r.width > 0) {
       const pointerX = e.clientX - r.left;
@@ -165,6 +232,7 @@ export function SeekBar({
   const onLeave = useCallback(() => {
     setHover(null);
     setOverDot(false);
+    setIsSnapped(false);
   }, []);
   const hoverGuardRef = useRef(false);
   hoverGuardRef.current = hover != null && scrub == null;
@@ -176,12 +244,19 @@ export function SeekBar({
     } catch {}
     setPending(null);
     pendingAtRef.current = null;
-    setScrub(fromEvent(e.clientX));
+    const { time, snapped, rateLabel } = fromEvent(e.clientX, e.clientY);
+    pointerDownRef.current = { x: e.clientX, y: e.clientY, time };
+    setScrub(time);
+    setIsSnapped(snapped);
+    setFineRateLabel(rateLabel);
   };
   const onUp = (e: React.PointerEvent) => {
     try {
       e.currentTarget.releasePointerCapture(e.pointerId);
     } catch {}
+    pointerDownRef.current = null;
+    setFineRateLabel(null);
+    setIsSnapped(false);
     if (scrub != null) {
       onSeek(scrub);
       setPending(scrub);
@@ -192,6 +267,12 @@ export function SeekBar({
 
   return (
     <div dir="ltr" className="pointer-events-auto group/seek relative h-12">
+      {fineRateLabel && (
+        <div className="pointer-events-none absolute -top-14 left-1/2 -translate-x-1/2 z-30 flex items-center gap-1.5 rounded-full border border-white/20 bg-black/90 px-3 py-1 text-[11px] font-bold text-amber-400 shadow-2xl backdrop-blur-xl animate-[argus-fade-in_150ms_ease-out]">
+          <span>⚡</span>
+          <span>{fineRateLabel}</span>
+        </div>
+      )}
       <div
         ref={ref}
         data-player-seekbar
@@ -202,10 +283,10 @@ export function SeekBar({
         onPointerCancel={onCancel}
         onClick={(e) => {
           if (e.isTrusted) return;
-          const seek = fromEvent(e.clientX);
-          setPending(seek);
+          const { time } = fromEvent(e.clientX);
+          setPending(time);
           pendingAtRef.current = Date.now();
-          onSeek(seek);
+          onSeek(time);
         }}
         className="absolute inset-x-0 top-1/2 -translate-y-1/2 cursor-pointer"
       >
@@ -251,11 +332,14 @@ export function SeekBar({
             <ThumbPreview
               time={hover}
               dur={dur}
+              chapterTitle={hoverChapter}
               canFetch={!bufferedOnly || hover <= position + Math.max(0, buffered - BUFFER_PAD_SEC)}
             />
           ) : (
             <div
-              className="pointer-events-none absolute -top-9 -translate-x-1/2 flex items-center gap-1.5 whitespace-nowrap rounded-md border border-white/10 bg-black/90 px-2.5 py-1 text-[12px] font-semibold text-white shadow-lg backdrop-blur-md"
+              className={`pointer-events-none absolute -top-9 -translate-x-1/2 flex items-center gap-1.5 whitespace-nowrap rounded-md border border-white/10 bg-black/90 px-2.5 py-1 text-[12px] font-semibold text-white shadow-lg backdrop-blur-md transition-all duration-75 ${
+                isSnapped ? "ring-2 ring-amber-400/80 bg-black" : ""
+              }`}
               style={{ left: `${(hover / dur) * 100}%` }}
             >
               {hoverChapter && (
@@ -267,6 +351,14 @@ export function SeekBar({
                 </>
               )}
               <span className="font-mono tabular-nums">{fmtTime(hover)}</span>
+              <span className="font-mono text-white/45 text-[11px] tabular-nums">
+                (-{fmtTime(Math.max(0, dur - hover))})
+              </span>
+              {isSnapped && (
+                <span className="rounded bg-amber-400/25 px-1 py-0.5 font-sans text-[9px] font-bold uppercase tracking-wider text-amber-300">
+                  Snap
+                </span>
+              )}
             </div>
           ))}
       </div>

@@ -1,10 +1,11 @@
-import { Languages, X } from "lucide-react";
+import { Languages, X, FileText } from "lucide-react";
 import { UiIcon } from "@/components/ui-icon";
 import type { TrackInfo } from "@/lib/player/bridge";
 import { useT } from "@/lib/i18n";
 import { useSettings } from "@/lib/settings";
 import { useAutoSyncHandle } from "@/components/player/autosync/autosync-store";
 import { HoverTooltip } from "@/components/hover-tooltip";
+import { toggleTranscriptDrawer } from "@/lib/subtitles/transcript-store";
 import { SubtitleFpsControl } from "./subtitle-fps-control";
 import { SyncControl } from "./sync-control";
 
@@ -15,6 +16,7 @@ type Props = {
   hasSecondary: boolean;
   delaySec: number;
   delayNonZero: boolean;
+  onDelay?: (sec: number) => void;
   onEnterSync?: () => void;
   onOpenStyleBar?: () => void;
   onClose: () => void;
@@ -47,6 +49,7 @@ export function MenuHeader(p: Props) {
           canLiveSync={p.selectedTrack != null}
           delaySec={p.delaySec}
           delayNonZero={p.delayNonZero}
+          onDelay={p.onDelay}
           onLiveSync={p.onEnterSync}
           onClose={p.onClose}
         />
@@ -55,6 +58,20 @@ export function MenuHeader(p: Props) {
           track={p.selectedTrack}
           hasSecondary={p.hasSecondary}
         />
+
+        <HoverTooltip label={tr("Interactive transcript")} side="bottom" align="end">
+          <button
+            type="button"
+            onClick={() => {
+              toggleTranscriptDrawer();
+              p.onClose();
+            }}
+            aria-label={tr("Interactive transcript")}
+            className="flex h-9 w-9 items-center justify-center rounded-full text-ink-muted transition-colors hover:bg-raised hover:text-ink"
+          >
+            <FileText size={17} strokeWidth={2} />
+          </button>
+        </HoverTooltip>
 
         <HoverTooltip label={tr("Dual subtitles")} side="bottom" align="end">
           <button

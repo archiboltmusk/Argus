@@ -1,5 +1,30 @@
-import { Languages, Zap } from "lucide-react";
+import { Languages, MonitorSmartphone, Zap } from "lucide-react";
 import { abbreviateLanguages, normalizeLangCode } from "./picker-utils";
+
+export function DeviceFilterPill({
+  on,
+  hiddenCount,
+  onToggle,
+}: {
+  on: boolean;
+  hiddenCount: number;
+  onToggle: () => void;
+}) {
+  return (
+    <button
+      onClick={onToggle}
+      className={`flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10.5px] font-semibold uppercase tracking-[0.18em] transition-colors ${
+        on
+          ? "bg-emerald-500/15 text-emerald-400 hover:bg-emerald-500/22"
+          : "text-ink-subtle/80 hover:bg-canvas/60 hover:text-ink-muted"
+      }`}
+      aria-pressed={on}
+    >
+      <MonitorSmartphone size={11} strokeWidth={2.2} />
+      {on ? `Playable only · +${hiddenCount}` : `Show all formats`}
+    </button>
+  );
+}
 
 export function CachedFilterPill({
   on,

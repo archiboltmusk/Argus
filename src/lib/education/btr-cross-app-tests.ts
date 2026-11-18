@@ -8,7 +8,7 @@
  * - Generic NEET-PG / INI-CET Mock Tests
  */
 
-export type MedicalTestPlatform = "marrow" | "prepladder" | "dams" | "cerebellum" | "other";
+export type MedicalTestPlatform = "marrow" | "prepladder" | "dams" | "cerebellum" | "corebtr" | "other";
 export type ExamMarkingPattern = "neet_pg" | "ini_cet" | "custom";
 
 export interface CrossAppMistakeItem {
@@ -87,6 +87,14 @@ export const PLATFORM_METADATA: Record<
     badgeText: "text-red-400",
     tagline: "Cerebellum Mission Tests, BTR Mocks & LNX",
     commonTestTypes: ["BTR Grand Test", "Mission INI-CET Mock", "Late Night Express (LNX) Test"],
+  },
+  corebtr: {
+    name: "CoreBTR / Dr. Zainab Vora",
+    brandColor: "#0ea5e9", // Sky Blue
+    badgeBg: "bg-sky-500/15 border-sky-500/30",
+    badgeText: "text-sky-400",
+    tagline: "CoreBTR 200 MCQ Marathon, Volatiles Sprint & 20th Subject Mock",
+    commonTestTypes: ["CoreBTR National Mock", "Volatiles Sprint GT", "20th Subject CBT", "T&D Integrated Paper"],
   },
   other: {
     name: "Other Mock Exam",
@@ -345,6 +353,7 @@ export function calculateCrossAppAnalytics(records: CrossAppTestRecord[]): Cross
         prepladder: { testCount: 0, averageAccuracy: 0, averagePercentile: 0, bestScore: 0 },
         dams: { testCount: 0, averageAccuracy: 0, averagePercentile: 0, bestScore: 0 },
         cerebellum: { testCount: 0, averageAccuracy: 0, averagePercentile: 0, bestScore: 0 },
+        corebtr: { testCount: 0, averageAccuracy: 0, averagePercentile: 0, bestScore: 0 },
         other: { testCount: 0, averageAccuracy: 0, averagePercentile: 0, bestScore: 0 },
       },
       topWeakSubjects: [],
@@ -360,6 +369,7 @@ export function calculateCrossAppAnalytics(records: CrossAppTestRecord[]): Cross
     prepladder: { accuracies: [], percentiles: [], bestScore: 0 },
     dams: { accuracies: [], percentiles: [], bestScore: 0 },
     cerebellum: { accuracies: [], percentiles: [], bestScore: 0 },
+    corebtr: { accuracies: [], percentiles: [], bestScore: 0 },
     other: { accuracies: [], percentiles: [], bestScore: 0 },
   };
 
@@ -392,6 +402,7 @@ export function calculateCrossAppAnalytics(records: CrossAppTestRecord[]): Cross
     prepladder: formatPlatformStat(platforms.prepladder),
     dams: formatPlatformStat(platforms.dams),
     cerebellum: formatPlatformStat(platforms.cerebellum),
+    corebtr: formatPlatformStat(platforms.corebtr),
     other: formatPlatformStat(platforms.other),
   };
 

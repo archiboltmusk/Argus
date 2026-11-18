@@ -270,6 +270,8 @@ export function usePlayerMedia(params: {
     assScale: assNormalizeScale,
     subTrackId: selectedSubTrack?.id,
     sdhFilterAllowed,
+    videoWidth: snap.videoWidth,
+    videoHeight: snap.videoHeight,
   });
   const captionsPopout = useCaptionsPopoutOpen();
   useEffect(() => {

@@ -18,7 +18,7 @@ export function MobileNotice() {
         </h1>
         <p className="text-[14.5px] leading-relaxed text-ink-muted">
           {t(
-            "This instance of Argus is made for desktop. Our standalone iOS and Android apps are coming soon, each with a bespoke, mobile-first experience built for its native platform.",
+            "This version of Argus is built for desktop computers. Our standalone mobile apps are coming soon, tailored specifically for phone and tablet screens.",
           )}
         </p>
         <p className="text-[14.5px] leading-relaxed text-ink-muted">

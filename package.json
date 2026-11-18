@@ -1,6 +1,6 @@
 {
   "name": "argus",
-  "version": "3.0.0",
+  "version": "3.17.13",
   "private": true,
   "license": "MIT",
   "type": "module",
@@ -34,6 +34,7 @@
     "package:smart-tv": "node scripts/package-smart-tv.mjs",
     "build:ecosystem": "node scripts/build-cross-ecosystem.mjs",
     "shipyard": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/build-shipyard.ps1",
+    "release:prep": "node scripts/release-prep.mjs",
     "release:beta": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/release-beta.ps1",
     "release:stable": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/release-beta.ps1 -Channel stable",
     "build:web": "vite build --mode web",

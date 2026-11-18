@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   X,
   Play,
@@ -8,22 +8,40 @@ import {
   Radio,
   Clock,
   Check,
+  BookOpen,
+  Maximize2,
+  Zap,
+  Loader2,
 } from "lucide-react";
 import {
   CORE_BTR_OFFICIAL_CHANNEL,
   CORE_BTR_BROADCASTS,
   type BTRBroadcastVideo,
 } from "@/lib/education/btr-broadcasts";
+import { buildYouTubeEmbedUrl } from "@/lib/education/btr-youtube-bridge";
+import { fetchTrailer, trailerSrc } from "@/lib/trailer";
 
 interface BTRBroadcastsModalProps {
   open: boolean;
   onClose: () => void;
+  onOpenInWorkstation?: (video: BTRBroadcastVideo) => void;
 }
 
-export function BTRBroadcastsModal({ open, onClose }: BTRBroadcastsModalProps) {
+export function BTRBroadcastsModal({
+  open,
+  onClose,
+  onOpenInWorkstation,
+}: BTRBroadcastsModalProps) {
   const [activeVideo, setActiveVideo] = useState<BTRBroadcastVideo>(CORE_BTR_BROADCASTS[0]);
   const [activeFilter, setActiveFilter] = useState<string>("ALL");
   const [copiedPearl, setCopiedPearl] = useState<string | null>(null);
+  const [nativeSrc, setNativeSrc] = useState<string | null>(null);
+  const [isExtracting, setIsExtracting] = useState<boolean>(false);
+
+  useEffect(() => {
+    setNativeSrc(null);
+    setIsExtracting(false);
+  }, [activeVideo.youtubeId]);
 
   if (!open) return null;
 
@@ -37,6 +55,20 @@ export function BTRBroadcastsModal({ open, onClose }: BTRBroadcastsModalProps) {
     navigator.clipboard?.writeText(text);
     setCopiedPearl(text);
     setTimeout(() => setCopiedPearl(null), 2000);
+  };
+
+  const startNativeStream = async (youtubeId: string) => {
+    setIsExtracting(true);
+    try {
+      const info = await fetchTrailer(youtubeId, "720p");
+      if (info) {
+        setNativeSrc(trailerSrc(info));
+      }
+    } catch {
+      // Fallback remains in embed mode
+    } finally {
+      setIsExtracting(false);
+    }
   };
 
   return (
@@ -76,31 +108,134 @@ export function BTRBroadcastsModal({ open, onClose }: BTRBroadcastsModalProps) {
           </button>
         </header>
 
-        {/* Daily 3 PM Core Drop Banner */}
+        {/* Daily 3 PM Video Banner */}
         <div className="shrink-0 bg-gradient-to-r from-accent/20 via-emerald-600/15 to-transparent border-b border-edge-soft px-6 py-2.5 flex items-center justify-between text-xs">
           <div className="flex items-center gap-2 text-ink">
             <Flame size={14} className="text-amber-400" />
-            <span className="font-bold">Daily 3:00 PM Core Drop:</span>
+            <span className="font-bold">Daily 3:00 PM Video:</span>
             <span className="text-ink-muted hidden sm:inline">
-              New micro-strategy sessions and high-yield mini-quizzes drop daily at 3 PM IST.
+              New short study sessions and quizzes posted daily at 3 PM.
             </span>
           </div>
-          <span className="font-mono text-[11px] font-bold text-accent">Active Broadcast Feed</span>
+          <span className="font-mono text-[11px] font-bold text-accent">Latest Videos</span>
         </div>
 
         {/* Content Body: Split between active player and playlist */}
         <div className="flex-1 flex flex-col lg:flex-row overflow-hidden">
-          {/* LEFT: Distraction-free Theater Player & Key Pearls (60%) */}
+          {/* LEFT: Player & Key Points (60%) */}
           <div className="w-full lg:w-[60%] flex flex-col border-b lg:border-b-0 lg:border-r border-edge bg-black/60 overflow-y-auto p-4 sm:p-5 gap-4">
-            {/* Embed Frame */}
-            <div className="relative aspect-video w-full rounded-2xl overflow-hidden bg-black border border-edge-soft shadow-lg">
-              <iframe
-                title={activeVideo.title}
-                src={`https://www.youtube-nocookie.com/embed/${activeVideo.youtubeId}?rel=0&modestbranding=1`}
-                className="w-full h-full border-none"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                allowFullScreen
-              />
+            {/* Embed Frame with Error 153 mitigation & Native HD Playback */}
+            <div className="relative aspect-video w-full rounded-2xl overflow-hidden bg-black border border-edge-soft shadow-lg group">
+              {nativeSrc ? (
+                <div className="relative w-full h-full bg-black flex items-center justify-center">
+                  <video
+                    src={nativeSrc}
+                    controls
+                    autoPlay
+                    className="w-full h-full object-contain"
+                  />
+                </div>
+              ) : isExtracting ? (
+                <div className="relative w-full h-full bg-black flex flex-col items-center justify-center gap-3 text-white">
+                  <Loader2 size={32} className="animate-spin text-accent" />
+                  <span className="text-xs font-medium text-white/80">
+                    Extracting High-Definition Stream via Argus Engine...
+                  </span>
+                </div>
+              ) : (
+                <iframe
+                  key={activeVideo.youtubeId}
+                  title={activeVideo.title}
+                  src={buildYouTubeEmbedUrl(activeVideo.youtubeId, { autoplay: false, enableJsApi: false })}
+                  className="w-full h-full border-none"
+                  referrerPolicy="strict-origin-when-cross-origin"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                  allowFullScreen
+                />
+              )}
+
+              {/* Quick Watch Controls: Native HD, Popout Window & YouTube */}
+              <div className="absolute top-3 right-3 z-20 flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (nativeSrc) {
+                      setNativeSrc(null);
+                    } else {
+                      void startNativeStream(activeVideo.youtubeId);
+                    }
+                  }}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-bold text-xs backdrop-blur-md border transition shadow-lg opacity-90 hover:opacity-100 ${
+                    nativeSrc
+                      ? "bg-accent text-white border-accent/40"
+                      : "bg-black/85 hover:bg-black text-amber-300 border-amber-400/30"
+                  }`}
+                  title="Stream directly with zero restrictions using the Argus native engine"
+                >
+                  <Zap size={12} className={nativeSrc ? "fill-current" : "text-amber-400"} />
+                  <span>{nativeSrc ? "Embed Mode" : "Native HD"}</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const popout = window.open(
+                      `https://www.youtube.com/watch?v=${activeVideo.youtubeId}`,
+                      "_blank",
+                      "width=1000,height=560,menubar=no,toolbar=no,location=no,status=no"
+                    );
+                    popout?.focus();
+                  }}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-black/85 hover:bg-black text-white font-bold text-xs backdrop-blur-md border border-white/20 transition shadow-lg opacity-90 hover:opacity-100"
+                  title="Open in a new window"
+                >
+                  <Maximize2 size={12} />
+                  <span>Popout Player</span>
+                </button>
+                <a
+                  href={`https://www.youtube.com/watch?v=${activeVideo.youtubeId}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-red-600/90 hover:bg-red-600 text-white font-bold text-xs backdrop-blur-md border border-red-400/30 transition shadow-lg opacity-90 hover:opacity-100"
+                  title="Watch directly on YouTube"
+                >
+                  <ExternalLink size={12} />
+                  <span>YouTube</span>
+                </a>
+              </div>
+
+              {/* In-player smart fallback hint with Error 153 quick resolution */}
+              {!nativeSrc && !isExtracting && (
+                <div className="absolute bottom-2 left-3 right-3 z-10 flex items-center justify-between text-[11px] text-white/90 bg-black/80 backdrop-blur-md px-3 py-1.5 rounded-xl border border-white/10 shadow-lg">
+                  <span className="flex items-center gap-1.5">
+                    <span className="h-1.5 w-1.5 rounded-full bg-amber-400 animate-pulse" />
+                    <span>Seeing Error 153?</span>
+                  </span>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => void startNativeStream(activeVideo.youtubeId)}
+                      className="font-bold text-accent hover:underline flex items-center gap-1 cursor-pointer"
+                    >
+                      <Zap size={11} /> Stream in Native HD
+                    </button>
+                    <span className="text-white/30">•</span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const popout = window.open(
+                          `https://www.youtube.com/watch?v=${activeVideo.youtubeId}`,
+                          "_blank",
+                          "width=1000,height=560,menubar=no,toolbar=no,location=no,status=no"
+                        );
+                        popout?.focus();
+                      }}
+                      className="text-white/70 hover:text-white hover:underline cursor-pointer"
+                    >
+                      Popout
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Video Meta */}
@@ -115,15 +250,25 @@ export function BTRBroadcastsModal({ open, onClose }: BTRBroadcastsModalProps) {
               </div>
               <h3 className="text-base font-bold text-ink leading-snug">{activeVideo.title}</h3>
               <p className="text-xs text-ink-muted leading-relaxed">{activeVideo.description}</p>
+              {onOpenInWorkstation && (
+                <button
+                  type="button"
+                  onClick={() => onOpenInWorkstation(activeVideo)}
+                  className="mt-1 flex items-center justify-center gap-2 py-2 px-3 rounded-xl bg-accent text-white font-bold text-xs hover:brightness-110 shadow-xs transition"
+                >
+                  <BookOpen size={13} />
+                  <span>Open with Side-by-Side Notes</span>
+                </button>
+              )}
             </div>
 
             {/* Key Pearls from this Drop */}
             <div className="rounded-2xl bg-surface/80 border border-edge p-4 flex flex-col gap-2.5">
               <div className="flex items-center justify-between text-xs">
                 <span className="font-bold text-ink flex items-center gap-1.5">
-                  <Sparkles size={13} className="text-accent" /> High-Yield Pearls & Takeaways:
+                  <Sparkles size={13} className="text-accent" /> Key Study Points:
                 </span>
-                <span className="text-[10px] text-ink-muted">Click any to copy</span>
+                <span className="text-[10px] text-ink-muted">Click to copy</span>
               </div>
               <div className="flex flex-col gap-2">
                 {activeVideo.keyPearls.map((pearl, i) => (

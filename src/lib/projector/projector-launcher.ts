@@ -53,7 +53,7 @@ export const PROJECTOR_INPUT_SOURCES: ProjectorInputSource[] = [
   },
   {
     id: "argus",
-    label: "Argus Cinema Hub",
+    label: "Argus Cinema",
     subtitle: "Movies, Shows, Anime & Live TV",
     badge: "Infinite",
     iconType: "argus",

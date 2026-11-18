@@ -93,7 +93,7 @@ export function BpTasteBlendBand({
             {t("Movie Night Taste Blend")}
           </h3>
           <p className="text-xs sm:text-sm text-zinc-300">
-            {t("Merge two profiles to calculate joint cinematic synergy and zero-conflict picks.")}
+            {t("Combine two profiles to find movies both of you will enjoy with no compromises.")}
           </p>
         </div>
 

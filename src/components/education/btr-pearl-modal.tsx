@@ -71,7 +71,7 @@ export function BTRPearlModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-md animate-in fade-in duration-200">
-      <div className="relative w-full max-w-lg rounded-3xl bg-[#0f101d] border border-indigo-500/30 text-white shadow-2xl flex flex-col p-6 gap-5">
+      <div className="relative w-full max-w-lg rounded-3xl bg-surface border border-edge text-white shadow-2xl flex flex-col p-6 gap-5">
         {isFinished ? (
           <div className="flex flex-col items-center justify-center py-8 text-center gap-4">
             <div className="h-16 w-16 rounded-3xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 flex items-center justify-center">
@@ -98,7 +98,7 @@ export function BTRPearlModal({
               <button
                 type="button"
                 onClick={onClose}
-                className="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs shadow transition"
+                className="px-5 py-2 rounded-xl bg-white hover:bg-white/90 text-black font-semibold font-bold text-xs shadow transition"
               >
                 Done
               </button>
@@ -110,7 +110,7 @@ export function BTRPearlModal({
               {/* Header */}
               <div className="flex items-center justify-between pb-3 border-b border-white/10">
                 <div className="flex items-center gap-2">
-                  <span className="font-mono text-xs font-bold px-2 py-0.5 rounded-lg bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+                  <span className="font-mono text-xs font-bold px-2 py-0.5 rounded-lg bg-white/10 text-white/90 border border-white/15">
                     {activePearl.code}
                   </span>
                   <span className="text-xs text-white/50 uppercase font-bold tracking-wider">
@@ -155,8 +155,8 @@ export function BTRPearlModal({
               </div>
 
               {/* 2V Yield Badge */}
-              <div className="flex items-center gap-2 p-3 rounded-xl bg-indigo-600/15 border border-indigo-500/25 text-xs text-indigo-300">
-                <Sparkles size={14} className="shrink-0 text-indigo-400" />
+              <div className="flex items-center gap-2 p-3 rounded-xl bg-white/10 border border-edge text-xs text-ink-muted">
+                <Sparkles size={14} className="shrink-0 text-ink-muted" />
                 <span>
                   <strong>Dr. Zainab Vora Board Rule: </strong>
                   High-yield volatile table. Spaced repetition interval automatically scheduled.
@@ -168,7 +168,7 @@ export function BTRPearlModal({
                 <div className="flex items-center justify-between text-[11px] font-bold uppercase tracking-wider text-white/60">
                   <span>Rate Spaced Recall (FSRS):</span>
                   {isDeckMode && pearls && (
-                    <div className="flex items-center gap-1 normal-case font-normal text-xs text-indigo-300">
+                    <div className="flex items-center gap-1 normal-case font-normal text-xs text-ink-muted">
                       <button
                         type="button"
                         onClick={handlePrev}

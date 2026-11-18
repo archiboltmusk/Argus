@@ -264,6 +264,7 @@ export function SeekBarVisual({
           leftPct={pct}
           color={dotColor}
           image={settings.seekDotImage}
+          scrubbing={scrubbing}
         />
       )}
     </>
@@ -276,12 +277,14 @@ function SeekDot({
   leftPct,
   color,
   image,
+  scrubbing,
 }: {
   shape: "circle" | "square" | "image";
   size: number;
   leftPct: number;
   color: string;
   image: string;
+  scrubbing?: boolean;
 }) {
   if (shape === "image" && image) {
     return (
@@ -289,7 +292,9 @@ function SeekDot({
         src={image}
         alt=""
         draggable={false}
-        className="absolute top-1/2 -translate-x-1/2 -translate-y-1/2 select-none object-contain drop-shadow-[0_0_6px_rgba(0,0,0,0.55)] transition-[width,height,opacity] duration-200"
+        className={`absolute top-1/2 -translate-x-1/2 -translate-y-1/2 select-none object-contain drop-shadow-[0_0_6px_rgba(0,0,0,0.55)] transition-[width,height,opacity] duration-200 ${
+          scrubbing ? "drop-shadow-[0_0_12px_rgba(255,255,255,0.85)] scale-110" : ""
+        }`}
         style={{ left: `${leftPct}%`, width: size, height: size }}
       />
     );
@@ -297,18 +302,16 @@ function SeekDot({
   const radius = shape === "square" ? "20%" : "50%";
   return (
     <div
-      className="absolute top-1/2 -translate-x-1/2 -translate-y-1/2 transition-[width,height,border-radius,box-shadow] duration-200 ease-[cubic-bezier(0.22,0.61,0.36,1)] motion-reduce:transition-none"
+      className="absolute top-1/2 -translate-x-1/2 -translate-y-1/2 transition-[width,height,border-radius,box-shadow,transform] duration-200 ease-[cubic-bezier(0.22,0.61,0.36,1)] motion-reduce:transition-none"
       style={{
         left: `${leftPct}%`,
         width: size,
         height: size,
         backgroundColor: color,
         borderRadius: radius,
-        // A hard 4px ring reads as a sticker. A tight dark halo keeps the dot
-        // legible over a blown-out frame, the soft drop seats it on the track,
-        // and the inset highlight gives it a lit top edge instead of a flat fill.
-        boxShadow:
-          "0 0 0 2px rgba(0,0,0,0.5), 0 2px 6px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.35)",
+        boxShadow: scrubbing
+          ? `0 0 0 2px rgba(0,0,0,0.6), 0 0 16px ${color}, 0 2px 8px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.4)`
+          : "0 0 0 2px rgba(0,0,0,0.5), 0 2px 6px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.35)",
       }}
     />
   );
