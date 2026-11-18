@@ -1,3 +1,4 @@
+import { ExplanationText } from "./explanation-text";
 import { useState } from "react";
 import {
   CheckCircle2,
@@ -43,10 +44,10 @@ export function BTRClinicalAutopsy({
           </div>
           <div>
             <h3 className="text-sm font-black text-white">
-              5-Tier Clinical Autopsy &amp; Distractor Inversion
+              Answer explanation
             </h3>
             <span className="text-[10px] text-white/50">
-              Gold-standard board reasoning • Harrison / Robbins calibrated
+              
             </span>
           </div>
         </div>
@@ -60,7 +61,7 @@ export function BTRClinicalAutopsy({
               activeTierTab === "all" ? "bg-white text-black shadow-xs" : "text-white/60 hover:text-white"
             }`}
           >
-            Full Autopsy
+            Explanation
           </button>
           <button
             type="button"
@@ -69,7 +70,7 @@ export function BTRClinicalAutopsy({
               activeTierTab === "distractors" ? "bg-white text-black shadow-xs" : "text-white/60 hover:text-white"
             }`}
           >
-            Distractor Inversions
+            Other options
           </button>
         </div>
       </div>
@@ -79,7 +80,7 @@ export function BTRClinicalAutopsy({
         <Lightbulb size={18} className="text-amber-400 shrink-0 mt-0.5" />
         <div className="flex-1">
           <span className="text-[10px] font-extrabold uppercase tracking-wider text-amber-300 block">
-            Tier 1 • Fast-Track Clinical Bottom Line
+            Answer
           </span>
           <p className="text-[13px] font-bold text-white mt-1 leading-relaxed">
             {exp.bottomLine}
@@ -93,16 +94,14 @@ export function BTRClinicalAutopsy({
           <div className="flex items-center justify-between">
             <span className="text-[11px] font-extrabold uppercase tracking-wider text-emerald-400 flex items-center gap-1.5">
               <CheckCircle2 size={14} />
-              Tier 2 • Why Option {String.fromCharCode(65 + question.correctIndex)} is Correct
+              Why option {String.fromCharCode(65 + question.correctIndex)} is Correct
             </span>
             <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
-              Key Diagnostic Rule
+              
             </span>
           </div>
 
-          <p className="text-[13px] text-white/90 leading-relaxed whitespace-pre-line font-medium">
-            {exp.correctRationale || exp.whyCorrect?.mechanism || exp.bottomLine}
-          </p>
+          <ExplanationText text={exp.correctRationale || exp.whyCorrect?.mechanism || "No rationale supplied."} />
 
           {exp.whyCorrect?.clinicalRule && (
             <div className="p-2.5 rounded-xl bg-black/40 border border-emerald-500/20 text-xs text-emerald-200 mt-1">
@@ -113,7 +112,7 @@ export function BTRClinicalAutopsy({
       )}
 
       {/* Examiner Trap Radar */}
-      {question.examinerTrap && (
+      {question.examinerTrap && question.examinerTrap !== "High-Yield Grand Test discriminator" && (
         <div className="p-3.5 rounded-2xl bg-rose-500/10 border border-rose-500/30 flex items-start gap-2.5">
           <AlertTriangle size={16} className="text-rose-400 shrink-0 mt-0.5" />
           <div className="text-xs">
@@ -258,17 +257,11 @@ export function BTRClinicalAutopsy({
       <div className="flex flex-wrap items-center justify-between gap-2 p-3 rounded-2xl bg-surface border border-edge text-xs">
         <div className="flex items-center gap-2">
           <BookOpen size={14} className="text-white/50" />
-          <span className="text-[11px] font-bold text-white/70">Textbook Authorities:</span>
+          <span className="text-[11px] font-bold text-white/70">Sources</span>
         </div>
 
         <div className="flex flex-wrap items-center gap-1.5">
-          {(exp.citations && exp.citations.length > 0
-            ? exp.citations
-            : [
-                { textbook: "Harrison's Principles of Internal Medicine", chapter: "21st Edition" },
-                { textbook: "Robbins & Cotran Pathologic Basis of Disease", chapter: "10th Edition" },
-              ]
-          ).map((c, cIdx) => (
+          {(exp.citations ?? []).map((c, cIdx) => (
             <span
               key={cIdx}
               className="px-2 py-0.5 rounded-md bg-white/5 border border-white/10 text-white/60 text-[10px] font-mono"

@@ -208,7 +208,7 @@ export function AISubtitleGeneratorPanel({
             </button>
 
             {langDropdownOpen && (
-              <div className="absolute top-full left-0 right-0 z-50 mt-1 max-h-44 overflow-y-auto rounded-lg border border-edge-soft bg-surface-elevated p-1 shadow-xl scrollbar-thin">
+              <div className="absolute top-full left-0 right-0 z-50 mt-1 max-h-44 overflow-y-auto rounded-lg border border-edge-soft player-menu-surface p-1 shadow-xl scrollbar-thin">
                 {SUBTITLE_LANGUAGES.map((lang) => {
                   const isSelected = selectedLang === lang.code;
                   return (
