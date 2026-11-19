@@ -1,4 +1,4 @@
-import { useViewActions } from "@/lib/view";
+import { useView } from "@/lib/view";
 import { useProfiles } from "@/lib/profiles";
 import { ActionRow } from "./action-row";
 import { ExperimentalChangelog } from "@/components/update/experimental-changelog";
@@ -16,7 +16,7 @@ import { isTauri } from "../player-panel/internals";
 
 export function AboutTab() {
   const t = useT();
-  const { setView } = useViewActions();
+  const { setView } = useView();
   const { activeProfile } = useProfiles();
   return (
     <>
