@@ -19,6 +19,22 @@ Practice Questions works with the included Argus starter set. Bring your own fil
 
 Before adding educational content to a public build, record its author, source, license or written redistribution permission, and required attribution. Review those records for images and explanations as well as questions. For public videos, use the publisher's own page or their authorized embed.
 
+### App identity on connected services
+
+Argus identifies itself as Argus in the app and browser. Some default integrations use services hosted by Harbor. Their domain, consent screens and activity logs may show Harbor.
+
+To ship with your own third-party app identity, register **Argus** in the provider's developer console and set the following public build variables. For GitHub builds, add them under **Settings → Secrets and variables → Actions → Variables**. Register the exact redirect URL with the provider and keep client secrets in the token proxy.
+
+| Integration | Build variables |
+| --- | --- |
+| Trakt | `VITE_ARGUS_TRAKT_CLIENT_ID`, `VITE_ARGUS_TRAKT_BASE` |
+| MyAnimeList | `VITE_ARGUS_MAL_CLIENT_ID`, `VITE_ARGUS_MAL_BASE`. The redirect path is `/mal/`. |
+| TheTVDB | `VITE_ARGUS_TVDB_BASE` |
+| Together | `VITE_ARGUS_PUBLIC_RELAY` for the WebSocket relay and `VITE_ARGUS_RELAY_BASE` for invite links |
+| Argus account and rankings | `VITE_ARGUS_API_BASE` |
+
+Verify the identity with a fresh sign-in on a build using your registered credentials. Existing service sessions can retain the identity under which they were originally authorized.
+
 Build targets (availability varies by release; packaging does not establish device compatibility): **Apple** (iOS, iPadOS, macOS, watchOS, tvOS, visionOS), **Android** (Google TV, Fire TV, Projectors, Mobile), **Smart TVs** (Samsung Tizen, LG webOS, Hisense VIDAA, Philips Titan OS, Panasonic, Roku), **Windows**, **Linux**, and **Web TV**.
 
 ### Worldwide communities

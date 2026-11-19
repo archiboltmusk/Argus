@@ -213,42 +213,42 @@ export function MusicServicesBrowser({ onExploreTrack }: { onExploreTrack?: (tra
         </div>
       </section>
 
-      {/* Harbor Community Integration Hub */}
+      {/* Music settings */}
       <section className="rounded-3xl border border-accent/20 bg-accent/5 p-6 space-y-6">
         <div className="flex items-center justify-between">
           <div className="space-y-1">
             <span className="inline-flex items-center gap-1.5 rounded-full bg-accent/20 px-3 py-0.5 text-xs font-bold uppercase tracking-wider text-accent">
-              <Zap className="h-3 w-3" /> Harbor Community Architecture
+              <Zap className="h-3 w-3" /> Argus Music
             </span>
-            <h3 className="text-xl font-bold">Harbor Theme Studio & Music Together Relay</h3>
+            <h3 className="text-xl font-bold">Player themes and room preview</h3>
             <p className="text-xs text-ink-subtle">
-              Inspired by harborcommunity/harbor: Custom music themes, 4-stage stream ranking, and decentralized listen-together parties.
+              Customize the player or preview a local listening room.
             </p>
           </div>
           <button
             onClick={handleCreateRoom}
             className="flex items-center gap-2 rounded-xl bg-accent px-4 py-2 text-xs font-bold text-white shadow-md hover:bg-accent/90 transition-all"
           >
-            <Users className="h-4 w-4" /> Create Music Together Room
+            <Users className="h-4 w-4" /> Preview Listening Room
           </button>
         </div>
 
         {roomCreatedCode && (
           <div className="rounded-2xl border border-emerald-500/30 bg-emerald-500/10 p-4 flex items-center justify-between text-sm">
             <div>
-              <span className="font-bold text-emerald-400">Room Ready!</span>
-              <p className="text-xs text-ink-subtle mt-0.5">Share code <strong className="text-white font-mono tracking-widest">{roomCreatedCode}</strong> with friends to sync playback with shared lyrics.</p>
+              <span className="font-bold text-emerald-400">Local room preview</span>
+              <p className="text-xs text-ink-subtle mt-0.5">Preview code <strong className="text-white font-mono tracking-widest">{roomCreatedCode}</strong>. This preview does not connect to other listeners.</p>
             </div>
             <span className="font-mono text-xs text-emerald-400 font-bold bg-emerald-500/20 px-3 py-1 rounded-lg">
-              Cloudflare Relay Active
+              Local only
             </span>
           </div>
         )}
 
-        {/* Harbor Theme Presets */}
+        {/* Theme presets */}
         <div>
           <h4 className="text-sm font-semibold flex items-center gap-2 mb-3">
-            <Palette className="h-4 w-4 text-accent" /> Harbor Player Theme Presets
+            <Palette className="h-4 w-4 text-accent" /> Player Theme Presets
           </h4>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
             {HARBOR_MUSIC_THEMES.map((theme) => {

@@ -15,7 +15,7 @@ export type HarborMusicTheme = {
 export const HARBOR_MUSIC_THEMES: HarborMusicTheme[] = [
   {
     id: "midnight-harbor",
-    name: "Midnight Harbor Glass",
+    name: "Midnight Glass",
     description: "Deep obsidian cyan gradient with frosted glass cards and cyan neon accents",
     backgroundGradient: "linear-gradient(145deg, #070d18 0%, #0b1526 50%, #060910 100%)",
     accentColor: "#00E5FF",
