@@ -14,6 +14,7 @@ import {
   saveAttempt,
   loadAttempt,
   elapsedSeconds,
+  findResumableAttempt,
 } from "../src/lib/education/attempts.ts";
 import {
   initialSimulation,
@@ -411,5 +412,25 @@ test("every shipped simulation can finish after its authored goals, including me
     assert.equal(state.resolved, false);
     state = transitionSimulation(caseData, state, { type: "reassess" });
     assert.equal(state.resolved, true, caseData.id);
+  }
+});
+
+test("resume recovers the same question order and custom deadline", () => {
+  const questions = CLINICAL_QBANK_STARTER.slice(0, 3).reverse();
+  const state = newAttempt(1000);
+  state.activeQuestionIndex = 2;
+  state.activeSince = 2000;
+  state.deadlineAt = 181000;
+  const key = attemptKey(questions, true, 3);
+  saveAttempt(key, questions, state);
+  try {
+    const resume = findResumableAttempt(CLINICAL_QBANK_STARTER);
+    assert.deepEqual(resume?.questions, questions);
+    assert.equal(resume.examMode, true);
+    assert.equal(resume.durationMinutes, 3);
+    assert.equal(loadAttempt(key, resume.questions).activeQuestionIndex, 2);
+    assert.equal(findResumableAttempt(questions.slice(1)), undefined);
+  } finally {
+    localStorage.removeItem(key);
   }
 });

@@ -12,8 +12,6 @@ const artwork: Readonly<Record<number, { logo: string; source: string; monochrom
   // Exact original-game identities where the retro directory has no wordmark.
   // Full provenance: public/games/roms/HERO-ARTWORK.md. Never reuse these for remakes or hacks.
   375: { logo: "/games/roms/metal-gear-solid.png", source: "https://commons.wikimedia.org/wiki/File:Metal_Gear_Solid_logo.png" },
-  427: { logo: "/games/roms/final-fantasy-vii.png", source: "https://store.steampowered.com/app/39140/" },
-  421: { logo: "/games/roms/final-fantasy-ix.png", source: "https://store.steampowered.com/app/377840/" },
   1128: { logo: "/games/roms/symphony-of-the-night.png", source: "https://commons.wikimedia.org/wiki/File:Castlevania_Symphony_of_the_Night_logo.png" },
   1185: { logo: "/games/roms/crash-bandicoot.png", source: "https://commons.wikimedia.org/wiki/File:Crash_bandicoot_logo.png" },
   125: { logo: "/games/roms/diablo.svg", source: "https://commons.wikimedia.org/wiki/File:Diablo_(Computerspiel)_Logo.svg", monochrome: true },

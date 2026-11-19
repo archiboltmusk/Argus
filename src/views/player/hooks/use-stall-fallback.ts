@@ -198,6 +198,8 @@ export function useStallFallback(params: {
             // Keep updating duration and addon references even if already offering
             return {
               ...prev,
+              nextStream,
+              secondsLeft: canAutoSwitch ? prev.secondsLeft : null,
               currentAddonName,
               nextAddonName,
               stalledDurationSec,
@@ -228,6 +230,7 @@ export function useStallFallback(params: {
     snap.bufferedSec,
     debrids,
     autoSwitchEnabled,
+    mirrorFailoverOn,
     inRoom,
     sourceSwitching,
   ]);

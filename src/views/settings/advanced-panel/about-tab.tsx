@@ -4,7 +4,7 @@ import { WhatsNewSection } from "../whats-new-section";
 import { useOnboarding } from "@/lib/onboarding";
 import { Check, RotateCw } from "../icons";
 import { useEffect, useState } from "react";
-import { IS_BETA_BUILD } from "@/lib/build-info";
+import { BUILD_ID, IS_BETA_BUILD } from "@/lib/build-info";
 import { useT } from "@/lib/i18n";
 import { readBetaReturnContext } from "@/lib/updater/beta-return";
 import { ROW_DESC, Section } from "../shared";
@@ -50,6 +50,7 @@ function AboutRow() {
             : `${__APP_VERSION__}${IS_BETA_BUILD ? ` (${t("Beta")})` : ""}`
         }
       />
+      <InfoLine label={t("Build ID")} value={BUILD_ID} />
       <InfoLine label={t("Build")} value={isTauri ? t("Desktop (Tauri 2 / WebView2)") : t("Web")} />
     </>
   );

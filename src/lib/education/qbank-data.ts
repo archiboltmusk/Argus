@@ -23,7 +23,7 @@ export const CLINICAL_QBANK_STARTER: ClinicalQuestion[] = [
       ],
       bottomLine: "Orphan Annie nuclei + Nuclear Grooves + Psammoma bodies = Papillary Thyroid Carcinoma.",
     },
-    highYieldTags: ["AIIMS Repeat", "Must-Know", "Endocrine"],
+    highYieldTags: ["Thyroid Cytology", "Must-Know", "Endocrine"],
   },
   {
     id: "med-pharma-02",
@@ -191,7 +191,7 @@ export const CLINICAL_QBANK_STARTER: ClinicalQuestion[] = [
       ],
       bottomLine: "TGA = 'Egg-on-a-string' on CXR. Ductal-dependent parallel circulation: Keep PDA open with IV PGE1 (Alprostadil).",
     },
-    highYieldTags: ["Pediatric Cardiology", "Prostaglandins", "INI-CET Classic"],
+    highYieldTags: ["Pediatric Cardiology", "Prostaglandins", "Congenital Heart Disease"],
   },
   {
     id: "med-neuro-09",

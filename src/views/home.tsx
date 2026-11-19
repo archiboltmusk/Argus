@@ -108,7 +108,8 @@ import { useLetterboxd } from "@/lib/stremboxd/provider";
 import { buildLetterboxdHomeRows } from "@/lib/stremboxd/home-rails";
 import { useMediaFavorites, type MediaEntry } from "@/lib/media-favorites";
 import { useLocalWatchlist } from "@/lib/local-watchlist";
-import { useScrollMemory, useHomeResetTick } from "@/lib/view";
+import { useScrollMemory, useHomeResetTick, useView } from "@/lib/view";
+import { useSearchActions } from "@/lib/search-context";
 import { CustomizableRows } from "./home/customizable-rows";
 import { CustomizeBar } from "./home/customize-bar";
 import { CWSection } from "./home/cw-section";
@@ -1326,8 +1327,30 @@ export function Home({
     [settings.tmdbKey, settings.streaming],
   );
 
+  const { setView } = useView();
+  const { setOpen: setSearchOpen } = useSearchActions();
+  const lastTvCard = useRef<string | null>(null);
+  const restoreTvFocus = useRef(false);
+  useEffect(() => {
+    if (!settings.tvNavigation) return;
+    if (!active) {
+      restoreTvFocus.current = true;
+      return;
+    }
+    if (!restoreTvFocus.current || !lastTvCard.current || !scrollEl) return;
+    const frame = window.requestAnimationFrame(() => {
+      const card = Array.from(scrollEl.querySelectorAll<HTMLButtonElement>("[data-continue-card-id]"))
+        .find((element) => element.dataset.continueCardId === lastTvCard.current && !element.disabled);
+      if (card) {
+        card.focus();
+        restoreTvFocus.current = false;
+      }
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [active, cwItems, scrollEl, settings.tvNavigation]);
+
   const cwHidden = homeRowsCustom.hidden.includes("cw");
-  const cwTop = !!homeRowsCustom.cwTop;
+  const cwTop = settings.tvNavigation || !!homeRowsCustom.cwTop;
   const cwBlock =
     cwHidden && !editMode ? null : (
       <div data-scroll-anchor="cw">
@@ -1363,6 +1386,11 @@ export function Home({
   return (
     <main
       ref={scrollCb}
+      onFocusCapture={(event) => {
+        if (!(event.target instanceof HTMLElement)) return;
+        const id = event.target.dataset.continueCardId;
+        if (settings.tvNavigation && id) lastTvCard.current = id;
+      }}
       className="flex-1 overflow-y-auto overflow-x-hidden px-5 pt-24 pb-14 sm:px-8 lg:px-12 lg:pt-28"
     >
       <ScrollRootContext.Provider value={scrollEl}>
@@ -1391,6 +1419,16 @@ export function Home({
             </div>
           )}
           {cwTop && cwBlock}
+          {settings.tvNavigation && (
+            <nav aria-label={t("Quick actions")} className="flex flex-wrap gap-3">
+              <button type="button" className="rounded-xl border border-edge px-5 py-3" onClick={() => setSearchOpen(true)}>
+                {t("Search")}
+              </button>
+              <button type="button" className="rounded-xl border border-edge px-5 py-3" onClick={() => setView("library")}>
+                {t("Library")}
+              </button>
+            </nav>
+          )}
           {settings.homeMode !== "classic" &&
             !homeRowsCustom.hidden.includes("hero") &&
             showHero && (

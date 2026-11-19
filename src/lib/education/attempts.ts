@@ -156,3 +156,44 @@ export function listAttempts(questions?: ClinicalQuestion[]): QBankSessionState[
   }
   return attempts;
 }
+
+export function findResumableAttempt(available: ClinicalQuestion[]) {
+  const byId = new Map(available.map((question) => [question.id, question]));
+  const prefix = `argus.education.attempt.v1.${encodeURIComponent(cwProfileScope().profileId || "local")}.`;
+  let latest: {
+    questions: ClinicalQuestion[];
+    examMode: boolean;
+    durationMinutes?: number;
+    updatedAt: number;
+  } | undefined;
+  try {
+    for (let index = 0; index < localStorage.length; index++) {
+      const key = localStorage.key(index);
+      if (!key?.startsWith(prefix)) continue;
+      const match = /^(exam|practice)\.\d+(?:\.minutes-(\d+(?:\.\d+)?))?$/.exec(key.slice(prefix.length));
+      if (!match) continue;
+      try {
+        const saved = JSON.parse(localStorage.getItem(key) ?? "null");
+        if (!saved?.state || saved.state.finishedAt || saved.state.result) continue;
+        const ids = JSON.parse(saved.manifest) as Array<[string, string]>;
+        const questions = ids.flatMap(([id]) => {
+          const question = byId.get(id);
+          return question ? [question] : [];
+        });
+        if (!questions.length || questions.length !== ids.length || manifest(questions) !== saved.manifest) continue;
+        const examMode = match[1] === "exam";
+        const durationMinutes = match[2] === undefined ? undefined : Number(match[2]);
+        if (attemptKey(questions, examMode, durationMinutes) !== key) continue;
+        const state = loadAttempt(key, questions, -1);
+        const updatedAt = state.activeSince ?? state.startedAt ?? -1;
+        if (state.startedAt === -1 || updatedAt <= (latest?.updatedAt ?? -1)) continue;
+        latest = { questions, examMode, durationMinutes, updatedAt };
+      } catch {
+        // One corrupt attempt must not hide other saved sessions.
+      }
+    }
+  } catch {
+    // Storage can be disabled. The starter drill remains available.
+  }
+  return latest;
+}

@@ -55,9 +55,9 @@ import { DailyWateringDeck } from "./education/daily-watering-deck";
 import { QBankRunner } from "./education/qbank-drill";
 import { QBankManager } from "./education/qbank-manager";
 import { PatientCaseSimulator } from "./education/patient-case-simulator";
-import { getAllQuestions, getInicetHighYieldQuestions } from "@/lib/education/qbank-store";
+import { getAllQuestions, getInicetHighYieldQuestions, useQBankPacks } from "@/lib/education/qbank-store";
 import { buildStudyPlan, type StudyBudget } from "@/lib/education/study-plan";
-import { listAttempts } from "@/lib/education/attempts";
+import { findResumableAttempt, listAttempts } from "@/lib/education/attempts";
 
 import type { ClinicalQuestion } from "@/lib/education/qbank-types";
 import {
@@ -451,6 +451,12 @@ export function EducationView() {
     }
   };
 
+  const questionPacks = useQBankPacks();
+  const resumable = !showQBank
+    ? findResumableAttempt(questionPacks.flatMap((pack) => pack.questions))
+    : undefined;
+  const [resumeExamMode, setResumeExamMode] = useState(false);
+
   const [activeTestId, setActiveTestId] = useState<string | undefined>(undefined);
 
   const startQBankDrill = useCallback(async (testTitleOrSubject?: string | boolean, questionsOverride?: ClinicalQuestion[]) => {
@@ -544,12 +550,29 @@ export function EducationView() {
 
           <button
             type="button"
-            onClick={() => startQBankDrill(true)}
+            onClick={() => {
+              if (resumable) {
+                setActiveDrillQuestions(resumable.questions);
+                setDrillDurationMinutes(resumable.durationMinutes);
+                setResumeExamMode(resumable.examMode);
+                setShowQBank(true);
+              } else {
+                void startQBankDrill(false);
+              }
+            }}
             className="edu-pill-button primary"
-            title={t("Practice High-Yield Medical Questions")}
           >
             <Zap size={15} className="fill-canvas text-canvas" />
-            <span>{t("Practice Questions")}</span>
+            <span>{resumable ? t("Resume Test") : t("Start Studying")}</span>
+          </button>
+
+          <button
+            type="button"
+            className="edu-pill-button"
+            onClick={() => setShowQBankManager(true)}
+          >
+            <FolderPlus size={15} />
+            <span>{t("Import Questions")}</span>
           </button>
 
           <div className="relative">
@@ -2049,6 +2072,7 @@ export function EducationView() {
           <QBankRunner
             questions={activeDrillQuestions}
             durationMinutes={drillDurationMinutes}
+            examMode={resumeExamMode}
             onFinish={(result) => {
               saveExamResult(result, activeTestId);
             }}
@@ -2056,6 +2080,7 @@ export function EducationView() {
               setShowQBank(false);
               setActiveDrillQuestions(undefined);
               setActiveTestId(undefined);
+              setResumeExamMode(false);
               setDrillDurationMinutes(undefined);
             }}
           />

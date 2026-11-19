@@ -26,7 +26,16 @@ test("BTR Backend Service: initializes cleanly and exposes API", async () => {
   assert.equal(ready, true);
 
   const tests = await getBackendTests();
-  assert.ok(Array.isArray(tests));
+  assert.deepEqual(tests, []);
+
+  const starterDrill = await buildCustomModuleTest({
+    subjects: [],
+    status: "all",
+    count: 20,
+    mode: "study",
+  });
+  assert.ok(starterDrill.length > 0, "a clean install can start a drill");
+  assert.ok(starterDrill.every((question) => !question.sourceExam));
 });
 
 test("BTR Backend Service: handles bookmarking and attempt recording", async () => {
