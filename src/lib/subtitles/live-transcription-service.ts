@@ -16,12 +16,12 @@ export const GENERATION_PROFILES: GenerationProfile[] = [
   {
     id: "verbatim",
     name: "Original Speech",
-    description: "Exact word-for-word spoken dialogue with millisecond timing precision.",
+    description: "Generate captions in the spoken language.",
   },
   {
     id: "translate",
     name: "Translate to English",
-    description: "Converts foreign speech, anime, or regional cinema into clear English subtitles.",
+    description: "Generate English subtitles from supported spoken languages.",
     badge: "Popular",
   },
   {
@@ -47,6 +47,7 @@ export interface SubtitleLanguageOption {
 export const SUBTITLE_LANGUAGES: SubtitleLanguageOption[] = [
   { code: "auto", label: "Auto Detect", nativeLabel: "Smart Multilingual" },
   { code: "en", label: "English", nativeLabel: "English" },
+  { code: "bn", label: "Bengali", nativeLabel: "বাংলা" },
   { code: "hi", label: "Hindi", nativeLabel: "हिन्दी" },
   { code: "ja", label: "Japanese", nativeLabel: "日本語" },
   { code: "es", label: "Spanish", nativeLabel: "Español" },
@@ -79,6 +80,7 @@ export interface LiveTranscriptionState {
   mode: GenerationMode;
   cleanSdh: boolean;
   error: string | null;
+  missingRanges: Array<[number, number]>;
 }
 
 type Listener = () => void;
@@ -103,6 +105,7 @@ class LiveTranscriptionManager {
     mode: "verbatim",
     cleanSdh: true,
     error: null,
+    missingRanges: [],
   };
 
   private listeners = new Set<Listener>();
@@ -113,6 +116,7 @@ class LiveTranscriptionManager {
     | null = null;
   private trackMounted = false;
   private runStartTime = 0;
+  private running = false;
 
   public static getInstance(): LiveTranscriptionManager {
     if (!LiveTranscriptionManager.instance) {
@@ -149,6 +153,7 @@ class LiveTranscriptionManager {
     mediaUrl: string;
     headers?: Record<string, string> | null;
     durationSec?: number | null;
+    audioStreamIndex?: number;
     lang?: string | null;
     translate?: boolean;
     mode?: GenerationMode;
@@ -163,8 +168,8 @@ class LiveTranscriptionManager {
       return;
     }
 
-    // Cancel existing session
-    await this.stop();
+    if (this.running) return;
+    this.running = true;
 
     this.onAddTrackCallback = options.onAddTrack ?? null;
     this.trackMounted = false;
@@ -204,6 +209,7 @@ class LiveTranscriptionManager {
         mode: selectedMode,
         cleanSdh,
         error: null,
+        missingRanges: [],
       });
 
       // Hook global Tauri event listeners that persist even when minimized
@@ -288,16 +294,29 @@ class LiveTranscriptionManager {
 
       // Kick off native Rust background task
       // Rust writes directly to `output_path` on each chunk and triggers `sub-reload` on mpv
-      const srt = await invoke<string>("asr_generate_subtitles", {
+      const { srt, missingRanges } = await invoke<{ srt: string; missingRanges: Array<[number, number]> }>("asr_generate_subtitles", {
         url: options.mediaUrl,
         headers: options.headers ?? null,
         durationSec: options.durationSec ?? null,
+        audioStreamIndex: options.audioStreamIndex ?? null,
         lang: options.lang ?? null,
         translate: isTranslate,
         outputPath: filePath,
       });
 
-      if (!srt || srt.trim().length === 0) {
+      if (missingRanges.length > 0) {
+        const format = (seconds: number) => {
+          const whole = Math.floor(seconds);
+          return `${Math.floor(whole / 60)}:${String(whole % 60).padStart(2, "0")}`;
+        };
+        const list = missingRanges.map(([from, to]) => `${format(from)}–${format(to)}`).join(", ");
+        this.updateState({
+          isActive: false,
+          status: "error",
+          missingRanges,
+          error: `Incomplete subtitles. Missing audio ranges: ${list}.`,
+        });
+      } else if (!srt || srt.trim().length === 0) {
         this.updateState({
           status: "error",
           error: "No intelligible speech detected in media stream.",
@@ -327,6 +346,7 @@ class LiveTranscriptionManager {
       }
     } finally {
       this.cleanupListeners();
+      this.running = false;
     }
   }
 

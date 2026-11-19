@@ -214,6 +214,7 @@ export function useTrackAutoload(params: {
     return () => publishSubtitleSearch(null);
   }, [refreshReady, refreshing, initialSearches, lastAdded, generated, src]);
 
+  const asrAudioStreamIndex = snap.audioTracks.find((track) => track.selected)?.ffmpegStreamIndex;
   useEffect(() => {
     if (!resolutionSettled) return;
     const searchImdbId = subtitleSearchImdbId(resolvedImdbId, resolvedImdbVerified);
@@ -228,10 +229,11 @@ export function useTrackAutoload(params: {
       filename: subtitleStreamDescriptor(src.streamRef) ?? null,
       mediaUrl: src.url ?? null,
       headers: (src.streamRef as any)?.behaviorHints?.proxyHeaders?.request ?? null,
+      audioStreamIndex: asrAudioStreamIndex,
       durationSec: snap.durationSec > 0 ? snap.durationSec : snapRef.current.durationSec,
     });
     return () => publishSubtitleContext(null);
-  }, [resolutionSettled, resolvedImdbId, resolvedImdbVerified, src, snap.durationSec]);
+  }, [resolutionSettled, resolvedImdbId, resolvedImdbVerified, src, snap.durationSec, asrAudioStreamIndex]);
 
   const autoSubLoadKeyRef = useRef<string | null>(null);
   const autoSubStagesRef = useRef(new Set<string>());
@@ -316,6 +318,7 @@ export function useTrackAutoload(params: {
         mediaUrl: src.url ?? null,
         headers: (src.streamRef as any)?.behaviorHints?.proxyHeaders?.request ?? null,
         durationSec: snapRef.current.durationSec,
+        audioStreamIndex: snapRef.current.audioTracks.find((track) => track.selected)?.ffmpegStreamIndex,
         searchSeason,
         searchEpisode,
       });

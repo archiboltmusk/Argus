@@ -27,6 +27,7 @@ interface AISubtitleGeneratorPanelProps {
   mediaUrl: string | null;
   headers?: Record<string, string> | null;
   durationSec?: number | null;
+  audioStreamIndex?: number;
   onAddSubtitle: (filePath: string, lang?: string, name?: string, metadata?: any) => Promise<boolean | void>;
 }
 
@@ -35,6 +36,7 @@ export function AISubtitleGeneratorPanel({
   mediaUrl,
   headers,
   durationSec,
+  audioStreamIndex,
   onAddSubtitle,
 }: AISubtitleGeneratorPanelProps) {
   const tr = useT();
@@ -64,12 +66,13 @@ export function AISubtitleGeneratorPanel({
       mediaUrl,
       headers: headers ?? null,
       durationSec: durationSec ?? null,
+      audioStreamIndex,
       lang: selectedLang === "auto" ? null : selectedLang,
       translate: isTranslate,
       mode: selectedMode,
       cleanSdh,
       onAddTrack: async (filePath, lang, name) => {
-        await onAddSubtitle(filePath, lang, name, {
+        return onAddSubtitle(filePath, lang, name, {
           format: "srt",
           timingMeasurementStatus: "measured",
         });
@@ -248,7 +251,7 @@ export function AISubtitleGeneratorPanel({
             {tr("Subtitle Style")}
           </label>
           <div className="grid grid-cols-1 gap-1.5">
-            {GENERATION_PROFILES.map((prof) => {
+            {GENERATION_PROFILES.filter((profile) => profile.id === "verbatim" || profile.id === "translate").map((prof) => {
               const isSelected = selectedMode === prof.id;
               return (
                 <button
@@ -313,6 +316,11 @@ export function AISubtitleGeneratorPanel({
         </div>
 
         {/* Export Notification */}
+        {session.error && !session.isActive && (
+          <p role="alert" className="min-w-0 break-words text-xs text-red-300">
+            {session.error}
+          </p>
+        )}
         {exportNotice && (
           <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-xs font-medium">
             <Check size={12} className="text-emerald-400" />
@@ -323,7 +331,7 @@ export function AISubtitleGeneratorPanel({
 
       {/* Footer Controls */}
       <div className="shrink-0 p-3 border-t border-edge-soft bg-surface-elevated/40 flex items-center justify-between gap-2">
-        {session.filePath && !session.isActive && (
+        {session.filePath && session.cueCount > 0 && !session.isActive && (
           <button
             type="button"
             onClick={handleExport}
@@ -348,10 +356,11 @@ export function AISubtitleGeneratorPanel({
             <button
               type="button"
               onClick={handleStart}
+              disabled={!mediaUrl}
               className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-accent text-accent-contrast text-xs font-bold hover:brightness-110 shadow-sm transition-all"
             >
               <Sparkles size={13} strokeWidth={2.4} />
-              {session.cueCount > 0 ? tr("Regenerate Subtitles") : tr("Start Generating Subtitles")}
+              {session.missingRanges.length > 0 ? "Retry subtitles" : session.cueCount > 0 ? tr("Regenerate Subtitles") : tr("Start Generating Subtitles")}
             </button>
           )}
         </div>

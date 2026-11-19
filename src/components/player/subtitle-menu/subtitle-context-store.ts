@@ -7,6 +7,7 @@ export type SubtitleContentContext = {
   mediaUrl?: string | null;
   headers?: Record<string, string> | null;
   durationSec?: number | null;
+  audioStreamIndex?: number;
   /**
    * Anime-aware search coordinates for the playing episode: seasonal anime
    * carry season + within-season episode, long-running anime only the
@@ -25,6 +26,10 @@ function same(a: SubtitleContentContext | null, b: SubtitleContentContext | null
   return (
     a.stremioId === b.stremioId &&
     a.filename === b.filename &&
+    a.mediaUrl === b.mediaUrl &&
+    a.durationSec === b.durationSec &&
+    a.audioStreamIndex === b.audioStreamIndex &&
+    JSON.stringify(a.headers ?? null) === JSON.stringify(b.headers ?? null) &&
     a.candidateIds.join("|") === b.candidateIds.join("|") &&
     a.searchSeason === b.searchSeason &&
     a.searchEpisode === b.searchEpisode
