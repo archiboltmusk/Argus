@@ -166,3 +166,29 @@ test("expired custom deadline finishes after reopening without resetting the tim
     dom.window.close();
   }
 });
+
+test("learning opens a general-purpose sample without imports", async () => {
+  const dom = new JSDOM("<div id='root'></div>", { url: "https://argus.invalid/" });
+  Object.assign(globalThis, { window: dom.window, document: dom.window.document, IS_REACT_ACT_ENVIRONMENT: true });
+  Object.defineProperty(globalThis, "localStorage", { configurable: true, value: dom.window.localStorage });
+  const { createRoot } = await import("react-dom/client");
+  const { LearningStart } = await import("../src/views/education/learning-start");
+  const root = createRoot(document.getElementById("root")!);
+  const button = (label: string) =>
+    [...document.querySelectorAll("button")].find((element) => element.textContent?.includes(label))!;
+  try {
+    await act(() => root.render(createElement(LearningStart, { onOpenLibrary() {} })));
+    await act(() => button("Start learning").click());
+    assert.match(document.body.textContent!, /bicycle tyre/);
+    await act(() => button("Describe the steps").click());
+    assert.match(document.querySelector('[role="status"]')?.textContent ?? "", /Correct/);
+    await act(() => button("Try another example").click());
+    assert.match(document.body.textContent!, /different table/);
+  } finally {
+    await act(() => root.unmount());
+    dom.window.close();
+    delete (globalThis as any).window;
+    delete (globalThis as any).document;
+    delete (globalThis as any).localStorage;
+  }
+});

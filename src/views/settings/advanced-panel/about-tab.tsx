@@ -1,3 +1,5 @@
+import { useViewActions } from "@/lib/view";
+import { useProfiles } from "@/lib/profiles";
 import { ActionRow } from "./action-row";
 import { ExperimentalChangelog } from "@/components/update/experimental-changelog";
 import { WhatsNewSection } from "../whats-new-section";
@@ -14,6 +16,8 @@ import { isTauri } from "../player-panel/internals";
 
 export function AboutTab() {
   const t = useT();
+  const { setView } = useViewActions();
+  const { activeProfile } = useProfiles();
   return (
     <>
       <Section
@@ -27,6 +31,13 @@ export function AboutTab() {
         <AboutRow />
         <ExperimentalChangelog />
       </Section>
+
+      {!activeProfile?.kid && (
+        <Section title={t("Experimental areas")}>
+          <button type="button" className="edu-pill-button w-fit" onClick={() => setView("lifemaxxing")}>{t("Wellbeing")}</button>
+          <button type="button" className="edu-pill-button w-fit" onClick={() => setView("argus-lab")}>{t("System Lab")}</button>
+        </Section>
+      )}
 
       <WhatsNewSection />
 

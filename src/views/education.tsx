@@ -1,5 +1,7 @@
 import { useState, useMemo, useCallback, useRef, type ChangeEvent } from "react";
 import { createPortal } from "react-dom";
+import { useProfiles } from "@/lib/profiles";
+import { LearningStart } from "./education/learning-start";
 import {
   GraduationCap,
   FolderPlus,
@@ -106,11 +108,13 @@ const BTR_19_SUBJECTS_CATALOG = [
 export function EducationView() {
   const t = useT();
   const { openPlayer, openSettings } = useView();
+  const { activeId } = useProfiles();
+  const [learningHome, setLearningHome] = useState(true);
   const { settings, update } = useSettings();
   const localEntries = useLocalLibrary();
   const notes = useStudyNotes();
 
-  const [tab, setTab] = useState<"courses" | "btr" | "checkpoints" | "qbank" | "simulator" | "notes">("btr");
+  const [tab, setTab] = useState<"courses" | "btr" | "checkpoints" | "qbank" | "simulator" | "notes">("courses");
   const [activeDrillCheckpoint, setActiveDrillCheckpoint] = useState<LectureCheckpoint | null>(null);
   const [activeCategory, setActiveCategory] = useState<CourseCategory>("all");
   const [searchQuery, setSearchQuery] = useState("");
@@ -512,22 +516,22 @@ export function EducationView() {
     setShowQBank(true);
   }, []);
 
+  if (learningHome) {
+    return (
+      <main className="edu-hub" aria-label={t("Education")}>
+        <header className="edu-masthead"><h1>{t("Learning")}</h1></header>
+        <LearningStart key={activeId ?? "local"} profileId={activeId} onOpenLibrary={() => setLearningHome(false)} />
+      </main>
+    );
+  }
+
   return (
-    <main className="edu-hub" aria-label={t("Medical Education")}>
+    <main className="edu-hub" aria-label={t("Study Library")}>
       {/* 1. Masthead matching Argus Sports Standard */}
       <header className="edu-masthead">
         <div>
-          <div className="edu-eyebrow">
-            <GraduationCap size={15} />
-            <span>ARGUS EDUCATION</span>
-            <span className="edu-eyebrow-badge">Open Masterclasses</span>
-          </div>
-          <h1>{t("Medical Education & Revision")}</h1>
-          <p>
-            {t(
-              "Video lectures, clinical practice questions, and daily flashcard review for all 19 medical subjects.",
-            )}
-          </p>
+          <button type="button" onClick={() => setLearningHome(true)} className="text-sm text-ink-muted hover:text-ink">{t("Back to Learning")}</button>
+          <h1>{t("Study Library")}</h1>
         </div>
 
         {/* Action Dock */}
@@ -654,7 +658,7 @@ export function EducationView() {
       <nav className="edu-view-tabs" aria-label={t("Education sub-navigation")}>
         {[
           { key: "courses", label: "Courses & Catalogs", icon: BookOpen },
-          { key: "btr", label: "Core BTR NEET-PG 2027", icon: Flame, badge: "PRO" },
+          { key: "btr", label: "Medical Exam Prep", icon: Flame, badge: undefined },
           { key: "checkpoints", label: "Checkpoints", icon: Target },
           { key: "qbank", label: "Clinical QBank", icon: Zap },
           { key: "simulator", label: "Emergency Simulator", icon: Stethoscope },
