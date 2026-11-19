@@ -59,7 +59,7 @@ test("Expanded retro index resolves original Sega and GameCube titles without cr
 });
 
 test("ROM hero gaps use distinct exact-game assets, never a collection or remake substitution", () => {
-  const expected=new Map([[375,"metal-gear-solid.png"],[427,"final-fantasy-vii.png"],[421,"final-fantasy-ix.png"],[1128,"symphony-of-the-night.png"],[1185,"crash-bandicoot.png"],[125,"diablo.svg"],[358,"super-mario-bros.svg"],[1068,"super-mario-bros-3.svg"],[4438,"sonic-the-hedgehog-2.png"]]);
+  const expected=new Map([[375,"metal-gear-solid.png"],[1128,"symphony-of-the-night.png"],[1185,"crash-bandicoot.png"],[125,"diablo.svg"],[358,"super-mario-bros.svg"],[1068,"super-mario-bros-3.svg"],[4438,"sonic-the-hedgehog-2.png"]]);
   const paths=new Set<string>();
   for(const [id,file] of expected){
     const art=romGameArtwork(id);assert.equal(art?.logo,`/games/roms/${file}`);assert.ok(art?.source.startsWith("https://"));
@@ -67,7 +67,7 @@ test("ROM hero gaps use distinct exact-game assets, never a collection or remake
     paths.add(art!.logo);
   }
   assert.equal(paths.size,expected.size);
-  assert.equal(romGameArtwork(125)?.monochrome,true);assert.equal(romGameArtwork(427)?.monochrome,undefined);
+  assert.equal(romGameArtwork(125)?.monochrome,true);assert.equal(romGameArtwork(427),undefined);assert.equal(romGameArtwork(421),undefined);
   assert.equal(romGameArtwork(undefined),undefined);assert.equal(romGameArtwork(999999999),undefined);
 });
 

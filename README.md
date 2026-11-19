@@ -13,6 +13,12 @@ Argus the app does the same for your media. It unifies Stremio-compatible addons
 
 Argus ships with **no content and no built-in sources**. You connect the addons, accounts, indexers, servers and playlists you already use and have rights to.
 
+### Education content
+
+Practice Questions works with the included Argus starter set. Bring your own files and question packs if you have permission to use them. Third-party test papers and solution PDFs require files you supply. Argus's software license does not grant rights to third-party content.
+
+Before adding educational content to a public build, record its author, source, license or written redistribution permission, and required attribution. Review those records for images and explanations as well as questions. For public videos, use the publisher's own page or their authorized embed.
+
 Build targets (availability varies by release; packaging does not establish device compatibility): **Apple** (iOS, iPadOS, macOS, watchOS, tvOS, visionOS), **Android** (Google TV, Fire TV, Projectors, Mobile), **Smart TVs** (Samsung Tizen, LG webOS, Hisense VIDAA, Philips Titan OS, Panasonic, Roku), **Windows**, **Linux**, and **Web TV**.
 
 ### Worldwide communities

@@ -2,13 +2,12 @@ import type { ClinicalQuestion, GrandTestResult } from "./qbank-types";
 import type {
   BTRStoredTestMeta,
   BTRUserQuestionState,
-  BTRBackendDatabasePayload,
   BTRGTAnalyticsSummary,
   CustomModuleConfig,
   GTAutopsyReport,
   RemediationRecommendation,
 } from "./btr-backend-types";
-import { readEducationalFileText } from "./json-gz-importer";
+import { CLINICAL_QBANK_STARTER } from "./qbank-data";
 import { TOP_100_FRONTIER_VAULT } from "./btr-frontier-vault";
 import {
   getQuestionPhase,
@@ -99,100 +98,29 @@ export async function initBTRBackendDatabase(): Promise<boolean> {
     try {
       const db = await getIDB();
 
-      // Check if DB already populated in IndexedDB
+      // Only Argus starter questions are loaded by default. Older releases stored
+      // the bundled third-party bank in IndexedDB, so skip its content stores.
       if (db) {
-        const count = await new Promise<number>((resolve) => {
-          try {
-            const tx = db.transaction("questions", "readonly");
-            const store = tx.objectStore("questions");
-            const countReq = store.count();
-            countReq.onsuccess = () => resolve(countReq.result || 0);
-            countReq.onerror = () => resolve(0);
-          } catch {
-            resolve(0);
-          }
-        });
-
-        if (count > 0) {
-          const tx = db.transaction(["tests", "user_state", "questions"], "readonly");
-          const testsStore = tx.objectStore("tests");
-          const userStore = tx.objectStore("user_state");
-          const qStore = tx.objectStore("questions");
-
-          const testsReq = testsStore.getAll();
-          testsReq.onsuccess = () => {
-            (testsReq.result as BTRStoredTestMeta[]).forEach((t) => memoryTestsCache.set(t.id, t));
+        try {
+          const tx = db.transaction("user_state", "readonly");
+          const request = tx.objectStore("user_state").getAll();
+          request.onsuccess = () => {
+            (request.result as BTRUserQuestionState[]).forEach((state) => {
+              memoryUserStateCache.set(state.questionId, state);
+            });
           };
-
-          const userReq = userStore.getAll();
-          userReq.onsuccess = () => {
-            (userReq.result as BTRUserQuestionState[]).forEach((u) => memoryUserStateCache.set(u.questionId, u));
-          };
-
-          const qReq = qStore.getAll();
-          qReq.onsuccess = () => {
-            (qReq.result as ClinicalQuestion[]).forEach((q) => memoryQuestionsCache.set(q.id, q));
-            buildSearchIndex();
-          };
-
           await new Promise<void>((resolve, reject) => {
             tx.oncomplete = () => resolve();
             tx.onabort = () => reject(tx.error);
           });
-          isHydrated = true;
-          return true;
+        } finally {
+          db.close();
         }
       }
-
-      // If empty or in memory, fetch and decompress the bundled corebtr database
-      let buffer: ArrayBuffer | null = null;
-      if (typeof window !== "undefined" && typeof fetch !== "undefined") {
-        try {
-          const resp = await fetch("/data/corebtr-database.json.gz");
-          if (resp.ok) {
-            buffer = await resp.arrayBuffer();
-          }
-        } catch {
-          // ignore fetch error
-        }
-      } else {
-        try {
-          const fs = await import("node:fs/promises");
-          const path = await import("node:path");
-          const filePath = path.resolve(process.cwd(), "public/data/corebtr-database.json.gz");
-          const fileBuf = await fs.readFile(filePath);
-          buffer = fileBuf.buffer.slice(fileBuf.byteOffset, fileBuf.byteOffset + fileBuf.byteLength);
-        } catch {
-          // ignore fs error
-        }
+      for (const question of CLINICAL_QBANK_STARTER) {
+        memoryQuestionsCache.set(question.id, question);
       }
-
-      if (buffer) {
-        const text = await readEducationalFileText(buffer);
-        const payload: BTRBackendDatabasePayload = JSON.parse(text);
-
-        if (payload && payload.questions && payload.tests) {
-          payload.tests.forEach((t) => memoryTestsCache.set(t.id, t));
-          payload.questions.forEach((q) => memoryQuestionsCache.set(q.id, q));
-          buildSearchIndex();
-
-          if (db) {
-            const tx = db.transaction(["questions", "tests"], "readwrite");
-            const qStore = tx.objectStore("questions");
-            const tStore = tx.objectStore("tests");
-
-            for (const q of payload.questions) {
-              qStore.put(q);
-            }
-            for (const t of payload.tests) {
-              tStore.put(t);
-            }
-          }
-
-          isHydrated = true;
-          return true;
-        }
-      }
+      buildSearchIndex();
 
       isHydrated = true;
       return true;
