@@ -732,12 +732,14 @@ pub async fn asr_generate_subtitles(
     lang: Option<String>,
     translate: Option<bool>,
     output_path: Option<String>,
+    repair_range: Option<(f32, f32)>,
+    existing_segments: Option<Vec<AsrSegment>>,
 ) -> Result<GeneratedSubtitles, String> {
     url_guard::validate_media_url(&url, true)?;
 
     #[cfg(not(feature = "asr-whisper"))]
     return {
-        let _ = (&app, &url, &headers, duration_sec, audio_stream_index, &lang, translate, &output_path);
+        let _ = (&app, &url, &headers, duration_sec, audio_stream_index, &lang, translate, &output_path, repair_range, &existing_segments);
         Err("Whisper ASR is not compiled into this build".to_string())
     };
 
@@ -769,6 +771,37 @@ pub async fn asr_generate_subtitles(
         };
 
         let audio_map = audio_stream_index.map_or_else(|| "0:a:0".to_string(), |index| format!("0:{index}"));
+        if let Some((from, to)) = repair_range {
+            use tauri::Manager;
+            if !from.is_finite() || !to.is_finite() || from < 0.0 || to <= from || to > dur || to - from > 30.0 {
+                return Err("Invalid subtitle repair range".to_string());
+            }
+            let mut segments = existing_segments.ok_or("No subtitle track to repair")?;
+            let repaired = transcribe_window(
+                &*engine, &url, &hdrs, from, to - from, &audio_map, lang, is_translate,
+            ).await?;
+            if cancel_signal.load(Ordering::Relaxed) {
+                return Err("cancelled".into());
+            }
+            segments.extend(repaired);
+            segments.sort_by(|a, b| a.t0.total_cmp(&b.t0));
+            let srt = segments_to_srt(&segments);
+            if let Some(path) = output_path.as_deref() {
+                let tmp = format!("{path}.{}.retry", uuid::Uuid::new_v4());
+                std::fs::write(&tmp, &srt).map_err(|err| format!("Saving subtitles failed: {err}"))?;
+                if let Err(err) = std::fs::rename(&tmp, path) {
+                    let _ = std::fs::remove_file(&tmp);
+                    return Err(format!("Saving subtitles failed: {err}"));
+                }
+            }
+            if let Some(mpv) = app.try_state::<crate::mpv::MpvState>() {
+                let _ = crate::mpv::mpv_command(
+                    mpv, vec![serde_json::Value::String("sub-reload".to_string())],
+                ).await;
+            }
+            return Ok(GeneratedSubtitles { srt, missing_ranges: Vec::new() });
+        }
+
         let checkpoints = subtitle_checkpoint_dir(&app, &url, &model_path, dur, lang, is_translate, &audio_map);
         let (segments, missing_ranges) = generate(
             &app,

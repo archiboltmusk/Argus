@@ -9,6 +9,10 @@ export function WelcomeStep({ onPlay }: { onPlay: (source: PlayerSrc) => void })
   const [url, setUrl] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [picking, setPicking] = useState(false);
+  const [demo, setDemo] = useState<
+    "ready" | "playing" | "failed-test" | "recovering" | "recovered" | "error"
+  >("ready");
+  const demoUrl = `${import.meta.env.BASE_URL}demo/argus-playback.mp4`;
 
   function play(source: string, title: string, local = false) {
     onPlay({
@@ -67,6 +71,64 @@ export function WelcomeStep({ onPlay }: { onPlay: (source: PlayerSrc) => void })
           )}
         </p>
       </div>
+      {demo === "ready" ? (
+        <button
+          type="button"
+          onClick={() => setDemo("playing")}
+          className="w-fit rounded-md bg-accent px-3 py-2 text-sm text-accent-contrast"
+        >
+          {t("Play the sample video")}
+        </button>
+      ) : (
+        <div className="space-y-2">
+          <video
+            key={demo === "failed-test" ? "invalid" : "sample"}
+            src={
+              demo === "failed-test"
+                ? `${import.meta.env.BASE_URL}demo/missing-source.mp4`
+                : demoUrl
+            }
+            autoPlay
+            controls
+            playsInline
+            onError={() => {
+              setDemo(demo === "failed-test" ? "recovering" : "error");
+            }}
+            onPlaying={() => {
+              if (demo === "recovering") setDemo("recovered");
+            }}
+            className="aspect-video w-full rounded-lg bg-black"
+            aria-label={t("Argus sample video")}
+          />
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setDemo("failed-test")}
+              disabled={demo === "failed-test"}
+              className="rounded border border-edge-soft px-2 py-1 text-xs"
+            >
+              {t("Simulate a source failure")}
+            </button>
+            <button
+              type="button"
+              onClick={() => setDemo("ready")}
+              className="rounded border border-edge-soft px-2 py-1 text-xs"
+            >
+              {t("Close demo")}
+            </button>
+            {demo === "error" && (
+              <span role="alert" className="text-xs">
+                {t("The sample video could not play.")}
+              </span>
+            )}
+            {demo === "recovered" && (
+              <span role="status" className="text-xs">
+                {t("Sample video restored after a simulated failure.")}
+              </span>
+            )}
+          </div>
+        </div>
+      )}
       <form
         className="flex flex-col gap-2"
         onSubmit={(event) => {

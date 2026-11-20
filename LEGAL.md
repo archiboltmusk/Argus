@@ -6,7 +6,7 @@ Argus is designed, developed, and distributed as a **pure client application and
 
 ## 1. Zero Content & Separation of Layers
 
-* **No Bundled Media or Scraping Sources**: Argus ships with zero bundled media files, streams, playlists, scrapers, indexers, or proprietary scraping scripts.
+* **Bundled Sample and External Sources**: Argus includes a first-party synthetic playback sample. It ships without bundled third-party streams, playlists, scrapers, indexers, or proprietary scraping scripts.
 * **Neutral Protocol Engine**: The software acts strictly as a multi-protocol player and interface conforming to open specifications (such as the open Stremio Addon Protocol, mDNS/Bonjour LAN discovery, and standard m3u/HLS streams).
 * **User Agency & Configuration**: All third-party add-ons, personal media servers (Plex, Jellyfin), Debrid provider accounts, and IPTV playlists are configured and authenticated exclusively by the end user.
 * **No Cloud Relay of Streams**: Video streams and media packets flow directly between the user's client and their configured endpoints. Argus operates no centralized proxy, caching server, or media relay infrastructure.

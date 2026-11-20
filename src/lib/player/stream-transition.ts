@@ -1,4 +1,9 @@
-import { beginPlaybackTrace, markPlaybackTrace, finishPlaybackTrace } from "@/lib/perf/playback-trace";
+import { alignChapterPosition } from "./chapter-alignment";
+import {
+  beginPlaybackTrace,
+  markPlaybackTrace,
+  finishPlaybackTrace,
+} from "@/lib/perf/playback-trace";
 import { normalizeLang } from "@/lib/subtitles/language";
 import type { PlayerBridge, PlayerSnapshot, PlayerSource, TrackInfo } from "./bridge";
 
@@ -123,13 +128,29 @@ export async function transitionStream(
   let outcome: "ready" | "failed" | "aborted" = "failed";
   try {
     const after = await loadReady(bridge, next, signal, timeoutMs);
-    if (signal.aborted) { outcome = "aborted"; return; }
+    if (signal.aborted) {
+      outcome = "aborted";
+      return;
+    }
+    if (
+      !next.isLive &&
+      next.startAtSec != null &&
+      snapshot.chapters?.length &&
+      after.chapters?.length
+    ) {
+      const aligned = alignChapterPosition(snapshot.chapters, after.chapters, next.startAtSec);
+      if (aligned != null && Math.abs(aligned - next.startAtSec) >= 1)
+        bridge.seek(aligned, "exact");
+    }
     await restoreSelection(bridge, snapshot, after);
     markPlaybackTrace(traceId, "first-frame");
     outcome = "ready";
   } catch (error) {
     // Another movie/switch owns the bridge after cancellation. Never load over it.
-    if (signal.aborted) { outcome = "aborted"; return; }
+    if (signal.aborted) {
+      outcome = "aborted";
+      return;
+    }
     const restored = await loadReady(bridge, previous, signal, timeoutMs);
     if (!signal.aborted) {
       await restoreSelection(bridge, snapshot, restored);

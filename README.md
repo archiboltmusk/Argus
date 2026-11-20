@@ -14,7 +14,7 @@ Argus is an open-source media player and library for the sources you already use
 
 1. Open the [latest stable release](https://github.com/archiboltmusk/Argus/releases/latest) and download an installer listed for your platform. Use the [download matrix](#platform-build-targets--download-matrix) to identify the right asset. Apple Silicon Mac users should look for `Argus-aarch64.dmg`.
 2. Start with a local video you own or an authorized direct media URL. Builds that include the [welcome-screen playback shortcut](https://github.com/archiboltmusk/Argus/pull/178) let you do this during setup. In earlier builds, finish setup and use the local library for your own files.
-3. When you want to add more sources, connect the servers, accounts, playlists, or add-ons you use. Argus ships without streaming sources.
+3. When you want to add more sources, connect the servers, accounts, playlists, or add-ons you use. Argus ships without streaming sources. The welcome screen includes a first-party playback sample on builds that bundle it.
 
 [Build from source](#getting-started) · [Contribute](CONTRIBUTING.md) · [Report a bug](https://github.com/archiboltmusk/Argus/issues/new?template=bug_report.yml)
 
@@ -244,7 +244,7 @@ pnpm build:web          # Package Progressive Web App (PWA)
 ## Responsibility & Legal
 
 Argus is an open-source software application distributed under the [MIT License](LICENSE).
-* **Zero Bundled Content**: Argus ships with **zero media files, streams, scrapers, indexers, or proprietary commercial study materials**. Users supply their own authorized media files and playlists.
+* **Media sources**: Argus includes an original synthetic playback sample. Viewers supply authorized media files, streams, and playlists. Peer-to-peer uploading is disabled by default.
 * **Educational BYOC & Non-Medical Status**: The educational module provides a neutral study shell and synthetic mock drills. Argus is not a medical device and is not intended for clinical decision support or direct patient care.
 * **Privacy & Local AI**: All transcription, speech processing, and educational aids execute locally on-device. No telemetry, watch logs, or personal voice data are stored on or sent to remote servers.
 * For full policy details, see [LEGAL.md](LEGAL.md) and [SECURITY.md](SECURITY.md).
