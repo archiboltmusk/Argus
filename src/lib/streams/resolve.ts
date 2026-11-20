@@ -1,6 +1,7 @@
 import { safeFetch as fetch } from "@/lib/safe-fetch";
 import { dwarn } from "@/lib/debug";
-import { isWeb } from "@/lib/platform";
+import { isMacDesktop, isWeb } from "@/lib/platform";
+import { markPlaybackTrace } from "@/lib/perf/playback-trace";
 import { isMixedContentSource } from "@/lib/player/web-playback";
 import { completedTorrentDownloadFor } from "@/lib/download/downloads-store";
 import { hasUncachedMarker, isP2pStream } from "./cached";
@@ -108,6 +109,7 @@ async function resolveStreamForPlatform(
   hint?: EpisodeHint,
   allowP2pFallback = true,
   allowCompletedDownload = true,
+  traceId?: string,
 ): Promise<ResolveResult> {
   const expectedSize = stream.size ?? null;
   const tried: Array<{ slug: string; code: string }> = [];
@@ -130,14 +132,14 @@ async function resolveStreamForPlatform(
   }
 
   if (forceP2p && stream.infoHash && engineP2pEligible(stream)) {
-    const direct = await tryTorrentEngine(stream, signal, hint);
+    const direct = await tryTorrentEngine(stream, signal, hint, traceId);
     if (direct) return { ok: true, data: direct, via: "p2p" };
     if (signal.aborted) return { ok: false, code: "aborted", tried };
     return { ok: false, code: engineFailureCode(), tried };
   }
 
   if (stream.infoHash && isHostedTorrentServerUrl(stream.url) && engineP2pEligible(stream)) {
-    const direct = await tryTorrentEngine(stream, signal, hint);
+    const direct = await tryTorrentEngine(stream, signal, hint, traceId);
     if (direct) return { ok: true, data: direct, via: "p2p" };
     if (signal.aborted) return { ok: false, code: "aborted", tried };
   }
@@ -193,7 +195,7 @@ async function resolveStreamForPlatform(
   }
   if (debrids.length === 0) {
     if (!allowP2pFallback) return { ok: false, code: "no-debrid-configured", tried };
-    const direct = await tryTorrentEngine(stream, signal, hint);
+    const direct = await tryTorrentEngine(stream, signal, hint, traceId);
     if (direct) return { ok: true, data: direct, via: "p2p" };
     if (signal.aborted) return { ok: false, code: "aborted", tried };
     return { ok: false, code: engineFailureCode(), tried };
@@ -217,7 +219,7 @@ async function resolveStreamForPlatform(
     hasUncachedMarker(stream) &&
     engineP2pEligible(stream)
   ) {
-    const direct = await tryTorrentEngine(stream, signal, hint);
+    const direct = await tryTorrentEngine(stream, signal, hint, traceId);
     if (direct) return { ok: true, data: direct, via: "p2p" };
     if (signal.aborted) return { ok: false, code: "aborted", tried };
   }
@@ -246,7 +248,7 @@ async function resolveStreamForPlatform(
     tried.push({ slug: d.slug, code: "stub-or-error-video" });
   }
   if (allowP2pFallback && !anyCached) {
-    const direct = await tryTorrentEngine(stream, signal, hint);
+    const direct = await tryTorrentEngine(stream, signal, hint, traceId);
     if (direct) return { ok: true, data: direct, via: "p2p" };
     if (signal.aborted) return { ok: false, code: "aborted", tried };
     if (directTorrentEnabled()) return { ok: false, code: engineFailureCode(), tried };
@@ -358,6 +360,7 @@ async function tryLocalEngine(
   stream: ParsedStream | ScoredStream,
   signal: AbortSignal,
   hint?: EpisodeHint,
+  traceId?: string,
 ): Promise<DirectLink | null> {
   if (isWeb() || !stream.infoHash || !localTorrentAllowed() || signal.aborted) return null;
   if (remoteStreamServerStrict()) return null;
@@ -373,6 +376,7 @@ async function tryLocalEngine(
   let handedOff = false;
   try {
     if (added.files.length === 0 || signal.aborted) return null;
+    markPlaybackTrace(traceId, "torrent-add-ready");
     const filename = stream.behaviorHints?.filename ?? stream.behaviorHints?.fileName ?? null;
     let chosenIdx = stream.fileIdx;
     if (chosenIdx == null || chosenIdx < 0) {
@@ -380,8 +384,11 @@ async function tryLocalEngine(
       const episode = hint?.episode ?? stream.episode;
       chosenIdx = selectEngineFileIdx(added.files, season, episode);
     }
-    if (!(await torrentEngineSelect(added.info_hash, chosenIdx))) return null;
+    const alreadySelected =
+      isMacDesktop() && added.already_managed === false && added.selected_file_idx === chosenIdx;
+    if (!alreadySelected && !(await torrentEngineSelect(added.info_hash, chosenIdx))) return null;
     if (signal.aborted) return null;
+    markPlaybackTrace(traceId, "torrent-file-ready");
     const engineUrl = `${added.stream_base}/${added.info_hash.toLowerCase()}/${chosenIdx}`;
     handedOff = true;
     return {
@@ -442,6 +449,7 @@ async function tryTorrentEngine(
   stream: ParsedStream | ScoredStream,
   signal: AbortSignal,
   hint?: EpisodeHint,
+  traceId?: string,
 ): Promise<DirectLink | null> {
   lastRemoteEngineFailure = null;
   const remoteBase = remoteStreamServerUrl();
@@ -454,7 +462,7 @@ async function tryTorrentEngine(
       lastRemoteEngineFailure = "unreachable";
     }
   }
-  return tryLocalEngine(stream, signal, hint);
+  return tryLocalEngine(stream, signal, hint, traceId);
 }
 
 function registerAbortCleanup(added: AddResult, signal: AbortSignal): () => void {

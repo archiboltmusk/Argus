@@ -87,7 +87,12 @@ pub async fn resolve_playback_redirect(url: String) -> Option<String> {
     if !candidate(&parsed) {
         return None;
     }
-    resolve(client()?, &url, RESOLVE_BUDGET).await
+    let budget = if cfg!(target_os = "macos") {
+        Duration::from_millis(450)
+    } else {
+        RESOLVE_BUDGET
+    };
+    resolve(client()?, &url, budget).await
 }
 
 #[cfg(test)]

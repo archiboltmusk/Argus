@@ -25,6 +25,7 @@ export type AddResult = {
   files: EngineFile[];
   stream_base: string;
   already_managed?: boolean;
+  selected_file_idx?: number | null;
 };
 
 export type LocalEngineStreamRef = {

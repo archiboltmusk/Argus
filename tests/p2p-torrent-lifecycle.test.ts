@@ -171,9 +171,14 @@ test("torrent file selection has a bounded recoverable wait", () => {
   assert.match(engine, /const FILE_SELECTION_TIMEOUT_SECS: u64 = 12/);
   assert.match(engine, /async fn update_only_files_bounded/);
   assert.match(engine, /"torrent file selection timed out"/);
+  assert.match(engine, /Ok\(\(\)\) => selected_file_idx = Some\(idx\)/);
   assert.match(
     resolve,
-    /if \(!\(await torrentEngineSelect\(added\.info_hash, chosenIdx\)\)\) return null/,
+    /isMacDesktop\(\) && added\.already_managed === false && added\.selected_file_idx === chosenIdx/,
+  );
+  assert.match(
+    resolve,
+    /if \(!alreadySelected && !\(await torrentEngineSelect\(added\.info_hash, chosenIdx\)\)\) return null/,
   );
 });
 

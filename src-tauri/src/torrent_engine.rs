@@ -283,6 +283,7 @@ pub struct AddResult {
     files: Vec<EngineFile>,
     stream_base: String,
     already_managed: bool,
+    selected_file_idx: Option<usize>,
 }
 
 #[derive(Serialize)]
@@ -781,10 +782,12 @@ async fn add_result_from_handle(
     let narrow_idx = file_idx
         .filter(|&i| i < files.len())
         .or_else(|| files.iter().max_by_key(|f| f.length).map(|f| f.idx));
+    let mut selected_file_idx = None;
     if let Some(idx) = narrow_idx {
         let only: HashSet<usize> = HashSet::from([idx]);
-        if let Err(error) = update_only_files_bounded(session, &handle, &only).await {
-            eprintln!("[torrent-engine] initial file narrowing failed: {error}");
+        match update_only_files_bounded(session, &handle, &only).await {
+            Ok(()) => selected_file_idx = Some(idx),
+            Err(error) => eprintln!("[torrent-engine] initial file narrowing failed: {error}"),
         }
     }
     let port = current_port().ok_or_else(|| "engine port unavailable".to_string())?;
@@ -793,6 +796,7 @@ async fn add_result_from_handle(
         files,
         stream_base: format!("http://127.0.0.1:{port}/stream"),
         already_managed,
+        selected_file_idx,
     })
 }
 
