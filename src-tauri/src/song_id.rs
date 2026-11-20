@@ -84,7 +84,7 @@ fn capture_loopback(seconds: u32) -> Result<(Vec<u8>, u32, u16, u16), String> {
         None,
     );
 
-    let (_default_period, min_period) = audio_client.get_periods().map_err(|e| e.to_string())?;
+    let (_default_period, min_period) = audio_client.get_device_period().map_err(|e| e.to_string())?;
     audio_client
         .initialize_client(
             &format,
