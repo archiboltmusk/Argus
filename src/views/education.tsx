@@ -1,5 +1,7 @@
 import { useState, useMemo, useCallback, useRef, type ChangeEvent } from "react";
 import { createPortal } from "react-dom";
+import { useProfiles } from "@/lib/profiles";
+import { LearningStart } from "./education/learning-start";
 import {
   GraduationCap,
   FolderPlus,
@@ -55,7 +57,9 @@ import { DailyWateringDeck } from "./education/daily-watering-deck";
 import { QBankRunner } from "./education/qbank-drill";
 import { QBankManager } from "./education/qbank-manager";
 import { PatientCaseSimulator } from "./education/patient-case-simulator";
-import { getAllQuestions, getInicetHighYieldQuestions } from "@/lib/education/qbank-store";
+import { getAllQuestions, getInicetHighYieldQuestions, useQBankPacks } from "@/lib/education/qbank-store";
+import { buildStudyPlan, type StudyBudget } from "@/lib/education/study-plan";
+import { findResumableAttempt, listAttempts } from "@/lib/education/attempts";
 
 import type { ClinicalQuestion } from "@/lib/education/qbank-types";
 import {
@@ -104,30 +108,45 @@ const BTR_19_SUBJECTS_CATALOG = [
 export function EducationView() {
   const t = useT();
   const { openPlayer, openSettings } = useView();
+  const { activeId } = useProfiles();
+  const [learningHome, setLearningHome] = useState(true);
   const { settings, update } = useSettings();
   const localEntries = useLocalLibrary();
   const notes = useStudyNotes();
 
-  const [tab, setTab] = useState<"courses" | "btr" | "checkpoints" | "qbank" | "simulator" | "notes">("btr");
+  const [tab, setTab] = useState<"courses" | "btr" | "checkpoints" | "qbank" | "simulator" | "notes">("courses");
   const [activeDrillCheckpoint, setActiveDrillCheckpoint] = useState<LectureCheckpoint | null>(null);
   const [activeCategory, setActiveCategory] = useState<CourseCategory>("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [showNotesDrawer, setShowNotesDrawer] = useState(false);
   const [showWateringDeck, setShowWateringDeck] = useState(false);
   const [showQBank, setShowQBank] = useState(false);
+  const [drillDurationMinutes, setDrillDurationMinutes] = useState<number | undefined>();
   const [showSimulator, setShowSimulator] = useState(false);
-  const [activeDrillQuestions, setActiveDrillQuestions] = useState<import("@/lib/education/qbank-types").ClinicalQuestion[] | undefined>();
+  const [activeDrillQuestions, setActiveDrillQuestions] = useState<
+    import("@/lib/education/qbank-types").ClinicalQuestion[] | undefined
+  >();
+  const [plannedNotes, setPlannedNotes] = useState<StudyNote[] | null>(null);
+  const [plannedQuestions, setPlannedQuestions] = useState<
+    import("@/lib/education/qbank-types").ClinicalQuestion[] | null
+  >(null);
   const [showQBankManager, setShowQBankManager] = useState(false);
   const [sharedTokens, setSharedTokens] = useState<Record<string, string>>({});
   const [copiedShareFolder, setCopiedShareFolder] = useState<string | null>(null);
-  const [importNotice, setImportNotice] = useState<{ success: boolean; message: string } | null>(null);
+  const [importNotice, setImportNotice] = useState<{ success: boolean; message: string } | null>(
+    null,
+  );
   const [showToolsMenu, setShowToolsMenu] = useState(false);
   const [heroIndex, setHeroIndex] = useState(0);
   const [selectedBtrSubject, setSelectedBtrSubject] = useState<string | undefined>();
   const [selectedBtrDestination, setSelectedBtrDestination] = useState<any>("today");
   const [revealedConcepts, setRevealedConcepts] = useState<Record<string, boolean>>({});
-  const [conceptStats, setConceptStats] = useState<Record<string, any>>(() => loadAllConceptStats());
-  const [conceptSystemFilter, setConceptSystemFilter] = useState<"all" | "cardio" | "neuro" | "renal">("all");
+  const [conceptStats, setConceptStats] = useState<Record<string, any>>(() =>
+    loadAllConceptStats(),
+  );
+  const [conceptSystemFilter, setConceptSystemFilter] = useState<
+    "all" | "cardio" | "neuro" | "renal"
+  >("all");
   const globalFileInputRef = useRef<HTMLInputElement>(null);
 
   const toggleConceptReveal = useCallback((conceptId: string) => {
@@ -147,11 +166,18 @@ export function EducationView() {
         id: "concept-co",
         timestampSec: 120,
         title: "Cardiac Output Determinants",
-        question: "Which physiological variables directly dictate Cardiac Output in the hemodynamic formula?",
+        question:
+          "Which physiological variables directly dictate Cardiac Output in the hemodynamic formula?",
         type: "multiple-choice",
-        options: ["Heart Rate and Stroke Volume (CO = HR × SV)", "Systemic Vascular Resistance only", "Left Atrial Mean Pressure only", "Pulmonary Artery Wedge Pressure only"],
+        options: [
+          "Heart Rate and Stroke Volume (CO = HR × SV)",
+          "Systemic Vascular Resistance only",
+          "Left Atrial Mean Pressure only",
+          "Pulmonary Artery Wedge Pressure only",
+        ],
         correctIndex: 0,
-        explanation: "Cardiac Output (CO) is the product of Heart Rate (HR) and Stroke Volume (SV). Any factor altering either will directly shift total organ perfusion.",
+        explanation:
+          "Cardiac Output (CO) is the product of Heart Rate (HR) and Stroke Volume (SV). Any factor altering either will directly shift total organ perfusion.",
         rewindOnFailSec: 30,
         prerequisiteId: "stroke-volume",
         conceptLabel: "Cardiovascular Physiology",
@@ -162,9 +188,15 @@ export function EducationView() {
         title: "Stroke Volume Mechanics",
         question: "What are the three core determinants that modulate ventricular stroke volume?",
         type: "multiple-choice",
-        options: ["Preload, Afterload, and Inotropy (Contractility)", "Blood Viscosity, Vessel Length, and Arteriolar Radius", "Heart Rate, Respiratory Rate, and PaO2", "Renal Blood Flow, GFR, and Aldosterone"],
+        options: [
+          "Preload, Afterload, and Inotropy (Contractility)",
+          "Blood Viscosity, Vessel Length, and Arteriolar Radius",
+          "Heart Rate, Respiratory Rate, and PaO2",
+          "Renal Blood Flow, GFR, and Aldosterone",
+        ],
         correctIndex: 0,
-        explanation: "Stroke volume is governed by Preload (end-diastolic filling), Afterload (ejection resistance), and Contractility (myocardial squeeze).",
+        explanation:
+          "Stroke volume is governed by Preload (end-diastolic filling), Afterload (ejection resistance), and Contractility (myocardial squeeze).",
         rewindOnFailSec: 30,
         prerequisiteId: "frank-starling",
         conceptLabel: "Cardiovascular Physiology",
@@ -173,10 +205,20 @@ export function EducationView() {
         id: "concept-fs",
         timestampSec: 210,
         title: "Frank-Starling Relationship",
-        question: "In your own words, explain how stretching cardiac myocytes by increasing venous return elevates contractile force.",
+        question:
+          "In your own words, explain how stretching cardiac myocytes by increasing venous return elevates contractile force.",
         type: "explain-it",
-        expectedKeywords: ["stretch", "sarcomere", "length", "calcium", "troponin", "sensitivity", "force"],
-        explanation: "Myocardial stretch optimizes sarcomere length (toward 2.2 µm) and increases Troponin C calcium affinity, generating stronger tension without adrenergic stimulation.",
+        expectedKeywords: [
+          "stretch",
+          "sarcomere",
+          "length",
+          "calcium",
+          "troponin",
+          "sensitivity",
+          "force",
+        ],
+        explanation:
+          "Myocardial stretch optimizes sarcomere length (toward 2.2 µm) and increases Troponin C calcium affinity, generating stronger tension without adrenergic stimulation.",
         rewindOnFailSec: 45,
         prerequisiteId: "sarcomere-structure",
         conceptLabel: "Myocardial Biophysics",
@@ -185,11 +227,13 @@ export function EducationView() {
         id: "concept-sarcomere",
         timestampSec: 90,
         title: "Sarcomere & Actin-Myosin Crossbridge",
-        question: "Which regulatory protein binds calcium to uncover actin binding sites during cardiac and skeletal muscle contraction?",
+        question:
+          "Which regulatory protein binds calcium to uncover actin binding sites during cardiac and skeletal muscle contraction?",
         type: "multiple-choice",
         options: ["Troponin C", "Tropomyosin", "Myosin Light Chain", "Calmodulin"],
         correctIndex: 0,
-        explanation: "Intracellular Ca²⁺ binds Troponin C, shifting tropomyosin out of the groove to expose actin-myosin crossbridge binding sites.",
+        explanation:
+          "Intracellular Ca²⁺ binds Troponin C, shifting tropomyosin out of the groove to expose actin-myosin crossbridge binding sites.",
         rewindOnFailSec: 30,
         conceptLabel: "Cellular Physiology",
       },
@@ -197,11 +241,13 @@ export function EducationView() {
         id: "concept-bp",
         timestampSec: 180,
         title: "Brachial Plexus Superior Trunk",
-        question: "Which cervical ventral rami unite to form the superior trunk, damaged in Erb-Duchenne palsy?",
+        question:
+          "Which cervical ventral rami unite to form the superior trunk, damaged in Erb-Duchenne palsy?",
         type: "multiple-choice",
         options: ["C5 and C6", "C7 only", "C8 and T1", "C3 and C4"],
         correctIndex: 0,
-        explanation: "C5 and C6 ventral rami form the superior trunk. Damage paralyzes the deltoid, supraspinatus, infraspinatus, and biceps (waiter's tip posture).",
+        explanation:
+          "C5 and C6 ventral rami form the superior trunk. Damage paralyzes the deltoid, supraspinatus, infraspinatus, and biceps (waiter's tip posture).",
         rewindOnFailSec: 30,
         prerequisiteId: "spinal-nerve-roots",
         conceptLabel: "Neuroanatomy",
@@ -210,11 +256,18 @@ export function EducationView() {
         id: "concept-snr",
         timestampSec: 140,
         title: "Spinal Nerve Root Exit Anatomy",
-        question: "Where does the C8 spinal nerve exit the neural canal in relation to the vertebral pedicles?",
+        question:
+          "Where does the C8 spinal nerve exit the neural canal in relation to the vertebral pedicles?",
         type: "multiple-choice",
-        options: ["Between C7 and T1 vertebrae", "Above C7 vertebra", "Between T1 and T2 vertebrae", "Above C1 vertebra"],
+        options: [
+          "Between C7 and T1 vertebrae",
+          "Above C7 vertebra",
+          "Between T1 and T2 vertebrae",
+          "Above C1 vertebra",
+        ],
         correctIndex: 0,
-        explanation: "Cervical nerves C1-C7 exit ABOVE their numbered vertebrae; C8 exits below C7 and above T1. Thoracic and lumbar nerves exit BELOW their corresponding vertebrae.",
+        explanation:
+          "Cervical nerves C1-C7 exit ABOVE their numbered vertebrae; C8 exits below C7 and above T1. Thoracic and lumbar nerves exit BELOW their corresponding vertebrae.",
         rewindOnFailSec: 30,
         conceptLabel: "Gross Anatomy",
       },
@@ -222,11 +275,18 @@ export function EducationView() {
         id: "concept-ma",
         timestampSec: 200,
         title: "Serum Anion Gap Calculation",
-        question: "What is the standard formula used at the bedside to calculate serum Anion Gap in metabolic acidosis?",
+        question:
+          "What is the standard formula used at the bedside to calculate serum Anion Gap in metabolic acidosis?",
         type: "multiple-choice",
-        options: ["Na⁺ - (Cl⁻ + HCO₃⁻)", "(Na⁺ + K⁺) / (Cl⁻ + HCO₃⁻)", "2×Na⁺ + Glucose/18 + BUN/2.8", "PaCO₂ - 0.7 × (24 - HCO₃⁻)"],
+        options: [
+          "Na⁺ - (Cl⁻ + HCO₃⁻)",
+          "(Na⁺ + K⁺) / (Cl⁻ + HCO₃⁻)",
+          "2×Na⁺ + Glucose/18 + BUN/2.8",
+          "PaCO₂ - 0.7 × (24 - HCO₃⁻)",
+        ],
         correctIndex: 0,
-        explanation: "Serum Anion Gap = Na⁺ - (Cl⁻ + HCO₃⁻). Normal is 10-12 mEq/L. Elevated anion gap indicates unmeasured organic acids (MUDPILES).",
+        explanation:
+          "Serum Anion Gap = Na⁺ - (Cl⁻ + HCO₃⁻). Normal is 10-12 mEq/L. Elevated anion gap indicates unmeasured organic acids (MUDPILES).",
         rewindOnFailSec: 30,
         prerequisiteId: "henderson-hasselbalch",
         conceptLabel: "Renal & Acid-Base",
@@ -235,11 +295,18 @@ export function EducationView() {
         id: "concept-hh",
         timestampSec: 160,
         title: "Henderson-Hasselbalch Ratio",
-        question: "In the carbonic acid-bicarbonate buffer system, which organ systems independently regulate the numerator and denominator?",
+        question:
+          "In the carbonic acid-bicarbonate buffer system, which organ systems independently regulate the numerator and denominator?",
         type: "multiple-choice",
-        options: ["Kidneys regulate numerator (HCO₃⁻), Lungs regulate denominator (PaCO₂)", "Lungs regulate numerator (PaCO₂), Kidneys regulate denominator (HCO₃⁻)", "Liver regulates both numerator and denominator", "GI tract regulates numerator, Spleen regulates denominator"],
+        options: [
+          "Kidneys regulate numerator (HCO₃⁻), Lungs regulate denominator (PaCO₂)",
+          "Lungs regulate numerator (PaCO₂), Kidneys regulate denominator (HCO₃⁻)",
+          "Liver regulates both numerator and denominator",
+          "GI tract regulates numerator, Spleen regulates denominator",
+        ],
         correctIndex: 0,
-        explanation: "pH = 6.1 + log([HCO₃⁻] / (0.03 × PaCO₂)). Kidneys balance the metabolic component ([HCO₃⁻]), while lungs dynamically modulate PaCO₂ via ventilation.",
+        explanation:
+          "pH = 6.1 + log([HCO₃⁻] / (0.03 × PaCO₂)). Kidneys balance the metabolic component ([HCO₃⁻]), while lungs dynamically modulate PaCO₂ via ventilation.",
         rewindOnFailSec: 30,
         conceptLabel: "Physiological Chemistry",
       },
@@ -262,7 +329,7 @@ export function EducationView() {
           success: true,
           message:
             res.type === "qbank"
-              ? `Successfully imported QBank Pack "${res.title}" with ${res.count} questions!`
+              ? `Imported "${res.title}": ${res.count} accepted, ${res.report?.rejected.length ?? 0} rejected. View item-level reports in Manage Question Packs.`
               : `Successfully imported ${res.count} study cards and notes into your deck!`,
         });
       } else {
@@ -375,9 +442,29 @@ export function EducationView() {
     [settings.videoFeeds, update, openSettings],
   );
 
+  const startStudyPlan = (minutes: StudyBudget) => {
+    const plan = buildStudyPlan(getAllQuestions(), notes, listAttempts(getAllQuestions()), minutes);
+    setDrillDurationMinutes(minutes - plan.reviews.length);
+    if (plan.reviews.length) {
+      setPlannedNotes(plan.reviews);
+      setPlannedQuestions(plan.questions);
+      setShowWateringDeck(true);
+    } else {
+      setActiveDrillQuestions(plan.questions);
+      setShowQBank(true);
+    }
+  };
+
+  const questionPacks = useQBankPacks();
+  const resumable = !showQBank
+    ? findResumableAttempt(questionPacks.flatMap((pack) => pack.questions))
+    : undefined;
+  const [resumeExamMode, setResumeExamMode] = useState(false);
+
   const [activeTestId, setActiveTestId] = useState<string | undefined>(undefined);
 
   const startQBankDrill = useCallback(async (testTitleOrSubject?: string | boolean, questionsOverride?: ClinicalQuestion[]) => {
+    setDrillDurationMinutes(undefined);
     if (questionsOverride && questionsOverride.length > 0) {
       setActiveDrillQuestions(questionsOverride);
       setActiveTestId(typeof testTitleOrSubject === "string" ? testTitleOrSubject : undefined);
@@ -407,7 +494,7 @@ export function EducationView() {
           return;
         }
       } catch (err) {
-        console.warn("[education] Failed to load backend questions, falling back to starter pack", err);
+        console.warn("[education] Failed to load backend questions", err);
       }
     }
     if (typeof testTitleOrSubject === "string") {
@@ -429,22 +516,22 @@ export function EducationView() {
     setShowQBank(true);
   }, []);
 
+  if (learningHome) {
+    return (
+      <main className="edu-hub" aria-label={t("Education")}>
+        <header className="edu-masthead"><h1>{t("Learning")}</h1></header>
+        <LearningStart key={activeId ?? "local"} profileId={activeId} onOpenLibrary={() => setLearningHome(false)} />
+      </main>
+    );
+  }
+
   return (
-    <main className="edu-hub" aria-label={t("Medical Education")}>
+    <main className="edu-hub" aria-label={t("Study Library")}>
       {/* 1. Masthead matching Argus Sports Standard */}
       <header className="edu-masthead">
         <div>
-          <div className="edu-eyebrow">
-            <GraduationCap size={15} />
-            <span>ARGUS EDUCATION</span>
-            <span className="edu-eyebrow-badge">Open Masterclasses</span>
-          </div>
-          <h1>{t("Medical Education & Revision")}</h1>
-          <p>
-            {t(
-              "Video lectures, clinical practice questions, and daily flashcard review for all 19 medical subjects.",
-            )}
-          </p>
+          <button type="button" onClick={() => setLearningHome(true)} className="text-sm text-ink-muted hover:text-ink">{t("Back to Learning")}</button>
+          <h1>{t("Study Library")}</h1>
         </div>
 
         {/* Action Dock */}
@@ -467,12 +554,29 @@ export function EducationView() {
 
           <button
             type="button"
-            onClick={() => startQBankDrill(true)}
+            onClick={() => {
+              if (resumable) {
+                setActiveDrillQuestions(resumable.questions);
+                setDrillDurationMinutes(resumable.durationMinutes);
+                setResumeExamMode(resumable.examMode);
+                setShowQBank(true);
+              } else {
+                void startQBankDrill(false);
+              }
+            }}
             className="edu-pill-button primary"
-            title={t("Practice High-Yield Medical Questions")}
           >
             <Zap size={15} className="fill-canvas text-canvas" />
-            <span>{t("Practice Questions")}</span>
+            <span>{resumable ? t("Resume Test") : t("Start Studying")}</span>
+          </button>
+
+          <button
+            type="button"
+            className="edu-pill-button"
+            onClick={() => setShowQBankManager(true)}
+          >
+            <FolderPlus size={15} />
+            <span>{t("Import Questions")}</span>
           </button>
 
           <div className="relative">
@@ -554,7 +658,7 @@ export function EducationView() {
       <nav className="edu-view-tabs" aria-label={t("Education sub-navigation")}>
         {[
           { key: "courses", label: "Courses & Catalogs", icon: BookOpen },
-          { key: "btr", label: "Core BTR NEET-PG 2027", icon: Flame, badge: "PRO" },
+          { key: "btr", label: "Medical Exam Prep", icon: Flame, badge: undefined },
           { key: "checkpoints", label: "Checkpoints", icon: Target },
           { key: "qbank", label: "Clinical QBank", icon: Zap },
           { key: "simulator", label: "Emergency Simulator", icon: Stethoscope },
@@ -622,7 +726,9 @@ export function EducationView() {
           <>
             {/* Cinematic CoreBTR Brand Hero (matching corebtr.com standard) */}
             {(() => {
-              const hasBtrLocal = localCourseFolders.some((f) => f.folder.includes("BTR") || f.title.toLowerCase().includes("btr"));
+              const hasBtrLocal = localCourseFolders.some(
+                (f) => f.folder.includes("BTR") || f.title.toLowerCase().includes("btr"),
+              );
               const featuredList = CURATED_COURSES.slice(0, 4);
               const activeHeroCourse = featuredList[heroIndex] || featuredList[0];
               if (!activeHeroCourse) return null;
@@ -630,7 +736,11 @@ export function EducationView() {
               return (
                 <div className="edu-cinematic-hero group">
                   <img
-                    src={hasBtrLocal && heroIndex === 0 ? "https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?w=1200&auto=format&fit=crop&q=80" : activeHeroCourse.thumbnail}
+                    src={
+                      hasBtrLocal && heroIndex === 0
+                        ? "https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?w=1200&auto=format&fit=crop&q=80"
+                        : activeHeroCourse.thumbnail
+                    }
                     alt={activeHeroCourse.title}
                     className="edu-cinematic-hero-bg"
                   />
@@ -697,7 +807,9 @@ export function EducationView() {
                   <div className="edu-hero-nav-dots">
                     <button
                       type="button"
-                      onClick={() => setHeroIndex((prev) => (prev > 0 ? prev - 1 : featuredList.length - 1))}
+                      onClick={() =>
+                        setHeroIndex((prev) => (prev > 0 ? prev - 1 : featuredList.length - 1))
+                      }
                       className="rounded-full bg-white/10 hover:bg-white/20 p-1.5 text-white backdrop-blur-md transition"
                       aria-label="Previous featured course"
                     >
@@ -714,7 +826,9 @@ export function EducationView() {
                     ))}
                     <button
                       type="button"
-                      onClick={() => setHeroIndex((prev) => (prev < featuredList.length - 1 ? prev + 1 : 0))}
+                      onClick={() =>
+                        setHeroIndex((prev) => (prev < featuredList.length - 1 ? prev + 1 : 0))
+                      }
                       className="rounded-full bg-white/10 hover:bg-white/20 p-1.5 text-white backdrop-blur-md transition"
                       aria-label="Next featured course"
                     >
@@ -1100,7 +1214,9 @@ export function EducationView() {
                     <GraduationCap size={22} className="text-accent" />
                     <span>{t("Curated University & Faculty Series")}</span>
                   </h2>
-                  <p>{t("Comprehensive masterclasses from open universities and medical faculties.")}</p>
+                  <p>
+                    {t("Comprehensive masterclasses from open universities and medical faculties.")}
+                  </p>
                 </div>
 
                 {/* Filter Pills & Search */}
@@ -1275,7 +1391,9 @@ export function EducationView() {
                     <span>{t("High-Yield Course Checkpoint Decks")}</span>
                   </h4>
                   <p className="text-xs text-ink-muted mt-0.5">
-                    {t("Interactive inflection points embedded directly inside university lectures.")}
+                    {t(
+                      "Interactive inflection points embedded directly inside university lectures.",
+                    )}
                   </p>
                 </div>
               </div>
@@ -1292,7 +1410,10 @@ export function EducationView() {
                       <div className="flex flex-col gap-3">
                         <div className="relative h-28 w-full overflow-hidden rounded-xl border border-white/10">
                           <img
-                            src={course?.thumbnail || "https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?w=800"}
+                            src={
+                              course?.thumbnail ||
+                              "https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?w=800"
+                            }
                             alt={course?.title || courseKey}
                             className="h-full w-full object-cover transition duration-500 group-hover:scale-105 filter brightness-75"
                           />
@@ -1313,7 +1434,8 @@ export function EducationView() {
                         </div>
 
                         <p className="text-[11.5px] text-ink-muted line-clamp-2 leading-relaxed">
-                          {course?.description || t("Interactive checkpoints linked with video timestamps.")}
+                          {course?.description ||
+                            t("Interactive checkpoints linked with video timestamps.")}
                         </p>
                       </div>
 
@@ -1321,11 +1443,10 @@ export function EducationView() {
                       <div className="relative space-y-3 pt-2">
                         <div className="edu-timeline-connector" />
                         {checkpoints.map((cp, idx) => (
-                          <div
-                            key={cp.id}
-                            className="edu-checkpoint-row"
-                          >
-                            <div className={`edu-timeline-dot ${idx === 0 ? "mastered" : "review"}`} />
+                          <div key={cp.id} className="edu-checkpoint-row">
+                            <div
+                              className={`edu-timeline-dot ${idx === 0 ? "mastered" : "review"}`}
+                            />
                             <div className="min-w-0 flex-1">
                               <div className="flex items-center justify-between gap-1">
                                 <span className="font-bold text-white text-xs truncate">
@@ -1341,7 +1462,11 @@ export function EducationView() {
                               </p>
                               <div className="flex items-center justify-between mt-2 pt-1.5 border-t border-white/[0.04]">
                                 <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-accent capitalize">
-                                  {cp.type === "multiple-choice" ? <Zap size={11} /> : <BrainCircuit size={11} />}
+                                  {cp.type === "multiple-choice" ? (
+                                    <Zap size={11} />
+                                  ) : (
+                                    <BrainCircuit size={11} />
+                                  )}
                                   {cp.type.replace("-", " ")}
                                 </span>
                                 <button
@@ -1418,11 +1543,18 @@ export function EducationView() {
                           Cardiovascular Hemodynamics & Mechanics
                         </h5>
                       </div>
-                      <span className="text-[11px] font-mono text-white/40">4 Nodes • Root-Cause Trail</span>
+                      <span className="text-[11px] font-mono text-white/40">
+                        4 Nodes • Root-Cause Trail
+                      </span>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                      {["cardiac-output", "stroke-volume", "frank-starling", "sarcomere-structure"].map((conceptId, idx) => {
+                      {[
+                        "cardiac-output",
+                        "stroke-volume",
+                        "frank-starling",
+                        "sarcomere-structure",
+                      ].map((conceptId, idx) => {
                         const concept = FOUNDATIONAL_CONCEPT_GRAPH[conceptId];
                         if (!concept) return null;
                         const isRevealed = !!revealedConcepts[conceptId];
@@ -1471,7 +1603,9 @@ export function EducationView() {
                                   {isRevealed ? <EyeOff size={12} /> : <Eye size={12} />}
                                 </button>
                               </div>
-                              <p className={`text-[11px] text-white/90 leading-snug ${isRevealed ? "" : "edu-occlusion-blurred"}`}>
+                              <p
+                                className={`text-[11px] text-white/90 leading-snug ${isRevealed ? "" : "edu-occlusion-blurred"}`}
+                              >
                                 {concept.refresherTip}
                               </p>
                               {!isRevealed && (
@@ -1530,7 +1664,9 @@ export function EducationView() {
                           Upper Limb Neuroanatomy & Palsy Localization
                         </h5>
                       </div>
-                      <span className="text-[11px] font-mono text-white/40">2 Nodes • Anatomical Trail</span>
+                      <span className="text-[11px] font-mono text-white/40">
+                        2 Nodes • Anatomical Trail
+                      </span>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1581,7 +1717,9 @@ export function EducationView() {
                                   {isRevealed ? <EyeOff size={12} /> : <Eye size={12} />}
                                 </button>
                               </div>
-                              <p className={`text-[11px] text-white/90 leading-snug ${isRevealed ? "" : "edu-occlusion-blurred"}`}>
+                              <p
+                                className={`text-[11px] text-white/90 leading-snug ${isRevealed ? "" : "edu-occlusion-blurred"}`}
+                              >
                                 {concept.refresherTip}
                               </p>
                               {!isRevealed && (
@@ -1639,7 +1777,9 @@ export function EducationView() {
                           Renal, Acid-Base & Physicochemical Buffers
                         </h5>
                       </div>
-                      <span className="text-[11px] font-mono text-white/40">2 Nodes • Equilibrium Trail</span>
+                      <span className="text-[11px] font-mono text-white/40">
+                        2 Nodes • Equilibrium Trail
+                      </span>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1690,7 +1830,9 @@ export function EducationView() {
                                   {isRevealed ? <EyeOff size={12} /> : <Eye size={12} />}
                                 </button>
                               </div>
-                              <p className={`text-[11px] text-white/90 leading-snug ${isRevealed ? "" : "edu-occlusion-blurred"}`}>
+                              <p
+                                className={`text-[11px] text-white/90 leading-snug ${isRevealed ? "" : "edu-occlusion-blurred"}`}
+                              >
                                 {concept.refresherTip}
                               </p>
                               {!isRevealed && (
@@ -1747,6 +1889,24 @@ export function EducationView() {
           <div className="flex flex-col gap-6">
             <InicetWarRoomBanner onOpenBtrWarRoom={() => setTab("btr")} />
 
+            <div className="p-4 rounded-2xl bg-surface/70 border border-edge-soft">
+              <h3 className="font-bold text-ink">Study around your duty</h3>
+              <p className="text-xs text-ink-muted py-2">
+                Due recall first, then confident mistakes and weak topics. Your question progress
+                resumes after interruptions.
+              </p>
+              <div className="flex gap-3">
+                {([10, 25, 60] as const).map((minutes) => (
+                  <button
+                    key={minutes}
+                    className="edu-pill-button"
+                    onClick={() => startStudyPlan(minutes)}
+                  >
+                    {minutes} minutes
+                  </button>
+                ))}
+              </div>
+            </div>
             {/* QBank Launch Cards */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
               <div className="p-6 rounded-2xl bg-surface/70 border border-edge-soft flex flex-col justify-between gap-4">
@@ -1756,7 +1916,9 @@ export function EducationView() {
                   </div>
                   <div>
                     <h3 className="text-base font-bold text-ink">INICET High-Yield Drill</h3>
-                    <p className="text-xs text-ink-muted">Examiner trap questions & multi-step clinical vignettes</p>
+                    <p className="text-xs text-ink-muted">
+                      Examiner trap questions & multi-step clinical vignettes
+                    </p>
                   </div>
                 </div>
                 <button
@@ -1776,7 +1938,9 @@ export function EducationView() {
                   </div>
                   <div>
                     <h3 className="text-base font-bold text-ink">Complete Question Bank</h3>
-                    <p className="text-xs text-ink-muted">All installed packs across Medicine, Surgery, OBG & Pedia</p>
+                    <p className="text-xs text-ink-muted">
+                      All installed packs across Medicine, Surgery, OBG & Pedia
+                    </p>
                   </div>
                 </div>
                 <button
@@ -1796,7 +1960,9 @@ export function EducationView() {
                   </div>
                   <div>
                     <h3 className="text-base font-bold text-ink">Manage QBank Packs</h3>
-                    <p className="text-xs text-ink-muted">Import, export, and review installed specialty packs</p>
+                    <p className="text-xs text-ink-muted">
+                      Import, export, and review installed specialty packs
+                    </p>
                   </div>
                 </div>
                 <button
@@ -1824,7 +1990,9 @@ export function EducationView() {
                 Interactive Patient Case & ER Resident Simulator
               </h2>
               <p className="text-sm text-ink-muted leading-relaxed">
-                Step into the shoes of an on-call emergency physician. Manage acute coronary syndromes, anaphylactic shock, septicemia, and traumatic head injuries under real-time hemodynamic monitoring and diagnostic investigations.
+                Step into the shoes of an on-call emergency physician. Manage acute coronary
+                syndromes, anaphylactic shock, septicemia, and traumatic head injuries under
+                real-time hemodynamic monitoring and diagnostic investigations.
               </p>
               <div className="pt-2">
                 <button
@@ -1851,7 +2019,8 @@ export function EducationView() {
               <div className="flex flex-col gap-2">
                 <h3 className="text-xl font-bold text-ink">Spaced Repetition Flashcard Engine</h3>
                 <p className="text-xs text-ink-muted max-w-lg">
-                  Every note captured while watching lectures (press &apos;N&apos; during playback) enters your daily spaced repetition watering queue.
+                  Every note captured while watching lectures (press &apos;N&apos; during playback)
+                  enters your daily spaced repetition watering queue.
                 </p>
               </div>
               <div className="flex items-center gap-3">
@@ -1879,31 +2048,35 @@ export function EducationView() {
       </div>
 
       {/* Modals & Overlays */}
-      {showQBankManager && createPortal(
-        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-canvas/80 backdrop-blur-md p-4">
-          <QBankManager
-            onStartPackDrill={(pack, filterLevel) => {
-              let qs = pack.questions;
-              if (filterLevel === "high-yield") {
-                qs = pack.questions.filter(
-                  (q) => q.depthLevel === "L3_MultiStepClinical" || q.depthLevel === "L4_InicetTrap",
-                );
-                if (qs.length === 0) qs = pack.questions;
-              }
-              setActiveDrillQuestions(qs);
-              setShowQBankManager(false);
-              setShowQBank(true);
-            }}
-            onClose={() => setShowQBankManager(false)}
-          />
-        </div>,
-        document.body,
-      )}
+      {showQBankManager &&
+        createPortal(
+          <div className="fixed inset-0 z-[200] flex items-center justify-center bg-canvas/80 backdrop-blur-md p-4">
+            <QBankManager
+              onStartPackDrill={(pack, filterLevel) => {
+                let qs = pack.questions;
+                if (filterLevel === "high-yield") {
+                  qs = pack.questions.filter(
+                    (q) =>
+                      q.depthLevel === "L3_MultiStepClinical" || q.depthLevel === "L4_InicetTrap",
+                  );
+                  if (qs.length === 0) qs = pack.questions;
+                }
+                setActiveDrillQuestions(qs);
+                setShowQBankManager(false);
+                setShowQBank(true);
+              }}
+              onClose={() => setShowQBankManager(false)}
+            />
+          </div>,
+          document.body,
+        )}
 
       {showQBank && createPortal(
         <div className="fixed inset-0 z-[200] flex items-center justify-center bg-canvas/80 backdrop-blur-md p-4">
           <QBankRunner
             questions={activeDrillQuestions}
+            durationMinutes={drillDurationMinutes}
+            examMode={resumeExamMode}
             onFinish={(result) => {
               saveExamResult(result, activeTestId);
             }}
@@ -1911,6 +2084,8 @@ export function EducationView() {
               setShowQBank(false);
               setActiveDrillQuestions(undefined);
               setActiveTestId(undefined);
+              setResumeExamMode(false);
+              setDrillDurationMinutes(undefined);
             }}
           />
         </div>,
@@ -1919,21 +2094,22 @@ export function EducationView() {
 
       {showWateringDeck && (
         <DailyWateringDeck
-          notes={notes}
-          onClose={() => setShowWateringDeck(false)}
+          notes={plannedNotes ?? notes}
+          onClose={() => {
+            setShowWateringDeck(false);
+            setPlannedNotes(null);
+            if (plannedQuestions?.length) {
+              setActiveDrillQuestions(plannedQuestions);
+              setShowQBank(true);
+            }
+            setPlannedQuestions(null);
+          }}
         />
       )}
 
-      {showNotesDrawer && (
-        <NotesDrawer
-          notes={notes}
-          onClose={() => setShowNotesDrawer(false)}
-        />
-      )}
+      {showNotesDrawer && <NotesDrawer notes={notes} onClose={() => setShowNotesDrawer(false)} />}
 
-      {showSimulator && (
-        <PatientCaseSimulator onClose={() => setShowSimulator(false)} />
-      )}
+      {showSimulator && <PatientCaseSimulator onClose={() => setShowSimulator(false)} />}
 
       {activeDrillCheckpoint && (
         <InteractiveCheckpointOverlay
@@ -1946,18 +2122,14 @@ export function EducationView() {
   );
 }
 
-function NotesDrawer({
-  notes,
-  onClose,
-}: {
-  notes: StudyNote[];
-  onClose: () => void;
-}) {
+function NotesDrawer({ notes, onClose }: { notes: StudyNote[]; onClose: () => void }) {
   const t = useT();
   const [copiedAll, setCopiedAll] = useState(false);
   const [downloadedAnki, setDownloadedAnki] = useState(false);
   const [downloadedJson, setDownloadedJson] = useState(false);
-  const [drawerNotice, setDrawerNotice] = useState<{ success: boolean; message: string } | null>(null);
+  const [drawerNotice, setDrawerNotice] = useState<{ success: boolean; message: string } | null>(
+    null,
+  );
   const drawerFileInputRef = useRef<HTMLInputElement>(null);
 
   const handleExportAll = () => {
@@ -1989,7 +2161,7 @@ function NotesDrawer({
       if (res.success) {
         setDrawerNotice({
           success: true,
-          message: `Imported ${res.count} cards / questions (${res.type})!`,
+          message: `Imported ${res.count} cards / questions (${res.type}). ${res.report?.rejected.length ?? 0} rejected; question reports are saved with the pack.`,
         });
       } else {
         setDrawerNotice({
@@ -2113,7 +2285,9 @@ function NotesDrawer({
               <FileText size={32} strokeWidth={1.5} />
               <p className="text-[13px]">{t("No study notes captured yet.")}</p>
               <p className="text-[11.5px] max-w-[280px]">
-                {t("Press 'N' while watching any lecture to freeze the frame and create a timestamped note.")}
+                {t(
+                  "Press 'N' while watching any lecture to freeze the frame and create a timestamped note.",
+                )}
               </p>
             </div>
           ) : (
@@ -2127,9 +2301,7 @@ function NotesDrawer({
                     <h4 className="text-[13.5px] font-semibold text-ink leading-tight">
                       {note.itemTitle}
                     </h4>
-                    <span className="text-[11px] font-mono text-accent">
-                      {note.timestampLabel}
-                    </span>
+                    <span className="text-[11px] font-mono text-accent">{note.timestampLabel}</span>
                   </div>
                   <button
                     type="button"

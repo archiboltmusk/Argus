@@ -20,6 +20,14 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 env:
+  VITE_ARGUS_API_BASE: ${{ vars.VITE_ARGUS_API_BASE }}
+  VITE_ARGUS_TRAKT_BASE: ${{ vars.VITE_ARGUS_TRAKT_BASE }}
+  VITE_ARGUS_TRAKT_CLIENT_ID: ${{ vars.VITE_ARGUS_TRAKT_CLIENT_ID }}
+  VITE_ARGUS_MAL_BASE: ${{ vars.VITE_ARGUS_MAL_BASE }}
+  VITE_ARGUS_MAL_CLIENT_ID: ${{ vars.VITE_ARGUS_MAL_CLIENT_ID }}
+  VITE_ARGUS_TVDB_BASE: ${{ vars.VITE_ARGUS_TVDB_BASE }}
+  VITE_ARGUS_PUBLIC_RELAY: ${{ vars.VITE_ARGUS_PUBLIC_RELAY }}
+  VITE_ARGUS_RELAY_BASE: ${{ vars.VITE_ARGUS_RELAY_BASE }}
   CARGO_TERM_COLOR: always
   NODE_OPTIONS: --max-old-space-size=8192
 

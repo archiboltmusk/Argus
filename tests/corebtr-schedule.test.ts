@@ -4,11 +4,8 @@ import assert from "node:assert/strict";
 import {
   CORE_BTR_SUBJECTS,
   CORE_BTR_PHASES,
-  CORE_BTR_SUPER_VOLATILES,
   calculateExamCountdowns,
   calculateOverallReadiness,
-  updateBTRSubjectStatus,
-  loadBTRSubjectProgress,
   type BTRSubjectProgress,
 } from "../src/lib/education/corebtr-schedule.ts";
 
@@ -50,7 +47,10 @@ test("CoreBTR Schedule: computes countdowns to NEET-PG 2027 and INI-CET May 2027
   const countdowns = calculateExamCountdowns(mockNow);
 
   assert.ok(countdowns.neetPg.days > 200, "NEET-PG 2027 should be >200 days away from late 2026");
-  assert.ok(countdowns.iniCetMay.days > 150, "INI-CET May 2027 should be >150 days away from late 2026");
+  assert.ok(
+    countdowns.iniCetMay.days > 150,
+    "INI-CET May 2027 should be >150 days away from late 2026",
+  );
   assert.equal(countdowns.neetPg.targetDateStr, "June 20, 2027");
   assert.equal(countdowns.iniCetMay.targetDateStr, "May 16, 2027");
 });
@@ -94,7 +94,7 @@ test("CoreBTR Local Library: classifies videos, annotated and unannotated PDF wo
   // Test video classification
   const video = classifyBTRFile(
     "01_Anatomy_UpperLimb_BrachialPlexus_1080p.mp4",
-    "/Volumes/Storage/BTR 2027/Anatomy/01_Anatomy_UpperLimb_BrachialPlexus_1080p.mp4"
+    "/Volumes/Storage/BTR 2027/Anatomy/01_Anatomy_UpperLimb_BrachialPlexus_1080p.mp4",
   );
   assert.ok(video);
   assert.equal(video.kind, "video");
@@ -104,7 +104,7 @@ test("CoreBTR Local Library: classifies videos, annotated and unannotated PDF wo
   // Test unannotated workbook PDF
   const unannotated = classifyBTRFile(
     "BTR_Pathology_Unannotated_Workbook.pdf",
-    "/Volumes/Storage/BTR 2027/Pathology/BTR_Pathology_Unannotated_Workbook.pdf"
+    "/Volumes/Storage/BTR 2027/Pathology/BTR_Pathology_Unannotated_Workbook.pdf",
   );
   assert.ok(unannotated);
   assert.equal(unannotated.kind, "pdf_unannotated");
@@ -113,7 +113,7 @@ test("CoreBTR Local Library: classifies videos, annotated and unannotated PDF wo
   // Test annotated master solution PDF
   const annotated = classifyBTRFile(
     "Pharmacology_Annotated_Notes_Dr_Zainab_Vora.pdf",
-    "/Volumes/Storage/BTR 2027/Pharmacology/Pharmacology_Annotated_Notes_Dr_Zainab_Vora.pdf"
+    "/Volumes/Storage/BTR 2027/Pharmacology/Pharmacology_Annotated_Notes_Dr_Zainab_Vora.pdf",
   );
   assert.ok(annotated);
   assert.equal(annotated.kind, "pdf_annotated");
@@ -124,7 +124,10 @@ test("CoreBTR Local Library: indexes and organizes raw file hierarchy into subje
   const fileEntries = [
     { name: "Anat_L01.mp4", fullPath: "/BTR/Anatomy/Anat_L01.mp4" },
     { name: "Anat_L02.mp4", fullPath: "/BTR/Anatomy/Anat_L02.mp4" },
-    { name: "Anatomy_Unannotated_Workbook.pdf", fullPath: "/BTR/Anatomy/Anatomy_Unannotated_Workbook.pdf" },
+    {
+      name: "Anatomy_Unannotated_Workbook.pdf",
+      fullPath: "/BTR/Anatomy/Anatomy_Unannotated_Workbook.pdf",
+    },
     { name: "Anatomy_Annotated_Notes.pdf", fullPath: "/BTR/Anatomy/Anatomy_Annotated_Notes.pdf" },
     { name: "Biochem_Metabolism_L01.mkv", fullPath: "/BTR/Biochem/Biochem_Metabolism_L01.mkv" },
     { name: "OBG_CTG_Decelerations_L01.mp4", fullPath: "/BTR/OBG/OBG_CTG_Decelerations_L01.mp4" },
@@ -144,21 +147,40 @@ test("CoreBTR Local Library: indexes and organizes raw file hierarchy into subje
   assert.ok(anatMapping.annotatedPdf);
 });
 
-test("CoreBTR Local Library: creates valid PlayerSrc for native zero-latency player", () => {
+test("CoreBTR Local Library: preserves native disk path and companion workbook", () => {
   const anatSubject = CORE_BTR_SUBJECTS.find((s) => s.id === "anatomy")!;
   const video = classifyBTRFile("Anat_L01.mp4", "/BTR/Anatomy/Anat_L01.mp4")!;
 
   const playerSrc = createBTRVideoPlayerSrc(
     video,
     anatSubject,
-    "/BTR/Anatomy/Anatomy_Unannotated_Workbook.pdf"
+    "/BTR/Anatomy/Anatomy_Unannotated_Workbook.pdf",
   );
 
-  assert.ok(playerSrc.url.startsWith("/") || playerSrc.url.startsWith("file://"));
   assert.equal(playerSrc.url, "/BTR/Anatomy/Anat_L01.mp4");
   assert.equal(playerSrc.notWebReady, true);
   assert.equal(playerSrc.meta.type, "other");
   assert.ok(playerSrc.title.length > 0);
   assert.ok(playerSrc.subtitle?.includes("Core BTR 2027"));
-  assert.ok(playerSrc.historyUrl?.includes("companionPdf="), "Companion PDF path should be attached for slide syncing");
+  assert.ok(
+    playerSrc.historyUrl?.includes("companionPdf="),
+    "Companion PDF path should be attached for slide syncing",
+  );
+});
+
+test("CoreBTR Local Library: remote and browser blob lessons do not force native playback", () => {
+  const subject = CORE_BTR_SUBJECTS.find((item) => item.id === "anatomy")!;
+  const video = classifyBTRFile("Anat_L01.mp4", "/BTR/Anatomy/Anat_L01.mp4")!;
+  const remote = createBTRVideoPlayerSrc(
+    { ...video, fullPath: "https://example.invalid/lecture.mp4" },
+    subject,
+  );
+  assert.equal(remote.url, "https://example.invalid/lecture.mp4");
+  assert.equal(remote.notWebReady, false);
+  const browser = createBTRVideoPlayerSrc(
+    { ...video, blobUrl: "blob:https://argus.invalid/lesson" },
+    subject,
+  );
+  assert.equal(browser.url, "blob:https://argus.invalid/lesson");
+  assert.equal(browser.notWebReady, false);
 });

@@ -124,9 +124,9 @@ notify-rust = "4"
 # means a cross-compiled OpenSSL on Android. Keep `default-features = false` on
 # both halves or Cargo turns reqwest's defaults back on for every target.
 reqwest = { version = "0.12", default-features = false, features = ["native-tls"] }
-rusqlite = { version = "0.32.0", features = ["bundled"] }
+rusqlite = { version = "0.41.1", features = ["bundled"] }
 async-trait = "0.1"
-md5 = "0.7"
+md5 = "0.8"
 sha2 = "0.10"
 futures = "0.3"
 lofty = "0.22"
@@ -179,7 +179,7 @@ windows = { version = "0.62", features = [
   "Storage_Streams",
 ] }
 window-vibrancy = "0.8"
-wasapi = "0.15"
+wasapi = "0.27"
 webview2-com = "0.39"
 
 [target.'cfg(target_os = "linux")'.dependencies]
@@ -232,7 +232,7 @@ objc2-app-kit = { version = "0.3", features = [
 ] }
 objc2-web-kit = { version = "0.3", features = ["WKWebView"] }
 core-foundation = "0.10"
-core-video = "0.4"
+core-video = "0.6"
 souvlaki = { version = "0.8", default-features = false }
 
 # librqbit enables governor's quanta default clock while librespot 0.8 hardcodes

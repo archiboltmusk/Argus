@@ -59,6 +59,22 @@ pub fn model_specs() -> &'static [(&'static str, &'static str, &'static str, &'s
             "Studio-grade multilingual recognition and live audio translation.",
             488,
         ),
+        (
+            "large-v3-turbo",
+            "ggml-large-v3-turbo-q5_0.bin",
+            "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-large-v3-turbo-q5_0.bin",
+            "Whisper Large v3 Turbo (574 MB)",
+            "Fast multilingual transcription. Choose another model for translation.",
+            574,
+        ),
+        (
+            "large-v3",
+            "ggml-large-v3-q5_0.bin",
+            "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-large-v3-q5_0.bin",
+            "Whisper Large v3 (1.1 GB)",
+            "Higher-accuracy multilingual transcription and translation to English.",
+            1100,
+        ),
     ]
 }
 
@@ -147,20 +163,31 @@ pub fn asr_set_active_model(app: tauri::AppHandle, model_id: String) -> Result<(
 #[tauri::command]
 pub fn asr_model_path(app: tauri::AppHandle) -> Result<Option<String>, String> {
     let active = active_model_id(&app);
-    let spec = model_specs()
-        .iter()
-        .find(|(id, ..)| *id == active)
-        .or_else(|| model_specs().first())
-        .unwrap();
-    if let Some(dest) = resolve_model_path(&app, spec.1) {
-        return Ok(Some(dest.to_string_lossy().into_owned()));
-    }
-    Ok(None)
+    let spec = model_specs().iter().find(|(id, ..)| *id == active).unwrap();
+    Ok(resolve_model_path(&app, spec.1).map(|path| path.to_string_lossy().into_owned()))
 }
 
 #[tauri::command]
 pub async fn asr_ensure_model(app: tauri::AppHandle) -> Result<String, String> {
     let active = active_model_id(&app);
+    ensure_model(&app, &active).await
+}
+
+pub async fn ensure_generation_model(
+    app: &tauri::AppHandle, language: Option<&str>, translate: bool,
+) -> Result<String, String> {
+    let mut model = active_model_id(app);
+    if (model.ends_with(".en") && (language != Some("en") || translate))
+        || (model == "large-v3-turbo" && translate)
+    {
+        model = if model == "large-v3-turbo" { "large-v3" } else { "base" }.to_string();
+    }
+    ensure_model(app, &model).await
+}
+
+async fn ensure_model(app: &tauri::AppHandle, active: &str) -> Result<String, String> {
+    static DOWNLOAD: tokio::sync::Mutex<()> = tokio::sync::Mutex::const_new(());
+    let _download = DOWNLOAD.lock().await;
     let spec = model_specs()
         .iter()
         .find(|(id, ..)| *id == active)
@@ -169,11 +196,11 @@ pub async fn asr_ensure_model(app: tauri::AppHandle) -> Result<String, String> {
     let filename = spec.1;
 
     // Check if model already exists in bundled resources or app_data_dir
-    if let Some(existing) = resolve_model_path(&app, filename) {
+    if let Some(existing) = resolve_model_path(app, filename) {
         return Ok(existing.to_string_lossy().into_owned());
     }
 
-    let dir = model_dir(&app)?;
+    let dir = model_dir(app)?;
     std::fs::create_dir_all(&dir).map_err(|e| format!("create dir: {}", e))?;
     let url = spec.2;
     let dest = dir.join(filename);
@@ -208,7 +235,7 @@ pub async fn asr_ensure_model(app: tauri::AppHandle) -> Result<String, String> {
     }
     file.flush().map_err(|e| format!("flush: {}", e))?;
     drop(file);
-    if received < MIN_VALID_BYTES {
+    if received < MIN_VALID_BYTES || (total > 0 && received != total) {
         let _ = std::fs::remove_file(&tmp);
         return Err("download truncated".into());
     }

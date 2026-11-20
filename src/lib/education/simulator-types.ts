@@ -25,6 +25,8 @@ export type ClinicalIntervention = {
   id: string;
   name: string;
   category: "medication" | "procedure" | "resuscitation" | "consultation";
+  requiresInterventions?: string[];
+  requiresInvestigations?: string[];
   isCorrect: boolean;
   isFatal?: boolean;
   hemodynamicDelta?: Partial<PatientVitalSigns>;
@@ -48,6 +50,7 @@ export type ClinicalCaseSimulation = {
   examinerTrap: string;
   availableInvestigations: ClinicalInvestigation[];
   availableInterventions: ClinicalIntervention[];
+  requiredInterventions?: string[];
   finalDiagnosis: string;
   clinicalPearls: string[];
 };
