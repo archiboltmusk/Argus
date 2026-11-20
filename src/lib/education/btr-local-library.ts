@@ -419,3 +419,38 @@ export function createBTRVideoPlayerSrc(
     historyUrl,
   };
 }
+
+/**
+ * Universally opens a PDF document in the native system viewer (e.g. macOS Preview, Adobe Reader)
+ * using Tauri's openPath, with graceful fallback.
+ */
+export async function openPdfDocument(filePathOrUrl: string): Promise<boolean> {
+  if (!filePathOrUrl) return false;
+
+  let cleanPath = filePathOrUrl.replace(/^file:\/\//, "");
+  if (cleanPath.startsWith("http://asset.localhost/") || cleanPath.startsWith("https://asset.localhost/") || cleanPath.startsWith("asset://localhost/")) {
+    const encoded = cleanPath
+      .replace(/^https?:\/\/asset\.localhost\//, "")
+      .replace(/^asset:\/\/localhost\//, "");
+    cleanPath = decodeURIComponent(encoded);
+    if (!cleanPath.startsWith("/") && !cleanPath.includes(":")) {
+      cleanPath = "/" + cleanPath;
+    }
+  }
+
+  try {
+    const { openPath } = await import("@tauri-apps/plugin-opener");
+    await openPath(cleanPath);
+    return true;
+  } catch (err) {
+    console.warn("[openPdfDocument] Tauri openPath failed, attempting window fallback:", err);
+    try {
+      const url = resolveBTRPlayableUrl(filePathOrUrl);
+      window.open(url, "_blank");
+      return true;
+    } catch {
+      return false;
+    }
+  }
+}
+

@@ -50,6 +50,8 @@
 @theme {
   --color-canvas: oklch(0.18 0.004 260);
   --color-surface: oklch(0.22 0.004 260);
+  --color-surface-base: oklch(0.18 0.004 260);
+  --color-surface-elevated: oklch(0.26 0.004 260);
   --color-elevated: oklch(0.27 0.004 260);
   --color-raised: oklch(0.32 0.004 260);
   --color-ink: oklch(0.97 0.003 260);

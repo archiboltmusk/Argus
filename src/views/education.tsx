@@ -80,7 +80,7 @@ import {
 } from "@/lib/education/prerequisite-graph";
 import { InteractiveCheckpointOverlay } from "./player/interactive-checkpoint-overlay";
 import { USER_LOCAL_BTR_MANIFEST } from "@/lib/education/btr-library-manifest";
-import { resolveBTRPlayableUrl } from "@/lib/education/btr-local-library";
+import { openPdfDocument } from "@/lib/education/btr-local-library";
 import "./education/education-hub.css";
 
 const BTR_19_SUBJECTS_CATALOG = [
@@ -1042,8 +1042,7 @@ export function EducationView() {
                     <div
                       key={pdf.id}
                       onClick={() => {
-                        const url = resolveBTRPlayableUrl(pdf.fullPath);
-                        window.open(url, "_blank");
+                        void openPdfDocument(pdf.fullPath);
                       }}
                       className="edu-poster-card group/vol edu-book-spine"
                     >
@@ -1111,8 +1110,7 @@ export function EducationView() {
                     <div
                       key={gt.id}
                       onClick={() => {
-                        const url = resolveBTRPlayableUrl(gt.fullPath);
-                        window.open(url, "_blank");
+                        void openPdfDocument(gt.fullPath);
                       }}
                       className="edu-poster-card group/gt"
                     >

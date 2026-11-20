@@ -158,7 +158,7 @@ export function SpeedMenu({
         </button>
       </Tooltip>
       {open && (
-        <div className="fixed end-14 bottom-[150px] w-[400px] max-w-[calc(100vw-72px)] max-h-[calc(100vh-174px)] overflow-y-auto rounded-md player-menu-surface shadow-[0_10px_30px_-12px_rgba(0,0,0,0.6)] animate-menu-pop">
+        <div className="fixed end-14 bottom-[150px] w-[400px] max-w-[calc(100vw-72px)] max-h-[calc(100vh-174px)] overflow-y-auto rounded-2xl border border-white/20 bg-neutral-900/98 player-menu-surface backdrop-blur-2xl shadow-2xl p-1 animate-menu-pop z-50 text-white">
           <div className={`grid ${sleep ? "grid-cols-2" : "grid-cols-1"}`}>
             <Section title={t("Playback speed")}>
               {speedList.map((s) => {
@@ -325,10 +325,10 @@ function Row({
     <div className="group relative flex items-center">
       <button
         onClick={onClick}
-        className={`flex h-10 w-full items-center justify-between rounded-lg px-3 text-start text-[14px] transition-colors ${
+        className={`flex h-10 w-full items-center justify-between rounded-xl px-3 text-start text-[13.5px] transition-all ${
           selected
-            ? "bg-elevated text-ink ring-1 ring-edge"
-            : "text-ink-muted hover:bg-canvas/55 hover:text-ink"
+            ? "bg-accent/25 text-amber-300 font-bold ring-1 ring-accent/50 shadow-xs"
+            : "text-white/80 hover:bg-white/10 hover:text-white"
         } ${onRemove || hasPin ? "pe-10" : ""}`}
       >
         <span className={selected ? "font-medium" : ""}>{label}</span>

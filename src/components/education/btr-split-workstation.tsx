@@ -25,6 +25,8 @@ import {
   FolderOpen,
   Eye,
   EyeOff,
+  Volume2,
+  VolumeX,
 } from "lucide-react";
 import { getChaptersForVideo, type BTRLectureChapter } from "@/lib/education/btr-chapters-engine";
 import {
@@ -157,6 +159,10 @@ export function BTRSplitWorkstation({
     () => extractYouTubeId(activeVideo.fullPath || activeVideo.streamUrl || ""),
     [activeVideo]
   );
+
+  // Audio & Volume Control
+  const [volume, setVolume] = useState<number>(1.0);
+  const [isMuted, setIsMuted] = useState<boolean>(false);
 
   const handleGrabFrame = useCallback(() => {
     const vid = videoRef.current;
@@ -583,6 +589,8 @@ export function BTRSplitWorkstation({
                 onLoadedMetadata={(e) => {
                   setDuration(e.currentTarget.duration);
                   setVideoError(false);
+                  e.currentTarget.volume = volume;
+                  e.currentTarget.muted = isMuted;
                 }}
                 onError={() => {
                   setIsPlaying(false);
@@ -821,6 +829,46 @@ export function BTRSplitWorkstation({
                     </button>
                   ))}
                 </div>
+
+                {/* Volume & Audio Controls */}
+                <div className="flex items-center gap-1.5 rounded-xl bg-elevated border border-edge-soft px-2 py-1">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const nextMuted = !isMuted;
+                      setIsMuted(nextMuted);
+                      if (videoRef.current) {
+                        videoRef.current.muted = nextMuted;
+                      }
+                    }}
+                    className="text-ink-muted hover:text-ink transition cursor-pointer"
+                    title={isMuted ? "Unmute" : "Mute"}
+                  >
+                    {isMuted || volume === 0 ? (
+                      <VolumeX size={14} className="text-rose-400" />
+                    ) : (
+                      <Volume2 size={14} />
+                    )}
+                  </button>
+                  <input
+                    type="range"
+                    min="0"
+                    max="1"
+                    step="0.05"
+                    value={isMuted ? 0 : volume}
+                    onChange={(e) => {
+                      const v = parseFloat(e.target.value);
+                      setVolume(v);
+                      setIsMuted(v === 0);
+                      if (videoRef.current) {
+                        videoRef.current.volume = v;
+                        videoRef.current.muted = v === 0;
+                      }
+                    }}
+                    className="w-14 sm:w-16 h-1 accent-accent cursor-pointer"
+                    title={`Volume: ${Math.round((isMuted ? 0 : volume) * 100)}%`}
+                  />
+                </div>
               </div>
 
               {/* A-B Loop Controls */}
@@ -1030,6 +1078,33 @@ export function BTRSplitWorkstation({
               <div className="relative w-full h-full flex flex-col">
                 {pdfUrl && !pdfLoadError ? (
                   <>
+                    {/* Native macOS Preview Quick Sync Bar */}
+                    <div className="h-8 border-b border-edge-soft px-3 flex items-center justify-between bg-surface/90 text-xs text-ink-muted shrink-0">
+                      <div className="flex items-center gap-2">
+                        <span className="font-semibold text-ink text-[11px] truncate max-w-[200px]">
+                          {activePdf?.filename || "Workbook PDF"}
+                        </span>
+                        <span className="text-[10px] text-ink-muted">Page {pdfPage}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={handleOpenPdfInSystemViewer}
+                          className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-accent/15 border border-accent/30 text-accent font-bold text-[11px] hover:bg-accent/25 transition shadow-xs cursor-pointer"
+                          title="Open document directly in macOS Preview"
+                        >
+                          <ExternalLink size={11} />
+                          <span>Open in Preview</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setPdfMode("annotated")}
+                          className="px-2 py-1 rounded-lg bg-white/5 hover:bg-white/10 text-white/80 text-[11px] font-medium transition cursor-pointer"
+                        >
+                          Master Deck
+                        </button>
+                      </div>
+                    </div>
                     <iframe
                       key={`${pdfUrl}-${pdfPage}`}
                       title="BTR PDF Workbook"

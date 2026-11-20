@@ -292,10 +292,30 @@ class LiveTranscriptionManager {
         }
       });
 
+      // Normalize convertFileSrc / asset:// URLs to absolute filesystem paths for ffmpeg
+      let resolvedUrl = options.mediaUrl;
+      if (
+        resolvedUrl.startsWith("http://asset.localhost/") ||
+        resolvedUrl.startsWith("https://asset.localhost/") ||
+        resolvedUrl.startsWith("asset://localhost/") ||
+        resolvedUrl.startsWith("asset://")
+      ) {
+        const encoded = resolvedUrl
+          .replace(/^https?:\/\/asset\.localhost\//, "")
+          .replace(/^asset:\/\/localhost\//, "")
+          .replace(/^asset:\/\//, "");
+        resolvedUrl = decodeURIComponent(encoded);
+        if (!resolvedUrl.startsWith("/") && !resolvedUrl.includes(":")) {
+          resolvedUrl = "/" + resolvedUrl;
+        }
+      } else if (resolvedUrl.startsWith("file://")) {
+        resolvedUrl = decodeURIComponent(resolvedUrl.replace(/^file:\/\//, ""));
+      }
+
       // Kick off native Rust background task
       // Rust writes directly to `output_path` on each chunk and triggers `sub-reload` on mpv
       const { srt, missingRanges } = await invoke<{ srt: string; missingRanges: Array<[number, number]> }>("asr_generate_subtitles", {
-        url: options.mediaUrl,
+        url: resolvedUrl,
         headers: options.headers ?? null,
         durationSec: options.durationSec ?? null,
         audioStreamIndex: options.audioStreamIndex ?? null,

@@ -100,7 +100,12 @@ fn is_media_stream_target(url: &str) -> bool {
 pub fn validate_media_url(url: &str, allow_local: bool) -> Result<(), String> {
     let trimmed = url.trim();
     let lower = trimmed.to_ascii_lowercase();
-    if lower.starts_with("file://") || is_abs_path(trimmed) {
+    if lower.starts_with("file://")
+        || lower.starts_with("asset://")
+        || lower.starts_with("http://asset.localhost/")
+        || lower.starts_with("https://asset.localhost/")
+        || is_abs_path(trimmed)
+    {
         return if allow_local {
             Ok(())
         } else {

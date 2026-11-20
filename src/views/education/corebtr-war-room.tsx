@@ -116,6 +116,7 @@ import {
   indexBTRFiles,
   createBTRVideoPlayerSrc,
   resolveBTRPlayableUrl,
+  openPdfDocument,
   type BTRLocalLibraryState,
   type BTRLocalMediaFile,
 } from "@/lib/education/btr-local-library";
@@ -275,7 +276,7 @@ const COREBTR_LIVE_SESSIONS: BTRLiveSessionData[] = [
     time: "5:00 PM - 7:00 PM",
     badge: "Completed",
     topic: "Roadmap & Prioritization",
-    youtubeId: "vD246f3h614",
+    youtubeId: "WlqZ93dF9c0",
     duration: "2h 00m",
     keyTimestamps: [
       { time: "00:00", label: "NEET PG 2026 High-Yield Roadmap", seconds: 0 },
@@ -297,7 +298,7 @@ const COREBTR_LIVE_SESSIONS: BTRLiveSessionData[] = [
     time: "11:30 AM - 4:00 PM",
     badge: "Completed",
     topic: "200 INI-CET Recall Breakdown",
-    youtubeId: "E04_O8N91fM",
+    youtubeId: "p6uDEanvmn4",
     duration: "4h 30m",
     keyTimestamps: [
       { time: "00:00", label: "INI-CET Paper Pattern & Cut-off Traps", seconds: 0 },
@@ -319,7 +320,7 @@ const COREBTR_LIVE_SESSIONS: BTRLiveSessionData[] = [
     time: "8:00 AM - 12:00 PM",
     badge: "Completed",
     topic: "Mindset & Exam Temperament",
-    youtubeId: "tE1U4xW1-sQ",
+    youtubeId: "CwPjd_00lt8",
     duration: "1h 45m",
     keyTimestamps: [
       { time: "00:00", label: "Pre-Exam Routine & Sleep Optimization", seconds: 0 },
@@ -339,7 +340,7 @@ const COREBTR_LIVE_SESSIONS: BTRLiveSessionData[] = [
     time: "8:30 AM - 3:00 PM",
     badge: "Completed",
     topic: "Volatiles & High-Yield Tables",
-    youtubeId: "zV99BTR002",
+    youtubeId: "jgVuKMz2DWc",
     duration: "6h 30m",
     keyTimestamps: [
       { time: "00:00", label: "Radiology Classifications & CT Signs", seconds: 0 },
@@ -360,7 +361,7 @@ const COREBTR_LIVE_SESSIONS: BTRLiveSessionData[] = [
     time: "8:30 AM - 3:00 PM",
     badge: "Completed",
     topic: "Pre- & Para-Clinical High-Yield",
-    youtubeId: "zV99BTR001",
+    youtubeId: "TCkolHaQ5BA",
     duration: "6h 30m",
     keyTimestamps: [
       { time: "00:00", label: "Embryology & Neuro-Anatomy High Yields", seconds: 0 },
@@ -3727,7 +3728,7 @@ export function CoreBTRWarRoom({
       <BTRPdfSearchModal
         open={showPdfSearchModal}
         onClose={() => setShowPdfSearchModal(false)}
-        onJumpToPdfPage={(pdfFileName, pageNumber) => {
+        onJumpToPdfPage={(pdfFileName, _pageNumber) => {
           setShowPdfSearchModal(false);
           // Look for matching PDF in library mappings or master PDFs
           let matchedPdf: BTRLocalMediaFile | undefined;
@@ -3760,8 +3761,7 @@ export function CoreBTRWarRoom({
             }
           }
           if (matchedPdf) {
-            const url = resolveBTRPlayableUrl(matchedPdf.fullPath);
-            window.open(`${url}#page=${pageNumber}`, "_blank");
+            void openPdfDocument(matchedPdf.fullPath);
           }
         }}
       />

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   X,
   Play,
@@ -8,8 +8,12 @@ import {
   Sparkles,
   Layers,
   ChevronRight,
+  Zap,
+  Loader2,
 } from "lucide-react";
 import { useView } from "@/lib/view";
+import { buildYouTubeEmbedUrl } from "@/lib/education/btr-youtube-bridge";
+import { fetchTrailer, trailerSrc } from "@/lib/trailer";
 
 export interface BTRLiveSessionData {
   id: string;
@@ -42,12 +46,45 @@ export function BTRLiveStreamModal({
   const { openPlayer } = useView();
   const [activePlaybackSpeed, setActivePlaybackSpeed] = useState<number>(1.25);
   const [selectedTimestampSec, setSelectedTimestampSec] = useState<number>(0);
+  const [nativeSrc, setNativeSrc] = useState<string | null>(null);
+  const [isExtracting, setIsExtracting] = useState<boolean>(false);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+
+  const ytId = session?.youtubeId || "M7lc1UVf-VE";
+
+  useEffect(() => {
+    setNativeSrc(null);
+    setIsExtracting(false);
+    setSelectedTimestampSec(0);
+  }, [session?.id, ytId]);
+
+  useEffect(() => {
+    if (videoRef.current && selectedTimestampSec > 0) {
+      videoRef.current.currentTime = selectedTimestampSec;
+      videoRef.current.play().catch(() => {});
+    }
+  }, [selectedTimestampSec]);
 
   if (!open || !session) return null;
 
-  // Use session youtubeId or a robust default high-yield medical stream
-  const ytId = session.youtubeId || "M7lc1UVf-VE";
-  const embedUrl = `https://www.youtube-nocookie.com/embed/${ytId}?autoplay=1&start=${selectedTimestampSec}&rel=0`;
+  const embedUrl = buildYouTubeEmbedUrl(ytId, {
+    startSec: selectedTimestampSec,
+    autoplay: true,
+  });
+
+  const startNativeStream = async (id: string) => {
+    setIsExtracting(true);
+    try {
+      const info = await fetchTrailer(id, "720p");
+      if (info) {
+        setNativeSrc(trailerSrc(info));
+      }
+    } catch {
+      // Keep embed fallback
+    } finally {
+      setIsExtracting(false);
+    }
+  };
 
   const handleLaunchArgusNative = () => {
     openPlayer({
@@ -85,6 +122,25 @@ export function BTRLiveStreamModal({
           <div className="flex items-center gap-2">
             <button
               type="button"
+              onClick={() => {
+                if (nativeSrc) {
+                  setNativeSrc(null);
+                } else {
+                  void startNativeStream(ytId);
+                }
+              }}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold border transition shadow-xs ${
+                nativeSrc
+                  ? "bg-accent text-white border-accent/40"
+                  : "bg-white/10 hover:bg-white/20 text-amber-300 border-amber-400/30"
+              }`}
+              title="Stream in Native HD via Argus engine"
+            >
+              <Zap size={13} className={nativeSrc ? "fill-current" : "text-amber-400"} />
+              <span>{nativeSrc ? "Embed Mode" : "Native HD"}</span>
+            </button>
+            <button
+              type="button"
               onClick={handleLaunchArgusNative}
               className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/15 hover:bg-white/20 text-white/90 text-xs font-bold border border-edge transition shadow-xs"
               title="Launch in Argus Native Player"
@@ -103,15 +159,69 @@ export function BTRLiveStreamModal({
         </header>
 
         {/* Video Player Area */}
-        <div className="relative w-full bg-black aspect-video flex items-center justify-center overflow-hidden border-b border-edge">
-          <iframe
-            title={session.title}
-            src={embedUrl}
-            className="w-full h-full border-none"
-            referrerPolicy="strict-origin-when-cross-origin"
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-            allowFullScreen
-          />
+        <div className="relative w-full bg-black aspect-video flex items-center justify-center overflow-hidden border-b border-edge group">
+          {nativeSrc ? (
+            <div className="relative w-full h-full bg-black flex items-center justify-center">
+              <video
+                ref={videoRef}
+                src={nativeSrc}
+                controls
+                autoPlay
+                className="w-full h-full object-contain"
+                onLoadedMetadata={(e) => {
+                  if (activePlaybackSpeed !== 1.0) {
+                    e.currentTarget.playbackRate = activePlaybackSpeed;
+                  }
+                }}
+              />
+            </div>
+          ) : isExtracting ? (
+            <div className="relative w-full h-full bg-black flex flex-col items-center justify-center gap-3 text-white">
+              <Loader2 size={32} className="animate-spin text-accent" />
+              <span className="text-xs font-medium text-white/80">
+                Resolving High-Definition Stream via Argus Engine...
+              </span>
+            </div>
+          ) : (
+            <iframe
+              key={`${ytId}-${selectedTimestampSec}`}
+              title={session.title}
+              src={embedUrl}
+              className="w-full h-full border-none"
+              referrerPolicy="strict-origin-when-cross-origin"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowFullScreen
+            />
+          )}
+
+          {/* Quick Error 153 helper banner */}
+          {!nativeSrc && !isExtracting && (
+            <div className="absolute bottom-2 left-3 right-3 z-10 flex items-center justify-between text-[11px] text-white/90 bg-black/80 backdrop-blur-md px-3 py-1.5 rounded-xl border border-white/10 shadow-lg">
+              <span className="flex items-center gap-1.5">
+                <span className="h-1.5 w-1.5 rounded-full bg-amber-400 animate-pulse" />
+                <span>Seeing Error 153?</span>
+              </span>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => void startNativeStream(ytId)}
+                  className="font-bold text-accent hover:underline flex items-center gap-1 cursor-pointer"
+                >
+                  <Zap size={11} /> Stream in Native HD
+                </button>
+                <span className="text-white/30">•</span>
+                <a
+                  href={`https://www.youtube.com/watch?v=${ytId}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-white/70 hover:text-white hover:underline flex items-center gap-1 cursor-pointer"
+                >
+                  <span>Watch on YouTube</span>
+                  <ExternalLink size={10} />
+                </a>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* HUD Toolbar & Speed Selectors */}
@@ -124,7 +234,12 @@ export function BTRLiveStreamModal({
               <button
                 key={rate}
                 type="button"
-                onClick={() => setActivePlaybackSpeed(rate)}
+                onClick={() => {
+                  setActivePlaybackSpeed(rate);
+                  if (videoRef.current) {
+                    videoRef.current.playbackRate = rate;
+                  }
+                }}
                 className={`px-2.5 py-1 rounded-lg font-mono text-[11px] font-bold transition ${
                   activePlaybackSpeed === rate
                     ? "bg-white text-black font-semibold shadow-xs"

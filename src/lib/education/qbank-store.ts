@@ -6,6 +6,7 @@ import type {
   SubjectCategory,
 } from "./qbank-types";
 import { CLINICAL_QBANK_STARTER } from "./qbank-data";
+import { TOP_100_FRONTIER_VAULT } from "./btr-frontier-vault";
 import { classifyInicetQuestion } from "./inicet-classifier";
 import { cleanExplanationPayload } from "./explanation-cleaner";
 
@@ -79,9 +80,53 @@ export function useQBankPacks(): QBankPack[] {
   return useSyncExternalStore(subscribeQBankPacks, getAllPacks, getAllPacks);
 }
 
+/**
+ * Converts the 100 high-yield board facts from Frontier Vault into fully playable clinical questions
+ */
+export function getFrontierVaultQuestions(): ClinicalQuestion[] {
+  return TOP_100_FRONTIER_VAULT.map((f, i) => {
+    const options = [
+      f.mustKnowPill,
+      f.examinerTrap ? `Distractor: ${f.examinerTrap}` : "Alternative empiric protocol without definitive imaging",
+      "Conservative outpatient observation and symptomatic analgesia",
+      "Immediate exploratory intervention / empiric broad-spectrum switch",
+    ];
+    return {
+      id: `frontier-${f.id || i}`,
+      subject: f.tags[0] || f.category || "High-Yield",
+      topic: f.title,
+      vignette: `${f.clinicalContext}\n\nAccording to latest national gold-standard guidelines, what is the single most definitive diagnostic sign or management rule?`,
+      options,
+      correctIndex: 0,
+      examinerTrap: f.examinerTrap,
+      highYieldTags: f.tags,
+      depthLevel: "L3_MultiStepClinical" as const,
+      explanation: {
+        bottomLine: f.mustKnowPill,
+        correctRationale: `${f.mustKnowPill}\n\nClinical Pearl: ${f.clinicalContext}`,
+        distractorBreakdown: [
+          { option: "Option A", reason: "Gold-standard correct rationale." },
+          { option: "Option B", reason: f.examinerTrap ? `Examiner Trap: ${f.examinerTrap}` : "Common distractor." },
+          { option: "Option C", reason: "Incorrect conservative management for this acute presentation." },
+          { option: "Option D", reason: "Overtreatment before confirming diagnostic criteria." },
+        ],
+        whyCorrect: {
+          mechanism: f.clinicalContext,
+          clinicalRule: f.mustKnowPill,
+        },
+      },
+    };
+  });
+}
+
 export function getAllQuestions(): ClinicalQuestion[] {
   const packs = readPacks();
-  return packs.flatMap((p) => p.questions);
+  const custom = packs.flatMap((p) => p.questions);
+  const frontier = getFrontierVaultQuestions();
+  if (custom.length > 0) {
+    return [...custom, ...CLINICAL_QBANK_STARTER, ...frontier];
+  }
+  return [...CLINICAL_QBANK_STARTER, ...frontier];
 }
 
 /**

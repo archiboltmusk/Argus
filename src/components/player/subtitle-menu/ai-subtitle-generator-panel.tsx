@@ -13,6 +13,7 @@ import {
   ChevronDown,
   Clock,
   Zap,
+  AlertCircle,
 } from "lucide-react";
 import {
   useLiveTranscriptionSession,
@@ -93,9 +94,9 @@ export function AISubtitleGeneratorPanel({
   const remainingMins = Math.ceil(session.estimatedRemainingSec / 60);
 
   return (
-    <div className="flex flex-col h-full w-full bg-surface-base text-ink select-none overflow-hidden animate-in fade-in duration-150">
+    <div className="flex flex-col h-full w-full bg-neutral-900 border border-white/10 text-white select-none overflow-hidden animate-in fade-in duration-150 shadow-2xl">
       {/* Header */}
-      <div className="flex shrink-0 items-center justify-between px-3.5 py-2.5 border-b border-edge-soft bg-surface-elevated/40">
+      <div className="flex shrink-0 items-center justify-between px-3.5 py-2.5 border-b border-white/10 bg-white/5">
         <div className="flex items-center gap-2">
           <div className="flex h-6 w-6 items-center justify-center rounded-md bg-accent/15 text-accent">
             <Sparkles size={14} strokeWidth={2.4} />
@@ -188,9 +189,29 @@ export function AISubtitleGeneratorPanel({
           </div>
         )}
 
+        {/* Error Notice */}
+        {session.error && !session.isActive && (
+          <div className="rounded-xl border border-rose-500/40 bg-rose-500/15 p-3 space-y-2 text-xs">
+            <div className="flex items-center gap-2 text-rose-300 font-bold">
+              <AlertCircle size={14} />
+              <span>{tr("Transcription Error")}</span>
+            </div>
+            <p className="text-[11.5px] text-white/90 leading-relaxed font-sans">
+              {session.error}
+            </p>
+            <button
+              type="button"
+              onClick={handleStart}
+              className="px-3 py-1.5 rounded-lg bg-rose-500 hover:bg-rose-600 text-white font-bold text-xs shadow-xs transition"
+            >
+              {tr("Retry Transcription")}
+            </button>
+          </div>
+        )}
+
         {/* Spoken Language Dropdown */}
-        <div className="space-y-1.5">
-          <label className="text-[11px] font-semibold text-ink-muted uppercase tracking-wider block">
+        <div className="space-y-1.5 relative z-30">
+          <label className="text-[11px] font-semibold text-white/70 uppercase tracking-wider block">
             {tr("Spoken Language")}
           </label>
           <div className="relative">
@@ -198,7 +219,7 @@ export function AISubtitleGeneratorPanel({
               type="button"
               disabled={session.isActive}
               onClick={() => setLangDropdownOpen(!langDropdownOpen)}
-              className="w-full flex items-center justify-between px-3 py-2 rounded-lg border border-edge-soft bg-surface-elevated text-xs text-ink hover:border-accent/50 transition-colors disabled:opacity-50"
+              className="w-full flex items-center justify-between px-3 py-2 rounded-lg border border-white/15 bg-white/5 text-xs text-white hover:border-accent/50 transition-colors disabled:opacity-50"
             >
               <div className="flex items-center gap-2">
                 <Languages size={13} className="text-accent shrink-0" />
@@ -206,41 +227,47 @@ export function AISubtitleGeneratorPanel({
               </div>
               <ChevronDown
                 size={13}
-                className={`text-ink-muted transition-transform ${langDropdownOpen ? "rotate-180" : ""}`}
+                className={`text-white/60 transition-transform ${langDropdownOpen ? "rotate-180" : ""}`}
               />
             </button>
 
             {langDropdownOpen && (
-              <div className="absolute top-full left-0 right-0 z-50 mt-1 max-h-44 overflow-y-auto rounded-lg border border-edge-soft player-menu-surface p-1 shadow-xl scrollbar-thin">
-                {SUBTITLE_LANGUAGES.map((lang) => {
-                  const isSelected = selectedLang === lang.code;
-                  return (
-                    <button
-                      key={lang.code}
-                      type="button"
-                      onClick={() => {
-                        setSelectedLang(lang.code);
-                        setLangDropdownOpen(false);
-                      }}
-                      className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-md text-xs transition-colors ${
-                        isSelected
-                          ? "bg-accent/15 text-accent font-semibold"
-                          : "text-ink hover:bg-canvas/50"
-                      }`}
-                    >
-                      <div className="flex items-center gap-2">
-                        <span>{lang.label}</span>
-                        {lang.nativeLabel && (
-                          <span className="text-[10px] text-ink-muted">
-                            ({lang.nativeLabel})
-                          </span>
-                        )}
-                      </div>
-                      {isSelected && <Check size={12} className="text-accent" />}
-                    </button>
-                  );
-                })}
-              </div>
+              <>
+                <div
+                  className="fixed inset-0 z-40"
+                  onClick={() => setLangDropdownOpen(false)}
+                />
+                <div className="absolute top-full left-0 right-0 z-50 mt-1 max-h-48 overflow-y-auto rounded-xl border border-white/20 bg-neutral-950 shadow-2xl p-1 scrollbar-thin">
+                  {SUBTITLE_LANGUAGES.map((lang) => {
+                    const isSelected = selectedLang === lang.code;
+                    return (
+                      <button
+                        key={lang.code}
+                        type="button"
+                        onClick={() => {
+                          setSelectedLang(lang.code);
+                          setLangDropdownOpen(false);
+                        }}
+                        className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-md text-xs transition-colors ${
+                          isSelected
+                            ? "bg-accent/20 text-accent font-semibold"
+                            : "text-white/80 hover:bg-white/10 hover:text-white"
+                        }`}
+                      >
+                        <div className="flex items-center gap-2">
+                          <span>{lang.label}</span>
+                          {lang.nativeLabel && (
+                            <span className="text-[10px] text-white/50">
+                              ({lang.nativeLabel})
+                            </span>
+                          )}
+                        </div>
+                        {isSelected && <Check size={12} className="text-accent" />}
+                      </button>
+                    );
+                  })}
+                </div>
+              </>
             )}
           </div>
         </div>

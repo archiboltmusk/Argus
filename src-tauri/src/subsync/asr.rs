@@ -92,6 +92,24 @@ async fn run_ffmpeg_pcm(
     use_speechnorm: bool,
 ) -> Result<Vec<f32>, String> {
     let ff = crate::transcode::locate_ffmpeg().ok_or("ffmpeg not found")?;
+
+    let resolved_url_string = if let Some(rest) = url.strip_prefix("http://asset.localhost/")
+        .or_else(|| url.strip_prefix("https://asset.localhost/"))
+        .or_else(|| url.strip_prefix("asset://localhost/"))
+        .or_else(|| url.strip_prefix("asset://"))
+    {
+        let decoded = urlencoding::decode(rest).unwrap_or_else(|_| rest.into());
+        if !decoded.starts_with('/') && !decoded.contains(':') {
+            format!("/{}", decoded)
+        } else {
+            decoded.into_owned()
+        }
+    } else if let Some(rest) = url.strip_prefix("file://") {
+        urlencoding::decode(rest).unwrap_or_else(|_| rest.into()).into_owned()
+    } else {
+        url.to_string()
+    };
+
     let mut cmd = Command::new(&ff);
     cmd.arg("-hide_banner")
         .arg("-nostats")
@@ -99,7 +117,9 @@ async fn run_ffmpeg_pcm(
         .arg("error");
 
     // Automatically reconnect on dropped TCP/TLS sockets during backgrounding or network latency
-    if url.starts_with("http://") || url.starts_with("https://") {
+    if (resolved_url_string.starts_with("http://") || resolved_url_string.starts_with("https://"))
+        && !resolved_url_string.contains("asset.localhost")
+    {
         cmd.arg("-reconnect")
             .arg("1")
             .arg("-reconnect_streamed")
@@ -118,7 +138,7 @@ async fn run_ffmpeg_pcm(
         .arg(start_sec.to_string())
         .arg("-accurate_seek")
         .arg("-i")
-        .arg(url)
+        .arg(&resolved_url_string)
         // Duration MUST be placed AFTER -i as an output option to slice exactly len_sec from seek point
         .arg("-t")
         .arg(len_sec.to_string())

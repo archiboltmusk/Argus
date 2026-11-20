@@ -101,7 +101,7 @@ export function BTRClinicalAutopsy({
             </span>
           </div>
 
-          <ExplanationText text={exp.correctRationale || exp.whyCorrect?.mechanism || "No rationale supplied."} />
+          <ExplanationText text={exp.correctRationale || exp.whyCorrect?.mechanism || exp.bottomLine || "No rationale supplied."} />
 
           {exp.whyCorrect?.clinicalRule && (
             <div className="p-2.5 rounded-xl bg-black/40 border border-emerald-500/20 text-xs text-emerald-200 mt-1">
