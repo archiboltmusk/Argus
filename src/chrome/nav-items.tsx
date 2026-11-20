@@ -385,3 +385,54 @@ export function renameNavItem(cfg: NavCustomization, id: string, label: string):
 export function resetNavCustomization(): NavCustomization {
   return { order: [], hidden: [], renamed: {} };
 }
+
+export type WorkspacePersona = "omni" | "academic" | "theater" | "studio";
+
+export interface PersonaConfig {
+  id: WorkspacePersona;
+  label: string;
+  description: string;
+  visibleIds: NavItemId[];
+}
+
+export const WORKSPACE_PERSONAS: Record<WorkspacePersona, PersonaConfig> = {
+  omni: {
+    id: "omni",
+    label: "Omni Workspace",
+    description: "All entertainment, academic, gaming, and creative modules",
+    visibleIds: NAV_ITEMS_ALL.map((it) => it.id),
+  },
+  academic: {
+    id: "academic",
+    label: "Academic / Medical",
+    description: "Focus on CoreBTR, QBank, notes, calendar, and study downloads",
+    visibleIds: ["education", "home", "library", "calendar", "downloads", "settings"],
+  },
+  theater: {
+    id: "theater",
+    label: "Argus Theater",
+    description: "Pure distraction-free cinema, series, anime, live TV, and catalogs",
+    visibleIds: ["home", "discover", "catalogs", "movies", "shows", "anime", "live", "library", "calendar", "settings"],
+  },
+  studio: {
+    id: "studio",
+    label: "Studio & Gaming",
+    description: "Focus on lossless music, gaming radar, mods, and system lab",
+    visibleIds: ["games", "music", "argus-lab", "home", "library", "downloads", "settings"],
+  },
+};
+
+export function getPersonaNavCustomization(persona: WorkspacePersona): NavCustomization {
+  if (persona === "omni") {
+    return { order: [], hidden: [], renamed: {} };
+  }
+  const config = WORKSPACE_PERSONAS[persona];
+  const visible = new Set(config.visibleIds);
+  const hidden = NAV_ITEMS_ALL.map((it) => it.id).filter((id) => !visible.has(id));
+  return {
+    order: config.visibleIds,
+    hidden,
+    renamed: {},
+  };
+}
+

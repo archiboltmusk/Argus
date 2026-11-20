@@ -1150,31 +1150,114 @@ export function BTRSplitWorkstation({
                     />
                   </>
                 ) : (
-                  <div className="flex-1 flex flex-col items-center justify-center p-8 text-center bg-canvas">
-                    <div className="flex h-16 w-16 items-center justify-center rounded-3xl bg-blue-500/15 border border-blue-500/30 text-blue-400 mb-4">
-                      <FileText size={32} />
+                  <div className="flex-1 flex flex-col overflow-y-auto p-4 space-y-3 bg-canvas text-white">
+                    {/* Header banner */}
+                    <div className="p-3.5 rounded-2xl bg-surface border border-edge flex items-center justify-between">
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="px-2 py-0.5 rounded-md bg-accent/20 text-accent font-bold text-[10px] uppercase tracking-wider">
+                            Digital Workbook Deck
+                          </span>
+                          <span className="text-xs text-white/50">
+                            {activePdf?.filename ? activePdf.filename : `${subject.name} Companion Notes`}
+                          </span>
+                        </div>
+                        <h3 className="text-sm font-bold text-white mt-1">
+                          {currentChapter ? currentChapter.title : `${subject.name} Core Slides`}
+                        </h3>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => directPdfInputRef.current?.click()}
+                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-accent text-white font-bold text-xs shadow-md hover:brightness-110 transition cursor-pointer"
+                        >
+                          <FolderOpen size={13} />
+                          <span>Link PDF File</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setPdfMode("annotated")}
+                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-elevated border border-edge text-white/80 hover:text-white font-medium text-xs transition cursor-pointer"
+                        >
+                          <FileText size={13} />
+                          <span>Master Deck</span>
+                        </button>
+                      </div>
                     </div>
-                    <h3 className="text-base font-bold text-ink">{pdfLoadError ? "PDF could not open" : "No PDF linked"}</h3>
-                    <p className="text-xs text-ink-muted max-w-sm mt-1 mb-6 leading-relaxed">
-                      Locate your workbook PDF or continue with the study notes.
-                    </p>
-                    <div className="flex flex-wrap items-center justify-center gap-2.5">
-                      <button
-                        type="button"
-                        onClick={() => directPdfInputRef.current?.click()}
-                        className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-accent text-white font-bold text-xs shadow-md hover:brightness-110 transition"
-                      >
-                        <FolderOpen size={14} />
-                        <span>Locate PDF</span>
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setPdfMode("annotated")}
-                        className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-elevated border border-edge-soft text-ink font-semibold text-xs hover:bg-raised transition"
-                      >
-                        <FileText size={14} />
-                        <span>View Annotated Master</span>
-                      </button>
+
+                    {/* Active Chapter Slide Synapse Card */}
+                    {currentChapter && (
+                      <div className="p-4 rounded-2xl bg-gradient-to-br from-blue-500/10 via-surface to-accent/10 border border-blue-500/30 space-y-3 shadow-md">
+                        <div className="flex items-center justify-between">
+                          <span className="text-[11px] font-extrabold uppercase tracking-wider text-blue-300 flex items-center gap-1.5">
+                            <BookOpen size={13} />
+                            Workbook Slide Ref: Page {currentChapter.pageNumberRef ?? 1}
+                          </span>
+                          <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-md bg-white/10 text-white/70">
+                            Timestamp: {currentChapter.timestampLabel}
+                          </span>
+                        </div>
+
+                        <div className="p-3 rounded-xl bg-black/40 border border-white/10">
+                          <span className="text-[10px] font-bold uppercase text-white/40 block mb-1">
+                            Must-Know High-Yield Concept
+                          </span>
+                          <p className="text-xs font-medium text-white/95 leading-relaxed">
+                            {currentChapter.mustKnowConcept}
+                          </p>
+                        </div>
+
+                        {currentChapter.highYieldTrap && (
+                          <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 flex items-start gap-2">
+                            <AlertTriangle size={15} className="text-rose-400 shrink-0 mt-0.5" />
+                            <div className="text-xs">
+                              <strong className="text-rose-300 font-bold block text-[11px] uppercase tracking-wider">
+                                Examiner Trap Warning
+                              </strong>
+                              <p className="text-white/80 leading-relaxed mt-0.5">{currentChapter.highYieldTrap}</p>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Lecture Chapters Index */}
+                    <div className="space-y-2">
+                      <span className="text-[11px] font-extrabold uppercase tracking-wider text-white/40 block">
+                        Jump to Lecture Slide & Workbook Section ({chapters.length})
+                      </span>
+                      <div className="space-y-1.5">
+                        {chapters.map((ch) => {
+                          const isCurrent = currentChapter?.id === ch.id;
+                          return (
+                            <button
+                              key={ch.id}
+                              type="button"
+                              onClick={() => handleSeek(ch.timestampSec)}
+                              className={`w-full p-2.5 rounded-xl border text-left transition flex items-center justify-between gap-3 cursor-pointer ${
+                                isCurrent
+                                  ? "bg-accent/20 border-accent/40 text-white shadow-xs"
+                                  : "bg-surface/50 border-edge text-white/70 hover:bg-surface hover:text-white"
+                              }`}
+                            >
+                              <div className="flex items-center gap-2.5 min-w-0">
+                                <span className={`text-[10.5px] font-mono font-bold px-1.5 py-0.5 rounded ${
+                                  isCurrent ? "bg-accent text-white" : "bg-white/5 text-white/50"
+                                }`}>
+                                  {ch.timestampLabel}
+                                </span>
+                                <span className="text-xs font-semibold truncate">{ch.title}</span>
+                              </div>
+                              {ch.pageNumberRef && (
+                                <span className="text-[10px] text-white/40 shrink-0 font-mono">
+                                  p.{ch.pageNumberRef}
+                                </span>
+                              )}
+                            </button>
+                          );
+                        })}
+                      </div>
                     </div>
                   </div>
                 )}

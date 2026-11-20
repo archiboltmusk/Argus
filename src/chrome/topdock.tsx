@@ -21,6 +21,7 @@ import { close, minimize, toggleMaximize, useMaximized } from "@/lib/window";
 import { OverflowNav, type NavEntry } from "@/chrome/nav-overflow";
 import { useAvailableNavItems, applyNavCustomization, type NavItem } from "@/chrome/nav-items";
 import { useBigPictureEntry } from "@/chrome/use-big-picture-entry";
+import { WorkspacePersonaMenu } from "@/chrome/workspace-persona-menu";
 
 const IS_TAURI = typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
 
@@ -132,6 +133,7 @@ export function TopDock() {
             <IconBtn onClick={() => setSearchOpen(true)} label={t("common.search")} active={false}>
               <Search size={15} strokeWidth={2.2} />
             </IconBtn>
+            <WorkspacePersonaMenu />
             <AccountMenu
               trigger="pill"
               placement="down"

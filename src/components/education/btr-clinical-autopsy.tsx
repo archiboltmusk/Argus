@@ -11,9 +11,12 @@ import {
   ChevronUp,
   Table,
   Sparkles,
+  Check,
+  Download,
 } from "lucide-react";
 import type { ClinicalQuestion, ClinicalExplanation5Tier } from "@/lib/education/qbank-types";
 import { resolveQuestionSynapse } from "@/lib/education/btr-synapse";
+import { loadFSRSCardStates, saveFSRSCardStates } from "@/lib/education/btr-fsrs-engine";
 
 export interface BTRClinicalAutopsyProps {
   question: ClinicalQuestion;
@@ -30,6 +33,47 @@ export function BTRClinicalAutopsy({
 }: BTRClinicalAutopsyProps) {
   const [activeTierTab, setActiveTierTab] = useState<"all" | "distractors" | "table">("all");
   const [expandedDistractor, setExpandedDistractor] = useState<number | null>(null);
+  const [isBookmarkedFSRS, setIsBookmarkedFSRS] = useState(false);
+  const [showSocratic, setShowSocratic] = useState(false);
+  const [exportedAnki, setExportedAnki] = useState(false);
+
+  const handleBookmark = () => {
+    setIsBookmarkedFSRS(true);
+    try {
+      const states = loadFSRSCardStates();
+      states[question.id] = {
+        cardId: question.id,
+        intervalDays: 1,
+        repetitionCount: 1,
+        lastReviewedAt: new Date().toISOString().slice(0, 10),
+        dueAt: new Date(Date.now() + 86400000).toISOString().slice(0, 10),
+        easeFactor: 2.5,
+      };
+      saveFSRSCardStates(states);
+    } catch {
+      // ignore
+    }
+    onBookmarkFSRS?.();
+  };
+
+  const handleExportAnki = () => {
+    const cardData = [
+      `#separator:tab`,
+      `#html:true`,
+      `#tags column:3`,
+      `#deck:Argus NEET-PG Clinical Autopsy`,
+      `${question.vignette.replace(/\t/g, " ")}\t<b>Correct: ${question.options[question.correctIndex]}</b><br><br>${(exp.bottomLine || "").replace(/\t/g, " ")}\t${question.subject}::${question.topic || "CoreBTR"}`
+    ].join("\n");
+    const blob = new Blob([cardData], { type: "text/plain;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `argus_${question.id}_anki.txt`;
+    a.click();
+    URL.revokeObjectURL(url);
+    setExportedAnki(true);
+    setTimeout(() => setExportedAnki(false), 3000);
+  };
 
   const exp: ClinicalExplanation5Tier = question.explanation;
   const synapse = resolveQuestionSynapse(question);
@@ -106,6 +150,38 @@ export function BTRClinicalAutopsy({
           {exp.whyCorrect?.clinicalRule && (
             <div className="p-2.5 rounded-xl bg-black/40 border border-emerald-500/20 text-xs text-emerald-200 mt-1">
               <strong>Clinical Pearl: </strong> {exp.whyCorrect.clinicalRule}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Socratic Clinical Challenge (Interactive Distractor Drill) */}
+      {selectedOptionIndex !== undefined && selectedOptionIndex !== question.correctIndex && (
+        <div className="p-4 rounded-2xl bg-indigo-500/10 border border-indigo-500/30 flex flex-col gap-2.5">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Sparkles size={16} className="text-indigo-400" />
+              <span className="text-xs font-bold text-indigo-300 uppercase tracking-wider">
+                Socratic Clinical Challenge
+              </span>
+            </div>
+            <button
+              type="button"
+              onClick={() => setShowSocratic(!showSocratic)}
+              className="text-[11px] font-bold px-2.5 py-1 rounded-lg bg-indigo-500/20 hover:bg-indigo-500/30 text-indigo-200 transition cursor-pointer"
+            >
+              {showSocratic ? "Hide Challenge" : `Grill Me on Option ${String.fromCharCode(65 + selectedOptionIndex)}`}
+            </button>
+          </div>
+          {showSocratic && (
+            <div className="pt-2 border-t border-indigo-500/20 text-xs text-white/90 space-y-2">
+              <p className="font-semibold text-white">
+                Why did you choose <strong>{question.options[selectedOptionIndex]}</strong>, and what hallmark finding separates it from {question.options[question.correctIndex]}?
+              </p>
+              <div className="p-3 rounded-xl bg-black/40 border border-indigo-500/20 text-[12px] text-indigo-200 leading-relaxed">
+                <strong>Pathognomonic Rule: </strong>
+                {question.examinerTrap || exp.whyCorrect?.clinicalRule || exp.bottomLine}
+              </div>
             </div>
           )}
         </div>
@@ -300,17 +376,33 @@ export function BTRClinicalAutopsy({
             </button>
           )}
 
-          {onBookmarkFSRS && (
-            <button
-              type="button"
-              onClick={onBookmarkFSRS}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-white font-bold text-xs border border-white/20 transition"
-              title="Add to Spaced Repetition Queue"
-            >
-              <Bookmark size={12} />
-              <span>FSRS Card</span>
-            </button>
-          )}
+          <button
+            type="button"
+            onClick={handleBookmark}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-bold text-xs border transition cursor-pointer ${
+              isBookmarkedFSRS
+                ? "bg-emerald-500/20 text-emerald-300 border-emerald-500/40 shadow-xs"
+                : "bg-white/10 hover:bg-white/20 text-white border-white/20"
+            }`}
+            title="Add to Spaced Repetition Queue"
+          >
+            {isBookmarkedFSRS ? <Check size={12} className="text-emerald-400" /> : <Bookmark size={12} />}
+            <span>{isBookmarkedFSRS ? "Added to Daily FSRS" : "FSRS Card"}</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={handleExportAnki}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-bold text-xs border transition cursor-pointer ${
+              exportedAnki
+                ? "bg-amber-500/20 text-amber-300 border-amber-500/40 shadow-xs"
+                : "bg-white/5 hover:bg-white/15 text-white/80 hover:text-white border-white/15"
+            }`}
+            title="Export card to Anki text format"
+          >
+            <Download size={12} />
+            <span>{exportedAnki ? "Exported!" : "Export Anki"}</span>
+          </button>
         </div>
       </div>
     </div>
