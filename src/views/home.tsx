@@ -1351,7 +1351,6 @@ export function Home({
   }, [active, cwItems, scrollEl, settings.tvNavigation]);
 
   const cwHidden = homeRowsCustom.hidden.includes("cw");
-  const cwTop = settings.tvNavigation || !!homeRowsCustom.cwTop;
   const cwBlock =
     cwHidden && !editMode ? null : (
       <div data-scroll-anchor="cw">
@@ -1419,34 +1418,14 @@ export function Home({
               </div>
             </div>
           )}
-          {cwTop && cwBlock}
-          {settings.tvNavigation && (
-            <nav aria-label={t("Quick actions")} className="flex flex-wrap items-center gap-3">
-              <button
-                type="button"
-                className="group flex items-center gap-2.5 rounded-xl border border-white/10 bg-white/5 px-5 py-2.5 text-[14px] font-medium text-ink shadow-sm backdrop-blur-md transition-all duration-200 hover:scale-[1.02] hover:border-white/20 hover:bg-white/10 active:scale-[0.98]"
-                onClick={() => setSearchOpen(true)}
-              >
-                <Search size={16} strokeWidth={2.2} className="text-ink-subtle transition-colors group-hover:text-accent" />
-                <span>{t("Search")}</span>
-              </button>
-              <button
-                type="button"
-                className="group flex items-center gap-2.5 rounded-xl border border-white/10 bg-white/5 px-5 py-2.5 text-[14px] font-medium text-ink shadow-sm backdrop-blur-md transition-all duration-200 hover:scale-[1.02] hover:border-white/20 hover:bg-white/10 active:scale-[0.98]"
-                onClick={() => setView("library")}
-              >
-                <Film size={16} strokeWidth={2.2} className="text-ink-subtle transition-colors group-hover:text-accent" />
-                <span>{t("Library")}</span>
-              </button>
-            </nav>
-          )}
+          {/* Featured Hero Banner at the Top (Full-bleed under translucent header, like Harbor / Netflix) */}
           {settings.homeMode !== "classic" &&
             !homeRowsCustom.hidden.includes("hero") &&
             showHero && (
               <div
                 data-scroll-anchor="hero"
                 data-tv-hero-zone
-                className={`relative ${heroFull ? `${cwTop ? "" : "-mt-24 lg:-mt-28"} -mb-12 argus-hero-full` : ""}`}
+                className={`relative ${heroFull ? "-mt-24 lg:-mt-28 -mb-12 argus-hero-full" : ""}`}
               >
                 {editMode && (
                   <PinnedRowControls
@@ -1510,7 +1489,31 @@ export function Home({
             homeRowsCustom.hidden.includes("hero") ||
             !showHero) &&
             seasonalInvitation}
-          {!cwTop && cwBlock}
+
+          {/* Quick actions for TV navigation */}
+          {settings.tvNavigation && (
+            <nav aria-label={t("Quick actions")} className="flex flex-wrap items-center gap-3">
+              <button
+                type="button"
+                className="group flex items-center gap-2.5 rounded-xl border border-white/10 bg-white/5 px-5 py-2.5 text-[14px] font-medium text-ink shadow-sm backdrop-blur-md transition-all duration-200 hover:scale-[1.02] hover:border-white/20 hover:bg-white/10 active:scale-[0.98]"
+                onClick={() => setSearchOpen(true)}
+              >
+                <Search size={16} strokeWidth={2.2} className="text-ink-subtle transition-colors group-hover:text-accent" />
+                <span>{t("Search")}</span>
+              </button>
+              <button
+                type="button"
+                className="group flex items-center gap-2.5 rounded-xl border border-white/10 bg-white/5 px-5 py-2.5 text-[14px] font-medium text-ink shadow-sm backdrop-blur-md transition-all duration-200 hover:scale-[1.02] hover:border-white/20 hover:bg-white/10 active:scale-[0.98]"
+                onClick={() => setView("library")}
+              >
+                <Film size={16} strokeWidth={2.2} className="text-ink-subtle transition-colors group-hover:text-accent" />
+                <span>{t("Library")}</span>
+              </button>
+            </nav>
+          )}
+
+          {/* Continue Watching & New Episodes Row */}
+          {cwBlock}
           {settings.homeMode !== "classic" && (
             <div data-scroll-anchor="streaming">
               <Profiled id="home.services">
