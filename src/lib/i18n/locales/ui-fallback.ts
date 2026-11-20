@@ -1,5 +1,13 @@
 // Newly introduced UI copy remains usable until each locale provides an override.
 const uiFallback: Record<string, string> = {
+  "Play the sample video": "Play the sample video",
+  "Argus sample video": "Argus sample video",
+  "Simulate a source failure": "Simulate a source failure",
+  "Close demo": "Close demo",
+  "The sample video could not play.": "The sample video could not play.",
+  "Sample video restored after a simulated failure.": "Sample video restored after a simulated failure.",
+  "Subtitle gaps": "Subtitle gaps",
+  "Retry {start}–{end}": "Retry {start}–{end}",
   "Enter a valid HTTP or HTTPS media URL.": "Enter a valid HTTP or HTTPS media URL.",
   "Could not open the video file.": "Could not open the video file.",
   "Open a media URL": "Open a media URL",

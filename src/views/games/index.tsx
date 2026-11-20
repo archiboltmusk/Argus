@@ -88,8 +88,9 @@ import "./games-loading.css";
 import "./game-explore-polish.css";
 
 import { deferredGameView, GameVisited } from "./game-deferred";
-import { KafilaCard } from "./kafila-surge/kafila-card";
-import { KafilaSurgeModal } from "./kafila-surge/kafila-surge-modal";
+import { ArcadeShowcaseCard } from "./argus-arcade/arcade-showcase-card";
+import { ArcadeHubModal } from "./argus-arcade/arcade-hub-modal";
+import type { ArcadeGameId } from "./argus-arcade/arcade-types";
 
 const ModsWorkspace = deferredGameView(async () => ({ default: (await import("./mods-workspace")).ModsWorkspace }));
 const GameDownloads = deferredGameView(async () => ({ default: (await import("./game-downloads")).GameDownloads }));
@@ -129,7 +130,8 @@ function GamesViewContent({ argusNavigationOpen = false, onArgusNavigationChange
   useEffect(()=>{setCollectGame(null);},[profileId]);
   useEffect(()=>{if(!active)setCollectGame(null);},[active]);
   const [sourcesOpen,setSourcesOpen]=useState(false);
-  const [kafilaOpen, setKafilaOpen] = useState(false);
+  const [arcadeOpen, setArcadeOpen] = useState(false);
+  const [arcadeTargetGame, setArcadeTargetGame] = useState<ArcadeGameId | undefined>(undefined);
   const [startedDownload,setStartedDownload]=useState<string>();
   useEffect(()=>{if(!active)setSourcesOpen(false);},[active]);
   useEffect(()=>setSourcesOpen(false),[profileId]);
@@ -369,7 +371,12 @@ function GamesViewContent({ argusNavigationOpen = false, onArgusNavigationChange
       {home ? <>
         <GameShowcase key={exploreVisit.id} visit={exploreVisit} active={homeActive} open={open} save={save} isSaved={isSaved} browse={browse} />
         <div className="games-inset mb-4">
-          <KafilaCard onPlay={() => setKafilaOpen(true)} />
+          <ArcadeShowcaseCard
+            onOpenHub={(gameId) => {
+              setArcadeTargetGame(gameId);
+              setArcadeOpen(true);
+            }}
+          />
         </div>
         <GamePageRows page="games-explore" active={homeActive} inset intro={hidden => <GameExploreShortcuts scrollRef={scroll} hiddenRows={hidden}/>} >
           <GamePageRow id="picker" title={t("games.pick.title")}>{homeActive&&<GameDiscoveryPicker key={"discovery-picker:" + profileId} profile={profileId} saved={saved} installed={library.scan?.games??[]} emulation={emulation.data} libraryContext={{steam:steamAccount.status.connected?steamAccount.status.snapshot:null,custom:customLibrary.data.games,launchers:access.launchers.scan}} active={homeActive} open={open}/>}</GamePageRow>
@@ -416,7 +423,15 @@ function GamesViewContent({ argusNavigationOpen = false, onArgusNavigationChange
     {active && libraryPreferences.editing && <GameLibraryPreferenceDialog key={libraryPreferences.editing.id} preferences={libraryPreferences}/>}
     {sourcesOpen && <GameSourcesModal key={customLibrary.profile} customLibrary={customLibrary} sources={sources} downloads={downloads} onClose={()=>setSourcesOpen(false)}/>}
     {active && downloads.torrents.draft !== null && <GameTorrentDialog torrents={downloads.torrents} source={downloads.torrents.draft} onClose={downloads.torrents.close} onStarted={torrentStarted}/>}
-    {kafilaOpen && <KafilaSurgeModal onClose={() => setKafilaOpen(false)} />}
+    {arcadeOpen && (
+      <ArcadeHubModal
+        initialGameId={arcadeTargetGame}
+        onClose={() => {
+          setArcadeOpen(false);
+          setArcadeTargetGame(undefined);
+        }}
+      />
+    )}
     {library.launchError && <div className="games-save-error" role="alert">{t("games.library.launchError")}<button onClick={library.dismissLaunchError} aria-label={t("common.close")}><X size={16} /></button></div>}
     {saveFailed && <div className="games-save-error" role="alert">{t("games.saveError")}<button onClick={() => setSaveFailed(false)} aria-label={t("common.close")}><X size={16} /></button></div>}
     {(homeActive || (active && !selected && !collection && !atlasRoute && !recentOpen && tab === "library" && libraryMode === "retro") || (active && !selected && !!atlasRoute && ["hacks","romhacks"].includes(atlasRoute.kind)))&&<BackToTop scrollRef={scroll} onReturnToTop={()=>scroll.current?.querySelector<HTMLElement>(atlasRoute&&["hacks","romhacks"].includes(atlasRoute.kind)?'.games-hack-mast h1':'.games-mast h1')?.focus({preventScroll:true})}/>}
