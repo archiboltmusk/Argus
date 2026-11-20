@@ -117,6 +117,15 @@ class LiveTranscriptionManager {
   private trackMounted = false;
   private runStartTime = 0;
   private running = false;
+  private repairSource: {
+    mediaUrl: string;
+    headers?: Record<string, string> | null;
+    durationSec?: number | null;
+    audioStreamIndex?: number;
+    lang?: string | null;
+    translate: boolean;
+    srt: string;
+  } | null = null;
 
   public static getInstance(): LiveTranscriptionManager {
     if (!LiveTranscriptionManager.instance) {
@@ -170,6 +179,7 @@ class LiveTranscriptionManager {
 
     if (this.running) return;
     this.running = true;
+    this.repairSource = null;
 
     this.onAddTrackCallback = options.onAddTrack ?? null;
     this.trackMounted = false;
@@ -324,6 +334,15 @@ class LiveTranscriptionManager {
         outputPath: filePath,
       });
 
+      this.repairSource = {
+        mediaUrl: options.mediaUrl,
+        headers: options.headers,
+        durationSec: options.durationSec,
+        audioStreamIndex: options.audioStreamIndex,
+        lang: options.lang,
+        translate: isTranslate,
+        srt,
+      };
       if (missingRanges.length > 0) {
         const format = (seconds: number) => {
           const whole = Math.floor(seconds);
@@ -367,6 +386,66 @@ class LiveTranscriptionManager {
     } finally {
       this.cleanupListeners();
       this.running = false;
+    }
+  }
+
+  public async repairGap(mediaUrl: string, from: number, to: number): Promise<void> {
+    const source = this.repairSource;
+    const { filePath, missingRanges } = this.state;
+    if (this.running || !source || source.mediaUrl !== mediaUrl || !filePath) return;
+    if (!missingRanges.some(([start, end]) => start === from && end === to)) return;
+
+    this.running = true;
+    this.updateState({ isActive: true, status: "transcribing", error: null });
+    try {
+      const { parseSubtitle } = await import("./parser");
+      const existingSegments = parseSubtitle(source.srt, "srt").map((cue) => ({
+        text: cue.text,
+        t0: cue.start,
+        t1: cue.end,
+        noSpeech: 0,
+        tokens: [],
+      }));
+      const { srt } = await invoke<{ srt: string }>("asr_generate_subtitles", {
+        url: source.mediaUrl,
+        headers: source.headers ?? null,
+        durationSec: source.durationSec ?? null,
+        audioStreamIndex: source.audioStreamIndex ?? null,
+        lang: source.lang ?? null,
+        translate: source.translate,
+        outputPath: filePath,
+        repairRange: [from, to],
+        existingSegments,
+      });
+      source.srt = srt;
+      const cues = parseSubtitle(srt, "srt");
+      const { setTranscriptCues } = await import("./transcript-store");
+      setTranscriptCues(cues, mediaUrl);
+      if (!this.trackMounted && cues.length && this.onAddTrackCallback) {
+        try {
+          const mounted = await this.onAddTrackCallback(
+            filePath,
+            source.translate ? "en" : source.lang || "en",
+            "Whisper AI",
+          );
+          this.trackMounted = mounted !== false;
+        } catch {
+          this.trackMounted = false;
+        }
+      }
+      const remaining = missingRanges.filter(([start, end]) => start !== from || end !== to);
+      this.updateState({
+        missingRanges: remaining,
+        cueCount: cues.length,
+        status: remaining.length ? "error" : "completed",
+        error: remaining.length ? "Some subtitle gaps still need repair." : null,
+        progressPct: remaining.length ? this.state.progressPct : 100,
+      });
+    } catch (error) {
+      this.updateState({ status: "error", error: String(error) });
+    } finally {
+      this.running = false;
+      this.updateState({ isActive: false });
     }
   }
 

@@ -329,6 +329,25 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: node scripts/publish-release-page.mjs "${{ needs.version.outputs.tag }}" "${{ github.repository }}"
+      - name: Publish installer checksums
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          TAG: ${{ needs.version.outputs.tag }}
+        run: |
+          set -euo pipefail
+          mkdir verified-assets
+          gh release download "$TAG" --repo "$REPO" --dir verified-assets \
+            -p Argus-aarch64.dmg -p Argus-aarch64.app.tar.gz \
+            -p Argus-windows-x64-setup.exe -p Argus-windows-x64.msi \
+            -p Argus-linux-x64.AppImage -p Argus-linux-x64.deb
+          (
+            cd verified-assets
+            sha256sum Argus-aarch64.dmg Argus-aarch64.app.tar.gz \
+              Argus-windows-x64-setup.exe Argus-windows-x64.msi \
+              Argus-linux-x64.AppImage Argus-linux-x64.deb
+          ) > SHA256SUMS.txt
+          gh release upload "$TAG" SHA256SUMS.txt --repo "$REPO" --clobber
       - name: Publish complete verified release
         env:
           GH_TOKEN: ${{ github.token }}

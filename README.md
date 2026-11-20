@@ -14,7 +14,7 @@ Argus is an open-source media player and library for the sources you already use
 
 1. Open the [latest stable release](https://github.com/archiboltmusk/Argus/releases/latest) and download an installer listed for your platform. Use the [download matrix](#platform-build-targets--download-matrix) to identify the right asset. Apple Silicon Mac users should look for `Argus-aarch64.dmg`.
 2. Start with a local video you own or an authorized direct media URL. Builds that include the [welcome-screen playback shortcut](https://github.com/archiboltmusk/Argus/pull/178) let you do this during setup. In earlier builds, finish setup and use the local library for your own files.
-3. When you want to add more sources, connect the servers, accounts, playlists, or add-ons you use. Argus ships without streaming sources.
+3. When you want to add more sources, connect the servers, accounts, playlists, or add-ons you use. Argus ships without streaming sources. The welcome screen includes a first-party playback sample on builds that bundle it.
 
 [Build from source](#getting-started) · [Contribute](CONTRIBUTING.md) · [Report a bug](https://github.com/archiboltmusk/Argus/issues/new?template=bug_report.yml)
 
@@ -224,7 +224,7 @@ pnpm build:web          # Package Progressive Web App (PWA)
 
 ## Responsibility & Legal
 
-Argus ships with **no streaming sources, scrapers, catalogs, or media content of any kind**. Addons, plugins, and custom indexers are installed and configured exclusively by the end user. Users are entirely responsible for the sources they configure and for adhering to the applicable laws in their jurisdiction. Peer-to-peer uploading (seeding) is disabled by default. See [LEGAL.md](LEGAL.md).
+Argus ships with **no bundled third-party streaming sources, scrapers, catalogs, or entertainment media**. Addons, plugins, and custom indexers are installed and configured exclusively by the end user. Users are entirely responsible for the sources they configure and for adhering to the applicable laws in their jurisdiction. Peer-to-peer uploading (seeding) is disabled by default. See [LEGAL.md](LEGAL.md).
 
 ## Contributing
 

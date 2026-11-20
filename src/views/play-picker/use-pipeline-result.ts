@@ -1,4 +1,6 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { keepPickerSearch } from "@/lib/player/background-picker-search";
+import { capturePlaybackActor, isPlaybackActorCurrent } from "@/lib/playback-history";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Addon } from "@/lib/addons";
 import type { Meta } from "@/lib/cinemeta";
 import { useDebridClients } from "@/lib/debrid/registry";
@@ -53,6 +55,10 @@ export function usePipelineResult({
   animeTitles: string[] | null;
   preferredAddonId?: string | null;
 }) {
+  const handoff = useRef<((traceId: string) => void) | null>(null);
+  const retainSearch = useCallback((traceId?: string) => {
+    if (traceId) handoff.current?.(traceId);
+  }, []);
   const [result, setResult] = useState<PipelineResult | null>(null);
   const [loading, setLoading] = useState(true);
   const [pipelineDone, setPipelineDone] = useState(false);
@@ -127,6 +133,15 @@ export function usePipelineResult({
       settledAddonIds: [],
     });
     setPipelineStartedAt(performance.now());
+    const actor = capturePlaybackActor();
+    let attached = true;
+    let retained = false;
+    const retain = (traceId: string) => {
+      if (ac.signal.aborted || retained) return;
+      retained = true;
+      keepPickerSearch(traceId, ac);
+    };
+    handoff.current = retain;
     runPipeline(
       buildEpisodePipelineInput({
         meta,
@@ -144,31 +159,34 @@ export function usePipelineResult({
       }),
       ac.signal,
       (partial) => {
-        if (ac.signal.aborted) return;
+        if (ac.signal.aborted || !isPlaybackActorCurrent(actor)) return;
         if (partial.picker.all.length === 0) return;
         stampAddonOrder(partial.picker.all, partial.raw.addon);
-        setResult(partial);
-        setLoading(false);
-        setFirstResultAt((prev) => prev ?? performance.now());
         setPickerCache(meta, episode, partial, configHash, false, animePreference);
+        if (attached) {
+          setResult(partial);
+          setLoading(false);
+          setFirstResultAt((prev) => prev ?? performance.now());
+        }
       },
       (progress) => {
-        if (ac.signal.aborted) return;
+        if (!attached || ac.signal.aborted) return;
         setAddonQuorum(progress);
       },
     )
       .then(async (r) => {
-        if (ac.signal.aborted) return;
+        if (ac.signal.aborted || !isPlaybackActorCurrent(actor)) return;
         stampAddonOrder(r.picker.all, r.raw.addon);
+        setPickerCache(meta, episode, r, configHash, true, animePreference);
+        if (!attached) return;
         setResult(r);
         setLoading(false);
         setPipelineDone(true);
-        setPickerCache(meta, episode, r, configHash, true, animePreference);
 
         // Background CDN speed verification: probe top candidate streams (up to 6) and promote the fastest
         try {
           const probes = await probeTopStreams(r.picker.all, 6, ac.signal);
-          if (!ac.signal.aborted && probes.size > 0) {
+          if (attached && !ac.signal.aborted && probes.size > 0) {
             const reRanked = applySpeedProbeBonuses(r.picker.all, probes);
             setResult((prev) => {
               if (!prev || ac.signal.aborted) return prev;
@@ -186,7 +204,7 @@ export function usePipelineResult({
           }
         } catch {}
 
-        if (!ac.signal.aborted) {
+        if (attached && !ac.signal.aborted) {
           setAutoSettleReady(true);
           // Prewarm candidate top stream + hot standby runner-up socket/buffer for instant click-to-play
           if (r.picker.all && r.picker.all.length > 0) {
@@ -197,13 +215,17 @@ export function usePipelineResult({
         }
       })
       .catch((e) => {
-        if (ac.signal.aborted) return;
+        if (!attached || ac.signal.aborted) return;
         setResolveError(pipelineError(e instanceof Error ? e.message : undefined));
         setLoading(false);
         setPipelineDone(true);
         setAutoSettleReady(true);
       });
-    return () => ac.abort();
+    return () => {
+      attached = false;
+      if (handoff.current === retain) handoff.current = null;
+      if (!retained) ac.abort();
+    };
   }, [
     streamIds,
     imdbId,
@@ -245,6 +267,7 @@ export function usePipelineResult({
     resolveError,
     pickerError,
     refresh,
+    retainSearch,
     setResult,
     setLoading,
     setPipelineDone,

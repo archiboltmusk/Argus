@@ -6,7 +6,13 @@ import {
   setTranscriptSearchQuery,
 } from "@/lib/subtitles/transcript-store";
 import { findMatchingPearl } from "@/lib/subtitles/medical-pearls-glossary";
+import {
+  liveTranscription,
+  useLiveTranscriptionSession,
+} from "@/lib/subtitles/live-transcription-service";
 import { useT } from "@/lib/i18n";
+
+const EMPTY_CUES: ReturnType<typeof useTranscriptState>["cues"] = [];
 
 interface TranscriptDrawerProps {
   mediaUrl: string;
@@ -23,6 +29,9 @@ function formatTime(sec: number): string {
 export function TranscriptDrawer({ mediaUrl, onSeek, onOpenPearlModal }: TranscriptDrawerProps) {
   const tr = useT();
   const state = useTranscriptState();
+  const transcription = useLiveTranscriptionSession();
+  const gaps = transcription.mediaUrl === mediaUrl ? transcription.missingRanges : [];
+  const cues = state.mediaUrl && state.mediaUrl !== mediaUrl ? EMPTY_CUES : state.cues;
   const [followPlayback, setFollowPlayback] = useState(true);
   const [copiedAll, setCopiedAll] = useState(false);
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
@@ -33,13 +42,13 @@ export function TranscriptDrawer({ mediaUrl, onSeek, onOpenPearlModal }: Transcr
   // Filter cues by search query
   const filteredCues = useMemo(() => {
     if (!state.searchQuery.trim()) {
-      return state.cues.map((cue, index) => ({ cue, originalIndex: index }));
+      return cues.map((cue, index) => ({ cue, originalIndex: index }));
     }
     const q = state.searchQuery.toLowerCase();
-    return state.cues
+    return cues
       .map((cue, index) => ({ cue, originalIndex: index }))
       .filter(({ cue }) => cue.text.toLowerCase().includes(q));
-  }, [state.cues, state.searchQuery]);
+  }, [cues, state.searchQuery]);
 
   // Auto-scroll to active cue when follow mode is on
   useEffect(() => {
@@ -52,17 +61,18 @@ export function TranscriptDrawer({ mediaUrl, onSeek, onOpenPearlModal }: Transcr
     }
   }, [state.activeCueIndex, followPlayback]);
 
-  if (!state.isOpen || (state.mediaUrl && state.mediaUrl !== mediaUrl)) return null;
+  if (!state.isOpen || (state.mediaUrl && state.mediaUrl !== mediaUrl && gaps.length === 0))
+    return null;
 
-  const canReplay = (state.cues[0]?.start ?? Infinity) <= state.currentSec;
+  const canReplay = (cues[0]?.start ?? Infinity) <= state.currentSec;
   const replayLastLine = () => {
-    const active = state.cues[state.activeCueIndex];
+    const active = cues[state.activeCueIndex];
     if (active) {
       onSeek(active.start);
       return;
     }
-    for (let index = state.cues.length - 1; index >= 0; index--) {
-      const cue = state.cues[index];
+    for (let index = cues.length - 1; index >= 0; index--) {
+      const cue = cues[index];
       if (cue.start <= state.currentSec) {
         onSeek(cue.start);
         return;
@@ -71,7 +81,7 @@ export function TranscriptDrawer({ mediaUrl, onSeek, onOpenPearlModal }: Transcr
   };
 
   const handleCopyAll = () => {
-    const fullText = state.cues.map((c) => `[${formatTime(c.start)}] ${c.text}`).join("\n\n");
+    const fullText = cues.map((c) => `[${formatTime(c.start)}] ${c.text}`).join("\n\n");
     navigator.clipboard.writeText(fullText);
     setCopiedAll(true);
     setTimeout(() => setCopiedAll(false), 2500);
@@ -86,6 +96,27 @@ export function TranscriptDrawer({ mediaUrl, onSeek, onOpenPearlModal }: Transcr
 
   return (
     <div className="fixed top-14 bottom-20 right-6 z-[9500] w-96 max-w-[calc(100vw-3rem)] flex flex-col rounded-2xl border border-edge-soft bg-surface-base/95 backdrop-blur-xl shadow-2xl overflow-hidden animate-in slide-in-from-right-4 duration-200 select-none">
+      {gaps.length > 0 && (
+        <div className="max-h-28 shrink-0 overflow-y-auto border-b border-edge-soft p-3">
+          <p className="mb-1 text-xs text-ink-muted">{tr("Subtitle gaps")}</p>
+          {gaps.map(([from, to]) => (
+            <button
+              key={from}
+              type="button"
+              disabled={transcription.isActive}
+              onClick={() => void liveTranscription.repairGap(mediaUrl, from, to)}
+              className="mr-2 rounded border border-edge-soft px-2 py-1 text-xs text-ink disabled:opacity-50"
+            >
+              {tr("Retry {start}–{end}", { start: formatTime(from), end: formatTime(to) })}
+            </button>
+          ))}
+          {transcription.error && (
+            <p role="status" className="mt-1 text-xs text-ink-muted">
+              {transcription.error}
+            </p>
+          )}
+        </div>
+      )}
       {/* Header */}
       <div className="p-3.5 border-b border-edge-soft bg-surface-elevated/40 space-y-2.5 shrink-0">
         <div className="flex items-center justify-between">
@@ -98,7 +129,7 @@ export function TranscriptDrawer({ mediaUrl, onSeek, onOpenPearlModal }: Transcr
                 {tr("Interactive Transcript")}
               </h3>
               <p className="text-[10px] text-ink-muted mt-0.5">
-                {state.cues.length} {tr("spoken sentences")}
+                {cues.length} {tr("spoken sentences")}
               </p>
             </div>
           </div>

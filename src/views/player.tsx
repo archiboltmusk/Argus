@@ -1,3 +1,4 @@
+import { cancelPickerSearch } from "@/lib/player/background-picker-search";
 import { useHandoffReceipt } from "./player/hooks/use-handoff-receipt";
 import { PlaybackHelp } from "@/components/player/playback-help";
 import { useSourceMemory } from "./player/hooks/use-source-memory";
@@ -517,6 +518,7 @@ function NativePlayerView({ src }: { src: PlayerSrc }) {
     snap,
     debrids,
   });
+  useEffect(() => () => cancelPickerSearch(src.playbackTraceId), [src.playbackTraceId]);
   const activeMediaSrc = useMemo(
     () =>
       liveUrl === src.url && liveStreamRef === src.streamRef

@@ -273,6 +273,7 @@ export function PlayPicker({
     pipelineStartedAt,
     pickerError,
     refresh,
+    retainSearch,
     setAutoSettleReady,
     setResolveError,
   } = usePipelineResult({
@@ -661,13 +662,14 @@ export function PlayPicker({
         !s.meta.id?.startsWith("iptv:") &&
         (s.meta.type === "movie" || s.meta.type === "series" || s.meta.type === "anime");
       if (!applicable) {
+        if (!s.isLive) retainSearch(s.playbackTraceId);
         openPlayer(s);
         return;
       }
       setResolving(null);
       setPendingPreselect(s);
     },
-    [settings.subtitlePreselect, isDownload, inSession, openPlayer],
+    [settings.subtitlePreselect, isDownload, inSession, openPlayer, retainSearch],
   );
 
   const {
@@ -976,6 +978,7 @@ export function PlayPicker({
             setResolveError(playError("The active profile changed. Open the menu again."));
             return;
           }
+          retainSearch(finalSrc.playbackTraceId);
           openPlayer(finalSrc);
         }}
         onCancel={() => setPendingPreselect(null)}
