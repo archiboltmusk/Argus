@@ -157,7 +157,7 @@ test("Micro-Surgical Drill Healer: generates focused remediations for weak subje
   await initBTRBackendDatabase();
 
   const drillQs = await generateMicroSurgicalDrill({
-    weakSubject: "Radiology",
+    weakSubject: "Pathology",
     count: 10,
     prioritizeTrapsAndMissed: true,
   });
@@ -165,8 +165,10 @@ test("Micro-Surgical Drill Healer: generates focused remediations for weak subje
   assert.ok(Array.isArray(drillQs), "Should return array of questions");
   assert.ok(drillQs.length > 0, "Should return at least 1 question for weak subject");
 
-  // Verify that all returned questions are valid ClinicalQuestions
+  // The starter bank covers Pathology. Radiology requires an additional question source.
+  assert.deepEqual(await generateMicroSurgicalDrill({ weakSubject: "Radiology" }), []);
   for (const q of drillQs) {
+    assert.equal(q.subject, "Pathology");
     assert.ok(q.id, "Question must have an id");
     assert.ok(q.vignette, "Question must have a vignette");
     assert.ok(q.options.length >= 4, "Question must have at least 4 options");
