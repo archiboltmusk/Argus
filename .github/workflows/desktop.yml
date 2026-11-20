@@ -11,6 +11,7 @@ on:
   pull_request:
     paths:
       - ".github/workflows/desktop.yml"
+      - "scripts/fetch-binaries.mjs"
       - "src-tauri/tauri.windows.conf.json"
       - "src-tauri/tauri.linux*.json"
       - "src-tauri/tauri.updater.conf.json"
@@ -118,6 +119,13 @@ jobs:
       - run: pnpm run setup:libmpv
       - run: pnpm run setup:mpv
       - run: pnpm run setup:binaries
+      - name: Smoke-test Windows FFmpeg sidecars
+        shell: pwsh
+        run: |
+          & ./src-tauri/binaries/ffmpeg-x86_64-pc-windows-msvc.exe -version
+          if ($LASTEXITCODE -ne 0) { throw "FFmpeg sidecar failed to start" }
+          & ./src-tauri/binaries/ffprobe-x86_64-pc-windows-msvc.exe -version
+          if ($LASTEXITCODE -ne 0) { throw "FFprobe sidecar failed to start" }
       - run: pnpm run setup:models
       - name: Set beta version and updater key
         if: github.event_name != 'pull_request'

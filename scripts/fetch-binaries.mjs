@@ -39,6 +39,7 @@ const mb = (p) => (statSync(p).size / 1048576).toFixed(0);
 const YTDLP = "https://github.com/yt-dlp/yt-dlp/releases/latest/download";
 const BTBN = "https://github.com/BtbN/FFmpeg-Builds/releases/download/latest";
 const EVERMEET_INFO = "https://evermeet.cx/ffmpeg/info";
+const BTBN_WINDOWS = `${BTBN}/ffmpeg-master-latest-win64-gpl.zip`;
 const GYAN = "https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-essentials.zip";
 const DESCRIPT = "https://github.com/descriptinc/ffmpeg-ffprobe-static/releases/download/b6.1.2-rc.1";
 const UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36";
@@ -71,7 +72,10 @@ const SOURCES = {
       url: `${DESCRIPT}/ffmpeg-darwin-arm64`,
       fallback: { kind: "zip", url: "https://www.osxexperts.net/ffmpeg71arm.zip", member: "ffmpeg" },
     },
-    "x86_64-pc-windows-msvc": { kind: "zip", url: GYAN, member: "ffmpeg.exe" },
+    "x86_64-pc-windows-msvc": {
+      kind: "zip", url: BTBN_WINDOWS, member: "ffmpeg.exe",
+      fallback: { kind: "zip", url: GYAN, member: "ffmpeg.exe" },
+    },
   },
   ffprobe: {
     "x86_64-unknown-linux-gnu": { kind: "tar.xz", url: `${BTBN}/ffmpeg-master-latest-linux64-gpl.tar.xz`, member: "ffprobe" },
@@ -82,7 +86,10 @@ const SOURCES = {
       url: `${DESCRIPT}/ffprobe-darwin-arm64`,
       fallback: { kind: "zip", url: "https://www.osxexperts.net/ffprobe71arm.zip", member: "ffprobe" },
     },
-    "x86_64-pc-windows-msvc": { kind: "zip", url: GYAN, member: "ffprobe.exe" },
+    "x86_64-pc-windows-msvc": {
+      kind: "zip", url: BTBN_WINDOWS, member: "ffprobe.exe",
+      fallback: { kind: "zip", url: GYAN, member: "ffprobe.exe" },
+    },
   },
 };
 
@@ -131,7 +138,8 @@ function findMember(dir, name) {
   let best = null;
   let bestSize = -1;
   for (const p of walk(dir, [])) {
-    if (basename(p) !== name) continue;
+    const filename = basename(p);
+    if (process.platform === "win32" ? filename.toLowerCase() !== name.toLowerCase() : filename !== name) continue;
     const size = statSync(p).size;
     if (size > bestSize) {
       best = p;
@@ -151,11 +159,7 @@ function extractMember(buf, kind, member, dest) {
     if (kind === "tar.xz") {
       execFileSync("tar", ["-xJf", archive, "-C", outDir], { stdio: "inherit" });
     } else if (process.platform === "win32") {
-      execFileSync(
-        "powershell",
-        ["-NoProfile", "-NonInteractive", "-Command", `Expand-Archive -LiteralPath "${archive}" -DestinationPath "${outDir}" -Force`],
-        { stdio: "inherit" },
-      );
+      execFileSync("tar.exe", ["-xf", archive, "-C", outDir], { stdio: "inherit" });
     } else {
       execFileSync("unzip", ["-oq", archive, "-d", outDir], { stdio: "inherit" });
     }
