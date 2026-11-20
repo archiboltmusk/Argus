@@ -11,6 +11,7 @@ on:
   pull_request:
     paths:
       - ".github/workflows/desktop.yml"
+      - "scripts/fetch-binaries.mjs"
       - "src-tauri/tauri.windows.conf.json"
       - "src-tauri/tauri.linux*.json"
       - "src-tauri/tauri.updater.conf.json"
@@ -25,6 +26,14 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 env:
+  VITE_ARGUS_API_BASE: ${{ vars.VITE_ARGUS_API_BASE }}
+  VITE_ARGUS_TRAKT_BASE: ${{ vars.VITE_ARGUS_TRAKT_BASE }}
+  VITE_ARGUS_TRAKT_CLIENT_ID: ${{ vars.VITE_ARGUS_TRAKT_CLIENT_ID }}
+  VITE_ARGUS_MAL_BASE: ${{ vars.VITE_ARGUS_MAL_BASE }}
+  VITE_ARGUS_MAL_CLIENT_ID: ${{ vars.VITE_ARGUS_MAL_CLIENT_ID }}
+  VITE_ARGUS_TVDB_BASE: ${{ vars.VITE_ARGUS_TVDB_BASE }}
+  VITE_ARGUS_PUBLIC_RELAY: ${{ vars.VITE_ARGUS_PUBLIC_RELAY }}
+  VITE_ARGUS_RELAY_BASE: ${{ vars.VITE_ARGUS_RELAY_BASE }}
   CARGO_TERM_COLOR: always
   NODE_OPTIONS: --max-old-space-size=8192
 
@@ -110,6 +119,13 @@ jobs:
       - run: pnpm run setup:libmpv
       - run: pnpm run setup:mpv
       - run: pnpm run setup:binaries
+      - name: Smoke-test Windows FFmpeg sidecars
+        shell: pwsh
+        run: |
+          & ./src-tauri/binaries/ffmpeg-x86_64-pc-windows-msvc.exe -version
+          if ($LASTEXITCODE -ne 0) { throw "FFmpeg sidecar failed to start" }
+          & ./src-tauri/binaries/ffprobe-x86_64-pc-windows-msvc.exe -version
+          if ($LASTEXITCODE -ne 0) { throw "FFprobe sidecar failed to start" }
       - run: pnpm run setup:models
       - name: Set beta version and updater key
         if: github.event_name != 'pull_request'

@@ -2,7 +2,7 @@ import { ARGUS_TRAKT_BASE } from "@/lib/config/endpoints";
 
 export const TRAKT_API_BASE = "https://api.trakt.tv";
 export const TRAKT_API_VERSION = "2";
-export const TRAKT_CLIENT_ID = "wL17DxIVWSRSKgCXLJGnRvwT2c8vUcqUtxSo5u4Mt7Q";
+export const TRAKT_CLIENT_ID = import.meta.env?.VITE_ARGUS_TRAKT_CLIENT_ID?.trim() || "wL17DxIVWSRSKgCXLJGnRvwT2c8vUcqUtxSo5u4Mt7Q";
 export const TRAKT_TOKEN_PROXY = `${ARGUS_TRAKT_BASE}/api/trakt/token`;
 export const TRAKT_DEVICE_TOKEN_PROXY = `${ARGUS_TRAKT_BASE}/api/trakt/device-token`;
 export const TRAKT_VERIFY_URL = "https://trakt.tv/activate";
