@@ -58,18 +58,18 @@
     "test": "node --import ./scripts/node-test-environment.mjs --experimental-loader ./scripts/node-test-loader.mjs --test --test-timeout=60000 --test-concurrency=4 tests/*.test.ts tests/*.test.tsx tests/*.test.mjs"
   },
   "dependencies": {
-    "@mediapipe/tasks-vision": "1.2.2",
+    "@mediapipe/tasks-vision": "1.2.3",
     "@noble/hashes": "2.4.0",
-    "@rive-app/canvas": "^2.50.0",
+    "@rive-app/canvas": "^2.51.0",
     "@tanstack/react-virtual": "^3.14.26",
-    "@tauri-apps/api": "^2.12.4",
+    "@tauri-apps/api": "^2.12.5",
     "@tauri-apps/plugin-clipboard-manager": "^2.5.0",
     "@tauri-apps/plugin-deep-link": "^2.6.3",
     "@tauri-apps/plugin-dialog": "^2.8.4",
     "@tauri-apps/plugin-fs": "^2.7.1",
-    "@tauri-apps/plugin-http": "^2.8.3",
+    "@tauri-apps/plugin-http": "^2.9.0",
     "@tauri-apps/plugin-notification": "^2",
-    "@tauri-apps/plugin-opener": "^2.7.2",
+    "@tauri-apps/plugin-opener": "^2.7.3",
     "@tauri-apps/plugin-os": "^2.4.0",
     "@tauri-apps/plugin-process": "^2",
     "@tauri-apps/plugin-updater": "^2",
@@ -78,9 +78,9 @@
     "gifenc": "^1.0.3",
     "gifuct-js": "2.1.2",
     "hls.js": "^1.7.4",
-    "html-to-pdfmake": "2.5.36",
+    "html-to-pdfmake": "2.6.0",
     "lottie-web": "^5.13.0",
-    "lucide-react": "^1.70.0",
+    "lucide-react": "^1.73.0",
     "mpegts.js": "^1.8.2",
     "onnxruntime-web": "1.31.1",
     "parse-torrent-title": "^3.0.1",
@@ -93,7 +93,7 @@
     "remark-gfm": "^4.0.1",
     "skinview3d": "^3.4.2",
     "tailwindcss": "^4.3.5",
-    "tldts": "7.4.19",
+    "tldts": "7.5.4",
     "ts-fsrs": "5.4.2"
   },
   "devDependencies": {
@@ -107,11 +107,11 @@
     "@types/react-dom": "^19.3.0",
     "@vitejs/plugin-react": "^4.7.0",
     "cheerio": "^1.2.0",
-    "jsdom": "^31.0.0",
+    "jsdom": "^31.0.1",
     "typescript": "~5.8.3",
     "vite": "^7.0.4",
     "vite-plugin-static-copy": "^2.0.0",
-    "vite-plus": "1.5.1"
+    "vite-plus": "1.6.0"
   },
   "packageManager": "pnpm@11.9.0"
 }
