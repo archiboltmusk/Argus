@@ -50,8 +50,6 @@
 @theme {
   --color-canvas: oklch(0.18 0.004 260);
   --color-surface: oklch(0.22 0.004 260);
-  --color-surface-base: oklch(0.18 0.004 260);
-  --color-surface-elevated: oklch(0.26 0.004 260);
   --color-elevated: oklch(0.27 0.004 260);
   --color-raised: oklch(0.32 0.004 260);
   --color-ink: oklch(0.97 0.003 260);
@@ -60,6 +58,7 @@
   --color-edge: oklch(0.36 0.004 260 / 0.55);
   --color-edge-soft: oklch(0.36 0.004 260 / 0.25);
   --color-accent: oklch(0.78 0.13 60);
+  --color-accent-contrast: #000;
   --color-accent-soft: oklch(0.78 0.13 60 / 0.18);
   --color-danger: oklch(0.55 0.18 25);
   --color-success: oklch(0.68 0.15 150);
@@ -84,6 +83,27 @@
   --duration-fast: 150ms;
   --duration-base: 250ms;
   --duration-slow: 400ms;
+}
+
+/* Resolve aliases on each surface so overrides in the player and TV menus apply. */
+@theme inline {
+  --color-surface-base: var(--color-canvas);
+  --color-surface-elevated: var(--color-elevated);
+  --color-edge-strong: var(--color-edge);
+}
+
+@layer base {
+  :where(button, a[href], input, select, textarea, summary, [tabindex]):focus-visible {
+    outline: 2px solid var(--color-ink);
+    outline-offset: 3px;
+  }
+}
+
+@layer utilities {
+  /* Existing solid-accent controls across the app used the canvas as their text color. */
+  .bg-accent.text-canvas {
+    color: var(--color-accent-contrast);
+  }
 }
 
 :root {

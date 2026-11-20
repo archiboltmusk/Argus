@@ -1,3 +1,4 @@
+import { flattenAlpha, parseColor, relLum } from "./theme-import/color-math";
 import { kawaiiCss } from "./theme-kawaii";
 import auroraPreview from "@/assets/theme-previews/aurora.png";
 import crunchPreview from "@/assets/theme-previews/crunchy.png";
@@ -2014,12 +2015,24 @@ export function isLightColor(value: string | undefined): boolean {
   return (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255 > 0.55;
 }
 
+export function accentContrast(accent?: string, canvas?: string): "#000" | "#fff" {
+  const background = parseColor(canvas ?? "") ?? { r: 0, g: 0, b: 0 };
+  const color = parseColor(accent ?? "");
+  if (!color) return "#000";
+  const luminance = relLum(flattenAlpha(color, background));
+  return (luminance + 0.05) / 0.05 >= 1.05 / (luminance + 0.05) ? "#000" : "#fff";
+}
+
 export function applyTheme(theme: ThemeSettings): void {
   const root = document.documentElement;
   const tokens = resolveTokens(theme);
   for (const [k, v] of Object.entries(tokens)) {
     root.style.setProperty(k, v);
   }
+  root.style.setProperty(
+    "--color-accent-contrast",
+    accentContrast(tokens["--color-accent"], tokens["--color-canvas"]),
+  );
   root.dataset.themePreset = theme.preset;
   root.dataset.themeMode = isLightColor(tokens["--color-canvas"]) ? "light" : "dark";
   // light-dark() is how album-art colours pick a readable lightness. Without a real

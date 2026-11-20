@@ -62,15 +62,17 @@ export function AddSourceModal({
 
   return createPortal(
     <div
-      className="animate-in fade-in pointer-events-auto fixed inset-0 z-[170] flex items-center justify-center bg-black/60 backdrop-blur-sm duration-200"
+      className="animate-in fade-in pointer-events-auto fixed inset-0 z-[170] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm duration-200"
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}
     >
-      <div className="animate-modal-in flex w-full max-w-[420px] flex-col gap-4 rounded-lg border border-edge-soft bg-elevated p-4 shadow-[0_16px_40px_-12px_rgba(0,0,0,0.75)]">
+      <div className="animate-modal-in flex max-h-[90dvh] w-full max-w-[420px] flex-col gap-4 overflow-y-auto rounded-xl border border-edge-soft bg-elevated p-4 shadow-[0_16px_40px_-12px_rgba(0,0,0,0.75)]">
         <div className="flex items-start justify-between gap-3">
           <div className="flex flex-col gap-0.5">
-            <h2 className="text-[13px] font-semibold tracking-tight text-ink">{t("Add Custom Source")}</h2>
+            <h2 className="text-[13px] font-semibold tracking-tight text-ink">
+              {t("Add Custom Source")}
+            </h2>
             <p className="text-[11.5px] leading-relaxed text-ink-subtle">
               {t("Provide a JSON link or paste it directly.")}
             </p>
@@ -95,6 +97,7 @@ export function AddSourceModal({
           />
           <button
             onClick={() => setMode("url")}
+            aria-pressed={mode === "url"}
             className={`relative z-10 flex-1 rounded-[6px] py-2 text-[12.5px] font-medium transition-colors ${
               mode === "url" ? "text-ink" : "text-ink-muted hover:text-ink"
             }`}
@@ -103,6 +106,7 @@ export function AddSourceModal({
           </button>
           <button
             onClick={() => setMode("json")}
+            aria-pressed={mode === "json"}
             className={`relative z-10 flex-1 rounded-[6px] py-2 text-[12.5px] font-medium transition-colors ${
               mode === "json" ? "text-ink" : "text-ink-muted hover:text-ink"
             }`}
@@ -115,6 +119,7 @@ export function AddSourceModal({
           <input
             value={url}
             onChange={(e: React.ChangeEvent<HTMLInputElement>) => setUrl(e.target.value)}
+            aria-label={t("JSON URL")}
             placeholder="https://example.com/sources.json"
             autoFocus
             className="h-10 w-full rounded-md bg-canvas px-3 text-[12.5px] text-ink ring-1 ring-inset ring-edge-soft transition-colors placeholder:text-ink-subtle focus:outline-none focus:ring-accent/50"
@@ -123,12 +128,17 @@ export function AddSourceModal({
           <textarea
             value={jsonText}
             onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setJsonText(e.target.value)}
+            aria-label={t("Paste JSON")}
             placeholder='[ { "id": "...", "title": "Directors", "folders": [ ... ] } ]'
             className="h-36 w-full resize-none rounded-md bg-canvas p-3 font-mono text-[12px] leading-relaxed text-ink ring-1 ring-inset ring-edge-soft transition-colors placeholder:text-ink-subtle focus:outline-none focus:ring-accent/50"
           />
         )}
 
-        {error && <p className="text-[11.5px] text-danger">{error}</p>}
+        {error && (
+          <p role="alert" className="text-[11.5px] text-danger">
+            {error}
+          </p>
+        )}
 
         <div className="flex justify-end gap-2">
           <button
@@ -141,7 +151,7 @@ export function AddSourceModal({
           <button
             onClick={handleSave}
             disabled={loading}
-            className="argus-press-pop inline-flex h-9 items-center justify-center rounded-md bg-ink px-3.5 text-[12.5px] font-medium text-canvas transition-transform hover:scale-[1.01] disabled:opacity-40 disabled:hover:scale-100"
+            className="argus-press-pop inline-flex h-9 items-center justify-center rounded-md bg-accent px-3.5 text-[12.5px] font-medium text-accent-contrast transition-transform hover:scale-[1.01] disabled:opacity-40 disabled:hover:scale-100"
           >
             {loading ? t("Loading...") : t("Add Source")}
           </button>

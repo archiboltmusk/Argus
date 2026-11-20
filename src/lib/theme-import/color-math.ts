@@ -36,6 +36,24 @@ export function parseColor(input: string): Rgba | null {
   let s = input.trim().toLowerCase();
   if (s in NAMED) s = NAMED[s];
 
+  const oklch = s.match(
+    /^oklch\(\s*([\d.]+)(%?)\s+([\d.]+)\s+(-?[\d.]+)(?:deg)?(?:\s*\/\s*([\d.]+%?))?\s*\)$/,
+  );
+  if (oklch) {
+    const lightness = Number(oklch[1]) / (oklch[2] ? 100 : 1);
+    const chroma = Number(oklch[3]);
+    const hue = (Number(oklch[4]) * Math.PI) / 180;
+    if (![lightness, chroma, hue].every(Number.isFinite)) return null;
+    return {
+      ...oklabToRgb({
+        L: clamp(lightness, 0, 1),
+        a: chroma * Math.cos(hue),
+        b: chroma * Math.sin(hue),
+      }),
+      a: oklch[5] == null ? 1 : parseAlphaToken(oklch[5]),
+    };
+  }
+
   const fn = s.match(/^(?:rgba?|hsla?)\(([^)]+)\)$/);
   if (fn) {
     const parts = fn[1].split(/[,/\s]+/).filter(Boolean);

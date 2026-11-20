@@ -87,12 +87,12 @@ export function WelcomeStep({ onPlay }: { onPlay: (source: PlayerSrc) => void })
               setUrl(event.target.value);
               setError(null);
             }}
-            className="min-w-40 flex-1 rounded-md border border-edge-soft bg-canvas px-3 py-2 text-sm"
+            className="min-w-0 basis-40 grow rounded-md border border-edge bg-canvas px-3 py-2 text-sm text-ink placeholder:text-ink-muted"
             placeholder="https://"
           />
           <button
             type="submit"
-            className="rounded-md bg-accent px-3 py-2 text-sm text-accent-contrast"
+            className="rounded-md bg-accent px-3 py-2 text-sm font-medium text-accent-contrast transition-colors enabled:hover:brightness-110 disabled:opacity-50"
             disabled={picking || !url.trim()}
           >
             {t("Play URL")}
