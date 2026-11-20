@@ -1,4 +1,4 @@
-use wasapi::{DeviceCollection, Direction, SampleType};
+use wasapi::{DeviceCollection, DeviceEnumerator, Direction, SampleType};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Side {
@@ -43,7 +43,7 @@ fn flow(side: Side) -> Direction {
 
 fn collection(side: Side) -> Option<(DeviceCollection, u32)> {
     let _ = wasapi::initialize_mta().ok();
-    let devices = DeviceCollection::new(&flow(side)).ok()?;
+    let devices = DeviceEnumerator::new().ok()?.get_device_collection(flow(side)).ok()?;
     let count = devices.get_nbr_devices().ok()?;
     Some((devices, count))
 }

@@ -70,26 +70,30 @@ fn capture_loopback(seconds: u32) -> Result<(Vec<u8>, u32, u16, u16), String> {
     let channels = 2u16;
     let bits = 16u16;
 
-    let device = get_default_device(&Direction::Render).map_err(|e| e.to_string())?;
+    let device = DeviceEnumerator::new()
+        .and_then(|enumerator| enumerator.get_default_device(Direction::Render))
+        .map_err(|e| e.to_string())?;
     let mut audio_client = device.get_iaudioclient().map_err(|e| e.to_string())?;
 
     let format = WaveFormat::new(
         bits as usize,
         bits as usize,
-        &SampleType::Int,
+        SampleType::Int,
         sample_rate as usize,
         channels as usize,
         None,
     );
 
-    let (_default_period, min_period) = audio_client.get_periods().map_err(|e| e.to_string())?;
+    let (_default_period, min_period) = audio_client.get_device_period().map_err(|e| e.to_string())?;
     audio_client
         .initialize_client(
             &format,
-            min_period,
-            &Direction::Capture,
-            &ShareMode::Shared,
-            true,
+            Direction::Capture,
+            StreamMode::EventsShared {
+                autoconvert: true,
+                buffer_duration_hns: min_period,
+            },
+            None,
         )
         .map_err(|e| e.to_string())?;
 
