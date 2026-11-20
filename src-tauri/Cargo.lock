@@ -225,6 +225,7 @@ dependencies = [
  "trash",
  "unrar_sys",
  "url",
+ "urlencoding",
  "uuid 1.29.3",
  "walkdir",
  "wasapi",
