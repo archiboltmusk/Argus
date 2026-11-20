@@ -7,17 +7,16 @@ import { getPlaybackPosition } from "@/lib/player/playback-clock";
 import { useSettings } from "@/lib/settings";
 import { fetchAddonStreams } from "@/lib/streams/addons";
 import { buildEpisodePipelineInput } from "@/lib/streams/episode-pipeline-input";
+import { parseStream } from "@/lib/streams/parser/parser-stream";
 import { isPluginAddon } from "@/lib/streams/plugins";
 import { probeTopStreams } from "@/lib/streams/top-stream-prober";
 import { prepareCachedDebridStreams } from "@/lib/debrid/playback-preparation";
-import { prewarmCandidateStream } from "@/lib/streams/prewarm-candidate";
-import { storePreloadedNextStream } from "@/lib/player/zero-wait-binge";
 import type { PlayEpisode } from "@/lib/view";
 import { useAddons } from "@/views/play-picker/use-addons";
 import { useAnimeAltTitles } from "@/views/play-picker/use-anime-alt-titles";
 import { useStreamIds } from "@/views/play-picker/use-stream-ids";
 
-const PREFETCH_WINDOW_SEC = 120;
+const PREFETCH_WINDOW_SEC = 90;
 const PREFETCH_TICK_MS = 30_000;
 
 /**
@@ -108,21 +107,14 @@ export function NextEpisodePrefetch({
           input.forcedAddonBases,
           true,
         ).catch(() => []);
-        if (streams && streams.length > 0 && !ac.signal.aborted) {
-          void probeTopStreams(streams as any, 2, ac.signal);
-          // Netflix Standard: Pre-resolve the top stream for the next episode in the background
-          const top = streams[0] as any;
-          if (top) {
-            if (settings.zeroWaitBinge !== false) {
-              storePreloadedNextStream(meta.id, nextEpisode, top);
-            }
-            if (top.url) {
-              prewarmCandidateStream(top);
-            } else if (debrids.length > 0) {
-              const hint = { season: nextEpisode.season ?? null, episode: nextEpisode.episode ?? null };
-              void prepareCachedDebridStreams([top], debrids, hint, ac.signal).catch(() => {});
-            }
-          }
+        if (ac.signal.aborted || settings.zeroWaitBinge === false) return;
+        const top = streams[0];
+        if (!top) return;
+        if (top.url) {
+          await probeTopStreams([top], 1, ac.signal);
+        } else if (debrids.length > 0) {
+          const hint = { season: nextEpisode.season ?? null, episode: nextEpisode.episode ?? null };
+          await prepareCachedDebridStreams([parseStream(top)], debrids, hint, ac.signal);
         }
       })()
         .catch(() => {})

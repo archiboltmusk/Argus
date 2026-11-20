@@ -260,6 +260,7 @@ export function usePickHandler({
         hint,
         allowP2pFallback,
         intent !== "download",
+        playbackTraceId,
       );
       if (ac.signal.aborted) return;
       if (continuation && !isPlaybackActorCurrent(continuation.actor)) {
@@ -313,7 +314,6 @@ export function usePickHandler({
         });
         if (ac.signal.aborted) return;
       }
-      markPlaybackTrace(playbackTraceId, "resolve-ready");
       const hasProxyHeaders = !!r.data.headers && Object.keys(r.data.headers).length > 0;
       const hasTauriRuntime = typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
       if (intent !== "download" && hasProxyHeaders && hasTauriRuntime) {
@@ -331,6 +331,8 @@ export function usePickHandler({
           return;
         }
       }
+      if (ac.signal.aborted) return;
+      markPlaybackTrace(playbackTraceId, "resolve-ready");
       const isDebridVia = debrids.some((debrid) => debrid.slug === r.via);
       const needsPreflight = !(
         intent === "download" ||

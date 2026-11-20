@@ -18,12 +18,12 @@ function headersOf(stream: Stream): Record<string, string> | undefined {
  * Caches the probe results so UI badges and scoring reflect live verified CDN throughput.
  */
 export async function probeTopStreams(
-  streams: ScoredStream[],
+  streams: Stream[],
   maxProbeCount = 6,
   signal?: AbortSignal,
 ): Promise<Map<string, SpeedProbeResult>> {
   const results = new Map<string, SpeedProbeResult>();
-  const candidates: ScoredStream[] = [];
+  const candidates: Stream[] = [];
 
   for (const s of streams) {
     if (s.url && /^https?:/i.test(s.url)) {

@@ -5,6 +5,8 @@ export type PlaybackMilestone =
   | "rollback-ready"
   | "resolve-start"
   | "resolve-ready"
+  | "torrent-add-ready"
+  | "torrent-file-ready"
   | "preflight-start"
   | "preflight-ready"
   | "player-opened"

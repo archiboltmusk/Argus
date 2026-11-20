@@ -1282,11 +1282,9 @@ export function createMpvBridge(mpvOptions?: MpvOptions): PlayerBridge {
             await Promise.all([
               invoke("mpv_set_property", { name: "sid", value: "no" }),
               invoke("mpv_set_property", { name: "secondary-sid", value: "no" }),
+              applyHeaderProps(src.headers),
+              nextIsLive ? undefined : applyDefaultVodBufferPhase(nextStartupProfile, "startup"),
             ]);
-            if (!nextIsLive) {
-              await applyDefaultVodBufferPhase(nextStartupProfile, "startup");
-            }
-            await applyHeaderProps(src.headers);
             const startAt =
               typeof src.startAtSec === "number" && src.startAtSec > 0 ? src.startAtSec : 0;
             const cmd: Array<string | number> = [
