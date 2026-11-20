@@ -13,7 +13,7 @@ import type {LauncherDiscoveryId} from "@/lib/games/launcher-discovery";
 import {GameLaunchers} from "./game-launchers";
 import { GameDiscoveryCollection, GameMilestones } from "./game-discovery-collections";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
-import { Search, X, Apple } from "lucide-react";
+import { Search, X, Apple, ShoppingBag } from "lucide-react";
 import { useT } from "@/lib/i18n";
 import { useSettings } from "@/lib/settings";
 import { useSectionBack } from "@/lib/section-back";
@@ -92,6 +92,8 @@ import { ArcadeShowcaseCard } from "./argus-arcade/arcade-showcase-card";
 import { ArcadeHubModal } from "./argus-arcade/arcade-hub-modal";
 import type { ArcadeGameId } from "./argus-arcade/arcade-types";
 import { MacGamingModal } from "./mac-gaming-modal";
+import { StoreButtonCard } from "./argus-store/store-button-card";
+import { ArgusStoreModal } from "./argus-store/argus-store-modal";
 
 const ModsWorkspace = deferredGameView(async () => ({ default: (await import("./mods-workspace")).ModsWorkspace }));
 const GameDownloads = deferredGameView(async () => ({ default: (await import("./game-downloads")).GameDownloads }));
@@ -134,6 +136,7 @@ function GamesViewContent({ argusNavigationOpen = false, onArgusNavigationChange
   const [arcadeOpen, setArcadeOpen] = useState(false);
   const [arcadeTargetGame, setArcadeTargetGame] = useState<ArcadeGameId | undefined>(undefined);
   const [macGamingOpen, setMacGamingOpen] = useState(false);
+  const [storeOpen, setStoreOpen] = useState(false);
   const [startedDownload,setStartedDownload]=useState<string>();
   useEffect(()=>{if(!active)setSourcesOpen(false);},[active]);
   useEffect(()=>setSourcesOpen(false),[profileId]);
@@ -371,6 +374,15 @@ function GamesViewContent({ argusNavigationOpen = false, onArgusNavigationChange
         <div className="flex items-center gap-2">
           <button
             type="button"
+            onClick={() => setStoreOpen(true)}
+            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-gradient-to-r from-cyan-600/30 to-blue-600/30 hover:from-cyan-600/40 hover:to-blue-600/40 border border-cyan-500/40 text-cyan-200 hover:text-white text-xs font-bold transition-all shadow-sm"
+            title="Argus Game Store & AI Game Forge"
+          >
+            <ShoppingBag size={14} className="text-cyan-400" />
+            <span className="hidden sm:inline">Game Store</span>
+          </button>
+          <button
+            type="button"
             onClick={() => setMacGamingOpen(true)}
             className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-stone-900/80 hover:bg-stone-800 border border-stone-700/80 text-stone-200 hover:text-white text-xs font-bold transition-all shadow-sm"
             title="Apple Silicon & Mac Gaming Compatibility Suite"
@@ -384,6 +396,7 @@ function GamesViewContent({ argusNavigationOpen = false, onArgusNavigationChange
       {home ? <>
         <GameShowcase key={exploreVisit.id} visit={exploreVisit} active={homeActive} open={open} save={save} isSaved={isSaved} browse={browse} />
         <div className="games-inset mb-4">
+          <StoreButtonCard onOpenStore={() => setStoreOpen(true)} />
           <ArcadeShowcaseCard
             onOpenHub={(gameId) => {
               setArcadeTargetGame(gameId);
@@ -446,6 +459,7 @@ function GamesViewContent({ argusNavigationOpen = false, onArgusNavigationChange
       />
     )}
     {macGamingOpen && <MacGamingModal onClose={() => setMacGamingOpen(false)} />}
+    {storeOpen && <ArgusStoreModal onClose={() => setStoreOpen(false)} />}
     {library.launchError && <div className="games-save-error" role="alert">{t("games.library.launchError")}<button onClick={library.dismissLaunchError} aria-label={t("common.close")}><X size={16} /></button></div>}
     {saveFailed && <div className="games-save-error" role="alert">{t("games.saveError")}<button onClick={() => setSaveFailed(false)} aria-label={t("common.close")}><X size={16} /></button></div>}
     {(homeActive || (active && !selected && !collection && !atlasRoute && !recentOpen && tab === "library" && libraryMode === "retro") || (active && !selected && !!atlasRoute && ["hacks","romhacks"].includes(atlasRoute.kind)))&&<BackToTop scrollRef={scroll} onReturnToTop={()=>scroll.current?.querySelector<HTMLElement>(atlasRoute&&["hacks","romhacks"].includes(atlasRoute.kind)?'.games-hack-mast h1':'.games-mast h1')?.focus({preventScroll:true})}/>}
