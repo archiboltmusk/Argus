@@ -6,7 +6,6 @@ import {
   evaluateStallStatus,
   findNextFallbackStream,
   isStreamPlayable,
-  STALL_TIMEOUT_MS,
 } from "../src/lib/player/stall-fallback.ts";
 import type { ScoredStream } from "../src/lib/streams/types.ts";
 import type { DebridStore } from "../src/lib/debrid/types.ts";
@@ -84,6 +83,39 @@ test("findNextFallbackStream selects next best stream skipping current URL and h
     mockDebrids,
   );
   assert.equal(nextAfterS3, s1);
+});
+
+test("automatic fallback skips a different file in the same torrent and a known different cut", () => {
+  const current = createMockStream({
+    url: "https://current.example/movie.mkv",
+    infoHash: "shared-hash",
+    fileIdx: 1,
+    edition: "extended",
+  });
+  const wrongFile = createMockStream({
+    url: "https://mirror.example/other.mkv",
+    infoHash: "shared-hash",
+    fileIdx: 2,
+    cached: { rd: true },
+  });
+  const wrongCut = createMockStream({
+    url: "https://cdn.example/theatrical.mkv",
+    edition: "theatrical",
+  });
+  const matchingCut = createMockStream({
+    url: "https://cdn.example/extended.mkv",
+    edition: "extended",
+  });
+  assert.equal(
+    findNextFallbackStream(
+      [current, wrongFile, wrongCut, matchingCut],
+      current.url,
+      current.infoHash,
+      mockDebrids,
+      current.fileIdx,
+    ),
+    matchingCut,
+  );
 });
 
 test("evaluateStallStatus respects user pause and ended states", () => {

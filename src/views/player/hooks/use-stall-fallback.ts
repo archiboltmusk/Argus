@@ -72,7 +72,13 @@ export function useStallFallback(params: {
       const cacheEntry = peekPickerCache(src.meta, src.episode);
       const candidates = cacheEntry?.result?.picker?.all ?? [];
       const currentHash = src.streamRef?.infoHash;
-      const standby = findNextFallbackStream(candidates, src.url, currentHash, debrids);
+      const standby = findNextFallbackStream(
+        candidates,
+        src.url,
+        currentHash,
+        debrids,
+        src.streamRef?.fileIdx,
+      );
       if (standby) {
         if (standby.url) {
           // Pre-warm connection for direct HTTPS / HTTP streams
@@ -175,7 +181,13 @@ export function useStallFallback(params: {
         const cacheEntry = peekPickerCache(src.meta, src.episode);
         const candidates = cacheEntry?.result?.picker?.all ?? [];
         const currentHash = src.streamRef?.infoHash;
-        const nextStream = findNextFallbackStream(candidates, src.url, currentHash, debrids);
+        const nextStream = findNextFallbackStream(
+          candidates,
+          src.url,
+          currentHash,
+          debrids,
+          src.streamRef?.fileIdx,
+        );
 
         // Circuit Breaker Check: Check how many auto-swaps occurred in the last 60 seconds
         const oneMinuteAgo = now - 60_000;

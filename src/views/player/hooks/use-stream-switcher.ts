@@ -41,6 +41,7 @@ export function useStreamSwitcher(params: {
   const [liveUrl, setLiveUrl] = useState(src.url);
   const liveSourceRef = useRef<PlayerSource>({
     url: src.url,
+    headers: src.headers,
     notWebReady: src.notWebReady,
     subtitles: src.subtitles,
     isLive: src.isLive,
@@ -52,6 +53,7 @@ export function useStreamSwitcher(params: {
     setLiveUrl(src.url);
     liveSourceRef.current = {
       url: src.url,
+      headers: src.headers,
       notWebReady: src.notWebReady,
       subtitles: src.subtitles,
       isLive: src.isLive,
@@ -154,7 +156,7 @@ export function useStreamSwitcher(params: {
         }
       }
       const b = bridgeRef.current;
-      if (!b) {
+      if (!b || ac.signal.aborted) {
         if (nextProxySessionId) void unregisterStreamProxy(nextProxySessionId).catch(() => {});
         finish();
         return;
@@ -172,6 +174,7 @@ export function useStreamSwitcher(params: {
           b,
           {
             url: playUrl,
+            headers: nextProxySessionId ? undefined : r.data.headers,
             subtitles: r.data.subtitles,
             notWebReady: r.data.notWebReady,
             // The bridge no longer infers liveness from notWebReady, so the swap has
@@ -208,6 +211,7 @@ export function useStreamSwitcher(params: {
       }
       liveSourceRef.current = {
         url: playUrl,
+        headers: nextProxySessionId ? undefined : r.data.headers,
         notWebReady: r.data.notWebReady,
         subtitles: r.data.subtitles,
         isLive: isLivePlaybackSrc({ meta: src.meta, streamRef: { addonId: stream.addonId } }),

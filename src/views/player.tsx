@@ -2009,10 +2009,14 @@ function NativePlayerView({ src }: { src: PlayerSrc }) {
           onChoose={() => openPicker(src.meta, src.episode, { autoPlay: false })}
         />
       )}
-      {sourceError && !webErrorCode && !docked && (
+      {sourceError && liveUrl === src.url && !webErrorCode && !docked && !switcherOpen && (
         <SourceErrorCard
           error={sourceError}
           onChoose={() => {
+            if (src.streamRef?.addonId) {
+              pickAnother();
+              return;
+            }
             clearSourceError();
             openPicker(src.meta, src.episode, { autoPlay: false });
           }}

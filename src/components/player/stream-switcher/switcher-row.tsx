@@ -61,6 +61,7 @@ export function SwitcherRow({
   resolving,
   isCurrent,
   match,
+  topRanked,
 }: {
   stream: ScoredStream;
   addonLogo: string | null;
@@ -69,6 +70,7 @@ export function SwitcherRow({
   onPick: () => void;
   resolving: boolean;
   isCurrent: boolean;
+  topRanked?: boolean;
   match?: "same" | "close" | null;
 }) {
   const t = useT();
@@ -176,6 +178,11 @@ export function SwitcherRow({
                 className={`transition-transform duration-200 motion-reduce:transition-none ${expanded ? "rotate-180" : ""}`}
               />
             </button>
+          )}
+          {topRanked && (
+            <p className="mt-1 text-xs font-medium text-accent">
+              {t("Top-ranked match for these filters")}
+            </p>
           )}
           {(() => {
             const hostSpeed = getHostEwmaMbps(stream.url);
