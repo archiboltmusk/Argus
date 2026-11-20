@@ -97,7 +97,7 @@ export function usePickHandler({
   autoActive,
   autoAttemptIdx,
   autoCandidatesLength,
-  pipelineDone,
+  pipelineDone = true,
   candidateCount = 0,
   searchStartedAt,
   firstResultAt,
@@ -133,7 +133,7 @@ export function usePickHandler({
   autoActive: boolean;
   autoAttemptIdx: number;
   autoCandidatesLength: number;
-  pipelineDone: boolean;
+  pipelineDone?: boolean;
   candidateCount?: number;
   searchStartedAt?: number | null;
   firstResultAt?: number | null;
