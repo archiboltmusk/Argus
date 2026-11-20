@@ -126,7 +126,7 @@ notify-rust = "4"
 reqwest = { version = "0.12", default-features = false, features = ["native-tls"] }
 rusqlite = { version = "0.41.1", features = ["bundled"] }
 async-trait = "0.1"
-md5 = "0.7"
+md5 = "0.8"
 sha2 = "0.10"
 futures = "0.3"
 lofty = "0.22"
