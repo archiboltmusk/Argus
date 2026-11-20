@@ -344,6 +344,7 @@ export function MenuBody(props: SubtitleMenuProps & { onClose: () => void }) {
               mediaUrl={subContext?.mediaUrl ?? null}
               headers={subContext?.headers ?? null}
               durationSec={subContext?.durationSec ?? null}
+              audioStreamIndex={subContext?.audioStreamIndex}
               onAddSubtitle={async (filePath, lang, name, metadata) => {
                 const ok = await props.onAddSubtitle(filePath, lang, name, metadata || {
                   format: "srt",

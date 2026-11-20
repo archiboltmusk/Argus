@@ -5,6 +5,7 @@ import type { SubtitleMatchConfidence } from "@/lib/subtitles/release-match";
 import type { SubtitleSelectionOrigin } from "./subtitle-selection";
 
 export type TrackInfo = {
+  ffmpegStreamIndex?: number;
   id: string;
   label: string;
   lang?: string;

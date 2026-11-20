@@ -971,6 +971,10 @@ export function createMpvBridge(mpvOptions?: MpvOptions): PlayerBridge {
               : undefined;
           const info: TrackInfo = {
             id,
+            ffmpegStreamIndex:
+              !external && typeof t["ff-index"] === "number" && t["ff-index"] >= 0
+                ? t["ff-index"]
+                : undefined,
             label,
             // A prepared file can lose (or mis-detect) the provider's language.
             lang: extMeta?.lang || lang,

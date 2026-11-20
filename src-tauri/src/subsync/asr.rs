@@ -15,7 +15,7 @@ pub static ACTIVE_ASR_CANCEL: LazyLock<Mutex<Option<Arc<AtomicBool>>>> =
 pub const ASR_SAMPLE_RATE: u32 = 16000;
 const PCM_TIMEOUT_SECS: u64 = 60;
 
-#[derive(Clone, serde::Serialize)]
+#[derive(Clone, serde::Serialize, serde::Deserialize)]
 pub struct AsrToken {
     pub text: String,
     pub t0: f32,
@@ -23,7 +23,7 @@ pub struct AsrToken {
     pub p: f32,
 }
 
-#[derive(Clone, serde::Serialize)]
+#[derive(Clone, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct AsrSegment {
     pub text: String,
@@ -187,15 +187,15 @@ pub async fn pcm_window(
     match run_ffmpeg_pcm(url, headers, start_sec, len_sec, Some(map_spec), true).await {
         Ok(pcm) if !pcm.is_empty() => Ok(pcm),
         Err(err) => {
-            eprintln!("[ASR] pcm_window initial attempt failed: {}. Retrying with auto stream map and standard filter...", err);
-            match run_ffmpeg_pcm(url, headers, start_sec, len_sec, None, false).await {
+            eprintln!("[ASR] pcm_window initial attempt failed: {}. Retrying the selected stream with the standard filter...", err);
+            match run_ffmpeg_pcm(url, headers, start_sec, len_sec, Some(map_spec), false).await {
                 Ok(pcm) => Ok(pcm),
                 Err(err2) => Err(format!("initial: {}, fallback: {}", err, err2)),
             }
         }
         Ok(_) => {
-            // Empty buffer, retry with auto stream map
-            run_ffmpeg_pcm(url, headers, start_sec, len_sec, None, false).await
+            // Empty buffer, retry the same stream with the standard filter
+            run_ffmpeg_pcm(url, headers, start_sec, len_sec, Some(map_spec), false).await
         }
     }
 }
@@ -369,6 +369,92 @@ pub fn segments_to_srt(segments: &[AsrSegment]) -> String {
     }
     srt
 }
+fn subtitle_checkpoint_dir(
+    app: &tauri::AppHandle,
+    source: &str,
+    model: &str,
+    duration: f32,
+    language: Option<&str>,
+    translate: bool,
+    map_spec: &str,
+) -> Option<std::path::PathBuf> {
+    use sha2::{Digest, Sha256};
+    use tauri::Manager;
+
+    // A URL alone does not identify the audio: a server may return different
+    // cuts or tracks on different requests. Resume only identifiable local files.
+    let path = if source.starts_with("file://") {
+        url::Url::parse(source).ok()?.to_file_path().ok()?
+    } else {
+        std::path::PathBuf::from(source)
+    };
+    let path = path.canonicalize().ok()?;
+    let metadata = path.metadata().ok()?;
+    if !metadata.is_file() {
+        return None;
+    }
+    let modified = metadata.modified().ok()?.duration_since(std::time::UNIX_EPOCH).ok()?;
+    let key = serde_json::to_vec(&(
+        path.to_str()?, metadata.len(), modified.as_nanos(), model,
+        duration.to_bits(), language, translate, map_spec,
+    )).ok()?;
+    let dir = app.path().app_cache_dir().ok()?
+        .join("subtitle-checkpoints-v1")
+        .join(format!("{:x}", Sha256::digest(key)));
+    std::fs::create_dir_all(&dir).ok()?;
+    Some(dir)
+}
+
+fn store_subtitle_chunk(path: &std::path::Path, segments: &[AsrSegment]) -> Result<(), String> {
+    static SEQUENCE: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
+    let temporary = path.with_extension(format!(
+        "{}-{}.tmp", std::process::id(), SEQUENCE.fetch_add(1, Ordering::Relaxed)
+    ));
+    let bytes = serde_json::to_vec(segments).map_err(|err| err.to_string())?;
+    let result = std::fs::write(&temporary, bytes).and_then(|_| std::fs::rename(&temporary, path));
+    if result.is_err() {
+        let _ = std::fs::remove_file(&temporary);
+    }
+    result.map_err(|err| err.to_string())
+}
+
+async fn transcribe_window(
+    engine: &dyn AsrEngine,
+    url: &str,
+    headers: &HashMap<String, String>,
+    start: f32,
+    length: f32,
+    map_spec: &str,
+    lang: Option<&str>,
+    translate: bool,
+) -> Result<Vec<AsrSegment>, String> {
+    let pcm = pcm_window(url, headers, start, length, map_spec).await?;
+    if pcm.is_empty() {
+        return Err("no audio samples".into());
+    }
+    let audio_seconds = pcm.len() as f32 / ASR_SAMPLE_RATE as f32;
+    if audio_seconds + 0.5 < length {
+        return Err("audio ended before the requested range".into());
+    }
+    let mut segments = engine.transcribe(&pcm, lang, translate)?;
+    for segment in &mut segments {
+        segment.t0 += start;
+        segment.t1 = (segment.t1 + start).min(start + length);
+        for token in &mut segment.tokens {
+            token.t0 += start;
+            token.t1 += start;
+        }
+    }
+    segments.retain(|segment| {
+        let text = segment.text.trim();
+        segment.t1 > segment.t0
+            && !matches!(text, "" | "..." | "." | "-")
+            && !text.starts_with("[_")
+            && !text.starts_with("<|")
+    });
+    Ok(segments)
+}
+
 pub async fn generate(
     app: &tauri::AppHandle,
     engine: &dyn AsrEngine,
@@ -379,139 +465,95 @@ pub async fn generate(
     translate: bool,
     map_spec: &str,
     out_path: Option<&str>,
+    checkpoints: Option<&std::path::Path>,
     cancel_signal: Arc<AtomicBool>,
-) -> Result<Vec<AsrSegment>, String> {
+) -> Result<(Vec<AsrSegment>, Vec<(f32, f32)>), String> {
     use tauri::{Emitter, Manager};
-    let chunk = 30.0f32;
-    let overlap = 1.0f32;
-    let mut out: Vec<AsrSegment> = Vec::new();
-    let mut start = 0.0f32;
-    let total_chunks = (dur / chunk).ceil().max(1.0) as usize;
-    let mut chunk_idx = 0;
+    const CHUNK: f32 = 30.0;
+    let mut out = Vec::<AsrSegment>::new();
+    let mut gaps = Vec::new();
+    let total = (dur / CHUNK).ceil() as usize;
+    if let Some(parent) = out_path.and_then(|path| std::path::Path::new(path).parent()) {
+        std::fs::create_dir_all(parent).map_err(|err| format!("Saving subtitles failed: {err}"))?;
+    }
 
-
-    while start < dur {
+    for index in 0..total {
         if cancel_signal.load(Ordering::Relaxed) {
-            eprintln!("[ASR] transcription cancelled");
             return Err("cancelled".into());
         }
+        let start = index as f32 * CHUNK;
+        let length = CHUNK.min(dur - start);
+        let checkpoint = checkpoints.map(|dir| dir.join(format!("{index}.json")));
+        let cached = checkpoint.as_ref()
+            .and_then(|path| std::fs::read(path).ok())
+            .and_then(|bytes| serde_json::from_slice::<Vec<AsrSegment>>(&bytes).ok());
 
-        let len = chunk.min(dur - start);
-        if len < 1.0 {
-            break;
-        }
-
-        chunk_idx += 1;
-        let _ = app.emit(
-            "asr://progress",
-            serde_json::json!({
-                "current": chunk_idx,
-                "total": total_chunks,
-                "currentSec": start,
-                "totalSec": dur,
-                "count": out.len(),
-            }),
-        );
-
-        // Fetch audio chunk with up to 3 retries
-        let mut pcm_opt = None;
-        let mut extraction_error = String::new();
-        for attempt in 1..=3 {
-            if cancel_signal.load(Ordering::Relaxed) {
-                return Err("cancelled".into());
-            }
-            match pcm_window(url, headers, start, len + overlap, map_spec).await {
-                Ok(p) => {
-                    pcm_opt = Some(p);
-
-                    break;
-                }
-                Err(err) => {
-                    eprintln!("[ASR] chunk {} at {:.1}s attempt {} failed: {}", chunk_idx, start, attempt, err);
-                    extraction_error = err;
-                    if attempt < 3 {
-                        tokio::time::sleep(Duration::from_millis(500 * attempt as u64)).await;
-                    }
-                }
-            }
-        }
-
-        let pcm = match pcm_opt {
-            Some(p) => p,
+        let needs_checkpoint = cached.is_none();
+        let segments = match cached {
+            Some(segments) => segments,
             None => {
-                return Err(format!("Audio extraction failed at {start:.0}s after three attempts: {extraction_error}"));
+                let result = transcribe_window(
+                    engine, url, headers, start, length, map_spec, lang, translate,
+                ).await;
+                if result.is_err() {
+                    let mut recovered = Vec::new();
+                    let mut offset = 0.0;
+                    while offset < length {
+                        if cancel_signal.load(Ordering::Relaxed) {
+                            return Err("cancelled".into());
+                        }
+                        let span = 10.0_f32.min(length - offset);
+                        let from = start + offset;
+                        match transcribe_window(engine, url, headers, from, span, map_spec, lang, translate).await {
+                            Ok(segments) => recovered.extend(segments),
+                            Err(_) => gaps.push((from, from + span)),
+                        }
+                        offset += span;
+                    }
+                    recovered
+                } else {
+                    result.unwrap_or_default()
+                }
             }
         };
 
-        if pcm.len() > ASR_SAMPLE_RATE as usize {
-            {
-                let segs = engine.transcribe(&pcm, lang, translate)
-                    .map_err(|err| format!("Speech recognition failed at {start:.0}s: {err}"))?;
-                let mut added_any = false;
-                for mut seg in segs {
-                    seg.t0 += start;
-                    seg.t1 += start;
-                    let clean = seg.text.trim();
-                    if clean.is_empty()
-                        || clean == "..."
-                        || clean == "."
-                        || clean == "-"
-                        || clean == "You"
-                        || clean == "Thank you."
-                        || clean.starts_with("[_")
-                        || clean.starts_with("<|")
-                    {
-                        continue;
-                    }
-                    if out.last().map(|p| seg.t0 >= p.t1 - 0.25).unwrap_or(true) {
-                        for tk in seg.tokens.iter_mut() {
-                            tk.t0 += start;
-                            tk.t1 += start;
-                        }
-                        out.push(seg);
-                        added_any = true;
-                    }
-                }
-                if added_any {
-                    let current_srt = segments_to_srt(&out);
-
-                    // Write directly to disk from Rust on EVERY chunk!
-                    // This guarantees subtitles remain continuous even when minimized!
-                    if let Some(path) = out_path {
-                        if let Some(parent) = std::path::Path::new(path).parent() {
-                            let _ = std::fs::create_dir_all(parent);
-                        }
-                        if let Err(e) = std::fs::write(path, &current_srt) {
-                            eprintln!("[ASR] error writing srt: {}", e);
-                        }
-                    }
-
-                    // Directly notify mpv to reload subtitles from Rust!
-                    if let Some(mpv) = app.try_state::<crate::mpv::MpvState>() {
-                        let _ = crate::mpv::mpv_command(
-                            mpv,
-                            vec![serde_json::Value::String("sub-reload".to_string())],
-                        )
-                        .await;
-                    }
-
-                    let latest_text = out.last().map(|s| s.text.clone()).unwrap_or_default();
-                    let _ = app.emit("asr://live-cues", serde_json::json!({
-                        "chunk": chunk_idx,
-                        "total": total_chunks,
-                        "srt": current_srt,
-                        "count": out.len(),
-                        "filePath": out_path,
-                        "latestText": latest_text,
-                    }));
+        if cancel_signal.load(Ordering::Relaxed) {
+            return Err("cancelled".into());
+        }
+        if !gaps.last().is_some_and(|(from, _)| *from >= start) {
+            if let Some(path) = &checkpoint {
+                if needs_checkpoint {
+                    store_subtitle_chunk(path, &segments)
+                        .map_err(|err| format!("Saving subtitle progress failed: {err}"))?;
                 }
             }
         }
 
-        start += chunk;
+        let had_cues = !segments.is_empty();
+        out.extend(segments);
+        if had_cues {
+            let srt = segments_to_srt(&out);
+            if let Some(path) = out_path {
+                std::fs::write(path, &srt).map_err(|err| format!("Saving subtitles failed: {err}"))?;
+            }
+            if let Some(mpv) = app.try_state::<crate::mpv::MpvState>() {
+                let _ = crate::mpv::mpv_command(
+                    mpv,
+                    vec![serde_json::Value::String("sub-reload".to_string())],
+                ).await;
+            }
+            let latest_text = out.last().map(|segment| segment.text.as_str()).unwrap_or_default();
+            let _ = app.emit("asr://live-cues", serde_json::json!({
+                "chunk": index + 1, "total": total, "srt": srt, "count": out.len(),
+                "filePath": out_path, "latestText": latest_text,
+            }));
+        }
+        let _ = app.emit("asr://progress", serde_json::json!({
+            "current": index + 1, "total": total, "currentSec": start + length,
+            "totalSec": dur, "count": out.len(),
+        }));
     }
-
-    Ok(out)
+    Ok((out, gaps))
 }
 
 #[cfg(feature = "asr-whisper")]
@@ -653,21 +695,29 @@ pub async fn asr_cancel_subtitles() -> Result<(), String> {
     Ok(())
 }
 
+#[derive(serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct GeneratedSubtitles {
+    srt: String,
+    missing_ranges: Vec<(f32, f32)>,
+}
+
 #[tauri::command]
 pub async fn asr_generate_subtitles(
     app: tauri::AppHandle,
     url: String,
     headers: Option<HashMap<String, String>>,
     duration_sec: Option<f32>,
+    audio_stream_index: Option<u32>,
     lang: Option<String>,
     translate: Option<bool>,
     output_path: Option<String>,
-) -> Result<String, String> {
+) -> Result<GeneratedSubtitles, String> {
     url_guard::validate_media_url(&url, true)?;
 
     #[cfg(not(feature = "asr-whisper"))]
     return {
-        let _ = (&app, &url, &headers, duration_sec, &lang, translate, &output_path);
+        let _ = (&app, &url, &headers, duration_sec, audio_stream_index, &lang, translate, &output_path);
         Err("Whisper ASR is not compiled into this build".to_string())
     };
 
@@ -683,7 +733,12 @@ pub async fn asr_generate_subtitles(
             *lock = Some(cancel_signal.clone());
         }
 
-        let model_path = crate::asr_model::asr_ensure_model(app.clone()).await?;
+        let lang = lang.as_deref().filter(|s| !s.is_empty() && *s != "auto");
+        let is_translate = translate.unwrap_or(false);
+        let model_path = crate::asr_model::ensure_generation_model(&app, lang, is_translate).await?;
+        if cancel_signal.load(Ordering::Relaxed) {
+            return Err("cancelled".into());
+        }
         let engine = load_engine(&model_path)?;
         let hdrs = headers.unwrap_or_default();
         let dur = match duration_sec {
@@ -693,24 +748,26 @@ pub async fn asr_generate_subtitles(
                 .ok_or("Could not determine media duration. Wait for playback to load and retry.")?,
         };
 
-        let is_translate = translate.unwrap_or(false);
-        let segments = generate(
+        let audio_map = audio_stream_index.map_or_else(|| "0:a:0".to_string(), |index| format!("0:{index}"));
+        let checkpoints = subtitle_checkpoint_dir(&app, &url, &model_path, dur, lang, is_translate, &audio_map);
+        let (segments, missing_ranges) = generate(
             &app,
             &*engine,
             &url,
             &hdrs,
             dur,
-            lang.as_deref().filter(|s| !s.is_empty() && *s != "auto"),
+            lang,
             is_translate,
-            "0:a:0",
+            &audio_map,
             output_path.as_deref(),
+            checkpoints.as_deref(),
             cancel_signal,
         )
         .await?;
 
         let srt = segments_to_srt(&segments);
 
-        if srt.is_empty() {
+        if srt.is_empty() && missing_ranges.is_empty() {
             return Err("No intelligible dialogue found in stream".to_string());
         }
 
@@ -721,13 +778,39 @@ pub async fn asr_generate_subtitles(
             std::fs::write(path, &srt).map_err(|err| format!("Saving subtitles failed: {err}"))?;
         }
 
-        Ok(srt)
+        Ok(GeneratedSubtitles { srt, missing_ranges })
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn checkpoint_round_trips_silent_and_spoken_ranges() {
+        let dir = std::env::temp_dir().join(format!("argus-asr-test-{}", uuid::Uuid::new_v4()));
+        std::fs::create_dir_all(&dir).unwrap();
+        let path = dir.join("chunk.json");
+        store_subtitle_chunk(&path, &[]).unwrap();
+        let empty: Vec<AsrSegment> = serde_json::from_slice(&std::fs::read(&path).unwrap()).unwrap();
+        assert!(empty.is_empty());
+
+        let segment = AsrSegment {
+            text: "Hello".to_string(),
+            t0: 60.5,
+            t1: 61.5,
+            no_speech: 0.0,
+            tokens: Vec::new(),
+        };
+        let spoken_path = dir.join("spoken.json");
+        store_subtitle_chunk(&spoken_path, &[segment]).unwrap();
+        let restored: Vec<AsrSegment> =
+            serde_json::from_slice(&std::fs::read(&spoken_path).unwrap()).unwrap();
+        assert_eq!(restored.len(), 1);
+        assert_eq!(restored[0].text, "Hello");
+        assert_eq!(restored[0].t0, 60.5);
+        std::fs::remove_dir_all(dir).unwrap();
+    }
 
     #[test]
     fn probe_windows_spread_across_middle() {
