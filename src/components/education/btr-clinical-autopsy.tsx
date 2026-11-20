@@ -36,6 +36,47 @@ export function BTRClinicalAutopsy({
   const [isBookmarkedFSRS, setIsBookmarkedFSRS] = useState(false);
   const [showSocratic, setShowSocratic] = useState(false);
   const [exportedAnki, setExportedAnki] = useState(false);
+  const [userRationale, setUserRationale] = useState("");
+  const [socraticFeedback, setSocraticFeedback] = useState<{
+    tested: boolean;
+    score: number;
+    message: string;
+  } | null>(null);
+
+  const handleEvaluateRationale = () => {
+    if (!userRationale.trim()) return;
+    const inputLower = userRationale.toLowerCase();
+    const rule = (question.examinerTrap || exp.whyCorrect?.clinicalRule || exp.bottomLine || "").toLowerCase();
+    const distractorReason = (
+      exp.distractorBreakdown?.find(
+        (d) =>
+          selectedOptionIndex !== undefined &&
+          (d.option === String.fromCharCode(65 + selectedOptionIndex) ||
+            d.option.startsWith(question.options[selectedOptionIndex]?.slice(0, 8) || ""))
+      )?.reason || ""
+    ).toLowerCase();
+
+    const ruleTokens = rule.split(/\W+/).filter((w) => w.length > 3);
+    const matchCount = ruleTokens.filter((token) => inputLower.includes(token)).length;
+
+    if (
+      matchCount >= 2 ||
+      (distractorReason &&
+        inputLower.split(/\W+/).filter((w) => w.length > 3 && distractorReason.includes(w)).length >= 2)
+    ) {
+      setSocraticFeedback({
+        tested: true,
+        score: 95,
+        message: "Diagnostic Discriminator Confirmed! Your clinical reasoning correctly isolates the hallmark mechanism.",
+      });
+    } else {
+      setSocraticFeedback({
+        tested: true,
+        score: 65,
+        message: "Good active recall effort! Compare your reasoning with the gold-standard discriminator below.",
+      });
+    }
+  };
 
   const handleBookmark = () => {
     setIsBookmarkedFSRS(true);
@@ -174,10 +215,53 @@ export function BTRClinicalAutopsy({
             </button>
           </div>
           {showSocratic && (
-            <div className="pt-2 border-t border-indigo-500/20 text-xs text-white/90 space-y-2">
-              <p className="font-semibold text-white">
-                Why did you choose <strong>{question.options[selectedOptionIndex]}</strong>, and what hallmark finding separates it from {question.options[question.correctIndex]}?
+            <div className="pt-2 border-t border-indigo-500/20 text-xs text-white/90 space-y-2.5">
+              <p className="font-semibold text-white leading-relaxed">
+                Why did you choose <strong>{question.options[selectedOptionIndex]}</strong>, and what primary diagnostic discriminator did you rely on?
               </p>
+
+              {/* Interactive Socratic Input */}
+              <div className="flex flex-col sm:flex-row gap-2">
+                <input
+                  type="text"
+                  value={userRationale}
+                  onChange={(e) => setUserRationale(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") handleEvaluateRationale();
+                  }}
+                  placeholder="Type your rationale (e.g., capsule invasion, amyloid, ground glass...)"
+                  className="flex-1 px-3 py-2 rounded-xl bg-black/50 border border-indigo-500/30 text-xs text-white placeholder:text-white/40 focus:outline-none focus:border-indigo-400"
+                />
+                <button
+                  type="button"
+                  onClick={handleEvaluateRationale}
+                  className="px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs shadow-md transition shrink-0 cursor-pointer"
+                >
+                  Challenge Examiner
+                </button>
+              </div>
+
+              {/* Socratic Feedback */}
+              {socraticFeedback && (
+                <div
+                  className={`p-3 rounded-xl border text-xs leading-relaxed animate-in fade-in duration-200 ${
+                    socraticFeedback.score >= 80
+                      ? "bg-emerald-500/15 border-emerald-500/30 text-emerald-200"
+                      : "bg-amber-500/15 border-amber-500/30 text-amber-200"
+                  }`}
+                >
+                  <div className="flex items-center justify-between mb-1">
+                    <strong className="font-extrabold uppercase tracking-wider text-[11px]">
+                      {socraticFeedback.score >= 80 ? "Diagnostic Rule Confirmed" : "Socratic Guidance"}
+                    </strong>
+                    <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-black/40">
+                      Mastery Score: {socraticFeedback.score}%
+                    </span>
+                  </div>
+                  <p>{socraticFeedback.message}</p>
+                </div>
+              )}
+
               <div className="p-3 rounded-xl bg-black/40 border border-indigo-500/20 text-[12px] text-indigo-200 leading-relaxed">
                 <strong>Pathognomonic Rule: </strong>
                 {question.examinerTrap || exp.whyCorrect?.clinicalRule || exp.bottomLine}
