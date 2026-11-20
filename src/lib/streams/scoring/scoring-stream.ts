@@ -205,6 +205,11 @@ export function scoreStream(
     reasons.push({ signal: "Screener penalty", delta: -40 });
   }
 
+  if (s.hasBettingAds) {
+    score -= 150;
+    reasons.push({ signal: "burned-in-betting-ads-penalty", delta: -150 });
+  }
+
   if (s.proper || s.repackIteration > 0) {
     const r = Math.min(2, s.repackIteration || 1);
     score += r;

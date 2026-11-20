@@ -120,6 +120,7 @@ export type ParsedStream = Stream & {
   repackIteration: number;
   proper: boolean;
   hardcoded: boolean;
+  hasBettingAds: boolean;
   animeHash: string | null;
   scamScore: number;
 };

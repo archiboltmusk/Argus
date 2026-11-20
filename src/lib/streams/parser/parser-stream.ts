@@ -25,6 +25,8 @@ import {
 
 const REMUX_RX = /\bRemux\b/i;
 const HARDCODED_RX = /\b(HC|HARDCODED|HARDSUB)\b/i;
+const BETTING_ADS_RX =
+  /\b(1XBET|4RABET|MEGAPARI|MOSTBET|MELBET|PARIMATCH|BET365|DAFABET|LOTUS365|FAIRPLAY|LINEBET|BETWAY|1X-BET|4RA-BET|PROMOCODE)\b/i;
 
 export function parseStream(stream: Stream): ParsedStream {
   const filenameLine = extractFilenameLine(stream);
@@ -67,6 +69,7 @@ export function parseStream(stream: Stream): ParsedStream {
   const repackIteration = parseRepackIteration(text, ptt);
   const proper = ptt.proper === true;
   const hardcoded = HARDCODED_RX.test(text) || ptt.hardcoded === true;
+  const hasBettingAds = BETTING_ADS_RX.test(text);
   const animeHash = parseAnimeHash(text);
   const scamScore = computeScamScore(source, resolution, size);
 
@@ -100,6 +103,7 @@ export function parseStream(stream: Stream): ParsedStream {
     repackIteration,
     proper,
     hardcoded,
+    hasBettingAds,
     animeHash,
     scamScore,
   };
