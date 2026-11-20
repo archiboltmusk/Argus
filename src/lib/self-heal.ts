@@ -3,8 +3,8 @@ import { useSyncExternalStore } from "react";
 const BOOT_KEY = "argus.selfheal.boot";
 const SAFE_KEY = "argus.selfheal.safe";
 const LOOP_AT = 3;
-const LOOP_WINDOW_MS = 10 * 60 * 1000;
-export const HEALTHY_AFTER_MS = 30_000;
+const LOOP_WINDOW_MS = 5 * 60 * 1000;
+export const HEALTHY_AFTER_MS = 10_000;
 
 type Boot = { streak: number; at: number; healthy: boolean };
 
@@ -55,12 +55,18 @@ export function setSafeMode(on: boolean) {
   for (const l of listeners) l();
 }
 
-/** Call once at startup. Enters safe mode when the last few launches never got healthy. */
+/** Call once at startup. Enters safe mode when the last few launches never got healthy.
+ * Auto-heals and clears safe mode once the app runs stably past the healthy window. */
 export function recordBoot(now = Date.now()): () => void {
   const boot = nextBoot(readBoot(), now);
   writeBoot(boot);
   if (isCrashLoop(boot)) setSafeMode(true);
-  const timer = window.setTimeout(() => writeBoot({ ...boot, healthy: true }), HEALTHY_AFTER_MS);
+  const timer = window.setTimeout(() => {
+    writeBoot({ streak: 0, at: now, healthy: true });
+    if (isSafeMode()) {
+      setSafeMode(false);
+    }
+  }, HEALTHY_AFTER_MS);
   return () => window.clearTimeout(timer);
 }
 

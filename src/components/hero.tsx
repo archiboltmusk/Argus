@@ -479,7 +479,7 @@ function HeroTitlePlate({
   name,
   logo,
   loaded,
-  resolved,
+  resolved: _resolved,
   onLoad,
   onError,
 }: {
@@ -508,20 +508,23 @@ function HeroTitlePlate({
             else onLoad();
           }}
           onError={onError}
-          className="max-h-[120px] w-auto max-w-[460px] object-contain object-left rtl:object-right drop-shadow-[0_6px_22px_rgba(0,0,0,0.45)]"
+          className="max-h-[120px] w-auto max-w-[460px] object-contain object-left rtl:object-right drop-shadow-[0_8px_24px_rgba(0,0,0,0.65)]"
           style={{
             opacity: loaded ? 1 : 0,
+            position: loaded ? "relative" : "absolute",
+            pointerEvents: loaded ? "auto" : "none",
             transition: "opacity 360ms cubic-bezier(0.32, 0.72, 0.24, 1)",
           }}
         />
-      ) : resolved ? (
+      ) : null}
+      {(!logo || !loaded) && (
         <h2
-          className="font-display text-[68px] font-medium leading-[0.98] tracking-tight text-ink"
-          style={{ animation: "argus-fade-in 420ms cubic-bezier(0.32, 0.72, 0.24, 1) both" }}
+          className="font-display text-[44px] sm:text-[56px] lg:text-[68px] font-extrabold leading-[1.02] tracking-tight text-white drop-shadow-[0_4px_16px_rgba(0,0,0,0.85)]"
+          style={{ animation: "argus-fade-in 300ms cubic-bezier(0.32, 0.72, 0.24, 1) both" }}
         >
           {name}
         </h2>
-      ) : null}
+      )}
     </div>
   );
 }

@@ -8,6 +8,7 @@ import {
   useSyncExternalStore,
   type ReactNode,
 } from "react";
+import { Film, Search } from "lucide-react";
 import { BackToTop } from "@/components/back-to-top";
 import { HeroCarousel, type Slide } from "@/components/hero-carousel";
 import { Profiled } from "@/components/profiled";
@@ -1420,12 +1421,22 @@ export function Home({
           )}
           {cwTop && cwBlock}
           {settings.tvNavigation && (
-            <nav aria-label={t("Quick actions")} className="flex flex-wrap gap-3">
-              <button type="button" className="rounded-xl border border-edge px-5 py-3" onClick={() => setSearchOpen(true)}>
-                {t("Search")}
+            <nav aria-label={t("Quick actions")} className="flex flex-wrap items-center gap-3">
+              <button
+                type="button"
+                className="group flex items-center gap-2.5 rounded-xl border border-white/10 bg-white/5 px-5 py-2.5 text-[14px] font-medium text-ink shadow-sm backdrop-blur-md transition-all duration-200 hover:scale-[1.02] hover:border-white/20 hover:bg-white/10 active:scale-[0.98]"
+                onClick={() => setSearchOpen(true)}
+              >
+                <Search size={16} strokeWidth={2.2} className="text-ink-subtle transition-colors group-hover:text-accent" />
+                <span>{t("Search")}</span>
               </button>
-              <button type="button" className="rounded-xl border border-edge px-5 py-3" onClick={() => setView("library")}>
-                {t("Library")}
+              <button
+                type="button"
+                className="group flex items-center gap-2.5 rounded-xl border border-white/10 bg-white/5 px-5 py-2.5 text-[14px] font-medium text-ink shadow-sm backdrop-blur-md transition-all duration-200 hover:scale-[1.02] hover:border-white/20 hover:bg-white/10 active:scale-[0.98]"
+                onClick={() => setView("library")}
+              >
+                <Film size={16} strokeWidth={2.2} className="text-ink-subtle transition-colors group-hover:text-accent" />
+                <span>{t("Library")}</span>
               </button>
             </nav>
           )}

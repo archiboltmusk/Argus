@@ -67,6 +67,7 @@ export type NewEpisode = {
   title: string;
   still: string | null;
   poster: string | null;
+  background?: string | null;
   released: number;
 };
 
@@ -121,12 +122,13 @@ async function computeList(item: LibraryItem, lastWatchedMs: number): Promise<Ne
     out.push({
       key: `${item._id}:${season}:${episode}`,
       seriesId: item._id,
-      seriesName: item.name ?? "",
+      seriesName: item.name ?? m.name ?? "",
       season,
       episode,
       title: v.name ?? v.title ?? "",
       still: v.thumbnail ?? null,
       poster: m.poster ?? item.poster ?? null,
+      background: m.background ?? item.background ?? null,
       released: rel,
     });
   }
