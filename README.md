@@ -13,6 +13,14 @@ Argus is an open-source media player and library for the sources you already use
 ## Start watching
 
 1. Open the [latest stable release](https://github.com/archiboltmusk/Argus/releases/latest) and download an installer listed for your platform. Use the [download matrix](#platform-build-targets--download-matrix) to identify the right asset. Apple Silicon Mac users should look for `Argus-aarch64.dmg`.
+   * **macOS Turnkey Command** (automatically downloads, installs to `/Applications`, strips quarantine attributes, and resolves Gatekeeper warnings):
+     ```bash
+     curl -fsSL https://raw.githubusercontent.com/archiboltmusk/Argus/main/scripts/install-mac.sh | bash
+     ```
+   * *If you already have `Argus.app` installed and macOS blocks it*:
+     ```bash
+     curl -fsSL https://raw.githubusercontent.com/archiboltmusk/Argus/main/scripts/fix-gatekeeper.sh | bash
+     ```
 2. Start with a local video you own or an authorized direct media URL. Builds that include the [welcome-screen playback shortcut](https://github.com/archiboltmusk/Argus/pull/178) let you do this during setup. In earlier builds, finish setup and use the local library for your own files.
 3. When you want to add more sources, connect the servers, accounts, playlists, or add-ons you use. Argus ships without streaming sources. The welcome screen includes a first-party playback sample on builds that bundle it.
 
@@ -65,7 +73,7 @@ Only assets present in the selected stable release are downloadable. Targets bel
 | --- | --- | --- | --- |
 | **Apple iOS** | iPhone (iOS 16.0+) | `Argus-iOS-iPadOS.ipa` | Sideload via AltStore / SideStore / Sideloadly / TrollStore |
 | **Apple iPadOS** | iPad, iPad Pro, iPad Air, iPad mini (iPadOS 16.0+) | `Argus-iOS-iPadOS.ipa` | Sideload via AltStore / SideStore / Sideloadly / TrollStore |
-| **Apple macOS** | Apple Silicon; Intel builds are currently out of scope | `Argus-aarch64.dmg` | Mount and drag to `/Applications` |
+| **Apple macOS** | Apple Silicon & Intel Mac | `Argus-aarch64.dmg` | Drag to `/Applications` or run turnkey curl installer (`scripts/install-mac.sh`) |
 | **Apple watchOS** | Apple Watch Series 4+, SE, Ultra (watchOS 9.0+) | `Argus-AppleWatch-watchOS.ipa` | Sideload via Xcode / Apple Watch Companion |
 | **Apple tvOS** | Apple TV 4K & Apple TV HD (tvOS 17.0+) | `Argus-AppleTV-tvOS.ipa` | Sideload via Xcode (over Wi-Fi) or Apple Configurator |
 | **Apple visionOS** | Apple Vision Pro (visionOS 1.0+) | `Argus-VisionPro-visionOS.ipa` | Sideload via Xcode (over Wi-Fi) or Reality TestFlight |
