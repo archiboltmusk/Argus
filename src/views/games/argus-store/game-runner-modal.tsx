@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from "react";
-import { X, Gamepad2, ArrowLeft, RotateCcw } from "lucide-react";
+import { X, Gamepad2, ArrowLeft, RotateCcw, Download, Sliders } from "lucide-react";
 import { StoreGame } from "./store-types";
 import { KafilaGameCanvas } from "../kafila-surge/kafila-game-canvas";
 import { AutoDriftCanvas } from "../argus-arcade/games/auto-drift/autodrift-canvas";
@@ -56,6 +56,17 @@ export const GameRunnerModal: React.FC<GameRunnerModalProps> = ({ game, onClose 
     }
   };
 
+  const handleExportHtml = () => {
+    if (!game.sourceCode) return;
+    const blob = new Blob([game.sourceCode], { type: "text/html;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${game.id || "argus-game"}.html`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-xl animate-in fade-in duration-200 p-4">
       <div className="relative w-full max-w-5xl h-[840px] max-h-[92vh] bg-stone-950 rounded-2xl border border-stone-800 shadow-2xl flex flex-col overflow-hidden text-stone-200">
@@ -86,13 +97,32 @@ export const GameRunnerModal: React.FC<GameRunnerModalProps> = ({ game, onClose 
 
           <div className="flex items-center gap-2">
             {game.playableType === "html5_canvas" && (
-              <button
-                onClick={reloadIframe}
-                className="p-2 rounded-xl hover:bg-stone-800 text-stone-400 hover:text-white transition-colors"
-                title="Restart Game Simulation"
-              >
-                <RotateCcw className="w-4 h-4" />
-              </button>
+              <>
+                <div className="hidden sm:flex items-center gap-1.5 text-[11px] text-stone-400 px-2.5 py-1 rounded-lg bg-stone-900 border border-stone-800">
+                  <Sliders className="w-3.5 h-3.5 text-cyan-400" />
+                  <span>
+                    Tweak HUD: <kbd className="px-1 py-0.5 rounded bg-stone-800 font-mono text-[10px]">Tab</kbd> /{" "}
+                    <kbd className="px-1 py-0.5 rounded bg-stone-800 font-mono text-[10px]">Select</kbd>
+                  </span>
+                </div>
+                {game.sourceCode && (
+                  <button
+                    onClick={handleExportHtml}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-stone-800/80 hover:bg-stone-700 text-stone-300 hover:text-white text-xs font-semibold transition-all"
+                    title="Export Standalone .html File"
+                  >
+                    <Download className="w-3.5 h-3.5 text-cyan-400" />
+                    <span className="hidden md:inline">Export HTML</span>
+                  </button>
+                )}
+                <button
+                  onClick={reloadIframe}
+                  className="p-2 rounded-xl hover:bg-stone-800 text-stone-400 hover:text-white transition-colors"
+                  title="Restart Game Simulation"
+                >
+                  <RotateCcw className="w-4 h-4" />
+                </button>
+              </>
             )}
             <button
               onClick={onClose}

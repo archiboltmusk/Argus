@@ -16,7 +16,7 @@ import {
 } from "lucide-react";
 import { StoreCategory, StoreGame } from "./store-types";
 import { getStoreCatalog, saveGameToStoreLibrary, toggleInstallGame } from "./store-catalog";
-import { generateOfflineAIGame, wrapGameWithArgusBridge } from "./ai-game-forge";
+import { generateOfflineAIGame, wrapGameWithArgusBridge, ForgeGenre } from "./ai-game-forge";
 import { GameRunnerModal } from "./game-runner-modal";
 import { ButtonGlyph } from "@/components/gamepad-button-glyph";
 import { detectLayout } from "@/lib/gamepad/layout";
@@ -35,7 +35,7 @@ export const ArgusStoreModal: React.FC<ArgusStoreModalProps> = ({ onClose }) => 
   // AI Forge Studio State
   const [forgePrompt, setForgePrompt] = useState("");
   const [forgeTitle, setForgeTitle] = useState("");
-  const [forgeGenre, setForgeGenre] = useState<"runner" | "action" | "shooter">("runner");
+  const [forgeGenre, setForgeGenre] = useState<ForgeGenre>("twinstick");
   const [forgeStyle, setForgeStyle] = useState<
     "neon_cyberpunk" | "retro_pixel" | "vector_minimal" | "sunset_arcade"
   >("neon_cyberpunk");
@@ -328,12 +328,15 @@ export const ArgusStoreModal: React.FC<ArgusStoreModalProps> = ({ onClose }) => 
                 <label className="text-[10px] uppercase font-bold text-stone-400 block mb-1">Genre</label>
                 <select
                   value={forgeGenre}
-                  onChange={(e) => setForgeGenre(e.target.value as typeof forgeGenre)}
+                  onChange={(e) => setForgeGenre(e.target.value as ForgeGenre)}
                   className="w-full px-3 py-2 rounded-xl bg-stone-950 border border-stone-800 text-xs text-white focus:border-cyan-500 outline-none"
                 >
-                  <option value="runner">Endless Runner / Jumper</option>
-                  <option value="shooter">Top-Down Space Shooter</option>
-                  <option value="action">Arena Survival Brawler</option>
+                  <option value="twinstick">⚡ Twin-Stick Arena (Dual Stick + Dash)</option>
+                  <option value="metroidvania">⚔️ Katana Platformer (Coyote Time + Slashes)</option>
+                  <option value="danmaku">🌀 Bullet Hell (Danmaku + Grazing + EMP)</option>
+                  <option value="runner">🏃 Synthwave Runner (Jump Buffer + Jumps)</option>
+                  <option value="shooter">🚀 Space Relay Defender (Shields + Lasers)</option>
+                  <option value="action">🥊 Arena Brawler (Knockback + Combos)</option>
                 </select>
               </div>
 
