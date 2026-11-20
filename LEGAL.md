@@ -42,7 +42,29 @@ Developers authoring community integrations must adhere to the following standar
 
 ---
 
-## 5. DMCA & Inquiries
+## 5. Educational Architecture & Bring-Your-Own-Content (BYOC)
+
+* **Independent Software Shell**: Argus operates strictly as an open-source workstation application. The software does not host, bundle, scrape, or distribute proprietary commercial video lectures, third-party question banks, or copyrighted textbooks.
+* **Synthetic Starter Materials**: All built-in mock vignettes and practice drills are synthetic educational samples authored under fair-use open education principles.
+* **User-Supplied Files**: Users must provide their own local media files, companion PDFs, and study materials that they are legally authorized to access.
+* **Non-Clinical Software Disclaimer**: Argus is an educational productivity tool and media viewer. It is not a certified medical device, diagnostic tool, or clinical decision support system, and must not be used for direct clinical care, patient diagnosis, or medical treatment decisions.
+
+---
+
+## 6. On-Device AI Processing
+
+* All speech recognition, live captioning, and local automated study assists run locally on the user's personal hardware using open-source models.
+* No microphone audio, video streams, or user notes are transmitted to remote servers or commercial AI APIs.
+
+---
+
+## 7. Trademarks
+
+All product names, logos, and brands mentioned in the software documentation and interface are the property of their respective trademark holders. Mention of external systems or platforms does not imply affiliation, sponsorship, or endorsement.
+
+---
+
+## 8. DMCA & Inquiries
 
 Argus hosts no copyrighted material. Because the developers operate no servers hosting or transmitting infringing files, requests to remove content should be directed to the third-party hosts or network providers hosting the relevant media.
 

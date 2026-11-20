@@ -102,6 +102,12 @@ audit-rest.txt
 !README.md
 !CHANGELOG.md
 !LEGAL.md
+!SECURITY.md
+!CODE_OF_CONDUCT.md
+!CONTRIBUTING.md
+!THIRD_PARTY_NOTICES.md
+!AGENTS.md
+!CLAUDE.md
 !docs/*.md
 !docs/**/*.md
 

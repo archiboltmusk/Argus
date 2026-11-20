@@ -110,10 +110,29 @@ Traditional streaming hubs break when an addon fails, streams stall, or links mi
 | **Muffled dialogue or harsh audio** | **10-Band Graphic Equalizer**, Neural Whisper vocal isolation, and dynamic dialogue auto-ducking. |
 | **Scrubbing blindly** | **Audio & Action Energy Heatmap** overlaid right on the seekbar reveals dialog, action, and quiet moments at a glance. |
 | **External Indexer Independence** | Direct **Prowlarr & Jackett Torznab scrapers** built right in, so you aren't reliant on public Stremio addons. |
+| **Navbar Clutter / Cognitive Overload** | **1-Click Workspace Personas** (Academic, Theater, Studio, Omni) toggle your layout instantly. |
+
+---
+
+## Workspace Personas (Focus Modes)
+
+Argus adapts to what you are doing without forcing an 18-tab clutter:
+
+* 🎓 **Argus Academic (Medical & Higher Ed)**: Streamlines the UI to study essentials: Dual-Pane Workstation, 5-Tier Clinical Autopsy, FSRS Spaced Repetition, Lecture Chapters, and Notes.
+* 🎬 **Argus Theater (Cinema & Media)**: Focuses exclusively on media catalogs, movies, series, anime, and live broadcast playback powered by the native `libmpv` hardware engine.
+* 🎮 **Argus Studio & Gaming**: Dedicated to lossless high-fidelity music queues, game library tracking, and system lab performance telemetry.
+* 🌐 **Omni Workspace**: Full multi-module suite for power users.
 
 ---
 
 ## Shipped Capabilities & Key Features
+
+### 🎓 Academic Workstation & Medical Learning Engine
+- **Dual-Pane Study Workstation**: Video lectures on the left, synchronized interactive digital companion notes or workbook slides on the right.
+- **5-Tier Clinical Autopsy & Distractor Inversion**: Break down board-style questions with high-yield clinical rules, examiner trap radar, and differential comparison tables.
+- **Interactive Socratic Challenge**: On-demand Socratic drill to examine why specific distractors fail and reinforce key discriminators.
+- **Free Spaced Repetition (FSRS) & Anki Export**: Track daily retention with the built-in FSRS engine and export ready-to-import flashcard decks in one click.
+- **Offline ASR Whisper Subtitles**: Generate real-time subtitles and search lecture transcripts completely offline with zero external cloud API dependencies.
 
 ### 🎯 Intelligent Stream Curation & Anti-Dead Link System
 - **Verified Correct Link Marking (Thumbs-Up)**: User-voted correct streams receive an instant **+150 score boost**, pinning the working link to the top of subsequent episodes.
@@ -224,7 +243,11 @@ pnpm build:web          # Package Progressive Web App (PWA)
 
 ## Responsibility & Legal
 
-Argus ships with **no bundled third-party streaming sources, scrapers, catalogs, or entertainment media**. Addons, plugins, and custom indexers are installed and configured exclusively by the end user. Users are entirely responsible for the sources they configure and for adhering to the applicable laws in their jurisdiction. Peer-to-peer uploading (seeding) is disabled by default. See [LEGAL.md](LEGAL.md).
+Argus is an open-source software application distributed under the [MIT License](LICENSE).
+* **Media sources**: Argus includes an original synthetic playback sample. Viewers supply authorized media files, streams, and playlists. Peer-to-peer uploading is disabled by default.
+* **Educational BYOC & Non-Medical Status**: The educational module provides a neutral study shell and synthetic mock drills. Argus is not a medical device and is not intended for clinical decision support or direct patient care.
+* **Privacy & Local AI**: All transcription, speech processing, and educational aids execute locally on-device. No telemetry, watch logs, or personal voice data are stored on or sent to remote servers.
+* For full policy details, see [LEGAL.md](LEGAL.md) and [SECURITY.md](SECURITY.md).
 
 ## Contributing
 
