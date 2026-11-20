@@ -720,6 +720,7 @@ export const PlayerOverlayLayers = memo(function PlayerOverlayLayers(p: PlayerOv
       />
 
       <TranscriptDrawer
+        mediaUrl={p.liveUrl}
         onSeek={(sec) => p.seekTo(sec)}
         onOpenPearlModal={(pearl) => setActivePearl(pearl)}
       />

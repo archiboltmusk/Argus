@@ -1,3 +1,4 @@
+import { confirmDialog } from "@/lib/dialog";
 import { MousePointerClick, RefreshCw, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { addonLogoMap } from "@/components/addon-logo";
@@ -308,6 +309,7 @@ export function StreamSwitcher({
     const curKey = streamKey(currentStream);
     return [currentStream, ...filteredList.filter((s) => streamKey(s) !== curKey)];
   }, [filteredList, currentStream]);
+  const topRanked = list.find((candidate) => candidate !== currentStream);
   const [showCount, setShowCount] = useState(80);
   const [filtersOpen, setFiltersOpen] = useState(false);
   useEffect(() => {
@@ -447,10 +449,27 @@ export function StreamSwitcher({
                       addonLogo={addonLogos.get(rowAddon?.id ?? s.addonId) ?? null}
                       currentAddon={rowAddon}
                       currentName={isCurrent ? (currentRef?.name ?? null) : null}
-                      onPick={() => onPick(s)}
+                      onPick={() => {
+                        if (
+                          currentStream?.edition &&
+                          s.edition &&
+                          s.edition !== currentStream.edition
+                        ) {
+                          void confirmDialog(
+                            t(
+                              "This source is a different cut. The saved position may land in a different scene. Switch anyway?",
+                            ),
+                          ).then((confirmed) => {
+                            if (confirmed) onPick(s);
+                          });
+                          return;
+                        }
+                        onPick(s);
+                      }}
                       resolving={resolvingKey === streamKey(s)}
                       isCurrent={isCurrent}
                       match={matchBadge(matchScores?.get(s))}
+                      topRanked={s === topRanked}
                     />
                   );
                 })}

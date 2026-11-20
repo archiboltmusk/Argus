@@ -266,7 +266,7 @@ class LiveTranscriptionManager {
             const { setTranscriptCues } = await import("./transcript-store");
             const parsed = parseSubtitle(event.payload.srt);
             if (parsed.length > 0) {
-              setTranscriptCues(parsed);
+              setTranscriptCues(parsed, options.mediaUrl);
             }
           } catch {}
         }

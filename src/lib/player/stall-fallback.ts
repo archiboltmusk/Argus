@@ -48,6 +48,7 @@ export function findNextFallbackStream(
   currentUrl: string | undefined | null,
   currentInfoHash: string | null | undefined,
   debrids: DebridStore[],
+  currentFileIdx?: number | null,
 ): ScoredStream | null {
   // First priority: Same torrent file / infoHash, but resolved via alternate healthy Debrid provider
   if (currentInfoHash && currentUrl) {
@@ -57,6 +58,7 @@ export function findNextFallbackStream(
         s.infoHash.toLowerCase() === currentInfoHash.toLowerCase() &&
         s.url &&
         s.url !== currentUrl &&
+        (currentFileIdx == null || s.fileIdx === currentFileIdx) &&
         isStreamPlayable(s, debrids),
     );
     if (sameTorrent) return sameTorrent;
@@ -66,18 +68,26 @@ export function findNextFallbackStream(
   const currentStream = candidates.find(
     (s) =>
       (currentUrl && s.url && s.url === currentUrl) ||
-      (currentInfoHash && s.infoHash && s.infoHash.toLowerCase() === currentInfoHash.toLowerCase()),
+      (currentInfoHash &&
+        s.infoHash &&
+        s.infoHash.toLowerCase() === currentInfoHash.toLowerCase() &&
+        (currentFileIdx == null || s.fileIdx === currentFileIdx)),
   );
   const currentResRank = currentStream ? resolutionRank(currentStream.resolution) : 3; // Default 1080p rank
 
   // Filter playable alternate candidates
   const eligible = candidates.filter((s) => {
-    if (currentInfoHash && s.infoHash && s.infoHash.toLowerCase() === currentInfoHash.toLowerCase()) {
+    if (
+      currentInfoHash &&
+      s.infoHash &&
+      s.infoHash.toLowerCase() === currentInfoHash.toLowerCase()
+    ) {
       return false;
     }
     if (currentUrl && s.url && s.url === currentUrl) {
       return false;
     }
+    if (currentStream?.edition && s.edition && currentStream.edition !== s.edition) return false;
     return isStreamPlayable(s, debrids);
   });
 

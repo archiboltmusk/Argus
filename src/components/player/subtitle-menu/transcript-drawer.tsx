@@ -1,13 +1,5 @@
 import { useState, useEffect, useRef, useMemo } from "react";
-import {
-  FileText,
-  Search,
-  X,
-  Copy,
-  Check,
-  Compass,
-  BookOpen,
-} from "lucide-react";
+import { FileText, Search, X, Copy, Check, Compass, BookOpen, RotateCcw } from "lucide-react";
 import {
   useTranscriptState,
   closeTranscriptDrawer,
@@ -17,6 +9,7 @@ import { findMatchingPearl } from "@/lib/subtitles/medical-pearls-glossary";
 import { useT } from "@/lib/i18n";
 
 interface TranscriptDrawerProps {
+  mediaUrl: string;
   onSeek: (seconds: number) => void;
   onOpenPearlModal?: (pearl: any) => void;
 }
@@ -27,7 +20,7 @@ function formatTime(sec: number): string {
   return `${m}:${s.toString().padStart(2, "0")}`;
 }
 
-export function TranscriptDrawer({ onSeek, onOpenPearlModal }: TranscriptDrawerProps) {
+export function TranscriptDrawer({ mediaUrl, onSeek, onOpenPearlModal }: TranscriptDrawerProps) {
   const tr = useT();
   const state = useTranscriptState();
   const [followPlayback, setFollowPlayback] = useState(true);
@@ -59,12 +52,26 @@ export function TranscriptDrawer({ onSeek, onOpenPearlModal }: TranscriptDrawerP
     }
   }, [state.activeCueIndex, followPlayback]);
 
-  if (!state.isOpen) return null;
+  if (!state.isOpen || (state.mediaUrl && state.mediaUrl !== mediaUrl)) return null;
+
+  const canReplay = (state.cues[0]?.start ?? Infinity) <= state.currentSec;
+  const replayLastLine = () => {
+    const active = state.cues[state.activeCueIndex];
+    if (active) {
+      onSeek(active.start);
+      return;
+    }
+    for (let index = state.cues.length - 1; index >= 0; index--) {
+      const cue = state.cues[index];
+      if (cue.start <= state.currentSec) {
+        onSeek(cue.start);
+        return;
+      }
+    }
+  };
 
   const handleCopyAll = () => {
-    const fullText = state.cues
-      .map((c) => `[${formatTime(c.start)}] ${c.text}`)
-      .join("\n\n");
+    const fullText = state.cues.map((c) => `[${formatTime(c.start)}] ${c.text}`).join("\n\n");
     navigator.clipboard.writeText(fullText);
     setCopiedAll(true);
     setTimeout(() => setCopiedAll(false), 2500);
@@ -108,6 +115,17 @@ export function TranscriptDrawer({ onSeek, onOpenPearlModal }: TranscriptDrawerP
               }`}
             >
               <Compass size={14} />
+            </button>
+
+            <button
+              type="button"
+              disabled={!canReplay}
+              onClick={replayLastLine}
+              aria-label={tr("Replay last line")}
+              title={tr("Replay last line")}
+              className="p-1.5 rounded-md text-ink-muted hover:text-ink disabled:opacity-40"
+            >
+              <RotateCcw size={14} />
             </button>
 
             <button

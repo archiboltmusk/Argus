@@ -15,6 +15,7 @@ import { useBigPicture } from "@/lib/big-picture";
 import type { Meta } from "@/lib/cinemeta";
 import { setVote } from "@/lib/feed/preferences";
 import { useT } from "@/lib/i18n";
+import { useView } from "@/lib/view";
 import { useOnboarding } from "@/lib/onboarding";
 
 type StepId =
@@ -42,6 +43,7 @@ const STEPS: StepId[] = [
 
 export function OnboardingModal() {
   const { onboarded, finishOnboarding } = useOnboarding();
+  const { openPlayer } = useView();
   const bigPicture = useBigPicture().active;
   const t = useT();
   const [stepIdx, setStepIdx] = useState(0);
@@ -90,7 +92,7 @@ export function OnboardingModal() {
       }`}
     >
       <div
-        className={`relative flex flex-col overflow-hidden rounded-2xl border border-edge-soft bg-elevated/95 shadow-[0_40px_80px_-20px_rgba(0,0,0,0.6)] ${
+        className={`relative flex max-h-[94dvh] flex-col overflow-hidden rounded-2xl border border-edge-soft bg-elevated/95 shadow-[0_40px_80px_-20px_rgba(0,0,0,0.6)] ${
           isTaste ? "w-[min(93vw,640px)]" : "w-[min(92vw,580px)]"
         } transition-[width] duration-300 ${closing ? "scale-[0.97] opacity-0 !transition-all !duration-300" : "animate-modal-in"}`}
       >
@@ -109,11 +111,21 @@ export function OnboardingModal() {
         ) : (
           <>
             <div
-              className={`flex min-h-[440px] flex-col ${isTaste ? "px-8 pt-9 pb-3" : "justify-center px-12 py-10"}`}
+              className={`overflow-y-auto ${isTaste ? "px-8 pt-9 pb-3" : "px-6 py-10 sm:px-12"}`}
             >
-              <div key={step} className="animate-step-in">
+              <div
+                key={step}
+                className={`animate-step-in flex min-h-[360px] flex-col ${isTaste ? "" : "justify-center"}`}
+              >
                 {step === "language" && <LanguageStep />}
-                {step === "welcome" && <WelcomeStep />}
+                {step === "welcome" && (
+                  <WelcomeStep
+                    onPlay={(source) => {
+                      finishOnboarding();
+                      openPlayer(source);
+                    }}
+                  />
+                )}
                 {step === "layout" && <LayoutStep />}
                 {step === "tmdb" && <TmdbStep />}
                 {step === "stremio" && <StremioStep />}

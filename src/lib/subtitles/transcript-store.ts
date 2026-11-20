@@ -3,6 +3,7 @@ import type { SubCue } from "./parser";
 
 export interface TranscriptState {
   isOpen: boolean;
+  mediaUrl: string | null;
   cues: SubCue[];
   currentSec: number;
   activeCueIndex: number;
@@ -11,6 +12,7 @@ export interface TranscriptState {
 
 let state: TranscriptState = {
   isOpen: false,
+  mediaUrl: null,
   cues: [],
   currentSec: 0,
   activeCueIndex: -1,
@@ -42,8 +44,13 @@ export function toggleTranscriptDrawer(): void {
   notify();
 }
 
-export function setTranscriptCues(cues: SubCue[]): void {
-  state = { ...state, cues };
+export function setTranscriptCues(cues: SubCue[], mediaUrl: string): void {
+  state = {
+    ...state,
+    cues,
+    mediaUrl,
+    ...(state.mediaUrl !== mediaUrl ? { activeCueIndex: -1, searchQuery: "" } : {}),
+  };
   notify();
 }
 
