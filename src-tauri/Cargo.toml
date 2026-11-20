@@ -93,6 +93,7 @@ argus-core = { path = "../argus-core" }
 argus-install-recovery = { path = "../argus-install-recovery" }
 librqbit = { version = "=8.1.1", default-features = false, features = ["rust-tls"] }
 url = "2"
+urlencoding = "2"
 realfft = "3"
 ort = { version = "=2.0.0-rc.15", optional = true }
 ndarray = { version = "0.16", optional = true }

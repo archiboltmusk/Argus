@@ -1,3 +1,4 @@
+import { hasExactAutoplayPackFile } from "./play-picker/autoplay-readiness";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { matchedPreferredHost } from "@/lib/streams/preferred-host";
 import { parseHostList } from "@/lib/streams/dead-links";
@@ -708,7 +709,10 @@ export function PlayPicker({
     autoActive,
     autoAttemptIdx,
     autoCandidatesLength: autoCandidates.length,
+    pipelineDone,
     candidateCount: result?.picker.all.length ?? 0,
+    searchStartedAt: pipelineStartedAt,
+    firstResultAt,
     rejectedCount: result?.rejected.length ?? 0,
     autoFiredRef,
     setAutoAttemptIdx,
@@ -738,7 +742,9 @@ export function PlayPicker({
   }, [resolving, abortResolve, setResolveError]);
 
   const rememberedInstant =
-    !!previousMatch && (isCached(previousMatch) || !!previousMatch.url || p2pAutoConsent);
+    !!previousMatch &&
+    hasExactAutoplayPackFile(previousMatch, episode?.season ?? null, episode?.episode ?? null) &&
+    (isCached(previousMatch) || !!previousMatch.url || p2pAutoConsent);
   const rememberedFiredRef = useRef(false);
   const rememberedHandledFirst =
     !!previousMatch &&
@@ -807,6 +813,7 @@ export function PlayPicker({
     expectHostSource,
     hostSource: hostSourceForMedia,
     preferredSourceEntry: lastSeriesSource,
+    allowPreferredSourceHeadStart: lastSeriesSourceIsLineage,
     preferredSourceMatched: sameSourceMatch != null || previousMatch != null,
     season: !isAnimeMetaId ? (episode?.season ?? null) : null,
     episode: !isAnimeMetaId ? (episode?.episode ?? null) : null,

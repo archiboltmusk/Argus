@@ -10,6 +10,7 @@ test("late preferred source blocks fast candidates and settlement permits fallba
     "useAutoFire",
     {
       "@/lib/torrent/stremio-stream": { engineP2pEligible: () => false },
+      "./autoplay-readiness": { isEarlyAutoplaySource: () => false },
       "./picker-utils": {
         hasInstantMarker: () => true,
         streamMatchesLangs: () => true,
@@ -56,5 +57,14 @@ test("late preferred source blocks fast candidates and settlement permits fallba
     addonQuorum: { ...args.addonQuorum, settled: 2, settledAddonIds: ["fast", "aio"] },
   });
   assert.deepEqual(played, [fast]);
+  args.autoFiredRef.current = false;
+  const backup = { url: "https://example.test/backup" };
+  hook.render({
+    ...args,
+    autoAttemptIdx: 1,
+    autoCandidates: [backup, fast],
+    pipelineDone: true,
+  });
+  assert.deepEqual(played, [fast, backup]);
   hook.unmount();
 });

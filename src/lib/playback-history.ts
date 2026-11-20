@@ -37,6 +37,7 @@ export type ActualPlayback = {
   positionMs: number;
   durationMs: number;
   completed: boolean;
+  sustained?: boolean;
   src: Omit<PlayerSrc, "continuation">;
   requiresSourceRefresh?: boolean;
   audioTrack?: PlaybackAudioChoice;
@@ -490,7 +491,11 @@ export function readLastSeriesPlayback(metaId: string): PlaybackEntry | null {
   let best: PlaybackEntry | null = null;
   for (const [key, entry] of Object.entries(all)) {
     if (key !== metaId && !key.startsWith(prefix)) continue;
-    if (!best || entry.savedAt > best.savedAt) best = entry;
+    const actual = entry.actual;
+    if (!actual?.sustained || !actual.src.streamRef?.addonId) continue;
+    if (!best || actual.playedAt > best.savedAt) {
+      best = { ...actual.src.streamRef, savedAt: actual.playedAt };
+    }
   }
   return best;
 }
