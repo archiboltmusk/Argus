@@ -8,10 +8,17 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg?style=flat-square)](LICENSE)
 [![CI Status](https://img.shields.io/github/actions/workflow/status/archiboltmusk/Argus/ci.yml?branch=main&style=flat-square&label=CI)](https://github.com/archiboltmusk/Argus/actions)
 
-In Greek myth, *Argus Panoptes* was the hundred-eyed giant who saw everything at once.
-Argus the app does the same for your media. It unifies Stremio-compatible addons, direct indexer scrapers (Prowlarr / Jackett Torznab), debrid clouds, Plex/Jellyfin servers, local libraries and IPTV playlists in one blazing-fast player with stream ranking and bounded fallback recovery.
+Argus is an open-source media player and library for the sources you already use. Bring local files, Plex or Jellyfin libraries, Stremio-compatible add-ons, and IPTV playlists into one place. Argus ranks available streams and can offer an alternate source when playback stalls.
 
-Argus ships with **no content and no built-in sources**. You connect the addons, accounts, indexers, servers and playlists you already use and have rights to.
+## Start watching
+
+1. Open the [latest stable release](https://github.com/archiboltmusk/Argus/releases/latest) and download an installer listed for your platform. Use the [download matrix](#platform-build-targets--download-matrix) to identify the right asset. Apple Silicon Mac users should look for `Argus-aarch64.dmg`.
+2. Start with a local video you own or an authorized direct media URL. Builds that include the [welcome-screen playback shortcut](https://github.com/archiboltmusk/Argus/pull/178) let you do this during setup. In earlier builds, finish setup and use the local library for your own files.
+3. When you want to add more sources, connect the servers, accounts, playlists, or add-ons you use. Argus ships without streaming sources.
+
+[Build from source](#getting-started) · [Contribute](CONTRIBUTING.md) · [Report a bug](https://github.com/archiboltmusk/Argus/issues/new?template=bug_report.yml)
+
+## Integration notes
 
 ### Education content
 
@@ -98,8 +105,8 @@ Traditional streaming hubs break when an addon fails, streams stall, or links mi
 | **"Streaming server offline"** | Zero separate background daemons. High-performance torrent and HTTP streaming run embedded inside the Rust core. |
 | **Dead / 0-Seeder links** | **Automatic zero-seeder filtering** hides dead torrents; dead-link purge applies permanent score penalties. |
 | **Wrong / Mismatched stream chosen** | **Verified Working Link Marker (Thumbs-Up)** gives streams a permanent **+150 score boost** across future episode searches. |
-| **Stalls & Mid-play buffering** | Multi-CDN prewarming and dynamic standby links. Stall detection offers one-click seamless stream switching. |
-| **Lost context when resuming** | **Smart Resume 5-second micro-rewind** gently rolls back dialogue position so you never miss a beat. |
+| **Stalls & Mid-play buffering** | Multi-CDN prewarming and dynamic standby links. Stall detection offers an in-player option to switch sources. |
+| **Lost context when resuming** | **Smart Resume 5-second micro-rewind** gently rolls back dialogue position to give dialogue more context. |
 | **Muffled dialogue or harsh audio** | **10-Band Graphic Equalizer**, Neural Whisper vocal isolation, and dynamic dialogue auto-ducking. |
 | **Scrubbing blindly** | **Audio & Action Energy Heatmap** overlaid right on the seekbar reveals dialog, action, and quiet moments at a glance. |
 | **External Indexer Independence** | Direct **Prowlarr & Jackett Torznab scrapers** built right in, so you aren't reliant on public Stremio addons. |
@@ -138,7 +145,9 @@ Traditional streaming hubs break when an addon fails, streams stall, or links mi
 
 ---
 
-## Performance Targets
+## Performance targets (unverified)
+
+These are engineering goals. Measure them on a named device and release before reporting results.
 
 - **Cold Start**: < 1.5 s to interactive home screen.
 - **Time to First Frame**: < 2.0 s on cached debrid, < 3.0 s on direct HTTP.
@@ -162,8 +171,8 @@ Traditional streaming hubs break when an addon fails, streams stall, or links mi
 ## Getting Started
 
 ### Prerequisites
-- [Node.js](https://nodejs.org/) (v22+)
-- [pnpm](https://pnpm.io/) (v10+)
+- [Node.js 24](https://nodejs.org/), matching CI.
+- [pnpm](https://pnpm.io/), using the version pinned in [package.json](package.json).
 - [Rust](https://www.rust-lang.org/) (Stable toolchain)
 - *Linux only*: `libwebkit2gtk-4.1-dev`, `libgtk-3-dev`, `librsvg2-dev`
 
@@ -175,23 +184,26 @@ git clone https://github.com/archiboltmusk/Argus.git
 cd Argus
 
 # Install dependencies
-pnpm install
+pnpm install --frozen-lockfile
 
-# Run in desktop development mode (Tauri + Vite)
+# Run the Vite frontend
 pnpm dev
+
+# Run the native desktop app after setting up its dependencies
+pnpm tauri dev
 
 # Run unit and integration tests
 pnpm test
 
 # Run Rust core tests
-cargo test -p argus-core -- --ignored
+cargo test --manifest-path argus-core/Cargo.toml
 ```
 
 ### Packaging Builds
 
 ```sh
 # Desktop builds
-pnpm build:mac          # Package macOS .dmg (Apple Silicon & Intel)
+pnpm build:mac          # Package a macOS .dmg on Apple Silicon
 pnpm build:windows      # Package Windows .msi / .exe
 pnpm build:linux        # Package Linux .AppImage / .deb
 
@@ -213,6 +225,10 @@ pnpm build:web          # Package Progressive Web App (PWA)
 ## Responsibility & Legal
 
 Argus ships with **no streaming sources, scrapers, catalogs, or media content of any kind**. Addons, plugins, and custom indexers are installed and configured exclusively by the end user. Users are entirely responsible for the sources they configure and for adhering to the applicable laws in their jurisdiction. Peer-to-peer uploading (seeding) is disabled by default. See [LEGAL.md](LEGAL.md).
+
+## Contributing
+
+Follow the [contributor guide](CONTRIBUTING.md) for your first checkout, test commands, and the evidence to attach to a bug report or pull request.
 
 ## License
 
