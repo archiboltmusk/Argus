@@ -1,6 +1,8 @@
 import React, { useEffect, useRef, useState, useCallback } from "react";
 import { nightERAudio } from "./nighter-audio";
 import { Heart, Zap, Trophy, RotateCcw, Volume2, VolumeX } from "lucide-react";
+import { playGamepadHaptics } from "@/views/games/haptics/gamepad-haptics";
+import { earnArcadeCredits, getMetaState } from "../../arcade-meta-progression";
 
 interface NightERCanvasProps {
   onGameOver?: (score: number, level: number) => void;
@@ -171,17 +173,21 @@ export const NightERCanvas: React.FC<NightERCanvasProps> = ({ onGameOver }) => {
   };
 
   const restartGame = useCallback(() => {
+    const meta = getMetaState();
+    const extraHp = (meta.upgrades.kinetic_shield || 0) * 25;
+    const extraSpeed = (meta.upgrades.overdrive_nitro || 0) * 0.4;
+
     const s = stateRef.current;
     s.x = 400;
     s.y = 320;
     s.vx = 0;
     s.vy = 0;
-    s.hp = 100;
-    s.maxHp = 100;
+    s.hp = 100 + extraHp;
+    s.maxHp = 100 + extraHp;
     s.level = 1;
     s.xp = 0;
     s.xpToNext = 100;
-    s.speed = 3.5;
+    s.speed = 3.5 + extraSpeed;
     s.mobs = [];
     s.projectiles = [];
     s.pickups = [];
@@ -191,8 +197,8 @@ export const NightERCanvas: React.FC<NightERCanvasProps> = ({ onGameOver }) => {
     s.isGameOver = false;
     s.isLevelUp = false;
 
-    setHp(100);
-    setMaxHp(100);
+    setHp(100 + extraHp);
+    setMaxHp(100 + extraHp);
     setLevel(1);
     setXp(0);
     setXpToNext(100);
@@ -527,11 +533,13 @@ export const NightERCanvas: React.FC<NightERCanvasProps> = ({ onGameOver }) => {
             s.invulnTimer = 0.5;
             s.screenShake = 12;
             nightERAudio.playDamage();
+            playGamepadHaptics("heavy");
 
             if (s.hp <= 0) {
               s.hp = 0;
               s.isGameOver = true;
               setIsGameOver(true);
+              earnArcadeCredits(Math.round(s.score / 12));
               onGameOver?.(s.score, s.level);
             }
           }

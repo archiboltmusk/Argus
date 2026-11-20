@@ -1,6 +1,8 @@
 import React, { useEffect, useRef, useState, useCallback } from "react";
 import { autoDriftAudio } from "./autodrift-audio";
 import { Trophy, RotateCcw, Volume2, VolumeX } from "lucide-react";
+import { playGamepadHaptics } from "@/views/games/haptics/gamepad-haptics";
+import { earnArcadeCredits, getMetaState } from "../../arcade-meta-progression";
 
 interface AutoDriftCanvasProps {
   onGameOver?: (score: number, distance: number) => void;
@@ -111,6 +113,10 @@ export const AutoDriftCanvas: React.FC<AutoDriftCanvasProps> = ({ onGameOver }) 
   };
 
   const restartGame = useCallback(() => {
+    const meta = getMetaState();
+    const extraHealth = meta.upgrades.kinetic_shield || 0;
+    const extraSpeed = (meta.upgrades.overdrive_nitro || 0) * 0.9;
+
     const state = gameStateRef.current;
     state.x = 400;
     state.y = 500;
@@ -118,6 +124,7 @@ export const AutoDriftCanvas: React.FC<AutoDriftCanvasProps> = ({ onGameOver }) 
     state.vy = 0;
     state.angle = -Math.PI / 2;
     state.speed = 0;
+    state.maxSpeed = 8.5 + extraSpeed;
     state.obstacles = [];
     state.coins = [];
     state.skidMarks = [];
@@ -126,7 +133,7 @@ export const AutoDriftCanvas: React.FC<AutoDriftCanvasProps> = ({ onGameOver }) 
     state.multiplier = 1;
     state.distance = 0;
     state.fuel = 100;
-    state.health = 3;
+    state.health = 3 + extraHealth;
     state.isGameOver = false;
     state.isPaused = false;
     state.screenShake = 0;
@@ -135,7 +142,7 @@ export const AutoDriftCanvas: React.FC<AutoDriftCanvasProps> = ({ onGameOver }) 
     setMultiplier(1);
     setDistance(0);
     setFuel(100);
-    setHealth(3);
+    setHealth(3 + extraHealth);
     setIsGameOver(false);
     setIsPaused(false);
     autoDriftAudio.startEngine();
@@ -453,10 +460,12 @@ export const AutoDriftCanvas: React.FC<AutoDriftCanvasProps> = ({ onGameOver }) 
               state.angle += (Math.random() - 0.5) * 1.2;
               state.speed *= 0.7;
               autoDriftAudio.playDriftSqueal();
+              playGamepadHaptics("drift");
             } else if (obs.type === "pothole") {
               state.speed *= 0.5;
               state.screenShake = 12;
               autoDriftAudio.playCrash();
+              playGamepadHaptics("medium");
               state.obstacles.splice(i, 1);
               continue;
             } else {
@@ -466,11 +475,13 @@ export const AutoDriftCanvas: React.FC<AutoDriftCanvasProps> = ({ onGameOver }) 
               state.speed = 1;
               state.multiplier = 1;
               autoDriftAudio.playCrash();
+              playGamepadHaptics("heavy");
               state.obstacles.splice(i, 1);
 
               if (state.health <= 0) {
                 state.isGameOver = true;
                 setIsGameOver(true);
+                earnArcadeCredits(Math.round(state.score / 8));
                 onGameOver?.(state.score, Math.floor(state.distance));
               }
               continue;

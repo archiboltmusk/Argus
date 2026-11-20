@@ -61,6 +61,13 @@ export function wrapGameWithArgusBridge(innerGameJs: string, title: string): str
       background: #18181b; border-radius: 8px; box-shadow: 0 12px 48px rgba(0,0,0,0.85);
       max-width: 100%; max-height: 100%; aspect-ratio: 5/4; display: block;
     }
+    #crt-overlay {
+      position: absolute; inset: 0; pointer-events: none; border-radius: 8px; z-index: 25; display: none;
+      background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.38) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.03), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.03));
+      background-size: 100% 4px, 6px 100%;
+      box-shadow: inset 0 0 80px rgba(0,0,0,0.85);
+    }
+    #crt-overlay.active { display: block; }
     #gamepad-hud {
       position: absolute; bottom: 12px; left: 16px; color: rgba(255,255,255,0.7);
       font-size: 11px; font-family: monospace; pointer-events: none; z-index: 10;
@@ -83,6 +90,7 @@ export function wrapGameWithArgusBridge(innerGameJs: string, title: string): str
 <body>
   <div id="canvas-container">
     <canvas id="gameCanvas" width="800" height="640"></canvas>
+    <div id="crt-overlay"></div>
     <div id="gamepad-hud">🎮 Move: LS/WASD • Action: A/Space • Alt: B/Shift • Tweak HUD: Select/Tab</div>
 
     <!-- Real-time Game Feel & Juice Tweak HUD -->
@@ -106,6 +114,18 @@ export function wrapGameWithArgusBridge(innerGameJs: string, title: string): str
       <div class="tweak-row">
         <div class="tweak-label"><span>PARTICLE JUICE</span><span id="val-particles">HIGH</span></div>
         <input type="range" min="0" max="3" step="1" value="2" class="tweak-slider" id="slider-particles">
+      </div>
+      <div class="tweak-row">
+        <div class="tweak-label"><span>RETRO CRT SCANLINES</span></div>
+        <button id="btn-crt" style="background:#334155; color:#fff; border:none; padding:4px 8px; border-radius:6px; cursor:pointer; font-weight:bold; font-size:11px;">CRT: OFF</button>
+      </div>
+      <div class="tweak-row">
+        <div class="tweak-label"><span>PROCEDURAL SYNTH BGM</span><span id="val-bgm">MUTED</span></div>
+        <button id="btn-bgm" style="background:#334155; color:#fff; border:none; padding:4px 8px; border-radius:6px; cursor:pointer; font-weight:bold; font-size:11px;">TOGGLE BGM</button>
+      </div>
+      <div class="tweak-row">
+        <div class="tweak-label"><span>CONTROLLER HAPTICS</span><span id="val-haptics">ACTIVE</span></div>
+        <button id="btn-haptics" style="background:#059669; color:#fff; border:none; padding:4px 8px; border-radius:6px; cursor:pointer; font-weight:bold; font-size:11px;">TEST RUMBLE</button>
       </div>
       <div class="tweak-row">
         <div class="tweak-label"><span>GOD MODE (INVULNERABLE)</span></div>
@@ -157,6 +177,114 @@ export function wrapGameWithArgusBridge(innerGameJs: string, title: string): str
       godBtn.style.background = window.argusTweak.godMode ? '#059669' : '#334155';
       godBadge.textContent = window.argusTweak.godMode ? 'GOD MODE' : 'NORMAL';
       godBadge.style.background = window.argusTweak.godMode ? '#10b981' : '#06b6d4';
+    });
+
+    const crtOverlay = document.getElementById('crt-overlay');
+    const crtBtn = document.getElementById('btn-crt');
+    let crtActive = false;
+    crtBtn.addEventListener('click', () => {
+      crtActive = !crtActive;
+      crtOverlay.classList.toggle('active', crtActive);
+      crtBtn.textContent = 'CRT: ' + (crtActive ? 'ON' : 'OFF');
+      crtBtn.style.background = crtActive ? '#059669' : '#334155';
+    });
+
+    // --- CONTROLLER HAPTICS DUAL-RUMBLE ENGINE ---
+    window.triggerHaptics = (pattern = 'medium') => {
+      try {
+        const pads = navigator.getGamepads ? navigator.getGamepads() : [];
+        for (const p of pads) {
+          if (p && p.vibrationActuator && typeof p.vibrationActuator.playEffect === 'function') {
+            let dur = 100, weak = 0.5, strong = 0.3;
+            if (pattern === 'hit') { dur = 110; weak = 0.7; strong = 0.4; }
+            else if (pattern === 'explosion') { dur = 280; weak = 1.0; strong = 0.85; }
+            else if (pattern === 'dash') { dur = 60; weak = 0.4; strong = 0.2; }
+            else if (pattern === 'jump') { dur = 40; weak = 0.3; strong = 0.1; }
+            p.vibrationActuator.playEffect('dual-rumble', { startDelay: 0, duration: dur, weakMagnitude: weak, strongMagnitude: strong }).catch(() => {});
+          }
+        }
+      } catch (e) {}
+    };
+
+    document.getElementById('btn-haptics').addEventListener('click', () => {
+      window.triggerHaptics('explosion');
+    });
+
+    // --- PROCEDURAL MULTI-TRACK SYNTH BGM ENGINE ---
+    window.argusBgm = {
+      playing: false,
+      volume: 0.10,
+      tempo: 124,
+      step: 0,
+      timer: null
+    };
+    const BASS_NOTES = [65.41, 65.41, 73.42, 82.41, 58.27, 58.27, 73.42, 65.41];
+    const ARP_NOTES = [261.63, 311.13, 392.00, 466.16, 523.25, 466.16, 392.00, 311.13];
+
+    function runBgmLoop() {
+      if (!window.argusBgm.playing) return;
+      const stepTime = (60 / window.argusBgm.tempo) / 4;
+      const t = window.argusAudio.currentTime;
+      const s = window.argusBgm.step % 16;
+      if (s % 4 === 0) {
+        // Kick
+        const o = window.argusAudio.createOscillator();
+        const g = window.argusAudio.createGain();
+        o.frequency.setValueAtTime(120, t);
+        o.frequency.exponentialRampToValueAtTime(32, t + 0.08);
+        g.gain.setValueAtTime(0.24 * window.argusBgm.volume * 5, t);
+        g.gain.exponentialRampToValueAtTime(0.001, t + 0.08);
+        o.connect(g); g.connect(window.argusAudio.destination);
+        o.start(t); o.stop(t + 0.08);
+      }
+      if (s % 2 === 1) {
+        // Hihat
+        const o = window.argusAudio.createOscillator();
+        const g = window.argusAudio.createGain();
+        o.type = 'triangle';
+        o.frequency.setValueAtTime(1200, t);
+        g.gain.setValueAtTime(0.03 * window.argusBgm.volume * 5, t);
+        g.gain.exponentialRampToValueAtTime(0.001, t + 0.03);
+        o.connect(g); g.connect(window.argusAudio.destination);
+        o.start(t); o.stop(t + 0.03);
+      }
+      if (s % 2 === 0) {
+        // Bass
+        const bIdx = Math.floor(window.argusBgm.step / 4) % BASS_NOTES.length;
+        const o = window.argusAudio.createOscillator();
+        const g = window.argusAudio.createGain();
+        o.type = 'sawtooth';
+        o.frequency.setValueAtTime(BASS_NOTES[bIdx], t);
+        g.gain.setValueAtTime(0.09 * window.argusBgm.volume * 5, t);
+        g.gain.exponentialRampToValueAtTime(0.001, t + stepTime * 1.8);
+        o.connect(g); g.connect(window.argusAudio.destination);
+        o.start(t); o.stop(t + stepTime * 1.8);
+      }
+      // Arp
+      const aIdx = s % ARP_NOTES.length;
+      const o = window.argusAudio.createOscillator();
+      const g = window.argusAudio.createGain();
+      o.type = 'sine';
+      o.frequency.setValueAtTime(ARP_NOTES[aIdx], t);
+      g.gain.setValueAtTime(0.06 * window.argusBgm.volume * 5, t);
+      g.gain.exponentialRampToValueAtTime(0.001, t + stepTime);
+      o.connect(g); g.connect(window.argusAudio.destination);
+      o.start(t); o.stop(t + stepTime);
+
+      window.argusBgm.step++;
+      setTimeout(runBgmLoop, stepTime * 1000);
+    }
+
+    const bgmBtn = document.getElementById('btn-bgm');
+    const bgmVal = document.getElementById('val-bgm');
+    bgmBtn.addEventListener('click', () => {
+      window.argusBgm.playing = !window.argusBgm.playing;
+      bgmVal.textContent = window.argusBgm.playing ? 'ON (124 BPM)' : 'MUTED';
+      bgmBtn.style.background = window.argusBgm.playing ? '#059669' : '#334155';
+      if (window.argusBgm.playing) {
+        if (window.argusAudio.state === 'suspended') window.argusAudio.resume();
+        runBgmLoop();
+      }
     });
 
     window.addEventListener('keydown', e => {
@@ -226,10 +354,12 @@ export function wrapGameWithArgusBridge(innerGameJs: string, title: string): str
 
     window.triggerShake = (amt = 8) => {
       window.argusJuice.shake = Math.min(26, window.argusJuice.shake + amt * (window.argusTweak.shakeMult || 1));
+      window.triggerHaptics(amt > 15 ? 'explosion' : amt > 7 ? 'heavy' : 'light');
     };
 
     window.triggerHitStop = (frames = 4) => {
       window.argusJuice.hitStopFrames = Math.max(window.argusJuice.hitStopFrames, Math.round(frames * (window.argusTweak.hitStopMult || 1)));
+      window.triggerHaptics('hit');
     };
 
     window.spawnJuiceParticles = (x, y, color = '#38bdf8', count = 12, speed = 4) => {
@@ -281,6 +411,10 @@ export function wrapGameWithArgusBridge(innerGameJs: string, title: string): str
 
     window.playJuicySound = (type = 'hit') => {
       try {
+        if (type === 'explosion') window.triggerHaptics('explosion');
+        else if (type === 'slash' || type === 'hit') window.triggerHaptics('hit');
+        else if (type === 'dash') window.triggerHaptics('dash');
+        else if (type === 'jump') window.triggerHaptics('jump');
         if (window.argusAudio.state === 'suspended') window.argusAudio.resume();
         const t = window.argusAudio.currentTime;
         if (type === 'jump') {

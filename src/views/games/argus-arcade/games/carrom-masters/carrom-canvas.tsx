@@ -1,6 +1,8 @@
 import React, { useEffect, useRef, useState, useCallback } from "react";
 import { carromAudio } from "./carrom-audio";
 import { Trophy, RotateCcw, Volume2, VolumeX } from "lucide-react";
+import { playGamepadHaptics } from "@/views/games/haptics/gamepad-haptics";
+import { earnArcadeCredits } from "../../arcade-meta-progression";
 
 interface CarromCanvasProps {
   onGameOver?: (playerScore: number, opponentScore: number) => void;
@@ -178,6 +180,7 @@ export const CarromCanvas: React.FC<CarromCanvasProps> = ({ onGameOver }) => {
     striker.vy = Math.sin(angle) * (power * 24);
     s.isMoving = true;
     carromAudio.playClack(power);
+    playGamepadHaptics(power > 0.6 ? "heavy" : "medium");
   }, []);
 
   // Controls
@@ -362,6 +365,7 @@ export const CarromCanvas: React.FC<CarromCanvasProps> = ({ onGameOver }) => {
               p.vx = 0;
               p.vy = 0;
               carromAudio.playPocket();
+              playGamepadHaptics("tap");
 
               if (p.type !== "striker") {
                 if (s.turn === "player") {
@@ -445,6 +449,7 @@ export const CarromCanvas: React.FC<CarromCanvasProps> = ({ onGameOver }) => {
             s.isGameOver = true;
             setIsGameOver(true);
             carromAudio.playWin();
+            earnArcadeCredits(Math.max(20, Math.round(s.p1Score * 3)));
             onGameOver?.(s.p1Score, s.aiScore);
           } else {
             // Swap turns
