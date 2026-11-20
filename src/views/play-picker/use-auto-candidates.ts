@@ -1,3 +1,4 @@
+import { hasExactAutoplayPackFile } from "./autoplay-readiness";
 import { useMemo } from "react";
 import { isStreamDead } from "@/lib/dead-streams";
 import { engineP2pEligible } from "@/lib/torrent/stremio-stream";
@@ -171,7 +172,8 @@ export function useAutoCandidates(args: {
       if (isStreamDead(s)) return;
       if (isWatchHub(s)) return;
       if (s.externalUrl || s.ytId || s.url === "#") return;
-      if (episodeConflict(s)) return;
+      if (episodeConflict(s) || !hasExactAutoplayPackFile(s, season ?? null, episode ?? null))
+        return;
       if (!isCached(s) && !s.url && !engineP2pEligible(s)) return;
       const k = key(s);
       if (seen.has(k)) return;

@@ -2,12 +2,15 @@ import { useEffect, useRef, useState } from "react";
 import type { ScoredStream } from "@/lib/streams/types";
 import type { SourceDescriptor } from "@/lib/together/protocol";
 import { engineP2pEligible } from "@/lib/torrent/stremio-stream";
-import { hasInstantMarker, streamMatchesLangs, torrentFilename } from "./picker-utils";
+import { streamMatchesLangs, torrentFilename } from "./picker-utils";
 import { episodeVariantMatch } from "@/lib/streams/episode-file";
 import { episodeSpanContains } from "@/lib/episode-span";
 import type { AddonProgress } from "@/lib/streams/addons";
 import { preferredSourceAddonPending, type PlaybackEntry } from "@/lib/playback-history";
 
+import { isEarlyAutoplaySource } from "./autoplay-readiness";
+
+const PREFERRED_SOURCE_HEAD_START_MS = 900;
 const AUTO_SETTLE_MS = 1500;
 const AUTO_SETTLE_PACK_MS = 4000;
 const HIGH_CONFIDENCE_GRACE_MS = 350;
@@ -34,6 +37,7 @@ export function useAutoFire(args: {
   hostSource?: SourceDescriptor | null;
   preferredSourceEntry?: PlaybackEntry | null;
   preferredSourceMatched?: boolean;
+  allowPreferredSourceHeadStart?: boolean;
   season?: number | null;
   episode?: number | null;
   addonQuorum: AddonProgress;
@@ -62,6 +66,7 @@ export function useAutoFire(args: {
     hostSource,
     preferredSourceEntry,
     preferredSourceMatched,
+    allowPreferredSourceHeadStart,
     season,
     episode,
     addonQuorum,
@@ -83,12 +88,15 @@ export function useAutoFire(args: {
   const topInstantPlayable = (s: ScoredStream) =>
     isCached(s) || !!s.url || (p2pAutoConsent && engineP2pEligible(s));
   const isHighConfidence = (s: ScoredStream, langOk: boolean) =>
-    hasInstantMarker(s) &&
-    isCached(s) &&
+    isEarlyAutoplaySource(s) &&
+    !!s.parsedTitle?.trim() &&
     langOk &&
     episodeQualifies(s) &&
     !nameAbsent(s) &&
     (!hasStrongAddon || !isTorrentioStream(s));
+  const attemptedRef = useRef(new Set<string>());
+  const candidateKey = (stream: ScoredStream) =>
+    JSON.stringify([stream.addonId, stream.url, stream.infoHash, stream.fileIdx, stream.title]);
   const highConfidenceSinceRef = useRef<number | null>(null);
   const [highConfidenceTick, setHighConfidenceTick] = useState(0);
 
@@ -106,12 +114,19 @@ export function useAutoFire(args: {
     pipelineDone,
     addonQuorum,
   );
-  // Wait for the remembered source's own addon to answer instead of giving up
-  // after a fixed budget. A slow aggregator (AIOStreams) is allowed to take its
-  // full request timeout. Settlement is published with processed candidates by
-  // the pipeline; Cancel remains available throughout the wait.
-  const waitingForPreferredSource = preferredAddonPending;
-  const protectingPreferredSource = !!preferredSourceEntry && !preferredSourceMatched;
+  const [headStartExpired, setHeadStartExpired] = useState(false);
+  useEffect(() => {
+    if (!autoActive || !preferredAddonPending || !allowPreferredSourceHeadStart) return;
+    const timer = window.setTimeout(
+      () => setHeadStartExpired(true),
+      PREFERRED_SOURCE_HEAD_START_MS,
+    );
+    return () => window.clearTimeout(timer);
+  }, [autoActive, preferredAddonPending, allowPreferredSourceHeadStart]);
+
+  const waitingForPreferredSource =
+    preferredAddonPending && (!allowPreferredSourceHeadStart || !headStartExpired);
+  const protectingPreferredSource = waitingForPreferredSource;
 
   useEffect(() => {
     if (waitingForHostSource || waitingForPreferredSource || protectingPreferredSource) return;
@@ -228,14 +243,20 @@ export function useAutoFire(args: {
     }
     if (autoCandidates.length === 0) return;
     if (resolving) return;
-    const idx = Math.min((attempt ?? 0) + autoAttemptIdx, autoCandidates.length - 1);
-    const pick = autoCandidates[idx];
-    if (!pick) return;
+    // Partial replies can reorder the shortlist between attempts.
+    const pick = autoCandidates.find(
+      (candidate) => !attemptedRef.current.has(candidateKey(candidate)),
+    );
+    if (!pick) {
+      if (pipelineDone) setAutoCancelled(true);
+      return;
+    }
     const pickInstant = isCached(pick) || !!pick.url || (p2pAutoConsent && engineP2pEligible(pick));
     if (!pickInstant) {
       if (pipelineDone) setAutoCancelled(true);
       return;
     }
+    attemptedRef.current.add(candidateKey(pick));
     autoFiredRef.current = true;
     const p2pConsentPick =
       !isCached(pick) && !pick.url && p2pAutoConsent && engineP2pEligible(pick);

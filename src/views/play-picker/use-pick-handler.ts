@@ -97,7 +97,10 @@ export function usePickHandler({
   autoActive,
   autoAttemptIdx,
   autoCandidatesLength,
+  pipelineDone = true,
   candidateCount = 0,
+  searchStartedAt,
+  firstResultAt,
   rejectedCount = 0,
   autoFiredRef,
   setAutoAttemptIdx,
@@ -130,7 +133,10 @@ export function usePickHandler({
   autoActive: boolean;
   autoAttemptIdx: number;
   autoCandidatesLength: number;
+  pipelineDone?: boolean;
   candidateCount?: number;
+  searchStartedAt?: number | null;
+  firstResultAt?: number | null;
   rejectedCount?: number;
   autoFiredRef: React.MutableRefObject<boolean>;
   setAutoAttemptIdx: Dispatch<SetStateAction<number>>;
@@ -171,7 +177,7 @@ export function usePickHandler({
   const advanceAuto = () => {
     if (!autoActive) return;
     const nextIdx = autoAttemptIdx + 1;
-    if (nextIdx < autoCandidatesLength) {
+    if (nextIdx < autoCandidatesLength || !pipelineDone) {
       autoFiredRef.current = false;
       setAutoAttemptIdx(nextIdx);
     } else {
@@ -194,10 +200,25 @@ export function usePickHandler({
     const playbackTraceId =
       intent === "download"
         ? undefined
-        : beginPlaybackTrace(playbackSourceClass(stream, debrids.length, forceP2p));
+        : beginPlaybackTrace(
+            playbackSourceClass(stream, debrids.length, forceP2p),
+            autoPickRef.current ? (searchStartedAt ?? undefined) : undefined,
+          );
+    if (
+      autoPickRef.current &&
+      searchStartedAt != null &&
+      firstResultAt != null &&
+      firstResultAt >= searchStartedAt
+    ) {
+      markPlaybackTrace(playbackTraceId, "first-search-result", firstResultAt);
+    }
+    markPlaybackTrace(playbackTraceId, "candidate-selected");
     recordPlaybackDecision(playbackTraceId, {
-      mode: userCommitted ? "manual" : "automatic", score: stream.score,
-      candidates: candidateCount, rejected: rejectedCount, reasons: stream.reasons,
+      mode: userCommitted ? "manual" : "automatic",
+      score: stream.score,
+      candidates: candidateCount,
+      rejected: rejectedCount,
+      reasons: stream.reasons,
     });
     markPlaybackTrace(playbackTraceId, "resolve-start");
     try {
