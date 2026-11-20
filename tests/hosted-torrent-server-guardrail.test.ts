@@ -38,7 +38,7 @@ test("resolve tries the torrent engine before it hands a hosted server url to th
   assert.ok(guard < urlBranch, "the guardrail must run before the direct url");
   assert.match(
     resolveSource.slice(guard, urlBranch),
-    /const direct = await tryTorrentEngine\(stream, signal, hint\);/,
+    /const direct = await tryTorrentEngine\(stream, signal, hint(?:,\s*traceId)?\);/,
   );
 });
 
