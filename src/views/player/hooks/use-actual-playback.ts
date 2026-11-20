@@ -14,6 +14,7 @@ import type { PlayerSrc } from "@/lib/view";
 export function useActualPlayback(src: PlayerSrc, snap: PlayerSnapshot): void {
   const key = `${playbackSourceKey(src)}|${src.meta.id}|${src.episode?.season ?? ""}|${src.episode?.episode ?? ""}`;
   const latest = useRef({ key, src, snap });
+  const continuousSince = useRef<number | null>(null);
   const flush = useRef<() => void>(() => {});
   const loaded = useRef({ key, armed: !snap.firstFrameReady });
   if (loaded.current.key !== key) loaded.current = { key, armed: !snap.firstFrameReady };
@@ -22,10 +23,13 @@ export function useActualPlayback(src: PlayerSrc, snap: PlayerSnapshot): void {
   useEffect(() => {
     const session = { id: crypto.randomUUID(), actor: capturePlaybackActor() };
     let last: ActualPlayback | null = null;
+    let sustained = false;
+    let lastMovingAt: number | null = null;
+    continuousSince.current = null;
     let lastSavedAt = 0;
     let previousPosition = getPlaybackPosition();
     const save = () => {
-      if (last && recordActualPlayback(last)) lastSavedAt = Date.now();
+      if (last && recordActualPlayback({ ...last, sustained })) lastSavedAt = Date.now();
     };
     const saveCurrent = () => {
       const current = latest.current;
@@ -52,6 +56,24 @@ export function useActualPlayback(src: PlayerSrc, snap: PlayerSnapshot): void {
       const next = actualPlaybackSnapshot(current.src, current.snap, position, session);
       if (!next) return;
       last = next;
+      if (
+        current.snap.status === "playing" &&
+        current.snap.firstFrameReady &&
+        !current.snap.buffering
+      ) {
+        const now = performance.now();
+        if (lastMovingAt == null || now - lastMovingAt > 3000) continuousSince.current = now;
+        lastMovingAt = now;
+        continuousSince.current ??= now;
+        if (!sustained && now - continuousSince.current >= 30_000) {
+          sustained = true;
+          save();
+          return;
+        }
+      } else {
+        continuousSince.current = null;
+        lastMovingAt = null;
+      }
       if (!lastSavedAt || Date.now() - lastSavedAt >= 4000) save();
     };
     const unsubscribe = subscribePlaybackClock(observe);
@@ -70,6 +92,9 @@ export function useActualPlayback(src: PlayerSrc, snap: PlayerSnapshot): void {
     };
   }, [key]);
   useEffect(() => {
+    if (snap.status !== "playing" || snap.buffering || !snap.firstFrameReady) {
+      continuousSince.current = null;
+    }
     if (snap.status !== "playing") flush.current();
-  }, [snap.status]);
+  }, [snap.status, snap.buffering, snap.firstFrameReady]);
 }

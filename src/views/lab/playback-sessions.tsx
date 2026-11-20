@@ -35,6 +35,8 @@ export function PlaybackSessions() {
               <tr>
                 <th className="p-2">Source</th>
                 <th className="p-2">Outcome</th>
+                <th className="p-2">First search result</th>
+                <th className="p-2">Candidate selected</th>
                 <th className="p-2">Resolved</th>
                 <th className="p-2">First frame</th>
                 <th className="p-2">Total</th>
@@ -51,6 +53,14 @@ export function PlaybackSessions() {
                         ? `Switch ${report.outcome}`
                         : report.outcome}
                   </td>
+                  {(["first-search-result", "candidate-selected"] as const).map((milestone) => {
+                    const elapsed = report.milestones[milestone];
+                    return (
+                      <td key={milestone} className="p-2">
+                        {elapsed == null ? "—" : `${elapsed} ms`}
+                      </td>
+                    );
+                  })}
                   <td className="p-2">
                     {report.milestones["resolve-ready"] == null
                       ? "—"

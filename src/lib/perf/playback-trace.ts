@@ -3,6 +3,8 @@ import { dlog } from "@/lib/debug";
 export type PlaybackMilestone =
   | "recovery-start"
   | "rollback-ready"
+  | "first-search-result"
+  | "candidate-selected"
   | "resolve-start"
   | "resolve-ready"
   | "torrent-add-ready"
@@ -126,7 +128,10 @@ function markName(traceId: string, milestone: string): string {
   return `argus:playback:${traceId}:${milestone}`;
 }
 
-export function beginPlaybackTrace(sourceClass: ActiveTrace["sourceClass"]): string {
+export function beginPlaybackTrace(
+  sourceClass: ActiveTrace["sourceClass"],
+  startedAt = now(),
+): string {
   const traceId = `${Date.now().toString(36)}-${(++nextTraceId).toString(36)}`;
   // Bound abandoned traces as well as completed reports.
   if (active.size >= 50) {
@@ -137,8 +142,8 @@ export function beginPlaybackTrace(sourceClass: ActiveTrace["sourceClass"]): str
     }
     active.delete(oldest);
   }
-  active.set(traceId, { startedAt: now(), sourceClass, milestones: {} });
-  performance?.mark?.(markName(traceId, "committed"));
+  active.set(traceId, { startedAt, sourceClass, milestones: {} });
+  performance?.mark?.(markName(traceId, "committed"), { startTime: startedAt });
   dlog(`[perf][playback] ${traceId} committed source=${sourceClass}`);
   return traceId;
 }
@@ -146,11 +151,12 @@ export function beginPlaybackTrace(sourceClass: ActiveTrace["sourceClass"]): str
 export function markPlaybackTrace(
   traceId: string | null | undefined,
   milestone: PlaybackMilestone,
+  observedAt = now(),
 ): void {
   if (!traceId || !active.has(traceId)) return;
-  performance?.mark?.(markName(traceId, milestone));
+  performance?.mark?.(markName(traceId, milestone), { startTime: observedAt });
   const trace = active.get(traceId)!;
-  trace.milestones[milestone] ??= Math.round(now() - trace.startedAt);
+  trace.milestones[milestone] ??= Math.round(observedAt - trace.startedAt);
   dlog(
     `[perf][playback] ${traceId} ${milestone} elapsed_ms=${Math.round(now() - trace.startedAt)}`,
   );
