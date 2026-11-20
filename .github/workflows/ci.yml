@@ -197,7 +197,13 @@ jobs:
           mkdir -p dist-dmg && cp -R "$APP" dist-dmg/
           ln -s /Applications dist-dmg/Applications
           hdiutil create -volname Argus -srcfolder dist-dmg -ov -format UDZO "Argus-${{ matrix.arch }}.dmg"
-          du -h "Argus-${{ matrix.arch }}.dmg"
+          DMG="Argus-${{ matrix.arch }}.dmg"
+          MOUNT=$(mktemp -d)
+          hdiutil attach "$DMG" -readonly -nobrowse -mountpoint "$MOUNT"
+          trap 'hdiutil detach "$MOUNT"; rmdir "$MOUNT"' EXIT
+          python3 scripts/macos-bundle-libmpv.py verify-app --app "$MOUNT/Argus.app" --target "${{ matrix.target }}"
+          "$MOUNT/Argus.app/Contents/MacOS/ffmpeg" -v error -f lavfi -i sine=frequency=440:duration=1 -f null -
+          du -h "$DMG"
       - name: Sign the update bundle and write latest.json
         if: github.event_name != 'pull_request'
         env:

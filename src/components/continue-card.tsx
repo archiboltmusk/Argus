@@ -706,10 +706,11 @@ export const ContinueCard = memo(function ContinueCard({
         ref={cardRef}
         type="button"
         data-continue-card-trigger
-        onClick={(event) => runControl(event, commands.chooseSource)}
+        data-continue-card-id={item._id}
+        onClick={(event) => runControl(event, settings.tvNavigation ? commands.play : commands.chooseSource)}
         disabled={pending || waitingForAir}
-        aria-label={`${t("Choose another source")}: ${displayTitle}`}
-        title={t("Choose another source")}
+        aria-label={`${settings.tvNavigation ? t("Continue Watching") : t("Choose another source")}: ${displayTitle}`}
+        title={settings.tvNavigation ? t("Continue Watching") : t("Choose another source")}
         className="block w-full min-w-0 rounded-xl text-start focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
       >
         <div className="argus-poster relative aspect-[16/9] overflow-hidden rounded-xl bg-elevated shadow-[0_2px_8px_-2px_rgba(0,0,0,0.4),inset_0_1px_0_rgba(255,255,255,0.06)] will-change-transform [transform:translate3d(0,0,0)] transition-transform duration-[220ms] ease-[cubic-bezier(0.22,0.61,0.36,1)] group-hover:scale-[1.02]">

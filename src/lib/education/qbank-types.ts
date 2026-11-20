@@ -1,3 +1,5 @@
+import type { AnswerSpec, QuestionAnswer, ImportReport } from "./question-integrity";
+
 export type SubjectCategory =
   | "Pathology"
   | "Pharmacology"
@@ -106,6 +108,29 @@ export type ClinicalQuestion = {
   imageUrl?: string;
   options: string[];
   correctIndex: number;
+  assertionReason?: { assertion: string; reason: string };
+  answerSpec?: AnswerSpec;
+  provenance?: {
+    kind: "original" | "recalled" | "generated" | "unknown";
+    source?: string;
+    edition?: string;
+    publishedAt?: string;
+    reviewer?: string;
+    reviewedAt?: string;
+    status: "unverified" | "reviewed";
+    corrections?: {
+      date: string;
+      reason: string;
+      reviewer: string;
+      previous?: {
+        correctIndex: number;
+        answerSpec?: AnswerSpec;
+        rationale: string;
+        source?: string;
+      };
+    }[];
+  };
+  learningLink?: { url: string; timestampSec?: number; relatedQuestionId?: string };
   examinerTrap: string;
   explanation: ClinicalExplanation5Tier;
   highYieldTags: string[];
@@ -120,6 +145,7 @@ export type ClinicalQuestion = {
 };
 
 export type QBankPack = {
+  importReport?: ImportReport;
   id: string;
   title: string;
   description: string;
@@ -133,8 +159,22 @@ export type QBankPack = {
 };
 
 export type QBankSessionState = {
+  analytics?: {
+    telemetry: import("./btr-rank-optimizer").AIR100ExamTelemetry;
+    irtReport: import("./btr-irt-rank-simulator").IRTExamSimulationReport;
+    biasReport: ReturnType<typeof import("./btr-cognitive-decoder").aggregateSessionBiases>;
+  };
+  deadlineAt?: number;
+  activeSince?: number;
+  startedAt?: number;
+  finishedAt?: number;
+  result?: GrandTestResult;
+  guessedQuestions?: Record<string, boolean>;
+  markedForReview?: string[];
+  confidence?: Record<string, "unsure" | "confident">;
+  mistakes?: Record<string, "knowledge" | "misread" | "reasoning" | "guessing" | "time">;
   activeQuestionIndex: number;
-  selectedAnswers: Record<string, number>; // questionId -> selectedIndex
+  selectedAnswers: Record<string, QuestionAnswer>; // questionId -> response
   eliminatedOptions: Record<string, number[]>; // questionId -> [indices of struck-out options]
   isSubmitted: Record<string, boolean>; // questionId -> boolean
   bookmarks: string[]; // questionIds

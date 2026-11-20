@@ -1,10 +1,12 @@
+import { useView } from "@/lib/view";
+import { useProfiles } from "@/lib/profiles";
 import { ActionRow } from "./action-row";
 import { ExperimentalChangelog } from "@/components/update/experimental-changelog";
 import { WhatsNewSection } from "../whats-new-section";
 import { useOnboarding } from "@/lib/onboarding";
 import { Check, RotateCw } from "../icons";
 import { useEffect, useState } from "react";
-import { IS_BETA_BUILD } from "@/lib/build-info";
+import { BUILD_ID, IS_BETA_BUILD } from "@/lib/build-info";
 import { useT } from "@/lib/i18n";
 import { readBetaReturnContext } from "@/lib/updater/beta-return";
 import { ROW_DESC, Section } from "../shared";
@@ -14,6 +16,8 @@ import { isTauri } from "../player-panel/internals";
 
 export function AboutTab() {
   const t = useT();
+  const { setView } = useView();
+  const { activeProfile } = useProfiles();
   return (
     <>
       <Section
@@ -27,6 +31,13 @@ export function AboutTab() {
         <AboutRow />
         <ExperimentalChangelog />
       </Section>
+
+      {!activeProfile?.kid && (
+        <Section title={t("Experimental areas")}>
+          <button type="button" className="edu-pill-button w-fit" onClick={() => setView("lifemaxxing")}>{t("Wellbeing")}</button>
+          <button type="button" className="edu-pill-button w-fit" onClick={() => setView("argus-lab")}>{t("System Lab")}</button>
+        </Section>
+      )}
 
       <WhatsNewSection />
 
@@ -50,6 +61,7 @@ function AboutRow() {
             : `${__APP_VERSION__}${IS_BETA_BUILD ? ` (${t("Beta")})` : ""}`
         }
       />
+      <InfoLine label={t("Build ID")} value={BUILD_ID} />
       <InfoLine label={t("Build")} value={isTauri ? t("Desktop (Tauri 2 / WebView2)") : t("Web")} />
     </>
   );

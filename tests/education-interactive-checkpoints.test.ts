@@ -10,7 +10,6 @@ import {
   type LectureCheckpoint,
 } from "../src/lib/education/interactive-checkpoints.ts";
 import {
-  FOUNDATIONAL_CONCEPT_GRAPH,
   diagnoseRootCause,
   recordConceptAttempt,
   loadAllConceptStats,
@@ -19,14 +18,29 @@ import {
 test("extractCheckpointsFromTranscript manufactures intelligent checkpoints from cues", () => {
   const mockCues = [
     { startSec: 10, endSec: 25, text: "Welcome to cardiovascular physiology." },
-    { startSec: 75, endSec: 90, text: "Therefore, when venous return increases, the end-diastolic volume expands." },
-    { startSec: 180, endSec: 195, text: "Notice that the stroke volume increases because the sarcomeres stretch." },
-    { startSec: 320, endSec: 340, text: "In summary, the Frank-Starling mechanism matches output to input." },
+    {
+      startSec: 75,
+      endSec: 90,
+      text: "Therefore, when venous return increases, the end-diastolic volume expands.",
+    },
+    {
+      startSec: 180,
+      endSec: 195,
+      text: "Notice that the stroke volume increases because the sarcomeres stretch.",
+    },
+    {
+      startSec: 320,
+      endSec: 340,
+      text: "In summary, the Frank-Starling mechanism matches output to input.",
+    },
   ];
 
   const checkpoints = extractCheckpointsFromTranscript(mockCues, 3);
   assert.ok(checkpoints.length >= 2, "Must extract at least 2 checkpoints from trigger words");
-  assert.ok(checkpoints[0].timestampSec > 60, "Checkpoints should be placed at meaningful points in time");
+  assert.ok(
+    checkpoints[0].timestampSec > 60,
+    "Checkpoints should be placed at meaningful points in time",
+  );
   assert.equal(checkpoints[0].type, "explain-it");
   assert.ok(checkpoints[0].expectedKeywords && checkpoints[0].expectedKeywords.length > 0);
 });
@@ -35,12 +49,16 @@ test("evaluateStudentExplanation scores plain-English understanding and flags mi
   const keywords = ["stretch", "sarcomere", "myosin", "calcium", "contraction"];
 
   // 1. Solid explanation covering key concepts
-  const goodAttempt = "When blood fills the heart, the muscle stretches the sarcomere, which increases calcium sensitivity and contraction.";
+  const goodAttempt =
+    "When blood fills the heart, the muscle stretches the sarcomere, which increases calcium sensitivity and contraction.";
   const goodEval = evaluateStudentExplanation(goodAttempt, keywords, 2);
   assert.equal(goodEval.passed, true, "Good explanation must pass");
   assert.ok(goodEval.scorePct >= 50, "Score should be >= 50%");
   assert.ok(goodEval.matchedKeywords.length >= 2, "Must identify matched keywords");
-  assert.ok(goodEval.feedback.includes("Solid explanation"), "Feedback should encourage the learner");
+  assert.ok(
+    goodEval.feedback.includes("Solid explanation"),
+    "Feedback should encourage the learner",
+  );
 
   // 2. Empty or too brief explanation
   const poorAttempt = "heart pumps";
@@ -75,7 +93,11 @@ test("diagnoseRootCause traverses prerequisite tree to identify foundational gap
   // Now diagnose high-level "cardiac-output"
   const deepDiag = diagnoseRootCause("cardiac-output");
   assert.ok(deepDiag);
-  assert.equal(deepDiag?.rootCauseConcept?.id, "frank-starling", "Must pinpoint frank-starling as root cause");
+  assert.equal(
+    deepDiag?.rootCauseConcept?.id,
+    "frank-starling",
+    "Must pinpoint frank-starling as root cause",
+  );
   assert.ok(deepDiag?.recommendation.includes("Frank-Starling"));
 });
 
@@ -99,7 +121,8 @@ test("recordCheckpointAttempt updates FSRS spaced repetition state", () => {
   assert.ok(fsrsPass.due > Date.now(), "Next review must be in future");
 
   const fsrsFail = recordCheckpointAttempt(mockCp, false);
-  assert.equal(fsrsFail.lapses, 1, "FSRS must record 1 lapse after fail");
+  assert.equal(fsrsFail.lapses, 0, "A failed learning step is not a lapse from the review state");
+  assert.equal(fsrsFail.state, "learning");
 });
 
 test("getCheckpointsForVideo loads curated course checkpoints and saves custom decks", () => {
@@ -132,13 +155,31 @@ test("getCheckpointsForVideo loads curated course checkpoints and saves custom d
 test("Entertainment media policy: movies and series never trigger lecture synthesis checkpoints", () => {
   // Simulate policy check logic used in player
   const isExcludedMediaType = (mediaType?: string) => {
-    return mediaType === "movie" || mediaType === "series" || mediaType === "anime" || mediaType === "tv" || mediaType === "channel";
+    return (
+      mediaType === "movie" ||
+      mediaType === "series" ||
+      mediaType === "anime" ||
+      mediaType === "tv" ||
+      mediaType === "channel"
+    );
   };
 
-  assert.equal(isExcludedMediaType("movie"), true, "Movies must be strictly excluded from lecture synthesis");
-  assert.equal(isExcludedMediaType("series"), true, "Series must be excluded from lecture synthesis");
+  assert.equal(
+    isExcludedMediaType("movie"),
+    true,
+    "Movies must be strictly excluded from lecture synthesis",
+  );
+  assert.equal(
+    isExcludedMediaType("series"),
+    true,
+    "Series must be excluded from lecture synthesis",
+  );
   assert.equal(isExcludedMediaType("anime"), true, "Anime must be excluded from lecture synthesis");
-  assert.equal(isExcludedMediaType("other"), false, "Other/courseware may undergo academic evaluation");
+  assert.equal(
+    isExcludedMediaType("other"),
+    false,
+    "Other/courseware may undergo academic evaluation",
+  );
 
   const isAcademicKey = (key: string) => {
     return (
@@ -155,6 +196,14 @@ test("Entertainment media policy: movies and series never trigger lecture synthe
   };
 
   assert.equal(isAcademicKey("tt1234567"), false, "IMDb movie IDs must not be treated as academic");
-  assert.equal(isAcademicKey("Loki S02E02"), false, "Movie/show titles must not be treated as academic");
-  assert.equal(isAcademicKey("stanford-cs224w-l1"), true, "Stanford lecture must be recognized as academic");
+  assert.equal(
+    isAcademicKey("Loki S02E02"),
+    false,
+    "Movie/show titles must not be treated as academic",
+  );
+  assert.equal(
+    isAcademicKey("stanford-cs224w-l1"),
+    true,
+    "Stanford lecture must be recognized as academic",
+  );
 });

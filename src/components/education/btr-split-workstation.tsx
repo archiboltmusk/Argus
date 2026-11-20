@@ -484,9 +484,9 @@ export function BTRSplitWorkstation({
                   <AlertTriangle size={32} />
                 </div>
                 <div>
-                  <h3 className="text-base font-bold text-ink">Video Decoder Mismatch</h3>
+                  <h3 className="text-base font-bold text-ink">Video could not play</h3>
                   <p className="text-xs text-ink-muted mt-1.5 leading-relaxed">
-                    This video format (MKV, 10-bit HEVC, or sandboxed disk path) is not supported by standard webview HTML5 decoders. Select a playback option below:
+                    Try the native player or locate your video file.
                   </p>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 w-full">
@@ -494,10 +494,10 @@ export function BTRSplitWorkstation({
                     type="button"
                     onClick={handleLaunchNativePlayer}
                     className="w-full flex items-center justify-center gap-1.5 rounded-xl bg-accent px-3 py-2.5 text-xs font-bold text-white shadow-md hover:brightness-110 transition"
-                    title="Play with zero-lag hardware decoding via Argus MPV engine"
+                    title="Open this file in the native player"
                   >
                     <ExternalLink size={13} />
-                    <span>Native MPV</span>
+                    <span>Try Native Player</span>
                   </button>
                   <button
                     type="button"
@@ -506,7 +506,7 @@ export function BTRSplitWorkstation({
                     title="Pick video from disk for immediate in-webview playback"
                   >
                     <Upload size={13} />
-                    <span>Pick File</span>
+                    <span>Locate Video</span>
                   </button>
                   <button
                     type="button"
@@ -966,7 +966,7 @@ export function BTRSplitWorkstation({
                 <span>Fill Blanks</span>
               </button>
 
-              <button
+              {pdfUrl && <button
                 type="button"
                 onClick={() => {
                   setPdfMode("pdf");
@@ -981,8 +981,8 @@ export function BTRSplitWorkstation({
                 title="Local PDF File Document Viewer"
               >
                 <ExternalLink size={12} />
-                <span className="hidden md:inline">PDF Doc</span>
-              </button>
+                <span className="hidden md:inline">Open PDF</span>
+              </button>}
             </div>
 
             <div className="flex items-center gap-1.5 sm:gap-2">
@@ -1079,9 +1079,9 @@ export function BTRSplitWorkstation({
                     <div className="flex h-16 w-16 items-center justify-center rounded-3xl bg-blue-500/15 border border-blue-500/30 text-blue-400 mb-4">
                       <FileText size={32} />
                     </div>
-                    <h3 className="text-base font-bold text-ink">Local PDF Not Detected</h3>
+                    <h3 className="text-base font-bold text-ink">{pdfLoadError ? "PDF could not open" : "No PDF linked"}</h3>
                     <p className="text-xs text-ink-muted max-w-sm mt-1 mb-6 leading-relaxed">
-                      Select your local workbook PDF from disk, open in macOS Preview, or review Dr. Zainab Vora&apos;s high-yield annotated notes.
+                      Locate your workbook PDF or continue with the study notes.
                     </p>
                     <div className="flex flex-wrap items-center justify-center gap-2.5">
                       <button
@@ -1090,7 +1090,7 @@ export function BTRSplitWorkstation({
                         className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-accent text-white font-bold text-xs shadow-md hover:brightness-110 transition"
                       >
                         <FolderOpen size={14} />
-                        <span>Pick Local PDF</span>
+                        <span>Locate PDF</span>
                       </button>
                       <button
                         type="button"

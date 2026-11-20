@@ -1,6 +1,6 @@
-import { useSyncExternalStore } from "react";
+import { useMemo, useSyncExternalStore } from "react";
 import type { StudyNote, FSRSRating } from "./types";
-import { createInitialCard, scheduleReview, isCardDue } from "./fsrs";
+import { createInitialCard, scheduleReview, isCardDue, FSRS_ENGINE } from "./fsrs";
 
 const KEY = "argus.study.notes.v1";
 
@@ -23,14 +23,8 @@ function readNotes(): StudyNote[] {
 }
 
 function commit(notes: StudyNote[]): void {
+  if (typeof localStorage !== "undefined") localStorage.setItem(KEY, JSON.stringify(notes));
   notesCache = notes;
-  try {
-    if (typeof localStorage !== "undefined") {
-      localStorage.setItem(KEY, JSON.stringify(notes));
-    }
-  } catch (e) {
-    console.warn("[education] failed to save study notes", e);
-  }
   for (const listener of listeners) listener();
 }
 
@@ -48,10 +42,10 @@ export function getStudyNotes(itemId?: string): StudyNote[] {
 }
 
 export function useStudyNotes(itemId?: string): StudyNote[] {
-  return useSyncExternalStore(
-    subscribeNotes,
-    () => getStudyNotes(itemId),
-    () => getStudyNotes(itemId),
+  const notes = useSyncExternalStore(subscribeNotes, getStudyNotes, getStudyNotes);
+  return useMemo(
+    () => (itemId ? notes.filter((note) => note.itemId === itemId) : notes),
+    [notes, itemId],
   );
 }
 
@@ -83,9 +77,15 @@ export function reviewStudyNote(id: string, rating: FSRSRating): void {
     existing.map((n) => {
       if (n.id !== id) return n;
       const currentFSRS = n.fsrs ?? createInitialCard(n.createdAt);
+      const reviewedAt = Date.now();
+      const after = scheduleReview(currentFSRS, rating, reviewedAt);
       return {
         ...n,
-        fsrs: scheduleReview(currentFSRS, rating),
+        fsrs: after,
+        reviewHistory: [
+          ...(n.reviewHistory ?? []),
+          { reviewedAt, rating, before: currentFSRS, after, engine: FSRS_ENGINE },
+        ],
       };
     }),
   );
@@ -96,16 +96,18 @@ export function deleteStudyNote(id: string): void {
   commit(existing.filter((note) => note.id !== id));
 }
 
-export function importNotesFromJson(
-  rawText: string,
-): { success: boolean; count: number; error?: string } {
+export function importNotesFromJson(rawText: string): {
+  success: boolean;
+  count: number;
+  error?: string;
+} {
   try {
     const parsed = JSON.parse(rawText);
     const candidateArray: any[] = Array.isArray(parsed)
       ? parsed
       : Array.isArray(parsed.notes)
-      ? parsed.notes
-      : [parsed];
+        ? parsed.notes
+        : [parsed];
 
     const validNotes: StudyNote[] = [];
     const now = Date.now();
@@ -118,7 +120,9 @@ export function importNotesFromJson(
       if (!markdown.trim() && !item.snapshotDataUrl) continue;
 
       const note: StudyNote = {
-        id: String(item.id || `imported_note_${now}_${i}_${Math.random().toString(36).slice(2, 6)}`),
+        id: String(
+          item.id || `imported_note_${now}_${i}_${Math.random().toString(36).slice(2, 6)}`,
+        ),
         itemId: String(item.itemId || item.courseId || "external_resource"),
         itemTitle: String(item.itemTitle || item.title || item.course || "Imported Study Deck"),
         timestampSec: typeof item.timestampSec === "number" ? item.timestampSec : 0,
@@ -128,6 +132,7 @@ export function importNotesFromJson(
         createdAt: typeof item.createdAt === "number" ? item.createdAt : now,
         occlusions: Array.isArray(item.occlusions) ? item.occlusions : undefined,
         fsrs: item.fsrs && typeof item.fsrs === "object" ? item.fsrs : createInitialCard(now),
+        reviewHistory: Array.isArray(item.reviewHistory) ? item.reviewHistory : [],
         highYield: Boolean(item.highYield ?? true),
         topic: item.topic ? String(item.topic) : undefined,
       };
@@ -136,7 +141,11 @@ export function importNotesFromJson(
     }
 
     if (validNotes.length === 0) {
-      return { success: false, count: 0, error: "No valid study notes or flashcards found in JSON file." };
+      return {
+        success: false,
+        count: 0,
+        error: "No valid study notes or flashcards found in JSON file.",
+      };
     }
 
     const existing = readNotes();
@@ -174,7 +183,8 @@ export function exportNotesAsMarkdown(input?: string | StudyNote[]): string {
   const notes = Array.isArray(input) ? input : getStudyNotes(input);
   if (!notes.length) return "# Study Notes\n\nNo notes recorded yet.";
 
-  const title = !Array.isArray(input) && input && notes[0] ? notes[0].itemTitle : "Argus Lecture Study Notes";
+  const title =
+    !Array.isArray(input) && input && notes[0] ? notes[0].itemTitle : "Argus Lecture Study Notes";
   const lines: string[] = [
     `# ${title}`,
     `*Exported from Argus on ${new Date().toLocaleDateString()} at ${new Date().toLocaleTimeString()}*`,
@@ -190,7 +200,9 @@ export function exportNotesAsMarkdown(input?: string | StudyNote[]): string {
       lines.push("");
     }
     if (note.occlusions && note.occlusions.length > 0) {
-      lines.push(`> 🧠 **Image Occlusion Card**: Contains ${note.occlusions.length} masked active-recall regions.`);
+      lines.push(
+        `> 🧠 **Image Occlusion Card**: Contains ${note.occlusions.length} masked active-recall regions.`,
+      );
       lines.push("");
     }
     lines.push(note.markdown);

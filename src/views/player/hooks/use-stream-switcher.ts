@@ -165,7 +165,9 @@ export function useStreamSwitcher(params: {
           readResumeMs(src.meta.id, src.episode?.season, src.episode?.episode) / 1000;
         const curDur = snapRef.current.durationSec;
         const currentIsStub = curDur > 0 && curDur < SHORT_PLAYBACK_SEC;
-        const resumeAt = !currentIsStub && current >= 0 ? current : savedSec;
+        // A failed decoder can reset the shared clock to zero before a recovery.
+        const pausedAtStart = snapRef.current.status === "paused" && current === 0;
+        const resumeAt = !currentIsStub && (current > 0 || pausedAtStart) ? current : savedSec;
         await transitionStream(
           b,
           {
@@ -182,7 +184,7 @@ export function useStreamSwitcher(params: {
           {
             ...liveSourceRef.current,
             url: liveUrl,
-            startAtSec: Math.max(0, current),
+            startAtSec: Math.max(0, resumeAt),
             startPaused: snapRef.current.status === "paused",
           },
           snapRef.current,
