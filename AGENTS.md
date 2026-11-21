@@ -66,6 +66,16 @@ Keep business logic outside React components when it can be expressed as a reusa
 - Inputs become editable only after explicit activation.
 - Preserve the user's configured hotkeys.
 
+## UI, Theme & Design Standards
+
+Always maintain Argus and Harbor UI design standards across every screen, dialog, and component:
+
+- **Theme Semantic Tokens**: Always use semantic design tokens (`--color-canvas`, `--color-surface`, `--color-elevated`, `--color-raised`, `--color-ink`, `--color-ink-muted`, `--color-ink-subtle`, `--color-accent`, `--color-edge`, `--color-edge-soft`). Never hardcode raw hex colors or stark contrast blocks that break active community themes (e.g. Nord, Tokyo Night, Dracula, Royal, Noir, Forest).
+- **Modal Architecture**: Important dialogs (updates, confirmation, auth, source setup) must be centered on-screen with a dark glassmorphic backdrop blur (`backdrop-blur-md`), generous padding, rounded corners (`rounded-2xl` / `rounded-3xl`), and clear primary/secondary hierarchy. Avoid cramped bottom-corner floaters for primary dialogs.
+- **Micro-Interactions & Fluidity**: Maintain tactile, high-polish feedback everywhere: smooth progress transitions, subtle hover/active states (`active:scale-[0.98]`), pill toggles, and clean icon alignments.
+- **Scroll & Layout Hygiene**: Enforce strict z-indexing and solid/blurred background masking on headers, topbars, and sticky titles. Content must never bleed, overlap, or clip awkwardly under window controls or titlebars.
+- **Typography**: Respect editorial display hierarchy (`Fraunces` / `Sentient` for prominent headlines, `Onest` / `Inter` / `Switzer` for body and UI copy).
+
 ## Reference Repositories
 
 Use these repositories as implementation references:
