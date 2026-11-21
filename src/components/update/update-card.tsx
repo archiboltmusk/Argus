@@ -57,39 +57,47 @@ export function UpdateCard() {
 
   return (
     <div
-      style={{
-        bottom:
-          "calc(1.25rem + var(--argus-music-dock, 0px) + var(--argus-viewport-bottom, 0px))",
+      className="fixed inset-0 z-[150] flex items-center justify-center bg-black/65 p-4 backdrop-blur-md transition-opacity duration-200"
+      onClick={(e) => {
+        if (e.target === e.currentTarget && u.status !== "installing") closeUpdatePanel();
       }}
-      className={`fixed bottom-5 end-5 z-[120] w-[372px] max-w-[calc(100vw-2.5rem)] transition-all duration-300 ${
-        shown ? "translate-y-0 opacity-100" : "translate-y-3 opacity-0"
-      }`}
     >
-      <div className="overflow-hidden rounded-2xl border border-edge bg-elevated shadow-[0_24px_70px_rgba(0,0,0,0.5)]">
-        <div className="flex items-start gap-3 px-5 pt-4 pb-3">
+      <div
+        className={`w-full max-w-[500px] overflow-hidden rounded-[26px] border border-edge bg-elevated shadow-[0_32px_90px_rgba(0,0,0,0.7)] transition-all duration-300 ${
+          shown ? "scale-100 opacity-100" : "scale-95 opacity-0"
+        }`}
+      >
+        <div className="flex items-start gap-3.5 px-6 pt-5 pb-3">
           <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-accent/15 text-accent">
             {u.status === "installing" ? (
               <Loader2 size={22} className="animate-spin" />
             ) : (
-              <ArrowUpCircle size={22} strokeWidth={2} />
+              <ArrowUpCircle size={22} strokeWidth={2.2} />
             )}
           </div>
           <div className="flex min-w-0 flex-1 flex-col">
-            <span className="text-[15px] font-semibold text-ink">
-              {u.intent === "return-beta"
-                ? t("Return to beta")
-                : u.status === "downloaded"
-                  ? t("update.ready")
-                  : u.status === "installing"
-                    ? t("update.installing")
-                    : u.status === "downloading"
-                      ? t("update.downloading")
-                      : u.status === "error"
-                        ? u.installFailed
-                          ? t("Finish updating Argus")
-                          : t("update.failed")
-                        : t("update.available")}
-            </span>
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-[17px] font-semibold text-ink">
+                {u.intent === "return-beta"
+                  ? t("Return to beta")
+                  : u.status === "downloaded"
+                    ? t("update.ready")
+                    : u.status === "installing"
+                      ? t("update.installing")
+                      : u.status === "downloading"
+                        ? t("update.downloading")
+                        : u.status === "error"
+                          ? u.installFailed
+                            ? t("Finish updating Argus")
+                            : t("update.failed")
+                          : t("update.available")}
+              </span>
+              {u.version && (
+                <span className="rounded-full bg-accent/15 px-2.5 py-0.5 text-[11px] font-semibold text-accent">
+                  Argus {u.version}
+                </span>
+              )}
+            </div>
             {u.version && (
               <span className="text-[12.5px] text-ink-subtle">
                 {u.channel === "experimental" && u.experimentalVersion
@@ -108,16 +116,16 @@ export function UpdateCard() {
               className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-ink-subtle transition-colors hover:bg-raised hover:text-ink"
             >
               {u.status === "downloading" ? (
-                <ChevronDown size={16} strokeWidth={2.2} />
+                <ChevronDown size={18} strokeWidth={2.2} />
               ) : (
-                <X size={16} strokeWidth={2.2} />
+                <X size={18} strokeWidth={2.2} />
               )}
             </button>
           )}
         </div>
 
         {u.handoff && u.status !== "error" && (
-          <p className="mx-5 mb-2 text-[12px] leading-relaxed text-ink-subtle">
+          <p className="mx-6 mb-3 text-[13px] leading-relaxed text-ink-muted">
             {u.handoff.verifiable
               ? t(
                   "This one also replaces Argus's bundled players and tools, so it installs through Argus Shipyard. Argus closes, the installer finishes, then Argus reopens.",
@@ -129,11 +137,11 @@ export function UpdateCard() {
         )}
 
         {["available", "downloading", "downloaded"].includes(u.status) && (rich || u.notes) && (
-          <div className="mx-5 mb-1 max-h-[248px] overflow-y-auto rounded-xl border border-edge-soft/60 bg-canvas/40 px-3.5 py-3">
+          <div className="mx-6 mb-3 max-h-[220px] overflow-y-auto rounded-xl border border-edge-soft/60 bg-canvas/60 px-4 py-3">
             {rich ? (
               <RichNote note={rich} />
             ) : (
-              <p className="whitespace-pre-line text-[12.5px] leading-relaxed text-ink-muted">
+              <p className="whitespace-pre-line text-[13px] leading-relaxed text-ink-muted">
                 {u.notes?.trim()}
               </p>
             )}
@@ -141,7 +149,7 @@ export function UpdateCard() {
         )}
 
         {(u.status === "downloading" || u.status === "downloaded") && (
-          <div className="px-5 pb-1">
+          <div className="px-6 pb-2">
             <div className="h-2 overflow-hidden rounded-full bg-raised">
               <div
                 className={`h-full rounded-full bg-accent transition-[width] duration-300 ${
@@ -150,7 +158,7 @@ export function UpdateCard() {
                 style={determinate ? { width: `${Math.max(4, pct)}%` } : undefined}
               />
             </div>
-            <div className="mt-1.5 flex items-center justify-between text-[11.5px] text-ink-subtle">
+            <div className="mt-2 flex items-center justify-between text-[12px] font-medium text-ink-subtle">
               <span>
                 {u.status === "downloaded"
                   ? t("update.downloadComplete")
@@ -161,13 +169,15 @@ export function UpdateCard() {
                       })
                     : t("update.fetching")}
               </span>
-              {u.status === "downloading" && determinate && <span>{pct}%</span>}
+              {u.status === "downloading" && determinate && (
+                <span className="font-semibold text-accent">{pct}%</span>
+              )}
             </div>
           </div>
         )}
 
         {u.status === "error" && (
-          <div className="mx-5 mb-1 rounded-xl border border-danger/40 bg-danger/10 px-3.5 py-3 text-[12.5px] leading-relaxed text-ink-muted">
+          <div className="mx-6 mb-3 rounded-xl border border-danger/40 bg-danger/10 px-4 py-3 text-[12.5px] leading-relaxed text-ink-muted">
             {u.error ?? t("update.errorServer")}
             {u.installFailed && u.channel !== "experimental" && u.intent !== "return-beta" && (
               <span className="mt-1.5 block text-ink-subtle">
@@ -179,7 +189,7 @@ export function UpdateCard() {
           </div>
         )}
 
-        <div className="flex items-center justify-end gap-2 px-5 pb-4 pt-3">
+        <div className="flex items-center justify-end gap-2 px-6 pb-5 pt-3">
           {u.status === "available" && (
             <>
               <GhostButton onClick={dismissUpdate}>{t("update.later")}</GhostButton>
@@ -225,9 +235,14 @@ export function UpdateCard() {
             </>
           )}
           {u.status === "downloading" && (
-            <span className="flex items-center gap-1.5 text-[12px] text-ink-subtle">
-              <Check size={14} strokeWidth={2.4} className="text-accent" /> {t("update.keepUsing")}
-            </span>
+            <div className="flex w-full items-center justify-center">
+              <button
+                onClick={closeUpdatePanel}
+                className="inline-flex items-center gap-2 rounded-full border border-edge bg-raised/80 px-5 py-2.5 text-[13.5px] font-medium text-ink transition-colors hover:border-edge-soft hover:bg-raised"
+              >
+                <Check size={15} strokeWidth={2.4} className="text-accent" /> {t("update.keepUsing")}
+              </button>
+            </div>
           )}
         </div>
       </div>

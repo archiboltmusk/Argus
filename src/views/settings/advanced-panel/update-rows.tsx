@@ -144,7 +144,17 @@ export function UpdatesRow() {
       }
       desc={status}
     >
-      {ready ? (
+      {u.status === "downloading" ? (
+        <button type="button" onClick={openUpdatePanel} className={ROW_ACTION}>
+          <span className="h-2 w-2 rounded-full bg-accent animate-pulse" />
+          {t("View progress")}
+        </button>
+      ) : u.status === "downloaded" ? (
+        <button type="button" onClick={openUpdatePanel} className={ROW_ACTION_PRIMARY}>
+          <RotateCw size={16} strokeWidth={2.2} />
+          {t("Restart & install")}
+        </button>
+      ) : ready ? (
         <button type="button" onClick={openUpdatePanel} className={ROW_ACTION_PRIMARY}>
           <Download size={16} strokeWidth={2.2} />
           {t("Update now")}

@@ -4841,6 +4841,8 @@ html[data-theme-card="crunch"][dir="rtl"] .argus-profile-dropdown {
   min-inline-size: 0;
   padding-inline: var(--hset-pad-inline);
   background: var(--color-canvas);
+  position: relative;
+  z-index: 10;
 }
 
 .hset-browse-toggle {
