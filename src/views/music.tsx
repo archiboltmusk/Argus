@@ -10,7 +10,8 @@ import { MusicExploreBands } from "./music/music-explore-bands";
 import { MusicBillboardCharts } from "@/components/music/music-discovery-charts";
 import { MusicAudioSettings } from "@/components/music/music-audio-settings";
 import { MusicSpeakers } from "@/components/music/music-speakers";
-import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Component, lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { MusicHomeHeroSkeleton } from "@/components/music/music-skeletons";
 import { ChevronLeft, LoaderCircle, Music2, X } from "@/components/icons/music-icons";
 import { BackToTop } from "@/components/back-to-top";
 import { MediaStartPage } from "@/components/media-start-page";
@@ -135,15 +136,52 @@ type Notice = { kind: "busy" | "info" | "error"; text: string };
 
 const MusicQuickListen = lazy(() => import("@/components/music/music-quick-listen").then(module => ({ default: module.MusicQuickListen })));
 
+class MusicErrorBoundary extends Component<{ children: ReactNode }, { error: Error | null }> {
+  state = { error: null as Error | null };
+  static getDerivedStateFromError(error: Error) {
+    return { error };
+  }
+  componentDidCatch(error: unknown) {
+    console.error("[MusicView] Render error caught:", error);
+  }
+  render() {
+    if (this.state.error) {
+      return (
+        <main className="w-full h-full min-h-0 min-w-0 flex-1 pt-28 px-5 sm:px-8 text-ink bg-canvas flex flex-col items-center justify-center gap-4">
+          <div className="flex flex-col items-center gap-3 text-center max-w-md">
+            <div className="p-3 rounded-full bg-surface-raised border border-edge">
+              <Music2 size={28} className="text-accent" />
+            </div>
+            <h2 className="text-lg font-semibold">Music Interface Recovery</h2>
+            <p className="text-sm text-ink-muted">
+              {this.state.error.message || "An issue occurred while rendering the music view. Click below to recover."}
+            </p>
+            <button
+              type="button"
+              className="mt-2 px-5 py-2.5 rounded-full bg-accent text-white font-medium text-sm transition-transform active:scale-95 hover:brightness-110"
+              onClick={() => this.setState({ error: null })}
+            >
+              Reload Music View
+            </button>
+          </div>
+        </main>
+      );
+    }
+    return this.props.children;
+  }
+}
+
 export function MusicView({ active }: { active: boolean; shellBackAvailable?: boolean }) {
   return (
-    <MusicConnectionsProvider active={active}>
-      <MusicSourcePickerProvider active={active}>
-        <MusicPlaylistPickerProvider active={active}>
-          <MusicViewContent active={active} />
-        </MusicPlaylistPickerProvider>
-      </MusicSourcePickerProvider>
-    </MusicConnectionsProvider>
+    <MusicErrorBoundary>
+      <MusicConnectionsProvider active={active}>
+        <MusicSourcePickerProvider active={active}>
+          <MusicPlaylistPickerProvider active={active}>
+            <MusicViewContent active={active} />
+          </MusicPlaylistPickerProvider>
+        </MusicSourcePickerProvider>
+      </MusicConnectionsProvider>
+    </MusicErrorBoundary>
   );
 }
 
@@ -1171,6 +1209,29 @@ function MusicViewContent({ active }: { active: boolean }) {
     data.libraryStatus === "error" &&
     player.recents.length === 0 &&
     player.likedTracks.length === 0;
+
+  // While connections status is loading and connections are not yet settled,
+  // show the skeleton placeholder so the full heavy catalog doesn't mount/unmount thrash.
+  if (connectionsStatus === "loading" && (!connections || connections.length === 0)) {
+    return (
+      <main className="min-h-0 min-w-0 w-full flex-1 overflow-x-hidden px-5 pt-28 pb-14 text-ink bg-canvas sm:px-8 lg:px-12">
+        <div className="mx-auto flex w-full max-w-[1480px] flex-col gap-6 pb-24">
+          <section data-scroll-anchor="mast">
+            <MusicMast
+              initialQuery=""
+              onSubmit={runSearch}
+              onClear={clearSearch}
+              onPick={(item) => openItem(item, [item])}
+              searching={false}
+            />
+          </section>
+          <div className="flex flex-col gap-8">
+            <MusicHomeHeroSkeleton />
+          </div>
+        </div>
+      </main>
+    );
+  }
 
   // First run has nothing to play from, so the music home would be an empty shell.
   // Opening connections keeps the full page mounted while a source is being added.

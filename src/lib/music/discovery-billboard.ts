@@ -139,12 +139,12 @@ export async function loadBillboardChart(
   const controller = new AbortController();
   const abort = () => controller.abort();
   signal?.addEventListener("abort", abort, { once: true });
-  const timer = setTimeout(abort, 15000);
+  const timer = setTimeout(abort, 6000);
   try {
     const response = await safeFetchBytes(
       billboardChartUrl(id),
       { signal: controller.signal, credentials: "omit" },
-      15000,
+      6000,
       MAX_PAGE_BYTES,
     );
     if (!response.ok) throw new Error(`Billboard: ${response.status}`);
