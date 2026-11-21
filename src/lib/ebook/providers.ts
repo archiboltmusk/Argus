@@ -282,16 +282,39 @@ function pluginContent(value: unknown): EBookChapterContent {
 }
 
 function cleanSourceText(value: string): string {
-  const text = value.replace(/\r/g, "").trim();
+  const normalizedHtml = value
+    .replace(/<style[\s\S]*?<\/style>/gi, "")
+    .replace(/<script[\s\S]*?<\/script>/gi, "")
+    .replace(/<br\s*\/?>/gi, "\n")
+    .replace(/<\/(?:p|div|section|article|h[1-6]|li|tr|blockquote)>/gi, "\n\n")
+    .replace(/<[^>]+>/g, "")
+    .replace(/&nbsp;/gi, " ")
+    .replace(/&quot;/gi, '"')
+    .replace(/&(?:apos|#39|rsquo|lsquo);/gi, "'")
+    .replace(/&(?:rdquo|ldquo);/gi, '"')
+    .replace(/&mdash;/gi, "—")
+    .replace(/&ndash;/gi, "–")
+    .replace(/&hellip;/gi, "…")
+    .replace(/&amp;/gi, "&")
+    .replace(/&lt;/gi, "<")
+    .replace(/&gt;/gi, ">")
+    .replace(/&#(\d+);/g, (_, dec) => String.fromCharCode(Number(dec)))
+    .replace(/&#x([0-9a-f]+);/gi, (_, hex) => String.fromCharCode(parseInt(hex, 16)))
+    .replace(/\r/g, "")
+    .replace(/[ \t]+/g, " ")
+    .replace(/ *\n */g, "\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+
   const boundary = [
     /(?:^|\s)(?:background|border|color|cursor|display|font-size|line-height|opacity|position)\s*:\s*[^;{}]+;\s*(?:[\w-]+\s*:|})/i,
     /\b(?:document\.(?:getElementById|querySelector)|function\s+[\w$]+\s*\(|querySelectorAll\s*\(|classList\.(?:add|remove)\s*\()/i,
     /(?:^|\s)[.#][\w-]+(?::[\w-]+)?\s*\{(?=[^}]{0,400}\b(?:background|border|color|display|position)\s*:)/i,
   ].reduce((cut, pattern) => {
-    const index = text.search(pattern);
+    const index = normalizedHtml.search(pattern);
     return index < 0 ? cut : Math.min(cut, index);
-  }, text.length);
-  const cleaned = text.slice(0, boundary).trim();
+  }, normalizedHtml.length);
+  const cleaned = normalizedHtml.slice(0, boundary).trim();
   return /[\p{L}\p{N}]/u.test(cleaned) ? cleaned : "";
 }
 

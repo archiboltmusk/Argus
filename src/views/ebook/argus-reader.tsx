@@ -34,7 +34,7 @@ import { useSettings } from "@/lib/settings";
 import { useWindowFullscreen } from "@/lib/use-window-fullscreen";
 import { copyText } from "@/lib/clipboard-text";
 import type { EBookChapter, EBookChapterContent } from "@/lib/ebook/providers";
-import { ebookTextIdentity } from "@/lib/ebook/chapter-locations";
+import { ebookParagraphs, ebookTextIdentity } from "@/lib/ebook/chapter-locations";
 import { createEBookFlipPages, type EBookFlipPages } from "@/lib/ebook/book-pages";
 import {
   addEBookBookmark,
@@ -670,12 +670,7 @@ export function ArgusReader({
   const progressId = `${chapter.id}:argus`;
   const textIdentity = useMemo(() => ebookTextIdentity(readerText), [readerText]);
   const paragraphs = useMemo(
-    () =>
-      readerText
-        .replace(/\r/g, "")
-        .split(/\n{2,}/)
-        .map((value) => value.replace(/\n/g, " ").trim())
-        .filter(Boolean),
+    () => ebookParagraphs(readerText),
     [readerText],
   );
   const resumeVolumeLabel =

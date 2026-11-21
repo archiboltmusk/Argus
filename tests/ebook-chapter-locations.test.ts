@@ -3,6 +3,7 @@ import test from "node:test";
 import {
   ebookLegacyNavigation,
   ebookLocationResolver,
+  ebookParagraphs,
   ebookTextIdentity,
   type EBookChapterLocationSource,
 } from "../src/lib/ebook/chapter-locations.ts";
@@ -203,4 +204,15 @@ test("legacy Next continues inside a real chapter split across EPUB files", () =
 
 test("text identities distinguish both halves of UTF-16 surrogate pairs", () => {
   assert.notEqual(ebookTextIdentity("😀"), ebookTextIdentity("😁"));
+});
+
+test("ebookParagraphs cleanly normalizes HTML breaks and strips raw tags from web novel sources", () => {
+  const rawWebNovel =
+    '<br/>Dressed in black, she seemed like someone who had been swallowed...<br/><br/>"What do you want with me?"<br/><br/>Lisa spoke curtly.<br/>';
+  const paragraphs = ebookParagraphs(rawWebNovel);
+  assert.deepEqual(paragraphs, [
+    "Dressed in black, she seemed like someone who had been swallowed...",
+    '"What do you want with me?"',
+    "Lisa spoke curtly.",
+  ]);
 });

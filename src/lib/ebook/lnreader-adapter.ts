@@ -285,7 +285,35 @@ export function buildLNReaderSource(
     content: function (chapterId) {
       if (typeof __inst.parseChapter !== "function") return Promise.resolve({ text: "" });
       return Promise.resolve(__inst.parseChapter(String(chapterId))).then(function (res) {
-        return { text: typeof res === "string" ? res : (res && res.text) || "" };
+        var raw = typeof res === "string" ? res : (res && (res.chapterText || res.text)) || "";
+        var cleaned = raw
+          .replace(/<style[\s\S]*?<\/style>/gi, "")
+          .replace(/<script[\s\S]*?<\/script>/gi, "")
+          .replace(/<br\s*\/?>/gi, "\n")
+          .replace(/<\/(?:p|div|section|article|h[1-6]|li|tr|blockquote)>/gi, "\n\n")
+          .replace(/<[^>]+>/g, "")
+          .replace(/&nbsp;/gi, " ")
+          .replace(/&quot;/gi, '"')
+          .replace(/&(?:apos|#39|rsquo|lsquo);/gi, "'")
+          .replace(/&(?:rdquo|ldquo);/gi, '"')
+          .replace(/&mdash;/gi, "—")
+          .replace(/&ndash;/gi, "–")
+          .replace(/&hellip;/gi, "…")
+          .replace(/&amp;/gi, "&")
+          .replace(/&lt;/gi, "<")
+          .replace(/&gt;/gi, ">")
+          .replace(/&#(\d+);/g, function (_, dec) {
+            return String.fromCharCode(Number(dec));
+          })
+          .replace(/&#x([0-9a-f]+);/gi, function (_, hex) {
+            return String.fromCharCode(parseInt(hex, 16));
+          })
+          .replace(/\r/g, "")
+          .replace(/[ \t]+/g, " ")
+          .replace(/ *\n */g, "\n")
+          .replace(/\n{3,}/g, "\n\n")
+          .trim();
+        return { text: cleaned };
       });
     }
   };

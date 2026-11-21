@@ -4869,6 +4869,7 @@ html[data-theme-card="crunch"][dir="rtl"] .argus-profile-dropdown {
   }
 
   .hset-heading {
+    grid-row: 1 / 3;
     align-items: flex-start;
     padding-block-start: var(--hset-heading-inset);
   }
@@ -4928,7 +4929,7 @@ html[data-theme-card="crunch"][dir="rtl"] .argus-profile-dropdown {
     grid-row: 3;
   }
   .hset-grid > .hset-main {
-    grid-row: 2 / 4;
+    grid-row: 3;
   }
 }
 
