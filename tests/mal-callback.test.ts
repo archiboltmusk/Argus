@@ -25,20 +25,26 @@ function authFixture() {
   let calls = 0;
   let saved: unknown;
   const api: Record<string, any> = {};
+  const fetchImpl = async (url: string) => {
+    calls++;
+    return {
+      ok: true,
+      json: async () =>
+        url.includes("token")
+          ? { access_token: "fixture-access", refresh_token: "fixture-refresh", expires_in: 3600 }
+          : { name: "Fixture" },
+    };
+  };
   const deps: Record<string, unknown> = {
     "./config": { MAL_CLIENT_ID: "fixture", MAL_AUTHORIZE_URL: "https://mal.example/authorize", MAL_TOKEN_PROXY: "https://proxy.example/token" },
     "./session": { getSession: () => null, setSession: (value: unknown) => { saved = value; } },
     "@/lib/active-profile-id": { activeProfileId: () => profile },
+    "@/lib/safe-fetch": { safeFetch: fetchImpl },
   };
   new Function("require", "exports", "sessionStorage", "window", "fetch", compiled)(
     (name: string) => deps[name], api,
     { getItem: (key: string) => values.get(key) ?? null, setItem: (key: string, value: string) => values.set(key, value), removeItem: (key: string) => values.delete(key) },
-    {}, async (url: string) => {
-      calls++;
-      return { ok: true, json: async () => url.includes("token")
-        ? { access_token: "fixture-access", refresh_token: "fixture-refresh", expires_in: 3600 }
-        : { name: "Fixture" } };
-    },
+    {}, fetchImpl,
   );
   return { api, calls: () => calls, saved: () => saved, switchProfile: () => { profile = "other"; } };
 }
