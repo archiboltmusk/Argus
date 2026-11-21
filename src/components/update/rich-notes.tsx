@@ -22,15 +22,26 @@ export function RichNote({ note }: { note: ReleaseNote }) {
             </span>
           )}
           <ul className="flex flex-col gap-1.5">
-            {section.items.map((item, j) => (
-              <li key={j} className="flex gap-2.5 text-[13px] leading-relaxed text-ink">
-                <span
-                  aria-hidden
-                  className="mt-[7px] h-1.5 w-1.5 shrink-0 rounded-full bg-accent"
-                />
-                <span>{item}</span>
-              </li>
-            ))}
+            {section.items.map((item, j) => {
+              const colonIdx = item.indexOf(":");
+              const hasPrefix = colonIdx > 0 && colonIdx < 50;
+              return (
+                <li key={j} className="flex gap-2.5 text-[13px] leading-relaxed text-ink">
+                  <span
+                    aria-hidden
+                    className="mt-[7px] h-1.5 w-1.5 shrink-0 rounded-full bg-accent"
+                  />
+                  {hasPrefix ? (
+                    <span>
+                      <strong className="font-semibold text-ink">{item.slice(0, colonIdx + 1)}</strong>
+                      <span className="text-ink-muted">{item.slice(colonIdx + 1)}</span>
+                    </span>
+                  ) : (
+                    <span>{item}</span>
+                  )}
+                </li>
+              );
+            })}
           </ul>
         </div>
       ))}

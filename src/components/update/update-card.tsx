@@ -76,38 +76,29 @@ export function UpdateCard() {
             )}
           </div>
           <div className="flex min-w-0 flex-1 flex-col">
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="text-[17px] font-semibold text-ink">
-                {u.intent === "return-beta"
-                  ? t("Return to beta")
-                  : u.status === "downloaded"
-                    ? t("update.ready")
-                    : u.status === "installing"
-                      ? t("update.installing")
-                      : u.status === "downloading"
-                        ? t("update.downloading")
-                        : u.status === "error"
-                          ? u.installFailed
-                            ? t("Finish updating Argus")
-                            : t("update.failed")
-                          : t("update.available")}
+            <h2 className="text-[18px] font-bold tracking-tight text-ink">
+              {u.intent === "return-beta"
+                ? t("Return to beta")
+                : u.status === "downloaded"
+                  ? t("update.ready")
+                  : u.status === "installing"
+                    ? t("update.installing")
+                    : u.status === "downloading"
+                      ? t("update.downloading")
+                      : u.status === "error"
+                        ? u.installFailed
+                          ? t("Finish updating Argus")
+                          : t("update.failed")
+                        : t("update.available")}
+            </h2>
+            <div className="mt-0.5 flex items-center gap-2">
+              <span className="text-[13px] font-medium text-ink-muted">
+                Argus {u.version ?? __APP_VERSION__}
               </span>
-              {u.version && (
-                <span className="rounded-full bg-accent/15 px-2.5 py-0.5 text-[11px] font-semibold text-accent">
-                  Argus {u.version}
-                </span>
-              )}
+              <span className="rounded-md bg-accent/20 px-2 py-0.5 text-[10.5px] font-bold uppercase tracking-wider text-accent">
+                {u.channel === "experimental" ? "Experimental" : "Beta"}
+              </span>
             </div>
-            {u.version && (
-              <span className="text-[12.5px] text-ink-subtle">
-                {u.channel === "experimental" && u.experimentalVersion
-                  ? t("Experimental {version} · Build {buildId}", {
-                      version: u.experimentalVersion,
-                      buildId: u.buildId ?? "—",
-                    })
-                  : t("update.argusVersion", { version: u.version })}
-              </span>
-            )}
           </div>
           {u.status !== "installing" && (
             <button
@@ -235,10 +226,10 @@ export function UpdateCard() {
             </>
           )}
           {u.status === "downloading" && (
-            <div className="flex w-full items-center justify-center">
+            <div className="flex w-full items-center justify-center pb-1">
               <button
                 onClick={closeUpdatePanel}
-                className="inline-flex items-center gap-2 rounded-full border border-edge bg-raised/80 px-5 py-2.5 text-[13.5px] font-medium text-ink transition-colors hover:border-edge-soft hover:bg-raised"
+                className="inline-flex items-center gap-2 rounded-full border border-edge/50 bg-raised/60 px-5 py-2 text-[13px] font-medium text-ink-muted transition-all hover:border-edge hover:bg-raised hover:text-ink"
               >
                 <Check size={15} strokeWidth={2.4} className="text-accent" /> {t("update.keepUsing")}
               </button>
