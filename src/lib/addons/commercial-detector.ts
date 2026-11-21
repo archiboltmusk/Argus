@@ -2,18 +2,20 @@ import type { Addon } from "@/lib/addons";
 
 export type AddonManifest = Addon["manifest"];
 
+const ZERO_WIDTH_RX = /[\u200B-\u200D\uFEFF]/g;
+
 /**
  * Patterns matching known commercial / subscription-gated addons that require
  * an external paid account or trial key, returning paywall stubs without one.
  */
 const COMMERCIAL_ID_OR_NAME_RX =
-  /\b(roxxy|justporn|adult[\s._-]*video[\s._-]*hd|paywall|paid[\s._-]*streams|subscription[\s._-]*hub|vip[\s._-]*pass)\b/i;
+  /\b(roxxy|just[\s._-]*porn|adult[\s._-]*video[\s._-]*hd|paywall|paid[\s._-]*streams|subscription[\s._-]*hub|vip[\s._-]*pass|commercial[\s._-]*streams)\b/i;
 
 const COMMERCIAL_DESC_RX =
-  /(?:all-access\s+is\s+\$|\$\d+\s+lifetime|paid\s+(?:subscription|membership|add-on)|subscription\s+required|requires?\s+(?:a\s+)?paid\s+(?:account|subscription)|1-hour\s+trial|free\s+for\s+1\s+hour|playback\s+is\s+locked|auto-activation)/i;
+  /(?:all-access\s+is\s+\$|\$\d+\s+lifetime|paid\s+(?:subscription|membership|add-on|access)|subscription\s+required|requires?\s+(?:a\s+)?paid\s+(?:account|subscription|token)|(?:1-hour|free\s+1-hour)\s+trial|playback\s+is\s+locked|auto-activation|vip\s+access\s+required|buy\s+subscription|paid\s+access\s+only|subscribe\s+to\s+unlock|unlock\s+all\s+titles)/i;
 
 const COMMERCIAL_URL_RX =
-  /(?:roxxyhub|justporn|adultvideohd|paywall-streams)/i;
+  /(?:roxxy[\s._-]*hub|roxxy|just[\s._-]*porn|adult[\s._-]*video[\s._-]*hd|paywall[\s._-]*streams)/i;
 
 export interface CommercialAddonInfo {
   isCommercial: boolean;
@@ -45,10 +47,10 @@ export function isCommercialAddon(
   }
 
   const manifest = "manifest" in target ? target.manifest : target;
-  const id = (("id" in target ? target.id : undefined) ?? manifest?.id ?? "").trim();
-  const name = (("name" in target ? target.name : undefined) ?? manifest?.name ?? id).trim();
-  const description = manifest?.description ?? ("description" in target ? target.description ?? "" : "");
-  const transportUrl = "transportUrl" in target ? target.transportUrl ?? "" : "";
+  const id = (("id" in target ? target.id : undefined) ?? manifest?.id ?? "").replace(ZERO_WIDTH_RX, "").trim();
+  const name = (("name" in target ? target.name : undefined) ?? manifest?.name ?? id).replace(ZERO_WIDTH_RX, "").trim();
+  const description = (manifest?.description ?? ("description" in target ? target.description ?? "" : "")).replace(ZERO_WIDTH_RX, "");
+  const transportUrl = ("transportUrl" in target ? target.transportUrl ?? "" : "").replace(ZERO_WIDTH_RX, "");
 
   if (COMMERCIAL_ID_OR_NAME_RX.test(id) || COMMERCIAL_ID_OR_NAME_RX.test(name)) {
     return {

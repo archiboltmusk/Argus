@@ -1,5 +1,10 @@
 // Newly introduced UI copy remains usable until each locale provides an override.
 const uiFallback: Record<string, string> = {
+  "Subscription marked active": "Subscription marked active",
+  "Subscription marked inactive (catalog only)": "Subscription marked inactive (catalog only)",
+  "Active subscription verified": "Active subscription verified",
+  "No active subscription - stream queries disabled": "No active subscription - stream queries disabled",
+  "Catalog Only": "Catalog Only",
   "Commercial Add-on": "Commercial Add-on",
   "Subscription Required": "Subscription Required",
   "This add-on requires an active paid membership or external subscription. Without a paid account, it returns payment and trial reminders instead of playable streams.": "This add-on requires an active paid membership or external subscription. Without a paid account, it returns payment and trial reminders instead of playable streams.",

@@ -31,6 +31,7 @@ export type Rejection = {
   reason: string;
 };
 
+const ZERO_WIDTH_RX = /[\u200B-\u200D\uFEFF]/g;
 const FILENAME_BLACKLIST = [".exe", ".zip", ".rar", ".lnk", ".scr", ".bat", ".iso", ".img"];
 const TRAILER_RX =
   /(?<![A-Za-z0-9])(?:trailer|teaser|tlr|trl|tra(?:iler)?|sneak[\s.\-_]?peek|preview|behind[\s.\-_]?the[\s.\-_]?scenes|featurette|making[\s.\-_]?of|deleted[\s.\-_]?scene|bloopers?|gag[\s.\-_]?reel|extras?|promo)(?![A-Za-z0-9])/i;
@@ -136,7 +137,8 @@ function checkOne(
   olderCatalog: boolean,
 ): string | null {
   const hasPlayableUrl = !!s.url || !!s.infoHash || !!s.ytId || !!s.externalUrl || !!s.nzbUrl;
-  const titleNameDesc = `${s.title ?? ""} ${s.name ?? ""} ${s.description ?? ""}`;
+  const rawTitleNameDesc = `${s.title ?? ""} ${s.name ?? ""} ${s.description ?? ""}`;
+  const titleNameDesc = rawTitleNameDesc.replace(ZERO_WIDTH_RX, "");
   if (!hasPlayableUrl) {
     return "no-playable-source";
   }

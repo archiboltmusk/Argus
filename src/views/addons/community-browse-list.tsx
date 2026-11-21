@@ -1,7 +1,8 @@
 import { ChevronRight, Loader2, Plus, Sparkles, Star, TrendingUp } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { AddonLogo, resolveAddonLogo } from "@/components/addon-logo";
-import { installAddon, manifestToConfigureUrl } from "@/lib/addon-store";
+import { installAddon, isAddonSubscribed, manifestToConfigureUrl } from "@/lib/addon-store";
+import { isCommercialAddon } from "@/lib/addons/commercial-detector";
 import { rememberPendingAddon } from "@/lib/addons-store/pending-detail";
 import { openInstallerViewport } from "@/components/installer-viewport";
 import { listAddons, risingEntryFor, useRising, type SAAddon } from "@/lib/providers/stremio-addons";
@@ -295,6 +296,11 @@ function CommunityRow({
   const install = async (e: React.MouseEvent) => {
     e.stopPropagation();
     if (!m?.id || busy) return;
+    const commercialCheck = isCommercialAddon(m ?? addon.manifestUrl);
+    if (commercialCheck.isCommercial && !isAddonSubscribed(addon.manifestUrl)) {
+      open();
+      return;
+    }
     const hints = (m as { behaviorHints?: { configurable?: boolean; configurationRequired?: boolean } })
       .behaviorHints;
     if (hints?.configurable === true || hints?.configurationRequired === true) {
@@ -330,6 +336,11 @@ function CommunityRow({
       <div className="flex min-w-0 flex-1 flex-col gap-1.5">
         <div className="flex flex-wrap items-center gap-2">
           <span className="truncate text-[16px] font-semibold text-ink">{name}</span>
+          {isCommercialAddon(m ?? addon.manifestUrl).isCommercial && (
+            <span className="inline-flex h-5 items-center gap-1 rounded-full bg-amber-500/15 px-2 text-[10.5px] font-bold text-amber-400 ring-1 ring-amber-500/30">
+              🔒 {t("Subscription Required")}
+            </span>
+          )}
           {addon.stars > 0 && (
             <span className="inline-flex h-5 items-center gap-1 rounded-full bg-canvas/70 px-1.5 text-[10.5px] font-bold text-accent ring-1 ring-accent/30">
               <Star size={9} strokeWidth={2.6} fill="currentColor" className="argus-rating-star" />

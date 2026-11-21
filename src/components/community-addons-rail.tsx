@@ -10,7 +10,8 @@ import {
   type SAAddon,
 } from "@/lib/providers/stremio-addons";
 import { useSettings } from "@/lib/settings";
-import { fetchManifestAt, installAddon, manifestToConfigureUrl } from "@/lib/addon-store";
+import { fetchManifestAt, installAddon, isAddonSubscribed, manifestToConfigureUrl } from "@/lib/addon-store";
+import { isCommercialAddon } from "@/lib/addons/commercial-detector";
 import { rememberPendingAddon } from "@/lib/addons-store/pending-detail";
 import { openInstallerViewport } from "@/components/installer-viewport";
 import { openUrl } from "@/lib/window";
@@ -231,6 +232,11 @@ function CommunityCard({
   const install = async (e: React.MouseEvent) => {
     e.stopPropagation();
     if (!m?.id || busy) return;
+    const commercialCheck = isCommercialAddon(m ?? addon.manifestUrl);
+    if (commercialCheck.isCommercial && !isAddonSubscribed(addon.manifestUrl)) {
+      openDetail();
+      return;
+    }
     setBusy(true);
     try {
       let hints = (
@@ -307,6 +313,11 @@ function CommunityCard({
           >
             {name}
           </button>
+          {isCommercialAddon(m ?? addon.manifestUrl).isCommercial && (
+            <span className="mt-1 inline-flex w-fit items-center gap-1 rounded-full bg-amber-500/15 px-2 py-0.5 text-[10px] font-bold text-amber-400 ring-1 ring-amber-500/30">
+              🔒 {t("Subscription Required")}
+            </span>
+          )}
           {description && (
             <span className="mt-0.5 line-clamp-2 text-[11.5px] leading-snug text-ink-subtle">
               {description}

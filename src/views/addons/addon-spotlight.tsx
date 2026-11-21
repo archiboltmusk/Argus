@@ -2,7 +2,8 @@ import { useEffect, useMemo, useState } from "react";
 import { ArrowUpRight, Check, Loader2, Plus, Star, TrendingUp } from "lucide-react";
 import { addonSiteUrl, isAdultAddon, listAddons, listRising, type SAAddon } from "@/lib/providers/stremio-addons";
 import { useSettings } from "@/lib/settings";
-import { fetchManifestAt, installAddon, manifestToConfigureUrl } from "@/lib/addon-store";
+import { fetchManifestAt, installAddon, isAddonSubscribed, manifestToConfigureUrl } from "@/lib/addon-store";
+import { isCommercialAddon } from "@/lib/addons/commercial-detector";
 import { rememberPendingAddon } from "@/lib/addons-store/pending-detail";
 import { openInstallerViewport } from "@/components/installer-viewport";
 import { openUrl } from "@/lib/window";
@@ -89,8 +90,20 @@ function SpotlightCard({
   const installed = !!m?.id && installedIds.has(m.id);
   const types = useMemo(() => (Array.isArray(m?.types) ? m!.types!.slice(0, 4) : []), [m?.types]);
 
+  const openDetail = () => {
+    if (m?.id && onOpen) {
+      rememberPendingAddon(m.id, addon.manifestUrl, addon.manifest);
+      onOpen(m.id);
+    } else openUrl(addonSiteUrl(addon.slug));
+  };
+
   const install = async () => {
     if (!m?.id || busy || installed) return;
+    const commercialCheck = isCommercialAddon(m ?? addon.manifestUrl);
+    if (commercialCheck.isCommercial && !isAddonSubscribed(addon.manifestUrl)) {
+      openDetail();
+      return;
+    }
     setBusy(true);
     try {
       let hints = (m as { behaviorHints?: { configurable?: boolean; configurationRequired?: boolean } })
@@ -153,6 +166,11 @@ function SpotlightCard({
               <Star size={12} strokeWidth={2.6} fill="currentColor" className="text-accent" />
               {addon.stars.toLocaleString()} {t("stars")}
               {types.length > 0 && <span className="text-white/45"> · {types.join(" · ")}</span>}
+              {isCommercialAddon(m ?? addon.manifestUrl).isCommercial && (
+                <span className="ms-2 inline-flex items-center gap-1 rounded-full bg-amber-500/20 px-2 py-0.5 text-[10.5px] font-bold text-amber-300 ring-1 ring-amber-500/40">
+                  🔒 {t("Subscription Required")}
+                </span>
+              )}
             </span>
           </div>
         </div>
@@ -180,12 +198,7 @@ function SpotlightCard({
           )}
           <button
             type="button"
-            onClick={() => {
-              if (m?.id && onOpen) {
-                rememberPendingAddon(m.id, addon.manifestUrl, addon.manifest);
-                onOpen(m.id);
-              } else openUrl(addonSiteUrl(addon.slug));
-            }}
+            onClick={openDetail}
             className="flex h-11 items-center gap-2 rounded-full bg-white/12 px-5 text-[13.5px] font-semibold text-white ring-1 ring-white/15 backdrop-blur-md transition-colors hover:bg-white/20"
           >
             {t("Details")}
