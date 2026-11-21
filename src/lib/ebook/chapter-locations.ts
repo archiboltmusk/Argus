@@ -10,7 +10,17 @@ export type EBookChapterLocationSource = {
 export function ebookParagraphs(text: string): string[] {
   return text
     .replace(/\r/g, "")
-    .replace(/<br\s*\/?>/gi, "\n")
+    .replace(/<br\s*\/?>|&lt;br\s*\/?&gt;/gi, "\n")
+    .replace(/<\/?(?:p|div|section|article|blockquote)[^>]*>|&lt;\/?(?:p|div|section|article|blockquote)[^&]*&gt;/gi, "\n\n")
+    .replace(/<[^>]+>/g, "")
+    .replace(/&nbsp;/gi, " ")
+    .replace(/&quot;/gi, '"')
+    .replace(/&(?:apos|#39|rsquo|lsquo);/gi, "'")
+    .replace(/&(?:rdquo|ldquo);/gi, '"')
+    .replace(/&mdash;/gi, "—")
+    .replace(/&ndash;/gi, "–")
+    .replace(/&hellip;/gi, "…")
+    .replace(/&amp;/gi, "&")
     .split(/\n{2,}/)
     .map((value) => value.replace(/\n/g, " ").trim())
     .filter(Boolean);

@@ -36,6 +36,8 @@ const TRAILER_RX =
   /(?<![A-Za-z0-9])(?:trailer|teaser|tlr|trl|tra(?:iler)?|sneak[\s.\-_]?peek|preview|behind[\s.\-_]?the[\s.\-_]?scenes|featurette|making[\s.\-_]?of|deleted[\s.\-_]?scene|bloopers?|gag[\s.\-_]?reel|extras?|promo)(?![A-Za-z0-9])/i;
 const PLACEHOLDER_BANNER_RX =
   /(?:🚫|⚠️?|❗|ℹ️?)\s*(?:no\s+streams?\s+(?:found|available)|streams?\s+filtered|streams?\s+blocked|filtered)/iu;
+const PAYWALL_AD_RX =
+  /(?:🔒|🔐|💳|💰|💵|🪙|🎟️)?\s*\b(?:subscribe(?:\s+on|\s+to|\s+now)?|payment\s+help|pay(?:ment)?\s+required|paid\s+but|playback\s+(?:is\s+)?locked|all-access\s+is\s+\$|(\d+[\s-]hour|free)\s+trial|catalog-only|browsing\s+only|unlock\s+all\s+titles|personal\s+add-on|auto-activation)\b/i;
 const STATUS_LINE_RX =
   /\b(?:expires?\s+in|days?\s+left|premium\s+(?:active|expir(?:ed|ing))|api\s+limit|quota\s+used)\b/i;
 const TINY_STUB_FLOOR = 5 * 1024 ** 2;
@@ -140,6 +142,9 @@ function checkOne(
   }
   if (PLACEHOLDER_BANNER_RX.test(titleNameDesc)) {
     return "addon-placeholder-banner";
+  }
+  if (PAYWALL_AD_RX.test(titleNameDesc)) {
+    return "commercial-paywall-ad";
   }
   if (!s.infoHash && !s.url?.match(/\.(mkv|mp4|m4v|avi|webm|mov|ts)(?:\?|$)/i)) {
     if (

@@ -129,18 +129,20 @@ export async function applySubStyle(
   let mpvMarginY = marginY;
 
   if (letterboxDodging && isLetterboxed) {
-    // Center subtitles comfortably within the lower letterbox bar.
-    // The bar spans from the screen bottom (0%) to barPercent%.
-    // Optical center is barPercent / 2 with user fine-tuning from subMarginY.
-    const centerOfBar = barPercent / 2;
-    const userAdjust = ((marginY - 12) / 12) * (barPercent * 0.35);
-    const effectiveMarginPercent = clamp(
-      centerOfBar + userAdjust,
-      2,
-      Math.max(2, barPercent - 1.5),
-    );
-    const targetPx = Math.round((dispH * effectiveMarginPercent) / 100);
-    mpvMarginY = clamp(targetPx, 18, 220);
+    // Optical centering within the lower letterbox bar.
+    // In mpv, sub-margin-y is the distance from the screen bottom to the bottom of the subtitle text.
+    // To center the subtitle block within the letterbox bar:
+    // barHeightPx = dispH * (barPercent / 100)
+    // barCenterPx = barHeightPx / 2
+    // subHeightPx ≈ (subFontSize || 32) * 1.25
+    // optimalMargin = barCenterPx - (subHeightPx / 2)
+    const barHeightPx = Math.round((dispH * barPercent) / 100);
+    const barCenterPx = Math.round(barHeightPx / 2);
+    const effectiveFontSize = Number(s.subFontSize) || 32;
+    const subHeightPx = Math.round(effectiveFontSize * 1.25);
+    const optimalMarginPx = Math.max(12, Math.round(barCenterPx - subHeightPx / 2));
+    const userAdjustPx = Math.round(((marginY - 12) / 12) * (barHeightPx * 0.25));
+    mpvMarginY = clamp(optimalMarginPx + userAdjustPx, 12, Math.max(12, barHeightPx - subHeightPx - 8));
     subPos = 100;
   } else {
     subPos = reposition ? clamp(100 - marginY, 0, 100) : 100;

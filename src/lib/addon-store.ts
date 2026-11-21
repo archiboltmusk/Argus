@@ -2,6 +2,7 @@ import { safeFetch as fetch, safeFetchLocal } from "@/lib/safe-fetch";
 import { isLocalNetworkUrl } from "@/lib/local-network";
 import { readActiveStremioAuthKey } from "./auth";
 import { setUserAddons, userAddons, type Addon } from "./addons";
+import { isCommercialAddon } from "./addons/commercial-detector";
 import {
   applyOrderToItems,
   loadDisplayOrder,
@@ -16,6 +17,8 @@ const LEGACY_STORAGE_KEY = "argus.installed-addons";
 const SEEDED_KEY = "argus.addons.seeded.v1";
 const DISABLED_KEY_PREFIX = "argus.addons.disabled.";
 const LEGACY_DISABLED_KEY = "argus.addons.disabled";
+const SUBSCRIBED_KEY_PREFIX = "argus.addons.subscribed.";
+const LEGACY_SUBSCRIBED_KEY = "argus.addons.subscribed";
 
 const DEFAULT_ADDONS: Array<{ id: string; transportUrl: string }> = [];
 
@@ -54,9 +57,10 @@ function primaryProfileId(): string {
   }
 }
 
-function storeKey(kind: "installed" | "disabled"): string {
+function storeKey(kind: "installed" | "disabled" | "subscribed"): string {
   const id = activeProfileId();
   if (kind === "installed") return id ? STORAGE_KEY_PREFIX + id : LEGACY_STORAGE_KEY;
+  if (kind === "subscribed") return id ? SUBSCRIBED_KEY_PREFIX + id : LEGACY_SUBSCRIBED_KEY;
   return id ? DISABLED_KEY_PREFIX + id : LEGACY_DISABLED_KEY;
 }
 
@@ -302,6 +306,60 @@ export function filterEnabled<T extends { transportUrl: string }>(items: T[]): T
   const disabled = loadDisabledAddons();
   if (disabled.size === 0) return items;
   return items.filter((a) => !disabled.has(a.transportUrl));
+}
+
+let memSubscribed: Set<string> | null = null;
+
+export function loadSubscribedAddons(): Set<string> {
+  if (typeof localStorage === "undefined") {
+    return memSubscribed ? new Set(memSubscribed) : new Set();
+  }
+  try {
+    const raw = localStorage.getItem(storeKey("subscribed"));
+    if (!raw) return memSubscribed ? new Set(memSubscribed) : new Set();
+    const parsed: unknown = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return memSubscribed ? new Set(memSubscribed) : new Set();
+    return new Set(parsed.filter((u): u is string => typeof u === "string"));
+  } catch {
+    return memSubscribed ? new Set(memSubscribed) : new Set();
+  }
+}
+
+export function saveSubscribedAddons(set: Set<string>): void {
+  memSubscribed = new Set(set);
+  if (typeof localStorage === "undefined") return;
+  try {
+    localStorage.setItem(storeKey("subscribed"), JSON.stringify([...set]));
+  } catch (e) {
+    console.warn("[addons] couldn't persist subscribed addons", e);
+  }
+}
+
+export function isAddonSubscribed(transportUrl: string): boolean {
+  return loadSubscribedAddons().has(transportUrl);
+}
+
+export function setAddonSubscribed(transportUrl: string, subscribed: boolean): void {
+  const set = loadSubscribedAddons();
+  if (subscribed) set.add(transportUrl);
+  else set.delete(transportUrl);
+  saveSubscribedAddons(set);
+}
+
+/**
+ * Filters stream addons for playback queries:
+ * 1. Checks if the addon is enabled by the user.
+ * 2. If the addon is commercial / subscription-gated (like Roxxy Hub, etc.),
+ *    only query it if the user has confirmed having an active subscription.
+ */
+export function filterQueryableAddons(items: Addon[]): Addon[] {
+  const enabled = filterEnabled(items);
+  const subscribed = loadSubscribedAddons();
+  return enabled.filter((addon) => {
+    const info = isCommercialAddon(addon);
+    if (!info.isCommercial) return true;
+    return subscribed.has(addon.transportUrl);
+  });
 }
 
 export function isInstalled(id: string): boolean {

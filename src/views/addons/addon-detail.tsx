@@ -5,6 +5,8 @@ import {
   EyeOff,
   ExternalLink,
   Loader2,
+  Lock,
+  LockOpen,
   Settings2,
   Star,
   Trash2,
@@ -14,7 +16,9 @@ import { useEffect, useRef, useState } from "react";
 import { AddonLogo, resolveAddonLogo } from "@/components/addon-logo";
 import addonBg from "@/assets/coastline.svg";
 import { setActiveAddon } from "@/lib/active-addon";
-import { manifestToConfigureUrl, manifestToShareUrl } from "@/lib/addon-store";
+import { isAddonSubscribed, manifestToConfigureUrl, manifestToShareUrl, setAddonSubscribed } from "@/lib/addon-store";
+import { isCommercialAddon } from "@/lib/addons/commercial-detector";
+import { SubscriptionAdvisoryModal } from "@/components/addons/subscription-advisory-modal";
 import { categorizeAddon, isAdultAddon, type ResolvedAddon } from "@/lib/addons-store/store";
 import {
   addonSiteUrl,
@@ -75,6 +79,10 @@ export function AddonDetail({
   const community = useCommunity(m?.id);
   const rising = useRising();
   const risingEntry = community ? risingEntryFor(rising, community) : null;
+  const commercialCheck = isCommercialAddon(m ?? c ?? resolved.transportUrl);
+  const isCommercial = commercialCheck.isCommercial;
+  const [subscribed, setSubscribed] = useState(() => isAddonSubscribed(resolved.transportUrl));
+  const [showAdvisory, setShowAdvisory] = useState(false);
   const openRate = () => {
     if (!community) return;
     openUrl(rateOnSiteUrl(community.slug));
@@ -129,6 +137,25 @@ export function AddonDetail({
 
   const handleInstall = async () => {
     if (busy) return;
+    if (isCommercial && !subscribed) {
+      setShowAdvisory(true);
+      return;
+    }
+    setBusy("install");
+    setOptimisticInstalled(true);
+    try {
+      await onInstall();
+    } catch {
+      setOptimisticInstalled(null);
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const handleAdvisoryConfirm = async (hasActiveSub: boolean) => {
+    setShowAdvisory(false);
+    setSubscribed(hasActiveSub);
+    setAddonSubscribed(resolved.transportUrl, hasActiveSub);
     setBusy("install");
     setOptimisticInstalled(true);
     try {
@@ -219,10 +246,18 @@ export function AddonDetail({
           </button>
         )}
         <div className="relative flex min-w-0 flex-1 flex-col gap-2">
-          <span className="text-[11px] font-bold uppercase tracking-[0.32em] text-ink-subtle">
-            {c?.tags.includes("official") ? t("Official") : t("Community")} ·{" "}
-            {categoryLabel(c?.category ?? categorizeAddon(resolved)) ?? t("Addon")}
-          </span>
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-[11px] font-bold uppercase tracking-[0.32em] text-ink-subtle">
+              {c?.tags.includes("official") ? t("Official") : t("Community")} ·{" "}
+              {categoryLabel(c?.category ?? categorizeAddon(resolved)) ?? t("Addon")}
+            </span>
+            {isCommercial && (
+              <span className="inline-flex w-fit items-center gap-1.5 rounded-full bg-amber-500/15 px-2.5 py-0.5 text-[11px] font-bold text-amber-300 ring-1 ring-amber-500/40">
+                <Lock size={11} strokeWidth={2.6} />
+                {t("Subscription Required")}
+              </span>
+            )}
+          </div>
           <h1 className="font-display text-[36px] font-medium leading-tight tracking-tight text-ink">
             {nameOf(resolved)}
           </h1>
@@ -253,19 +288,50 @@ export function AddonDetail({
                 {t("Installing")}
               </button>
             ) : installed ? (
-              <button
-                onClick={() => void handleUninstall()}
-                className="group/pill flex h-11 items-center gap-2 rounded-full bg-elevated/70 px-5 text-[13.5px] font-semibold text-ink ring-1 ring-edge-soft transition-colors hover:bg-danger/15 hover:text-danger hover:ring-danger/30"
-              >
-                <Check
-                  size={14}
-                  strokeWidth={2.4}
-                  className="block text-accent group-hover/pill:hidden"
-                />
-                <Trash2 size={14} strokeWidth={2.2} className="hidden group-hover/pill:block" />
-                <span className="block group-hover/pill:hidden">{t("Installed")}</span>
-                <span className="hidden group-hover/pill:block">{t("Remove")}</span>
-              </button>
+              <>
+                <button
+                  onClick={() => void handleUninstall()}
+                  className="group/pill flex h-11 items-center gap-2 rounded-full bg-elevated/70 px-5 text-[13.5px] font-semibold text-ink ring-1 ring-edge-soft transition-colors hover:bg-danger/15 hover:text-danger hover:ring-danger/30"
+                >
+                  <Check
+                    size={14}
+                    strokeWidth={2.4}
+                    className="block text-accent group-hover/pill:hidden"
+                  />
+                  <Trash2 size={14} strokeWidth={2.2} className="hidden group-hover/pill:block" />
+                  <span className="block group-hover/pill:hidden">{t("Installed")}</span>
+                  <span className="hidden group-hover/pill:block">{t("Remove")}</span>
+                </button>
+                {isCommercial && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const next = !subscribed;
+                      setSubscribed(next);
+                      setAddonSubscribed(resolved.transportUrl, next);
+                      showToast(
+                        "ok",
+                        next
+                          ? t("Subscription marked active")
+                          : t("Subscription marked inactive (catalog only)"),
+                      );
+                    }}
+                    className={`flex h-11 items-center gap-2 rounded-full px-4 text-[13.5px] font-semibold transition ${
+                      subscribed
+                        ? "bg-amber-500/20 text-amber-300 ring-1 ring-amber-500/40 hover:bg-amber-500/30"
+                        : "bg-elevated/70 text-ink-muted ring-1 ring-edge-soft hover:bg-elevated hover:text-ink"
+                    }`}
+                    title={
+                      subscribed
+                        ? t("Active subscription verified")
+                        : t("No active subscription - stream queries disabled")
+                    }
+                  >
+                    {subscribed ? <LockOpen size={14} strokeWidth={2.2} /> : <Lock size={14} strokeWidth={2.2} />}
+                    <span>{subscribed ? t("Subscribed") : t("Catalog Only")}</span>
+                  </button>
+                )}
+              </>
             ) : isConfigurable ? (
               <button
                 onClick={() =>
@@ -520,6 +586,13 @@ export function AddonDetail({
       </div>
 
       <ScrollTopButton label={t("Back to top")} />
+      {showAdvisory && (
+        <SubscriptionAdvisoryModal
+          addonName={nameOf(resolved)}
+          onCancel={() => setShowAdvisory(false)}
+          onConfirm={handleAdvisoryConfirm}
+        />
+      )}
     </main>
   );
 }

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { fetchInstalledAddons, fetchManifestAt, filterEnabled } from "@/lib/addon-store";
+import { fetchInstalledAddons, fetchManifestAt, filterEnabled, filterQueryableAddons } from "@/lib/addon-store";
 import { userAddons, withDebridKeys, type Addon } from "@/lib/addons";
 import { applyOrderToItems, loadDisplayOrder } from "@/lib/addons-store/reorder";
 import type { useSettings } from "@/lib/settings";
@@ -116,7 +116,7 @@ export function useAddons(
       console.info(
         `[picker] final addon list (${list.length}): ${list.map((a) => a.manifest.name).join(", ")}`,
       );
-      setAddons(list);
+      setAddons(filterQueryableAddons(list));
     })();
     return () => {
       cancelled = true;

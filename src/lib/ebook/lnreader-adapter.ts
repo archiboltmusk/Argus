@@ -289,8 +289,8 @@ export function buildLNReaderSource(
         var cleaned = raw
           .replace(/<style[\s\S]*?<\/style>/gi, "")
           .replace(/<script[\s\S]*?<\/script>/gi, "")
-          .replace(/<br\s*\/?>/gi, "\n")
-          .replace(/<\/(?:p|div|section|article|h[1-6]|li|tr|blockquote)>/gi, "\n\n")
+          .replace(/<br\s*\/?>|&lt;br\s*\/?&gt;/gi, "\n")
+          .replace(/<\/?(?:p|div|section|article|h[1-6]|li|tr|blockquote)[^>]*>|&lt;\/?(?:p|div|section|article|h[1-6]|li|tr|blockquote)[^&]*&gt;/gi, "\n\n")
           .replace(/<[^>]+>/g, "")
           .replace(/&nbsp;/gi, " ")
           .replace(/&quot;/gi, '"')
@@ -308,6 +308,8 @@ export function buildLNReaderSource(
           .replace(/&#x([0-9a-f]+);/gi, function (_, hex) {
             return String.fromCharCode(parseInt(hex, 16));
           })
+          .replace(/<br\s*\/?>/gi, "\n")
+          .replace(/<[^>]+>/g, "")
           .replace(/\r/g, "")
           .replace(/[ \t]+/g, " ")
           .replace(/ *\n */g, "\n")

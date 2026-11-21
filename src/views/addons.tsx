@@ -15,9 +15,13 @@ import {
   fetchManifestAt,
   installAddon,
   installFromUrl,
+  isAddonSubscribed,
   loadInstalled,
+  setAddonSubscribed,
   uninstallAddon,
 } from "@/lib/addon-store";
+import { isCommercialAddon } from "@/lib/addons/commercial-detector";
+import { SubscriptionAdvisoryModal } from "@/components/addons/subscription-advisory-modal";
 import { useAuth } from "@/lib/auth";
 import streamsIcon from "@/assets/category/streams.svg";
 import catalogsIcon from "@/assets/category/catalogs.svg";
@@ -183,11 +187,28 @@ export function AddonsView({ active = true }: { active?: boolean }) {
     if (trimmedQuery.length > 0 && tab !== "installed") setTab("browse");
   }, [trimmedQuery, tab]);
 
-  const onInstall = async (r: ResolvedAddon) => {
+  const [commercialAdvisory, setCommercialAdvisory] = useState<{
+    target: { kind: "addon"; addon: ResolvedAddon } | { kind: "url"; url: string };
+    name: string;
+    logo?: string | null;
+  } | null>(null);
+
+  const onInstall = async (r: ResolvedAddon, bypassAdvisory = false) => {
     try {
       let manifest = r.manifest ?? null;
       if (!manifest?.behaviorHints) {
         manifest = await fetchManifestAt(r.transportUrl).catch(() => manifest);
+      }
+      if (!bypassAdvisory) {
+        const check = isCommercialAddon(manifest ?? r.curated ?? r.transportUrl);
+        if (check.isCommercial && !isAddonSubscribed(r.transportUrl)) {
+          setCommercialAdvisory({
+            target: { kind: "addon", addon: r },
+            name: r.manifest?.name ?? r.curated?.id ?? "Commercial Add-on",
+            logo: r.manifest?.logo ?? null,
+          });
+          return;
+        }
       }
       const hints = manifest?.behaviorHints;
       if (hints?.configurable === true || hints?.configurationRequired === true) {
@@ -215,8 +236,18 @@ export function AddonsView({ active = true }: { active?: boolean }) {
       showToast("error", msg);
     }
   };
-  const onInstallUrl = async (rawUrl: string): Promise<string | null> => {
+  const onInstallUrl = async (rawUrl: string, bypassAdvisory = false): Promise<string | null> => {
     try {
+      if (!bypassAdvisory) {
+        const check = isCommercialAddon(rawUrl);
+        if (check.isCommercial && !isAddonSubscribed(rawUrl)) {
+          setCommercialAdvisory({
+            target: { kind: "url", url: rawUrl },
+            name: "Commercial Add-on",
+          });
+          return null;
+        }
+      }
       const result = await installFromUrl(rawUrl);
       window.dispatchEvent(
         new CustomEvent("argus:addons-changed", {
@@ -243,6 +274,19 @@ export function AddonsView({ active = true }: { active?: boolean }) {
       console.warn("[addons] installFromUrl failed", e);
       showToast("error", msg);
       return null;
+    }
+  };
+
+  const handleCommercialConfirm = async (hasActiveSubscription: boolean) => {
+    if (!commercialAdvisory) return;
+    const { target } = commercialAdvisory;
+    setCommercialAdvisory(null);
+    if (target.kind === "addon") {
+      setAddonSubscribed(target.addon.transportUrl, hasActiveSubscription);
+      await onInstall(target.addon, true);
+    } else {
+      setAddonSubscribed(target.url, hasActiveSubscription);
+      await onInstallUrl(target.url, true);
     }
   };
   const onUninstall = async (r: ResolvedAddon) => {
@@ -573,6 +617,13 @@ export function AddonsView({ active = true }: { active?: boolean }) {
                 : t("Addon order saved on this device"),
             );
           }}
+        />
+      )}
+      {commercialAdvisory && (
+        <SubscriptionAdvisoryModal
+          addonName={commercialAdvisory.name}
+          onCancel={() => setCommercialAdvisory(null)}
+          onConfirm={handleCommercialConfirm}
         />
       )}
     </main>

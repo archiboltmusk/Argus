@@ -1,5 +1,11 @@
 // Newly introduced UI copy remains usable until each locale provides an override.
 const uiFallback: Record<string, string> = {
+  "Commercial Add-on": "Commercial Add-on",
+  "Subscription Required": "Subscription Required",
+  "This add-on requires an active paid membership or external subscription. Without a paid account, it returns payment and trial reminders instead of playable streams.": "This add-on requires an active paid membership or external subscription. Without a paid account, it returns payment and trial reminders instead of playable streams.",
+  "I have an active paid subscription": "I have an active paid subscription",
+  "Enable playback stream queries for this add-on.": "Enable playback stream queries for this add-on.",
+  "Continue & Install": "Continue & Install",
   "View progress": "View progress",
   "Restart & install": "Restart & install",
   "Allow playing unreleased episodes": "Allow playing unreleased episodes",

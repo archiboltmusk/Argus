@@ -58,7 +58,7 @@ export function UpdateCard() {
   return (
     <div
       style={{
-        paddingBottom: "calc(1rem + var(--argus-viewport-bottom, 0px))",
+        paddingBottom: "calc(1rem + var(--argus-music-dock, 0px) + var(--argus-viewport-bottom, 0px))",
       }}
       className="fixed inset-0 z-[150] flex items-center justify-center bg-black/65 p-4 backdrop-blur-md transition-opacity duration-200"
       onClick={(e) => {

@@ -93,6 +93,13 @@ static PLACEHOLDER_BANNER_RX: Lazy<Regex> = Lazy::new(|| {
     .unwrap()
 });
 
+static PAYWALL_AD_RX: Lazy<Regex> = Lazy::new(|| {
+    Regex::new(
+        r"(?i)(?:🔒|🔐|💳|💰|💵|🪙|🎟️)?\s*\b(?:subscribe(?:\s+on|\s+to|\s+now)?|payment\s+help|pay(?:ment)?\s+required|paid\s+but|playback\s+(?:is\s+)?locked|all-access\s+is\s+\$|(\d+[\s-]hour|free)\s+trial|catalog-only|browsing\s+only|unlock\s+all\s+titles|personal\s+add-on|auto-activation)\b",
+    )
+    .unwrap()
+});
+
 static STATUS_LINE_RX: Lazy<Regex> = Lazy::new(|| {
     Regex::new(
         r"(?i)\b(?:expires?\s+in|days?\s+left|premium\s+(?:active|expir(?:ed|ing))|api\s+limit|quota\s+used)\b",
@@ -205,6 +212,9 @@ fn check_one(
     );
     if PLACEHOLDER_BANNER_RX.is_match(&title_name_desc) {
         return Some("addon-placeholder-banner".to_string());
+    }
+    if PAYWALL_AD_RX.is_match(&title_name_desc) {
+        return Some("commercial-paywall-ad".to_string());
     }
     let url_is_video = s
         .stream

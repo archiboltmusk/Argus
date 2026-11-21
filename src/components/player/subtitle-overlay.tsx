@@ -208,7 +208,13 @@ export const SubtitleOverlay = memo(function SubtitleOverlay({
         key={startSec}
         ref={wrapRef}
         className={`pointer-events-none absolute inset-x-0 z-10 flex flex-col gap-1.5 ${alignItems} px-[6%] transition-transform duration-300 ease-out motion-reduce:transition-none`}
-        style={{ bottom: `${effectiveMarginY}%`, opacity, transform: `translateY(${-lift}px)` }}
+        style={{
+          bottom: `${effectiveMarginY}%`,
+          opacity,
+          transform: isLetterboxed
+            ? `translateY(calc(50% - ${lift}px))`
+            : `translateY(${-lift}px)`,
+        }}
       >
         {secondBlock && !secondTop && secondBlock}
         {text && (
