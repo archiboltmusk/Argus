@@ -2105,7 +2105,7 @@ function Shell({ onReady }: { onReady?: () => void }) {
               </div>
             )}
             {musicAlive && (
-              <div className={layer(musicTop)}>
+              <div {...parkLayerProps(musicTop)}>
                 <Suspense fallback={null}>
                   <MusicView
                     active={musicTop}

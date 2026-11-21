@@ -1176,7 +1176,7 @@ function MusicViewContent({ active }: { active: boolean }) {
   // Opening connections keeps the full page mounted while a source is being added.
   if (connectionsStatus === "ready" && !connectionsPage && !hasUsableMusicSource(connections)) {
     return (
-      <main className="media-start-scroll pt-24">
+      <main className="media-start-scroll w-full h-full min-h-0 min-w-0 flex-1 pt-24 text-ink bg-canvas">
         <MediaStartPage kind="music" onSetup={() => openConnections()} />
       </main>
     );

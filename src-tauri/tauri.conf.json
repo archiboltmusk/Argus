@@ -134,6 +134,7 @@
       "desktop": {
         "schemes": [
           "argus",
+          "harbor",
           "nuvio",
           "stremio"
         ]

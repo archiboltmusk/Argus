@@ -4,7 +4,8 @@ let pending: string | null = null;
 export function isMalCallback(input: string): boolean {
   try {
     const url = new URL(input);
-    return url.protocol === "argus:" && url.hostname === "mal" &&
+    const validProtocol = url.protocol === "argus:" || url.protocol === "harbor:";
+    return validProtocol && url.hostname === "mal" &&
       (!url.pathname || url.pathname === "/") && !url.username && !url.password && !url.port &&
       !url.hash && url.searchParams.getAll("code").length === 1 &&
       url.searchParams.getAll("state").length === 1;

@@ -298,7 +298,7 @@ export function parseArgusList(url: string): DeepLinkList | null {
 }
 
 function shouldForward(url: string): boolean {
-  if (url.startsWith("argus://mal")) return false;
+  if (url.startsWith("argus://mal") || url.startsWith("harbor://mal")) return false;
   if (isMusicDeepLink(url)) return false;
   if (url.startsWith("argus://together")) return false;
   if (url.startsWith("argus://")) return true;
