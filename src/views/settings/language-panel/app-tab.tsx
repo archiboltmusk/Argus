@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { reloadAppWindow } from "@/lib/app-reload";
 import { RotateCw } from "../icons";
 import { Dropdown, type DropdownOption } from "@/components/dropdown";
 import { tvFocus } from "@/lib/keyboard-navigation";
@@ -73,7 +74,10 @@ export function AppLanguageTab() {
             label: "Apply and reload",
             tone: "primary",
             icon: <RotateCw size={18} strokeWidth={2.2} />,
-            onSelect: () => update({ tmdbLanguage: langDraft, tmdbImageLangs: imgLangsDraft }),
+            onSelect: () => {
+              update({ tmdbLanguage: langDraft, tmdbImageLangs: imgLangsDraft });
+              window.setTimeout(() => reloadAppWindow(), 200);
+            },
           },
         ]
       : [],

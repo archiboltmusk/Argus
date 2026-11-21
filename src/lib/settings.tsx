@@ -12,7 +12,7 @@ import { applyTheme, isKnownPreset, nextColorTheme } from "@/lib/theme";
 import { applyAppIcon } from "@/lib/app-icon";
 import { getCustomThemes, subscribeCustomThemes } from "@/lib/custom-themes";
 import { loadBgImage, saveBgImage } from "@/lib/theme-storage";
-import { effectiveTmdbLanguage, setTmdbLanguage } from "@/lib/providers/tmdb/tmdb-client";
+import { setTmdbLanguage } from "@/lib/providers/tmdb/tmdb-client";
 import { setPosterBaseUrl } from "@/lib/providers/rpdb";
 import { setMdblistBatchKey } from "@/lib/providers/mdblist-batch";
 import { setSubtitleSourceOrder } from "@/lib/subtitles/candidate-ranking";
@@ -214,30 +214,9 @@ export function SettingsProvider({
     };
   }, [settings.torrentsDisabled, settingsReady, syncTorrentEnginePolicy]);
 
-  const tmdbLangRef = useRef<string | null>(null);
   useEffect(() => {
-    const eff = effectiveTmdbLanguage();
-    if (tmdbLangRef.current === null) {
-      tmdbLangRef.current = eff;
-      return;
-    }
-    if (tmdbLangRef.current === eff) return;
-    tmdbLangRef.current = eff;
-    window.location.reload();
+    setTmdbLanguage(settings.tmdbLanguage);
   }, [settings.tmdbLanguage]);
-
-  const imgLangRef = useRef<string | null>(null);
-  useEffect(() => {
-    const sig = settings.tmdbImageLangs.join(",");
-    if (imgLangRef.current === null) {
-      imgLangRef.current = sig;
-      return;
-    }
-    if (imgLangRef.current === sig) return;
-    imgLangRef.current = sig;
-    const t = window.setTimeout(() => window.location.reload(), 1200);
-    return () => window.clearTimeout(t);
-  }, [settings.tmdbImageLangs]);
 
   useEffect(() => {
     applyTheme(settings.theme);
@@ -590,8 +569,6 @@ export function SettingsProvider({
       const next = loadEffective(profileId, linked);
       setUiLanguage(next.uiLanguage, next.region);
       setTmdbLanguage(next.tmdbLanguage);
-      tmdbLangRef.current = effectiveTmdbLanguage();
-      imgLangRef.current = next.tmdbImageLangs.join(",");
       sourceRef.current = { profileId, linked };
       if (settingsReadyRef.current) persistEffective(next, profileId, linked);
       settingsRef.current = next;
