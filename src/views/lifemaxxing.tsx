@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import "./lifemaxxing/lifemaxxing-harbor.css";
+import "./lifemaxxing/lifemaxxing-argus.css";
 import {
   Compass,
   FileCheck,

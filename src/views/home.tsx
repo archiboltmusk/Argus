@@ -1418,7 +1418,7 @@ export function Home({
               </div>
             </div>
           )}
-          {/* Featured Hero Banner at the Top (Full-bleed under translucent header, like Harbor / Netflix) */}
+          {/* Featured Hero Banner at the Top (Full-bleed under translucent header, like Argus / Netflix) */}
           {settings.homeMode !== "classic" &&
             !homeRowsCustom.hidden.includes("hero") &&
             showHero && (

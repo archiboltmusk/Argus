@@ -33,7 +33,7 @@ final class ArgusWatchRemoteStore: ObservableObject {
 @main
 struct ArgusWatchApp: App {
     @StateObject private var store = ArgusWatchRemoteStore()
-    private let harborAccent = Color(red: 0.92, green: 0.69, blue: 0.42)
+    private let argusAccent = Color(red: 0.92, green: 0.69, blue: 0.42)
 
     var body: some Scene {
         WindowGroup {
@@ -50,7 +50,7 @@ struct ArgusWatchApp: App {
                         Button { Task { await store.send("playpause") } } label: {
                             Image(systemName: store.playing ? "pause.fill" : "play.fill")
                         }
-                        .tint(harborAccent)
+                        .tint(argusAccent)
                         Button { Task { await store.send("seek-fwd") } } label: {
                             Image(systemName: "goforward.15")
                         }
@@ -66,7 +66,7 @@ struct ArgusWatchApp: App {
                     }
 
                     ProgressView(value: store.volume, total: 100)
-                        .tint(harborAccent)
+                        .tint(argusAccent)
                     Text("Volume \(Int(store.volume))%")
                         .font(.caption2)
                         .foregroundStyle(.secondary)
@@ -82,7 +82,7 @@ struct ArgusWatchApp: App {
                     Text("Quick Actions")
                         .font(.headline)
                     Button("Mute / Unmute") { Task { await store.setVolume(store.volume > 0 ? 0 : 70) } }
-                        .tint(harborAccent)
+                        .tint(argusAccent)
                     Button("Stop Playback") { Task { await store.send("stop") } }
                 }
                 .padding()

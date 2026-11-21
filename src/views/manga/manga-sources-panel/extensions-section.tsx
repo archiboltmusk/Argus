@@ -28,10 +28,10 @@ export const COMMUNITY_MANGA_REPOS: CommunityMangaRepoPreset[] = [
     badge: "Global Community",
   },
   {
-    name: "Harbor Manga Plugin Repo",
+    name: "Argus Manga Plugin Repo",
     url: "https://raw.githubusercontent.com/hamad0original-lgtm/harbor-manga-repo/main/repo.json",
-    description: "Curated zero-server manga plugins built for Argus and Harbor.",
-    badge: "Harbor Curated",
+    description: "Curated zero-server manga plugins built for Argus.",
+    badge: "Argus Curated",
   },
 ];
 

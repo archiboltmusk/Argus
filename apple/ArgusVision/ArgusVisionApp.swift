@@ -88,7 +88,7 @@ struct ArgusVisionApp: App {
     @StateObject private var store = ArgusVisionStore()
     @State private var section: String? = "Home"
     @State private var query = ""
-    private let harborAccent = Color(red: 0.92, green: 0.69, blue: 0.42)
+    private let argusAccent = Color(red: 0.92, green: 0.69, blue: 0.42)
 
     private var activeItems: [VisionMediaItem] {
         switch section {
@@ -122,7 +122,7 @@ struct ArgusVisionApp: App {
                         }
                         Button("Sync") { Task { await store.loadAll() } }
                             .buttonStyle(.borderedProminent)
-                            .tint(harborAccent)
+                            .tint(argusAccent)
                     }
 
                     if section == "Search" {
@@ -162,7 +162,7 @@ struct ArgusVisionApp: App {
                                                 Text(yr).font(.caption).foregroundStyle(.secondary)
                                             }
                                             if let r = item.imdbRating {
-                                                Text("★ \(r)").font(.caption.bold()).foregroundStyle(harborAccent)
+                                                Text("★ \(r)").font(.caption.bold()).foregroundStyle(argusAccent)
                                             }
                                         }
                                     }
@@ -185,7 +185,7 @@ struct ArgusVisionApp: App {
                         if item.streamUrl != nil {
                             Button("Play") { store.play(item); store.selectedItem = nil }
                                 .buttonStyle(.borderedProminent)
-                                .tint(harborAccent)
+                                .tint(argusAccent)
                         }
                         Button("Close") { store.selectedItem = nil }
                     }

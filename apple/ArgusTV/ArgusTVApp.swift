@@ -139,7 +139,7 @@ final class ArgusTVStore: ObservableObject {
     }
 }
 
-struct HarborPosterCard: View {
+struct ArgusPosterCard: View {
     let item: ArgusMediaItem
 
     var body: some View {
@@ -189,8 +189,8 @@ struct ArgusTVDetailView: View {
     @ObservedObject var store: ArgusTVStore
     @State private var detail: ArgusMediaDetail?
 
-    private let harborBg = Color(red: 0.07, green: 0.075, blue: 0.09)
-    private let harborAccent = Color(red: 0.92, green: 0.69, blue: 0.42)
+    private let argusBg = Color(red: 0.07, green: 0.075, blue: 0.09)
+    private let argusAccent = Color(red: 0.92, green: 0.69, blue: 0.42)
 
     var body: some View {
         ScrollView {
@@ -218,7 +218,7 @@ struct ArgusTVDetailView: View {
                             if let rating = detail?.imdbRating ?? item.imdbRating {
                                 Text("IMDb ★ \(rating)")
                                     .fontWeight(.bold)
-                                    .foregroundStyle(harborAccent)
+                                    .foregroundStyle(argusAccent)
                             }
                             if let genres = detail?.genres?.prefix(3), !genres.isEmpty {
                                 Text(genres.joined(separator: " · "))
@@ -236,7 +236,7 @@ struct ArgusTVDetailView: View {
                             if item.streamUrl != nil {
                                 Button("Play Stream") { store.playUrl(item.streamUrl) }
                                     .buttonStyle(.borderedProminent)
-                                    .tint(harborAccent)
+                                    .tint(argusAccent)
                             }
                             Button(store.watchlistIds.contains(item.id) ? "In Watchlist ✓" : "+ Watchlist") {
                                 store.toggleWatchlist(item.id)
@@ -255,7 +255,7 @@ struct ArgusTVDetailView: View {
                             HStack(spacing: 16) {
                                 Text("S\(ep.season ?? 1)E\(ep.episode ?? 1)")
                                     .font(.caption.bold())
-                                    .foregroundStyle(harborAccent)
+                                    .foregroundStyle(argusAccent)
                                     .frame(width: 80, alignment: .leading)
                                 VStack(alignment: .leading, spacing: 4) {
                                     Text(ep.title ?? ep.id).font(.headline)
@@ -273,12 +273,12 @@ struct ArgusTVDetailView: View {
             }
             .padding(48)
         }
-        .background(harborBg.ignoresSafeArea())
+        .background(argusBg.ignoresSafeArea())
         .task { detail = await store.fetchDetail(for: item) }
     }
 }
 
-struct HarborTVShelf: View {
+struct ArgusTVShelf: View {
     let title: String
     let items: [ArgusMediaItem]
     @ObservedObject var store: ArgusTVStore
@@ -294,7 +294,7 @@ struct HarborTVShelf: View {
                         NavigationLink {
                             ArgusTVDetailView(item: item, store: store)
                         } label: {
-                            HarborPosterCard(item: item)
+                            ArgusPosterCard(item: item)
                         }
                         .buttonStyle(.plain)
                     }
@@ -309,8 +309,8 @@ struct HarborTVShelf: View {
 struct ArgusTVApp: App {
     @StateObject private var store = ArgusTVStore()
     @State private var query = ""
-    private let harborBg = Color(red: 0.07, green: 0.075, blue: 0.09)
-    private let harborAccent = Color(red: 0.92, green: 0.69, blue: 0.42)
+    private let argusBg = Color(red: 0.07, green: 0.075, blue: 0.09)
+    private let argusAccent = Color(red: 0.92, green: 0.69, blue: 0.42)
 
     var body: some Scene {
         WindowGroup {
@@ -330,17 +330,17 @@ struct ArgusTVApp: App {
                                 Spacer()
                                 Button("Refresh") { Task { await store.loadAll() } }
                                     .buttonStyle(.borderedProminent)
-                                    .tint(harborAccent)
+                                    .tint(argusAccent)
                             }
                             if !store.macItems.isEmpty {
-                                HarborTVShelf(title: "Synced from Mac", items: store.macItems, store: store)
+                                ArgusTVShelf(title: "Synced from Mac", items: store.macItems, store: store)
                             }
-                            HarborTVShelf(title: "Top Movies", items: store.topMovies, store: store)
-                            HarborTVShelf(title: "Top Series", items: store.topSeries, store: store)
+                            ArgusTVShelf(title: "Top Movies", items: store.topMovies, store: store)
+                            ArgusTVShelf(title: "Top Series", items: store.topSeries, store: store)
                         }
                         .padding(48)
                     }
-                    .background(harborBg.ignoresSafeArea())
+                    .background(argusBg.ignoresSafeArea())
                 }
                 .tabItem { Label("Home", systemImage: "house.fill") }
 
@@ -352,12 +352,12 @@ struct ArgusTVApp: App {
                                 .background(Color.white.opacity(0.08), in: RoundedRectangle(cornerRadius: 14))
                                 .onSubmit { Task { await store.search(query) } }
                             if !store.searchResults.isEmpty {
-                                HarborTVShelf(title: "Results", items: store.searchResults, store: store)
+                                ArgusTVShelf(title: "Results", items: store.searchResults, store: store)
                             }
                         }
                         .padding(48)
                     }
-                    .background(harborBg.ignoresSafeArea())
+                    .background(argusBg.ignoresSafeArea())
                 }
                 .tabItem { Label("Search", systemImage: "magnifyingglass") }
 
@@ -372,12 +372,12 @@ struct ArgusTVApp: App {
                                 Text("Add movies or shows from any detail page.")
                                     .foregroundStyle(.white.opacity(0.6))
                             } else {
-                                HarborTVShelf(title: "Saved", items: saved, store: store)
+                                ArgusTVShelf(title: "Saved", items: saved, store: store)
                             }
                         }
                         .padding(48)
                     }
-                    .background(harborBg.ignoresSafeArea())
+                    .background(argusBg.ignoresSafeArea())
                 }
                 .tabItem { Label("Library", systemImage: "bookmark.fill") }
 
@@ -390,13 +390,13 @@ struct ArgusTVApp: App {
                         Button("Previous") { Task { await store.sendCommand("previous") } }
                         Button("Play / Pause") { Task { await store.sendCommand("playpause") } }
                             .buttonStyle(.borderedProminent)
-                            .tint(harborAccent)
+                            .tint(argusAccent)
                         Button("Next") { Task { await store.sendCommand("next") } }
                     }
                 }
                 .padding(60)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .background(harborBg.ignoresSafeArea())
+                .background(argusBg.ignoresSafeArea())
                 .tabItem { Label("Remote", systemImage: "appletvremote.gen4.fill") }
             }
             .fullScreenCover(isPresented: Binding(

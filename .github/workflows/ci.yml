@@ -28,7 +28,7 @@ env:
   VITE_ARGUS_PUBLIC_RELAY: ${{ vars.VITE_ARGUS_PUBLIC_RELAY }}
   VITE_ARGUS_RELAY_BASE: ${{ vars.VITE_ARGUS_RELAY_BASE }}
   CARGO_TERM_COLOR: always
-  # The Harbor tree is large; tsc and vite exceed the default ~2 GB heap.
+  # The Argus tree is large; tsc and vite exceed the default ~2 GB heap.
   NODE_OPTIONS: --max-old-space-size=8192
 
 jobs:

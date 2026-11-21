@@ -27,6 +27,11 @@ export const ARGUS_MAL_BASE = resolveBase(
   HARBOR_FALLBACK_BASE,
 );
 
+export const ARGUS_MAL_REDIRECT_BASE = resolveBase(
+  import.meta.env.VITE_ARGUS_MAL_REDIRECT_BASE,
+  "https://archiboltmusk.github.io/argus-auth",
+);
+
 export const ARGUS_TVDB_BASE = resolveBase(
   import.meta.env.VITE_ARGUS_TVDB_BASE,
   HARBOR_FALLBACK_BASE,

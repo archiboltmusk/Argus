@@ -15,7 +15,7 @@ async function getMpvProp<T = unknown>(name: string): Promise<T | null> {
 }
 
 /**
- * Minimal, elegant buffering indicator adhering to Harbor design language.
+ * Minimal, elegant buffering indicator adhering to Argus design language.
  * Free of harsh colored badges, blocky percentage meters, or screen clutter.
  */
 export function BufferingIndicator({
@@ -65,7 +65,7 @@ export function BufferingIndicator({
 
   return (
     <div className="pointer-events-none absolute inset-0 z-[15] flex items-center justify-center">
-      {/* Minimal Harbor-style ethereal spinner */}
+      {/* Minimal Argus-style ethereal spinner */}
       <div className="flex items-center justify-center motion-safe:animate-in motion-safe:fade-in motion-safe:duration-200">
         <div className="relative flex h-13 w-13 items-center justify-center rounded-full bg-black/40 backdrop-blur-md shadow-[0_8px_24px_-4px_rgba(0,0,0,0.5)]">
           <svg

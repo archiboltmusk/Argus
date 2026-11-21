@@ -8,7 +8,7 @@ import {
   getServiceCuratedTracks,
   type StreamingServiceId,
 } from "@/lib/music/multi-streaming-hub";
-import { HARBOR_MUSIC_THEMES, createHarborMusicRoom } from "@/lib/music/harbor-music-engine";
+import { ARGUS_MUSIC_THEMES, createArgusMusicRoom } from "@/lib/music/argus-music-engine";
 import { getCurrentDaylistVibe } from "@/lib/music/all-music-apps-features";
 import { playMusic } from "@/lib/music/player";
 import type { MusicTrack } from "@/lib/music/types";
@@ -21,7 +21,7 @@ export function MusicServicesBrowser({ onExploreTrack }: { onExploreTrack?: (tra
   useEffect(() => { let active = true; void getMusicHealth().then(value => { if (active) setConnectors(value); }).catch(() => {}); return () => { active = false; }; }, []);
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [activeServiceId, setActiveServiceId] = useState<StreamingServiceId>("reverbnation");
-  const [activeTheme, setActiveTheme] = useState<string>("midnight-harbor");
+  const [activeTheme, setActiveTheme] = useState<string>("midnight-argus");
   const [roomCreatedCode, setRoomCreatedCode] = useState<string | null>(null);
 
   const daylist = getCurrentDaylistVibe();
@@ -40,7 +40,7 @@ export function MusicServicesBrowser({ onExploreTrack }: { onExploreTrack?: (tra
   };
 
   const handleCreateRoom = () => {
-    const room = createHarborMusicRoom("You", serviceTracks[0] ?? null);
+    const room = createArgusMusicRoom("You", serviceTracks[0] ?? null);
     setRoomCreatedCode(room.roomCode);
   };
 
@@ -251,7 +251,7 @@ export function MusicServicesBrowser({ onExploreTrack }: { onExploreTrack?: (tra
             <Palette className="h-4 w-4 text-accent" /> Player Theme Presets
           </h4>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            {HARBOR_MUSIC_THEMES.map((theme) => {
+            {ARGUS_MUSIC_THEMES.map((theme) => {
               const active = activeTheme === theme.id;
               return (
                 <div

@@ -149,7 +149,7 @@ export function MacSimulatorGuideModal({
           </div>
         </div>
 
-        {/* Harbor-style Decentralized Indexer Disclaimer */}
+        {/* Argus Decentralized Indexer Disclaimer */}
         <div className="p-3 rounded-xl bg-elevated/40 border border-edge/30 text-[11px] text-ink-subtle leading-normal flex items-start gap-2">
           <ShieldAlert size={14} className="shrink-0 mt-0.5 text-warning" />
           <span>

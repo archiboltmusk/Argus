@@ -227,7 +227,7 @@ export const SubtitleOverlay = memo(function SubtitleOverlay({
 
 function fontFamilyFor(family: string | undefined): string {
   if (family?.startsWith("custom:")) {
-    return `"harbor-font-${family.slice("custom:".length)}", "Inter", system-ui, sans-serif`;
+    return `"argus-font-${family.slice("custom:".length)}", "Inter", system-ui, sans-serif`;
   }
   switch (family) {
     case "system":
