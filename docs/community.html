@@ -1,0 +1,357 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Argus is arriving — A new chapter</title>
+  <meta name="description" content="Argus is the open-source media sanctuary for films, series, audiobooks, and music. Join our Discord community for news and updates.">
+  <meta name="theme-color" content="#0b0e14">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Argus">
+  <meta property="og:title" content="Argus is arriving. A new chapter starts here.">
+  <meta property="og:description" content="A modern, community-driven media center across desktop, mobile, and TV. Join us on Discord.">
+  <link rel="canonical" href="https://archiboltmusk.github.io/Argus/community.html">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%230b0e14'/%3E%3Cpath d='M32 12C18 12 7 24 3 32c4 8 15 20 29 20s25-12 29-20C57 24 46 12 32 12Zm0 8a12 12 0 1 1 0 24 12 12 0 0 1 0-24Z' fill='%2338bdf8'/%3E%3Cpath d='M32 26a6 6 0 1 0 0 12 6 6 0 0 0 0-12Z' fill='%23f8fafc'/%3E%3C/svg%3E">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Onest:wght@400;450;500;600;650&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      color-scheme: dark;
+      --paper: #0b0e14;
+      --card: #131722;
+      --ink: #f1f5f9;
+      --muted: #94a3b8;
+      --line: rgba(255, 255, 255, 0.08);
+      --line-hover: rgba(56, 189, 248, 0.35);
+      --cyan: #38bdf8;
+      --cyan-soft: rgba(56, 189, 248, 0.12);
+      --gold: #38bdf8;
+      --accent: #0284c7;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      min-height: 100svh;
+      display: flex;
+      flex-direction: column;
+      background: radial-gradient(ellipse 90% 60% at 50% -15%, #152238 0%, var(--paper) 70%);
+      color: var(--ink);
+      font: 400 16px/1.7 "Onest", system-ui, -apple-system, sans-serif;
+      -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
+    }
+    main { flex: 1; display: flex; flex-direction: column; }
+    a { color: inherit; text-decoration: none; }
+    a:focus-visible { outline: 3px solid var(--cyan); outline-offset: 6px; }
+
+    .masthead {
+      flex-shrink: 0;
+      width: min(1120px, calc(100% - 64px));
+      margin: 0 auto;
+      padding: 28px 0 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid var(--line);
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-weight: 650;
+      font-size: 23px;
+      letter-spacing: -0.8px;
+      color: var(--ink);
+    }
+    .brand svg { width: 32px; height: 32px; color: var(--cyan); }
+    .chapter {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 2.2px;
+      text-transform: uppercase;
+      color: var(--cyan);
+      background: var(--cyan-soft);
+      padding: 4px 12px;
+      border-radius: 999px;
+      border: 1px solid rgba(56, 189, 248, 0.2);
+    }
+
+    .announcement {
+      flex: 1;
+      width: 100%;
+      max-width: 720px;
+      margin: 0 auto;
+      padding: clamp(48px, 7vh, 84px) 24px 40px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+    }
+    h1 {
+      margin: 0;
+      font: 400 clamp(54px, 7vw, 88px)/1.04 "Fraunces", Georgia, serif;
+      letter-spacing: -3.5px;
+      text-wrap: balance;
+    }
+    h1 em {
+      font-style: italic;
+      font-weight: 400;
+      background: linear-gradient(135deg, #38bdf8 0%, #818cf8 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .lede {
+      margin: 26px auto 0;
+      max-width: 520px;
+      color: var(--muted);
+      font-size: 17.5px;
+      line-height: 1.8;
+      text-wrap: pretty;
+    }
+    .lede strong {
+      color: var(--ink);
+      font-weight: 500;
+    }
+
+    .actions-row {
+      margin-top: 32px;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: center;
+      gap: 14px;
+    }
+    .discord {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      padding: 14px 26px;
+      border-radius: 10px;
+      background: var(--cyan);
+      color: #0b0e14;
+      font-weight: 650;
+      font-size: 14.5px;
+      box-shadow: 0 8px 24px rgba(56, 189, 248, 0.25);
+      transition: background 0.2s, transform 0.2s, box-shadow 0.2s;
+    }
+    .discord:hover {
+      background: #7dd3fc;
+      transform: translateY(-2px);
+      box-shadow: 0 12px 30px rgba(56, 189, 248, 0.35);
+    }
+    .discord svg { width: 20px; height: 20px; flex-shrink: 0; }
+    .discord .arrow { margin-left: 4px; width: 16px; height: 16px; }
+
+    .btn-secondary {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      padding: 14px 22px;
+      border-radius: 10px;
+      background: var(--card);
+      border: 1px solid var(--line);
+      color: var(--ink);
+      font-weight: 550;
+      font-size: 14.5px;
+      transition: border-color 0.2s, background 0.2s, transform 0.2s;
+    }
+    .btn-secondary:hover {
+      border-color: var(--line-hover);
+      background: #192030;
+      transform: translateY(-2px);
+    }
+    .btn-secondary svg { width: 18px; height: 18px; color: var(--cyan); }
+
+    .soon {
+      margin: 24px 0 0;
+      color: var(--muted);
+      font-size: 13px;
+      letter-spacing: 0.2px;
+    }
+
+    .seascape {
+      flex-shrink: 0;
+      width: min(1120px, calc(100% - 64px));
+      margin: 0 auto;
+      position: relative;
+      overflow: hidden;
+      border-radius: 160px 160px 16px 16px;
+      border: 1px solid var(--line);
+      box-shadow: 0 30px 60px rgba(0, 0, 0, 0.4);
+    }
+    .seascape > svg { display: block; width: 100%; height: auto; }
+
+    footer {
+      flex-shrink: 0;
+      width: min(1120px, calc(100% - 64px));
+      margin: 28px auto;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+    footer a {
+      color: var(--muted);
+      transition: color 0.15s;
+    }
+    footer a:hover { color: var(--ink); }
+    .footer-right {
+      display: flex;
+      align-items: center;
+      gap: 18px;
+    }
+    .github {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+    }
+    .github svg { width: 16px; height: 16px; }
+
+    @media(max-width: 640px) {
+      .masthead { width: calc(100% - 32px); padding: 20px 0; }
+      .announcement { padding: 40px 18px 30px; }
+      .seascape { width: calc(100% - 24px); border-radius: 64px 64px 12px 12px; }
+      footer { width: calc(100% - 32px); flex-direction: column; text-align: center; }
+    }
+  </style>
+</head>
+<body>
+  <header class="masthead">
+    <a class="brand" href="index.html" aria-label="Argus Home">
+      <svg viewBox="0 0 64 64" fill="currentColor" aria-hidden="true">
+        <path d="M32 12C18 12 7 24 3 32c4 8 15 20 29 20s25-12 29-20C57 24 46 12 32 12Zm0 8a12 12 0 1 1 0 24 12 12 0 0 1 0-24Z"/>
+        <path d="M32 26a6 6 0 1 0 0 12 6 6 0 0 0 0-12Z"/>
+      </svg>
+      Argus
+    </a>
+    <span class="chapter">A new chapter starts here</span>
+  </header>
+
+  <main id="announcement">
+    <section class="announcement" aria-labelledby="title">
+      <h1 id="title">Argus is<br><em>arriving.</em></h1>
+      <p class="lede">
+        <strong>A sanctuary for cinema, stories, and sound.</strong><br>
+        Built by the community with native mpv acceleration, smart subtitle synchronization, video watch queues, and seamless TV handoff. Join our community on Discord for builds, news, and what comes next.
+      </p>
+      
+      <div class="actions-row">
+        <a class="discord" href="https://discord.gg/argus" target="_blank" rel="noopener noreferrer">
+          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M20.3 4.4a19.8 19.8 0 0 0-4.9-1.5l-.6 1.2a18.2 18.2 0 0 0-5.5 0l-.6-1.2a20 20 0 0 0-4.9 1.5C.7 9 .1 13.5.4 17.9a19.7 19.7 0 0 0 6 3l1.2-2c-.7-.3-1.3-.6-1.9-1l.5-.4c3.7 1.7 7.8 1.7 11.5 0l.5.4c-.6.4-1.3.7-1.9 1l1.2 2a19.7 19.7 0 0 0 6-3c.5-5.1-.8-9.5-3.2-13.5ZM8 15.2c-1.1 0-1.9-1-1.9-2.2s.8-2.2 1.9-2.2 2 1 1.9 2.2c0 1.2-.8 2.2-1.9 2.2Zm8 0c-1.1 0-1.9-1-1.9-2.2s.8-2.2 1.9-2.2 2 1 1.9 2.2c0 1.2-.8 2.2-1.9 2.2Z"/></svg>
+          Join the Discord
+          <svg class="arrow" viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M4 10h12m-5-5 5 5-5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </a>
+        <a class="btn-secondary" href="u/anupam.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+          @anupam Profile
+        </a>
+      </div>
+
+      <p class="soon">A unified media universe across macOS, Windows, Linux, Android, and TV. Coming soon.</p>
+    </section>
+
+    <!-- Bespoke Argus Observatory & Twilight Seascape Vector -->
+    <figure class="seascape" aria-label="The Argus observatory overlooking a tranquil sea and starlit horizon.">
+      <svg viewBox="0 0 1120 290" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="scene-title">
+        <title id="scene-title">Twilight Observatory Horizon</title>
+        <defs>
+          <linearGradient id="nightSky" x2="0" y2="1">
+            <stop stop-color="#0b1329"/>
+            <stop offset="0.6" stop-color="#142340"/>
+            <stop offset="1" stop-color="#213a5a"/>
+          </linearGradient>
+          <linearGradient id="nightSea" x2="0" y2="1">
+            <stop stop-color="#0e1f33"/>
+            <stop offset="1" stop-color="#07101b"/>
+          </linearGradient>
+          <linearGradient id="beaconGlow" x1="0" y1="0" x2="1" y2="1">
+            <stop stop-color="#38bdf8" stop-opacity="0.8"/>
+            <stop offset="1" stop-color="#38bdf8" stop-opacity="0"/>
+          </linearGradient>
+          <linearGradient id="moonGlow" x2="0" y2="1">
+            <stop stop-color="#bae6fd"/>
+            <stop offset="1" stop-color="#7dd3fc"/>
+          </linearGradient>
+        </defs>
+
+        <!-- Sky & Atmosphere -->
+        <path fill="url(#nightSky)" d="M0 0h1120v290H0z"/>
+
+        <!-- Distant Starlight -->
+        <g fill="#bae6fd" opacity="0.6">
+          <circle cx="140" cy="45" r="1.5"/>
+          <circle cx="280" cy="65" r="1"/>
+          <circle cx="450" cy="30" r="1.8"/>
+          <circle cx="720" cy="50" r="1.2"/>
+          <circle cx="890" cy="35" r="1.6"/>
+          <circle cx="1020" cy="70" r="1.2"/>
+          <circle cx="560" cy="85" r="1"/>
+          <circle cx="340" cy="95" r="1.4"/>
+        </g>
+
+        <!-- Crescent Moon & Nebula -->
+        <circle cx="575" cy="130" r="54" fill="url(#moonGlow)" opacity="0.4" filter="blur(20px)"/>
+        <circle cx="575" cy="130" r="32" fill="#e0f2fe" opacity="0.85"/>
+        <circle cx="583" cy="126" r="28" fill="#142340"/>
+
+        <!-- Distant Mountain Ridges -->
+        <path d="M0 170q90-32 165-4t140-2 150 4 145-9 170 12 180-10 170 5v124H0z" fill="#12253b" opacity="0.75"/>
+        <path d="M0 192q170-14 340-3t370-3 410 6v98H0z" fill="url(#nightSea)"/>
+
+        <!-- Ocean Water Caustics / Ripple Shimmers -->
+        <g fill="none" stroke="#38bdf8" stroke-linecap="round" opacity="0.35">
+          <path d="M490 206h150m-130 9h105m-88 12h70m-52 13h36"/>
+          <path d="M90 226h64m-18 18h90m530-33h68m-50 24h90m-440 19h62m475 4h65"/>
+        </g>
+
+        <!-- Foreland Shorelines -->
+        <path d="M0 244q90-32 160-28t134 32 138 42H0z" fill="#0b1724"/>
+        <path d="M0 262q85-28 158-18t150 46H0z" fill="#070e17"/>
+        <path d="M825 234q36-35 90-37t105 20 100 4v69H765z" fill="#0f1d2d"/>
+        <path d="M898 224q82-28 145-2t77 12v56H845z" fill="#0a1420"/>
+
+        <!-- Observatory / Lighthouse Beacon with Argus Cyan Beam -->
+        <g transform="translate(930 58)">
+          <!-- Beacon Light Beam -->
+          <polygon points="-8,45 -380,-20 -380,110" fill="url(#beaconGlow)" opacity="0.45"/>
+          <!-- Dome and Tower -->
+          <path d="m-16 142 8-105h24l8 105z" fill="#1e293b"/>
+          <path d="M-11 84h30l2 23h-34z" fill="#0284c7"/>
+          <path d="M-12 36h30v7h-30z" fill="#0f172a"/>
+          <path d="M-9 15h26v21H-9z" fill="#38bdf8" opacity="0.9"/>
+          <!-- Observatory Dome -->
+          <path d="M-15 16 A 19 19 0 0 1 23 16 Z" fill="#0284c7"/>
+          <circle cx="4" cy="25" r="4" fill="#ffffff"/>
+        </g>
+
+        <!-- Sailboat Sailing Across the Bay -->
+        <g transform="translate(380 140)">
+          <path d="M0 68h66L55 81H12z" fill="#0f172a"/>
+          <path d="M33 0v66" stroke="#38bdf8" stroke-width="2"/>
+          <path d="M28 10 5 60h23z" fill="#e2e8f0"/>
+          <path d="m38 20 24 40H38z" fill="#94a3b8"/>
+          <path d="M8 86h48" stroke="#38bdf8" stroke-width="2" stroke-linecap="round" opacity="0.4"/>
+        </g>
+      </svg>
+    </figure>
+  </main>
+
+  <footer>
+    <span>Argus · 2026 · Built by the community</span>
+    <div class="footer-right">
+      <a href="https://harborcommunity.site" target="_blank" rel="noopener">Harbor Community</a>
+      <a class="github" href="https://github.com/archiboltmusk/Argus" target="_blank" rel="noopener noreferrer">
+        <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .3a12 12 0 0 0-3.8 23.4c.6.1.8-.3.8-.6v-2.2c-3.4.7-4.1-1.4-4.1-1.4-.5-1.4-1.3-1.8-1.3-1.8-1.1-.8.1-.8.1-.8 1.2.1 1.8 1.2 1.8 1.2 1.1 1.8 2.8 1.3 3.5 1 .1-.8.4-1.3.8-1.6-2.7-.3-5.5-1.3-5.5-5.9 0-1.3.5-2.4 1.2-3.2-.1-.3-.5-1.6.1-3.2 0 0 1-.3 3.3 1.2a11.5 11.5 0 0 1 6 0c2.3-1.5 3.3-1.2 3.3-1.2.6 1.6.2 2.9.1 3.2.8.8 1.2 1.9 1.2 3.2 0 4.6-2.8 5.6-5.5 5.9.4.4.8 1.1.8 2.2v3.3c0 .3.2.7.8.6A12 12 0 0 0 12 .3Z"/></svg>
+        <span>GitHub</span>
+      </a>
+    </div>
+  </footer>
+</body>
+</html>

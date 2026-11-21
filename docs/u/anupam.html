@@ -1,0 +1,429 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <title>anupam (@anupam) on Argus</title>
+  <meta name="description" content="anupam's Argus & Harbor profile">
+  <meta name="theme-color" content="#0b0e14">
+  <link rel="icon" href="https://harborcommunity.site/themes/api/images/authors/8b56f638-87c4-4ad8-9068-9c1a2cd43b9e.webp?v=1793030393369">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="anupam (@anupam) on Argus">
+  <meta property="og:description" content="anupam's Argus profile · 573 titles watched">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Onest:wght@400;450;500;600;650&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --canvas: #0b0e14;
+      --surface: #111622;
+      --elevated: #181f2f;
+      --raised: #222b40;
+      --sunk: #07090d;
+      --ink: #f1f5f9;
+      --ink-muted: #94a3b8;
+      --ink-subtle: #64748b;
+      --edge: rgba(255, 255, 255, 0.08);
+      --edge-soft: rgba(255, 255, 255, 0.05);
+      --accent: #38bdf8;
+      --accent-soft: rgba(56, 189, 248, 0.15);
+      --success: #34d399;
+      --danger: #f87171;
+      --font-display: "Fraunces", Georgia, serif;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }
+    body {
+      min-height: 100vh;
+      background: radial-gradient(ellipse 90% 40% at 50% -10%, #17243c 0%, var(--canvas) 60%);
+      color: var(--ink);
+      font: 400 15px/1.6 "Onest", system-ui, -apple-system, sans-serif;
+      -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
+    }
+    a { color: inherit; text-decoration: none; }
+
+    .nav {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      padding: 14px 28px;
+      background: rgba(11, 14, 20, 0.8);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--edge);
+    }
+    .nav-inner {
+      max-width: 1140px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    .brand {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 700;
+      font-size: 20px;
+      letter-spacing: -0.5px;
+      margin-right: auto;
+    }
+    .brand svg { width: 28px; height: 28px; color: var(--accent); }
+    .nav-links { display: flex; align-items: center; gap: 4px; }
+    .nav-links a {
+      padding: 6px 12px;
+      border-radius: 8px;
+      font-size: 13.5px;
+      font-weight: 500;
+      color: var(--ink-muted);
+      transition: color 0.15s, background 0.15s;
+    }
+    .nav-links a:hover { color: var(--ink); background: var(--elevated); }
+
+    .wrap {
+      max-width: 1140px;
+      margin: 0 auto;
+      padding: 40px 24px 60px;
+    }
+
+    .head {
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+      padding-bottom: 32px;
+      border-bottom: 1px solid var(--edge);
+    }
+    @media(min-width: 640px) {
+      .head { flex-direction: row; align-items: flex-end; justify-content: space-between; }
+    }
+
+    .id-row {
+      display: flex;
+      align-items: center;
+      gap: 22px;
+    }
+    .avatar-disc {
+      position: relative;
+      width: 100px;
+      height: 100px;
+      border-radius: 26px;
+      overflow: hidden;
+      border: 2px solid var(--edge);
+      background: var(--surface);
+      box-shadow: 0 10px 28px rgba(0, 0, 0, 0.5);
+    }
+    .avatar-disc img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+    .presence {
+      position: absolute;
+      bottom: 6px;
+      right: 6px;
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: var(--success);
+      border: 3px solid var(--surface);
+    }
+
+    .idmain .name {
+      font-family: var(--font-display);
+      font-size: 32px;
+      font-weight: 600;
+      letter-spacing: -0.6px;
+      line-height: 1.1;
+    }
+    .idmain .subrow {
+      margin-top: 6px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 14.5px;
+      color: var(--ink-muted);
+    }
+    .idmain .h {
+      color: var(--accent);
+      font-weight: 600;
+    }
+
+    .actions {
+      display: flex;
+      gap: 12px;
+    }
+    .btn-add {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 20px;
+      border-radius: 10px;
+      background: var(--accent);
+      color: #0b0e14;
+      font-weight: 600;
+      font-size: 14px;
+      cursor: pointer;
+      border: none;
+      transition: background 0.15s, transform 0.15s;
+    }
+    .btn-add:hover { background: #7dd3fc; transform: translateY(-1px); }
+
+    .stats {
+      margin-top: 28px;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+      gap: 14px;
+    }
+    .stat-pill {
+      background: var(--surface);
+      border: 1px solid var(--edge);
+      border-radius: 14px;
+      padding: 18px 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .stat-pill .v {
+      font-family: var(--font-display);
+      font-size: 26px;
+      font-weight: 600;
+      color: var(--ink);
+    }
+    .stat-pill .l {
+      font-size: 12.5px;
+      font-weight: 500;
+      color: var(--ink-subtle);
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+    }
+
+    .grid {
+      margin-top: 32px;
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 24px;
+    }
+    @media(min-width: 860px) {
+      .grid { grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); }
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--edge);
+      border-radius: 18px;
+      padding: 24px;
+      margin-bottom: 24px;
+    }
+    .card:last-child { margin-bottom: 0; }
+    .card .shead {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 16px;
+      font-weight: 600;
+      margin-bottom: 16px;
+      color: var(--ink);
+    }
+    .card .shead svg {
+      width: 18px;
+      height: 18px;
+      color: var(--accent);
+    }
+    .empty {
+      color: var(--ink-subtle);
+      font-size: 14px;
+      font-style: italic;
+    }
+
+    .compose {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-top: 12px;
+    }
+    .compose textarea {
+      width: 100%;
+      height: 80px;
+      background: var(--elevated);
+      border: 1px solid var(--edge);
+      border-radius: 12px;
+      padding: 12px;
+      color: var(--ink);
+      font: inherit;
+      resize: vertical;
+    }
+    .compose textarea:focus {
+      outline: 2px solid var(--accent);
+      border-color: transparent;
+    }
+    .compose-foot {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .compose-hint { font-size: 12px; color: var(--ink-subtle); }
+    .btn-post {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 18px;
+      border-radius: 8px;
+      background: var(--elevated);
+      border: 1px solid var(--edge);
+      color: var(--ink);
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .btn-post:hover { background: var(--raised); }
+
+    footer {
+      max-width: 1140px;
+      margin: 40px auto 0;
+      padding: 24px 0;
+      border-top: 1px solid var(--edge);
+      display: flex;
+      justify-content: space-between;
+      color: var(--ink-subtle);
+      font-size: 13px;
+    }
+  </style>
+</head>
+<body>
+  <nav class="nav">
+    <div class="nav-inner">
+      <a class="brand" href="../index.html">
+        <svg viewBox="0 0 64 64" fill="currentColor">
+          <path d="M32 12C18 12 7 24 3 32c4 8 15 20 29 20s25-12 29-20C57 24 46 12 32 12Zm0 8a12 12 0 1 1 0 24 12 12 0 0 1 0-24Z"/>
+          <path d="M32 26a6 6 0 1 0 0 12 6 6 0 0 0 0-12Z"/>
+        </svg>
+        Argus
+      </a>
+      <div class="nav-links">
+        <a href="#about">About</a>
+        <a href="#ratings">Ratings</a>
+        <a href="#activity">Activity</a>
+        <a href="#comments">Comments</a>
+        <a href="../community.html">Announcement</a>
+      </div>
+    </div>
+  </nav>
+
+  <div class="wrap">
+    <header class="head">
+      <div class="id-row">
+        <div class="avatar-disc">
+          <img src="https://harborcommunity.site/themes/api/images/authors/8b56f638-87c4-4ad8-9068-9c1a2cd43b9e.webp?v=1793030393369" alt="anupam">
+          <span class="presence" title="Active on Argus"></span>
+        </div>
+        <div class="idmain">
+          <h1 class="name">anupam</h1>
+          <div class="subrow">
+            <span class="h">@anupam</span>
+            <span>• Active on Argus</span>
+          </div>
+        </div>
+      </div>
+      <div class="actions">
+        <button type="button" class="btn-add">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" x2="19" y1="8" y2="14"/><line x1="22" x2="16" y1="11" y2="11"/></svg>
+          Add friend
+        </button>
+      </div>
+    </header>
+
+    <section class="stats" aria-label="Profile stats">
+      <div class="stat-pill">
+        <div class="v">573</div>
+        <div class="l">Watched</div>
+      </div>
+      <div class="stat-pill">
+        <div class="v">0</div>
+        <div class="l">Read</div>
+      </div>
+      <div class="stat-pill">
+        <div class="v">0</div>
+        <div class="l">Friends</div>
+      </div>
+      <div class="stat-pill">
+        <div class="v">0</div>
+        <div class="l">Badges</div>
+      </div>
+    </section>
+
+    <div class="grid">
+      <div class="col-main">
+        <section id="about" class="card">
+          <div class="shead">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 12h-5"/><path d="M15 8h-5"/><path d="M19 17V5a2 2 0 0 0-2-2H4"/><path d="M8 21h12a2 2 0 0 0 2-2v-1a1 1 0 0 0-1-1H11a1 1 0 0 0-1 1v1a2 2 0 1 1-4 0V5a2 2 0 1 0-4 0v2a1 1 0 0 0 1 1h3"/></svg>
+            About
+          </div>
+          <p class="empty">This user hasn't written anything yet</p>
+        </section>
+
+        <section id="ratings" class="card">
+          <div class="shead">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11.5 2.3a.55.55 0 0 1 1 0l2.3 4.7 5.2.75a.53.53 0 0 1 .3.9l-3.75 3.65.9 5.15a.53.53 0 0 1-.77.56L12 18.24l-4.62 2.42a.53.53 0 0 1-.77-.56l.88-5.15L3.75 9.3a.53.53 0 0 1 .3-.9l5.16-.76z"/></svg>
+            Ratings
+          </div>
+          <p class="empty">No ratings yet</p>
+        </section>
+
+        <section id="showcase" class="card">
+          <div class="shead">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+            Showcase
+          </div>
+          <p class="empty">A favorite title will appear here</p>
+        </section>
+
+        <section id="activity" class="card">
+          <div class="shead">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.2 6 3 11l-.9-2.4c-.3-1.1.3-2.2 1.3-2.5l13.5-4c1.1-.3 2.2.3 2.5 1.3Z"/><path d="m6.2 5.3 3.1 3.9"/><path d="m12.4 3.4 3.1 4"/><path d="M3 11h18v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z"/></svg>
+            Recent Activity
+          </div>
+          <p class="empty">No recent activity yet</p>
+        </section>
+
+        <section id="comments" class="card">
+          <div class="shead">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+            Comments
+          </div>
+          <form class="compose" onsubmit="event.preventDefault(); alert('Comment posted to profile!');">
+            <textarea placeholder="Leave a comment for @anupam. No links." maxlength="500"></textarea>
+            <div class="compose-foot">
+              <span class="compose-hint">No links</span>
+              <button type="submit" class="btn-post">Post</button>
+            </div>
+          </form>
+        </section>
+      </div>
+
+      <div class="col-rail">
+        <section id="friends" class="card">
+          <div class="shead">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+            Friends
+          </div>
+          <p class="empty">No friends to show yet</p>
+        </section>
+
+        <section id="groups" class="card">
+          <div class="shead">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 21a8 8 0 0 0-16 0"/><circle cx="10" cy="8" r="5"/><path d="M22 20c0-3.37-2-6.5-4-8a5 5 0 0 0-.45-8.3"/></svg>
+            Groups
+          </div>
+          <p class="empty">Browse public groups on Discord</p>
+        </section>
+      </div>
+    </div>
+
+    <footer>
+      <span>Argus Community &middot; Your account works across app and web</span>
+      <a href="https://github.com/archiboltmusk/Argus" target="_blank" rel="noopener">GitHub</a>
+    </footer>
+  </div>
+</body>
+</html>
