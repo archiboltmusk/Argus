@@ -256,6 +256,14 @@ export function UpNextTab() {
                     onChange={(v) => update({ endScreenOnZero: v === "play" ? "play" : "close" })}
                   />
                 </SettingRow>
+                <ToggleRow
+                  label={t("Show on still-airing series")}
+                  sub={t(
+                    "Show More Like This recommendations after the latest aired episode, even when future episodes are scheduled or yet to air.",
+                  )}
+                  value={settings.endScreenStillAiring}
+                  onChange={(v) => update({ endScreenStillAiring: v })}
+                />
               </>
             )}
           </>

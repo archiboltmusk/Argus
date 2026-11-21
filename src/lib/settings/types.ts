@@ -659,6 +659,8 @@ export type Settings = {
   endScreenCountdownSec: number;
   /** What the countdown does when it reaches zero. */
   endScreenOnZero: "close" | "play";
+  /** Whether More Like This is shown after the latest aired episode on still-airing series. */
+  endScreenStillAiring: boolean;
   autoPlayNextEpisode: boolean;
   stillWatching: boolean;
   stillWatchingAfter: number;
@@ -722,6 +724,8 @@ export type Settings = {
   animeCwEnd: "hide" | "timer";
   cwAdvanceNext: boolean;
   cwHideCaughtUp: boolean;
+  /** Whether Continue Watching allows playing an episode even if its listed release date is in the future. */
+  cwAllowUnreleased: boolean;
   useNativeTitleBar: boolean;
   fullscreenClockEnabled: boolean;
   fullscreenClockFormat: FullscreenClockFormat;

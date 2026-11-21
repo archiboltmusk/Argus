@@ -8,7 +8,7 @@ import { kitsuAnime, kitsuRelated, parseKitsuId } from "@/lib/providers/kitsu";
 export async function isFinalSeriesEpisode(
   meta: Meta,
   current: PlayEpisode,
-  opts: { tmdbKey: string; isAnime?: boolean },
+  opts: { tmdbKey: string; isAnime?: boolean; stillAiring?: boolean },
 ): Promise<boolean> {
   const animeId = animeSeriesFromStreamId(current.kitsuStreamId);
   const id = animeId ?? meta.id;
@@ -45,6 +45,11 @@ export async function isFinalSeriesEpisode(
     )
   )
     return false;
+  if (
+    !opts.stillAiring &&
+    eps.some((e) => e.season === matched.season && e.episode > matched.episode)
+  )
+    return false;
   if (kitsuId != null) {
     const related = await kitsuRelated(kitsuId);
     const sequels = await Promise.all(
@@ -60,7 +65,7 @@ export async function isFinalSeriesEpisode(
         (anime) =>
           anime &&
           (anime.status === "finished" ||
-            anime.status === "current" ||
+            (!opts.stillAiring && anime.status === "current") ||
             (Number.isFinite(Date.parse(anime.startDate ?? "")) &&
               Date.parse(anime.startDate!) <= Date.now())),
       )

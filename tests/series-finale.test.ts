@@ -117,3 +117,19 @@ test("Kitsu end-screen recommendations use the anime provider without a TMDB key
   assert.deepEqual(await loadMoreLikeThis({ id: "kitsu:42" }, null), items.slice(0, 18));
   assert.equal(called, 42);
 });
+
+test("still-airing series: future unreleased episodes block More Like This by default, but permit it when stillAiring is enabled", async () => {
+  const eps = [
+    { season: 1, episode: 1, airDate: "2024-01-01" },
+    { season: 1, episode: 2, airDate: "2099-01-01" },
+  ];
+  const cur = { season: 1, episode: 1 };
+  assert.equal(
+    await finale({ fetchEpisodeList: async () => eps })(meta, cur, { ...opts, stillAiring: false }),
+    false,
+  );
+  assert.equal(
+    await finale({ fetchEpisodeList: async () => eps })(meta, cur, { ...opts, stillAiring: true }),
+    true,
+  );
+});

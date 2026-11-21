@@ -719,6 +719,7 @@ function NativePlayerView({ src }: { src: PlayerSrc }) {
     countdownSec: settings.endScreenCountdownSec,
     onZero: settings.endScreenOnZero,
     tmdbKey: settings.tmdbKey,
+    stillAiring: settings.endScreenStillAiring,
     isLive: isLiveLike,
     onPlay: playFromEndScreen,
     onClose: () => void closePlayer(),

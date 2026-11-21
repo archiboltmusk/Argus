@@ -546,7 +546,8 @@ export function useCwAdvance(
           );
           if (followUp) nextEp = followUp;
         }
-        if (nextEp && nextEpAired(list, nextEp, isAnime)) {
+        const aired = nextEp ? nextEpAired(list, nextEp, isAnime) : false;
+        if (nextEp && (aired || settings.cwAllowUnreleased)) {
           const displaySeason = remappedMixed
             ? nextEp.season
             : origCur.season !== effCur.season
@@ -563,6 +564,12 @@ export function useCwAdvance(
               flaggedWatched: 0,
             },
             upNext: true,
+            ...(!aired
+              ? {
+                  waitingForAir: true as const,
+                  nextAirDate: nextEp.airDate,
+                }
+              : {}),
           });
         } else if (animeCwEnd === "timer" && nextEp && (nextEp.airDate || isAnime)) {
           next.set(i._id, {

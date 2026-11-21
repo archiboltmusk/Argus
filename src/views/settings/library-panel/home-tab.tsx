@@ -209,6 +209,14 @@ export function HomeTab() {
             value={settings.cwHideCaughtUp}
             onChange={(v) => update({ cwHideCaughtUp: v })}
           />
+          <ToggleRow
+            label={t("Allow playing unreleased episodes")}
+            sub={t(
+              "Continue Watching can play an episode even when its listed release date is still in the future. The countdown and Upcoming label stay visible.",
+            )}
+            value={settings.cwAllowUnreleased}
+            onChange={(v) => update({ cwAllowUnreleased: v })}
+          />
           <SettingRow
             label={t("When the latest episode ends")}
             desc={t(

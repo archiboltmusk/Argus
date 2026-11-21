@@ -461,6 +461,11 @@ function parseStoredSettings(raw: string | null): { settings: Settings; cacheabl
       endScreenLeadSec: sanitizeEndScreenLead(parsed.endScreenLeadSec),
       endScreenCountdownSec: sanitizeEndScreenCountdown(parsed.endScreenCountdownSec),
       endScreenOnZero: parsed.endScreenOnZero === "play" ? "play" : "close",
+      endScreenStillAiring: parsed.endScreenStillAiring === true,
+      cwAllowUnreleased:
+        typeof parsed.cwAllowUnreleased === "boolean"
+          ? parsed.cwAllowUnreleased
+          : DEFAULT.cwAllowUnreleased,
       bigPictureDisplay: sanitizeDisplaySelection(parsed.bigPictureDisplay),
       playerSeparateDisplay: sanitizeDisplaySelection(parsed.playerSeparateDisplay),
       playerSeparateCoverTaskbar:

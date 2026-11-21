@@ -224,6 +224,9 @@ function harness() {
     setPrivate: (value: boolean) => {
       settings = { ...settings, cwPerProfile: value };
     },
+    setAllowUnreleased: (value: boolean) => {
+      settings = { ...settings, cwAllowUnreleased: value };
+    },
     setSource: (value: boolean) => {
       settings = { ...settings, cwSources: { simkl: value } };
     },
@@ -364,6 +367,22 @@ test("future and unknown anime episodes are not presented as playable up next", 
     h.render([item(1, iso(-3600000), "mal:1")], "", true);
     assert.equal((await h.flush())[0]?.upNext, undefined);
   }
+});
+
+test("future and unreleased episodes are playable up next when cwAllowUnreleased is true", async () => {
+  const h = harness();
+  h.setAllowUnreleased(true);
+  h.setRemote(progress([1], "mal:1"));
+  h.setEpisodes([
+    { season: 1, episode: 1, airDate: "2020-01-01" },
+    { season: 1, episode: 2, airDate: "2099-01-01" },
+  ]);
+  h.render([item(1, iso(-3600000), "mal:1")], "", true);
+  const result = (await h.flush())[0];
+  assert.equal(result.upNext, true);
+  assert.equal(result.state.episode, 2);
+  assert.equal(result.waitingForAir, true);
+  assert.equal(result.nextAirDate, "2099-01-01");
 });
 
 test("local completion does not wait for a slow history request", async () => {
