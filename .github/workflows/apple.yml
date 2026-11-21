@@ -91,6 +91,12 @@ jobs:
           fi
 
           node scripts/package-apple-app.mjs --platform ios --app-dir "$RUNNER_TEMP/Payload/Argus.app" --dist-dir dist --version "$(node -p 'require("./package.json").version')"
+          if [ -d "$RUNNER_TEMP/Payload/Argus.app/Frameworks" ]; then
+            for fw in "$RUNNER_TEMP/Payload/Argus.app/Frameworks"/*.framework; do
+              [ -d "$fw" ] && codesign -s - --force "$fw" 2>/dev/null || true
+            done
+          fi
+          codesign -s - --force "$RUNNER_TEMP/Payload/Argus.app" 2>/dev/null || true
           (cd "$RUNNER_TEMP" && zip -r -9 Argus-iOS-iPadOS.ipa Payload)
           cp "$RUNNER_TEMP/Argus-iOS-iPadOS.ipa" "$GITHUB_WORKSPACE/Argus-iOS-iPadOS.ipa"
       - name: Smoke-check IPA payload (Argus-iOS-iPadOS.ipa)
@@ -279,3 +285,12 @@ jobs:
               gh release upload "$TAG" "$ipa#$LABEL" --repo "$GITHUB_REPOSITORY" --clobber
             fi
           done
+          LATEST_TAG=$(gh release view --repo "$GITHUB_REPOSITORY" --json tagName --jq .tagName 2>/dev/null || true)
+          if [ -n "$LATEST_TAG" ] && [ "$LATEST_TAG" != "$TAG" ]; then
+            for ipa in *.ipa; do
+              if [ -f "$ipa" ] && [ "$ipa" = "Argus-iOS-iPadOS.ipa" ]; then
+                echo "Uploading $ipa to $LATEST_TAG..."
+                gh release upload "$LATEST_TAG" "$ipa#Argus iOS & iPadOS IPA" --repo "$GITHUB_REPOSITORY" --clobber || true
+              fi
+            done
+          fi
