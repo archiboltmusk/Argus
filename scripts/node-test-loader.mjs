@@ -48,7 +48,7 @@ export async function resolve(specifier, context, nextResolve) {
     if (url) return { url, shortCircuit: true };
   }
 
-  if (sourcePath && /\.(?:png|jpe?g|webp|gif|svg|css|json)$/.test(sourcePath)) {
+  if (sourcePath && /\.(?:png|jpe?g|webp|gif|svg|ico|css|json)$/.test(sourcePath)) {
     return { url: pathToFileURL(sourcePath).href, shortCircuit: true };
   }
 
@@ -74,7 +74,7 @@ export async function load(url, context, nextLoad) {
       shortCircuit: true,
     };
   }
-  if (/\.(?:png|jpe?g|webp|gif|svg)$/.test(url)) {
+  if (/\.(?:png|jpe?g|webp|gif|svg|ico)$/.test(url)) {
     return {
       format: "module",
       source: `export default ${JSON.stringify(url)};`,

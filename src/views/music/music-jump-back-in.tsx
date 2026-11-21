@@ -3,7 +3,7 @@ import { useMusicNowPlaying } from "@/lib/music/use-now-playing";
 import { MusicNowPlayingMark } from "@/components/music/music-now-playing-mark";
 import { jumpBackInPlayingKey } from "@/lib/music/jump-back-in-playing";
 import { legacySingleArtist, musicDestinationIdentity, musicRecentContextIdentity, uniqueMusicRecents } from "@/lib/music/recent-identity";
-import { useRef, useState, type MouseEvent } from "react";
+import { useMemo, useRef, useState, type MouseEvent } from "react";
 import { MusicPinnedCover } from "@/components/music/music-pinned-cover";
 import { MusicCardBadgeChip } from "@/components/music/music-cover-card";
 import { musicItemMenuItems, musicPlayOpenMenuItems } from "@/components/music/music-item-menu";
@@ -208,32 +208,40 @@ function JumpBackIn({ ctx, title }: { ctx: MusicBandContext; title: string }) {
 
   // Everything the listener actually opened, newest first, so the row reads as where they just
   // were rather than a fixed menu.
-  const recent: Tile[] = uniqueMusicRecents([
-    ...destinations.map((entry) => ({
-      key: `${entry.kind}:${entry.id}`,
-      identity: musicDestinationIdentity(entry),
-      at: entry.at,
-      name: entry.name,
-      arts: [entry.artwork],
-      note: noteFor(entry.kind, t, entry.artist),
-      connectorId: named(entry.kind === "liked" ? undefined : entry.connectorId),
-      saved: entry.kind === "liked",
-      open: () => openDestination(entry),
-      source: { kind: "destination", entry } as const,
-    })),
-    ...contexts.map((context) => ({
-      key: `${context.kind}:${context.id}`,
-      identity: musicRecentContextIdentity(context),
-      at: context.at,
-      name: legacySingleArtist(context) ? t("music.madeForYou.namedMix", { name: legacySingleArtist(context)! }) : context.name,
-      arts: context.artwork.filter(Boolean),
-      surprise: context.kind === "similar" && context.id.startsWith("mix:surprise:"),
-      note: noteFor(context.kind === "similar" ? "mix" : "playlist", t),
-      open: () => openContext(context, `${context.kind}:${context.id}`),
-      source: { kind: "context", context } as const,
-    })),
-  ], tile => tile.identity)
-    .map(({ at: _at, ...tile }) => tile);
+  const recent: Tile[] = useMemo(
+    () =>
+      uniqueMusicRecents(
+        [
+          ...destinations.map((entry) => ({
+            key: `${entry.kind}:${entry.id}`,
+            identity: musicDestinationIdentity(entry),
+            at: entry.at,
+            name: entry.name,
+            arts: [entry.artwork],
+            note: noteFor(entry.kind, t, entry.artist),
+            connectorId: named(entry.kind === "liked" ? undefined : entry.connectorId),
+            saved: entry.kind === "liked",
+            open: () => openDestination(entry),
+            source: { kind: "destination", entry } as const,
+          })),
+          ...contexts.map((context) => ({
+            key: `${context.kind}:${context.id}`,
+            identity: musicRecentContextIdentity(context),
+            at: context.at,
+            name: legacySingleArtist(context)
+              ? t("music.madeForYou.namedMix", { name: legacySingleArtist(context)! })
+              : context.name,
+            arts: context.artwork.filter(Boolean),
+            surprise: context.kind === "similar" && context.id.startsWith("mix:surprise:"),
+            note: noteFor(context.kind === "similar" ? "mix" : "playlist", t),
+            open: () => openContext(context, `${context.kind}:${context.id}`),
+            source: { kind: "context", context } as const,
+          })),
+        ],
+        (tile) => tile.identity,
+      ).map(({ at: _at, ...tile }) => tile),
+    [destinations, contexts, t],
+  );
 
   const tiles = recent.slice(0, TILES);
   if (!ready && tiles.length === 0) {

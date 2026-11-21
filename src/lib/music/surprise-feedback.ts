@@ -43,10 +43,19 @@ export function dismissSurprisePrompt(): void {
 
 export const surpriseFeedbackState = (): SurpriseFeedbackState => state;
 
+const subscribeSurpriseFeedback = (listener: () => void) => {
+  listeners.add(listener);
+  return () => {
+    listeners.delete(listener);
+  };
+};
+
+const serverSurpriseFeedbackState = (): SurpriseFeedbackState => ({ step: "idle", heard: 0, covers: [] });
+
 export function useSurpriseFeedback(): SurpriseFeedbackState {
   return useSyncExternalStore(
-    listener => { listeners.add(listener); return () => { listeners.delete(listener); }; },
-    () => state,
-    () => ({ step: "idle" as SurprisePromptStep, heard: 0, covers: [] }),
+    subscribeSurpriseFeedback,
+    surpriseFeedbackState,
+    serverSurpriseFeedbackState,
   );
 }

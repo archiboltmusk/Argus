@@ -3,6 +3,8 @@ import { GameAccessProvider } from "@/views/games/game-access-context";
 import { GameLibraryDock } from "@/views/games/game-library-dock";
 import { GameDockWelcome } from "@/views/games/game-dock-welcome";
 import { GameRouteLoading } from "@/views/games/game-route-loading";
+import { MusicRouteLoading } from "@/views/music/music-route-loading";
+import { MusicLayerErrorBoundary } from "@/views/music/music-layer-error-boundary";
 import { hasBackHandlers } from "@/lib/back-intercept";
 import { useSportsEnabled } from "@/lib/sports/enabled";
 import { usePlaylists } from "@/lib/iptv/playlists-store";
@@ -2106,17 +2108,19 @@ function Shell({ onReady }: { onReady?: () => void }) {
             )}
             {musicAlive && (
               <div {...parkLayerProps(musicTop)}>
-                <Suspense fallback={null}>
-                  <MusicView
-                    active={musicTop}
-                    shellBackAvailable={
-                      canGoBack &&
-                      !chromeHidden &&
-                      !immersive &&
-                      (themeHasTopbar || layout === "minui")
-                    }
-                  />
-                </Suspense>
+                <MusicLayerErrorBoundary>
+                  <Suspense fallback={<MusicRouteLoading />}>
+                    <MusicView
+                      active={musicTop}
+                      shellBackAvailable={
+                        canGoBack &&
+                        !chromeHidden &&
+                        !immersive &&
+                        (themeHasTopbar || layout === "minui")
+                      }
+                    />
+                  </Suspense>
+                </MusicLayerErrorBoundary>
               </div>
             )}
             {gamesAlive && (

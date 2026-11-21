@@ -1107,6 +1107,39 @@ function MusicViewContent({ active }: { active: boolean }) {
     openConnections,
   };
 
+  // While connections status is loading and connections are not yet settled,
+  // show the skeleton placeholder so the full heavy catalog doesn't mount/unmount thrash.
+  if (connectionsStatus === "loading" && (!connections || connections.length === 0)) {
+    return (
+      <main className="min-h-0 min-w-0 w-full flex-1 overflow-x-hidden px-5 pt-28 pb-14 text-ink bg-canvas sm:px-8 lg:px-12">
+        <div className="mx-auto flex w-full max-w-[1480px] flex-col gap-6 pb-24">
+          <section data-scroll-anchor="mast">
+            <MusicMast
+              initialQuery=""
+              onSubmit={runSearch}
+              onClear={clearSearch}
+              onPick={(item) => openItem(item, [item])}
+              searching={false}
+            />
+          </section>
+          <div className="flex flex-col gap-8">
+            <MusicHomeHeroSkeleton />
+          </div>
+        </div>
+      </main>
+    );
+  }
+
+  // First run has nothing to play from, so the music home would be an empty shell.
+  // Opening connections keeps the full page mounted while a source is being added.
+  if (connectionsStatus === "ready" && !connectionsPage && !hasUsableMusicSource(connections)) {
+    return (
+      <main className="media-start-scroll w-full h-full min-h-0 min-w-0 flex-1 pt-24 text-ink bg-canvas">
+        <MediaStartPage kind="music" onSetup={() => openConnections()} />
+      </main>
+    );
+  }
+
   const personal = personalBands(context);
   const spotifyRows = spotifyBands(context);
   const catalog = catalogBands(context);
@@ -1209,39 +1242,6 @@ function MusicViewContent({ active }: { active: boolean }) {
     data.libraryStatus === "error" &&
     player.recents.length === 0 &&
     player.likedTracks.length === 0;
-
-  // While connections status is loading and connections are not yet settled,
-  // show the skeleton placeholder so the full heavy catalog doesn't mount/unmount thrash.
-  if (connectionsStatus === "loading" && (!connections || connections.length === 0)) {
-    return (
-      <main className="min-h-0 min-w-0 w-full flex-1 overflow-x-hidden px-5 pt-28 pb-14 text-ink bg-canvas sm:px-8 lg:px-12">
-        <div className="mx-auto flex w-full max-w-[1480px] flex-col gap-6 pb-24">
-          <section data-scroll-anchor="mast">
-            <MusicMast
-              initialQuery=""
-              onSubmit={runSearch}
-              onClear={clearSearch}
-              onPick={(item) => openItem(item, [item])}
-              searching={false}
-            />
-          </section>
-          <div className="flex flex-col gap-8">
-            <MusicHomeHeroSkeleton />
-          </div>
-        </div>
-      </main>
-    );
-  }
-
-  // First run has nothing to play from, so the music home would be an empty shell.
-  // Opening connections keeps the full page mounted while a source is being added.
-  if (connectionsStatus === "ready" && !connectionsPage && !hasUsableMusicSource(connections)) {
-    return (
-      <main className="media-start-scroll w-full h-full min-h-0 min-w-0 flex-1 pt-24 text-ink bg-canvas">
-        <MediaStartPage kind="music" onSetup={() => openConnections()} />
-      </main>
-    );
-  }
 
   return (
     <MusicNavigateProvider value={navigate}>

@@ -1,4 +1,4 @@
-import { useSyncExternalStore } from "react";
+import { useCallback, useSyncExternalStore } from "react";
 import { requestMusicExplore, type MusicExploreRequest } from "./navigation";
 import {
   hydrateJsonStore,
@@ -97,10 +97,17 @@ export function heldMusicContextTracks(
   return heldTracks.get(contextKey(kind, id)) ?? null;
 }
 
+const subscribeTrackListeners = (listener: () => void) => {
+  trackListeners.add(listener);
+  return () => {
+    trackListeners.delete(listener);
+  };
+};
+
 export function useMusicContextTracks(kind: MusicRecentContextKind, id: string | undefined): MusicTrack[] | null {
-  const snapshot = () => id ? heldMusicContextTracks(kind, id) : null;
+  const snapshot = useCallback(() => (id ? heldMusicContextTracks(kind, id) : null), [kind, id]);
   return useSyncExternalStore(
-    listener => { trackListeners.add(listener); return () => { trackListeners.delete(listener); }; },
+    subscribeTrackListeners,
     snapshot,
     snapshot,
   );
@@ -292,10 +299,12 @@ export function getMusicTrackContext(
 export function useMusicTrackContext(
   track: MusicTrackIdentity | null | undefined,
 ): MusicRecentContext | null {
+  const trackKey = track ? `${track.id ?? ""}:${track.connectorId ?? ""}:${track.title ?? ""}:${track.artist ?? ""}` : "";
+  const snapshot = useCallback(() => getMusicTrackContext(track), [trackKey]);
   return useSyncExternalStore(
     subscribe,
-    () => getMusicTrackContext(track),
-    () => getMusicTrackContext(track),
+    snapshot,
+    snapshot,
   );
 }
 

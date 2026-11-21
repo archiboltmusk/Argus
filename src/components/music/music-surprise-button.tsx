@@ -11,7 +11,12 @@ export function MusicSurpriseButton({ genres, homeRows, spotifyConnected, onChoo
   const [rolling, setRolling] = useState(status === "loading");
   useEffect(() => {
     if (status === "loading") setRolling(true);
-    else if (matchMedia("(prefers-reduced-motion: reduce)").matches) setRolling(false);
+    else if (
+      typeof window !== "undefined" &&
+      typeof window.matchMedia === "function" &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches
+    )
+      setRolling(false);
   }, [status]);
   const active = status === "playing" || status === "loading" || status === "waiting";
   const message = status === "empty" ? t("music.surprise.empty") : status === "error" ? t("music.surprise.error") : null;

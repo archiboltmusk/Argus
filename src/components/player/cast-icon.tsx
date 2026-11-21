@@ -2,11 +2,15 @@ import { Monitor, Tv2 } from "lucide-react";
 import { useState } from "react";
 import type { CastDeviceInfo } from "@/lib/cast";
 
-const MODULES = import.meta.glob("/src/assets/cast-icons/*.webp", {
-  eager: true,
-  query: "?url",
-  import: "default",
-}) as Record<string, string>;
+const MODULES = (
+  typeof import.meta.glob === "function"
+    ? import.meta.glob("/src/assets/cast-icons/*.webp", {
+        eager: true,
+        query: "?url",
+        import: "default",
+      })
+    : {}
+) as Record<string, string>;
 
 const ICONS: Record<string, string> = {};
 for (const [path, url] of Object.entries(MODULES)) {

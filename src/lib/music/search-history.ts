@@ -41,6 +41,12 @@ export function rememberMusicSearchItem(item: MusicCatalogItem) {
   publish(prependMusicSearch(snapshot(), { id: `${kind}:${connectorId}:${id}`, item: saved }));
 }
 export function removeMusicSearch(id: string) { publish(snapshot().filter((entry) => entry.id !== id)); }
+const subscribeSearchHistory = (listener: () => void) => {
+  listeners.add(listener);
+  return () => {
+    listeners.delete(listener);
+  };
+};
 export function useMusicSearchHistory() {
-  return useSyncExternalStore((listener) => { listeners.add(listener); return () => { listeners.delete(listener); }; }, snapshot, snapshot);
+  return useSyncExternalStore(subscribeSearchHistory, snapshot, snapshot);
 }

@@ -20,7 +20,10 @@ export function useSmoothWheel(ref: RefObject<HTMLElement | null>, enabled: bool
   useEffect(() => {
     const el = ref.current;
     if (!el || !enabled) return;
-    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const reducedMotion =
+      typeof window !== "undefined" && typeof window.matchMedia === "function"
+        ? window.matchMedia("(prefers-reduced-motion: reduce)")
+        : { matches: false };
 
     let target = el.scrollTop;
     let raf = 0;
@@ -90,13 +93,17 @@ export function useSmoothWheel(ref: RefObject<HTMLElement | null>, enabled: bool
     el.addEventListener("pointerdown", cancel, { passive: true, capture: true });
     el.addEventListener("touchstart", cancel, { passive: true });
     window.addEventListener("keydown", cancel, { capture: true });
-    reducedMotion.addEventListener("change", cancel);
+    if ("addEventListener" in reducedMotion && typeof reducedMotion.addEventListener === "function") {
+      reducedMotion.addEventListener("change", cancel);
+    }
     return () => {
       el.removeEventListener("wheel", onWheel);
       el.removeEventListener("pointerdown", cancel, true);
       el.removeEventListener("touchstart", cancel);
       window.removeEventListener("keydown", cancel, true);
-      reducedMotion.removeEventListener("change", cancel);
+      if ("removeEventListener" in reducedMotion && typeof reducedMotion.removeEventListener === "function") {
+        reducedMotion.removeEventListener("change", cancel);
+      }
       cancel();
     };
   }, [ref, enabled]);
