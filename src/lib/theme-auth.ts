@@ -66,7 +66,9 @@ function sessionKey(): string {
 }
 function migrateLegacyGlobal(): void {
   try {
-    const legacy = localStorage.getItem(LEGACY_SESSION_KEY);
+    const legacy =
+      localStorage.getItem(LEGACY_SESSION_KEY) ||
+      localStorage.getItem("harbor.theme-session");
     if (!legacy) return;
     const pid = primaryProfileId();
     if (!pid) return;
@@ -154,7 +156,21 @@ function parseSession(raw: string | null): Session | null {
 
 function readSession(): Session | null {
   try {
-    return parseSession(localStorage.getItem(sessionKey()));
+    const key = sessionKey();
+    let raw = localStorage.getItem(key);
+    if (!raw) {
+      const harborKey = key.replace(/^argus\./, "harbor.");
+      raw = localStorage.getItem(harborKey);
+      if (raw) localStorage.setItem(key, raw);
+    }
+    if (!raw) {
+      const harborLegacy = localStorage.getItem("harbor.theme-session");
+      if (harborLegacy) {
+        raw = harborLegacy;
+        localStorage.setItem(key, raw);
+      }
+    }
+    return parseSession(raw);
   } catch {
     return null;
   }
