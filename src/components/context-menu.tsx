@@ -14,6 +14,8 @@ import {
   EyeOff,
   Heart,
   Info,
+  ListCheck,
+  ListPlus,
   Navigation,
   Pencil,
   RotateCcw,
@@ -41,6 +43,7 @@ import { useTogether } from "@/lib/together/provider";
 import type { ParticipantLocation } from "@/lib/together/protocol";
 import { useView } from "@/lib/view";
 import { useInWatchlist } from "@/lib/watchlist";
+import { useInVideoQueue, toggleVideoQueue } from "@/lib/video-queue";
 import {
   setContextFavorite,
   setContextWatchlist,
@@ -307,6 +310,7 @@ export function ContextMenu() {
     null,
   );
   const isWatchlisted = useInWatchlist(targetMetaId, [targetImdb]);
+  const inVideoQueue = useInVideoQueue(targetMetaId);
   const isFav = useIsFavorite(targetMetaId);
   const { settings: appSettings, update: updateSettings } = useSettings();
   const navEditing = useNavEditMode();
@@ -594,6 +598,31 @@ export function ContextMenu() {
           label={isWatchlisted ? t("Remove from watchlist") : t("Add to watchlist")}
           onClick={handleWatchlist}
           accent={isWatchlisted}
+        />,
+      );
+    if (organizedMedia)
+      items.push(
+        <Item
+          key="queue"
+          icon={
+            inVideoQueue ? (
+              <ListCheck size={14} strokeWidth={2} />
+            ) : (
+              <ListPlus size={14} strokeWidth={2} />
+            )
+          }
+          label={inVideoQueue ? t("Remove from queue") : t("Add to queue")}
+          onClick={() => {
+            toggleVideoQueue({
+              id: meta.id,
+              type: (meta.type as "movie" | "series") || "movie",
+              name: meta.name,
+              poster: meta.poster,
+              background: meta.background,
+            });
+            close();
+          }}
+          accent={inVideoQueue}
         />,
       );
     if (organizedMedia)

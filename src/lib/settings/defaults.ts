@@ -32,6 +32,8 @@ export const DEFAULT: Settings = {
   imdbApiFallback: true,
   fanartKey: "",
   tvdbKey: "",
+  seekrKey: "",
+  seekrEnabled: true,
   rdKey: "",
   tbKey: "",
   adKey: "",

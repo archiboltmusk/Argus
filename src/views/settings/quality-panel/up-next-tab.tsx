@@ -261,6 +261,47 @@ export function UpNextTab() {
           </>
         )}
       </Section>
+
+      <Section
+        title={t("Seekr.tv Video Scrub Thumbnails")}
+        subtitle={t(
+          "Connect a free seekr.tv API key to stream high-speed seek thumbnail previews on the video timeline.",
+        )}
+      >
+        <ToggleRow
+          label={t("Enable Seekr.tv Thumbnails")}
+          sub={t("Show video frame previews when hovering or scrubbing the progress bar.")}
+          value={settings.seekrEnabled}
+          onChange={(v) => update({ seekrEnabled: v })}
+        />
+        {settings.seekrEnabled && (
+          <div className="flex flex-col gap-2 pt-2">
+            <label className="text-xs font-semibold text-ink-subtle uppercase tracking-wider">
+              {t("Seekr.tv API Key")}
+            </label>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                placeholder={t("Enter your free Seekr API key")}
+                value={settings.seekrKey}
+                onChange={(e) => update({ seekrKey: e.target.value.trim() })}
+                className="flex-1 rounded-xl border border-white/10 bg-black/40 px-3.5 py-2 text-sm text-ink outline-none transition focus:border-accent"
+              />
+            </div>
+            <p className="text-xs text-ink-subtle">
+              {t("Get a free personal API key at")}{" "}
+              <a
+                href="https://seekr.tv"
+                target="_blank"
+                rel="noreferrer"
+                className="text-accent underline"
+              >
+                seekr.tv
+              </a>
+            </p>
+          </div>
+        )}
+      </Section>
     </>
   );
 }

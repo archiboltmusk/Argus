@@ -131,6 +131,8 @@ export type Settings = {
   imdbApiFallback: boolean;
   fanartKey: string;
   tvdbKey: string;
+  seekrKey: string;
+  seekrEnabled: boolean;
   rdKey: string;
   tbKey: string;
   adKey: string;
