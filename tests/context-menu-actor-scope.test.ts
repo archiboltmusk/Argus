@@ -229,6 +229,7 @@ async function fixture({
       MenuIcon: empty,
     },
     "./context-menu/content-actions": { contentActions: () => [] },
+    "@/lib/video-queue": { toggleVideoQueue: empty, useInVideoQueue: () => false },
     "./context-image-viewer": { ContextImageViewer: empty },
     "@/lib/social/external-link-policy": {},
     "@/chrome/context-page-navigation": {

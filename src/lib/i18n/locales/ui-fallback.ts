@@ -1,5 +1,12 @@
 // Newly introduced UI copy remains usable until each locale provides an override.
 const uiFallback: Record<string, string> = {
+  "Seekr.tv Video Scrub Thumbnails": "Seekr.tv Video Scrub Thumbnails",
+  "Connect a free seekr.tv API key to stream high-speed seek thumbnail previews on the video timeline.": "Connect a free seekr.tv API key to stream high-speed seek thumbnail previews on the video timeline.",
+  "Enable Seekr.tv Thumbnails": "Enable Seekr.tv Thumbnails",
+  "Show video frame previews when hovering or scrubbing the progress bar.": "Show video frame previews when hovering or scrubbing the progress bar.",
+  "Seekr.tv API Key": "Seekr.tv API Key",
+  "Enter your free Seekr API key": "Enter your free Seekr API key",
+  "Get a free personal API key at": "Get a free personal API key at",
   "Play the sample video": "Play the sample video",
   "Argus sample video": "Argus sample video",
   "Simulate a source failure": "Simulate a source failure",
