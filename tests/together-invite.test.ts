@@ -5,13 +5,14 @@ import {
   emitTogetherInvite,
   onTogetherInvite,
   parseTogetherDeepLink,
+  WEB_JOIN_BASE,
   type ParsedInvite,
 } from "../src/lib/together/invite";
 
 test("shared invites use the hosted apex and reach the native invite parser", () => {
   const relay = "wss://relay.example.test/base?region=eu&version=11";
   const shared = new URL(buildInviteUrl(relay, "abc234"));
-  assert.equal(shared.origin, "https://argus.invalid");
+  assert.equal(shared.origin, new URL(WEB_JOIN_BASE).origin);
   assert.deepEqual(parseTogetherDeepLink(`argus://together?${shared.searchParams}`), {
     relayUrl: relay,
     roomCode: "ABC234",
