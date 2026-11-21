@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>app.argus.Argus</id>
+  <metadata_license>MIT</metadata_license>
+  <project_license>GPL-3.0-or-later</project_license>
+  <name>Argus</name>
+  <summary>Modern, fluid video player &amp; streaming companion</summary>
+  <description>
+    <p>
+      Argus is a sleek, ultra-responsive media player and streaming hub featuring mpv-accelerated
+      playback, smart subtitles auto-synchronization, video queue management, and multi-profile tracking.
+    </p>
+  </description>
+  <launchable type="desktop-id">app.argus.Argus.desktop</launchable>
+  <developer_name>Argus Community</developer_name>
+  <url type="homepage">https://github.com/archiboltmusk/Argus</url>
+  <url type="bugtracker">https://github.com/archiboltmusk/Argus/issues</url>
+  <screenshots>
+    <screenshot type="default">
+      <image>https://raw.githubusercontent.com/archiboltmusk/Argus/main/docs/screenshot.png</image>
+    </screenshot>
+  </screenshots>
+  <content_rating type="oars-1.1" />
+  <releases>
+    <release version="1.0.3" date="2026-11-21">
+      <description>
+        <p>Argus 1.0.3 upgrade release:</p>
+        <ul>
+          <li>Video watch queue with drag-to-reorder and continuous play</li>
+          <li>Seekr.tv timeline preview scrubbing integration</li>
+          <li>Harbor Account integration with custom handle and theme sharing</li>
+          <li>G1NYU community eBook and manga repository integration</li>
+          <li>Continue Watching play unreleased episodes toggle</li>
+          <li>End screen recommendations on still-airing series</li>
+        </ul>
+      </description>
+    </release>
+  </releases>
+</component>

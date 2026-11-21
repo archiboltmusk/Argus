@@ -202,7 +202,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends \
-            build-essential pkg-config patchelf xdg-utils file curl \
+            build-essential pkg-config patchelf xdg-utils file curl rpm \
             libwebkit2gtk-4.1-dev libgtk-3-dev libayatana-appindicator3-dev librsvg2-dev \
             libssl-dev libxdo-dev libmpv-dev \
             libgstreamer1.0-dev gstreamer1.0-plugins-good gstreamer1.0-plugins-bad gstreamer1.0-libav
@@ -229,7 +229,7 @@ jobs:
           PUBKEY: ${{ vars.TAURI_UPDATER_PUBKEY }}
           ARGUS_VERSION: ${{ needs.version.outputs.version }}
         run: node scripts/ci-set-beta-version.mjs
-      - name: Build AppImage and deb
+      - name: Build AppImage, deb and rpm
         env:
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
@@ -242,7 +242,7 @@ jobs:
           if [ "${{ github.event_name }}" != "pull_request" ] && [ -n "${TAURI_SIGNING_PRIVATE_KEY:-}" ]; then
             EXTRA="--config src-tauri/tauri.updater.conf.json"
           fi
-          pnpm tauri build --bundles appimage,deb $EXTRA --ignore-version-mismatches
+          pnpm tauri build --bundles appimage,deb,rpm $EXTRA --ignore-version-mismatches
       - name: Collect artifacts
         run: |
           set -euo pipefail
@@ -250,6 +250,9 @@ jobs:
           mkdir -p out
           cp "$(ls $B/appimage/*.AppImage | head -n1)" out/Argus-linux-x64.AppImage
           cp "$(ls $B/deb/*.deb | head -n1)" out/Argus-linux-x64.deb
+          if ls $B/rpm/*.rpm >/dev/null 2>&1; then
+            cp "$(ls $B/rpm/*.rpm | head -n1)" out/Argus-linux-x64.rpm
+          fi
           if ls $B/appimage/*.AppImage.sig >/dev/null 2>&1; then
             cp "$(ls $B/appimage/*.AppImage.sig | head -n1)" out/Argus-linux-x64.AppImage.sig
           fi
@@ -318,6 +321,9 @@ jobs:
                 '.platforms["linux-x86_64"] = {signature: ($sig|rtrimstr("\n")), url: $url}' latest.json > l.tmp && mv l.tmp latest.json
             fi
             FILES+=(linux/Argus-linux-x64.AppImage linux/Argus-linux-x64.deb)
+            if [ -f linux/Argus-linux-x64.rpm ]; then
+              FILES+=(linux/Argus-linux-x64.rpm)
+            fi
           fi
           [ ${#FILES[@]} -gt 0 ] || { echo "::error::No signed Windows/Linux bundle to publish"; exit 1; }
           node scripts/validate-update-manifest.mjs latest.json "${{ needs.version.outputs.version }}" darwin-aarch64 windows-x86_64 linux-x86_64
@@ -340,14 +346,13 @@ jobs:
           gh release download "$TAG" --repo "$REPO" --dir verified-assets \
             -p Argus-aarch64.dmg -p Argus-aarch64.app.tar.gz \
             -p Argus-windows-x64-setup.exe -p Argus-windows-x64.msi \
-            -p Argus-linux-x64.AppImage -p Argus-linux-x64.deb
+            -p Argus-linux-x64.AppImage -p Argus-linux-x64.deb \
+            -p "Argus-linux-x64.rpm" || true
           (
             cd verified-assets
-            sha256sum Argus-aarch64.dmg Argus-aarch64.app.tar.gz \
-              Argus-windows-x64-setup.exe Argus-windows-x64.msi \
-              Argus-linux-x64.AppImage Argus-linux-x64.deb
-          ) > SHA256SUMS.txt
-          gh release upload "$TAG" SHA256SUMS.txt --repo "$REPO" --clobber
+            sha256sum Argus-* > SHA256SUMS.txt
+          )
+          gh release upload "$TAG" verified-assets/SHA256SUMS.txt --repo "$REPO" --clobber
       - name: Publish complete verified release
         env:
           GH_TOKEN: ${{ github.token }}

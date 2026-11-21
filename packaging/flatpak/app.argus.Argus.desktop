@@ -1,0 +1,10 @@
+[Desktop Entry]
+Name=Argus
+Comment=Modern video player & streaming companion
+Exec=argus %U
+Icon=app.argus.Argus
+Type=Application
+Categories=AudioVideo;Video;Player;TV;
+MimeType=video/x-matroska;video/mp4;video/x-msvideo;video/quicktime;video/webm;x-scheme-handler/argus;
+StartupNotify=true
+Terminal=false

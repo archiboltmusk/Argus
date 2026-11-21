@@ -1,5 +1,9 @@
 // Newly introduced UI copy remains usable until each locale provides an override.
 const uiFallback: Record<string, string> = {
+  "Allow playing unreleased episodes": "Allow playing unreleased episodes",
+  "Continue Watching can play an episode even when its listed release date is still in the future. The countdown and Upcoming label stay visible.": "Continue Watching can play an episode even when its listed release date is still in the future. The countdown and Upcoming label stay visible.",
+  "Show on still-airing series": "Show on still-airing series",
+  "Show More Like This recommendations after the latest aired episode, even when future episodes are scheduled or yet to air.": "Show More Like This recommendations after the latest aired episode, even when future episodes are scheduled or yet to air.",
   "Seekr.tv Video Scrub Thumbnails": "Seekr.tv Video Scrub Thumbnails",
   "Connect a free seekr.tv API key to stream high-speed seek thumbnail previews on the video timeline.": "Connect a free seekr.tv API key to stream high-speed seek thumbnail previews on the video timeline.",
   "Enable Seekr.tv Thumbnails": "Enable Seekr.tv Thumbnails",

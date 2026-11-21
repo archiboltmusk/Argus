@@ -1,0 +1,35 @@
+app-id: app.argus.Argus
+runtime: org.freedesktop.Platform
+runtime-version: '23.08'
+sdk: org.freedesktop.Sdk
+command: argus
+
+finish-args:
+  # Display servers
+  - --socket=wayland
+  - --socket=fallback-x11
+  # Audio
+  - --socket=pulseaudio
+  # Hardware acceleration
+  - --device=dri
+  # Networking
+  - --share=network
+  - --share=ipc
+  # Notifications
+  - --talk-name=org.freedesktop.Notifications
+  # Inhibit screen saver during video playback
+  - --talk-name=org.freedesktop.ScreenSaver
+
+modules:
+  - name: argus
+    buildsystem: simple
+    build-commands:
+      - install -D -m 755 argus /app/bin/argus
+      - install -D -m 644 app.argus.Argus.desktop /app/share/applications/app.argus.Argus.desktop
+      - install -D -m 644 icons/128x128.png /app/share/icons/hicolor/128x128/apps/app.argus.Argus.png
+      - install -D -m 644 app.argus.Argus.metainfo.xml /app/share/metainfo/app.argus.Argus.metainfo.xml
+    sources:
+      - type: file
+        path: app.argus.Argus.desktop
+      - type: file
+        path: app.argus.Argus.metainfo.xml
