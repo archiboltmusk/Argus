@@ -457,6 +457,12 @@ test("existing chapter downloader keeps provider headers, rejects unsupported pa
         return { ok: true, arrayBuffer: async () => new Uint8Array([1, 2]).buffer };
       },
     },
+    "@/lib/safe-fetch": {
+      safeFetch: async (...args: unknown[]) => {
+        fetched.push(args);
+        return { ok: true, arrayBuffer: async () => new Uint8Array([1, 2]).buffer };
+      },
+    },
   });
   const originalError = console.error;
   console.error = () => {};

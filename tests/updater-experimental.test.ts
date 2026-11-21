@@ -905,10 +905,10 @@ test("explicit return verifies the exact approved target, backs up, and does not
   await h.updater.prepareBetaReturn("0.9.122");
   assert.equal(h.updater.useUpdate().intent, "return-beta");
   assert.equal(h.updater.useUpdate().handoff?.version, "0.9.122");
-  assert.deepEqual(h.calls.fetchUrls, []);
-  assert.deepEqual(h.calls.nativeFetchUrls, [
+  assert.deepEqual(h.calls.fetchUrls, [
     "https://example.test/updates/experimental/0.9.123/abc1234/manifest.json",
   ]);
+  assert.deepEqual(h.calls.nativeFetchUrls, []);
   await h.updater.downloadUpdate();
   await h.updater.installUpdate();
   assert.equal(h.calls.stage, 1);
