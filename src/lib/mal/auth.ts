@@ -96,11 +96,8 @@ export function extractMalCode(input: string): string {
 }
 
 async function tauriFetch(input: string, init?: RequestInit): Promise<Response> {
-  if (typeof window !== "undefined" && "__TAURI_INTERNALS__" in window) {
-    const { fetch: tauriFetchFn } = await import("@tauri-apps/plugin-http");
-    return tauriFetchFn(input, init as Record<string, unknown>) as unknown as Response;
-  }
-  return fetch(input, init);
+  const { safeFetch } = await import("@/lib/safe-fetch");
+  return safeFetch(input, init);
 }
 
 export async function completeAuthorization(pastedCode: string, requireState = false): Promise<MalSession> {

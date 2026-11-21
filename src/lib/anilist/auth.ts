@@ -70,9 +70,8 @@ async function exchangeCode(codeOrToken: string): Promise<string> {
       "AniList returned a short authorization code instead of an access token. Click 'Open AniList again' to generate a direct token, or paste the full access token (starting with eyJ...).",
     );
   }
-  const isTauri = "__TAURI__" in window || "__TAURI_INTERNALS__" in window;
-  const post = isTauri ? (await import("@tauri-apps/plugin-http")).fetch : fetch;
-  const res = await post(ANILIST_TOKEN_EXCHANGE_URL, {
+  const { safeFetch } = await import("@/lib/safe-fetch");
+  const res = await safeFetch(ANILIST_TOKEN_EXCHANGE_URL, {
     method: "POST",
     headers: { "Content-Type": "application/json", Accept: "application/json" },
     body: JSON.stringify({ code: codeOrToken }),

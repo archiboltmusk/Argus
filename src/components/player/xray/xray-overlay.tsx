@@ -5,7 +5,7 @@ import type { PlayerBridge } from "@/lib/player/bridge";
 import type { CastEntry } from "@/lib/providers/tmdb";
 import { useSettings } from "@/lib/settings";
 import { useT } from "@/lib/i18n";
-import { fetch as tauriHttpFetch } from "@tauri-apps/plugin-http";
+import { safeFetch } from "@/lib/safe-fetch";
 import { useFaceId } from "@/lib/face/use-face-id";
 import { useXrayCast } from "@/lib/xray/use-xray-cast";
 import { usePageVisible } from "@/lib/visibility";
@@ -15,11 +15,10 @@ import { XrayRail } from "./xray-rail";
 import { XrayBrowser } from "./xray-browser";
 import type { XrayPerson } from "./xray-actor-card";
 
-const IS_TAURI = typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
 const NO_CAST: CastEntry[] = [];
 
 async function loadBitmap(url: string, signal?: AbortSignal): Promise<ImageBitmap> {
-  const response = IS_TAURI ? await tauriHttpFetch(url, { signal }) : await fetch(url, { signal });
+  const response = await safeFetch(url, { signal });
   const buf = await response.arrayBuffer();
   if (signal?.aborted) throw new DOMException("Aborted", "AbortError");
   return createImageBitmap(new Blob([buf]));

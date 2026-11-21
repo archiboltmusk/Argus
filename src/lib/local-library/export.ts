@@ -1,4 +1,4 @@
-import { fetch as tauriHttpFetch } from "@tauri-apps/plugin-http";
+import { safeFetch } from "@/lib/safe-fetch";
 import {
   tmdbDetails,
   tmdbSeasonEpisodes,
@@ -178,7 +178,7 @@ function extFromPath(filePath: string, fallback: string): string {
 
 async function downloadTo(url: string, dest: string): Promise<boolean> {
   try {
-    const res = await tauriHttpFetch(url);
+    const res = await safeFetch(url);
     if (!res.ok) return false;
     const bytes = new Uint8Array(await res.arrayBuffer());
     const { writeFile } = await import("@tauri-apps/plugin-fs");

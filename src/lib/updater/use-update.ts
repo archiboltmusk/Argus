@@ -243,7 +243,7 @@ async function readExperimentalManifest(path = "latest-experimental.json"): Prom
     // Immutable history has no guaranteed browser CORS headers. Use native HTTP
     // for that recheck without changing normal-channel routes or proxying it.
     const manifestFetch =
-      path === "latest-experimental.json" ? fetch : (await import("@tauri-apps/plugin-http")).fetch;
+      path === "latest-experimental.json" ? fetch : (await import("@/lib/safe-fetch")).safeFetch;
     const response = await manifestFetch(`${ARGUS_API_BASE}/updates/${path}`, {
       cache: "no-store",
       signal: controller.signal,

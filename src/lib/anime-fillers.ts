@@ -1,12 +1,11 @@
 import { animeCatalogRequest } from "./providers/anime-catalog-client";
-import { fetch as tauriHttpFetch } from "@tauri-apps/plugin-http";
+import { safeFetch } from "./safe-fetch";
 
 const CACHE_KEY = "argus.animefillercache.v2";
 const TTL_MS = 14 * 24 * 60 * 60 * 1000;
 const NEG_TTL_MS = 24 * 60 * 60 * 1000;
 const AFL = "https://www.animefillerlist.com/shows";
 const UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Argus";
-const isTauri = typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
 
 type FillerEntry = { fillers: number[]; t: number; ok?: boolean };
 type FillerCache = Record<string, FillerEntry>;
@@ -105,9 +104,7 @@ function slugCandidates(titles: string[], year?: number): string[] {
 async function fetchShow(slug: string): Promise<string | null> {
   try {
     const url = `${AFL}/${slug}`;
-    const r = isTauri
-      ? await tauriHttpFetch(url, { method: "GET", headers: { "User-Agent": UA } })
-      : await fetch(url);
+    const r = await safeFetch(url, { method: "GET", headers: { "User-Agent": UA } });
     if (!r.ok) return null;
     return await r.text();
   } catch {

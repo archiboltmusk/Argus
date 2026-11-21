@@ -91,31 +91,11 @@ export async function xtreamFetch(url: string, signal?: AbortSignal): Promise<un
 async function xtreamFetchText(url: string, parentSignal?: AbortSignal): Promise<string> {
   return fetchBoundedText(
     async (signal) => {
-      if (typeof window !== "undefined" && "__TAURI_INTERNALS__" in window) {
-        const { fetch: tauriFetch } = await import("@tauri-apps/plugin-http");
-        let res: Response;
-        try {
-          res = await tauriFetch(url, {
-            method: "GET",
-            signal,
-            headers: {
-              "User-Agent": XTREAM_UA,
-              Accept: "application/json, */*",
-            },
-            connectTimeout: 30_000,
-            maxRedirections: 5,
-          } as unknown as RequestInit);
-        } catch (e) {
-          if (!/scope|not allowed/i.test(String(e))) throw e;
-          const { safeFetch } = await import("@/lib/safe-fetch");
-          res = await safeFetch(url, {
-            signal,
-            headers: { "User-Agent": XTREAM_UA, Accept: "application/json, */*" },
-          });
-        }
-        return res;
-      }
-      return fetch(url, { cache: "no-store", signal });
+      const { safeFetch } = await import("@/lib/safe-fetch");
+      return safeFetch(url, {
+        signal,
+        headers: { "User-Agent": XTREAM_UA, Accept: "application/json, */*" },
+      });
     },
     { signal: parentSignal },
   );

@@ -100,13 +100,8 @@ async function postJson<T>(path: string, body: unknown, auth?: string): Promise<
   if (auth) headers["Authorization"] = `Bearer ${auth}`;
   const url = `${STREMBOXD_BASE}${path}`;
   const bodyStr = JSON.stringify(body);
-  let res: Response;
-  try {
-    res = await fetch(url, { method: "POST", headers, body: bodyStr });
-  } catch {
-    const { fetch: tauriFetch } = await import("@tauri-apps/plugin-http");
-    res = await tauriFetch(url, { method: "POST", headers, body: bodyStr });
-  }
+  const { safeFetch } = await import("@/lib/safe-fetch");
+  const res = await safeFetch(url, { method: "POST", headers, body: bodyStr });
   return asJson<T>(res);
 }
 
@@ -230,20 +225,8 @@ async function fetchWithCloudflareBypass(url: string): Promise<Response> {
     "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
     "Accept-Language": "en-US,en;q=0.9",
   };
-  try {
-    const res = await fetch(url, { headers });
-    return res;
-  } catch (e) {
-    console.warn("[Letterboxd] safeFetch failed, trying tauri plugin:", e);
-    try {
-      const { fetch: tauriFetch } = await import("@tauri-apps/plugin-http");
-      const res = await tauriFetch(url, { headers });
-      return res;
-    } catch (e2) {
-      console.error("[Letterboxd] tauriFetch also failed:", e2);
-      throw e2;
-    }
-  }
+  const { safeFetch } = await import("@/lib/safe-fetch");
+  return safeFetch(url, { headers });
 }
 
 // Fetch reviews from the film's MAIN page (letterboxd.com/imdb/{imdbId}/) which
@@ -510,18 +493,12 @@ export async function loginLetterboxd(
   const url = `${STREMBOXD_BASE}/auth/login`;
   const headers: Record<string, string> = { "Content-Type": "application/json" };
 
+  const { safeFetch } = await import("@/lib/safe-fetch");
   let res: Response;
   try {
-    res = await fetch(url, { method: "POST", headers, body });
+    res = await safeFetch(url, { method: "POST", headers, body });
   } catch {
-    // safeFetch in Tauri has no fallback for POST — retry with the plugin
-    // directly if the Rust argus_fetch command failed.
-    try {
-      const { fetch: tauriFetch } = await import("@tauri-apps/plugin-http");
-      res = await tauriFetch(url, { method: "POST", headers, body });
-    } catch {
-      throw new StremboxdLoginError(0, "Could not reach Stremboxd. Check your connection.", undefined);
-    }
+    throw new StremboxdLoginError(0, "Could not reach Stremboxd. Check your connection.", undefined);
   }
 
   const text = await res.text().catch(() => "");

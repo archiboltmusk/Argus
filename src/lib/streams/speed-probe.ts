@@ -1,10 +1,6 @@
-import { fetch as tauriHttpFetch } from "@tauri-apps/plugin-http";
 import { safeFetch } from "@/lib/safe-fetch";
 
-const isTauri = typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
-const defaultFetch: typeof fetch = isTauri
-  ? (tauriHttpFetch as unknown as typeof fetch)
-  : safeFetch;
+const defaultFetch: typeof fetch = safeFetch;
 
 export type SpeedProbeResult =
   | { ok: true; latencyMs: number; mbps: number; bytes: number }

@@ -280,7 +280,7 @@ export function BookFlip({
     }
     const httpMod =
       hosts.size || (headersRef.current && Object.keys(headersRef.current).length > 0)
-        ? import("@tauri-apps/plugin-http")
+        ? import("@/lib/safe-fetch")
         : null;
     if (httpMod) {
       window.fetch = ((input: RequestInfo | URL, init?: RequestInit) => {
@@ -289,7 +289,7 @@ export function BookFlip({
         const headers =
           headersRef.current?.[u] ?? (host && hosts.has(host) ? IMAGE_FALLBACK_HEADERS : undefined);
         if (headers) {
-          return httpMod.then((m) => (m.fetch as unknown as typeof fetch)(u, { headers }));
+          return httpMod.then((m) => m.safeFetch(u, { headers }));
         }
         return origFetch(input, init);
       }) as typeof fetch;

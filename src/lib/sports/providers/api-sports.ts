@@ -1,4 +1,4 @@
-import { fetch as nativeFetch } from "@tauri-apps/plugin-http";
+import { safeFetch } from "../../safe-fetch";
 import { readSportsApiKey } from "../api-credentials";
 export { readSportsApiKey } from "../api-credentials";
 import { createApiSportsTransport, ApiSportsError, type ApiSport } from "./api-sports-transport";
@@ -381,9 +381,7 @@ const apiSports = createApiSportsProvider({
   fetch: (url, init) => {
     // Credentials go only to the provider, never Argus's generic web proxy or a redirect target.
     const request = { ...init, credentials: "omit" as const, redirect: "error" as const };
-    return typeof window !== "undefined" && "__TAURI_INTERNALS__" in window
-      ? nativeFetch(url, { ...request, maxRedirections: 0 })
-      : fetch(url, request);
+    return safeFetch(url, request);
   },
 });
 export const apiSportsProvider = apiSports.provider;

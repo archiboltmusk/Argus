@@ -101,25 +101,12 @@ export async function loadContextImage(
     if (controller.signal.aborted) throw controller.signal.reason;
     // Data URLs are inline bytes; decoding them avoids a network/CSP connect operation.
     if (url.protocol === "data:") return await readImageResponse(inlineImageResponse(src));
-    const isRemote =
-      /^https?:$/.test(url.protocol) &&
-      url.hostname !== "asset.localhost" &&
-      url.hostname !== "tauri.localhost" &&
-      url.origin !== (typeof window === "undefined" ? "" : window.location.origin);
-    const response =
-      native && isRemote
-        ? await (
-            await import("@tauri-apps/plugin-http")
-          ).fetch(url.href, {
-            signal: controller.signal,
-            maxRedirections: 5,
-            connectTimeout: IMAGE_TIMEOUT_MS,
-          })
-        : await fetch(url.href, {
-            signal: controller.signal,
-            credentials: "omit",
-            referrerPolicy: "no-referrer",
-          });
+    const { safeFetch } = await import("@/lib/safe-fetch");
+    const response = await safeFetch(url.href, {
+      signal: controller.signal,
+      credentials: "omit",
+      referrerPolicy: "no-referrer",
+    });
     return await readImageResponse(response);
   } catch (error) {
     if (controller.signal.aborted)

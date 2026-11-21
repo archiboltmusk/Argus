@@ -692,7 +692,7 @@ async function downloadChapterWithControl(
 
     const { join } = await import("@tauri-apps/api/path");
     const { mkdir, writeFile } = await import("@tauri-apps/plugin-fs");
-    const { fetch: tauriFetch } = await import("@tauri-apps/plugin-http");
+    const { safeFetch: tauriFetch } = await import("@/lib/safe-fetch");
 
     const base = getMangaDownloadDir() || (await defaultMangaDownloadDir());
     const dir = await join(
