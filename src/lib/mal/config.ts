@@ -5,7 +5,7 @@ export const MAL_TOKEN_URL = "https://myanimelist.net/v1/oauth2/token";
 export const MAL_API_BASE = "https://api.myanimelist.net/v2";
 export const MAL_REDIRECT_URI = `${ARGUS_MAL_BASE}/mal/`;
 export const MAL_DEVELOPER_URL = "https://myanimelist.net/apiconfig";
-export const MAL_CLIENT_ID = import.meta.env?.VITE_ARGUS_MAL_CLIENT_ID?.trim() || "8d7dac2f8cfd72abf79f59288bf6b0ed";
+export const MAL_CLIENT_ID = import.meta.env?.VITE_ARGUS_MAL_CLIENT_ID?.trim() || "14cf8e8e3576208af850840f86752b0b";
 export const MAL_TOKEN_PROXY = `${ARGUS_MAL_BASE}/api/mal/token`;
 
 const CUSTOM_MAL_CLIENT_ID_KEY = "argus.mal.clientId";
