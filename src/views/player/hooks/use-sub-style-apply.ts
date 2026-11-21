@@ -54,6 +54,8 @@ export function useSubStyleApply(params: {
         assScale,
         sdhFilterAllowed,
         isLetterboxed,
+        videoWidth,
+        videoHeight,
       });
     };
 

@@ -1,5 +1,7 @@
 // Newly introduced UI copy remains usable until each locale provides an override.
 const uiFallback: Record<string, string> = {
+  "View progress": "View progress",
+  "Restart & install": "Restart & install",
   "Allow playing unreleased episodes": "Allow playing unreleased episodes",
   "Continue Watching can play an episode even when its listed release date is still in the future. The countdown and Upcoming label stay visible.": "Continue Watching can play an episode even when its listed release date is still in the future. The countdown and Upcoming label stay visible.",
   "Show on still-airing series": "Show on still-airing series",

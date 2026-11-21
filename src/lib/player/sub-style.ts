@@ -71,6 +71,8 @@ export type SubRenderContext = {
   sdhFilterAllowed?: boolean;
   hudVisible?: boolean;
   isLetterboxed?: boolean;
+  videoWidth?: number;
+  videoHeight?: number;
 };
 
 export async function applySubStyle(
@@ -101,12 +103,49 @@ export async function applySubStyle(
       ? "no"
       : (letterboxDodging ? "yes" : assMargins);
   const stretchImageSubs = letterboxDodging ? "yes" : "no";
-  const subPos = letterboxDodging && isLetterboxed
-    ? (reposition ? clamp(106 - Math.round((marginY - 12) * 0.15), 102, 112) : 106)
-    : (reposition ? clamp(100 - marginY, 0, 100) : 100);
-  const mpvMarginY = letterboxDodging && isLetterboxed
-    ? clamp(marginY, 6, 24)
-    : marginY;
+
+  let barPercent = 0;
+  const dispH =
+    typeof window !== "undefined" && window.innerHeight > 0 ? window.innerHeight : 1080;
+  if (
+    typeof window !== "undefined" &&
+    context.videoWidth &&
+    context.videoHeight &&
+    context.videoHeight > 0
+  ) {
+    const dispW = window.innerWidth > 0 ? window.innerWidth : 1920;
+    const videoAspect = context.videoWidth / context.videoHeight;
+    const displayAspect = dispW / Math.max(1, dispH);
+    const activeVideoFraction = displayAspect / videoAspect;
+    const barFraction = Math.max(0, (1 - activeVideoFraction) / 2);
+    barPercent = barFraction * 100;
+  }
+  if (barPercent < 3 && isLetterboxed) {
+    // Default letterbox bar for standard 2.39:1 widescreen cinema
+    barPercent = 14;
+  }
+
+  let subPos = 100;
+  let mpvMarginY = marginY;
+
+  if (letterboxDodging && isLetterboxed) {
+    // Center subtitles comfortably within the lower letterbox bar.
+    // The bar spans from the screen bottom (0%) to barPercent%.
+    // Optical center is barPercent / 2 with user fine-tuning from subMarginY.
+    const centerOfBar = barPercent / 2;
+    const userAdjust = ((marginY - 12) / 12) * (barPercent * 0.35);
+    const effectiveMarginPercent = clamp(
+      centerOfBar + userAdjust,
+      2,
+      Math.max(2, barPercent - 1.5),
+    );
+    const targetPx = Math.round((dispH * effectiveMarginPercent) / 100);
+    mpvMarginY = clamp(targetPx, 18, 220);
+    subPos = 100;
+  } else {
+    subPos = reposition ? clamp(100 - marginY, 0, 100) : 100;
+    mpvMarginY = marginY;
+  }
   const props: Array<[string, unknown]> = [
     ["sub-filter-sdh", hideSdh],
     ["sub-filter-sdh-harder", false],
