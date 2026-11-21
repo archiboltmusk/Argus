@@ -161,6 +161,13 @@ export interface CommunityBookRepo {
 /** Pre-configured community repository presets for 1-click addition */
 export const COMMUNITY_BOOK_REPOS: CommunityBookRepo[] = [
   {
+    name: "GinyuBooks & Community eBook Plugins (Alpha)",
+    url: "https://raw.githubusercontent.com/G1NYU/harbor-plugins/main/dist/ebook/repo.json",
+    description: "ReadAnyBook fiction, Royal Road web novels, LibGen Stream, and FreeWebNovel.",
+    category: "Community Fiction",
+    kind: "plugin",
+  },
+  {
     name: "LNReader Official Community Scrapers",
     url: "https://raw.githubusercontent.com/LNReader/lnreader-plugins/plugins/v3.0.0/.dist/plugins.min.json",
     description: "Hundreds of community-maintained web novel, light novel, and fiction scrapers.",

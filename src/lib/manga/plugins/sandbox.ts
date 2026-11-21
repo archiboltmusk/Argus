@@ -119,6 +119,7 @@ export const SANDBOX_SOURCE = String.raw`(function () {
   function register(p) { provider = p; }
 
   var argus = { http: httpCall, grpc: grpcCall, parseHtml: parseHtml, register: register, log: log };
+  var harbor = argus;
 
   function isEl(node) { return node != null && typeof node === "object" && typeof node.t === "string"; }
   function children(node) { return isEl(node) && Array.isArray(node.c) ? node.c : []; }

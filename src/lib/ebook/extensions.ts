@@ -142,6 +142,9 @@ function manifest(value: unknown, ebookRepo: boolean): EBookPluginManifest | nul
 
 export function normalizeEBookRepoUrl(url: string): string {
   let u = url.trim();
+  if (u.includes("G1NYU/harbor-plugins") || u.includes("harbor-plugins/dist/ebook") || (u.includes("harbor-plugins") && u.includes("ebook"))) {
+    return "https://raw.githubusercontent.com/G1NYU/harbor-plugins/main/dist/ebook/repo.json";
+  }
   if (u.includes("github.com/")) {
     u = u.replace("github.com/", "raw.githubusercontent.com/").replace(/\/raw\//, "/").replace(/\/blob\//, "/");
   }
