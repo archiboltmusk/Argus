@@ -95,3 +95,4 @@ Use references to understand established patterns. Do not copy large implementat
 - Do not silently change user-facing behavior.
 - Add comments only when they explain a non-obvious decision.
 - Never expose secrets, tokens, private URLs, or user data.
+- Never mention or expose the user's personal name or identity anywhere in public documentation, web pages, forum templates, commit messages, or community spaces. Treat them as an ordinary user, traveler, or stargazer.
