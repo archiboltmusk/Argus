@@ -60,9 +60,11 @@ export function BrowseError({
 export function BrowseEmpty({
   kind,
   onRetry,
+  onManageSources,
 }: {
   kind: "favorites" | "search" | "source";
   onRetry: () => void;
+  onManageSources: () => void;
 }) {
   const t = useT();
   if (kind === "favorites") {
@@ -89,9 +91,18 @@ export function BrowseEmpty({
     <div className="flex flex-col items-center justify-center gap-3 py-24 text-center">
       <p className="text-[15px] font-medium text-ink">{t("This source returned nothing")}</p>
       <p className="max-w-sm text-balance text-[13px] leading-relaxed text-ink-muted">
-        {t("That is unusual for a popular listing. It is likely a hiccup on their end.")}
+        {t("Check your filters or choose another source.")}
       </p>
-      <RetryButton onRetry={onRetry} label={t("Try again")} />
+      <div className="flex flex-wrap items-center justify-center gap-2.5">
+        <RetryButton onRetry={onRetry} label={t("Try again")} />
+        <button
+          type="button"
+          onClick={onManageSources}
+          className="mt-1 inline-flex h-11 items-center rounded-xl border border-edge-soft bg-elevated/40 px-5 text-[14px] font-medium text-ink-muted transition-colors hover:bg-elevated/70 hover:text-ink"
+        >
+          {t("Manage Servers")}
+        </button>
+      </div>
     </div>
   );
 }

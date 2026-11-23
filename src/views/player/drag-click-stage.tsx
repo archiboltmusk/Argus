@@ -16,11 +16,13 @@ function formatTime(totalSec: number): string {
 }
 
 type GestureMode = "none" | "brightness" | "volume" | "seek";
+const DOUBLE_TAP_MS = 260;
 
 export function DragClickStage(props: {
   drawMode: boolean;
   pipMode: boolean;
   onClick: () => void;
+  resumeOnTouch?: boolean;
   onDoubleClick: () => void;
   onWheelVolume?: (deltaY: number) => void;
   seekTo?: (sec: number) => void;
@@ -32,6 +34,7 @@ export function DragClickStage(props: {
     drawMode,
     pipMode,
     onClick,
+    resumeOnTouch = false,
     onDoubleClick,
     onWheelVolume,
     seekTo,
@@ -50,6 +53,7 @@ export function DragClickStage(props: {
 
   const hudTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const tapTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastPointerType = useRef("");
   const lastTapRef = useRef<{ time: number; x: number; y: number } | null>(null);
 
   // Gesture tracking refs
@@ -98,7 +102,7 @@ export function DragClickStage(props: {
 
     // Double tap detection
     const last = lastTapRef.current;
-    if (last && now - last.time < 300 && Math.hypot(x - last.x, y - last.y) < 45) {
+    if (last && now - last.time < DOUBLE_TAP_MS && Math.hypot(x - last.x, y - last.y) < 45) {
       // Double tap detected! Cancel single tap
       if (tapTimerRef.current) {
         clearTimeout(tapTimerRef.current);
@@ -219,10 +223,17 @@ export function DragClickStage(props: {
     // Schedule single click if no gesture occurred
     if (start && start.lockedMode === "none") {
       if (tapTimerRef.current) clearTimeout(tapTimerRef.current);
+      tapTimerRef.current = null;
+      if (resumeOnTouch) {
+        // WebKit can require the original touch activation to resume audible media.
+        lastTapRef.current = null;
+        onClick();
+        return;
+      }
       tapTimerRef.current = setTimeout(() => {
         onClick();
         tapTimerRef.current = null;
-      }, 260);
+      }, DOUBLE_TAP_MS);
     }
   };
 
@@ -241,8 +252,16 @@ export function DragClickStage(props: {
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
-      onTouchCancel={handleTouchEnd}
+      onTouchCancel={() => {
+        touchStartRef.current = null;
+        lastTapRef.current = null;
+        triggerHudFade();
+      }}
+      onPointerDown={(e) => {
+        lastPointerType.current = e.pointerType;
+      }}
       onMouseDown={(e) => {
+        if (lastPointerType.current === "touch") return;
         if (e.target !== e.currentTarget) return;
         if (drawMode || pipMode) return;
         if (e.button !== 0) return;
@@ -273,6 +292,7 @@ export function DragClickStage(props: {
         window.addEventListener("mouseup", onUp);
       }}
       onDoubleClick={(e) => {
+        if (lastPointerType.current === "touch") return;
         if (e.target !== e.currentTarget) return;
         if (drawMode || pipMode) return;
         onDoubleClick();

@@ -487,7 +487,7 @@ export function MangaBrowse({
       ) : status === "error" ? (
         <BrowseError onRetry={reload} onManageSources={onManageSources} />
       ) : displayItems.length === 0 ? (
-        <BrowseEmpty kind={emptyKind} onRetry={reload} />
+        <BrowseEmpty kind={emptyKind} onRetry={reload} onManageSources={onManageSources} />
       ) : (
         <>
           <div className="grid gap-x-4 gap-y-7" style={{ gridTemplateColumns: GRID }}>

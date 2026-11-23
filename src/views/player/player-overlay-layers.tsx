@@ -2,6 +2,7 @@ import { memo, useState, useEffect, useRef, type ComponentProps, type RefObject 
 import { Activity } from "lucide-react";
 import { SportsSidebar } from "@/components/player/sports-sidebar";
 import { useT } from "@/lib/i18n";
+import { isIPadOS, isIOS } from "@/lib/platform";
 import { useSettings } from "@/lib/settings";
 import { findMatchingRegionalAudioTrack } from "@/lib/player/regional-audio-dub";
 import { HotspotOdometerChip } from "@/components/player/hotspot-odometer-chip";
@@ -327,6 +328,7 @@ export const PlayerOverlayLayers = memo(function PlayerOverlayLayers(p: PlayerOv
         drawMode={p.drawMode}
         pipMode={p.pipMode}
         onClick={p.playPauseToggle}
+        resumeOnTouch={p.snap.status === "paused" && (isIOS() || isIPadOS())}
         onDoubleClick={p.toggleFullscreen}
         onWheelVolume={p.onVolumeWheel}
         seekTo={p.seekTo}

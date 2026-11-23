@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { isIPadOS, isIOS, isWeb } from "@/lib/platform";
 import { useT } from "@/lib/i18n";
 import { useSubTabs } from "./sub-tabs";
 import {
@@ -20,12 +21,19 @@ export function P2PPanel() {
   useSubTabs(tabs, tab, (id) => setTab(id as Tab));
   return (
     <div key={tab} className="argus-cascade flex flex-col gap-10">
-      {tab === "engine" && (
-        <>
-          <LocalEngineSection />
-          <P2PPowerToolsSection />
-        </>
-      )}
+      {tab === "engine" &&
+        ((isIOS() || isIPadOS()) && isWeb() ? (
+          <p className="max-w-prose text-ink-muted">
+            {t(
+              "The local P2P engine is unavailable in this build. You can connect a streaming server in the Server tab.",
+            )}
+          </p>
+        ) : (
+          <>
+            <LocalEngineSection />
+            <P2PPowerToolsSection />
+          </>
+        ))}
       {tab === "server" && (
         <>
           <ServerAddressSection />

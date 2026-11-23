@@ -1,6 +1,7 @@
 import { RotateCcw } from "lucide-react";
 import { Play } from "@/components/icons/play-filled";
 import { useT } from "@/lib/i18n";
+import { isIPadOS, isIOS } from "@/lib/platform";
 import { useActiveKid } from "@/lib/profiles";
 
 const KID_BUBBLES = [10, 24, 40, 55, 70, 84, 93];
@@ -81,7 +82,16 @@ export function ResumePrompt({
   }
   return (
     <div className="absolute inset-0 z-[90] flex items-end justify-center bg-gradient-to-t from-black/90 via-black/55 to-transparent pb-16">
-      <div className="w-full max-w-xl rounded-3xl bg-surface p-7 ring-1 ring-edge-soft shadow-[0_30px_80px_-20px_rgba(0,0,0,0.85)]">
+      {(isIOS() || isIPadOS()) && (
+        <button
+          type="button"
+          tabIndex={-1}
+          aria-label={t("Resume from {time}", { time: formatTime(resumeSec) })}
+          onClick={onResume}
+          className="absolute inset-0 touch-manipulation"
+        />
+      )}
+      <div className="relative w-full max-w-xl rounded-3xl bg-surface p-7 ring-1 ring-edge-soft shadow-[0_30px_80px_-20px_rgba(0,0,0,0.85)]">
         <p className="text-[11px] font-semibold uppercase tracking-[0.32em] text-ink-subtle">
           {t("Pick up where you left off")}
         </p>

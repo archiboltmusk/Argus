@@ -80,9 +80,10 @@ jobs:
             xcodebuild $XCODE_FLAG -scheme "$SCHEME" \
               -configuration Release -destination 'generic/platform=iOS' \
               -archivePath "$RUNNER_TEMP/Argus-iOS.xcarchive" archive \
-              CODE_SIGNING_ALLOWED=NO CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO AD_HOC_CODE_SIGNING_ALLOWED=YES 2>/dev/null || true
+              CODE_SIGNING_ALLOWED=NO CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO AD_HOC_CODE_SIGNING_ALLOWED=YES ||
+              echo "::warning::The iOS archive failed. Packaging the experimental WebView build."
 
-            APP=$(find "$RUNNER_TEMP" -name '*.app' -type d 2>/dev/null | grep -E "Release-iphoneos|Products/Applications" | head -n1 || true)
+            APP=$(find "$RUNNER_TEMP/Argus-iOS.xcarchive/Products/Applications" -maxdepth 1 -name '*.app' -type d -print -quit 2>/dev/null || true)
             if [ -n "$APP" ] && [ -d "$APP" ]; then
               cp -R "$APP/." "$RUNNER_TEMP/Payload/Argus.app/"
             fi
@@ -90,7 +91,7 @@ jobs:
             cd "$GITHUB_WORKSPACE"
           fi
 
-          node scripts/package-apple-app.mjs --platform ios --app-dir "$RUNNER_TEMP/Payload/Argus.app" --dist-dir dist --version "$(node -p 'require("./package.json").version')"
+          node scripts/package-apple-app.mjs --platform ios --app-dir "$RUNNER_TEMP/Payload/Argus.app" --dist-dir dist --version "$(node -p 'require("./src-tauri/tauri.ios.conf.json").version')"
           if [ -d "$RUNNER_TEMP/Payload/Argus.app/Frameworks" ]; then
             for fw in "$RUNNER_TEMP/Payload/Argus.app/Frameworks"/*.framework; do
               [ -d "$fw" ] && codesign -s - --force "$fw" 2>/dev/null || true
@@ -107,6 +108,10 @@ jobs:
           PLIST=$(find "$TMP/Payload" -maxdepth 2 -name Info.plist | head -n1)
           [ -n "$PLIST" ] || { echo "::error::Missing Info.plist in Argus-iOS-iPadOS.ipa"; exit 1; }
           plutil -lint "$PLIST"
+          EXECUTABLE=$(plutil -extract CFBundleExecutable raw -o - "$PLIST")
+          test -s "$(dirname "$PLIST")/$EXECUTABLE"
+          VERSION=$(node -p 'require("./src-tauri/tauri.ios.conf.json").version')
+          test "$(plutil -extract CFBundleShortVersionString raw -o - "$PLIST")" = "$VERSION"
           rm -rf "$TMP"
       - uses: actions/upload-artifact@v7
         with:
@@ -281,16 +286,18 @@ jobs:
             if [ -f "$ipa" ]; then
               echo "Uploading $ipa to $TAG..."
               LABEL="Experimental iOS/iPadOS package"
-              if [ "$ipa" != "Argus-iOS-iPadOS.ipa" ]; then LABEL="Developer bootstrap - native UI not implemented"; fi
+              if [ "$ipa" != "Argus-iOS-iPadOS.ipa" ]; then
+                LABEL="Developer bootstrap - native UI not implemented"
+              elif unzip -Z1 "$ipa" | grep -Fx 'Payload/Argus.app/ArgusWebOnly' > /dev/null; then
+                LABEL="Experimental iOS/iPadOS web-only package"
+              fi
               gh release upload "$TAG" "$ipa#$LABEL" --repo "$GITHUB_REPOSITORY" --clobber
             fi
           done
-          LATEST_TAG=$(gh release view --repo "$GITHUB_REPOSITORY" --json tagName --jq .tagName 2>/dev/null || true)
-          if [ -n "$LATEST_TAG" ] && [ "$LATEST_TAG" != "$TAG" ]; then
-            for ipa in *.ipa; do
-              if [ -f "$ipa" ] && [ "$ipa" = "Argus-iOS-iPadOS.ipa" ]; then
-                echo "Uploading $ipa to $LATEST_TAG..."
-                gh release upload "$LATEST_TAG" "$ipa#Argus iOS & iPadOS IPA" --repo "$GITHUB_REPOSITORY" --clobber || true
-              fi
-            done
+          IOS_IPA="Argus-iOS-iPadOS.ipa"
+          if [ -f "$IOS_IPA" ] && [[ "$GITHUB_REF" == refs/tags/v* ]]; then
+            CONTENTS=$(unzip -Z1 "$IOS_IPA") || exit 1
+            if ! grep -Fx 'Payload/Argus.app/ArgusWebOnly' <<< "$CONTENTS" > /dev/null; then
+              gh release upload "$GITHUB_REF_NAME" "$IOS_IPA#Argus iOS & iPadOS IPA" --repo "$GITHUB_REPOSITORY" --clobber || true
+            fi
           fi

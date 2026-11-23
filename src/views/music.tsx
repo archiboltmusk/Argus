@@ -1,3 +1,5 @@
+import { isIPadOS, isIOS } from "@/lib/platform";
+import { MobileMusicStream } from "./music/mobile-music-stream";
 import { HoverTooltip } from "@/components/hover-tooltip";
 import { MusicQuickListenIcon } from "@/components/music/music-quick-listen-icon";
 import { MusicSurpriseButton } from "@/components/music/music-surprise-button";
@@ -172,6 +174,7 @@ class MusicErrorBoundary extends Component<{ children: ReactNode }, { error: Err
 }
 
 export function MusicView({ active }: { active: boolean; shellBackAvailable?: boolean }) {
+  if (isIOS() || isIPadOS()) return <MobileMusicStream active={active} />;
   return (
     <MusicErrorBoundary>
       <MusicConnectionsProvider active={active}>

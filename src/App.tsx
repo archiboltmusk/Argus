@@ -57,7 +57,7 @@ import {
 import { synchronizeMediaServer } from "@/lib/media-server/sync";
 import { setNativeMemoryActive } from "@/lib/native-memory";
 import { useOverlayPinned } from "@/lib/overlay-pin";
-import { isLauncherRoute, isMobilePlatform, isRemoteRoute, isSmartProjector } from "@/lib/platform";
+import { isIPadOS, isIOS, isLauncherRoute, isMobilePlatform, isRemoteRoute, isSmartProjector } from "@/lib/platform";
 import { makeSafeTauriUnlisten } from "@/lib/tauri-unlisten";
 import { activeLayout } from "@/lib/theme";
 import { useThemePreview } from "@/lib/theme-preview";
@@ -518,12 +518,12 @@ export function App({ onReady }: { onReady?: () => void }) {
                                                       ) : (
                                                         <Profiled id="shell">
                                                           <Shell onReady={onReady} />
+                                                          {(!isMobilePlatform() || isIOS() || isIPadOS()) && (
+                                                            <Suspense fallback={null}>
+                                                              <OnboardingModal />
+                                                            </Suspense>
+                                                          )}
                                                         </Profiled>
-                                                      )}
-                                                      {!isMobilePlatform() && !isRemoteRoute() && (
-                                                        <Suspense fallback={null}>
-                                                          <OnboardingModal />
-                                                        </Suspense>
                                                       )}
                                                       <TogetherInviteToast />
                                                       <TogetherFloater />

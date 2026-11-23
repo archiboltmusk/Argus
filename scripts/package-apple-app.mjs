@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import fs from "node:fs";
 import path from "node:path";
-import { execSync } from "node:child_process";
+import { execFileSync, execSync } from "node:child_process";
 import { applePlatform, validateAppleBuildOutput } from "./apple-platforms.mjs";
 
 const args = process.argv.slice(2);
@@ -36,8 +36,22 @@ if (fs.existsSync(distDir)) {
 }
 
 const infoPlistPath = path.join(appDir, "Info.plist");
+let executableName = conf.execName;
 let needsPlist = !fs.existsSync(infoPlistPath);
-if (!needsPlist) {
+if (!needsPlist && platform === "ios") {
+  // Xcode archives can hold a binary plist and use a different executable name.
+  executableName = execFileSync(
+    "plutil",
+    ["-extract", "CFBundleExecutable", "raw", "-o", "-", infoPlistPath],
+    { encoding: "utf8" },
+  ).trim();
+  if (!/^[a-zA-Z0-9_.-]+$/.test(executableName) || /^\.{1,2}$/.test(executableName)) {
+    throw new Error("Invalid executable name in the archived iOS Info.plist.");
+  }
+  for (const key of ["CFBundleShortVersionString", "CFBundleVersion"]) {
+    execFileSync("plutil", ["-replace", key, "-string", version, infoPlistPath]);
+  }
+} else if (!needsPlist) {
   try {
     const existing = fs.readFileSync(infoPlistPath, "utf8");
     if (
@@ -118,7 +132,7 @@ if (needsPlist) {
   fs.writeFileSync(infoPlistPath, plistContent, "utf8");
 }
 
-const execPath = path.join(appDir, conf.execName);
+const execPath = path.join(appDir, executableName);
 let needsBinary = !fs.existsSync(execPath);
 if (!needsBinary) {
   try {
@@ -136,6 +150,7 @@ if (needsBinary) {
   const tempSrc = path.join(appDir, "_temp_launcher.m");
 
   if (platform === "ios") {
+    fs.writeFileSync(path.join(appDir, "ArgusWebOnly"), "");
     const objcSrc = `
 #import <UIKit/UIKit.h>
 #import <WebKit/WebKit.h>
@@ -150,6 +165,9 @@ if (needsBinary) {
     UIViewController *vc = [[UIViewController alloc] init];
     vc.view.backgroundColor = [UIColor colorWithRed:17.0/255.0 green:18.0/255.0 blue:20.0/255.0 alpha:1.0];
     WKWebViewConfiguration *config = [[WKWebViewConfiguration alloc] init];
+    config.allowsInlineMediaPlayback = YES;
+    config.allowsAirPlayForMediaPlayback = YES;
+    config.allowsPictureInPictureMediaPlayback = YES;
     [config.preferences setValue:@YES forKey:@"allowFileAccessFromFileURLs"];
     @try {
         [config setValue:@YES forKey:@"allowUniversalAccessFromFileURLs"];
@@ -159,8 +177,15 @@ if (needsBinary) {
     }
     WKWebView *webView = [[WKWebView alloc] initWithFrame:vc.view.bounds configuration:config];
     webView.backgroundColor = [UIColor colorWithRed:17.0/255.0 green:18.0/255.0 blue:20.0/255.0 alpha:1.0];
-    webView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
+    webView.translatesAutoresizingMaskIntoConstraints = NO;
     [vc.view addSubview:webView];
+    UILayoutGuide *safeArea = vc.view.safeAreaLayoutGuide;
+    [NSLayoutConstraint activateConstraints:@[
+      [webView.topAnchor constraintEqualToAnchor:safeArea.topAnchor],
+      [webView.bottomAnchor constraintEqualToAnchor:safeArea.bottomAnchor],
+      [webView.leadingAnchor constraintEqualToAnchor:safeArea.leadingAnchor],
+      [webView.trailingAnchor constraintEqualToAnchor:safeArea.trailingAnchor]
+    ]];
     NSString *indexPath = [[NSBundle mainBundle] pathForResource:@"index" ofType:@"html"];
     if (indexPath) {
         [webView loadFileURL:[NSURL fileURLWithPath:indexPath] allowingReadAccessToURL:[[NSBundle mainBundle] bundleURL]];
