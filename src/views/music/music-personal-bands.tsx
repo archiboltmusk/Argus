@@ -67,7 +67,7 @@ function artistRefs(ctx: MusicBandContext): MusicArtistRef[] {
         const item = row.items.find(
           (i) =>
             ("artist" in i && typeof i.artist === "string" && i.artist.trim().toLowerCase().startsWith(key)) ||
-            (i.name && i.name.trim().toLowerCase().startsWith(key)),
+            ("name" in i && typeof i.name === "string" && i.name.trim().toLowerCase().startsWith(key)),
         );
         if (item && "artwork" in item && typeof item.artwork === "string" && item.artwork.trim()) {
           catalogArt = item.artwork.trim();

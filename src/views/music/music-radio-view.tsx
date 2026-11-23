@@ -1,9 +1,7 @@
 import { useState } from "react";
-import { Play, Radio, Sparkles, Volume2, Globe, Music2, Disc3 } from "lucide-react";
-import { playMusic } from "@/lib/music/player";
+import { Play, Radio, Globe, Disc3, Pause } from "lucide-react";
+import { playMusic, useMusicPlayer } from "@/lib/music/player";
 import { directMusicStream } from "@/lib/music/direct-stream";
-import { tuneRadio } from "@/lib/music/listening-controls";
-import { useMusicNowPlaying } from "@/lib/music/use-now-playing";
 import type { MusicTrack } from "@/lib/music/types";
 import { getCurrentDaylistVibe } from "@/lib/music/all-music-apps-features";
 
@@ -38,75 +36,75 @@ export const LIVE_RADIO_STATIONS: LiveStation[] = [
     tagline: "Music for hacking, coding, and nocturnal electronic exploration.",
     streamUrl: "https://ice1.somafm.com/defcon-128-mp3",
     artwork: "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=600&auto=format&fit=crop&q=80",
-    badge: "Cyber",
+    badge: "Special Event",
     listeners: "Worldwide",
-    color: "#F50057",
+    color: "#FF0055",
   },
   {
     id: "drone-zone",
     name: "Drone Zone",
-    genre: "Space Ambient & Drone",
+    genre: "Atmospheric & Space",
     tagline: "Served best chilled, safe with most medications. Atmospheric textures.",
     streamUrl: "https://ice1.somafm.com/dronezone-128-mp3",
-    artwork: "https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=600&auto=format&fit=crop&q=80",
-    badge: "Deep Sleep",
-    listeners: "Deep Focus",
+    artwork: "https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=600&auto=format&fit=crop&q=80",
+    badge: "Deep Focus",
+    listeners: "Calm",
     color: "#7928CA",
   },
   {
     id: "indie-pop",
     name: "Indie Pop Rocks!",
     genre: "Indie Rock & Pop",
-    tagline: "New and classic favorite indie pop tracks without commercial interruptions.",
+    tagline: "New and favorite independent pop and alternative rock tracks.",
     streamUrl: "https://ice1.somafm.com/indiepop-128-mp3",
-    artwork: "https://images.unsplash.com/photo-1464375117522-1311d6a5b81f?w=600&auto=format&fit=crop&q=80",
-    badge: "Alternative",
-    listeners: "Featured",
-    color: "#FF9900",
+    artwork: "https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=600&auto=format&fit=crop&q=80",
+    badge: "Curated",
+    listeners: "Trending",
+    color: "#FFB800",
   },
   {
     id: "linn-classical",
-    name: "Linn Classical",
-    genre: "Audiophile Classical",
-    tagline: "Pristine orchestral recordings and timeless symphonic masterworks.",
-    streamUrl: "https://radio.linnrecords.com/autodj/classical/stream",
+    name: "Linn Classical HQ",
+    genre: "Classical & Acoustic",
+    tagline: "Audiophile-grade 320kbps classical masterpieces recorded in pristine quality.",
+    streamUrl: "http://radio.linnrecords.com:8000/stream",
     artwork: "https://images.unsplash.com/photo-1507838153414-b4b713384a76?w=600&auto=format&fit=crop&q=80",
-    badge: "HQ Lossless",
-    listeners: "Audiophile",
-    color: "#FFD700",
+    badge: "Audiophile 320k",
+    listeners: "Lossless Grade",
+    color: "#10B981",
   },
   {
     id: "secret-agent",
     name: "Secret Agent",
-    genre: "Spy Lounge & Exotica",
-    tagline: "The soundtrack for your stylish, mysterious adventure. Shaken, not stirred.",
+    genre: "Spy & Lounge",
+    tagline: "The soundtrack for your stylish, mysterious cloak-and-dagger lifestyle.",
     streamUrl: "https://ice1.somafm.com/secretagent-128-mp3",
-    artwork: "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=600&auto=format&fit=crop&q=80",
-    badge: "Retro Lounge",
-    listeners: "Vintage",
-    color: "#FF2D55",
+    artwork: "https://images.unsplash.com/photo-1485579149621-3123dd979885?w=600&auto=format&fit=crop&q=80",
+    badge: "Retro Cool",
+    listeners: "Classic",
+    color: "#EC4899",
   },
   {
     id: "sonic-universe",
     name: "Sonic Universe",
     genre: "Nu-Jazz & Avant-Garde",
-    tagline: "Transcending the world of jazz with modern fusion and eclectic nuance.",
+    tagline: "Transcending the world of jazz with avant-garde, eclectic, and nu-grooves.",
     streamUrl: "https://ice1.somafm.com/sonicuniverse-128-mp3",
-    artwork: "https://images.unsplash.com/photo-1511192336575-5a79af67a629?w=600&auto=format&fit=crop&q=80",
-    badge: "Jazz Live",
-    listeners: "Curated",
-    color: "#30D158",
+    artwork: "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=600&auto=format&fit=crop&q=80",
+    badge: "Eclectic",
+    listeners: "Underground",
+    color: "#3B82F6",
   },
   {
-    id: "kexp-radio",
-    name: "KEXP 90.3 Seattle",
-    genre: "Live Independent",
-    tagline: "Where the music matters. Live in-studio performances and listener-powered curation.",
-    streamUrl: "https://kexp.streamguys1.com/kexp128.mp3",
-    artwork: "https://images.unsplash.com/photo-1598488035139-bdbb2231ce04?w=600&auto=format&fit=crop&q=80",
-    badge: "Live Radio",
-    listeners: "Seattle, WA",
-    color: "#64D2FF",
+    id: "kexp-live",
+    name: "KEXP 90.3 FM",
+    genre: "Variety & Discovery",
+    tagline: "Where the music matters. Legendary Seattle listener-powered independent broadcast.",
+    streamUrl: "https://kexp-mp3-128.streamguys1.com/kexp128.mp3",
+    artwork: "https://images.unsplash.com/photo-1520523839898-507121c00a64?w=600&auto=format&fit=crop&q=80",
+    badge: "FM Simulcast",
+    listeners: "Seattle WA",
+    color: "#F97316",
   },
 ];
 
@@ -115,7 +113,9 @@ export function MusicRadioView({ onExploreTrack }: { onExploreTrack?: (track: Mu
   const [directUrl, setDirectUrl] = useState("");
   const [directError, setDirectError] = useState("");
   const [directBusy, setDirectBusy] = useState(false);
-  const now = useMusicNowPlaying();
+  const player = useMusicPlayer();
+  const currentTrack = player.current;
+  const isPlaying = player.phase === "playing";
   const daylist = getCurrentDaylistVibe();
 
   const handlePlayStation = async (station: LiveStation) => {
@@ -147,9 +147,9 @@ export function MusicRadioView({ onExploreTrack }: { onExploreTrack?: (track: Mu
   };
 
   const handleStartArtistRadio = async () => {
-    if (!now.current) return;
+    if (!currentTrack) return;
     try {
-      await tuneRadio(now.current);
+      await playMusic(currentTrack, [currentTrack, ...player.recents]);
     } catch (e) {
       console.error("Failed to tune artist radio", e);
     }
@@ -165,6 +165,9 @@ export function MusicRadioView({ onExploreTrack }: { onExploreTrack?: (track: Mu
               <span className="flex h-2.5 w-2.5 rounded-full bg-red-500 animate-pulse" />
               <span className="text-xs font-bold uppercase tracking-widest text-red-400">
                 Argus Radio 1 · Live Worldwide
+              </span>
+              <span className="rounded-full bg-white/10 px-2.5 py-0.5 text-[11px] font-semibold text-white/80">
+                Flow: {daylist.title}
               </span>
             </div>
             <h2 className="text-3xl font-extrabold sm:text-4xl tracking-tight text-white">
@@ -192,7 +195,7 @@ export function MusicRadioView({ onExploreTrack }: { onExploreTrack?: (track: Mu
       </section>
 
       {/* Smart Artist Radio Tuning (if current track exists) */}
-      {now.current && (
+      {currentTrack && (
         <section className="flex items-center justify-between rounded-2xl border border-white/10 bg-surface/60 p-5 backdrop-blur-md">
           <div className="flex items-center gap-3.5">
             <div className="grid size-11 place-items-center rounded-xl bg-accent/20 text-accent ring-1 ring-accent/30">
@@ -200,10 +203,10 @@ export function MusicRadioView({ onExploreTrack }: { onExploreTrack?: (track: Mu
             </div>
             <div>
               <h3 className="text-sm font-semibold text-white">
-                Infinite Radio based on {now.current.title}
+                Infinite Radio based on {currentTrack.title}
               </h3>
               <p className="text-xs text-ink-subtle">
-                Automatically finds complementary harmonic tracks by {now.current.artist} and related artists.
+                Automatically finds complementary harmonic tracks by {currentTrack.artist} and related artists.
               </p>
             </div>
           </div>
@@ -229,7 +232,7 @@ export function MusicRadioView({ onExploreTrack }: { onExploreTrack?: (track: Mu
 
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
           {LIVE_RADIO_STATIONS.map((station) => {
-            const isPlayingThis = activeStationId === station.id && now.playback === "playing";
+            const isPlayingThis = activeStationId === station.id && isPlaying;
             return (
               <div
                 key={station.id}
@@ -248,7 +251,7 @@ export function MusicRadioView({ onExploreTrack }: { onExploreTrack?: (track: Mu
                   </span>
 
                   <span className="absolute bottom-2.5 end-2.5 grid size-10 place-items-center rounded-full bg-white text-black shadow-lg transition-transform duration-200 group-hover:scale-110">
-                    <Play className="h-4 w-4 fill-current ml-0.5" />
+                    {isPlayingThis ? <Pause className="h-4 w-4 fill-current" /> : <Play className="h-4 w-4 fill-current ml-0.5" />}
                   </span>
                 </div>
 

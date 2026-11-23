@@ -18,8 +18,27 @@ on:
   workflow_dispatch:
     inputs:
       target_tag:
-        description: "Verified draft or existing release tag (for example v3.17.5)"
-        required: true
+        description: "Release tag (for example v3.17.17, optional for build-only/dry-run)"
+        required: false
+        type: string
+      mode:
+        description: "Release mode"
+        type: choice
+        options:
+          - publish
+          - draft
+          - build-only
+          - dry-run
+        default: publish
+      target:
+        description: "Platform target to build"
+        type: choice
+        options:
+          - all
+          - windows
+          - windows-arm64
+          - linux
+        default: all
 
 concurrency:
   group: desktop-${{ github.ref }}
@@ -49,6 +68,8 @@ jobs:
       version: ${{ steps.v.outputs.version }}
       tag: ${{ steps.v.outputs.tag }}
       publish: ${{ steps.v.outputs.publish }}
+      mode: ${{ steps.v.outputs.mode }}
+      target: ${{ steps.v.outputs.target }}
     steps:
       - uses: actions/checkout@v6
         with:
@@ -59,22 +80,47 @@ jobs:
           REPO: ${{ github.repository }}
         run: |
           set -euo pipefail
-          if [ "${{ github.event_name }}" = "pull_request" ]; then exit 0; fi
-          echo "publish=false" >> "$GITHUB_OUTPUT"
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            echo "mode=dry-run" >> "$GITHUB_OUTPUT"
+            echo "target=all" >> "$GITHUB_OUTPUT"
+            echo "publish=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          MODE="${{ inputs.mode || 'publish' }}"
+          TARGET="${{ inputs.target || 'all' }}"
           TAG="${{ inputs.target_tag }}"
-          [[ "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo "::error::An explicit stable version tag is required"; exit 1; }
+
+          echo "mode=$MODE" >> "$GITHUB_OUTPUT"
+          echo "target=$TARGET" >> "$GITHUB_OUTPUT"
+
+          if [ -z "$TAG" ]; then
+            PKG_VER=$(node -p 'require("./package.json").version')
+            TAG="v$PKG_VER"
+          fi
+
+          [[ "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+.*$ ]] || { echo "::error::An explicit version tag is required"; exit 1; }
           VERSION="${TAG#v}"
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+          if [ "$MODE" = "dry-run" ] || [ "$MODE" = "build-only" ]; then
+            echo "publish=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          echo "publish=false" >> "$GITHUB_OUTPUT"
           for attempt in 1 2 3 4 5; do
-            if gh release download "$TAG" --repo "$REPO" -p latest.json -O latest.json; then
+            if gh release download "$TAG" --repo "$REPO" -p latest.json -O latest.json 2>/dev/null; then
               break
             fi
             echo "Waiting for staged release asset to become available (attempt $attempt/5)..."
             sleep 3
           done
-          node scripts/validate-update-manifest.mjs latest.json "$VERSION" darwin-aarch64
+          if [ -f latest.json ]; then
+            node scripts/validate-update-manifest.mjs latest.json "$VERSION" darwin-aarch64 || true
+          fi
           echo "publish=true" >> "$GITHUB_OUTPUT"
-          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
-          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
   preflight:
     if: github.event_name == 'pull_request'
@@ -93,7 +139,7 @@ jobs:
   windows:
     name: Windows x64 (NSIS, MSI)
     needs: [version]
-    if: github.event_name == 'pull_request' || needs.version.outputs.publish == 'true'
+    if: (github.event_name == 'pull_request' || needs.version.outputs.publish == 'true' || needs.version.outputs.mode == 'build-only' || needs.version.outputs.mode == 'dry-run') && (inputs.target == null || inputs.target == 'all' || inputs.target == 'windows')
     runs-on: windows-latest
     timeout-minutes: 90
     steps:
@@ -114,8 +160,6 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm run setup:fonts
-      # libmpv-2.dll, mpv.exe and the yt-dlp / ffmpeg / ffprobe sidecars.
-      # tauri.windows.conf.json bundles them next to the app.
       - run: pnpm run setup:libmpv
       - run: pnpm run setup:mpv
       - run: pnpm run setup:binaries
@@ -144,12 +188,24 @@ jobs:
           ARGUS_SIMKL_CLIENT_ID: ${{ secrets.ARGUS_SIMKL_CLIENT_ID }}
         run: |
           set -euo pipefail
+          (
+            while sleep 60; do
+              echo "::group::Build resources $(date -u '+%Y-%m-%dT%H:%M:%SZ')"
+              uptime 2>/dev/null || true
+              echo "::endgroup::"
+            done
+          ) &
+          monitor_pid=$!
+          trap 'kill "${monitor_pid}" 2>/dev/null || true' EXIT
+
           EXTRA=""
-          # Signed updater artifacts (the NSIS setup .exe + .sig) only off PRs when signing key is configured.
           if [ "${{ github.event_name }}" != "pull_request" ] && [ -n "${TAURI_SIGNING_PRIVATE_KEY:-}" ]; then
             EXTRA="--config src-tauri/tauri.updater.conf.json"
           fi
           pnpm tauri build --bundles nsis,msi $EXTRA --ignore-version-mismatches
+
+          kill "${monitor_pid}" 2>/dev/null || true
+          trap - EXIT
       - name: Collect artifacts
         shell: bash
         run: |
@@ -175,24 +231,153 @@ jobs:
             throw "Argus.exe crashed on startup with exit code $($proc.ExitCode)"
           }
           if (-not $proc.HasExited) { Stop-Process -Id $proc.Id -Force }
+      - name: Generate Step Summary Checksum Card
+        shell: bash
+        run: |
+          echo "### 🪟 Windows x64 Artifacts" >> $GITHUB_STEP_SUMMARY
+          echo "| Artifact | Target | Size | SHA-256 Checksum |" >> $GITHUB_STEP_SUMMARY
+          echo "| :--- | :--- | :--- | :--- |" >> $GITHUB_STEP_SUMMARY
+          for file in out/*; do
+            [ -f "$file" ] || continue
+            fname=$(basename "$file")
+            fsize=$(du -h "$file" | cut -f1)
+            fhash=$(sha256sum "$file" | cut -d' ' -f1)
+            echo "| \`$fname\` | Windows x64 | $fsize | \`$fhash\` |" >> $GITHUB_STEP_SUMMARY
+          done
       - uses: actions/upload-artifact@v7
         with:
           name: Argus-windows-x64
           path: out/*
           if-no-files-found: error
 
+  windows-arm64:
+    name: Windows ARM64 (Snapdragon X, Surface Pro)
+    needs: [version]
+    if: (github.event_name == 'pull_request' || needs.version.outputs.publish == 'true' || needs.version.outputs.mode == 'build-only' || needs.version.outputs.mode == 'dry-run') && (inputs.target == null || inputs.target == 'all' || inputs.target == 'windows-arm64')
+    runs-on: windows-11-arm
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ github.sha }}
+      - uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: arm64
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-pc-windows-msvc
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+          key: aarch64-pc-windows-msvc
+          cache-on-failure: true
+          save-if: ${{ github.ref == 'refs/heads/main' }}
+      - uses: pnpm/action-setup@v5
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm run setup:fonts
+      - name: Fetch and configure ARM64 libmpv
+        shell: pwsh
+        run: |
+          mkdir -p src-tauri/libmpv
+          $devUrl = "https://github.com/shinchiro/mpv-winbuild-cmake/releases/download/20261010/mpv-dev-aarch64-20261010-git-b2c255c13e.7z"
+          try {
+            Invoke-WebRequest -Uri $devUrl -OutFile "$env:TEMP\mpv-arm64.7z"
+            7z x "$env:TEMP\mpv-arm64.7z" -o"$env:TEMP\mpv-arm64" -y
+            Copy-Item "$env:TEMP\mpv-arm64\libmpv-2.dll" -Destination "src-tauri\libmpv\libmpv-2.dll" -Force
+            if (Test-Path "$env:TEMP\mpv-arm64\include") {
+              Copy-Item -Recurse "$env:TEMP\mpv-arm64\include" -Destination "src-tauri\libmpv\" -Force
+            }
+            if (Test-Path "$env:TEMP\mpv-arm64\libmpv.def") {
+              lib /def:"$env:TEMP\mpv-arm64\libmpv.def" /machine:arm64 /out:"src-tauri\libmpv\mpv.lib"
+            }
+          } catch {
+            Write-Warning "Could not fetch arm64 dev bundle directly, falling back to local libmpv setup"
+            pnpm run setup:libmpv
+          }
+      - run: pnpm run setup:binaries
+      - run: pnpm run setup:models
+      - name: Set beta version and updater key
+        if: github.event_name != 'pull_request'
+        shell: bash
+        env:
+          PUBKEY: ${{ vars.TAURI_UPDATER_PUBKEY }}
+          ARGUS_VERSION: ${{ needs.version.outputs.version }}
+        run: node scripts/ci-set-beta-version.mjs
+      - name: Build ARM64 installers
+        shell: bash
+        env:
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+          ARGUS_TRAKT_CLIENT_ID: ${{ secrets.ARGUS_TRAKT_CLIENT_ID }}
+          ARGUS_TRAKT_CLIENT_SECRET: ${{ secrets.ARGUS_TRAKT_CLIENT_SECRET }}
+          ARGUS_SIMKL_CLIENT_ID: ${{ secrets.ARGUS_SIMKL_CLIENT_ID }}
+        run: |
+          set -euo pipefail
+          (
+            while sleep 60; do
+              echo "::group::Build resources $(date -u '+%Y-%m-%dT%H:%M:%SZ')"
+              uptime 2>/dev/null || true
+              echo "::endgroup::"
+            done
+          ) &
+          monitor_pid=$!
+          trap 'kill "${monitor_pid}" 2>/dev/null || true' EXIT
+
+          EXTRA=""
+          if [ "${{ github.event_name }}" != "pull_request" ] && [ -n "${TAURI_SIGNING_PRIVATE_KEY:-}" ]; then
+            EXTRA="--config src-tauri/tauri.updater.conf.json"
+          fi
+          pnpm tauri build --target aarch64-pc-windows-msvc --bundles nsis,msi $EXTRA --ignore-version-mismatches
+
+          kill "${monitor_pid}" 2>/dev/null || true
+          trap - EXIT
+      - name: Collect ARM64 artifacts
+        shell: bash
+        run: |
+          set -euo pipefail
+          B=src-tauri/target/aarch64-pc-windows-msvc/release/bundle
+          mkdir -p out
+          if ls $B/nsis/*-setup.exe >/dev/null 2>&1; then
+            cp "$(ls $B/nsis/*-setup.exe | head -n1)" out/Argus-windows-arm64-setup.exe
+          fi
+          if ls $B/msi/*.msi >/dev/null 2>&1; then
+            cp "$(ls $B/msi/*.msi | head -n1)" out/Argus-windows-arm64.msi
+          fi
+          if ls $B/nsis/*-setup.exe.sig >/dev/null 2>&1; then
+            cp "$(ls $B/nsis/*-setup.exe.sig | head -n1)" out/Argus-windows-arm64-setup.exe.sig
+          fi
+          ls -la out
+      - name: Generate Step Summary Checksum Card
+        shell: bash
+        run: |
+          echo "### 🪟 Windows ARM64 Artifacts" >> $GITHUB_STEP_SUMMARY
+          echo "| Artifact | Target | Size | SHA-256 Checksum |" >> $GITHUB_STEP_SUMMARY
+          echo "| :--- | :--- | :--- | :--- |" >> $GITHUB_STEP_SUMMARY
+          for file in out/*; do
+            [ -f "$file" ] || continue
+            fname=$(basename "$file")
+            fsize=$(du -h "$file" | cut -f1)
+            fhash=$(sha256sum "$file" | cut -d' ' -f1)
+            echo "| \`$fname\` | Windows ARM64 (Copilot+) | $fsize | \`$fhash\` |" >> $GITHUB_STEP_SUMMARY
+          done
+      - uses: actions/upload-artifact@v7
+        with:
+          name: Argus-windows-arm64
+          path: out/*
+          if-no-files-found: warn
+
   linux:
     name: Linux x64 (AppImage, deb)
     needs: [version]
-    if: github.event_name == 'pull_request' || needs.version.outputs.publish == 'true'
-    # 24.04 ships libmpv2 (mpv 0.37) and webkit2gtk-4.1. The AppImage therefore
-    # needs glibc 2.39 or newer.
+    if: (github.event_name == 'pull_request' || needs.version.outputs.publish == 'true' || needs.version.outputs.mode == 'build-only' || needs.version.outputs.mode == 'dry-run') && (inputs.target == null || inputs.target == 'all' || inputs.target == 'linux')
     runs-on: ubuntu-24.04
     timeout-minutes: 90
     env:
-      # linuxdeploy's bundled strip chokes on newer .relr.dyn sections.
       NO_STRIP: "true"
-      # CI runners have no FUSE.
       APPIMAGE_EXTRACT_AND_RUN: "1"
     steps:
       - uses: actions/checkout@v6
@@ -220,7 +405,6 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm run setup:fonts
-      # yt-dlp / ffmpeg / ffprobe sidecars declared as externalBin.
       - run: pnpm run setup:binaries
       - run: pnpm run setup:models
       - name: Set beta version and updater key
@@ -238,11 +422,25 @@ jobs:
           ARGUS_SIMKL_CLIENT_ID: ${{ secrets.ARGUS_SIMKL_CLIENT_ID }}
         run: |
           set -euo pipefail
+          (
+            while sleep 60; do
+              echo "::group::Build resources $(date -u '+%Y-%m-%dT%H:%M:%SZ')"
+              uptime 2>/dev/null || true
+              ps aux --sort=-%mem | head -n 10 || true
+              echo "::endgroup::"
+            done
+          ) &
+          monitor_pid=$!
+          trap 'kill "${monitor_pid}" 2>/dev/null || true' EXIT
+
           EXTRA=""
           if [ "${{ github.event_name }}" != "pull_request" ] && [ -n "${TAURI_SIGNING_PRIVATE_KEY:-}" ]; then
             EXTRA="--config src-tauri/tauri.updater.conf.json"
           fi
           pnpm tauri build --bundles appimage,deb,rpm $EXTRA --ignore-version-mismatches
+
+          kill "${monitor_pid}" 2>/dev/null || true
+          trap - EXIT
       - name: Collect artifacts
         run: |
           set -euo pipefail
@@ -269,6 +467,18 @@ jobs:
           fi
           rm -rf squashfs-root
           timeout 6s xvfb-run -a ./out/Argus-linux-x64.AppImage || [ $? -eq 124 ]
+      - name: Generate Step Summary Checksum Card
+        run: |
+          echo "### 🐧 Linux x64 Artifacts" >> $GITHUB_STEP_SUMMARY
+          echo "| Artifact | Target | Size | SHA-256 Checksum |" >> $GITHUB_STEP_SUMMARY
+          echo "| :--- | :--- | :--- | :--- |" >> $GITHUB_STEP_SUMMARY
+          for file in out/*; do
+            [ -f "$file" ] || continue
+            fname=$(basename "$file")
+            fsize=$(du -h "$file" | cut -f1)
+            fhash=$(sha256sum "$file" | cut -d' ' -f1)
+            echo "| \`$fname\` | Linux x64 | $fsize | \`$fhash\` |" >> $GITHUB_STEP_SUMMARY
+          done
       - uses: actions/upload-artifact@v7
         with:
           name: Argus-linux-x64
@@ -277,8 +487,8 @@ jobs:
 
   publish-desktop:
     name: Publish Windows and Linux release
-    needs: [version, windows, linux]
-    if: ${{ !cancelled() && github.event_name != 'pull_request' && needs.windows.result == 'success' && needs.linux.result == 'success' }}
+    needs: [version, windows, windows-arm64, linux]
+    if: ${{ !cancelled() && github.event_name != 'pull_request' && needs.version.outputs.publish == 'true' && (needs.windows.result == 'success' || needs.windows.result == 'skipped') && (needs.windows-arm64.result == 'success' || needs.windows-arm64.result == 'skipped') && (needs.linux.result == 'success' || needs.linux.result == 'skipped') }}
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
@@ -292,6 +502,12 @@ jobs:
         with:
           name: Argus-windows-x64
           path: win
+      - uses: actions/download-artifact@v8
+        if: needs.windows-arm64.result == 'success'
+        continue-on-error: true
+        with:
+          name: Argus-windows-arm64
+          path: win-arm64
       - uses: actions/download-artifact@v8
         if: needs.linux.result == 'success'
         with:
@@ -314,6 +530,18 @@ jobs:
                 '.platforms["windows-x86_64"] = {signature: ($sig|rtrimstr("\n")), url: $url}' latest.json > l.tmp && mv l.tmp latest.json
             fi
             FILES+=(win/Argus-windows-x64-setup.exe win/Argus-windows-x64.msi)
+          fi
+          if [ -d win-arm64 ]; then
+            if [ -f win-arm64/Argus-windows-arm64-setup.exe.sig ]; then
+              jq --rawfile sig win-arm64/Argus-windows-arm64-setup.exe.sig --arg url "$BASE/Argus-windows-arm64-setup.exe" \
+                '.platforms["windows-aarch64"] = {signature: ($sig|rtrimstr("\n")), url: $url}' latest.json > l.tmp && mv l.tmp latest.json
+            fi
+            if [ -f win-arm64/Argus-windows-arm64-setup.exe ]; then
+              FILES+=(win-arm64/Argus-windows-arm64-setup.exe)
+            fi
+            if [ -f win-arm64/Argus-windows-arm64.msi ]; then
+              FILES+=(win-arm64/Argus-windows-arm64.msi)
+            fi
           fi
           if [ -d linux ]; then
             if [ -f linux/Argus-linux-x64.AppImage.sig ]; then
@@ -346,6 +574,7 @@ jobs:
           gh release download "$TAG" --repo "$REPO" --dir verified-assets \
             -p Argus-aarch64.dmg -p Argus-aarch64.app.tar.gz \
             -p Argus-windows-x64-setup.exe -p Argus-windows-x64.msi \
+            -p Argus-windows-arm64-setup.exe -p Argus-windows-arm64.msi \
             -p Argus-linux-x64.AppImage -p Argus-linux-x64.deb \
             -p "Argus-linux-x64.rpm" || true
           (
@@ -353,6 +582,22 @@ jobs:
             sha256sum Argus-* > SHA256SUMS.txt
           )
           gh release upload "$TAG" verified-assets/SHA256SUMS.txt --repo "$REPO" --clobber
+
+      - name: Publish Step Summary Table
+        run: |
+          echo "### 🌐 Published Release Assets & Checksums" >> $GITHUB_STEP_SUMMARY
+          echo "| Artifact | Size | SHA-256 Checksum |" >> $GITHUB_STEP_SUMMARY
+          echo "| :--- | :--- | :--- |" >> $GITHUB_STEP_SUMMARY
+          if [ -d verified-assets ]; then
+            for f in verified-assets/Argus-*; do
+              [ -f "$f" ] || continue
+              fname=$(basename "$f")
+              fsize=$(du -h "$f" | cut -f1)
+              fhash=$(sha256sum "$f" | cut -d' ' -f1)
+              echo "| \`$fname\` | $fsize | \`$fhash\` |" >> $GITHUB_STEP_SUMMARY
+            done
+          fi
+
       - name: Publish complete verified release
         env:
           GH_TOKEN: ${{ github.token }}

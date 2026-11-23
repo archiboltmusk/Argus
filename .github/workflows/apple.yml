@@ -14,6 +14,25 @@ on:
       - "scripts/package-apple-app.mjs"
       - "scripts/apple-platforms.mjs"
   workflow_dispatch:
+    inputs:
+      mode:
+        description: "Release mode (build-only, dry-run, publish)"
+        type: choice
+        options:
+          - build-only
+          - dry-run
+          - publish
+        default: publish
+      target:
+        description: "Target Apple platform"
+        type: choice
+        options:
+          - all
+          - ios
+          - tvos
+          - visionos
+          - watchos
+        default: all
 
 concurrency:
   group: apple-ecosystem-${{ github.ref }}
@@ -34,6 +53,7 @@ env:
 jobs:
   ios:
     name: Build iOS & iPadOS IPA
+    if: inputs.target == null || inputs.target == 'all' || inputs.target == 'ios'
     runs-on: macos-latest
     timeout-minutes: 60
     steps:
@@ -56,6 +76,18 @@ jobs:
       - name: Compile and Package iOS / iPadOS IPA
         run: |
           set -euo pipefail
+          (
+            while sleep 60; do
+              echo "::group::iOS build resources $(date -u '+%Y-%m-%dT%H:%M:%SZ')"
+              uptime 2>/dev/null || true
+              vm_stat 2>/dev/null || true
+              ps -Ao pid,etime,%cpu,rss,command -r 2>/dev/null | head -n 10 || true
+              echo "::endgroup::"
+            done
+          ) &
+          monitor_pid=$!
+          trap 'kill "${monitor_pid}" 2>/dev/null || true' EXIT
+
           rm -rf "$RUNNER_TEMP/Payload" "$RUNNER_TEMP/Argus-iOS-iPadOS.ipa"
           mkdir -p "$RUNNER_TEMP/Payload/Argus.app"
           if [ -d "src-tauri/gen/apple" ]; then
@@ -100,6 +132,9 @@ jobs:
           codesign -s - --force "$RUNNER_TEMP/Payload/Argus.app" 2>/dev/null || true
           (cd "$RUNNER_TEMP" && zip -r -9 Argus-iOS-iPadOS.ipa Payload)
           cp "$RUNNER_TEMP/Argus-iOS-iPadOS.ipa" "$GITHUB_WORKSPACE/Argus-iOS-iPadOS.ipa"
+
+          kill "${monitor_pid}" 2>/dev/null || true
+          trap - EXIT
       - name: Smoke-check IPA payload (Argus-iOS-iPadOS.ipa)
         run: |
           set -euo pipefail
@@ -113,6 +148,14 @@ jobs:
           VERSION=$(node -p 'require("./src-tauri/tauri.ios.conf.json").version')
           test "$(plutil -extract CFBundleShortVersionString raw -o - "$PLIST")" = "$VERSION"
           rm -rf "$TMP"
+      - name: Generate Step Summary Checksum Card
+        run: |
+          echo "### 📱 iOS / iPadOS Artifact" >> $GITHUB_STEP_SUMMARY
+          echo "| Artifact | Target | Size | SHA-256 Checksum |" >> $GITHUB_STEP_SUMMARY
+          echo "| :--- | :--- | :--- | :--- |" >> $GITHUB_STEP_SUMMARY
+          fsize=$(du -h Argus-iOS-iPadOS.ipa | cut -f1)
+          fhash=$(shasum -a 256 Argus-iOS-iPadOS.ipa | cut -d' ' -f1)
+          echo "| \`Argus-iOS-iPadOS.ipa\` | iOS 16+ / iPadOS | $fsize | \`$fhash\` |" >> $GITHUB_STEP_SUMMARY
       - uses: actions/upload-artifact@v7
         with:
           name: Argus-iOS-iPadOS-IPA
@@ -122,7 +165,7 @@ jobs:
   tvos:
     needs: [ios]
     name: Build Apple TV (tvOS) IPA
-    if: ${{ !cancelled() && (startsWith(github.ref, 'refs/tags/v') || github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[release]') || contains(github.event.head_commit.message, '[apple]')) }}
+    if: ${{ !cancelled() && (inputs.target == null || inputs.target == 'all' || inputs.target == 'tvos') && (startsWith(github.ref, 'refs/tags/v') || github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[release]') || contains(github.event.head_commit.message, '[apple]')) }}
     runs-on: macos-latest
     timeout-minutes: 60
     steps:
@@ -142,11 +185,26 @@ jobs:
       - name: Compile and Package tvOS IPA
         run: |
           set -euo pipefail
+          (
+            while sleep 60; do
+              echo "::group::tvOS build resources $(date -u '+%Y-%m-%dT%H:%M:%SZ')"
+              uptime 2>/dev/null || true
+              vm_stat 2>/dev/null || true
+              ps -Ao pid,etime,%cpu,rss,command -r 2>/dev/null | head -n 10 || true
+              echo "::endgroup::"
+            done
+          ) &
+          monitor_pid=$!
+          trap 'kill "${monitor_pid}" 2>/dev/null || true' EXIT
+
           rm -rf "$RUNNER_TEMP/Payload" "$RUNNER_TEMP/Argus-AppleTV-tvOS.ipa"
           mkdir -p "$RUNNER_TEMP/Payload/ArgusTV.app"
           node scripts/package-apple-app.mjs --platform tvos --app-dir "$RUNNER_TEMP/Payload/ArgusTV.app" --dist-dir dist --version "$(node -p 'require("./package.json").version')"
           (cd "$RUNNER_TEMP" && zip -r -9 Argus-AppleTV-tvOS.ipa Payload)
           cp "$RUNNER_TEMP/Argus-AppleTV-tvOS.ipa" "$GITHUB_WORKSPACE/Argus-AppleTV-tvOS.ipa"
+
+          kill "${monitor_pid}" 2>/dev/null || true
+          trap - EXIT
       - name: Smoke-check IPA payload (Argus-AppleTV-tvOS.ipa)
         run: |
           set -euo pipefail
@@ -156,6 +214,14 @@ jobs:
           [ -n "$PLIST" ] || { echo "::error::Missing Info.plist in Argus-AppleTV-tvOS.ipa"; exit 1; }
           python3 -c 'import plistlib,sys; plistlib.load(open(sys.argv[1], "rb"))' "$PLIST"
           rm -rf "$TMP"
+      - name: Generate Step Summary Checksum Card
+        run: |
+          echo "### 📺 Apple TV (tvOS) Artifact" >> $GITHUB_STEP_SUMMARY
+          echo "| Artifact | Target | Size | SHA-256 Checksum |" >> $GITHUB_STEP_SUMMARY
+          echo "| :--- | :--- | :--- | :--- |" >> $GITHUB_STEP_SUMMARY
+          fsize=$(du -h Argus-AppleTV-tvOS.ipa | cut -f1)
+          fhash=$(shasum -a 256 Argus-AppleTV-tvOS.ipa | cut -d' ' -f1)
+          echo "| \`Argus-AppleTV-tvOS.ipa\` | tvOS 17+ | $fsize | \`$fhash\` |" >> $GITHUB_STEP_SUMMARY
       - uses: actions/upload-artifact@v7
         with:
           name: Argus-AppleTV-tvOS-IPA
@@ -165,7 +231,7 @@ jobs:
   visionos:
     needs: [tvos]
     name: Build Apple Vision Pro (visionOS) IPA
-    if: ${{ !cancelled() && (startsWith(github.ref, 'refs/tags/v') || github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[release]') || contains(github.event.head_commit.message, '[apple]')) }}
+    if: ${{ !cancelled() && (inputs.target == null || inputs.target == 'all' || inputs.target == 'visionos') && (startsWith(github.ref, 'refs/tags/v') || github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[release]') || contains(github.event.head_commit.message, '[apple]')) }}
     runs-on: macos-latest
     timeout-minutes: 60
     steps:
@@ -185,11 +251,26 @@ jobs:
       - name: Compile and Package visionOS IPA
         run: |
           set -euo pipefail
+          (
+            while sleep 60; do
+              echo "::group::visionOS build resources $(date -u '+%Y-%m-%dT%H:%M:%SZ')"
+              uptime 2>/dev/null || true
+              vm_stat 2>/dev/null || true
+              ps -Ao pid,etime,%cpu,rss,command -r 2>/dev/null | head -n 10 || true
+              echo "::endgroup::"
+            done
+          ) &
+          monitor_pid=$!
+          trap 'kill "${monitor_pid}" 2>/dev/null || true' EXIT
+
           rm -rf "$RUNNER_TEMP/Payload" "$RUNNER_TEMP/Argus-VisionPro-visionOS.ipa"
           mkdir -p "$RUNNER_TEMP/Payload/ArgusVision.app"
           node scripts/package-apple-app.mjs --platform visionos --app-dir "$RUNNER_TEMP/Payload/ArgusVision.app" --dist-dir dist --version "$(node -p 'require("./package.json").version')"
           (cd "$RUNNER_TEMP" && zip -r -9 Argus-VisionPro-visionOS.ipa Payload)
           cp "$RUNNER_TEMP/Argus-VisionPro-visionOS.ipa" "$GITHUB_WORKSPACE/Argus-VisionPro-visionOS.ipa"
+
+          kill "${monitor_pid}" 2>/dev/null || true
+          trap - EXIT
       - name: Smoke-check IPA payload (Argus-VisionPro-visionOS.ipa)
         run: |
           set -euo pipefail
@@ -199,6 +280,14 @@ jobs:
           [ -n "$PLIST" ] || { echo "::error::Missing Info.plist in Argus-VisionPro-visionOS.ipa"; exit 1; }
           python3 -c 'import plistlib,sys; plistlib.load(open(sys.argv[1], "rb"))' "$PLIST"
           rm -rf "$TMP"
+      - name: Generate Step Summary Checksum Card
+        run: |
+          echo "### 🥽 Apple Vision Pro (visionOS) Artifact" >> $GITHUB_STEP_SUMMARY
+          echo "| Artifact | Target | Size | SHA-256 Checksum |" >> $GITHUB_STEP_SUMMARY
+          echo "| :--- | :--- | :--- | :--- |" >> $GITHUB_STEP_SUMMARY
+          fsize=$(du -h Argus-VisionPro-visionOS.ipa | cut -f1)
+          fhash=$(shasum -a 256 Argus-VisionPro-visionOS.ipa | cut -d' ' -f1)
+          echo "| \`Argus-VisionPro-visionOS.ipa\` | visionOS 1.0+ | $fsize | \`$fhash\` |" >> $GITHUB_STEP_SUMMARY
       - uses: actions/upload-artifact@v7
         with:
           name: Argus-VisionPro-visionOS-IPA
@@ -208,7 +297,7 @@ jobs:
   watchos:
     needs: [visionos]
     name: Build Apple Watch (watchOS) IPA
-    if: ${{ !cancelled() && (startsWith(github.ref, 'refs/tags/v') || github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[release]') || contains(github.event.head_commit.message, '[apple]')) }}
+    if: ${{ !cancelled() && (inputs.target == null || inputs.target == 'all' || inputs.target == 'watchos') && (startsWith(github.ref, 'refs/tags/v') || github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[release]') || contains(github.event.head_commit.message, '[apple]')) }}
     runs-on: macos-latest
     timeout-minutes: 60
     steps:
@@ -228,11 +317,26 @@ jobs:
       - name: Compile and Package watchOS IPA
         run: |
           set -euo pipefail
+          (
+            while sleep 60; do
+              echo "::group::watchOS build resources $(date -u '+%Y-%m-%dT%H:%M:%SZ')"
+              uptime 2>/dev/null || true
+              vm_stat 2>/dev/null || true
+              ps -Ao pid,etime,%cpu,rss,command -r 2>/dev/null | head -n 10 || true
+              echo "::endgroup::"
+            done
+          ) &
+          monitor_pid=$!
+          trap 'kill "${monitor_pid}" 2>/dev/null || true' EXIT
+
           rm -rf "$RUNNER_TEMP/Payload" "$RUNNER_TEMP/Argus-AppleWatch-watchOS.ipa"
           mkdir -p "$RUNNER_TEMP/Payload/ArgusWatch.app"
           node scripts/package-apple-app.mjs --platform watchos --app-dir "$RUNNER_TEMP/Payload/ArgusWatch.app" --dist-dir dist --version "$(node -p 'require("./package.json").version')"
           (cd "$RUNNER_TEMP" && zip -r -9 Argus-AppleWatch-watchOS.ipa Payload)
           cp "$RUNNER_TEMP/Argus-AppleWatch-watchOS.ipa" "$GITHUB_WORKSPACE/Argus-AppleWatch-watchOS.ipa"
+
+          kill "${monitor_pid}" 2>/dev/null || true
+          trap - EXIT
       - name: Smoke-check IPA payload (Argus-AppleWatch-watchOS.ipa)
         run: |
           set -euo pipefail
@@ -242,6 +346,14 @@ jobs:
           [ -n "$PLIST" ] || { echo "::error::Missing Info.plist in Argus-AppleWatch-watchOS.ipa"; exit 1; }
           python3 -c 'import plistlib,sys; plistlib.load(open(sys.argv[1], "rb"))' "$PLIST"
           rm -rf "$TMP"
+      - name: Generate Step Summary Checksum Card
+        run: |
+          echo "### ⌚ Apple Watch (watchOS) Artifact" >> $GITHUB_STEP_SUMMARY
+          echo "| Artifact | Target | Size | SHA-256 Checksum |" >> $GITHUB_STEP_SUMMARY
+          echo "| :--- | :--- | :--- | :--- |" >> $GITHUB_STEP_SUMMARY
+          fsize=$(du -h Argus-AppleWatch-watchOS.ipa | cut -f1)
+          fhash=$(shasum -a 256 Argus-AppleWatch-watchOS.ipa | cut -d' ' -f1)
+          echo "| \`Argus-AppleWatch-watchOS.ipa\` | watchOS 10+ | $fsize | \`$fhash\` |" >> $GITHUB_STEP_SUMMARY
       - uses: actions/upload-artifact@v7
         with:
           name: Argus-AppleWatch-watchOS-IPA
@@ -251,7 +363,7 @@ jobs:
   publish:
     name: Publish Apple Ecosystem IPAs to Release
     needs: [ios, tvos, visionos, watchos]
-    if: always() && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v'))
+    if: always() && (inputs.mode == null || inputs.mode == 'publish') && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v'))
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
@@ -273,6 +385,17 @@ jobs:
         continue-on-error: true
         with:
           name: Argus-AppleWatch-watchOS-IPA
+      - name: Publish Step Summary Table
+        run: |
+          echo "### 🍏 All Apple Ecosystem Packages & Checksums" >> $GITHUB_STEP_SUMMARY
+          echo "| Package | Size | SHA-256 Checksum |" >> $GITHUB_STEP_SUMMARY
+          echo "| :--- | :--- | :--- |" >> $GITHUB_STEP_SUMMARY
+          for ipa in *.ipa; do
+            [ -f "$ipa" ] || continue
+            fsize=$(du -h "$ipa" | cut -f1)
+            fhash=$(sha256sum "$ipa" | cut -d' ' -f1)
+            echo "| \`$ipa\` | $fsize | \`$fhash\` |" >> $GITHUB_STEP_SUMMARY
+          done
       - env:
           GH_TOKEN: ${{ github.token }}
         run: |

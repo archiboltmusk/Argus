@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>app.argus.desktop</id>
+  <metadata_license>MIT</metadata_license>
+  <project_license>GPL-3.0-or-later</project_license>
+  <name>Argus</name>
+  <summary>Modern, fluid video player, music player &amp; streaming companion</summary>
+  <description>
+    <p>
+      Argus is an ultra-responsive, privacy-centric media player and streaming hub featuring
+      mpv-accelerated video and music playback, Apple Music-style radio and audio streams,
+      smart subtitle auto-synchronization, and multi-profile tracking.
+    </p>
+  </description>
+  <launchable type="desktop-id">app.argus.desktop.desktop</launchable>
+  <developer_name>Argus Community</developer_name>
+  <url type="homepage">https://github.com/archiboltmusk/Argus</url>
+  <url type="bugtracker">https://github.com/archiboltmusk/Argus/issues</url>
+  <screenshots>
+    <screenshot type="default">
+      <image>https://raw.githubusercontent.com/archiboltmusk/Argus/main/docs/screenshot.png</image>
+    </screenshot>
+  </screenshots>
+  <content_rating type="oars-1.1" />
+  <releases>
+    <release version="3.17.17" date="2026-11-24">
+      <description>
+        <p>Argus 3.17.17 release:</p>
+        <ul>
+          <li>Apple Music-grade Radio view with live streams and custom audio stream tuner</li>
+          <li>Resilient SQLite catalog caching and instant offline playback recovery</li>
+          <li>Apple Music multi-hue gradient meshes for artist and album artwork</li>
+          <li>Windows ARM64 native target support and Flatpak bundle pipeline</li>
+        </ul>
+      </description>
+    </release>
+  </releases>
+</component>
