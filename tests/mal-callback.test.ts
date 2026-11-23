@@ -16,7 +16,7 @@ test("MAL callbacks queue before subscription and reject malformed targets", () 
   }
 });
 
-function authFixture() {
+function authFixture(customFetch?: (url: string, init?: any) => Promise<any>) {
   const compiled = ts.transpileModule(readFileSync(new URL("../src/lib/mal/auth.ts", import.meta.url), "utf8"), {
     compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 },
   }).outputText;
@@ -25,7 +25,7 @@ function authFixture() {
   let calls = 0;
   let saved: unknown;
   const api: Record<string, any> = {};
-  const fetchImpl = async (url: string) => {
+  const defaultFetch = async (url: string) => {
     calls++;
     return {
       ok: true,
@@ -35,8 +35,19 @@ function authFixture() {
           : { name: "Fixture" },
     };
   };
+  const fetchImpl = customFetch
+    ? async (url: string, init?: any) => {
+        calls++;
+        return customFetch(url, init);
+      }
+    : defaultFetch;
   const deps: Record<string, unknown> = {
-    "./config": { MAL_CLIENT_ID: "fixture", MAL_AUTHORIZE_URL: "https://mal.example/authorize", MAL_TOKEN_PROXY: "https://proxy.example/token" },
+    "./config": {
+      MAL_CLIENT_ID: "fixture",
+      MAL_AUTHORIZE_URL: "https://mal.example/authorize",
+      MAL_TOKEN_URL: "https://myanimelist.net/v1/oauth2/token",
+      MAL_TOKEN_PROXY: "https://proxy.example/token",
+    },
     "./session": { getSession: () => null, setSession: (value: unknown) => { saved = value; } },
     "@/lib/active-profile-id": { activeProfileId: () => profile },
     "@/lib/safe-fetch": { safeFetch: fetchImpl },
@@ -71,4 +82,34 @@ test("cancelled attempts and changed profiles cannot complete a MAL login", asyn
   f.switchProfile();
   await assert.rejects(f.api.completeAuthorization("fixture"), /expired/);
   assert.equal(f.calls(), 0);
+});
+
+test("MAL direct exchange failure falls back to proxy and parses actionable hint", async () => {
+  const requestedUrls: string[] = [];
+  const f = authFixture(async (url: string) => {
+    requestedUrls.push(url);
+    if (url.includes("myanimelist.net/v1/oauth2/token")) {
+      return {
+        ok: false,
+        status: 400,
+        text: async () => JSON.stringify({ hint: "Authorization code was not issued to this client" }),
+      };
+    }
+    if (url.includes("proxy.example/token")) {
+      return {
+        ok: false,
+        status: 400,
+        text: async () => JSON.stringify({ hint: "Proxy failed to exchange code" }),
+      };
+    }
+    return { ok: true, json: async () => ({ name: "Fixture" }) };
+  });
+
+  f.api.buildAuthorizeUrl();
+  await assert.rejects(
+    f.api.completeAuthorization("fixture-code"),
+    /MAL: Authorization code was not issued to this client/,
+  );
+  assert.ok(requestedUrls.some((u) => u.includes("myanimelist.net/v1/oauth2/token")));
+  assert.ok(requestedUrls.some((u) => u.includes("proxy.example/token")));
 });
