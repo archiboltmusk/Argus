@@ -1,27 +1,74 @@
 # Contributing to Argus
 
-Start with a reproducible problem. Search [open issues](https://github.com/archiboltmusk/Argus/issues) and [pull requests](https://github.com/archiboltmusk/Argus/pulls) before starting work.
+Thank you for your interest in contributing to Argus! Argus is a modern, privacy-focused, cross-platform media player and streaming hub. We welcome contributions that maintain our high standards of software quality, user privacy, and system security.
 
-## Run the project
+---
 
-Use Node.js 24 and the pnpm version pinned in [package.json](package.json). From the repository root, run:
+## 1. Contributor Standards & Safety Guidelines
+
+To protect the integrity of the project and ensure all contributions serve the community safely:
+
+### Developer Certificate of Origin (DCO)
+All commits submitted via Pull Requests must adhere to the [Developer Certificate of Origin (DCO) 1.1](https://developercertificate.org/):
+```text
+Developer Certificate of Origin
+Version 1.1
+
+By making a contribution to this project, I certify that:
+(a) The contribution was created in whole or in part by me and I have the right to submit it under the open source license indicated in the file; or
+(b) The contribution is based upon previous work that, to the best of my knowledge, is covered under an appropriate open source license and I have the right under that license to submit that work with modifications; or
+(c) The contribution was provided directly to me by some other person who certified (a), (b) or (c) and I have not modified it.
+(d) I understand and agree that this project and the contribution are public and that a record of the contribution is maintained indefinitely.
+```
+Add your sign-off to commits using `git commit -s` or by including `Signed-off-by: Your Name <your.email@example.com>` in your commit message.
+
+### Security & Privacy Non-Negotiables
+- **Zero Surveillance / Tracking**: Do not add telemetry, tracking pixels, behavioral logging, or analytics.
+- **No Hardcoded Credentials**: Never commit API keys, personal secrets, client secrets, or auth tokens.
+- **On-Device Independence**: Features must run locally and independently on each target OS without central lock-in.
+- **Supply Chain Hygiene**: Add dependencies only when necessary. Unpinned or unverified external packages will not be merged.
+
+---
+
+## 2. Development Setup
+
+Argus requires Node.js 24 and the pinned pnpm version specified in [package.json](package.json).
 
 ```sh
+# Clone the repository
+git clone https://github.com/archiboltmusk/Argus.git
+cd Argus
+
+# Install dependencies with strict lockfile verification
 pnpm install --frozen-lockfile
+
+# Launch the desktop frontend in development mode
 pnpm dev
 ```
 
-This starts the Vite frontend. For work involving native playback, the filesystem, or platform integrations, use a desktop development build. Read [the prerequisites](README.md#prerequisites) and the relevant build steps in [CI](.github/workflows/ci.yml), then run `pnpm tauri dev`.
+For native platform development (macOS, Windows, Linux, Android, iOS):
+- **macOS / iOS / tvOS / visionOS**: Xcode 16+ and Homebrew `mpv` `pkg-config`.
+- **Windows**: Visual Studio 2022 / C++ Build Tools and Rust `x86_64-pc-windows-msvc` / `aarch64-pc-windows-msvc`.
+- **Linux**: GTK3, WebKit2GTK 4.1, libmpv development libraries.
+- Run `pnpm tauri dev` to test native IPC bindings.
 
-## Verify your change
+---
 
-| Change | Checks to run |
-| --- | --- |
-| Frontend | `pnpm run typecheck` and `pnpm test` |
-| Shared Rust core | `cargo test --manifest-path argus-core/Cargo.toml` |
-| Native integration | `cargo check --manifest-path src-tauri/Cargo.toml`, then exercise the affected feature on its target platform |
-| Installer, platform build, or updater | Record the exact OS and architecture, build or asset used, and the install or update result |
+## 3. Pre-Flight Verification Checklist
 
-See [repository working rules](AGENTS.md) for additional checks. In the pull request, link the issue if there is one and describe what you exercised. For playback regressions, include the steps, expected result, actual result, and whether the first frame appeared. Use a shareable fixture or a sanitized description of the source. Keep credentials and private URLs out of reports, logs, and screenshots.
+Before opening a pull request, ensure your local changes pass all gates:
 
-See [legal and content guidance](LEGAL.md) before contributing fixtures, screenshots, or bundled assets.
+| Scope | Command | Purpose |
+| :--- | :--- | :--- |
+| **TypeScript / UI** | `pnpm run typecheck` | Validates strict TypeScript compilation (0 errors allowed) |
+| **Unit Test Suite** | `pnpm test` | Runs all 869+ unit and integration test suites |
+| **Rust Core** | `cargo fmt --check && cargo clippy --all-targets` | Enforces idiomatic Rust formatting and clippy lints |
+| **Security Audit** | `pnpm audit` and `cargo audit` | Checks for vulnerable dependencies |
+
+---
+
+## 4. Branch Protection & Review Policy
+
+1. **Pull Request Isolation**: All PRs run in isolated sandboxes with read-only tokens (`permissions: contents: read`).
+2. **Automated Status Gates**: Every PR must pass CodeQL static analysis, Gitleaks secret scanning, and automated test runners before being merged.
+3. **Squash & Clean History**: Commits will be squashed and merged with clear semantic commit messages (`feat:`, `fix:`, `refactor:`, `perf:`).

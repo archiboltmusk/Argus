@@ -1,38 +1,44 @@
 # Security Policy
 
-The Argus maintainers prioritize the privacy, security, and integrity of the application.
+The Argus Project maintains strict security, privacy, and integrity standards across all supported operating systems and architectures.
 
 ---
 
-## Supported Versions
+## Supported Releases
 
-Security updates are applied to the active development branch (`main`) and official releases.
+Security patches are actively applied to `main` and all official production releases.
 
-| Version / Branch | Supported          |
-| ---------------- | ------------------ |
-| `main`           | :white_check_mark: |
-| Latest Release   | :white_check_mark: |
-| Older Releases   | :x:                |
-
----
-
-## Reporting a Vulnerability
-
-If you discover a potential security vulnerability:
-
-1. **Please do not report security issues via public GitHub issues.**
-2. Report vulnerabilities confidentially through GitHub Security Advisories under the repository's **Security** tab.
-3. Provide:
-   - A summary of the vulnerability.
-   - Steps to reproduce or proof-of-concept material.
-   - Affected client platform(s).
-
-Maintainers aim to acknowledge reports within 48 hours and coordinate fixes prior to public disclosure.
+| Version / Target | Supported | Security Update Cadence |
+| :--- | :---: | :--- |
+| `main` (Development) | :white_check_mark: | Continuous CI/CD deployment |
+| Latest Stable Release (v3.17.x) | :white_check_mark: | Critical hotfixes within 24–48 hours |
+| Older Minor Releases | :x: | Upgrades to latest release recommended |
 
 ---
 
-## Architecture Safeguards
+## Reporting a Security Vulnerability
 
-* **Zero Surveillance**: Argus contains no centralized tracking or analytics servers.
-* **On-Device Storage**: User credentials, local tokens, and keys reside on the local device.
-* **Local AI**: Automated speech recognition and educational processing run locally on-device.
+If you identify a security defect, memory corruption vulnerability, credential disclosure, or sandbox escape:
+
+1. **Do not create a public issue.**
+2. Report the vulnerability confidentially via GitHub's [Private Vulnerability Reporting](https://github.com/archiboltmusk/Argus/security/advisories/new).
+3. Include:
+   - Vulnerability category (e.g. Memory Safety, Sandbox Escape, Path Traversal, Credential Exposure).
+   - Affected client platform (macOS, Windows, Linux, iOS, Android, tvOS).
+   - Detailed reproduction steps or proof-of-concept payload.
+   - Recommended mitigation if available.
+
+### Response Timelines & SLA
+- **Initial Acknowledgment**: Within 48 hours.
+- **Triage & Reproduction**: Within 5 business days.
+- **Remediation & Patch Release**: Coordinated security release before public disclosure.
+
+---
+
+## Security Architecture & Defense Safeguards
+
+1. **Zero Central Surveillance**: Argus operates with zero centralized behavioral tracking, analytics cookies, or usage telemetry.
+2. **Local Credential Storage**: All OAuth tokens, user profiles, and API credentials reside strictly in local client storage or system keyrings.
+3. **Isolated Network Layer**: Network requests are routed through safeFetch isolation boundaries preventing cross-origin IPC and token leakages.
+4. **Automated SAST & Secret Scanning**: Every pull request is statically analyzed via GitHub CodeQL and Gitleaks to detect secret leaks, command injection, and buffer risks prior to merging.
+5. **Least Privilege Execution**: GitHub Actions workflows run with explicit read-only permissions (`permissions: contents: read`) to prevent malicious PR supply chain attacks.

@@ -37,7 +37,8 @@ if (!spec) {
 }
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
-const destination = join(root, "src-tauri", "binaries", "mpv-x86_64-pc-windows-msvc.exe");
+const targetArch = process.arch === "arm64" ? "aarch64" : "x86_64";
+const destination = join(root, "src-tauri", "binaries", `mpv-${targetArch}-pc-windows-msvc.exe`);
 
 if (existsSync(destination) && statSync(destination).size > 0) {
   console.log(`[mpv] ${destination} already present`);
