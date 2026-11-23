@@ -488,7 +488,7 @@ jobs:
   publish-desktop:
     name: Publish Windows and Linux release
     needs: [version, windows, windows-arm64, linux]
-    if: ${{ !cancelled() && github.event_name != 'pull_request' && needs.version.outputs.publish == 'true' && (needs.windows.result == 'success' || needs.windows.result == 'skipped') && (needs.windows-arm64.result == 'success' || needs.windows-arm64.result == 'skipped') && (needs.linux.result == 'success' || needs.linux.result == 'skipped') }}
+    if: ${{ !cancelled() && github.event_name != 'pull_request' && needs.windows.result == 'success' && needs.linux.result == 'success' }}
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:

@@ -58,7 +58,7 @@ test("standalone people rankings use the public feed and map its source filename
     [],
     [],
   ]);
-  assert.equal(feed.RANK_FEED_PROVIDER, "Harbor");
+  assert.equal(feed.RANK_FEED_PROVIDER, "Argus");
   assert.deepEqual((await feed.fetchRankManifest()).sources, ["argus", "tmdb"]);
   assert.deepEqual(await feed.fetchRankList("argus", "Acting", null), {
     source: "argus",
