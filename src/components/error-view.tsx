@@ -183,17 +183,10 @@ export function ErrorView() {
       >
         <ArgusMark className="h-6 w-6 shrink-0 sm:h-7 sm:w-7" />
         <span
-          className="font-display text-[24px] font-medium leading-none tracking-tight sm:text-[28px]"
+          className="font-display text-[24px] font-semibold leading-none tracking-tight text-ink sm:text-[28px]"
           style={{ transform: "translateY(1px)" }}
         >
-          Harb
-          <span
-            className="inline-block"
-            style={{ transform: "rotate(7deg)", transformOrigin: "50% 65%" }}
-          >
-            o
-          </span>
-          r
+          Argus
         </span>
       </div>
 

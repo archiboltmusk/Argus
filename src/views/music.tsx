@@ -117,7 +117,7 @@ import { MusicTopPlaylists } from "./music/music-top-playlists";
 import { MusicSearchPanel } from "./music/music-search-panel";
 import { rememberMusicSearchItem } from "@/lib/music/search-history";
 import { useMusicData } from "./music/use-music-data";
-import { MusicServicesBrowser } from "./music/music-services-browser";
+import { MusicRadioView } from "./music/music-radio-view";
 
 import { MusicDetail, type MusicDetailState } from "./music/music-detail";
 import { registerMusicCatalogOrigin } from "@/lib/music/playback-origin";
@@ -1552,8 +1552,8 @@ function MusicViewContent({ active }: { active: boolean }) {
                       />
                     </>
                   )}
-                  {tab === "services" ? (
-                    <MusicServicesBrowser onExploreTrack={(track) => playTrack(track, [track])} />
+                  {tab === "radio" ? (
+                    <MusicRadioView onExploreTrack={(track) => playTrack(track, [track])} />
                   ) : tab === "library" ? (
                     <MusicLibrary
                       active={

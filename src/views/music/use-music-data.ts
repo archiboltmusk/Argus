@@ -26,7 +26,7 @@ export type MusicData = {
   reloadFresh: () => void;
 };
 
-const HOME_TIMEOUT_MS = CATALOG_REQUEST_TIMEOUT_MS * 2;
+const HOME_TIMEOUT_MS = 30_000;
 
 export function useMusicData(recents: MusicTrack[]): MusicData {
   const [entries, setEntries] = useState<HomeEntry[]>([]);
@@ -66,13 +66,25 @@ export function useMusicData(recents: MusicTrack[]): MusicData {
     withTimeout(loadHomeRows(attempt > 0), HOME_TIMEOUT_MS)
       .then((rows) => {
         if (!live()) return;
-        setEntries(rows.map((row) => ({ key: row.id, row })));
-        setHomeStatus("ready");
+        if (rows.length > 0) {
+          setEntries(rows.map((row) => ({ key: row.id, row })));
+          setHomeStatus("ready");
+          setHomeError("");
+        } else {
+          setHomeStatus("ready");
+        }
       })
       .catch((cause) => {
         if (!live()) return;
-        setHomeError(errorText(cause));
-        setHomeStatus("error");
+        setEntries((prev) => {
+          if (prev.length > 0) {
+            setHomeStatus("ready");
+            return prev;
+          }
+          setHomeError(errorText(cause));
+          setHomeStatus("error");
+          return prev;
+        });
       });
 
     withTimeout(loadMusicLibrary(), CATALOG_REQUEST_TIMEOUT_MS)

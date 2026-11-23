@@ -61,7 +61,7 @@ export function MusicSectionHead({
 
 function BandShell({ children }: { children: ReactNode }) {
   return (
-    <div className="grid min-h-[168px] place-items-center rounded-xl border border-edge-soft bg-surface px-6 py-6 text-center">
+    <div className="grid min-h-[160px] place-items-center rounded-2xl border border-white/5 bg-elevated/15 px-6 py-6 text-center backdrop-blur-md">
       <div className="flex max-w-md flex-col items-center">{children}</div>
     </div>
   );
@@ -101,23 +101,25 @@ export function MusicSectionError({
 }) {
   const t = useT();
   return (
-    <BandShell>
-      <span className="grid size-11 place-items-center rounded-full bg-elevated text-danger">
-        <TriangleAlert size={20} aria-hidden="true" />
-      </span>
-      <p className="mt-3 text-[13px] leading-5 text-ink-muted">
-        {message || t("music.error.load")}
-      </p>
-      {onRetry && (
-        <button
-          type="button"
-          onClick={onRetry}
-          className="mt-5 inline-flex h-11 items-center gap-2 rounded-full border border-edge px-4 text-[11px] font-medium text-ink transition-colors duration-200 ease-out hover:bg-elevated"
-        >
-          {t("music.row.tryAgain")}
-        </button>
-      )}
-    </BandShell>
+    <div className="flex min-h-[140px] flex-col items-center justify-center rounded-2xl border border-white/5 bg-elevated/20 p-6 text-center backdrop-blur-md">
+      <div className="flex max-w-md flex-col items-center">
+        <span className="grid size-10 place-items-center rounded-full bg-danger/10 text-danger ring-1 ring-danger/20">
+          <TriangleAlert size={18} aria-hidden="true" />
+        </span>
+        <p className="mt-2.5 text-[13px] leading-5 text-ink-muted">
+          {message || t("music.error.load")}
+        </p>
+        {onRetry && (
+          <button
+            type="button"
+            onClick={onRetry}
+            className="mt-4 inline-flex h-9 items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 text-[12px] font-medium text-ink backdrop-blur-sm transition-all duration-200 ease-out hover:scale-105 hover:bg-white/10 hover:text-white"
+          >
+            {t("music.row.tryAgain")}
+          </button>
+        )}
+      </div>
+    </div>
   );
 }
 

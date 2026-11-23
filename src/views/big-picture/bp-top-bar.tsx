@@ -328,17 +328,10 @@ export function BpTopBar({ active }: { active: BigPictureTabKind }) {
           />
         ) : (
           <span
-            className="hidden whitespace-nowrap text-[clamp(24px,3vh,40px)] font-medium leading-none tracking-tight text-ink [&_*]:text-inherit min-[1500px]:inline"
+            className="hidden whitespace-nowrap text-[clamp(24px,3vh,40px)] font-semibold leading-none tracking-tight text-ink [&_*]:text-inherit min-[1500px]:inline"
             style={{ fontFamily: '"Fraunces", "Iowan Old Style", "Georgia", serif' }}
           >
-            Harb
-            <span
-              className="inline-block"
-              style={{ transform: "rotate(7deg)", transformOrigin: "50% 65%" }}
-            >
-              o
-            </span>
-            r
+            Argus
           </span>
         )}
       </div>

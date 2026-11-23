@@ -90,6 +90,54 @@ ORDER BY position, id
     })
 }
 
+pub fn cached_any(database: &MusicDb, source: Option<&str>) -> Result<Vec<MusicCatalogRow>, String> {
+    database.with_connection(|connection| {
+        let mut statement = connection
+            .prepare(
+                r#"
+SELECT id, title, title_literal, subtitle, layout, source
+FROM catalog_rows
+WHERE (?1 IS NULL OR source = ?1)
+ORDER BY position, id
+"#,
+            )
+            .map_err(|error| error.to_string())?;
+        let rows = statement
+            .query_map(params![source], |row| {
+                Ok(MusicCatalogRow {
+                    id: row.get(0)?,
+                    title: row.get(1)?,
+                    title_literal: row.get::<_, i64>(2)? != 0,
+                    subtitle: row.get(3)?,
+                    layout: MusicRowLayout::from_str(&row.get::<_, String>(4)?),
+                    source: row.get(5)?,
+                    items: Vec::new(),
+                })
+            })
+            .map_err(|error| error.to_string())?
+            .collect::<Result<Vec<_>, _>>()
+            .map_err(|error| error.to_string())?;
+
+        let mut items = connection
+            .prepare("SELECT payload FROM catalog_row_items WHERE row_id = ?1 ORDER BY position")
+            .map_err(|error| error.to_string())?;
+        rows.into_iter()
+            .map(|mut row| {
+                let payloads = items
+                    .query_map(params![row.id], |item| item.get::<_, String>(0))
+                    .map_err(|error| error.to_string())?
+                    .collect::<Result<Vec<_>, _>>()
+                    .map_err(|error| error.to_string())?;
+                row.items = payloads
+                    .iter()
+                    .filter_map(|payload| serde_json::from_str::<MusicCatalogItem>(payload).ok())
+                    .collect();
+                Ok(row)
+            })
+            .collect::<Result<Vec<_>, String>>()
+    })
+}
+
 pub fn store(database: &MusicDb, rows: &[MusicCatalogRow]) -> Result<(), String> {
     let fetched_at = now_seconds().to_string();
     database.with_connection(|connection| {

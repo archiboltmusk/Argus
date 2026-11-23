@@ -35,10 +35,17 @@ function artistRefs(ctx: MusicBandContext): MusicArtistRef[] {
     const key = artist.name.trim().toLowerCase();
     if (!key || seen.has(key)) continue;
     seen.add(key);
+    const libAlbum = ctx.data.library?.albums.find(
+      (album) =>
+        (album.artist.trim().toLowerCase() === key ||
+          album.artist.trim().toLowerCase().startsWith(`${key} `)) &&
+        album.artwork?.trim(),
+    );
     refs.push({
       id: `library:${artist.id}`,
       connectorId: "local",
       name: artist.name,
+      artwork: libAlbum?.artwork?.trim() || undefined,
       subtitle: t("music.library.artistSummary", {
         tracks: artist.trackCount,
         albums: artist.albumCount,
@@ -52,10 +59,27 @@ function artistRefs(ctx: MusicBandContext): MusicArtistRef[] {
     const heard = ctx.player.recents.filter((track) =>
       track.artist.trim().toLowerCase().startsWith(key),
     );
+    const trackArt = heard.find((track) => track.artwork?.trim())?.artwork?.trim();
+    // Also check home rows for any album or track artwork for this artist
+    let catalogArt: string | undefined;
+    if (!trackArt) {
+      for (const row of ctx.data.homeRows) {
+        const item = row.items.find(
+          (i) =>
+            ("artist" in i && typeof i.artist === "string" && i.artist.trim().toLowerCase().startsWith(key)) ||
+            (i.name && i.name.trim().toLowerCase().startsWith(key)),
+        );
+        if (item && "artwork" in item && typeof item.artwork === "string" && item.artwork.trim()) {
+          catalogArt = item.artwork.trim();
+          break;
+        }
+      }
+    }
     refs.push({
       id: `history:${key}`,
       connectorId: heard[0]?.connectorId ?? "",
       name,
+      artwork: trackArt || catalogArt || undefined,
       subtitle: heard.length > 0 ? t("music.trackCount", { count: heard.length }) : undefined,
     });
   }
@@ -65,9 +89,18 @@ function artistRefs(ctx: MusicBandContext): MusicArtistRef[] {
 function artistMosaic(ctx: MusicBandContext, artist: MusicArtistRef): string[] {
   const wanted = artist.name.trim().toLowerCase();
   if (!wanted) return [];
-  const albums = ctx.data.library?.albums ?? [];
   const seen = new Set<string>();
   const covers: string[] = [];
+
+  // 1. Direct artist artwork if available
+  if (artist.artwork && artist.artwork.trim()) {
+    const art = artist.artwork.trim();
+    seen.add(art);
+    covers.push(art);
+  }
+
+  // 2. Local library albums
+  const albums = ctx.data.library?.albums ?? [];
   for (const album of albums) {
     const credit = album.artist.trim().toLowerCase();
     if (credit !== wanted && !credit.startsWith(`${wanted} `)) continue;
@@ -77,6 +110,36 @@ function artistMosaic(ctx: MusicBandContext, artist: MusicArtistRef): string[] {
     covers.push(url);
     if (covers.length === 4) break;
   }
+
+  // 3. Recent player history tracks (streaming, YouTube Music, etc.)
+  if (covers.length < 4) {
+    for (const track of ctx.player.recents) {
+      const credit = track.artist.trim().toLowerCase();
+      if (credit !== wanted && !credit.startsWith(`${wanted} `)) continue;
+      const url = track.artwork.trim();
+      if (!url || seen.has(url)) continue;
+      seen.add(url);
+      covers.push(url);
+      if (covers.length === 4) break;
+    }
+  }
+
+  // 4. Catalog home rows tracks / albums
+  if (covers.length < 4) {
+    for (const row of ctx.data.homeRows) {
+      for (const item of row.items) {
+        const itemArtist = "artist" in item && typeof item.artist === "string" ? item.artist.trim().toLowerCase() : "";
+        if (itemArtist !== wanted && !itemArtist.startsWith(`${wanted} `)) continue;
+        const url = "artwork" in item && typeof item.artwork === "string" ? item.artwork.trim() : "";
+        if (!url || seen.has(url)) continue;
+        seen.add(url);
+        covers.push(url);
+        if (covers.length === 4) break;
+      }
+      if (covers.length === 4) break;
+    }
+  }
+
   return covers;
 }
 

@@ -215,17 +215,10 @@ export function BpOnboardFrame({
       >
         <ArgusMark className="h-[clamp(32px,3.9vh,52px)] w-[clamp(32px,3.9vh,52px)] shrink-0 text-ink" />
         <span
-          className="whitespace-nowrap text-[clamp(28px,3.5vh,48px)] font-medium leading-none tracking-tight text-ink"
+          className="whitespace-nowrap text-[clamp(28px,3.5vh,48px)] font-semibold leading-none tracking-tight text-ink"
           style={{ fontFamily: '"Fraunces", "Iowan Old Style", "Georgia", serif' }}
         >
-          Harb
-          <span
-            className="inline-block"
-            style={{ transform: "rotate(7deg)", transformOrigin: "50% 65%" }}
-          >
-            o
-          </span>
-          r
+          Argus
         </span>
       </div>
       <header className="flex shrink-0 flex-col gap-[clamp(12px,1.6vh,24px)] px-[var(--bp-gutter)] pt-[calc(var(--bp-safe-y,0px)+clamp(26px,4.4vh,72px))]">

@@ -170,9 +170,9 @@ export function MusicCoverCard({
           aria-label={label}
           className="flex w-full min-w-0 flex-col text-start"
         >
-          <span className="relative block w-full overflow-hidden rounded-md">
+          <span className="relative block w-full overflow-hidden rounded-xl shadow-[0_4px_14px_rgba(0,0,0,0.25)] ring-1 ring-white/10 transition-transform duration-300 ease-out group-hover:scale-[1.02] group-hover:shadow-[0_8px_24px_rgba(0,0,0,0.4)]">
             {item.kind === "playlist" ? (
-              <MusicPlaylistCover artwork={item.artwork} seed={seed} className="rounded-md" />
+              <MusicPlaylistCover artwork={item.artwork} seed={seed} className="rounded-xl" />
             ) : (
               <Poster
                 src={item.artwork}
@@ -184,8 +184,8 @@ export function MusicCoverCard({
             {overlay}
             {item.kind === "track" && (loading || status.current) && <MusicNowPlayingMark loading={loading} paused={status.paused}/>}
           </span>
-          <span className="mt-[9px] flex min-w-0 items-center gap-[5px]">
-            <span className="truncate text-[13px] font-semibold text-ink" title={heading}>
+          <span className="mt-[10px] flex min-w-0 items-center gap-[5px]">
+            <span className="truncate text-[13px] font-semibold text-ink group-hover:text-primary transition-colors duration-150" title={heading}>
               {heading}
             </span>
             {chip && <MusicCardBadgeChip badge={chip} />}
@@ -194,7 +194,7 @@ export function MusicCoverCard({
                 data-music-label={explicitMark === "explicit" ? "explicit" : "clean"}
                 title={t(`music.label.${explicitMark}`)}
                 aria-label={t(`music.label.${explicitMark}`)}
-                className="inline-flex shrink-0 items-center rounded-[2px] bg-elevated px-1 py-0.5 text-[9px] font-medium leading-none text-ink-muted"
+                className="inline-flex shrink-0 items-center rounded-[3px] bg-elevated px-1 py-0.5 text-[9px] font-semibold leading-none text-ink-muted"
               >
                 {explicitMark === "explicit" ? "E" : t("music.label.clean")}
               </span>
@@ -206,7 +206,7 @@ export function MusicCoverCard({
           <div className="pointer-events-none absolute inset-x-0 top-0 aspect-square">
             <button
               type="button"
-              className="music-cover-play no-press bg-ink text-canvas"
+              className="music-cover-play no-press bg-white text-black shadow-2xl transition-transform duration-200 hover:scale-105 active:scale-95"
               aria-label={playLabel}
               aria-busy={loading || undefined}
               disabled={loading}
@@ -218,7 +218,7 @@ export function MusicCoverCard({
               {loading ? (
                 <LoaderCircle size={20} aria-hidden="true" className="animate-spin motion-reduce:animate-none" />
               ) : (
-                <Play size={20} aria-hidden="true" />
+                <Play size={20} fill="currentColor" aria-hidden="true" className="ml-0.5" />
               )}
             </button>
           </div>

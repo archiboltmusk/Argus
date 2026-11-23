@@ -27,8 +27,15 @@ pub async fn music_home_rows(
     let ordered = rows::order_rows(results);
     if !ordered.is_empty() {
         rows::store(&state.db, &ordered)?;
+        Ok(ordered)
+    } else {
+        let stale = rows::cached_any(&state.db, None).unwrap_or_default();
+        if !stale.is_empty() {
+            Ok(stale)
+        } else {
+            Ok(Vec::new())
+        }
     }
-    Ok(ordered)
 }
 
 #[tauri::command]

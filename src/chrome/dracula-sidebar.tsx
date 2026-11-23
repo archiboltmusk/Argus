@@ -114,17 +114,10 @@ export function DraculaSidebar() {
               <ArgusMark className="argus-dracula-moon h-7 w-7 shrink-0 text-accent drop-shadow-[0_0_10px_var(--color-accent-soft)] lg:h-[26px] lg:w-[26px]" />
               {!collapsed && (
                 <span
-                  className="hidden text-[40px] font-medium leading-none tracking-tight lg:inline"
+                  className="hidden text-[36px] font-semibold leading-none tracking-tight text-ink lg:inline"
                   style={{ fontFamily: "var(--font-display)", transform: "translateY(1px)" }}
                 >
-                  Harb
-                  <span
-                    className="inline-block"
-                    style={{ transform: "rotate(8deg)", transformOrigin: "50% 65%" }}
-                  >
-                    o
-                  </span>
-                  r
+                  Argus
                 </span>
               )}
             </button>

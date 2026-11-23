@@ -88,44 +88,25 @@ export function Sidebar() {
               <span
                 data-argus-sidebar-label
                 aria-hidden={collapsed || undefined}
-                className="hidden whitespace-nowrap text-[42px] font-bold leading-none tracking-tight lg:inline-flex lg:items-center"
+                className="hidden whitespace-nowrap text-[36px] font-bold leading-none tracking-tight text-ink lg:inline-flex lg:items-center"
                 style={{
                   fontFamily: '"Fredoka", "Baloo 2", system-ui, sans-serif',
                   transform: "translateY(1px)",
                 }}
               >
-                Harb
-                <img
-                  src="/kids/wheel.png"
-                  alt="o"
-                  draggable={false}
-                  className="inline-block h-[0.92em] w-auto"
-                  style={{
-                    transform: "translateY(0.08em)",
-                    marginLeft: "-5px",
-                    marginRight: "-5px",
-                  }}
-                />
-                r
+                Argus
               </span>
             ) : (
               <span
                 data-argus-sidebar-label
                 aria-hidden={collapsed || undefined}
-                className="hidden whitespace-nowrap text-[44px] font-medium leading-none tracking-tight lg:inline"
+                className="hidden whitespace-nowrap text-[38px] font-semibold leading-none tracking-tight text-ink lg:inline"
                 style={{
                   fontFamily: '"Fraunces", "Iowan Old Style", "Georgia", serif',
                   transform: "translateY(2px)",
                 }}
               >
-                Harb
-                <span
-                  className="inline-block"
-                  style={{ transform: "rotate(7deg)", transformOrigin: "50% 65%" }}
-                >
-                  o
-                </span>
-                r
+                Argus
               </span>
             ))}
         </div>

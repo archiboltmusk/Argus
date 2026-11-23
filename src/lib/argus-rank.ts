@@ -118,7 +118,7 @@ export const ARGUS_RANK_WEIGHTS: ScoreComponents = {
 };
 
 // Standalone builds use the same public provider as the other hosted metadata feeds.
-export const RANK_FEED_PROVIDER = ARGUS_HOSTED ? null : "Harbor";
+export const RANK_FEED_PROVIDER = ARGUS_HOSTED ? null : "Argus";
 const FEED_BASE = `${ARGUS_HOSTED ? ARGUS_API_BASE : HARBOR_FALLBACK_BASE}/rank`;
 const RANK_SOURCES: RankSource[] = [
   "argus",
