@@ -21,6 +21,7 @@ use tokio::sync::{watch, RwLock};
 use uuid::Uuid;
 
 use crate::cast_hls::HlsState;
+use crate::cast_transcode::CastJob;
 use crate::transcode::{handle_transcode, TranscodeProfile};
 #[path = "cast_audio.rs"]
 mod cast_audio;
@@ -30,6 +31,7 @@ use cast_audio::AudioCastState;
 #[derive(Clone)]
 struct Session {
     url: String,
+    audio_url: Option<String>,
     base_url: Option<String>,
     headers: HashMap<String, String>,
     transcode: bool,
@@ -37,6 +39,12 @@ struct Session {
     burn_sub: Option<(String, String)>,
     prebuffer: Option<watch::Receiver<PrebufferState>>,
     created_at: Instant,
+    /// A cast conversion served as one continuous MPEG-TS response (DLNA).
+    cast: Option<Arc<CastJob>>,
+    /// Ends every response of this session when the cast is stopped or replaced.
+    cancel: tokio_util::sync::CancellationToken,
+    /// The response currently converting this cast stream (MPEG-TS), so a new request ends it.
+    current_response: Arc<std::sync::Mutex<Option<tokio_util::sync::CancellationToken>>>,
 }
 
 #[derive(Clone)]
@@ -83,6 +91,8 @@ pub struct RegisterResult {
 pub struct RegisterArgs {
     pub url: String,
     #[serde(default)]
+    pub audio_url: Option<String>,
+    #[serde(default)]
     pub headers: HashMap<String, String>,
     #[serde(default)]
     pub transcode: bool,
@@ -92,8 +102,6 @@ pub struct RegisterArgs {
     pub profile: Option<TranscodeProfile>,
     #[serde(default)]
     pub target_host: Option<String>,
-    #[serde(default)]
-    pub start_time_sec: Option<f64>,
     #[serde(default)]
     pub burn_sub_path: Option<String>,
     #[serde(default)]
@@ -111,6 +119,11 @@ impl ProxyState {
             local_port: 0,
             client: reqwest::Client::builder()
                 .redirect(reqwest::redirect::Policy::none())
+                // Providers are frequently on the LAN (NzbDAV, media servers) while
+                // VPN and proxy tools export HTTP(S)_PROXY for the public internet.
+                // Every other Argus HTTP client disables the environment proxy;
+                // without this the relay fails for exactly those sources.
+                .no_proxy()
                 .build()
                 .expect("proxy HTTP client"),
             hls: HlsState::new(),
@@ -144,6 +157,9 @@ impl ProxyState {
         let client = reqwest::Client::builder()
             .redirect(reqwest::redirect::Policy::none())
             .pool_idle_timeout(std::time::Duration::from_secs(60))
+            // See ProxyState::placeholder: a LAN provider must not be routed
+            // through an environment proxy meant for public traffic.
+            .no_proxy()
             .build()
             .map_err(|e| format!("client build: {}", e))?;
         let hls = HlsState::new();
@@ -224,6 +240,7 @@ impl ProxyState {
             if let Some((base, last_seg, query)) = split_playlist_url(&args.url) {
                 let session = Session {
                     url: args.url.clone(),
+                    audio_url: None,
                     base_url: Some(base),
                     headers: args.headers,
                     transcode: false,
@@ -231,6 +248,9 @@ impl ProxyState {
                     burn_sub: None,
                     prebuffer: None,
                     created_at: Instant::now(),
+                    cast: None,
+                    cancel: tokio_util::sync::CancellationToken::new(),
+                    current_response: Default::default(),
                 };
                 self.sessions.write().await.insert(id.clone(), session);
                 let qs = query.map(|q| format!("?{}", q)).unwrap_or_default();
@@ -257,6 +277,7 @@ impl ProxyState {
         };
         let session = Session {
             url: args.url.clone(),
+            audio_url: args.audio_url,
             base_url: None,
             headers: args.headers,
             transcode: args.transcode,
@@ -264,6 +285,9 @@ impl ProxyState {
             burn_sub: None,
             prebuffer,
             created_at: Instant::now(),
+            cast: None,
+            cancel: tokio_util::sync::CancellationToken::new(),
+            current_response: Default::default(),
         };
         self.sessions.write().await.insert(id.clone(), session);
         let suffix = if args.transcode { ".ts" } else { "" };
@@ -282,38 +306,12 @@ impl ProxyState {
             .and_then(reachable_ip_for)
             .or_else(lan_ip)
             .unwrap_or_else(|| "127.0.0.1".to_string());
+        // Converted casts go through `register_cast_job`; a transcode requested here is served as
+        // one MPEG-TS response.
         let burn_sub = args
             .burn_sub_path
             .clone()
             .map(|path| (path, args.burn_sub_style.clone().unwrap_or_default()));
-        if args.transcode {
-            let seek = args.start_time_sec.unwrap_or(0.0).max(0.0);
-            match self
-                .hls
-                .register_with_seek(
-                    args.url.clone(),
-                    args.headers.clone(),
-                    seek,
-                    burn_sub.clone(),
-                )
-                .await
-            {
-                Ok(hid) => {
-                    let url = format!("http://{}:{}/cast/hls/{}/master.m3u8", host, self.port, hid);
-                    eprintln!(
-                        "[argus::proxy] cast HLS session: {} (seek={:.1}s)",
-                        url, seek
-                    );
-                    return RegisterResult {
-                        session_id: hid,
-                        url,
-                    };
-                }
-                Err(e) => {
-                    eprintln!("[argus::proxy] HLS register failed ({}); falling back to direct transcode", e);
-                }
-            }
-        }
         let playlist_parts = if args.transcode {
             None
         } else {
@@ -322,6 +320,7 @@ impl ProxyState {
         if let Some((base, last_seg, query)) = playlist_parts {
             let session = Session {
                 url: args.url.clone(),
+                audio_url: None,
                 base_url: Some(base),
                 headers: args.headers,
                 transcode: false,
@@ -329,6 +328,9 @@ impl ProxyState {
                 burn_sub: None,
                 prebuffer: None,
                 created_at: Instant::now(),
+                cast: None,
+                cancel: tokio_util::sync::CancellationToken::new(),
+                current_response: Default::default(),
             };
             self.sessions.write().await.insert(id.clone(), session);
             let qs = query.map(|q| format!("?{}", q)).unwrap_or_default();
@@ -340,6 +342,7 @@ impl ProxyState {
         }
         let session = Session {
             url: args.url.clone(),
+            audio_url: args.audio_url,
             base_url: None,
             headers: args.headers,
             transcode: args.transcode,
@@ -347,6 +350,9 @@ impl ProxyState {
             burn_sub,
             prebuffer: None,
             created_at: Instant::now(),
+            cast: None,
+            cancel: tokio_util::sync::CancellationToken::new(),
+            current_response: Default::default(),
         };
         self.sessions.write().await.insert(id.clone(), session);
         let suffix = if args.transcode { ".ts" } else { "" };
@@ -359,6 +365,42 @@ impl ProxyState {
 
     pub async fn unregister(&self, session_id: &str) {
         self.sessions.write().await.remove(session_id);
+    }
+
+    /// Starts serving a cast conversion: an HLS event playlist, or one continuous MPEG-TS response
+    /// for receivers (most DLNA TVs) that do not take HLS.
+    pub async fn register_cast_job(&self, job: CastJob, target_host: &str, hls: bool) -> Result<RegisterResult, String> {
+        let host = reachable_ip_for(target_host)
+            .or_else(lan_ip)
+            .unwrap_or_else(|| "127.0.0.1".to_string());
+        if self.port == 0 {
+            return Err("The cast server is not ready".into());
+        }
+        if hls {
+            let id = self.hls.register_job(job).await?;
+            let url = format!("http://{}:{}/cast/hls/{}/master.m3u8", host, self.port, id);
+            eprintln!("[argus::proxy] cast HLS session: {url}");
+            return Ok(RegisterResult { session_id: id, url });
+        }
+        let id = format!("ts-{}", Uuid::new_v4());
+        let session = Session {
+            url: job.url.clone(),
+            audio_url: None,
+            base_url: None,
+            headers: job.headers.clone(),
+            transcode: true,
+            profile: TranscodeProfile::default(),
+            burn_sub: None,
+            prebuffer: None,
+            created_at: Instant::now(),
+            cast: Some(Arc::new(job)),
+            cancel: tokio_util::sync::CancellationToken::new(),
+            current_response: Default::default(),
+        };
+        self.sessions.write().await.insert(id.clone(), session);
+        let url = format!("http://{}:{}/s/{}.ts", host, self.port, id);
+        eprintln!("[argus::proxy] cast MPEG-TS session: {url}");
+        Ok(RegisterResult { session_id: id, url })
     }
 
     pub(crate) async fn register_audio_cast(&self, input: AudioCastInput) -> Result<RegisterResult, String> {
@@ -376,27 +418,54 @@ impl ProxyState {
 
     pub async fn stop_hls_session(&self, session_id: &str) -> bool {
         if session_id.starts_with("audio-") { return self.audio.stop(session_id).await; }
+        if session_id.starts_with("ts-") {
+            let removed = self.sessions.write().await.remove(session_id);
+            if let Some(session) = removed.as_ref() {
+                session.cancel.cancel();
+            }
+            return removed.is_some();
+        }
         self.hls.stop_session(session_id).await
     }
 
     pub async fn stop_all_hls(&self) -> usize {
         self.audio.stop_all().await;
+        {
+            let mut map = self.sessions.write().await;
+            map.retain(|_, session| {
+                if session.cast.is_some() {
+                    session.cancel.cancel();
+                    return false;
+                }
+                true
+            });
+        }
         self.hls.stop_all().await
     }
 
+    /// Marks the active cast's stream as in use. Casting status is polled every second while a cast
+    /// runs, so a receiver paused for longer than the idle limit keeps its stream.
+    pub async fn keep_alive(&self, session_id: &str) {
+        if !session_id.starts_with("ts-") && !session_id.starts_with("audio-") {
+            self.hls.touch_session(session_id).await;
+        }
+    }
+
     pub async fn gc_idle(&self) -> usize {
-        const PROXY_MAX_AGE: Duration = Duration::from_secs(3 * 60 * 60);
         const HLS_IDLE: Duration = Duration::from_secs(5 * 60);
         let now = Instant::now();
         let mut removed = {
             let mut map = self.sessions.write().await;
             let stale: Vec<String> = map
                 .iter()
-                .filter(|(_, s)| now.duration_since(s.created_at) > PROXY_MAX_AGE)
+                .filter(|(_, s)| session_expired(s, now))
                 .map(|(k, _)| k.clone())
                 .collect();
             for k in &stale {
-                map.remove(k);
+                // A response still streaming from it ends with it.
+                if let Some(session) = map.remove(k) {
+                    session.cancel.cancel();
+                }
             }
             stale.len()
         };
@@ -411,6 +480,14 @@ impl ProxyState {
         removed += self.audio.gc().await;
         removed
     }
+}
+
+const PROXY_MAX_AGE: Duration = Duration::from_secs(3 * 60 * 60);
+
+/// A relayed stream expires after three hours. A cast conversion (MPEG-TS) does not: it lasts as
+/// long as its cast, and stopping or replacing the cast removes it.
+fn session_expired(session: &Session, now: Instant) -> bool {
+    session.cast.is_none() && now.duration_since(session.created_at) > PROXY_MAX_AGE
 }
 
 pub(crate) fn shutdown(app: &tauri::AppHandle) {
@@ -744,7 +821,7 @@ async fn fetch_prebuffer_prefix(
         }
         req = req.header(key, value);
     }
-    let upstream = crate::http_redirect::send_get(&client, req, url).await?;
+    let upstream = crate::http_redirect::send_get_playback(&client, req, url).await?;
     let status = upstream.status();
     if status != StatusCode::PARTIAL_CONTENT {
         return Err("range");
@@ -862,9 +939,90 @@ fn prepared_prefix_response(session: &Session, headers: &HeaderMap) -> Option<Re
         .ok()
 }
 
+/// Makes `token` the one response converting a cast stream and ends the previous one. A TV that
+/// asks for the stream again (after a probe, a stall or its own retry) must not leave the earlier
+/// conversion running: two FFmpeg processes would share the GPU encoder and the disk for nothing.
+fn take_over_response(
+    current: &std::sync::Mutex<Option<tokio_util::sync::CancellationToken>>,
+    token: tokio_util::sync::CancellationToken,
+) {
+    let previous = current.lock().ok().and_then(|mut slot| slot.replace(token));
+    if let Some(previous) = previous {
+        previous.cancel();
+    }
+}
+
+/// One continuous MPEG-TS response converted on the fly. A HEAD request (receivers probe before
+/// they play) is answered without starting FFmpeg.
+async fn serve_cast_ts(
+    job: Arc<CastJob>,
+    cancel: tokio_util::sync::CancellationToken,
+    current: Arc<std::sync::Mutex<Option<tokio_util::sync::CancellationToken>>>,
+    head: bool,
+) -> Response {
+    let mut headers = HeaderMap::new();
+    headers.insert("content-type", HeaderValue::from_static("video/mp2t"));
+    headers.insert("cache-control", HeaderValue::from_static("no-cache"));
+    headers.insert("transferMode.dlna.org", HeaderValue::from_static("Streaming"));
+    headers.insert(
+        "contentFeatures.dlna.org",
+        HeaderValue::from_static("DLNA.ORG_OP=00;DLNA.ORG_CI=1;DLNA.ORG_FLAGS=01700000000000000000000000000000"),
+    );
+    headers.insert("access-control-allow-origin", HeaderValue::from_static("*"));
+    if head {
+        return (StatusCode::OK, headers, Body::empty()).into_response();
+    }
+    let Some(ffmpeg) = crate::transcode::locate_ffmpeg() else {
+        return (StatusCode::INTERNAL_SERVER_ERROR, "ffmpeg not found").into_response();
+    };
+    // Ends with the cast (the session token) or with the next request for this stream.
+    let response = cancel.child_token();
+    take_over_response(&current, response.clone());
+    let caps = crate::cast_transcode::caps().await;
+    let mut cmd = tokio::process::Command::new(&ffmpeg);
+    // The receiver's reading paces the conversion through the pipe, so no read-rate limit.
+    cmd.args(job.input_args(false, &caps))
+        .args(&job.plan.output)
+        .args(["-f", "mpegts", "-mpegts_flags", "+resend_headers+initial_discontinuity", "-muxdelay", "0", "pipe:1"]);
+    #[cfg(windows)]
+    cmd.creation_flags(0x0800_0000);
+    cmd.kill_on_drop(true)
+        .stdin(std::process::Stdio::null())
+        .stdout(std::process::Stdio::piped())
+        .stderr(std::process::Stdio::piped());
+    crate::proc_guard::configure_command(&mut cmd);
+    let mut child = match cmd.spawn() {
+        Ok(child) => child,
+        Err(error) => {
+            return (StatusCode::INTERNAL_SERVER_ERROR, format!("ffmpeg spawn failed: {error}")).into_response();
+        }
+    };
+    crate::proc_guard::adopt(&child);
+    eprintln!(
+        "[argus::proxy] cast MPEG-TS started seek={:.1} video={} audio={}",
+        job.seek_sec, job.plan.summary.video, job.plan.summary.audio
+    );
+    if let Some(stderr) = child.stderr.take() {
+        crate::cast_hls::watch_stderr(stderr, job.stats.clone(), "cast-ts");
+    }
+    let Some(stdout) = child.stdout.take() else {
+        return (StatusCode::INTERNAL_SERVER_ERROR, "ffmpeg stdout missing").into_response();
+    };
+    // The stream owns the child: when the receiver disconnects or the cast is stopped, dropping the
+    // body kills FFmpeg.
+    let body = tokio_util::io::ReaderStream::with_capacity(stdout, 64 * 1024)
+        .map(move |chunk| {
+            let _owned = &child;
+            chunk
+        })
+        .take_until(response.cancelled_owned());
+    (StatusCode::OK, headers, Body::from_stream(body)).into_response()
+}
+
 async fn handle_stream(
     State(state): State<ProxyState>,
     Path(id_with_ext): Path<String>,
+    method: axum::http::Method,
     headers: HeaderMap,
 ) -> Response {
     let id = id_with_ext.trim_end_matches(".ts").to_string();
@@ -887,9 +1045,14 @@ async fn handle_stream(
         }
     };
 
+    if let Some(job) = session.cast.clone() {
+        return serve_cast_ts(job, session.cancel.clone(), session.current_response.clone(), method == axum::http::Method::HEAD).await;
+    }
+
     if session.transcode {
         return handle_transcode(
             &session.url,
+            session.audio_url.as_deref(),
             &session.headers,
             &session.profile,
             session.burn_sub.as_ref(),
@@ -975,12 +1138,13 @@ async fn forward_upstream(
         req = req.header(k, v);
     }
 
-    let upstream = match crate::http_redirect::send_get(&state.client, req, &session.url).await {
-        Ok(r) => r,
-        Err(e) => {
-            return (StatusCode::BAD_GATEWAY, format!("upstream error: {}", e)).into_response();
-        }
-    };
+    let upstream =
+        match crate::http_redirect::send_get_playback(&state.client, req, &session.url).await {
+            Ok(r) => r,
+            Err(e) => {
+                return (StatusCode::BAD_GATEWAY, format!("upstream error: {}", e)).into_response();
+            }
+        };
 
     let status =
         StatusCode::from_u16(upstream.status().as_u16()).unwrap_or(StatusCode::BAD_GATEWAY);
@@ -1158,6 +1322,87 @@ pub async fn proxy_gc_idle(state: tauri::State<'_, ProxyState>) -> Result<usize,
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    fn session_at(created_at: Instant, cast: Option<Arc<CastJob>>) -> Session {
+        Session {
+            url: "https://media.example/film.mkv".into(),
+            audio_url: None,
+            base_url: None,
+            headers: HashMap::new(),
+            transcode: cast.is_some(),
+            profile: TranscodeProfile::default(),
+            burn_sub: None,
+            prebuffer: None,
+            created_at,
+            cast,
+            cancel: tokio_util::sync::CancellationToken::new(),
+            current_response: Default::default(),
+        }
+    }
+
+    #[test]
+    fn a_new_request_for_a_cast_stream_ends_the_previous_conversion() {
+        let session = tokio_util::sync::CancellationToken::new();
+        let current = std::sync::Mutex::new(None);
+        let first = session.child_token();
+        take_over_response(&current, first.clone());
+        assert!(!first.is_cancelled());
+        let second = session.child_token();
+        take_over_response(&current, second.clone());
+        assert!(first.is_cancelled(), "the earlier FFmpeg stops");
+        assert!(!second.is_cancelled());
+        // Stopping the cast still ends whichever response is running.
+        session.cancel();
+        assert!(second.is_cancelled());
+    }
+
+    #[test]
+    fn a_running_cast_stream_never_ages_out() {
+        let Some(long_ago) = Instant::now().checked_sub(PROXY_MAX_AGE + Duration::from_secs(60)) else {
+            return;
+        };
+        let options = crate::cast_transcode::CastOptions::default();
+        let plan = crate::cast_transcode::build_plan(
+            &crate::cast_transcode::PlanInput {
+                probe: None,
+                options: &options,
+                audio_ordinal: 0,
+                burn_sub: None,
+                burn_bitmap: None,
+                force_video_encode: false,
+                limits: Default::default(),
+            },
+            &Default::default(),
+        );
+        let job = Arc::new(CastJob {
+            url: "C:/Films/film.mkv".into(),
+            headers: HashMap::new(),
+            seek_sec: 0.0,
+            fast_seek: false,
+            plan,
+            stats: Default::default(),
+        });
+        let now = Instant::now();
+        assert!(session_expired(&session_at(long_ago, None), now), "a relayed stream still expires");
+        assert!(!session_expired(&session_at(long_ago, Some(job)), now), "a cast stream lasts as long as its cast");
+        assert!(!session_expired(&session_at(now, None), now));
+    }
+
+    #[test]
+    fn register_args_accept_a_separate_audio_url() {
+        let args: RegisterArgs = serde_json::from_value(serde_json::json!({
+            "url": "https://media.example/video.m3u8",
+            "audioUrl": "https://media.example/audio.m3u8",
+            "headers": {},
+            "transcode": true
+        }))
+        .unwrap();
+        assert_eq!(
+            args.audio_url.as_deref(),
+            Some("https://media.example/audio.m3u8")
+        );
+        assert!(args.transcode);
+    }
 
     #[test]
     fn parses_media_byte_ranges() {

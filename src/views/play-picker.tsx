@@ -121,6 +121,7 @@ type PerEpisodeStatus =
 
 export function PlayPicker({
   meta,
+  queueItemId,
   episode,
   autoPlay,
   attempt,
@@ -131,6 +132,7 @@ export function PlayPicker({
   playerActive,
 }: {
   meta: Meta;
+  queueItemId?: string;
   episode?: PlayEpisode;
   autoPlay?: boolean;
   attempt?: number;
@@ -654,6 +656,9 @@ export function PlayPicker({
   const [pendingPreselect, setPendingPreselect] = useState<PlayerSrc | null>(null);
   const openPlayerGated = useCallback(
     (s: PlayerSrc) => {
+      const source = queueItemId
+        ? { ...s, meta: metaForDisplay, episode, queueItemId }
+        : { ...s, queueItemId: undefined };
       const applicable =
         settings.subtitlePreselect &&
         !isDownload &&
@@ -663,14 +668,23 @@ export function PlayPicker({
         !s.meta.id?.startsWith("iptv:") &&
         (s.meta.type === "movie" || s.meta.type === "series" || s.meta.type === "anime");
       if (!applicable) {
-        if (!s.isLive) retainSearch(s.playbackTraceId);
-        openPlayer(s);
+        if (!source.isLive) retainSearch(source.playbackTraceId);
+        openPlayer(source);
         return;
       }
       setResolving(null);
-      setPendingPreselect(s);
+      setPendingPreselect(source);
     },
-    [settings.subtitlePreselect, isDownload, inSession, openPlayer, retainSearch],
+    [
+      settings.subtitlePreselect,
+      isDownload,
+      inSession,
+      openPlayer,
+      retainSearch,
+      queueItemId,
+      metaForDisplay,
+      episode,
+    ],
   );
 
   const {
@@ -686,6 +700,7 @@ export function PlayPicker({
     cancelP2p,
   } = usePickHandler({
     meta: metaForDisplay,
+    queueItemId,
     imdbId,
     imdbIdVerified: resolvedImdb.verified,
     episode,

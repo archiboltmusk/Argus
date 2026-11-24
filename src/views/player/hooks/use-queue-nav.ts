@@ -1,7 +1,8 @@
-import { useRef } from "react";
+import { useEffect, useRef } from "react";
 import type { Meta } from "@/lib/cinemeta";
-import { queueIndexOf, useQueue } from "@/lib/queue";
-import type { PlayEpisode, PlayerSrc } from "@/lib/view";
+import { queueArchive, useQueue } from "@/lib/queue";
+import { queueSessionIndex } from "@/lib/queue-session";
+import type { PickerOptions, PlayEpisode, PlayerSrc } from "@/lib/view";
 
 export function useQueueNav(params: {
   src: PlayerSrc;
@@ -9,40 +10,100 @@ export function useQueueNav(params: {
   canChangeEpisode: boolean;
   isLiveLike: boolean;
   queueDrivesNav: boolean;
+  instantPlay?: boolean;
   goToEpisode: (ep: PlayEpisode | null) => void;
-  openPicker: (
-    meta: Meta,
-    episode?: PlayEpisode,
-    opts?: { autoPlay?: boolean; attempt?: number; intent?: "play" | "download"; resume?: boolean },
-  ) => void;
+  openPicker: (meta: Meta, episode?: PlayEpisode, opts?: PickerOptions) => void;
 }) {
-  const { src, adjacent, canChangeEpisode, isLiveLike, queueDrivesNav, goToEpisode, openPicker } =
-    params;
+  const {
+    src,
+    adjacent,
+    canChangeEpisode,
+    isLiveLike,
+    queueDrivesNav,
+    instantPlay = false,
+    goToEpisode,
+    openPicker,
+  } = params;
   const queue = useQueue();
-  const queueNav = queueDrivesNav && !isLiveLike && queue.length > 0;
-  const currentQueueIdx = queueNav ? queueIndexOf(src.meta, src.episode) : -1;
-  const queueNextItem = !queueNav
-    ? null
-    : currentQueueIdx >= 0
-      ? (queue[currentQueueIdx + 1] ?? null)
-      : (queue[0] ?? null);
+  const queueTransitionItemIdRef = useRef<string | null>(null);
+  const isQueueTransitionActive = () =>
+    queueTransitionItemIdRef.current !== null &&
+    queueTransitionItemIdRef.current === src.queueItemId;
+
+  useEffect(() => {
+    if (queueTransitionItemIdRef.current !== src.queueItemId) {
+      queueTransitionItemIdRef.current = null;
+    }
+  }, [src.queueItemId]);
+
+  const currentQueueIdx = queueSessionIndex(src, queue);
+  const queueNav = queueDrivesNav && !isLiveLike && currentQueueIdx >= 0;
+  const detachedQueueSource =
+    queueDrivesNav && !isLiveLike && src.queueItemId != null && currentQueueIdx < 0;
+  const currentQueueItem = queueNav ? (queue[currentQueueIdx] ?? null) : null;
+  const queueNextItem = queueNav ? (queue[currentQueueIdx + 1] ?? null) : null;
   const queuePrevItem =
     queueNav && currentQueueIdx > 0 ? (queue[currentQueueIdx - 1] ?? null) : null;
-  const hasNextEpisodeNow = (canChangeEpisode && !!adjacent.next) || !!queueNextItem;
-  const hasPrevEpisodeNow = (canChangeEpisode && !!adjacent.prev) || !!queuePrevItem;
+
+  const queueTransitionActive = isQueueTransitionActive() || detachedQueueSource;
+  const hasNextEpisodeNow = queueTransitionActive
+    ? false
+    : queueNav
+      ? !!queueNextItem
+      : canChangeEpisode && !!adjacent.next;
+  const hasPrevEpisodeNow = queueTransitionActive
+    ? false
+    : queueNav
+      ? !!queuePrevItem
+      : canChangeEpisode && !!adjacent.prev;
+
   const playNext = () => {
-    // The queue only takes over after the current show's episodes. Prioritising
-    // a queued episode here bypassed auto-play and therefore keep-same-source.
-    if (canChangeEpisode && adjacent.next) goToEpisode(adjacent.next);
-    else if (queueNextItem) openPicker(queueNextItem.meta, queueNextItem.episode);
+    if (isQueueTransitionActive() || detachedQueueSource) return;
+
+    if (queueNav) {
+      if (currentQueueItem && queueNextItem) {
+        queueTransitionItemIdRef.current = currentQueueItem.id;
+        if (!queueArchive(currentQueueItem.id, "skipped")) {
+          queueTransitionItemIdRef.current = null;
+          return;
+        }
+        openPicker(queueNextItem.meta, queueNextItem.episode, {
+          queueItemId: queueNextItem.id,
+          autoPlay: instantPlay,
+          resume: true,
+        });
+      }
+      return;
+    }
+
+    if (canChangeEpisode && adjacent.next) {
+      goToEpisode(adjacent.next);
+    }
   };
+
   const playPrev = () => {
-    if (canChangeEpisode && adjacent.prev) goToEpisode(adjacent.prev);
-    else if (queuePrevItem) openPicker(queuePrevItem.meta, queuePrevItem.episode);
+    if (isQueueTransitionActive() || detachedQueueSource) return;
+
+    if (queueNav) {
+      if (queuePrevItem) {
+        openPicker(queuePrevItem.meta, queuePrevItem.episode, {
+          queueItemId: queuePrevItem.id,
+          autoPlay: instantPlay,
+          resume: true,
+        });
+      }
+      return;
+    }
+
+    if (canChangeEpisode && adjacent.prev) {
+      goToEpisode(adjacent.prev);
+    }
   };
+
   const playNextRef = useRef(playNext);
   playNextRef.current = playNext;
   const playPrevRef = useRef(playPrev);
   playPrevRef.current = playPrev;
+
   return { hasNextEpisodeNow, hasPrevEpisodeNow, playNext, playPrev, playNextRef, playPrevRef };
 }

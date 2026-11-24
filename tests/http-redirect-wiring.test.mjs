@@ -2,12 +2,14 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
 
-test("stream proxy and prebuffer use the tested redirect policy", () => {
+test("stream proxy and prebuffer use the playback redirect policy", () => {
   const source = readFileSync(new URL("../src-tauri/src/stream_proxy.rs", import.meta.url), "utf8");
   assert.equal((source.match(/redirect\(reqwest::redirect::Policy::none\(\)\)/g) ?? []).length, 2);
-  assert.match(source, /http_redirect::send_get\(&client, req, url\)/);
-  assert.match(source, /http_redirect::send_get\(&state.client, req, &session.url\)/);
+  assert.match(source, /http_redirect::send_get_playback\(&client, req, url\)/);
+  assert.match(source, /http_redirect::send_get_playback\(&state\.client, req, &session\.url\)/);
+  assert.match(source, /\.no_proxy\(\)/);
   assert.doesNotMatch(source, /req\.send\(\)/);
+  assert.doesNotMatch(source, /http_redirect::send_get\(/);
 });
 
 test("native plugin fetch strips unknown credential names at origin changes", () => {
