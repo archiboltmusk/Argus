@@ -187,7 +187,7 @@ export function SpeedMenu({
                 <AddPresetInput placeholder={t("e.g. 1.35")} suffix="×" onAdd={addSpeed} />
               )}
               {!editing && (
-                <div className="mt-2 border-t border-edge-soft/60 pt-2">
+                <div className="mt-2 border-t border-white/10 pt-2">
                   <button
                     type="button"
                     onClick={() => {
@@ -195,17 +195,17 @@ export function SpeedMenu({
                       setSkipSilence(next);
                       void setSilenceSkipperEnabled(next, rate, 2.5);
                     }}
-                    className={`flex w-full items-center justify-between rounded-lg px-3 py-2 text-start text-[13px] font-medium transition-colors ${
+                    className={`flex w-full items-center justify-between rounded-xl px-3 py-2 text-start text-[13px] font-medium transition-all ${
                       skipSilence
-                        ? "bg-accent/15 text-accent"
-                        : "text-ink-muted hover:bg-white/8 hover:text-ink"
+                        ? "bg-white/22 text-white font-semibold ring-1 ring-white/30 shadow-xs"
+                        : "text-white/80 hover:bg-white/10 hover:text-white"
                     }`}
                   >
                     <span className="flex items-center gap-2">
-                      <FastForward size={14} className={skipSilence ? "text-accent" : "text-ink-subtle"} />
+                      <FastForward size={14} className={skipSilence ? "text-white" : "text-white/60"} />
                       <span>{t("Skip silence")}</span>
                     </span>
-                    <span className="rounded bg-canvas/60 px-1.5 py-0.5 text-[10px] font-mono uppercase tracking-wider text-ink-subtle">
+                    <span className="rounded-md bg-white/15 px-1.5 py-0.5 text-[10px] font-mono font-semibold uppercase tracking-wider text-white">
                       {skipSilence ? t("On") : t("Off")}
                     </span>
                   </button>
@@ -327,7 +327,7 @@ function Row({
         onClick={onClick}
         className={`flex h-10 w-full items-center justify-between rounded-xl px-3 text-start text-[13.5px] transition-all ${
           selected
-            ? "bg-white/20 text-white font-bold ring-1 ring-white/25 shadow-xs"
+            ? "bg-white/22 text-white font-semibold ring-1 ring-white/30 shadow-xs"
             : "text-white/80 hover:bg-white/10 hover:text-white"
         } ${onRemove || hasPin ? "pe-10" : ""}`}
       >
@@ -341,7 +341,7 @@ function Row({
       {hasPin && isDefaultRow && (
         <span
           aria-label={t("Default speed")}
-          className="pointer-events-none absolute end-2 grid h-7 w-7 place-items-center rounded-md text-accent"
+          className="pointer-events-none absolute end-2 grid h-7 w-7 place-items-center rounded-md text-white"
         >
           <Pin size={14} strokeWidth={2.4} className="rotate-45 fill-current" />
         </span>
@@ -354,7 +354,7 @@ function Row({
           }}
           aria-label={makeDefaultLabel}
           title={makeDefaultLabel}
-          className="absolute end-2 grid h-7 w-7 place-items-center rounded-md text-ink-subtle/50 opacity-70 transition-colors hover:bg-canvas/55 hover:text-ink group-hover:opacity-100"
+          className="absolute end-2 grid h-7 w-7 place-items-center rounded-lg text-white/50 opacity-70 transition-colors hover:bg-white/15 hover:text-white group-hover:opacity-100"
         >
           <Pin size={14} strokeWidth={2.2} className="rotate-45" />
         </button>
@@ -366,7 +366,7 @@ function Row({
             onRemove();
           }}
           aria-label={t("Remove preset")}
-          className="absolute end-2 flex h-6 w-6 items-center justify-center rounded-md text-ink-subtle transition-colors hover:bg-danger/15 hover:text-danger"
+          className="absolute end-2 flex h-6 w-6 items-center justify-center rounded-lg text-white/60 transition-colors hover:bg-danger/20 hover:text-danger"
         >
           <X size={13} strokeWidth={2.4} />
         </button>
@@ -396,7 +396,7 @@ function AddPresetInput({
     if (onAdd(value)) setVal("");
   };
   return (
-    <div className="mt-1 flex h-10 items-center gap-1.5 rounded-lg border border-edge-soft px-2.5">
+    <div className="mt-1 flex h-10 items-center gap-1.5 rounded-xl border border-white/12 bg-white/5 px-2.5">
       <input
         value={val}
         onChange={(e) => setVal(e.target.value)}
@@ -405,16 +405,16 @@ function AddPresetInput({
         }}
         placeholder={placeholder}
         inputMode="decimal"
-        className="min-w-0 flex-1 bg-transparent text-[14px] text-ink placeholder:text-ink-subtle focus:outline-none"
+        className="min-w-0 flex-1 bg-transparent text-[13.5px] text-white placeholder:text-white/40 focus:outline-none"
       />
       {units ? (
-        <div className="flex items-center rounded-md bg-canvas/55 p-0.5">
+        <div className="flex items-center rounded-lg bg-white/10 p-0.5">
           {units.labels.map((u, i) => (
             <button
               key={u}
               onClick={() => setUnit(i)}
               className={`rounded px-1.5 py-0.5 text-[11px] font-semibold transition-colors ${
-                unit === i ? "bg-raised text-ink" : "text-ink-subtle hover:text-ink"
+                unit === i ? "bg-white text-black font-semibold shadow-xs" : "text-white/60 hover:text-white"
               }`}
             >
               {u}
@@ -422,12 +422,12 @@ function AddPresetInput({
           ))}
         </div>
       ) : (
-        <span className="text-[12px] font-medium text-ink-subtle">{suffix}</span>
+        <span className="text-[12px] font-medium text-white/60">{suffix}</span>
       )}
       <button
         onClick={submit}
         aria-label={t("Add preset")}
-        className="flex h-7 w-7 items-center justify-center rounded-md bg-raised text-ink-muted transition-colors hover:bg-canvas/55 hover:text-ink"
+        className="flex h-7 w-7 items-center justify-center rounded-lg bg-white/15 text-white transition-colors hover:bg-white/25"
       >
         <Plus size={15} strokeWidth={2.4} />
       </button>

@@ -10,6 +10,7 @@ import { MobileServices } from "./mobile-services";
 import { RendererSheet } from "./renderer-sheet";
 import { KeyboardOverlay, SHEET_EXIT_CSS, SpeedSleepSheet } from "./remote-extras";
 import { VoiceSearch, getSpeechRecognition } from "./voice-search";
+import { safeMediaUrl } from "@/lib/security/url";
 
 type Service = (typeof SERVICES)[StreamingService];
 
@@ -630,9 +631,9 @@ export function ConfirmLeave({
         </h3>
         {hasCard && (
           <div className="flex items-center gap-3 rounded-2xl bg-raised/40 p-2.5">
-            {snapshot.posterUrl && (
+            {safeMediaUrl(snapshot.posterUrl) && (
               <img
-                src={snapshot.posterUrl}
+                src={safeMediaUrl(snapshot.posterUrl)!}
                 alt=""
                 className="h-14 w-[38px] shrink-0 rounded-lg bg-raised object-cover"
               />

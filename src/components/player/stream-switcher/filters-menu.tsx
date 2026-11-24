@@ -238,10 +238,10 @@ export function FiltersPanel({
 
       {/* Footer Reset */}
       {active > 0 && (
-        <div className="shrink-0 border-t border-white/10 p-3 bg-[#0d0e11]">
+        <div className="shrink-0 border-t border-white/10 p-3 bg-white/[0.03]">
           <button
             onClick={reset}
-            className="flex w-full items-center justify-center gap-2 rounded-lg bg-white/10 py-2 text-[12px] font-semibold text-ink transition-colors hover:bg-white/15"
+            className="flex w-full items-center justify-center gap-2 rounded-xl border border-white/14 bg-white/12 py-2 text-[12px] font-semibold text-white transition-all hover:bg-white/20 hover:border-white/25 active:scale-98"
           >
             <RotateCcw size={13} strokeWidth={2.4} />
             {t("Reset filters")}
@@ -325,7 +325,7 @@ export function FiltersMenu({
 function Section({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div>
-      <div className="mb-2 px-0.5 text-[10.5px] font-bold uppercase tracking-[0.12em] text-zinc-400">
+      <div className="mb-2 px-0.5 text-[10.5px] font-bold uppercase tracking-[0.14em] text-white/55">
         {label}
       </div>
       {children}
@@ -348,12 +348,12 @@ function Chip({
     <button
       onClick={onClick}
       aria-pressed={active}
-      className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-[11.5px] transition-all border ${
+      className={`flex items-center gap-1.5 rounded-xl px-2.5 py-1.5 text-[11.5px] transition-all border ${
         grow ? "flex-1 justify-center" : ""
       } ${
         active
-          ? "bg-white text-black font-bold border-white shadow-sm"
-          : "bg-[#1c1d22] text-zinc-300 font-medium border-white/10 hover:bg-[#25272e] hover:border-white/20 hover:text-white"
+          ? "bg-white text-black font-semibold border-white shadow-xs"
+          : "bg-white/10 text-white/85 font-medium border-white/12 hover:bg-white/18 hover:border-white/20 hover:text-white"
       }`}
     >
       {children}
@@ -381,15 +381,15 @@ function AddonRow({
   return (
     <button
       onClick={onClick}
-      className={`flex w-full items-center gap-2.5 rounded-lg px-2.5 py-1.5 text-start text-[12px] transition-colors ${
+      className={`flex w-full items-center gap-2.5 rounded-xl px-2.5 py-1.5 text-start text-[12px] transition-all ${
         active
-          ? "bg-[#25272e] font-semibold text-white border border-white/25"
-          : "text-zinc-300 hover:bg-[#1a1b20] hover:text-white border border-transparent"
+          ? "bg-white/22 font-semibold text-white border border-white/30 shadow-xs"
+          : "text-white/80 hover:bg-white/10 hover:text-white border border-transparent"
       }`}
     >
       <span className="shrink-0">{logo}</span>
       <span className="flex-1 truncate">{name}</span>
-      <span className="text-[11px] font-mono tabular-nums text-zinc-400">{count}</span>
+      <span className="text-[11px] font-mono tabular-nums text-white/60">{count}</span>
     </button>
   );
 }
@@ -408,22 +408,22 @@ function ToggleRow({
   return (
     <button
       onClick={onClick}
-      className="flex w-full items-center justify-between gap-3 rounded-lg px-2.5 py-2 text-start transition-colors hover:bg-[#1a1b20]"
+      className="flex w-full items-center justify-between gap-3 rounded-xl px-2.5 py-2 text-start transition-colors hover:bg-white/10"
     >
       <span className="flex min-w-0 flex-col">
-        <span className={`text-[12px] ${on ? "font-semibold text-white" : "text-zinc-300"}`}>
+        <span className={`text-[12px] ${on ? "font-semibold text-white" : "text-white/75"}`}>
           {label}
         </span>
-        <span className="truncate text-[10px] text-zinc-400">{hint}</span>
+        <span className="truncate text-[10px] text-white/50">{hint}</span>
       </span>
       <span
         className={`relative h-4 w-7 shrink-0 rounded-full transition-colors ${
-          on ? "bg-accent" : "bg-white/20"
+          on ? "bg-white shadow-xs" : "bg-white/20"
         }`}
       >
         <span
-          className={`absolute top-0.5 h-3 w-3 rounded-full bg-white transition-all ${
-            on ? "start-3.5" : "start-0.5"
+          className={`absolute top-0.5 h-3 w-3 rounded-full transition-all ${
+            on ? "start-3.5 bg-black" : "start-0.5 bg-white"
           }`}
         />
       </span>

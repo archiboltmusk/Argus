@@ -34,7 +34,6 @@ function fixture() {
   const dependencies: Record<string, unknown> = {
     react,
     "react/jsx-runtime": { jsx: (_: unknown, props: unknown) => ({ props }) },
-    "@/lib/secret-store": { subscribeSecretsReady: () => () => {} },
     "./session": {
       getSession: () => session,
       subscribeSession: (fn: () => void) => {

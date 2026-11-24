@@ -82,7 +82,6 @@ async function fixture(argusSignedIn = false, stremioSignedIn = false, kid = fal
     "react/jsx-runtime": jsxRuntime,
     "react-dom": ReactDOM,
     "lucide-react": icons,
-    "@/lib/config/endpoints": { ARGUS_API_BASE: "https://fixture.invalid" },
     "@/lib/safe-fetch": {
       safeFetch: async (url: string, options: RequestInit) => {
         if (url.endsWith("/auth/logout") && options.method === "POST") {
