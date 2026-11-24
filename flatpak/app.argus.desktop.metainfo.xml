@@ -23,6 +23,17 @@
   </screenshots>
   <content_rating type="oars-1.1" />
   <releases>
+    <release version="3.17.19" date="2026-11-25">
+      <description>
+        <p>Argus 3.17.19 release:</p>
+        <ul>
+          <li>Windows x64 &amp; ARM64 build fixes for sysinfo 0.40 and libmpv staging</li>
+          <li>Android native torrent bridge compatibility with jni 0.21</li>
+          <li>Native iOS/iPadOS archive pipeline via tauri ios build</li>
+          <li>Zero-vulnerability security hardening and Liquid Glass UI parity</li>
+        </ul>
+      </description>
+    </release>
     <release version="3.17.18" date="2026-11-25">
       <description>
         <p>Argus 3.17.18 release:</p>

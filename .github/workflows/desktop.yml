@@ -285,7 +285,7 @@ jobs:
       - name: Fetch and configure ARM64 libmpv
         shell: pwsh
         run: |
-          mkdir -p src-tauri/libmpv
+          New-Item -ItemType Directory -Force -Path src-tauri/libmpv | Out-Null
           $devUrl = "https://github.com/shinchiro/mpv-winbuild-cmake/releases/download/20261010/mpv-dev-aarch64-20261010-git-b2c255c13e.7z"
           try {
             Invoke-WebRequest -Uri $devUrl -OutFile "$env:TEMP\mpv-arm64.7z"

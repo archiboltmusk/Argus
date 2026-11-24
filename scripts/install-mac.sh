@@ -33,7 +33,7 @@ echo "→ Fetching latest release info from GitHub..."
 LATEST_TAG=$(curl -sSL "https://api.github.com/repos/${REPO}/releases/latest" 2>/dev/null | grep '"tag_name":' | head -n 1 | cut -d '"' -f 4 || true)
 
 if [ -z "$LATEST_TAG" ]; then
-    LATEST_TAG="v3.17.18"
+    LATEST_TAG="v3.17.19"
 fi
 echo "✓ Target version: ${LATEST_TAG}"
 

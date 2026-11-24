@@ -93,38 +93,15 @@ jobs:
 
           rm -rf "$RUNNER_TEMP/Payload" "$RUNNER_TEMP/Argus-iOS-iPadOS.ipa"
           mkdir -p "$RUNNER_TEMP/Payload/Argus.app"
-          if [ -d "src-tauri/gen/apple" ]; then
-            cd src-tauri/gen/apple
-            set +e
-            if [ -f "Argus.xcworkspace/contents.xcworkspacedata" ]; then
-              XCODE_FLAG="-workspace Argus.xcworkspace"
-            elif [ -d "argus.xcodeproj" ]; then
-              XCODE_FLAG="-project argus.xcodeproj"
-            elif [ -d "Argus.xcodeproj" ]; then
-              XCODE_FLAG="-project Argus.xcodeproj"
-            else
-              PROJ=$(find . -maxdepth 2 -name '*.xcodeproj' | head -n1)
-              XCODE_FLAG="-project $PROJ"
-            fi
-
-            SCHEME=$(xcodebuild $XCODE_FLAG -list 2>/dev/null | awk '/Schemes:/{flag=1;next}/^$/{flag=0}flag{gsub(/^[ \t]+/, ""); print; exit}')
-            if [ -z "$SCHEME" ]; then
-              SCHEME="argus_iOS"
-            fi
-
-            xcodebuild $XCODE_FLAG -scheme "$SCHEME" \
-              -configuration Release -destination 'generic/platform=iOS' \
-              -archivePath "$RUNNER_TEMP/Argus-iOS.xcarchive" archive \
-              CODE_SIGNING_ALLOWED=NO CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO AD_HOC_CODE_SIGNING_ALLOWED=YES ||
-              echo "::warning::The iOS archive failed. Packaging the experimental WebView build."
-
-            APP=$(find "$RUNNER_TEMP/Argus-iOS.xcarchive/Products/Applications" -maxdepth 1 -name '*.app' -type d -print -quit 2>/dev/null || true)
-            if [ -n "$APP" ] && [ -d "$APP" ]; then
-              cp -R "$APP/." "$RUNNER_TEMP/Payload/Argus.app/"
-            fi
-            set -e
-            cd "$GITHUB_WORKSPACE"
+          set +e
+          pnpm tauri ios build --ci --no-sign --archive-only --ignore-version-mismatches
+          APP=$(find src-tauri/gen/apple/build -maxdepth 5 -name '*.app' -type d -print -quit 2>/dev/null || true)
+          if [ -n "$APP" ] && [ -d "$APP" ]; then
+            cp -R "$APP/." "$RUNNER_TEMP/Payload/Argus.app/"
+          else
+            echo "::warning::The iOS archive failed. Packaging the experimental WebView build."
           fi
+          set -e
 
           node scripts/package-apple-app.mjs --platform ios --app-dir "$RUNNER_TEMP/Payload/Argus.app" --dist-dir dist --version "$(node -p 'require("./src-tauri/tauri.ios.conf.json").version')"
           if [ -d "$RUNNER_TEMP/Payload/Argus.app/Frameworks" ]; then

@@ -32,6 +32,8 @@ updates:
         update-types: ["version-update:semver-major", "version-update:semver-minor"]
       - dependency-name: lofty
         update-types: ["version-update:semver-major", "version-update:semver-minor"]
+      - dependency-name: jni
+        update-types: ["version-update:semver-major", "version-update:semver-minor"]
   - package-ecosystem: cargo
     directory: /argus-core
     schedule:
