@@ -522,7 +522,7 @@ export function MenuBody(props: SubtitleMenuProps & { onClose: () => void }) {
             </div>
           )}
 
-          {(liveSession.isActive || liveSession.status === "transcribing" || liveSession.status === "preparing") && !aiGeneratorOpen && (
+          {(liveSession.isActive || liveSession.status === "transcribing" || liveSession.status === "preparing") && (
             <div
               onClick={() => setAiGeneratorOpen(true)}
               className="flex shrink-0 items-center justify-between gap-2 border-t border-edge-soft bg-accent/10 px-3 py-1.5 text-[11.5px] text-accent cursor-pointer hover:bg-accent/15 transition-colors"
@@ -555,7 +555,7 @@ export function MenuBody(props: SubtitleMenuProps & { onClose: () => void }) {
             </div>
           )}
 
-          {localError && !aiGeneratorOpen && (
+          {localError && (
             <div className="flex shrink-0 items-center justify-between gap-2 border-t border-edge-soft bg-danger/10 px-3 py-1.5 text-[11.5px] text-danger">
               <span className="flex-1">{localError}</span>
               <button
@@ -569,53 +569,51 @@ export function MenuBody(props: SubtitleMenuProps & { onClose: () => void }) {
             </div>
           )}
 
-          {!aiGeneratorOpen && (
-            <div className="flex shrink-0 items-stretch border-t border-white/10 bg-white/[0.02]">
-              <button
-                onClick={() => {
-                  setSearchFocusLang(null);
-                  setSearchOpen((v) => !v);
-                }}
-                className="flex flex-1 items-center gap-2 px-3.5 py-2.5 text-start text-[12px] font-semibold text-white/80 transition-colors hover:bg-white/10 hover:text-white"
-              >
-                <SearchIcon size={12} strokeWidth={2.2} />
-                {searchOpen ? tr("Hide search") : tr("Find more subtitles")}
-              </button>
-              {isTauri && (
-                <>
-                  {whisperAvailable && (
-                    <HoverTooltip label={tr("Generate offline subtitles with AI in any language")} align="end">
-                      <button
-                        type="button"
-                        onClick={() => setAiGeneratorOpen(true)}
-                        className={`flex h-full shrink-0 items-center gap-1.5 border-s border-white/10 px-3.5 py-2.5 text-[12px] font-semibold transition-colors ${
-                          liveSession.isActive
-                            ? "bg-white/20 text-white font-bold"
-                            : "text-white/80 hover:text-white hover:bg-white/10"
-                        }`}
-                      >
-                        {liveSession.isActive ? (
-                          <Loader2 size={12} className="animate-spin motion-reduce:[animation-duration:2.4s]" />
-                        ) : (
-                          <Sparkles size={12} strokeWidth={2.2} />
-                        )}
-                        {liveSession.isActive ? `${liveSession.progressPct}%` : tr("Generate with AI")}
-                      </button>
-                    </HoverTooltip>
-                  )}
-                  <HoverTooltip label={tr("Load a .srt or .ass from your computer")} align="end">
+          <div className="flex shrink-0 items-stretch border-t border-white/10 bg-white/[0.02]">
+            <button
+              onClick={() => {
+                setSearchFocusLang(null);
+                setSearchOpen((v) => !v);
+              }}
+              className="flex flex-1 items-center gap-2 px-3.5 py-2.5 text-start text-[12px] font-semibold text-white/80 transition-colors hover:bg-white/10 hover:text-white"
+            >
+              <SearchIcon size={12} strokeWidth={2.2} />
+              {searchOpen ? tr("Hide search") : tr("Find more subtitles")}
+            </button>
+            {isTauri && (
+              <>
+                {whisperAvailable && (
+                  <HoverTooltip label={tr("Generate offline subtitles with AI in any language")} align="end">
                     <button
-                      onClick={() => void loadLocal()}
-                      className="flex h-full shrink-0 items-center gap-2 border-s border-white/10 px-3.5 py-2.5 text-[12px] font-semibold text-white/80 transition-colors hover:bg-white/10 hover:text-white"
+                      type="button"
+                      onClick={() => setAiGeneratorOpen(true)}
+                      className={`flex h-full shrink-0 items-center gap-1.5 border-s border-white/10 px-3.5 py-2.5 text-[12px] font-semibold transition-colors ${
+                        liveSession.isActive
+                          ? "bg-white/20 text-white font-bold"
+                          : "text-white/80 hover:text-white hover:bg-white/10"
+                      }`}
                     >
-                      <FolderOpen size={12} strokeWidth={2.2} />
-                      {tr("Load file")}
+                      {liveSession.isActive ? (
+                        <Loader2 size={12} className="animate-spin motion-reduce:[animation-duration:2.4s]" />
+                      ) : (
+                        <Sparkles size={12} strokeWidth={2.2} />
+                      )}
+                      {liveSession.isActive ? `${liveSession.progressPct}%` : tr("Generate with AI")}
                     </button>
                   </HoverTooltip>
-                </>
-              )}
-            </div>
-          )}
+                )}
+                <HoverTooltip label={tr("Load a .srt or .ass from your computer")} align="end">
+                  <button
+                    onClick={() => void loadLocal()}
+                    className="flex h-full shrink-0 items-center gap-2 border-s border-white/10 px-3.5 py-2.5 text-[12px] font-semibold text-white/80 transition-colors hover:bg-white/10 hover:text-white"
+                  >
+                    <FolderOpen size={12} strokeWidth={2.2} />
+                    {tr("Load file")}
+                  </button>
+                </HoverTooltip>
+              </>
+            )}
+          </div>
             </>
           )}
         </section>

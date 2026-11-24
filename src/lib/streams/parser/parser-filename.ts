@@ -1,6 +1,6 @@
 import type { Stream } from "../types";
 
-const TORRENTIO_NOISE_RX = /^[\s👤👥💾📦⚡🌐📺🎬🔊📅⚙️🔗📂🧑‍💻🇬🇧🇺🇸🌍🕵️‍♂️🔑]+|[\s👤👥💾📦⚡🌐📺🎬🔊📅⚙️🔗📂🧑‍💻🇬🇧🇺🇸🌍🕵️‍♂️🔑]+$/gu;
+const TORRENTIO_NOISE_RX = /^[\s👤👥💾📦⚡🌐📺🎬🔊📅⚙🔗📂🧑💻🇬🇧🇺🇸🌍🕵♂🔑\u200D\uFE0F]+|[\s👤👥💾📦⚡🌐📺🎬🔊📅⚙🔗📂🧑💻🇬🇧🇺🇸🌍🕵♂🔑\u200D\uFE0F]+$/gu;
 
 export function extractFilenameLine(stream: Stream): string {
   const lines: string[] = [];
@@ -28,7 +28,7 @@ function filenameScore(line: string): number {
   if (line.length < 8) return -100;
   if (/^(?:torrentio|comet|mediafusion|aiostreams|knightcrawler|jackettio|torbox)\b/i.test(line)) return -100;
   if (/^(?:4k|1080p|720p|480p|sd|hd|hdr|dv|uhd)$/i.test(line)) return -100;
-  if (/^[👤👥💾📦⚡🌐📺🎬🔊📅⚙️🔗📂🧑‍💻🇬🇧🇺🇸🌍🕵️‍♂️🔑]/u.test(line)) return -100;
+  if (/^[👤👥💾📦⚡🌐📺🎬🔊📅⚙🔗📂🧑💻🇬🇧🇺🇸🌍🕵♂🔑\u200D\uFE0F]/u.test(line)) return -100;
   if (/^(?:size|seeders?|peers?|languages?)\s*[:=]/i.test(line)) return -50;
   if (/^\[(?:RD|TB|AD|PM|DL)\+\]\s+\S+\s+library/i.test(line)) return -50;
 
