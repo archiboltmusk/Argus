@@ -575,7 +575,7 @@ export function mergeAndDedupe(
       continue;
     }
     // Register alternate mirrors for failover if multiple URLs exist
-    if (s.url && prior.url && s.url !== prior.url) {
+    if (s.url && prior.url && s.url !== prior.url && typeof streamMirrorManager !== "undefined" && typeof streamMirrorManager?.registerMirrors === "function") {
       streamMirrorManager.registerMirrors(key, [
         {
           id: prior.addonId,
