@@ -17,10 +17,10 @@ export function Tab({
     <button
       onClick={onClick}
       disabled={disabled}
-      className={`flex h-7 items-center gap-1.5 rounded-full px-2.5 text-[11.5px] font-semibold transition-colors disabled:opacity-40 ${
+      className={`flex h-7 items-center gap-1.5 rounded-full px-3 text-[11.5px] font-semibold transition-all disabled:opacity-40 ${
         active
-          ? "bg-elevated text-ink ring-1 ring-edge"
-          : "text-ink-muted hover:bg-elevated/60 hover:text-ink"
+          ? "bg-white/20 text-white ring-1 ring-white/25 shadow-xs"
+          : "text-white/70 hover:bg-white/10 hover:text-white"
       }`}
     >
       {children}
@@ -29,7 +29,7 @@ export function Tab({
 }
 
 export function Count({ value }: { value: number }) {
-  return <span className="text-[11.5px] tabular-nums text-ink-subtle">{value}</span>;
+  return <span className="text-[11.5px] tabular-nums text-white/50">{value}</span>;
 }
 
 export function ToggleChip({
@@ -47,8 +47,10 @@ export function ToggleChip({
     <button
       onClick={onClick}
       title={hint}
-      className={`flex h-6 items-center rounded-full px-2 text-[11px] font-semibold transition-colors ${
-        active ? "bg-accent text-canvas" : "bg-raised text-ink-muted hover:bg-elevated"
+      className={`flex h-6 items-center rounded-full px-2.5 text-[11px] font-semibold transition-all ${
+        active
+          ? "bg-white text-black font-bold shadow-xs"
+          : "bg-white/10 text-white/70 hover:bg-white/18 hover:text-white border border-white/8"
       }`}
     >
       {label}

@@ -103,17 +103,17 @@ export function ChapterMenu({
         </button>
       </Tooltip>
       {open && (
-        <div className="fixed end-14 bottom-[150px] flex max-h-[calc(100vh-174px)] w-[360px] max-w-[calc(100vw-72px)] flex-col overflow-hidden rounded-md bg-elevated shadow-[0_10px_30px_-12px_rgba(0,0,0,0.6)] animate-menu-pop">
-          <header className="flex items-center justify-between border-b border-edge-soft px-4 py-2.5">
+        <div className="fixed end-14 bottom-[150px] flex max-h-[calc(100vh-174px)] w-[360px] max-w-[calc(100vw-72px)] flex-col overflow-hidden apple-liquid-glass animate-menu-pop z-50 text-white">
+          <header className="flex items-center justify-between border-b border-white/10 px-4 py-3 bg-white/[0.02]">
             <div className="flex items-center gap-2.5">
-              <span className="text-[13.5px] font-semibold text-ink">{t("Chapters")}</span>
-              <span className="text-[11.5px] tabular-nums text-ink-subtle">{ordered.length}</span>
+              <span className="text-[13.5px] font-bold text-white">{t("Chapters")}</span>
+              <span className="text-[11.5px] tabular-nums font-semibold text-white/60">{ordered.length}</span>
             </div>
             <button
               type="button"
               onClick={() => setOpen(false)}
               aria-label={t("Close chapters")}
-              className="flex h-7 w-7 items-center justify-center rounded-full text-ink-muted transition-colors hover:bg-raised hover:text-ink"
+              className="flex h-7 w-7 items-center justify-center rounded-full text-white/70 transition-colors hover:bg-white/15 hover:text-white"
             >
               <X size={13} strokeWidth={2.2} />
             </button>
@@ -123,19 +123,19 @@ export function ChapterMenu({
             role="switch"
             aria-checked={showMarkers}
             onClick={() => update({ seekBarChapters: !showMarkers })}
-            className="flex w-full shrink-0 items-center justify-between gap-3 border-b border-edge-soft px-4 py-3 text-start text-[12.5px] text-ink-muted transition-colors hover:bg-raised hover:text-ink"
+            className="flex w-full shrink-0 items-center justify-between gap-3 border-b border-white/10 px-4 py-3 text-start text-[12.5px] text-white/80 transition-colors hover:bg-white/10 hover:text-white"
           >
             <span>{t("Show chapter marks on seekbar")}</span>
             <span
               aria-hidden
-              className={`flex h-[18px] w-8 shrink-0 items-center rounded-full px-[3px] transition-colors ${showMarkers ? "bg-accent" : "bg-raised"}`}
+              className={`flex h-[20px] w-9 shrink-0 items-center rounded-full px-[3px] transition-colors ${showMarkers ? "bg-white" : "bg-white/20"}`}
             >
               <span
-                className={`h-3 w-3 rounded-full bg-canvas shadow-sm transition-transform ${showMarkers ? "translate-x-[14px] rtl:-translate-x-[14px]" : "translate-x-0"}`}
+                className={`h-3.5 w-3.5 rounded-full shadow-sm transition-transform ${showMarkers ? "translate-x-[16px] bg-black rtl:-translate-x-[16px]" : "translate-x-0 bg-white"}`}
               />
             </span>
           </button>
-          <div className="flex flex-col gap-0.5 overflow-y-auto p-2">
+          <div className="flex flex-col gap-1 overflow-y-auto p-2">
             {ordered.map((chapter, index) => {
               const isCurrent = index === activeIndex;
               return (
@@ -146,8 +146,8 @@ export function ChapterMenu({
                     onSeek(chapter.startSec);
                     setOpen(false);
                   }}
-                  className={`flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-start transition-colors ${
-                    isCurrent ? "bg-elevated ring-1 ring-edge" : "hover:bg-canvas/55"
+                  className={`flex items-center gap-2.5 rounded-xl px-3 py-2 text-start transition-all ${
+                    isCurrent ? "bg-white/20 text-white font-semibold ring-1 ring-white/25 shadow-xs" : "text-white/80 hover:bg-white/10 hover:text-white"
                   }`}
                 >
                   <span
@@ -160,12 +160,12 @@ export function ChapterMenu({
                   </span>
                   <span
                     className={`min-w-0 flex-1 truncate text-[12.5px] leading-snug ${
-                      isCurrent ? "font-medium text-ink" : "text-ink-muted"
+                      isCurrent ? "font-semibold text-white" : "text-white/80"
                     }`}
                   >
                     {chapter.title || t("Chapter {chapter}", { chapter: index + 1 })}
                   </span>
-                  <span className="shrink-0 text-[10.5px] tabular-nums text-ink-subtle">
+                  <span className="shrink-0 text-[10.5px] font-mono tabular-nums text-white/60">
                     {fmtTime(chapter.startSec)}
                   </span>
                 </button>

@@ -66,15 +66,15 @@ export function Anime4kMenu({
         </button>
       </Tooltip>
       {open && (
-        <div className="fixed end-14 bottom-[150px] max-h-[calc(100vh-174px)] w-[320px] max-w-[calc(100vw-72px)] overflow-y-auto rounded-md bg-elevated shadow-[0_10px_30px_-12px_rgba(0,0,0,0.6)] animate-menu-pop">
-          <div className="p-2">
-            <div className="px-3 pt-1 text-[10.5px] font-semibold uppercase tracking-[0.18em] text-ink-subtle">
+        <div className="fixed end-14 bottom-[150px] max-h-[calc(100vh-174px)] w-[320px] max-w-[calc(100vw-72px)] overflow-y-auto apple-liquid-glass animate-menu-pop z-50 text-white">
+          <div className="p-3">
+            <div className="px-2 pt-1 text-[11px] font-bold uppercase tracking-[0.18em] text-white/60">
               {t("Anime4K")}
             </div>
-            <div className="px-3 pb-1.5 pt-0.5 text-[11px] leading-snug text-ink-subtle">
+            <div className="px-2 pb-2 pt-0.5 text-[11px] leading-snug text-white/60">
               {sub ? t(sub) : t("Real-time anime upscaling. GPU-intensive.")}
             </div>
-            <div className="flex flex-col gap-0.5">
+            <div className="flex flex-col gap-1">
               {OPTIONS.map((o) => {
                 const sel = o.id === mode;
                 return (
@@ -84,13 +84,13 @@ export function Anime4kMenu({
                       onMode(o.id);
                       setOpen(false);
                     }}
-                    className={`flex h-9 w-full items-center justify-between rounded-lg px-3 text-start text-[13.5px] transition-colors ${
-                      sel ? "bg-elevated text-ink ring-1 ring-edge" : "text-ink-muted hover:bg-canvas/55 hover:text-ink"
+                    className={`flex h-9 w-full items-center justify-between rounded-xl px-3 text-start text-[13.5px] transition-all ${
+                      sel ? "bg-white/20 text-white font-semibold ring-1 ring-white/25 shadow-xs" : "text-white/80 hover:bg-white/10 hover:text-white"
                     }`}
                   >
-                    <span className={sel ? "font-medium" : ""}>{t(o.label)}</span>
+                    <span className={sel ? "font-semibold text-white" : ""}>{t(o.label)}</span>
                     {o.id === "auto" && (
-                      <span className="text-[10.5px] font-semibold uppercase tracking-[0.16em] text-ink-subtle">
+                      <span className="text-[10.5px] font-semibold uppercase tracking-[0.16em] text-white/50">
                         {t("default")}
                       </span>
                     )}

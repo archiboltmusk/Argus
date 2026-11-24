@@ -94,39 +94,39 @@ export function StreamCheckPill({
 
   return (
     <div
-      className={`pointer-events-auto absolute left-1/2 z-40 flex -translate-x-1/2 items-center gap-3 rounded-2xl border border-white/12 bg-black/85 py-2.5 ps-3.5 pe-2.5 shadow-[0_18px_48px_-18px_rgba(0,0,0,0.85),inset_0_1px_0_rgba(255,255,255,0.06)] backdrop-blur-2xl animate-in fade-in slide-in-from-top-2 duration-300 ${compact ? "top-2" : "top-7"}`}
+      className={`pointer-events-auto absolute left-1/2 z-40 flex -translate-x-1/2 items-center gap-3 apple-liquid-glass-pill py-2.5 ps-4 pe-2.5 animate-in fade-in slide-in-from-top-2 duration-300 ${compact ? "top-2" : "top-7"}`}
       role="status"
     >
       {(variant === "failed" || variant === "stalled") && (
         <button
           type="button"
           onClick={openPlaybackHelp}
-          className="rounded-lg px-3 py-2 text-sm text-white"
+          className="rounded-full bg-white/10 px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-white/20"
         >
           {t("Fix playback")}
         </button>
       )}
       <span
-        className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full"
-        style={{ background: variant === "check" ? "rgba(255,255,255,0.08)" : `${copy.accent}26` }}
+        className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full shadow-inner"
+        style={{ background: variant === "check" ? "rgba(255,255,255,0.12)" : `${copy.accent}33` }}
       >
         <Icon size={14} strokeWidth={2.4} style={{ color: copy.accent }} />
       </span>
       <div className="flex min-w-0 flex-col leading-tight">
-        <span className="text-[13px] font-semibold text-white">{title}</span>
-        <span className="text-[11px] text-white/55">{sub}</span>
+        <span className="text-[13px] font-semibold text-white tracking-tight">{title}</span>
+        <span className="text-[11px] text-white/70">{sub}</span>
       </div>
       <div className="flex items-center gap-1.5 ps-1">
         <button
           onClick={onDismiss}
-          className="flex h-7 items-center gap-1 rounded-full px-3 text-[11.5px] font-semibold text-white/75 transition-colors hover:bg-white/8 hover:text-white"
+          className="flex h-7 items-center gap-1 rounded-full px-3 text-[11.5px] font-semibold text-white/75 transition-colors hover:bg-white/12 hover:text-white"
           aria-label={dismissLabel ?? (variant === "check" ? t("Looks good") : t("Dismiss"))}
         >
           {dismissLabel ?? (variant === "check" ? t("Looks good") : t("Dismiss"))}
         </button>
         <button
           onClick={onPickAnother}
-          className="flex h-7 items-center gap-1.5 rounded-full bg-white/12 px-3 text-[11.5px] font-semibold text-white transition-colors hover:bg-white/22"
+          className="flex h-7 items-center gap-1.5 rounded-full bg-white/20 hover:bg-white/30 border border-white/25 px-3 text-[11.5px] font-semibold text-white shadow-xs transition-colors"
         >
           {actionLabel ?? (live ? t("Other sources") : t("Pick another"))}
         </button>

@@ -125,7 +125,7 @@ export function AudioMenu(props: Props) {
         </button>
       </Tooltip>
       {open && (forceInline || !useOverlay) && (
-        <div className="fixed end-14 bottom-[150px] flex max-h-[calc(100vh-174px)] w-[360px] max-w-[calc(100vw-72px)] flex-col overflow-hidden rounded-md bg-elevated shadow-[0_10px_30px_-12px_rgba(0,0,0,0.6)] animate-menu-pop">
+        <div className="fixed end-14 bottom-[150px] flex max-h-[calc(100vh-174px)] w-[360px] max-w-[calc(100vw-72px)] flex-col overflow-hidden apple-liquid-glass animate-menu-pop z-50 text-white">
           <AudioMenuBody {...props} onClose={() => setOpen(false)} />
         </div>
       )}
@@ -161,11 +161,11 @@ function MenuBody(props: Props & { onClose: () => void }) {
     return tracks.filter((track) => trackMatches(track, term));
   }, [tracks, query, searchable]);
   return (
-    <div className="flex h-full flex-col overflow-hidden">
-      <header className="flex flex-col gap-2.5 border-b border-edge-soft px-4 py-2.5">
+    <div className="flex h-full flex-col overflow-hidden text-white">
+      <header className="flex flex-col gap-2.5 border-b border-white/10 px-4 py-3 bg-white/[0.02]">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2.5">
-            <span className="text-[13.5px] font-semibold text-ink">{t("Audio")}</span>
+            <span className="text-[13.5px] font-bold text-white">{t("Audio")}</span>
             {tracks.length > 0 && (
               <span className="text-[11.5px] tabular-nums text-ink-subtle">{shown.length}</span>
             )}
@@ -173,26 +173,26 @@ function MenuBody(props: Props & { onClose: () => void }) {
           <button
             onClick={onClose}
             aria-label={t("Close")}
-            className="flex h-7 w-7 items-center justify-center rounded-full text-ink-muted transition-colors hover:bg-raised hover:text-ink"
+            className="flex h-7 w-7 items-center justify-center rounded-full text-white/70 transition-colors hover:bg-white/15 hover:text-white"
           >
             <X size={13} strokeWidth={2.2} />
           </button>
         </div>
         {searchable && (
-          <div className="flex items-center gap-2 rounded-lg bg-raised px-2.5 py-1.5">
-            <Search size={13} strokeWidth={2.2} className="shrink-0 text-ink-subtle" aria-hidden />
+          <div className="flex items-center gap-2 rounded-lg bg-white/10 border border-white/12 px-2.5 py-1.5 backdrop-blur-md">
+            <Search size={13} strokeWidth={2.2} className="shrink-0 text-white/60" aria-hidden />
             <input
               value={query}
               onChange={(event) => setQuery(event.target.value)}
               placeholder={t("Search audio language")}
               aria-label={t("Search audio language")}
-              className="min-w-0 flex-1 bg-transparent text-[12.5px] text-ink outline-none placeholder:text-ink-subtle"
+              className="min-w-0 flex-1 bg-transparent text-[12.5px] text-white outline-none placeholder:text-white/50"
             />
             {query && (
               <button
                 onClick={() => setQuery("")}
                 aria-label={t("Clear")}
-                className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-ink-subtle transition-colors hover:bg-elevated hover:text-ink"
+                className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-white/60 transition-colors hover:bg-white/20 hover:text-white"
               >
                 <X size={11} strokeWidth={2.4} />
               </button>
@@ -203,7 +203,7 @@ function MenuBody(props: Props & { onClose: () => void }) {
 
       <div className="flex-1 overflow-y-auto p-2">
         {searchable && query.trim() && shown.length === 0 ? (
-          <div className="px-3 py-4 text-[12.5px] leading-relaxed text-ink-muted">
+          <div className="px-3 py-4 text-[12.5px] leading-relaxed text-white/70">
             {t("No audio track in that language.")}
           </div>
         ) : (
@@ -273,17 +273,17 @@ function AudioEnhancementSection({ engine }: { engine: "html5" | "mpv" }) {
   };
 
   return (
-    <div className="flex flex-col gap-2 border-t border-edge-soft px-4 py-2.5 bg-canvas/20">
+    <div className="flex flex-col gap-2 border-t border-white/10 px-4 py-3 bg-white/[0.02]">
       <div className="flex items-center justify-between">
-        <span className="text-[12px] font-semibold text-ink">{t("Audio Enhancement")}</span>
+        <span className="text-[12px] font-bold text-white/90">{t("Audio Enhancement")}</span>
         <div className="flex items-center gap-1.5">
           <button
             type="button"
             onClick={() => setEqOpen(!eqOpen)}
-            className={`flex items-center gap-1 rounded px-2 py-0.5 text-[11px] font-medium transition-colors ${
+            className={`flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-semibold transition-all ${
               eqOpen || settings.audioEqualizerEnabled
-                ? "bg-accent/20 text-accent font-semibold"
-                : "bg-raised text-ink-subtle hover:text-ink"
+                ? "bg-white/25 text-white ring-1 ring-white/30 shadow-xs"
+                : "bg-white/8 text-white/70 hover:bg-white/16 hover:text-white border border-white/8"
             }`}
           >
             <Sliders className="h-3 w-3" />
@@ -292,10 +292,10 @@ function AudioEnhancementSection({ engine }: { engine: "html5" | "mpv" }) {
           <button
             type="button"
             onClick={() => update({ audioNormalize: !settings.audioNormalize })}
-            className={`rounded px-2 py-0.5 text-[11px] font-medium transition-colors ${
+            className={`rounded-full px-2.5 py-1 text-[11px] font-semibold transition-all ${
               settings.audioNormalize
-                ? "bg-accent/20 text-accent font-semibold"
-                : "bg-raised text-ink-subtle hover:text-ink"
+                ? "bg-white/25 text-white ring-1 ring-white/30 shadow-xs"
+                : "bg-white/8 text-white/70 hover:bg-white/16 hover:text-white border border-white/8"
             }`}
           >
             {settings.audioNormalize ? t("Normalized") : t("Normalize")}
@@ -310,10 +310,10 @@ function AudioEnhancementSection({ engine }: { engine: "html5" | "mpv" }) {
               key={p.id}
               type="button"
               onClick={() => update({ audioProfile: p.id })}
-              className={`flex items-center justify-center rounded-lg px-2.5 py-1.5 text-[11.5px] font-medium transition-colors ${
+              className={`flex items-center justify-center rounded-xl px-2.5 py-2 text-[11.5px] transition-all ${
                 isSel
-                  ? "bg-accent text-canvas font-semibold shadow-sm"
-                  : "bg-raised text-ink-muted hover:bg-canvas/55 hover:text-ink"
+                  ? "bg-white text-black font-bold shadow-[0_2px_8px_rgba(0,0,0,0.3)] ring-1 ring-white/40"
+                  : "bg-white/8 text-white/80 font-medium hover:bg-white/16 hover:text-white border border-white/8"
               }`}
             >
               {p.label}
@@ -323,18 +323,18 @@ function AudioEnhancementSection({ engine }: { engine: "html5" | "mpv" }) {
       </div>
 
       {eqOpen && (
-        <div className="mt-2 flex flex-col gap-2 rounded-xl bg-canvas/60 p-3 border border-edge-soft">
+        <div className="mt-2 flex flex-col gap-2 rounded-xl bg-black/30 p-3 border border-white/12 backdrop-blur-md">
           <div className="flex items-center justify-between">
-            <span className="text-[11.5px] font-semibold text-ink flex items-center gap-1.5">
-              <Sliders className="h-3 w-3 text-accent" />
+            <span className="text-[11.5px] font-bold text-white flex items-center gap-1.5">
+              <Sliders className="h-3 w-3 text-white" />
               {t("10-Band Graphic Equalizer")}
             </span>
             <div className="flex items-center gap-2">
               <button
                 type="button"
                 onClick={() => update({ audioEqualizerEnabled: !settings.audioEqualizerEnabled })}
-                className={`text-[10.5px] font-semibold transition-colors ${
-                  settings.audioEqualizerEnabled ? "text-accent" : "text-ink-subtle hover:text-ink"
+                className={`text-[10.5px] font-bold transition-colors ${
+                  settings.audioEqualizerEnabled ? "text-white underline" : "text-white/60 hover:text-white"
                 }`}
               >
                 {settings.audioEqualizerEnabled ? t("Active") : t("Bypassed")}
@@ -342,7 +342,7 @@ function AudioEnhancementSection({ engine }: { engine: "html5" | "mpv" }) {
               <button
                 type="button"
                 onClick={handleResetEq}
-                className="text-[10.5px] text-ink-subtle hover:text-ink"
+                className="text-[10.5px] text-white/60 hover:text-white transition-colors"
               >
                 {t("Reset")}
               </button>
@@ -353,7 +353,7 @@ function AudioEnhancementSection({ engine }: { engine: "html5" | "mpv" }) {
               const gain = eqBands[idx] ?? 0;
               return (
                 <div key={freq} className="flex flex-col items-center gap-1">
-                  <span className="text-[9.5px] font-mono text-ink-muted">{freq}</span>
+                  <span className="text-[9.5px] font-mono text-white/70">{freq}</span>
                   <input
                     type="range"
                     min={-12}
@@ -361,9 +361,9 @@ function AudioEnhancementSection({ engine }: { engine: "html5" | "mpv" }) {
                     step={1}
                     value={gain}
                     onChange={(e) => handleBandChange(idx, Number(e.target.value))}
-                    className="h-16 w-3 accent-accent cursor-pointer [writing-mode:vertical-lr] [direction:rtl]"
+                    className="h-16 w-3 accent-white cursor-pointer [writing-mode:vertical-lr] [direction:rtl]"
                   />
-                  <span className="text-[9.5px] font-mono text-ink-subtle">
+                  <span className="text-[9.5px] font-mono text-white/60">
                     {gain > 0 ? `+${gain}` : gain}dB
                   </span>
                 </div>
@@ -390,7 +390,7 @@ function TrackSection({
   const tr = useT();
   if (tracks.length === 0) {
     return (
-      <div className="px-3 py-4 text-[12.5px] leading-relaxed text-ink-muted">
+      <div className="px-3 py-4 text-[12.5px] leading-relaxed text-white/70">
         {engine === "mpv"
           ? tr("This file has one audio track.")
           : tr(
@@ -400,20 +400,22 @@ function TrackSection({
     );
   }
   return (
-    <div className="flex flex-col gap-0.5">
+    <div className="flex flex-col gap-1">
       {tracks.map((t) => {
         const isSel = t.id === selectedId;
         return (
           <button
             key={t.id}
             onClick={() => onSelect(t.id)}
-            className={`flex items-start gap-2.5 rounded-lg px-2.5 py-2 text-start transition-colors ${
-              isSel ? "bg-elevated ring-1 ring-edge" : "hover:bg-canvas/55"
+            className={`flex items-start gap-2.5 rounded-xl px-3 py-2 text-start transition-all ${
+              isSel
+                ? "bg-white/20 text-white font-semibold ring-1 ring-white/25 shadow-xs"
+                : "text-white/80 hover:bg-white/10 hover:text-white"
             }`}
           >
             <span
               className={`mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full ${
-                isSel ? "bg-accent text-canvas" : "bg-raised text-ink-subtle"
+                isSel ? "bg-white text-black" : "bg-white/15 text-white/40"
               }`}
               aria-hidden
             >
@@ -425,10 +427,10 @@ function TrackSection({
               </span>
             )}
             <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-              <span className="truncate text-[12.5px] font-medium leading-snug text-ink">
+              <span className="truncate text-[13px] font-semibold leading-snug text-white">
                 {trackTitle(t, tr)}
               </span>
-              <span className="truncate text-[10.5px] uppercase tracking-[0.1em] text-ink-subtle">
+              <span className="truncate text-[10.5px] uppercase tracking-[0.1em] text-white/60">
                 {trackSubtitle(t, tr)}
               </span>
             </div>
@@ -467,16 +469,16 @@ function DelayRow({
   const round = (v: number) => Math.round(v * 100) / 100;
   return (
     <div
-      className={`flex flex-col gap-2.5 px-4 py-3 border-t border-edge-soft bg-canvas/30 ${
+      className={`flex flex-col gap-2.5 px-4 py-3 border-t border-white/10 bg-white/[0.02] ${
         disabled ? "opacity-40" : ""
       }`}
     >
       <div className="flex items-center justify-between">
-        <span className="text-[12px] font-semibold text-ink">
+        <span className="text-[12px] font-bold text-white/90">
           {tr("Sync Offset")}
         </span>
         <div className="flex items-center gap-2">
-          <span className={`font-mono text-[13px] font-bold tabular-nums ${delay !== 0 ? "text-accent" : "text-ink-muted"}`}>
+          <span className={`font-mono text-[13px] font-bold tabular-nums ${delay !== 0 ? "text-white" : "text-white/60"}`}>
             {delay > 0 ? "+" : ""}
             {delay.toFixed(2)}s
           </span>
@@ -484,7 +486,7 @@ function DelayRow({
             <button
               onClick={() => onDelay(0)}
               aria-label={tr("Reset sync")}
-              className="flex h-6 w-6 items-center justify-center rounded-md bg-raised text-ink-subtle transition-colors hover:bg-elevated hover:text-ink"
+              className="flex h-6 w-6 items-center justify-center rounded-md bg-white/10 text-white/70 transition-colors hover:bg-white/20 hover:text-white"
             >
               <RotateCcw size={12} strokeWidth={2.2} />
             </button>
@@ -492,19 +494,19 @@ function DelayRow({
         </div>
       </div>
       
-      <div className="flex items-stretch overflow-hidden rounded-lg bg-raised">
+      <div className="flex items-stretch overflow-hidden rounded-lg bg-white/10 border border-white/10">
         <button
           disabled={disabled}
           onClick={() => onDelay(round(delay - 0.1))}
-          className="flex-1 px-2 py-1.5 text-[12px] font-semibold tabular-nums text-ink-muted transition-colors hover:bg-elevated hover:text-ink active:scale-95 disabled:cursor-not-allowed"
+          className="flex-1 px-2 py-1.5 text-[12px] font-semibold tabular-nums text-white/85 transition-colors hover:bg-white/15 hover:text-white active:scale-95 disabled:cursor-not-allowed"
         >
           −0.1s
         </button>
-        <div className="w-px bg-edge-soft/50" />
+        <div className="w-px bg-white/10" />
         <button
           disabled={disabled}
           onClick={() => onDelay(round(delay + 0.1))}
-          className="flex-1 px-2 py-1.5 text-[12px] font-semibold tabular-nums text-ink-muted transition-colors hover:bg-elevated hover:text-ink active:scale-95 disabled:cursor-not-allowed"
+          className="flex-1 px-2 py-1.5 text-[12px] font-semibold tabular-nums text-white/85 transition-colors hover:bg-white/15 hover:text-white active:scale-95 disabled:cursor-not-allowed"
         >
           +0.1s
         </button>

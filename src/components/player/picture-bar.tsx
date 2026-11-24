@@ -67,15 +67,15 @@ export function PictureBar() {
       <div
         role="toolbar"
         aria-label={t("Picture adjustments")}
-        className="pointer-events-auto flex max-w-[calc(100vw-56px)] flex-wrap items-center justify-center gap-4 rounded-md bg-elevated px-4 py-3 shadow-[0_10px_30px_-12px_rgba(0,0,0,0.6)]"
+        className="pointer-events-auto flex max-w-[calc(100vw-56px)] flex-wrap items-center justify-center gap-4 apple-liquid-glass px-5 py-3.5 text-white"
       >
         {PICTURE_DIALS.map((dial) => {
           const value = valueOf(dial.key);
           return (
             <label key={dial.key} className="flex min-w-[168px] flex-col gap-1.5">
               <span className="flex items-baseline justify-between gap-3">
-                <span className="text-[12.5px] font-semibold text-ink-muted">{t(dial.label)}</span>
-                <span className="tabular-nums text-[12px] text-ink-subtle">{value}</span>
+                <span className="text-[12.5px] font-semibold text-white/90">{t(dial.label)}</span>
+                <span className="tabular-nums font-mono text-[12px] text-white/60">{value}</span>
               </span>
               <input
                 type="range"
@@ -85,22 +85,22 @@ export function PictureBar() {
                 value={value}
                 onChange={(e) => setValue(dial.key, Number(e.target.value))}
                 onDoubleClick={() => setValue(dial.key, 0)}
-                className="h-1.5 w-full cursor-pointer appearance-none rounded-full bg-raised accent-ink"
+                className="h-1.5 w-full cursor-pointer appearance-none rounded-full bg-white/20 accent-white"
               />
             </label>
           );
         })}
 
-        <div className="flex items-center gap-1.5 border-s border-edge-soft ps-2">
+        <div className="flex items-center gap-2 border-s border-white/12 ps-3">
           <button
             type="button"
             onClick={() => update({ ambientGlow: !settings.ambientGlow })}
             title={t("Ambient Edge Glow")}
             aria-label={t("Ambient Edge Glow")}
-            className={`flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold transition-colors ${
+            className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] font-semibold transition-all ${
               settings.ambientGlow
-                ? "bg-accent/20 text-accent ring-1 ring-accent/30"
-                : "text-ink-subtle hover:bg-raised hover:text-ink"
+                ? "bg-white text-black font-bold shadow-xs"
+                : "bg-white/10 text-white/70 hover:bg-white/18 hover:text-white border border-white/8"
             }`}
           >
             <span>✨</span>
@@ -112,7 +112,7 @@ export function PictureBar() {
             disabled={!anyActive}
             title={t("Reset picture")}
             aria-label={t("Reset picture")}
-            className="grid h-9 w-9 place-items-center rounded-full text-ink-subtle transition-colors hover:bg-raised hover:text-ink disabled:cursor-default disabled:opacity-35"
+            className="grid h-8 w-8 place-items-center rounded-full text-white/70 transition-colors hover:bg-white/15 hover:text-white disabled:cursor-default disabled:opacity-35"
           >
             <RotateCcw size={15} strokeWidth={2.2} />
           </button>
@@ -121,7 +121,7 @@ export function PictureBar() {
             onClick={closePictureBar}
             title={t("Close")}
             aria-label={t("Close")}
-            className="grid h-9 w-9 place-items-center rounded-full text-ink-subtle transition-colors hover:bg-raised hover:text-ink"
+            className="grid h-8 w-8 place-items-center rounded-full text-white/70 transition-colors hover:bg-white/15 hover:text-white"
           >
             <X size={15} strokeWidth={2.2} />
           </button>

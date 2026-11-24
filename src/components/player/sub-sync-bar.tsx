@@ -84,7 +84,7 @@ export function SubSyncBar({ delaySec, onDelay, onEnterSync, syncAvailable }: Pr
       <div
         role="toolbar"
         aria-label={t("Subtitle sync")}
-        className="pointer-events-auto flex items-stretch gap-2.5 rounded-md bg-elevated px-2.5 py-2 shadow-[0_10px_30px_-12px_rgba(0,0,0,0.6)]"
+        className="pointer-events-auto flex items-stretch gap-2.5 apple-liquid-glass px-3.5 py-2.5 text-white"
       >
         {/* Left Side: Live Sync (Fixed width to center the middle section) */}
         <div className="flex w-[240px] items-center gap-1.5">
@@ -102,8 +102,8 @@ export function SubSyncBar({ delaySec, onDelay, onEnterSync, syncAvailable }: Pr
               aria-label={t("Live sync")}
               className={`flex h-10 items-center gap-2 rounded-xl px-3.5 text-[13px] font-semibold transition-all ${
                 syncAvailable
-                  ? "bg-raised text-ink-muted hover:bg-elevated hover:text-ink active:scale-95"
-                  : "bg-raised/40 opacity-60 cursor-not-allowed text-ink-subtle/50"
+                  ? "bg-white/10 text-white hover:bg-white/20 border border-white/10 active:scale-95"
+                  : "bg-white/5 opacity-50 cursor-not-allowed text-white/40"
               }`}
             >
               <Type size={15} strokeWidth={2} />
@@ -113,12 +113,12 @@ export function SubSyncBar({ delaySec, onDelay, onEnterSync, syncAvailable }: Pr
         </div>
 
         {/* Center Side: Sync Controls */}
-        <div className="flex items-center gap-[2px] rounded-xl bg-raised p-[2px] shadow-inner">
+        <div className="flex items-center gap-[2px] rounded-xl bg-white/10 border border-white/10 p-[2px]">
           <StepBtn label="−0.5s" onClick={() => applyDelay(delaySec - 0.5)} wide />
           <StepBtn label="−0.25s" onClick={() => applyDelay(delaySec - 0.25)} wide />
           <StepBtn label="−0.05s" onClick={() => applyDelay(delaySec - 0.05)} wide />
 
-          <div className="mx-1.5 flex h-10 w-[96px] items-center justify-center rounded-lg bg-elevated">
+          <div className="mx-1.5 flex h-10 w-[96px] items-center justify-center rounded-lg bg-white/15 border border-white/10">
             <DelayDisplay value={delaySec} nonZero={isNonZero} onReset={() => applyDelay(0)} />
           </div>
 
@@ -135,7 +135,7 @@ export function SubSyncBar({ delaySec, onDelay, onEnterSync, syncAvailable }: Pr
               onClick={handleDiscard}
               title={t("Discard changes")}
               aria-label={t("Discard changes")}
-              className="flex h-10 w-10 items-center justify-center rounded-xl text-ink-muted transition-colors hover:bg-raised hover:text-danger active:scale-95"
+              className="flex h-10 w-10 items-center justify-center rounded-xl text-white/70 transition-colors hover:bg-white/15 hover:text-red-400 active:scale-95"
             >
               <RotateCcw size={16} strokeWidth={2.2} />
             </button>
@@ -145,7 +145,7 @@ export function SubSyncBar({ delaySec, onDelay, onEnterSync, syncAvailable }: Pr
             type="button"
             onClick={handleSave}
             aria-label={t("Save")}
-            className="flex h-10 items-center gap-1.5 rounded-xl bg-accent px-4 text-[13px] font-semibold text-canvas transition-all hover:brightness-110 active:scale-95"
+            className="flex h-10 items-center gap-1.5 rounded-xl bg-white text-black px-4 text-[13px] font-bold shadow-sm transition-all hover:bg-white/90 active:scale-95"
           >
             <Check size={16} strokeWidth={2.6} />
             {t("Done")}
@@ -155,7 +155,7 @@ export function SubSyncBar({ delaySec, onDelay, onEnterSync, syncAvailable }: Pr
             type="button"
             onClick={closeSyncBar}
             aria-label={t("Close")}
-            className="ms-1 flex h-10 w-10 items-center justify-center rounded-xl text-ink-muted transition-colors hover:bg-raised hover:text-ink active:scale-95"
+            className="ms-1 flex h-10 w-10 items-center justify-center rounded-xl text-white/70 transition-colors hover:bg-white/15 hover:text-white active:scale-95"
           >
             <X size={18} strokeWidth={2.2} />
           </button>
@@ -172,7 +172,7 @@ function StepBtn({ label, onClick, wide }: { label: string; onClick: () => void;
     <button
       type="button"
       onClick={onClick}
-      className={`flex h-[36px] items-center justify-center rounded-md font-mono text-[13px] font-bold tabular-nums text-ink-muted transition-colors hover:bg-elevated hover:text-ink active:scale-95 ${
+      className={`flex h-[36px] items-center justify-center rounded-lg font-mono text-[13px] font-bold tabular-nums text-white/80 transition-colors hover:bg-white/15 hover:text-white active:scale-95 ${
         wide ? "w-14" : "w-12"
       }`}
     >
@@ -195,7 +195,7 @@ function DelayDisplay({
     <div className="relative flex h-full w-full items-center justify-center">
       <span
         className={`text-center font-mono text-[15px] font-bold tabular-nums transition-colors ${
-          nonZero ? "text-accent" : "text-ink-subtle"
+          nonZero ? "text-white" : "text-white/60"
         }`}
       >
         {value >= 0 ? "+" : ""}
@@ -207,7 +207,7 @@ function DelayDisplay({
           onClick={onReset}
           aria-label={t("Reset sync")}
           title={t("Reset to 0")}
-          className="absolute -end-2 -top-2 flex h-5 w-5 items-center justify-center rounded-full bg-raised text-ink-subtle shadow-sm transition-colors hover:bg-elevated hover:text-danger"
+          className="absolute -end-2 -top-2 flex h-5 w-5 items-center justify-center rounded-full bg-white/20 text-white shadow-sm transition-colors hover:bg-white/30 hover:text-red-300"
         >
           <RotateCcw size={10} strokeWidth={2.5} />
         </button>

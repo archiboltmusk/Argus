@@ -54,13 +54,13 @@ export function SubStyleBar() {
       <div
         role="toolbar"
         aria-label={t("Subtitle appearance")}
-        className="pointer-events-auto flex max-w-[calc(100vw-56px)] flex-wrap items-center justify-center gap-2 rounded-md bg-elevated px-2 py-2 shadow-[0_10px_30px_-12px_rgba(0,0,0,0.6)]"
+        className="pointer-events-auto flex max-w-[calc(100vw-56px)] flex-wrap items-center justify-center gap-2 apple-liquid-glass px-3 py-2 text-white"
       >
         <div className={GROUP}>
           <FontMenu value={settings.subFontFamily} fonts={settings.customFonts} onChange={(f) => update({ subFontFamily: f })} />
-          <span aria-hidden className="h-6 w-px bg-edge-soft" />
+          <span aria-hidden className="h-6 w-px bg-white/10" />
           <SizeStepper value={settings.subFontSize} onChange={(n) => update({ subFontSize: clamp(n, 16, 120) })} />
-          <span aria-hidden className="h-6 w-px bg-edge-soft" />
+          <span aria-hidden className="h-6 w-px bg-white/10" />
           <BoldToggle on={settings.subBold} onToggle={() => update({ subBold: !settings.subBold })} />
         </div>
 
@@ -78,7 +78,7 @@ export function SubStyleBar() {
           type="button"
           onClick={closeStyleBar}
           aria-label={t("Done")}
-          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-md text-ink-subtle transition-colors hover:bg-raised hover:text-ink"
+          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-white/70 transition-colors hover:bg-white/15 hover:text-white"
         >
           <X size={18} strokeWidth={2.2} />
         </button>

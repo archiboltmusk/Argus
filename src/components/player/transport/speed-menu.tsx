@@ -158,7 +158,7 @@ export function SpeedMenu({
         </button>
       </Tooltip>
       {open && (
-        <div className="fixed end-14 bottom-[150px] w-[400px] max-w-[calc(100vw-72px)] max-h-[calc(100vh-174px)] overflow-y-auto rounded-2xl border border-white/20 bg-neutral-900/98 player-menu-surface backdrop-blur-2xl shadow-2xl p-1 animate-menu-pop z-50 text-white">
+        <div className="fixed end-14 bottom-[150px] w-[400px] max-w-[calc(100vw-72px)] max-h-[calc(100vh-174px)] overflow-y-auto apple-liquid-glass p-1.5 animate-menu-pop z-50 text-white">
           <div className={`grid ${sleep ? "grid-cols-2" : "grid-cols-1"}`}>
             <Section title={t("Playback speed")}>
               {speedList.map((s) => {
@@ -262,13 +262,13 @@ export function SpeedMenu({
               </Section>
             )}
           </div>
-          <div className="flex items-center justify-end border-t border-edge-soft px-3 py-2">
+          <div className="flex items-center justify-end border-t border-white/10 px-3 py-2 bg-white/[0.02]">
             <button
               onClick={() => setEditing((e) => !e)}
               className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-[12px] font-medium transition-colors ${
                 editing
-                  ? "bg-canvas/55 text-ink"
-                  : "text-ink-subtle hover:bg-canvas/55 hover:text-ink"
+                  ? "bg-white/20 text-white"
+                  : "text-white/70 hover:bg-white/10 hover:text-white"
               }`}
             >
               <Settings2 size={13} strokeWidth={2} />
@@ -291,8 +291,8 @@ function Section({
   children: React.ReactNode;
 }) {
   return (
-    <div className={`p-2 ${leftBorder ? "border-s border-edge-soft" : ""}`}>
-      <div className="px-3 pb-1.5 pt-1 text-[10.5px] font-semibold uppercase tracking-[0.18em] text-ink-subtle">
+    <div className={`p-2 ${leftBorder ? "border-s border-white/10" : ""}`}>
+      <div className="px-3 pb-1.5 pt-1 text-[10.5px] font-semibold uppercase tracking-[0.18em] text-white/60">
         {title}
       </div>
       <div className="flex flex-col gap-0.5">{children}</div>
@@ -327,13 +327,13 @@ function Row({
         onClick={onClick}
         className={`flex h-10 w-full items-center justify-between rounded-xl px-3 text-start text-[13.5px] transition-all ${
           selected
-            ? "bg-accent/25 text-amber-300 font-bold ring-1 ring-accent/50 shadow-xs"
+            ? "bg-white/20 text-white font-bold ring-1 ring-white/25 shadow-xs"
             : "text-white/80 hover:bg-white/10 hover:text-white"
         } ${onRemove || hasPin ? "pe-10" : ""}`}
       >
         <span className={selected ? "font-medium" : ""}>{label}</span>
         {hint && !onRemove && !hasPin && (
-          <span className="text-[10.5px] font-semibold uppercase tracking-[0.16em] text-ink-subtle">
+          <span className="text-[10.5px] font-semibold uppercase tracking-[0.16em] text-white/60">
             {hint}
           </span>
         )}

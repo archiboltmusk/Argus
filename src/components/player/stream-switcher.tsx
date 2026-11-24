@@ -364,7 +364,7 @@ export function StreamSwitcher({
 
   return (
     <div
-      className="pointer-events-auto absolute inset-0 z-[60] flex items-center justify-center bg-black/72 backdrop-blur-md animate-in fade-in duration-200"
+      className="pointer-events-auto absolute inset-0 z-[60] flex items-center justify-center bg-black/60 backdrop-blur-xl animate-in fade-in duration-200"
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}
@@ -372,9 +372,9 @@ export function StreamSwitcher({
       <div
         className={`flex h-full max-h-[84vh] w-full ${
           filtersOpen ? "max-w-[980px]" : "max-w-[880px]"
-        } flex-col overflow-hidden rounded-xl bg-elevated shadow-[0_28px_72px_-20px_rgba(0,0,0,0.85)] ring-1 ring-edge transition-all duration-200 backdrop-blur-xl`}
+        } flex-col overflow-hidden apple-liquid-glass-modal transition-all duration-200`}
       >
-        <header className="flex items-center justify-between gap-4 border-b border-edge-soft px-6 py-4">
+        <header className="flex items-center justify-between gap-4 border-b border-white/10 px-6 py-4 bg-white/[0.02]">
           <div className="flex items-center gap-2.5">
             <HoverTooltip
               label={t("Refresh sources")}
@@ -492,21 +492,20 @@ export function StreamSwitcher({
 
           {filtersOpen && (
             <aside
-              className="w-[320px] shrink-0 border-s border-white/10 bg-[#111215] flex flex-col z-20 animate-in slide-in-from-right-3 duration-150 overflow-hidden"
-              style={{ backgroundColor: "#111215" }}
+              className="w-[320px] shrink-0 border-s border-white/10 bg-black/40 backdrop-blur-2xl flex flex-col z-20 animate-in slide-in-from-right-3 duration-150 overflow-hidden"
             >
               <FiltersPanel filters={filters} onClose={() => setFiltersOpen(false)} />
             </aside>
           )}
         </div>
 
-        <footer className="flex items-center justify-between gap-4 border-t border-edge-soft px-6 py-2.5">
-          <span className="flex items-center gap-2 text-[12px] text-ink-subtle">
+        <footer className="flex items-center justify-between gap-4 border-t border-white/10 px-6 py-2.5 bg-white/[0.02]">
+          <span className="flex items-center gap-2 text-[12px] text-white/70">
             <MousePointerClick size={13} strokeWidth={2.2} />
             {t("Click any source to swap in place")}
           </span>
-          <span className="flex items-center gap-1.5 text-[12px] text-ink-subtle">
-            <kbd className="inline-flex h-[18px] items-center justify-center rounded-[5px] border border-edge bg-raised px-1.5 font-sans text-[10.5px] font-semibold tracking-normal text-ink-muted">
+          <span className="flex items-center gap-1.5 text-[12px] text-white/70">
+            <kbd className="inline-flex h-[18px] items-center justify-center rounded-[5px] border border-white/15 bg-white/10 px-1.5 font-sans text-[10.5px] font-semibold tracking-normal text-white">
               Esc
             </kbd>
             {t("to close")}

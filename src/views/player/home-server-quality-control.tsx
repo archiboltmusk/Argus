@@ -58,28 +58,30 @@ export function HomeServerQualityControl({
       onClick={(event) => event.stopPropagation()}
     >
       {open && (
-        <div className="absolute bottom-[calc(100%+12px)] left-1/2 w-56 max-w-[calc(100vw-32px)] -translate-x-1/2 animate-menu-pop overflow-hidden rounded-md bg-elevated p-1.5 text-ink shadow-[0_10px_30px_-12px_rgba(0,0,0,0.6)]">
-          <div className="px-3 pb-2 pt-1.5 text-[11px] font-semibold uppercase tracking-wide text-ink-muted">
+        <div className="absolute bottom-[calc(100%+12px)] left-1/2 w-56 max-w-[calc(100vw-32px)] -translate-x-1/2 animate-menu-pop overflow-hidden apple-liquid-glass p-2 text-white z-50">
+          <div className="px-3 pb-2 pt-1.5 text-[11px] font-bold uppercase tracking-wider text-white/60">
             Home server quality
           </div>
-          {MEDIA_SERVER_QUALITIES.map((quality) => {
-            const active = quality.id === context.quality;
-            return (
-              <button
-                key={quality.id}
-                type="button"
-                disabled={switching}
-                onClick={() => {
-                  setOpen(false);
-                  void switchQuality(quality.id);
-                }}
-                className={`flex h-9 w-full items-center justify-between rounded px-3 text-start text-[12.5px] transition-colors ${active ? "bg-accent text-white" : "text-ink-muted hover:bg-white/10 hover:text-ink"}`}
-              >
-                <span>{quality.label}</span>
-                {active && <Check size={14} />}
-              </button>
-            );
-          })}
+          <div className="flex flex-col gap-1">
+            {MEDIA_SERVER_QUALITIES.map((quality) => {
+              const active = quality.id === context.quality;
+              return (
+                <button
+                  key={quality.id}
+                  type="button"
+                  disabled={switching}
+                  onClick={() => {
+                    setOpen(false);
+                    void switchQuality(quality.id);
+                  }}
+                  className={`flex h-9 w-full items-center justify-between rounded-xl px-3 text-start text-[12.5px] transition-all ${active ? "bg-white/20 text-white font-semibold ring-1 ring-white/25 shadow-xs" : "text-white/80 hover:bg-white/10 hover:text-white"}`}
+                >
+                  <span>{quality.label}</span>
+                  {active && <Check size={14} className="text-white" />}
+                </button>
+              );
+            })}
+          </div>
         </div>
       )}
       <Tooltip label={`Home server quality · ${label}`}>
