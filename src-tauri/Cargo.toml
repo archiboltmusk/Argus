@@ -55,7 +55,7 @@ tar = "0.4"
 plist = "1.9"
 zip = { version = "9.8.0", default-features = false, features = ["deflate-flate2", "aes-crypto"] }
 zeroize = "1"
-sevenz-rust2 = { version = "=0.24.2", default-features = false, features = [
+sevenz-rust2 = { version = "=0.25.0", default-features = false, features = [
   "aes256",
   "bzip2",
   "ppmd",
@@ -75,7 +75,7 @@ libc = "0.2"
 socket2 = "0.5"
 base64 = "0.22"
 sha2 = "0.10"
-sha1 = "0.10"
+sha1 = "0.11"
 png = "0.18"
 image = { version = "0.25", default-features = false, features = ["jpeg", "png", "gif", "webp"] }
 hound = "3.5"
@@ -187,12 +187,12 @@ sysinfo = { version = "0.36", default-features = false, features = ["system"] }
 
 [target.'cfg(target_os = "linux")'.dependencies]
 gtk = { version = "0.18", features = ["v3_24"] }
-zbus = { version = "5", default-features = false, features = ["tokio"] }
+zbus = { version = "6", default-features = false, features = ["tokio"] }
 rust-ini = "=0.21.3"
 
 
 [dev-dependencies]
-sevenz-rust2 = { version = "=0.24.2", default-features = false, features = ["compress"] }
+sevenz-rust2 = { version = "=0.25.0", default-features = false, features = ["compress"] }
 crc32fast = "1"
 
 [profile.dev]

@@ -191,7 +191,7 @@ dependencies = [
  "serde",
  "serde_json",
  "sevenz-rust2",
- "sha1 0.10.7",
+ "sha1 0.11.0",
  "sha2 0.10.9",
  "socket2 0.5.10",
  "souvlaki",
@@ -227,7 +227,7 @@ dependencies = [
  "window-vibrancy",
  "windows 0.62.2",
  "yaml-rust2",
- "zbus 5.15.0",
+ "zbus 6.4.0",
  "zeroize",
  "zip",
 ]
@@ -4273,9 +4273,9 @@ checksum = "e20f57f9918e5bd7bc58c22cdd70a6afc7375d4dd9683af5f2b34bd3d2bba619"
 
 [[package]]
 name = "lzma-rust2"
-version = "0.23.0"
+version = "0.25.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f1c46f3fcd2e888afdb01a07efc071cb21300e07c68d32c3e8b01b5c8cb1fcaa"
+checksum = "ef1d73c59a56771343712b22ea5615092c612c16ba291c0979e3105dfeec4890"
 
 [[package]]
 name = "mac-notification-sys"
@@ -6845,9 +6845,9 @@ dependencies = [
 
 [[package]]
 name = "sevenz-rust2"
-version = "0.24.2"
+version = "0.25.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "30146010a60b5773ef63f7b0033576c7a0487ecc87a30d97b787ca8e27c85140"
+checksum = "e5e465701779cbc6d0d10cf907f175035cfdd50b8d3cb628d7f1f435ef02972f"
 dependencies = [
  "aes 0.9.4",
  "bzip2",
@@ -6856,7 +6856,7 @@ dependencies = [
  "flate2",
  "getrandom 0.4.2",
  "js-sys",
- "lzma-rust2 0.23.0",
+ "lzma-rust2 0.25.0",
  "ppmd-rust",
  "sha2 0.11.1",
  "wasm-bindgen",
@@ -8177,7 +8177,6 @@ dependencies = [
  "signal-hook-registry",
  "socket2 0.6.5",
  "tokio-macros",
- "tracing",
  "windows-sys 0.61.2",
 ]
 
@@ -10134,7 +10133,6 @@ dependencies = [
  "rustix 1.1.6",
  "serde",
  "serde_repr",
- "tokio",
  "tracing",
  "uds_windows",
  "uuid 1.29.3",
@@ -10162,6 +10160,7 @@ dependencies = [
  "serde",
  "serde_repr",
  "socket2 0.6.5",
+ "tokio",
  "uds_windows",
  "uuid 1.29.3",
  "windows-sys 0.61.2",
