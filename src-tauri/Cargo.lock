@@ -227,7 +227,7 @@ dependencies = [
  "window-vibrancy",
  "windows 0.62.2",
  "yaml-rust2",
- "zbus 6.5.0",
+ "zbus 5.15.0",
  "zeroize",
  "zip",
 ]
@@ -8177,6 +8177,7 @@ dependencies = [
  "signal-hook-registry",
  "socket2 0.6.5",
  "tokio-macros",
+ "tracing",
  "windows-sys 0.61.2",
 ]
 
@@ -10133,6 +10134,7 @@ dependencies = [
  "rustix 1.1.6",
  "serde",
  "serde_repr",
+ "tokio",
  "tracing",
  "uds_windows",
  "uuid 1.29.3",
@@ -10160,7 +10162,6 @@ dependencies = [
  "serde",
  "serde_repr",
  "socket2 0.6.5",
- "tokio",
  "uds_windows",
  "uuid 1.29.3",
  "windows-sys 0.61.2",

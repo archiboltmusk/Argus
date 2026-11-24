@@ -22,6 +22,8 @@ updates:
       cargo-minor-patch:
         update-types: [minor, patch]
     ignore:
+      - dependency-name: zbus
+        update-types: ["version-update:semver-major"]
       - dependency-name: libmpv2
         update-types: ["version-update:semver-major"]
       - dependency-name: rusqlite
