@@ -1,8 +1,9 @@
 import { Radio, Users, X } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { Meta } from "@/lib/cinemeta";
-import type { ScoredStream } from "@/lib/streams/types";
+import { abandonPrewarmedStream, prewarmP2pStream } from "@/lib/streams/p2p-prewarm";
 import { formatSize, streamSummaryParts } from "./picker-utils";
+import type { ScoredStream } from "@/lib/streams/types";
 
 export function P2pConfirmModal({
   meta,
@@ -16,6 +17,26 @@ export function P2pConfirmModal({
   onCancel: () => void;
 }) {
   const [remember, setRemember] = useState(false);
+  const confirmed = useRef(false);
+  // StrictMode (and HMR) run an effect, its cleanup, then the effect again. Only
+  // abandon the prewarm when the prompt is really gone; otherwise that cleanup
+  // would delete the torrent the prompt is still warming.
+  const mountGeneration = useRef(0);
+  useEffect(() => {
+    mountGeneration.current += 1;
+    const generation = mountGeneration.current;
+    prewarmP2pStream(stream);
+    return () => {
+      if (confirmed.current) return;
+      window.setTimeout(() => {
+        if (mountGeneration.current === generation) abandonPrewarmedStream(stream);
+      }, 0);
+    };
+  }, [stream]);
+  const confirm = (rememberIt: boolean) => {
+    confirmed.current = true;
+    onConfirm(rememberIt);
+  };
   const backdrop = meta.background || meta.poster;
   const title = stream.parsedTitle || stream.title || stream.name || "This source";
   const summary = streamSummaryParts(stream).filter((p) => !/seed/i.test(p));
@@ -63,7 +84,7 @@ export function P2pConfirmModal({
         <div className="flex items-center gap-3 pt-1">
           <button
             type="button"
-            onClick={() => onConfirm(remember)}
+            onClick={() => confirm(remember)}
             className="flex h-12 items-center gap-2 rounded-xl bg-accent px-6 text-[14px] font-semibold text-canvas transition-transform hover:scale-[1.02] active:scale-[0.97]"
           >
             <Radio size={15} strokeWidth={2.4} />

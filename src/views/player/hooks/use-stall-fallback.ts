@@ -8,6 +8,8 @@ import { isLocalUrl } from "@/lib/player/local-url";
 import { peekPickerCache } from "@/lib/picker-cache";
 import { prepareCachedDebridStreams } from "@/lib/debrid/playback-preparation";
 import { prewarmCandidateStream } from "@/lib/streams/prewarm-candidate";
+import { preburstStreamHeader } from "@/lib/streams/stream-header-preburst";
+import { prewarmP2pStream } from "@/lib/streams/p2p-prewarm";
 import { recordHostFailure, recordHostThroughput } from "@/lib/streams/host-health";
 import { markStreamDead, SOFT_STALL_TTL_MS } from "@/lib/dead-streams";
 import { evaluateStallStatus, findNextFallbackStream } from "@/lib/player/stall-fallback";
@@ -83,12 +85,15 @@ export function useStallFallback(params: {
         if (standby.url) {
           // Pre-warm connection for direct HTTPS / HTTP streams
           prewarmCandidateStream(standby);
+          void preburstStreamHeader(standby.url).catch(() => {});
         } else if (debrids.length > 0) {
           const hint = src.episode
             ? { season: src.episode.season ?? null, episode: src.episode.episode ?? null }
             : undefined;
           const ac = new AbortController();
           void prepareCachedDebridStreams([standby], debrids, hint, ac.signal).catch(() => {});
+        } else if (standby.infoHash) {
+          prewarmP2pStream(standby, { intent: true });
         }
       }
     }

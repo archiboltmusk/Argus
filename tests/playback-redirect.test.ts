@@ -100,8 +100,15 @@ function pickerHarness(intent = "play") {
     "@/lib/playback-history": { savePlayback: (_id: string, entry: any) => history.push(entry) },
     "@/lib/season-lock": { saveSeasonLock() {} },
     "@/lib/dead-streams": { markStreamDead() {}, recordStubEvent() {} },
-    "@/lib/torrent/stremio-stream": { engineP2pEligible: () => false },
+    "@/lib/torrent/stremio-stream": {
+      engineP2pEligible: () => false,
+      isHostedTorrentServerUrl: () => false,
+    },
     "@/lib/streams/cached": { hasUncachedMarker: () => false },
+    "@/lib/streams/p2p-prewarm": {
+      PLAY_PREWARM_ABANDON_MS: 30_000,
+      prewarmP2pStream() {},
+    },
     "@/lib/streams/preflight": {
       preflightCheck: () => {
         throw new Error("unexpected preflight");

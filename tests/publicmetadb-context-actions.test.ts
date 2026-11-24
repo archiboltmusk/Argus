@@ -308,6 +308,7 @@ test("PMDB mutation guards run after mapping or list preparation and before the 
   const lists = load<typeof import("../src/lib/publicmetadb/watchlist")>(
     "src/lib/publicmetadb/watchlist.ts",
     {
+      "@/lib/active-profile-id": { activeProfileId: () => "fixture" },
       "./lists": listApi,
       "./session": { isAuthenticated: () => true },
     },

@@ -24,6 +24,8 @@ function run(sourceSwitching) {
       evaluateStallStatus: () => ({ isStalled: false }),
       findNextFallbackStream: () => null,
     },
+    "@/lib/streams/stream-header-preburst": { preburstStreamHeader: noop },
+    "@/lib/streams/p2p-prewarm": { prewarmP2pStream: noop },
   };
   const source = readFileSync(
     new URL("../src/views/player/hooks/use-stall-fallback.ts", import.meta.url),
