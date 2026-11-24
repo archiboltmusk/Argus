@@ -359,11 +359,6 @@ html[data-os="linux"][data-mpv-embed="1"] .apple-liquid-glass-modal {
   box-shadow:
     inset 0 1px 1px 0 rgba(255, 255, 255, 0.45),
     0 4px 12px -2px rgba(0, 0, 0, 0.35) !important;
-}
-  border: 1px solid rgba(255, 255, 255, 0.28) !important;
-  box-shadow:
-    inset 0 1px 1px 0 rgba(255, 255, 255, 0.45),
-    0 4px 12px -2px rgba(0, 0, 0, 0.35) !important;
   color: #ffffff !important;
 }
 
