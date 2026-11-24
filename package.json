@@ -94,7 +94,7 @@
     "skinview3d": "^3.4.2",
     "tailwindcss": "^4.3.5",
     "tldts": "7.5.4",
-    "ts-fsrs": "5.4.2"
+    "ts-fsrs": "6.0.0"
   },
   "devDependencies": {
     "@resvg/resvg-js": "^2.6.2",
