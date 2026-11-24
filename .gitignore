@@ -162,3 +162,5 @@ public/argus-acceptance-fixture.webm
 
 everyday-acceptance.json
 .argus-everyday-fixture.tsx
+.flatpak-work/
+

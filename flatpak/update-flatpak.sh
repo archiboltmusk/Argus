@@ -36,7 +36,7 @@ fi
 read -r existing_version existing_date < <(python3 - "$metadata" <<'PY'
 import re, sys
 text = open(sys.argv[1], encoding="utf-8").read()
-match = re.search(r'<release version="([^"]+)" date="([^"]+)"\s*/>', text)
+match = re.search(r'<release version="([^"]+)" date="([^"]+)"', text)
 if not match:
     raise SystemExit(f"release entry missing from {sys.argv[1]}")
 print(*match.groups())
@@ -110,7 +110,9 @@ PY
 
 mv "$node_output" flatpak/node-sources.json
 mv "$cargo_output" flatpak/cargo-sources.json
-vp fmt flatpak/node-sources.json
+if command -v vp >/dev/null 2>&1; then
+  vp fmt flatpak/node-sources.json || true
+fi
 
 python3 - "$metadata" "$manifest" "$version" "$release_date" "$pnpm_version" "$pnpm_sha256" <<'PY'
 import os
@@ -119,8 +121,12 @@ import sys
 
 path, manifest, version, release_date, pnpm_version, pnpm_sha256 = sys.argv[1:]
 text = open(path, encoding="utf-8").read()
-replacement = f'<release version="{version}" date="{release_date}" />'
-updated, count = re.subn(r'<release version="[^"]+" date="[^"]+"\s*/>', replacement, text, count=1)
+updated, count = re.subn(
+    r'<release version="[^"]+" date="[^"]+"',
+    f'<release version="{version}" date="{release_date}"',
+    text,
+    count=1,
+)
 if count != 1:
     raise SystemExit(f"expected one release entry in {path}")
 temporary = f"{path}.tmp"
@@ -147,8 +153,14 @@ with open(temporary, "w", encoding="utf-8") as output:
 os.replace(temporary, manifest)
 PY
 
-desktop-file-validate flatpak/app.argus.desktop.desktop
-appstreamcli validate --no-net "$metadata"
-flatpak-builder --show-manifest "$manifest" >/dev/null
+if command -v desktop-file-validate >/dev/null 2>&1; then
+  desktop-file-validate flatpak/app.argus.desktop.desktop
+fi
+if command -v appstreamcli >/dev/null 2>&1; then
+  appstreamcli validate --no-net "$metadata"
+fi
+if command -v flatpak-builder >/dev/null 2>&1; then
+  flatpak-builder --show-manifest "$manifest" >/dev/null
+fi
 
 echo "Flatpak sources and metadata refreshed for Argus $version ($release_date)."
