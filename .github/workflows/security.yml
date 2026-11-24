@@ -63,13 +63,15 @@ jobs:
     steps:
       - uses: actions/checkout@v6
         with:
-          fetch-depth: 50
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
       - name: Validate Pull Request Commits
         if: github.event_name == 'pull_request'
         run: |
           set -euo pipefail
           echo "Verifying PR commit author signatures and change hygiene..."
-          COMMITS=$(git log --format="%H" origin/${{ github.base_ref }}..HEAD)
+          git fetch origin "${{ github.base_ref }}" --depth=100 || true
+          COMMITS=$(git rev-list --no-merges "origin/${{ github.base_ref }}..HEAD" 2>/dev/null || git log --format="%H" -n "${{ github.event.pull_request.commits || 1 }}")
           for commit in $COMMITS; do
             msg=$(git log -1 --format="%B" "$commit")
             echo "Checking commit $commit..."
