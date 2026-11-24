@@ -34,6 +34,7 @@ function fixture(native = false, supplied = streams) {
     "./parser": { parseStream },
     "./trust": { applyTrust },
     "./scoring": scoring,
+    "./stream-mirror-failover": { streamMirrorManager: { registerMirrors: () => {} } },
     "@tauri-apps/api/core": { invoke: async (name: string, args: any) => {
       assert.equal(name, "streams_run_pipeline"); coreCalls.push(args);
       const { keep, rejected } = applyTrust(args.streams, args.trustOpts);

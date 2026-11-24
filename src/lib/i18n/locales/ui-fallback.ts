@@ -1,5 +1,15 @@
 // Newly introduced UI copy remains usable until each locale provides an override.
 const uiFallback: Record<string, string> = {
+  "Neural Voice Clarity": "Neural Voice Clarity",
+  "Dialogue Isolation": "Dialogue Isolation",
+  "Studio Broadcast": "Studio Broadcast",
+  "Hardware Enhancement": "Hardware Enhancement",
+  "Deband Filter": "Deband Filter",
+  "Eliminates color banding in gradients & sky": "Eliminates color banding in gradients & sky",
+  "Adaptive Sharpening": "Adaptive Sharpening",
+  "AMD CAS contrast-adaptive edge clarity": "AMD CAS contrast-adaptive edge clarity",
+  "Neural voice clarity": "Neural voice clarity",
+  "Dialogue isolation": "Dialogue isolation",
   "Check your filters or choose another source.": "Check your filters or choose another source.",
   "Connected music catalogs and libraries are unavailable on this build. You can play a direct HTTPS audio stream.": "Connected music catalogs and libraries are unavailable on this build. You can play a direct HTTPS audio stream.",
   "Could not start this audio stream.": "Could not start this audio stream.",
