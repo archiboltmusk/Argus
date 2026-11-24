@@ -86,7 +86,7 @@ export function isGenericEpisodeName(text: string | null | undefined): boolean {
   const lower = t.toLowerCase();
   for (const word of EPISODE_NUMBER_WORDS) {
     if (!lower.includes(word)) continue;
-    const rest = lower.replace(word, "").replace(/[\s\-–—:.,()\[\]'"،،]/g, "");
+    const rest = lower.replace(word, "").replace(/[\s\-–—:.,()\[\]'"،]/g, "");
     if (/^\d*$/.test(rest)) return true;
   }
   return false;

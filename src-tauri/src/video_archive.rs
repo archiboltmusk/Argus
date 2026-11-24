@@ -152,12 +152,13 @@ fn list_zip(path: &Path) -> Result<Vec<Candidate>> {
         if entry.is_dir() {
             continue;
         }
-        if entry.encrypted() && is_video(entry.name()) {
+        let name = entry.name().map_err(|_| "archive_format")?;
+        if entry.encrypted() && is_video(&name) {
             return Err("archive_encrypted");
         }
         out.push(Candidate {
             index,
-            name: entry.name().to_string(),
+            name: name.to_string(),
             bytes: entry.size(),
         });
     }

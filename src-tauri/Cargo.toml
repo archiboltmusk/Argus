@@ -53,7 +53,7 @@ reqwest = { version = "0.12", default-features = false, features = [
 flate2 = "1"
 tar = "0.4"
 plist = "1.9"
-zip = { version = "4", default-features = false, features = ["deflate-flate2", "aes-crypto"] }
+zip = { version = "9.8.0", default-features = false, features = ["deflate-flate2", "aes-crypto"] }
 zeroize = "1"
 sevenz-rust2 = { version = "=0.24.2", default-features = false, features = [
   "aes256",

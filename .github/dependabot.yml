@@ -28,3 +28,17 @@ updates:
     groups:
       cargo-minor-patch:
         update-types: [minor, patch]
+  - package-ecosystem: cargo
+    directory: /installer/src-tauri
+    schedule:
+      interval: weekly
+    groups:
+      cargo-minor-patch:
+        update-types: [minor, patch]
+  - package-ecosystem: cargo
+    directory: /tools/android-p2p-probe
+    schedule:
+      interval: weekly
+    groups:
+      cargo-minor-patch:
+        update-types: [minor, patch]
