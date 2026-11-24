@@ -31,7 +31,10 @@ function normalizeRawHandoff(raw: unknown): PlaybackHandoff | null {
   };
 }
 
+const isTauri = typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
+
 export function acknowledgeHandoff(id: string, ok: boolean) {
+  if (!isTauri) return;
   void invoke("remote_ws_broadcast", {
     payload: JSON.stringify({ t: "handoff-result", id, ok }),
   }).catch(() => {});
@@ -65,14 +68,16 @@ export function HandoffReceiver() {
     window.addEventListener(HANDOFF_EVENT, receive);
     window.addEventListener("argus:handoff-dismiss", clear);
 
-    const unlistenPromise = listen<unknown>("argus://remote-handoff", (e) => {
-      handlePayload(e.payload);
-    });
+    const unlistenPromise = isTauri
+      ? listen<unknown>("argus://remote-handoff", (e) => {
+          handlePayload(e.payload);
+        })
+      : null;
 
     return () => {
       window.removeEventListener(HANDOFF_EVENT, receive);
       window.removeEventListener("argus:handoff-dismiss", clear);
-      unlistenPromise.then((unlisten) => unlisten()).catch(() => {});
+      unlistenPromise?.then((unlisten) => unlisten()).catch(() => {});
     };
   }, []);
   useEffect(() => {
