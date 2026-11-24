@@ -31,7 +31,7 @@ url = "2"
 # with no NASM. src-tauri/Cargo.lock pins 0.40.0, which builds here. Matching
 # the shipped lock is the whole point: unpinned, this crate would answer a
 # question about a dependency graph Argus does not ship.
-aws-lc-rs = "=1.16.3"
+aws-lc-rs = "=1.19.0"
 aws-lc-sys = "=0.40.0"
 
 # Host scaffolding, Windows x86_64 only, so it cannot reach the Android
