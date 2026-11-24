@@ -23,6 +23,17 @@
   </screenshots>
   <content_rating type="oars-1.1" />
   <releases>
+    <release version="3.17.18" date="2026-11-25">
+      <description>
+        <p>Argus 3.17.18 release:</p>
+        <ul>
+          <li>Zero-vulnerability security hardening with CodeQL static analysis automation</li>
+          <li>Apple Liquid Glass harmonized UI design across player overlays and menus</li>
+          <li>AZSO fast-start streaming engine upgrades (stages 1-5) for low-latency playback</li>
+          <li>Multi-platform release automation for macOS, Windows x64/ARM64, Linux Flatpak/deb/rpm, iOS, Android, and Smart TVs</li>
+        </ul>
+      </description>
+    </release>
     <release version="3.17.17" date="2026-11-24">
       <description>
         <p>Argus 3.17.17 release:</p>
