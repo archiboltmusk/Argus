@@ -32,7 +32,7 @@ url = "2"
 # the shipped lock is the whole point: unpinned, this crate would answer a
 # question about a dependency graph Argus does not ship.
 aws-lc-rs = "=1.19.0"
-aws-lc-sys = "=0.40.0"
+aws-lc-sys = "=0.47.0"
 
 # Host scaffolding, Windows x86_64 only, so it cannot reach the Android
 # cross-build. aws-lc-sys assembles x86_64 asm with NASM and panics outright
