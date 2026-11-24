@@ -105,21 +105,21 @@ export function CastMenu({
       role="dialog"
       aria-label={t("Cast to TV or speaker")}
       onMouseDown={(e) => e.stopPropagation()}
-      className="animate-menu-pop fixed z-[140] w-[320px] max-w-[calc(100vw-32px)] rounded-md bg-elevated p-4 shadow-[0_10px_30px_-12px_rgba(0,0,0,0.6)]"
+      className="animate-menu-pop fixed z-[140] w-[320px] max-w-[calc(100vw-32px)] apple-liquid-glass p-4"
       style={{
         right: anchor ? window.innerWidth - anchor.right : 24,
         bottom: anchor ? window.innerHeight - anchor.bottom + 82 : 150,
       }}
     >
-      <div className="mb-2 flex items-center justify-between">
-        <span className="flex items-center gap-2 text-[12.5px] font-semibold text-ink">
-          <Cast size={13} strokeWidth={2.4} />
+      <div className="mb-3 flex items-center justify-between">
+        <span className="flex items-center gap-2 text-[13px] font-semibold text-white">
+          <Cast size={14} strokeWidth={2.4} className="text-white/80" />
           {t("Cast to TV or speaker")}
         </span>
         <button
           onClick={onClose}
           aria-label={t("Close")}
-          className="flex h-6 w-6 items-center justify-center rounded-full text-ink-subtle transition-colors hover:bg-raised hover:text-ink"
+          className="flex h-6 w-6 items-center justify-center rounded-full text-white/60 transition-colors hover:bg-white/10 hover:text-white"
         >
           <X size={13} />
         </button>
@@ -131,29 +131,29 @@ export function CastMenu({
             role="switch"
             aria-checked={burnSubsOnTv}
             onClick={() => setBurnSubsOnTv(!burnSubsOnTv)}
-            className="group mb-2 flex w-full items-start gap-3 rounded-xl border border-edge-soft bg-canvas/40 px-3 py-2.5 text-start transition-colors hover:border-edge hover:bg-canvas/55"
+            className="group mb-2.5 flex w-full items-start gap-3 rounded-2xl border border-white/12 bg-white/[0.05] p-3 text-start transition-all hover:border-white/22 hover:bg-white/[0.09]"
           >
             <span
-              className={`mt-0.5 flex h-[18px] w-8 shrink-0 items-center rounded-full px-[3px] transition-colors duration-200 ${
-                burnSubsOnTv ? "bg-accent" : "bg-raised"
+              className={`mt-0.5 flex h-[20px] w-9 shrink-0 items-center rounded-full px-[2px] transition-colors duration-200 ${
+                burnSubsOnTv ? "bg-accent shadow-xs" : "bg-white/20"
               }`}
             >
               <span
-                className={`h-3 w-3 rounded-full bg-canvas shadow-sm transition-transform duration-200 ease-[cubic-bezier(0.22,1,0.36,1)] ${
-                  burnSubsOnTv ? "translate-x-[14px] rtl:-translate-x-[14px]" : "translate-x-0"
+                className={`h-4 w-4 rounded-full bg-white shadow-md transition-transform duration-200 ease-[cubic-bezier(0.22,1,0.36,1)] ${
+                  burnSubsOnTv ? "translate-x-[16px] rtl:-translate-x-[16px]" : "translate-x-0"
                 }`}
               />
             </span>
             <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-              <span className="flex items-center gap-1.5 text-[12.5px] font-semibold text-ink">
+              <span className="flex items-center gap-1.5 text-[12.5px] font-semibold text-white">
                 <Subtitles
                   size={12.5}
                   strokeWidth={2.4}
-                  className={burnSubsOnTv ? "text-accent" : "text-ink-subtle"}
+                  className={burnSubsOnTv ? "text-accent" : "text-white/60"}
                 />
                 {t("Burn in subtitles")}
               </span>
-              <span className="text-[11px] leading-snug text-ink-subtle">
+              <span className="text-[11px] leading-snug text-white/65">
                 {burnSubsOnTv
                   ? t(
                       "Subtitles are baked into the picture so they always show. Re-encodes the video.",
@@ -162,7 +162,7 @@ export function CastMenu({
               </span>
             </span>
           </button>
-          <div className="mb-2 h-px bg-edge-soft" />
+          <div className="mb-2 h-px bg-white/10" />
         </>
       )}
       {loading ? (

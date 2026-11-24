@@ -61,17 +61,17 @@ export function AspectMenu({
         </button>
       </Tooltip>
       {open && (
-        <div className="fixed end-14 bottom-[150px] flex max-h-[calc(100vh-174px)] w-[360px] max-w-[calc(100vw-72px)] flex-col overflow-y-auto rounded-md bg-elevated shadow-[0_10px_30px_-12px_rgba(0,0,0,0.6)] animate-menu-pop">
+        <div className="fixed end-14 bottom-[150px] flex max-h-[calc(100vh-174px)] w-[360px] max-w-[calc(100vw-72px)] flex-col overflow-y-auto apple-liquid-glass animate-menu-pop z-50 text-white">
           <div className="p-3">
             <div className="flex items-center justify-between px-1 pb-2">
-              <span className="text-[10.5px] font-semibold uppercase tracking-[0.18em] text-ink-subtle">
+              <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-white/60">
                 {t("Picture")}
               </span>
               {pictureActive && (
                 <button
                   type="button"
                   onClick={() => applyPatch(Object.fromEntries(PICTURE_KEYS.map((k) => [k, null])))}
-                  className="flex items-center gap-1 text-[11.5px] font-semibold text-ink-subtle transition-colors hover:text-ink"
+                  className="flex items-center gap-1 text-[11.5px] font-semibold text-white/60 transition-colors hover:text-white"
                 >
                   <RotateCcw size={11} strokeWidth={2.4} />
                   {t("Reset")}
@@ -85,7 +85,7 @@ export function AspectMenu({
                   type="button"
                   title={t(tpl.sub)}
                   onClick={() => applyPreset(PICTURE_KEYS, tpl.patch)}
-                  className="rounded-full border border-edge-soft bg-canvas/40 px-3 py-1.5 text-[12px] font-semibold text-ink-muted transition-colors hover:border-edge hover:text-ink"
+                  className="rounded-full border border-white/12 bg-white/6 px-3 py-1.5 text-[12px] font-medium text-white/85 backdrop-blur-md transition-colors hover:border-white/25 hover:bg-white/14 hover:text-white"
                 >
                   {t(tpl.label)}
                 </button>
@@ -99,8 +99,8 @@ export function AspectMenu({
               <TweakSlider compact tweaks={tweaks} setTweak={setTweak} mpvKey="sharpen" label={t("Sharpen")} min={0} max={2} step={0.05} def={0} fmt={(v) => v.toFixed(2)} />
             </div>
           </div>
-          <div className="border-t border-edge-soft/60 p-2">
-            <div className="px-3 pb-1.5 pt-1 text-[10.5px] font-semibold uppercase tracking-[0.18em] text-ink-subtle">
+          <div className="border-t border-white/10 p-2">
+            <div className="px-3 pb-1.5 pt-1 text-[11px] font-bold uppercase tracking-[0.18em] text-white/60">
               {t("Aspect ratio")}
             </div>
             <div className="flex flex-col gap-0.5">
@@ -114,12 +114,12 @@ export function AspectMenu({
                       setOpen(false);
                     }}
                     className={`flex h-10 w-full items-center justify-between rounded-lg px-3 text-start text-[14px] transition-colors ${
-                      sel ? "bg-elevated text-ink ring-1 ring-edge" : "text-ink-muted hover:bg-canvas/55 hover:text-ink"
+                      sel ? "bg-white/20 text-white font-semibold ring-1 ring-white/25 shadow-xs" : "text-white/80 hover:bg-white/10 hover:text-white"
                     }`}
                   >
                     <span className={sel ? "font-medium" : ""}>{t(m.label)}</span>
                     {m.id === "fit" && (
-                      <span className="text-[10.5px] font-semibold uppercase tracking-[0.16em] text-ink-subtle">
+                      <span className="text-[10.5px] font-semibold uppercase tracking-[0.16em] text-white/50">
                         {t("default")}
                       </span>
                     )}

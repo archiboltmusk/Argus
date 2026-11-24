@@ -83,9 +83,9 @@ export function FiltersPanel({
   const showFlagged = filters.rejectedCount > 0;
 
   return (
-    <div className="flex h-full flex-col bg-[#111215] text-ink selection:bg-accent/30">
+    <div className="flex h-full flex-col bg-transparent text-ink selection:bg-accent/30">
       {/* Panel Header */}
-      <div className="flex shrink-0 items-center justify-between border-b border-white/10 px-4 py-3">
+      <div className="flex shrink-0 items-center justify-between border-b border-white/10 px-4 py-3 bg-white/[0.02]">
         <div className="flex items-center gap-2 text-[13px] font-bold text-white">
           <SlidersHorizontal size={14} className="text-accent" />
           <span>{t("Filters")}</span>
@@ -313,8 +313,7 @@ export function FiltersMenu({
       {/* Fallback floating dropdown if parent doesn't handle side-panel docking */}
       {onToggle === undefined && localOpen && (
         <div
-          className="absolute end-0 top-full z-50 mt-2 max-h-[70vh] w-[320px] overflow-hidden rounded-xl border border-white/20 bg-[#111215] shadow-[0_24px_64px_rgba(0,0,0,0.95)]"
-          style={{ backgroundColor: "#111215" }}
+          className="absolute end-0 top-full z-50 mt-2 max-h-[70vh] w-[320px] overflow-hidden apple-liquid-glass p-1"
         >
           <FiltersPanel filters={filters} onClose={() => setLocalOpen(false)} />
         </div>

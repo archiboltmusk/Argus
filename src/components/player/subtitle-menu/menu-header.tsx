@@ -35,11 +35,11 @@ export function MenuHeader(p: Props) {
   const canAutoSync = p.selectedTrack?.external === true || autoSyncOn;
 
   return (
-    <header className="flex items-center justify-between border-b border-edge-soft pe-4 ps-10 py-2.5">
+    <header className="flex items-center justify-between border-b border-white/10 bg-white/[0.02] pe-4 ps-10 py-2.5">
       <div className="flex items-baseline gap-2.5">
-        <span className="text-[13.5px] font-semibold text-ink">{tr("Subtitles")}</span>
+        <span className="text-[13.5px] font-semibold text-white">{tr("Subtitles")}</span>
         {p.count > 0 && (
-          <span className="text-[11.5px] tabular-nums text-ink-subtle">{p.count}</span>
+          <span className="text-[11.5px] tabular-nums text-white/60">{p.count}</span>
         )}
       </div>
 

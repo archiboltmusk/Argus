@@ -112,18 +112,18 @@ export function VariantRow({
   return (
     <div
       data-subtitle-row
-      className={`group/row flex items-stretch rounded-md transition-colors ${
-        selected || isSecondary ? "bg-raised ring-1 ring-edge" : "hover:bg-raised/60"
+      className={`group/row flex items-stretch rounded-xl transition-all ${
+        selected || isSecondary ? "bg-white/20 ring-1 ring-white/25 shadow-xs" : "hover:bg-white/10"
       }`}
     >
       <button
         type="button"
         onClick={onPick}
-        className="flex min-w-0 flex-1 items-start gap-2.5 px-2.5 py-2 text-start"
+        className="flex min-w-0 flex-1 items-start gap-2.5 px-3 py-2 text-start"
       >
         <span
           className={`mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full ${
-            selected ? "bg-accent text-canvas" : "bg-raised text-ink-subtle"
+            selected ? "bg-white text-black" : "bg-white/15 text-white/40"
           }`}
           aria-hidden
         >
@@ -136,10 +136,10 @@ export function VariantRow({
               title={realRelease && releaseLabel ? realRelease : undefined}
             />
           </div>
-          <div className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-[10.5px] text-ink-subtle">
-            <span className="font-semibold uppercase tracking-[0.1em]">{langName}</span>
+          <div className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-[10.5px] text-white/60">
+            <span className="font-semibold uppercase tracking-[0.1em] text-white/80">{langName}</span>
             <span aria-hidden>·</span>
-            <span className={isImported ? "font-semibold text-accent" : ""}>{detailSource}</span>
+            <span className={isImported ? "font-semibold text-white" : ""}>{detailSource}</span>
             {codec && (
               <>
                 <span aria-hidden>·</span>
@@ -151,10 +151,10 @@ export function VariantRow({
                 key={t.label}
                 className={`rounded px-1 py-px text-[9.5px] font-bold uppercase tracking-[0.1em] ${
                   t.tone === "warn"
-                    ? "bg-amber-400/15 text-amber-200 ring-1 ring-amber-400/30"
+                    ? "bg-amber-400/20 text-amber-200 ring-1 ring-amber-400/40"
                     : t.tone === "info"
-                      ? "bg-sky-400/15 text-sky-200 ring-1 ring-sky-400/30"
-                      : "bg-raised text-ink-muted ring-1 ring-edge-soft"
+                      ? "bg-sky-400/20 text-sky-200 ring-1 ring-sky-400/40"
+                      : "bg-white/10 text-white/80 ring-1 ring-white/15"
                 }`}
               >
                 {t.label}
@@ -174,10 +174,10 @@ export function VariantRow({
             type="button"
             onClick={onPickSecondary}
             aria-pressed={isSecondary}
-            className={`my-1 me-1 flex shrink-0 items-center gap-1 rounded-md px-2 text-[10px] font-bold uppercase tracking-[0.1em] transition-opacity ${
+            className={`my-1 me-1 flex shrink-0 items-center gap-1 rounded-lg px-2 text-[10px] font-bold uppercase tracking-[0.1em] transition-opacity ${
               isSecondary
-                ? "bg-elevated text-ink ring-1 ring-edge"
-                : "text-ink-subtle opacity-0 hover:text-ink focus-visible:opacity-100 group-hover/row:opacity-100"
+                ? "bg-white/25 text-white ring-1 ring-white/30"
+                : "text-white/50 opacity-0 hover:text-white focus-visible:opacity-100 group-hover/row:opacity-100"
             }`}
           >
             <Languages size={11} strokeWidth={2.4} />

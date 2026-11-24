@@ -268,8 +268,8 @@ export function EpisodePanel({
         aria-label={t("Up next")}
         className={`absolute top-0 h-full w-full max-w-[440px] overflow-hidden shadow-[0_30px_80px_-30px_rgba(0,0,0,0.85)] transition-transform duration-300 ease-out ${
           corner === "top-left" || corner === "bottom-left"
-            ? "left-0 rounded-r-[12px]"
-            : "right-0 rounded-l-[12px]"
+            ? "left-0 rounded-r-[24px] border-e border-white/12"
+            : "right-0 rounded-l-[24px] border-s border-white/12"
         } ${
           open
             ? "translate-x-0"
@@ -278,7 +278,7 @@ export function EpisodePanel({
               : "translate-x-full"
         }`}
       >
-        <div className="relative flex h-full w-full flex-col overflow-hidden bg-canvas">
+        <div className="relative flex h-full w-full flex-col overflow-hidden bg-black/60 backdrop-blur-2xl text-white">
           {pickingFor ? (
             <StreamsView
               meta={meta}
@@ -289,12 +289,12 @@ export function EpisodePanel({
             />
           ) : (
             <>
-              <header className="flex items-center justify-between gap-3 px-6 pb-4 pt-7">
+              <header className="flex items-center justify-between gap-3 px-6 pb-4 pt-7 border-b border-white/8">
                 <div>
-                  <p className="text-[10.5px] font-semibold uppercase tracking-[0.32em] text-ink-subtle">
+                  <p className="text-[10.5px] font-bold uppercase tracking-[0.32em] text-white/50">
                     {t("Up Next")}
                   </p>
-                  <h2 className="mt-1 font-display text-[22px] font-semibold leading-tight text-ink">
+                  <h2 className="mt-1 font-display text-[22px] font-semibold leading-tight text-white">
                     {meta.name}
                   </h2>
                 </div>
@@ -303,14 +303,14 @@ export function EpisodePanel({
                     <div
                       role="group"
                       aria-label={t("Next and Previous behavior")}
-                      className="flex gap-0.5 rounded-full bg-elevated/60 p-0.5 ring-1 ring-edge-soft"
+                      className="flex gap-0.5 rounded-full bg-white/10 p-0.5 ring-1 ring-white/15"
                     >
                       <button
                         type="button"
                         onClick={() => update({ queueDrivesNav: true })}
                         aria-pressed={settings.queueDrivesNav}
                         title={t("Next and Previous follow your queue")}
-                        className={`rounded-full px-2.5 py-1.5 text-[11px] font-semibold transition-colors ${settings.queueDrivesNav ? "bg-accent text-canvas" : "text-ink-muted hover:text-ink"}`}
+                        className={`rounded-full px-2.5 py-1.5 text-[11px] font-semibold transition-colors ${settings.queueDrivesNav ? "bg-white text-black font-bold shadow-xs" : "text-white/70 hover:text-white"}`}
                       >
                         {t("Queue")}
                       </button>
@@ -319,7 +319,7 @@ export function EpisodePanel({
                         onClick={() => update({ queueDrivesNav: false })}
                         aria-pressed={!settings.queueDrivesNav}
                         title={t("Next and Previous follow this show")}
-                        className={`rounded-full px-2.5 py-1.5 text-[11px] font-semibold transition-colors ${!settings.queueDrivesNav ? "bg-accent text-canvas" : "text-ink-muted hover:text-ink"}`}
+                        className={`rounded-full px-2.5 py-1.5 text-[11px] font-semibold transition-colors ${!settings.queueDrivesNav ? "bg-white text-black font-bold shadow-xs" : "text-white/70 hover:text-white"}`}
                       >
                         {t("This show")}
                       </button>

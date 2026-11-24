@@ -167,8 +167,8 @@ export function SeekStepBtn({
         </button>
       </Tooltip>
       {pickerOpen && (
-        <div className="absolute bottom-[calc(100%+12px)] left-1/2 z-30 w-60 max-w-[calc(100vw-32px)] -translate-x-1/2 rounded-md bg-elevated p-3 shadow-[0_10px_30px_-12px_rgba(0,0,0,0.6)] animate-menu-pop">
-          <div className="mb-2.5 text-[10.5px] font-semibold uppercase tracking-[0.2em] text-ink-subtle">
+        <div className="absolute bottom-[calc(100%+12px)] left-1/2 z-30 w-60 max-w-[calc(100vw-32px)] -translate-x-1/2 apple-liquid-glass p-3.5 animate-menu-pop text-white">
+          <div className="mb-2.5 text-[10.5px] font-bold uppercase tracking-[0.2em] text-white/60">
             {word}
           </div>
           <SeekGroup
@@ -178,7 +178,7 @@ export function SeekStepBtn({
             onPick={commitChoice}
             ariaFor={(n) => t("{word} {n} seconds", { word, n })}
           />
-          <div className="my-2.5 h-px bg-edge-soft" />
+          <div className="my-2.5 h-px bg-white/10" />
           <SeekGroup
             label={t("Shift + Arrows")}
             value={shortSeconds}
@@ -189,7 +189,7 @@ export function SeekStepBtn({
           <button
             type="button"
             onClick={() => setExpanded((e) => !e)}
-            className="mt-2.5 flex w-full items-center justify-center gap-1 rounded-lg py-1.5 text-[11.5px] font-medium text-ink-subtle transition-colors hover:bg-canvas/55 hover:text-ink"
+            className="mt-2.5 flex w-full items-center justify-center gap-1 rounded-xl py-1.5 text-[11.5px] font-semibold text-white/70 transition-colors hover:bg-white/10 hover:text-white"
           >
             {expanded ? t("Show less") : t("All times")}
             <ChevronDown
@@ -219,7 +219,7 @@ function SeekGroup({
 }) {
   return (
     <div>
-      <div className="mb-1.5 text-[9.5px] font-semibold uppercase tracking-[0.14em] text-ink-subtle">
+      <div className="mb-1.5 text-[9.5px] font-bold uppercase tracking-[0.14em] text-white/50">
         {label}
       </div>
       <div className="flex flex-wrap gap-1.5">
@@ -231,10 +231,10 @@ function SeekGroup({
               type="button"
               onClick={() => onPick(s)}
               aria-label={ariaFor(s)}
-              className={`flex h-9 min-w-[44px] items-center justify-center rounded-lg px-2.5 text-[13px] tabular-nums transition-colors ${
+              className={`flex h-9 min-w-[44px] items-center justify-center rounded-xl px-2.5 text-[13px] tabular-nums transition-all ${
                 sel
-                  ? "bg-accent/15 font-semibold text-accent ring-1 ring-inset ring-accent/40"
-                  : "bg-canvas/50 text-ink-muted hover:bg-canvas/70 hover:text-ink"
+                  ? "bg-white/25 font-bold text-white ring-1 ring-white/30 shadow-xs"
+                  : "bg-white/10 text-white/80 hover:bg-white/18 hover:text-white border border-white/8"
               }`}
             >
               {s}s

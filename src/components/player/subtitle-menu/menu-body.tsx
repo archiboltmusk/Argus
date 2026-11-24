@@ -188,7 +188,7 @@ export function MenuBody(props: SubtitleMenuProps & { onClose: () => void }) {
       {/* ── Body ── */}
       <div className="flex min-h-0 flex-1">
         {/* Language sidebar */}
-        <aside className="flex w-[128px] shrink-0 flex-col gap-0.5 overflow-y-auto border-e border-edge-soft bg-canvas/30 p-2">
+        <aside className="flex w-[136px] shrink-0 flex-col gap-0.5 overflow-y-auto border-e border-white/10 bg-white/[0.02] p-2">
           <button
             onClick={() => {
               if (offSelected) return;
@@ -196,15 +196,15 @@ export function MenuBody(props: SubtitleMenuProps & { onClose: () => void }) {
               onClose();
             }}
             disabled={offSelected}
-            className={`flex items-center gap-2 rounded-md px-2.5 py-2 text-start text-[12.5px] font-semibold transition-colors ${
+            className={`flex items-center gap-2 rounded-xl px-2.5 py-2 text-start text-[12.5px] font-semibold transition-all ${
               offSelected
-                ? "text-ink-subtle"
-                : "bg-elevated text-ink ring-1 ring-edge hover:bg-raised"
+                ? "bg-white/5 text-white/40"
+                : "bg-white/20 text-white ring-1 ring-white/25 shadow-xs hover:bg-white/25"
             }`}
           >
             <span
               className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-full ${
-                offSelected ? "bg-raised text-ink-subtle" : "bg-accent text-canvas"
+                offSelected ? "bg-white/10 text-white/30" : "bg-white text-black"
               }`}
             >
               {offSelected ? null : <Check size={9} strokeWidth={3} />}
@@ -219,10 +219,10 @@ export function MenuBody(props: SubtitleMenuProps & { onClose: () => void }) {
                 setAiGeneratorOpen((v) => !v);
                 setSearchOpen(false);
               }}
-              className={`mt-1 flex items-center gap-2 rounded-md px-2.5 py-1.5 text-start text-[12px] font-semibold transition-colors ${
+              className={`mt-1 flex items-center gap-2 rounded-xl px-2.5 py-1.5 text-start text-[12px] font-semibold transition-all ${
                 aiGeneratorOpen
-                  ? "bg-accent/20 text-accent ring-1 ring-accent/30"
-                  : "text-accent/90 hover:bg-accent/10 hover:text-accent"
+                  ? "bg-white/25 text-white ring-1 ring-white/30 shadow-xs"
+                  : "text-white/80 hover:bg-white/10 hover:text-white"
               }`}
             >
               {liveSession.isActive ? (
@@ -232,18 +232,18 @@ export function MenuBody(props: SubtitleMenuProps & { onClose: () => void }) {
               )}
               <span className="flex-1 truncate">{tr("AI Generator")}</span>
               {liveSession.isActive && (
-                <span className="text-[10px] font-mono font-bold text-accent">{liveSession.progressPct}%</span>
+                <span className="text-[10px] font-mono font-bold text-white">{liveSession.progressPct}%</span>
               )}
             </button>
           )}
 
           {secondaryTrack && (
-            <div className="mt-1 flex items-center gap-1 rounded-md bg-accent/10 px-2 py-1.5 ring-1 ring-accent/25">
+            <div className="mt-1 flex items-center gap-1 rounded-xl bg-white/10 px-2.5 py-1.5 ring-1 ring-white/20 border border-white/10">
               <div className="flex min-w-0 flex-1 flex-col">
-                <span className="text-[9.5px] font-bold uppercase tracking-[0.14em] text-accent">
+                <span className="text-[9.5px] font-bold uppercase tracking-[0.14em] text-white/60">
                   {tr("2nd")}
                 </span>
-                <span className="truncate text-[11px] font-medium text-ink">
+                <span className="truncate text-[11px] font-medium text-white">
                   {subtitleTrackLanguageLabel(secondaryTrack)}
                 </span>
               </div>
@@ -251,7 +251,7 @@ export function MenuBody(props: SubtitleMenuProps & { onClose: () => void }) {
                 type="button"
                 onClick={() => pickSecondary(null)}
                 aria-label={tr("Stop showing as second subtitle")}
-                className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-ink-subtle transition-colors hover:bg-canvas/60 hover:text-ink"
+                className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-white/60 transition-colors hover:bg-white/20 hover:text-white"
               >
                 <X size={11} strokeWidth={2.6} />
               </button>
@@ -259,7 +259,7 @@ export function MenuBody(props: SubtitleMenuProps & { onClose: () => void }) {
           )}
 
           {groups.length > 0 && (
-            <div className="mt-1.5 mb-0.5 px-2.5 text-[10px] font-bold uppercase tracking-[0.16em] text-ink-subtle">
+            <div className="mt-2 mb-1 px-2 text-[10px] font-bold uppercase tracking-[0.16em] text-white/50">
               {tr("Languages")}
             </div>
           )}
@@ -270,15 +270,15 @@ export function MenuBody(props: SubtitleMenuProps & { onClose: () => void }) {
                 setSearchFocusLang(null);
                 setSearchOpen(false);
               }}
-              className={`flex items-center gap-2 rounded-md px-2.5 py-2 text-start text-[12.5px] font-medium transition-colors ${
+              className={`flex items-center gap-2 rounded-xl px-2.5 py-2 text-start text-[12.5px] font-medium transition-all ${
                 allLangs
-                  ? "bg-elevated text-ink ring-1 ring-edge"
-                  : "text-ink-muted hover:bg-elevated/60 hover:text-ink"
+                  ? "bg-white/20 text-white font-semibold ring-1 ring-white/25 shadow-xs"
+                  : "text-white/80 hover:bg-white/10 hover:text-white"
               }`}
             >
               <Languages size={14} strokeWidth={2} className="shrink-0" />
               <span className="flex-1 truncate">{tr("All languages")}</span>
-              <span className="text-[10.5px] tabular-nums text-ink-subtle">
+              <span className="text-[10.5px] tabular-nums text-white/50">
                 {languageTracks.length}
               </span>
             </button>
@@ -294,16 +294,16 @@ export function MenuBody(props: SubtitleMenuProps & { onClose: () => void }) {
                   setSearchFocusLang(null);
                   setSearchOpen(false);
                 }}
-                className={`group flex items-center gap-2 rounded-md px-2.5 py-2 text-start text-[12.5px] transition-colors ${
+                className={`group flex items-center gap-2 rounded-xl px-2.5 py-2 text-start text-[12.5px] transition-all ${
                   isActive
-                    ? "bg-elevated text-ink ring-1 ring-edge"
-                    : "text-ink-muted hover:bg-elevated/60 hover:text-ink"
+                    ? "bg-white/20 text-white font-semibold ring-1 ring-white/25 shadow-xs"
+                    : "text-white/80 hover:bg-white/10 hover:text-white"
                 }`}
               >
                 <Flag language={g.langDisplay} size="sm" showLabel={false} />
                 <span className="flex-1 truncate font-medium">{g.langDisplay}</span>
-                {hasSelected && <span aria-hidden className="h-1.5 w-1.5 rounded-full bg-accent" />}
-                <span className="text-[10.5px] tabular-nums text-ink-subtle">
+                {hasSelected && <span aria-hidden className="h-1.5 w-1.5 rounded-full bg-white shadow-[0_0_6px_white]" />}
+                <span className="text-[10.5px] tabular-nums text-white/50">
                   {g.variants.length}
                 </span>
               </button>
@@ -311,7 +311,7 @@ export function MenuBody(props: SubtitleMenuProps & { onClose: () => void }) {
           })}
           {generatedOptions.length > 0 && (
             <>
-              <div className="mt-1.5 mb-0.5 px-2.5 text-[10px] font-bold uppercase tracking-[0.16em] text-ink-subtle">
+              <div className="mt-2 mb-1 px-2 text-[10px] font-bold uppercase tracking-[0.16em] text-white/50">
                 {tr("Translations")}
               </div>
               {generatedOptions.map((option) => (
@@ -321,15 +321,15 @@ export function MenuBody(props: SubtitleMenuProps & { onClose: () => void }) {
                     setSearchFocusLang(option.key);
                     setSearchOpen(true);
                   }}
-                  className={`flex items-center gap-2 rounded-md px-2.5 py-2 text-start text-[12.5px] transition-colors ${
+                  className={`flex items-center gap-2 rounded-xl px-2.5 py-2 text-start text-[12.5px] transition-all ${
                     searchOpen && searchFocusLang === option.key
-                      ? "bg-elevated text-ink ring-1 ring-edge"
-                      : "text-ink-muted hover:bg-elevated/60 hover:text-ink"
+                      ? "bg-white/20 text-white font-semibold ring-1 ring-white/25 shadow-xs"
+                      : "text-white/80 hover:bg-white/10 hover:text-white"
                   }`}
                 >
                   <Sparkles size={14} strokeWidth={2} className="shrink-0" />
                   <span className="flex-1 truncate font-medium">{option.label}</span>
-                  <span className="text-[10.5px] tabular-nums text-ink-subtle">{option.count}</span>
+                  <span className="text-[10.5px] tabular-nums text-white/50">{option.count}</span>
                 </button>
               ))}
             </>
@@ -360,7 +360,7 @@ export function MenuBody(props: SubtitleMenuProps & { onClose: () => void }) {
           ) : (
             <>
               {!searchOpen && languageTracks.length > 0 && (activeGroup || allLangs) && (
-            <div className="flex flex-wrap items-center gap-1.5 border-b border-edge-soft bg-canvas/15 px-3 py-2">
+            <div className="flex flex-wrap items-center gap-1.5 border-b border-white/10 bg-white/[0.02] px-3 py-2">
               <Tab active={sourceFilter === "all"} onClick={() => setSourceFilter("all")}>
                 {tr("All")} <Count value={languageTracks.length} />
               </Tab>
@@ -395,16 +395,16 @@ export function MenuBody(props: SubtitleMenuProps & { onClose: () => void }) {
           )}
 
           {!searchOpen && betterMatch && (
-            <div className="flex shrink-0 items-center gap-3 border-b border-edge-soft bg-accent/[0.07] px-3 py-2">
-              <span className="min-w-0 flex-1 truncate text-[12px] text-ink-muted">
-                <span className="font-semibold text-ink">{tr("Better match")}</span>
-                <span className="text-ink-subtle"> · </span>
+            <div className="flex shrink-0 items-center gap-3 border-b border-white/10 bg-white/10 px-3.5 py-2.5">
+              <span className="min-w-0 flex-1 truncate text-[12px] text-white/80">
+                <span className="font-bold text-white">{tr("Better match")}</span>
+                <span className="text-white/40"> · </span>
                 {variantTitle(betterMatch.track)}
               </span>
               <button
                 type="button"
                 onClick={applyBestMatch}
-                className="shrink-0 rounded-full bg-accent px-2.5 py-1 text-[11.5px] font-semibold text-canvas transition-[filter] hover:brightness-110"
+                className="shrink-0 rounded-full bg-white px-3 py-1 text-[11.5px] font-bold text-black transition-all hover:bg-white/90 shadow-sm"
               >
                 {tr("Use it")}
               </button>
@@ -412,7 +412,7 @@ export function MenuBody(props: SubtitleMenuProps & { onClose: () => void }) {
           )}
 
           {search?.status === "searching" && (
-            <p className="flex shrink-0 items-center gap-2 border-b border-edge-soft px-3 py-1.5 text-[11.5px] text-ink-subtle">
+            <p className="flex shrink-0 items-center gap-2 border-b border-white/10 px-3 py-1.5 text-[11.5px] text-white/60">
               <Loader2 size={12} className="animate-spin motion-reduce:animate-none" />
               {tr("Searching every source for more subtitles…")}
             </p>
@@ -570,13 +570,13 @@ export function MenuBody(props: SubtitleMenuProps & { onClose: () => void }) {
           )}
 
           {!aiGeneratorOpen && (
-            <div className="flex shrink-0 items-stretch border-t border-edge-soft">
+            <div className="flex shrink-0 items-stretch border-t border-white/10 bg-white/[0.02]">
               <button
                 onClick={() => {
                   setSearchFocusLang(null);
                   setSearchOpen((v) => !v);
                 }}
-                className="flex flex-1 items-center gap-2 px-3 py-2 text-start text-[12px] font-semibold text-ink-muted transition-colors hover:bg-canvas/40 hover:text-ink"
+                className="flex flex-1 items-center gap-2 px-3.5 py-2.5 text-start text-[12px] font-semibold text-white/80 transition-colors hover:bg-white/10 hover:text-white"
               >
                 <SearchIcon size={12} strokeWidth={2.2} />
                 {searchOpen ? tr("Hide search") : tr("Find more subtitles")}
@@ -588,10 +588,10 @@ export function MenuBody(props: SubtitleMenuProps & { onClose: () => void }) {
                       <button
                         type="button"
                         onClick={() => setAiGeneratorOpen(true)}
-                        className={`flex h-full shrink-0 items-center gap-1.5 border-s border-edge-soft px-3 py-2 text-[12px] font-semibold transition-colors ${
+                        className={`flex h-full shrink-0 items-center gap-1.5 border-s border-white/10 px-3.5 py-2.5 text-[12px] font-semibold transition-colors ${
                           liveSession.isActive
-                            ? "bg-accent/15 text-accent"
-                            : "text-ink-muted hover:text-ink hover:bg-canvas/40"
+                            ? "bg-white/20 text-white font-bold"
+                            : "text-white/80 hover:text-white hover:bg-white/10"
                         }`}
                       >
                         {liveSession.isActive ? (
@@ -606,7 +606,7 @@ export function MenuBody(props: SubtitleMenuProps & { onClose: () => void }) {
                   <HoverTooltip label={tr("Load a .srt or .ass from your computer")} align="end">
                     <button
                       onClick={() => void loadLocal()}
-                      className="flex h-full shrink-0 items-center gap-2 border-s border-edge-soft px-3 py-2 text-[12px] font-semibold text-ink-muted transition-colors hover:bg-canvas/40 hover:text-ink"
+                      className="flex h-full shrink-0 items-center gap-2 border-s border-white/10 px-3.5 py-2.5 text-[12px] font-semibold text-white/80 transition-colors hover:bg-white/10 hover:text-white"
                     >
                       <FolderOpen size={12} strokeWidth={2.2} />
                       {tr("Load file")}

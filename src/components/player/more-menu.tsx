@@ -167,7 +167,7 @@ export function MoreMenu({
             </button>
           </Tooltip>
           {open && (
-            <div className="absolute end-0 top-[calc(100%+10px)] w-64 max-w-[calc(100vw-32px)] overflow-hidden rounded-md bg-elevated p-1.5 shadow-[0_10px_30px_-12px_rgba(0,0,0,0.6)]">
+            <div className="absolute end-0 top-[calc(100%+10px)] w-64 max-w-[calc(100vw-32px)] overflow-hidden apple-liquid-glass p-1.5 animate-menu-pop z-50 text-white">
               {rows.map((r) => (
                 <MoreRow key={r.key} spec={r} />
               ))}
@@ -215,7 +215,7 @@ function MoreRow({ spec }: { spec: MoreRowSpec }) {
     <button
       type="button"
       onClick={onClick}
-      className="flex h-11 w-full items-center gap-3 rounded-lg px-3 text-start text-[13.5px] text-ink-muted transition-colors hover:bg-canvas/55 hover:text-ink"
+      className="flex h-11 w-full items-center gap-3 rounded-xl px-3 text-start text-[13.5px] text-white/80 transition-all hover:bg-white/12 hover:text-white"
     >
       <span
         className={`flex h-5 w-5 shrink-0 items-center justify-center ${done ? "text-success" : "text-ink-subtle"}`}
