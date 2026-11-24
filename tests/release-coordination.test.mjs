@@ -14,7 +14,8 @@ test("one CI release stages Mac as a draft and calls the remaining desktop build
   assert.doesNotMatch(desktop, /workflow_run:/);
 });
 test("publication requires both platform builds and all signed platform entries", () => {
-  assert.match(desktop, /needs.windows.result == 'success' && needs.linux.result == 'success'/);
+  assert.match(desktop, /needs\.windows\.result\s*==\s*['"]success['"]/);
+  assert.match(desktop, /needs\.linux\.result\s*==\s*['"]success['"]/);
   const validation = desktop.indexOf("darwin-aarch64 windows-x86_64 linux-x86_64");
   const feedUpload = desktop.indexOf('gh release upload "$TAG" latest.json');
   const promote = desktop.indexOf("--draft=false --latest=true");
@@ -57,5 +58,5 @@ test("a missing or unsigned OS prevents promotion of the combined update feed", 
 test("implicit build versions cannot replace the stable release", () => {
   assert.match(ci, /release_tag:[\s\S]*?required: true/);
   const stage = ci.slice(ci.indexOf("  publish:"));
-  assert.match(stage, /inputs.release_tag != ''/);
+  assert.match(stage, /inputs\.release_tag\s*!=\s*['"]['"]/);
 });
