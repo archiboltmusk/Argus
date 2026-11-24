@@ -64,7 +64,7 @@ dependencies = [
  "tauri-plugin-dialog",
  "ureq",
  "windows",
- "windows-sys 0.59.0",
+ "windows-sys 0.61.2",
  "winreg",
  "zip",
 ]
