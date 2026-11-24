@@ -141,21 +141,21 @@ export function SwitcherRow({
         }}
         className={`group relative flex w-full items-start gap-3.5 px-5 py-3.5 text-start transition-colors focus-visible:outline-none ${
           isCurrent
-            ? "cursor-default bg-accent-soft/40"
+            ? "cursor-default bg-white/14 text-white"
             : resolving
               ? "cursor-wait opacity-60"
-              : "cursor-pointer hover:bg-canvas/50 focus-visible:bg-canvas/50"
+              : "cursor-pointer hover:bg-white/8 focus-visible:bg-white/8"
         }`}
       >
         {isCurrent && <span className="absolute inset-y-2 start-0 w-[3px] rounded-e-full bg-accent" />}
         <AddonLogo addonId={addonId} addonName={addonName} manifestLogo={addonLogo} size="xl" />
 
         <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-          <p className="truncate text-[14px] font-semibold leading-snug text-ink">{headline}</p>
+          <p className="truncate text-[14px] font-semibold leading-snug text-white">{headline}</p>
           {description && (
             <p
               ref={descRef}
-              className={`whitespace-pre-line text-[12.5px] leading-snug text-ink-muted ${
+              className={`whitespace-pre-line text-[12.5px] leading-snug text-white/70 ${
                 expanded ? "" : "line-clamp-2"
               }`}
             >
@@ -169,7 +169,7 @@ export function SwitcherRow({
                 e.stopPropagation();
                 setExpanded((v) => !v);
               }}
-              className="mt-0.5 inline-flex w-fit items-center gap-1 text-[11.5px] font-semibold text-ink-subtle transition-colors hover:text-ink"
+              className="mt-0.5 inline-flex w-fit items-center gap-1 text-[11.5px] font-semibold text-white/60 transition-colors hover:text-white"
             >
               {expanded ? t("Show less") : t("Show more")}
               <ChevronDown

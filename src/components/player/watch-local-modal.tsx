@@ -62,8 +62,8 @@ export function WatchLocalModal() {
     >
       <div className="mx-4 flex w-full max-w-[440px] flex-col gap-5 apple-liquid-glass-modal px-8 py-8 animate-in zoom-in-95 fade-in duration-200 text-white">
         <div className="flex flex-col gap-1.5 text-center">
-          <h2 className="text-[19px] font-medium tracking-tight text-ink">{t("This is in your local library")}</h2>
-          <p className="text-[13px] leading-relaxed text-ink-muted">
+          <h2 className="text-[19px] font-semibold tracking-tight text-white">{t("This is in your local library")}</h2>
+          <p className="text-[13px] leading-relaxed text-white/75">
             {state.subtitle ? `${state.title} · ${state.subtitle}` : state.title}
           </p>
         </div>
@@ -74,7 +74,7 @@ export function WatchLocalModal() {
                 type="button"
                 autoFocus
                 onClick={() => choose("local")}
-                className="flex h-12 items-center justify-center gap-2.5 rounded-full bg-ink text-[14px] font-semibold text-canvas transition-transform hover:scale-[1.02]"
+                className="flex h-12 items-center justify-center gap-2.5 rounded-full bg-white text-[14px] font-semibold text-black shadow-sm transition-transform hover:scale-[1.02] active:scale-[0.98]"
               >
                 <HardDrive size={16} strokeWidth={2.2} />
                 {state.resumeMs > 0
@@ -84,7 +84,7 @@ export function WatchLocalModal() {
               <button
                 type="button"
                 onClick={() => choose("local-restart")}
-                className="flex h-12 items-center justify-center gap-2.5 rounded-full bg-canvas/50 text-[14px] font-semibold text-ink ring-1 ring-edge-soft transition-colors hover:bg-canvas/70"
+                className="flex h-12 items-center justify-center gap-2.5 rounded-full border border-white/14 bg-white/10 text-[14px] font-semibold text-white shadow-xs transition-colors hover:bg-white/18 hover:border-white/25 active:scale-[0.98]"
               >
                 <RotateCcw size={16} strokeWidth={2.2} />
                 {t("Watch from the beginning")}
@@ -95,7 +95,7 @@ export function WatchLocalModal() {
               type="button"
               autoFocus
               onClick={() => choose("local")}
-              className="flex h-12 items-center justify-center gap-2.5 rounded-full bg-ink text-[14px] font-semibold text-canvas transition-transform hover:scale-[1.02]"
+              className="flex h-12 items-center justify-center gap-2.5 rounded-full bg-white text-[14px] font-semibold text-black shadow-sm transition-transform hover:scale-[1.02] active:scale-[0.98]"
             >
               <HardDrive size={16} strokeWidth={2.2} />
               {t("Watch my local copy")}
@@ -104,7 +104,7 @@ export function WatchLocalModal() {
           <button
             type="button"
             onClick={() => choose("stream")}
-            className="flex h-12 items-center justify-center gap-2.5 rounded-full bg-canvas/50 text-[14px] font-semibold text-ink ring-1 ring-edge-soft transition-colors hover:bg-canvas/70"
+            className="flex h-12 items-center justify-center gap-2.5 rounded-full border border-white/14 bg-white/10 text-[14px] font-semibold text-white shadow-xs transition-colors hover:bg-white/18 hover:border-white/25 active:scale-[0.98]"
           >
             <Wifi size={16} strokeWidth={2.2} />
             {t("Stream / addons")}

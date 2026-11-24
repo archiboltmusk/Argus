@@ -16,6 +16,7 @@ import { SheetLockProvider, useSheetLock } from "./mobile-sheet-lock";
 import { useMobileRemoteStyle } from "./remote-style";
 import { ScrollToTop } from "./scroll-to-top";
 import { MangaNowBar } from "./manga-remote/manga-now-bar";
+import { safeMediaUrl } from "@/lib/security/url";
 
 const RemoteApp = lazy(() => import("@/views/remote-app").then((m) => ({ default: m.RemoteApp })));
 const MangaRemote = lazy(() => import("./manga-remote/manga-remote").then((m) => ({ default: m.MangaRemote })));
@@ -266,8 +267,8 @@ function NowPlayingBar({ onExpand }: { onExpand: () => void }) {
           className="pointer-events-auto flex w-full items-center gap-3 rounded-2xl border border-edge-soft/60 bg-elevated/80 p-2 pe-4 text-start shadow-[0_10px_30px_-10px_rgba(0,0,0,0.6)] backdrop-blur-2xl argus-vibrancy-rail transition-transform duration-[380ms] ease-[cubic-bezier(0.22,1.18,0.36,1)] active:scale-[0.99]"
         >
           <span className="h-11 w-11 shrink-0 overflow-hidden rounded-xl bg-surface">
-            {snap.posterUrl && (
-              <img src={snap.posterUrl} alt="" className="h-full w-full object-cover" />
+            {safeMediaUrl(snap.posterUrl) && (
+              <img src={safeMediaUrl(snap.posterUrl)!} alt="" className="h-full w-full object-cover" />
             )}
           </span>
           <span className="flex min-w-0 flex-1 flex-col">

@@ -59,21 +59,22 @@ createServer(async (req, res) => {
     }
     return;
   }
-  const path = normalize(join(ROOT, url));
-  if (path !== ROOT && !path.startsWith(ROOT + sep)) {
+  const parsedUrl = new URL(req.url || "/", "http://localhost");
+  const targetPath = resolve(ROOT, "." + parsedUrl.pathname);
+  if (targetPath !== ROOT && !targetPath.startsWith(resolve(ROOT) + sep)) {
     res.writeHead(403).end("Forbidden");
     return;
   }
   try {
-    const body = await readFile(path);
+    const body = await readFile(targetPath);
     res.writeHead(200, {
-      "Content-Type": TYPES[extname(path).toLowerCase()] || "application/octet-stream",
+      "Content-Type": TYPES[extname(targetPath).toLowerCase()] || "application/octet-stream",
       "Cache-Control": "no-store",
     });
     res.end(body);
   } catch {
     res.writeHead(404, { "Content-Type": "text/plain; charset=utf-8" });
-    res.end("404 " + url);
+    res.end("404 " + parsedUrl.pathname);
   }
 }).listen(PORT, () => {
   console.log("Argus Shipyard prototype: http://127.0.0.1:" + PORT + "/");

@@ -23,6 +23,7 @@ import { MobileWhosWatching } from "./mobile-whos-watching";
 import { useMobileRemote } from "./mobile-remote";
 import { setMobileRemoteStyle, useMobileRemoteStyle, type MobileRemoteStyle } from "./remote-style";
 import { ARGUS_BUGS_BASE } from "@/lib/config/endpoints";
+import { safeMediaUrl } from "@/lib/security/url";
 import { openUrl } from "@/lib/window";
 
 export function MobileProfile({ onOpenRemote }: { onOpenRemote: () => void }) {
@@ -95,8 +96,8 @@ export function MobileProfile({ onOpenRemote }: { onOpenRemote: () => void }) {
           className="flex h-[84px] w-[84px] items-center justify-center overflow-hidden rounded-full text-[30px] font-bold text-white shadow-[0_10px_28px_-10px_rgba(0,0,0,0.6)] ring-2 ring-edge-soft"
           style={{ background: avatar ? undefined : color }}
         >
-          {avatar ? (
-            <img src={avatar} alt="" className="h-full w-full object-cover" />
+          {safeMediaUrl(avatar) ? (
+            <img src={safeMediaUrl(avatar)!} alt="" className="h-full w-full object-cover" />
           ) : (
             name.slice(0, 1).toUpperCase()
           )}

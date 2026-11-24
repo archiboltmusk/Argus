@@ -385,7 +385,7 @@ export function StreamSwitcher({
               <button
                 onClick={() => refresh()}
                 disabled={refreshing}
-                className="flex h-9 w-9 items-center justify-center rounded-md bg-raised text-ink-muted transition-colors hover:bg-elevated hover:text-ink disabled:cursor-default disabled:opacity-70"
+                className="flex h-9 w-9 items-center justify-center rounded-full border border-white/12 bg-white/10 text-white transition-all hover:bg-white/20 hover:border-white/25 disabled:cursor-default disabled:opacity-50"
                 aria-label={t("Refresh sources")}
               >
                 <RefreshCw
@@ -395,7 +395,7 @@ export function StreamSwitcher({
                 />
               </button>
             </HoverTooltip>
-            <span className="text-[13px] font-semibold tracking-[0.01em] text-ink-muted whitespace-nowrap">
+            <span className="text-[13px] font-semibold tracking-[0.01em] text-white/90 whitespace-nowrap">
               {refreshing
                 ? t("Refreshing…")
                 : cache
@@ -411,7 +411,7 @@ export function StreamSwitcher({
             />
             <button
               onClick={onClose}
-              className="flex h-9 w-9 items-center justify-center rounded-md bg-raised text-ink-muted transition-colors hover:bg-elevated hover:text-ink"
+              className="flex h-9 w-9 items-center justify-center rounded-full border border-white/12 bg-white/10 text-white transition-all hover:bg-white/20 hover:border-white/25"
               aria-label={t("Close")}
             >
               <X size={16} strokeWidth={2.2} />

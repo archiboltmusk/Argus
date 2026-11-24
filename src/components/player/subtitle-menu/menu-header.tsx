@@ -67,7 +67,7 @@ export function MenuHeader(p: Props) {
               p.onClose();
             }}
             aria-label={tr("Interactive transcript")}
-            className="flex h-9 w-9 items-center justify-center rounded-full text-ink-muted transition-colors hover:bg-raised hover:text-ink"
+            className="flex h-9 w-9 items-center justify-center rounded-full text-white/75 transition-colors hover:bg-white/15 hover:text-white"
           >
             <FileText size={17} strokeWidth={2} />
           </button>
@@ -79,8 +79,10 @@ export function MenuHeader(p: Props) {
             onClick={() => update({ dualSubtitlesEnabled: !dualOn })}
             aria-label={tr("Dual subtitles")}
             aria-pressed={dualOn}
-            className={`flex h-9 w-9 items-center justify-center rounded-full transition-colors hover:bg-raised ${
-              dualOn ? "bg-raised text-ink" : "text-ink-muted hover:text-ink"
+            className={`flex h-9 w-9 items-center justify-center rounded-full transition-all ${
+              dualOn
+                ? "bg-white/22 text-white font-semibold ring-1 ring-white/30 shadow-xs"
+                : "text-white/75 hover:bg-white/15 hover:text-white"
             }`}
           >
             <Languages size={17} strokeWidth={2} />
@@ -96,7 +98,7 @@ export function MenuHeader(p: Props) {
                 p.onClose();
               }}
               aria-label={tr("Subtitle appearance")}
-              className="flex h-9 w-9 items-center justify-center rounded-full text-ink-muted transition-colors hover:bg-raised hover:text-ink"
+              className="flex h-9 w-9 items-center justify-center rounded-full text-white/75 transition-colors hover:bg-white/15 hover:text-white"
             >
               <UiIcon name="customize-subtitles" className="h-[18px] w-[18px]" />
             </button>
@@ -106,7 +108,7 @@ export function MenuHeader(p: Props) {
         <button
           onClick={p.onClose}
           aria-label={tr("Close")}
-          className="flex h-9 w-9 items-center justify-center rounded-full text-ink-muted transition-colors hover:bg-raised hover:text-ink"
+          className="flex h-9 w-9 items-center justify-center rounded-full text-white/75 transition-colors hover:bg-white/15 hover:text-white"
         >
           <X size={16} strokeWidth={2.2} />
         </button>

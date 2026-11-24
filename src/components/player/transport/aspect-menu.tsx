@@ -85,7 +85,7 @@ export function AspectMenu({
                   type="button"
                   title={t(tpl.sub)}
                   onClick={() => applyPreset(PICTURE_KEYS, tpl.patch)}
-                  className="rounded-full border border-white/12 bg-white/6 px-3 py-1.5 text-[12px] font-medium text-white/85 backdrop-blur-md transition-colors hover:border-white/25 hover:bg-white/14 hover:text-white"
+                  className="rounded-full border border-white/14 bg-white/10 px-3 py-1.5 text-[12px] font-semibold text-white shadow-xs backdrop-blur-md transition-all hover:border-white/28 hover:bg-white/20 active:scale-95"
                 >
                   {t(tpl.label)}
                 </button>
@@ -103,7 +103,7 @@ export function AspectMenu({
             <div className="px-3 pb-1.5 pt-1 text-[11px] font-bold uppercase tracking-[0.18em] text-white/60">
               {t("Aspect ratio")}
             </div>
-            <div className="flex flex-col gap-0.5">
+            <div className="flex flex-col gap-1">
               {CROP_PRESETS.map((m) => {
                 const sel = m.id === mode;
                 return (
@@ -113,8 +113,8 @@ export function AspectMenu({
                       onMode(m.id);
                       setOpen(false);
                     }}
-                    className={`flex h-10 w-full items-center justify-between rounded-lg px-3 text-start text-[14px] transition-colors ${
-                      sel ? "bg-white/20 text-white font-semibold ring-1 ring-white/25 shadow-xs" : "text-white/80 hover:bg-white/10 hover:text-white"
+                    className={`flex h-10 w-full items-center justify-between rounded-xl px-3 text-start text-[13.5px] transition-all ${
+                      sel ? "bg-white/22 text-white font-semibold ring-1 ring-white/30 shadow-xs" : "text-white/80 hover:bg-white/10 hover:text-white"
                     }`}
                   >
                     <span className={sel ? "font-medium" : ""}>{t(m.label)}</span>

@@ -87,22 +87,22 @@ export function EmptyState({ searchSettled, veryNewMovie }: { searchSettled: boo
   const tr = useT();
   if (!searchSettled) {
     return (
-      <div className="flex items-center gap-2.5 px-5 py-6 text-[13.5px] text-ink-muted">
-        <Loader2 size={14} className="animate-spin text-ink-subtle" />
+      <div className="flex items-center gap-2.5 px-5 py-6 text-[13.5px] text-white/75">
+        <Loader2 size={14} className="animate-spin text-white/50" />
         {tr("Looking for subtitles…")}
       </div>
     );
   }
   if (veryNewMovie) {
     return (
-      <div className="flex flex-col gap-1.5 px-5 py-6 text-[13.5px] leading-snug text-ink-muted">
-        <span className="text-[14px] font-semibold text-ink">{tr("Movie's too new")}</span>
+      <div className="flex flex-col gap-1.5 px-5 py-6 text-[13.5px] leading-snug text-white/75">
+        <span className="text-[14px] font-semibold text-white">{tr("Movie's too new")}</span>
         <span>{tr("Subtitles haven't been published yet. Try search below or check back in a few days.")}</span>
       </div>
     );
   }
   return (
-    <p className="px-5 py-6 text-[13.5px] text-ink-muted">
+    <p className="px-5 py-6 text-[13.5px] text-white/75">
       {tr("No subtitles found yet. Try the search at the bottom.")}
     </p>
   );

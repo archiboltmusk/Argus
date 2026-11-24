@@ -3,6 +3,7 @@ import { Search } from "@/components/icons/search-icon";
 import type { ComponentType } from "react";
 import { useProfiles } from "@/lib/profiles";
 import { useT } from "@/lib/i18n";
+import { safeMediaUrl } from "@/lib/security/url";
 import { useMobileRemote } from "./mobile-remote";
 import { useSheetLock } from "./mobile-sheet-lock";
 
@@ -84,8 +85,8 @@ export function BottomTabBar({
                     className="flex h-[23px] w-[23px] items-center justify-center overflow-hidden rounded-full text-[10px] font-bold text-white ring-1 ring-black/10"
                     style={{ background: avatar ? undefined : color }}
                   >
-                    {avatar ? (
-                      <img src={avatar} alt="" className="h-full w-full object-cover" />
+                    {safeMediaUrl(avatar) ? (
+                      <img src={safeMediaUrl(avatar)!} alt="" className="h-full w-full object-cover" />
                     ) : pname ? (
                       pname.slice(0, 1).toUpperCase()
                     ) : (
