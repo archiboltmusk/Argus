@@ -203,6 +203,7 @@ dependencies = [
  "sha2 0.10.9",
  "socket2 0.5.10",
  "souvlaki",
+ "sysinfo",
  "tar",
  "tauri",
  "tauri-build",

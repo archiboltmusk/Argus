@@ -36,16 +36,19 @@ function cancelRelease(): void {
 
 function scheduleRelease(): void {
   cancelRelease();
-  releaseTimer = window.setTimeout(() => {
-    releaseTimer = null;
-    if (owner || !element || !element.getAttribute("src")) return;
-    try {
-      element.removeAttribute("src");
-      element.load();
-    } catch {
-      void 0;
-    }
-  }, IDLE_RELEASE_MS);
+  releaseTimer = window.setTimeout(discardIdleTrailerVideo, IDLE_RELEASE_MS);
+}
+
+export function discardIdleTrailerVideo(): void {
+  if (owner) return;
+  cancelRelease();
+  if (!element?.getAttribute("src")) return;
+  try {
+    element.removeAttribute("src");
+    element.load();
+  } catch {
+    void 0;
+  }
 }
 
 export function claimTrailerVideo(token: object, mount: HTMLElement): HTMLVideoElement {

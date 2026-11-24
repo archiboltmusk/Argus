@@ -1,10 +1,13 @@
-import { isAuthenticated } from "./session";
+import { activeProfileId } from "@/lib/active-profile-id";
+import { getSession, isAuthenticated } from "./session";
 import {
   capturePmdbListOwner,
   changePmdbList,
   clearPmdbListsCache,
   fetchPmdbListItems,
+  getPmdbDefaultListId,
   resolvePmdbList,
+  subscribePmdbLists,
   type PmdbListOptions,
 } from "./lists";
 import type { Meta } from "@/lib/cinemeta";
@@ -13,11 +16,94 @@ import type {
   PmdbTarget,
 } from "./types";
 
+// Shared details-page status reads, independent of authoritative mutation
+// reads. The cache never stores errors or crosses a profile, account or list.
+const MEMBERSHIP_TTL_MS = 15_000;
+const membershipCache = new Map<string, { at: number; items: PmdbListItem[] }>();
+const membershipPending = new Map<string, Promise<PmdbListItem[]>>();
+const sessionIds = new WeakMap<object, number>();
+let nextSessionId = 0;
+let membershipGeneration = 0;
+
+function invalidateMembershipCache(): void {
+  membershipGeneration++;
+  membershipCache.clear();
+  membershipPending.clear();
+}
+
+subscribePmdbLists(invalidateMembershipCache);
+
 export function clearPmdbWatchlistCache(): void {
+  invalidateMembershipCache();
   clearPmdbListsCache();
 }
 
+function membershipKey(listId: string | null | undefined): string {
+  const session = getSession();
+  if (!session) throw new DOMException("PublicMetaDB disconnected.", "AbortError");
+  let id = sessionIds.get(session);
+  if (id == null) {
+    id = ++nextSessionId;
+    sessionIds.set(session, id);
+  }
+  const selectedId = listId === undefined ? getPmdbDefaultListId() : listId;
+  return [activeProfileId(), id, selectedId ?? "watchlist"].join(":");
+}
+
+type WatchlistReadOptions = PmdbListOptions & {
+  /** Reuse validated membership for detail hero/overflow; not for writes. */
+  cacheForStatus?: boolean;
+};
+
 export async function fetchPmdbWatchlist(
+  options: WatchlistReadOptions = {},
+): Promise<PmdbListItem[]> {
+  // Only strict, validated status reads are eligible for reuse.
+  if (!options.cacheForStatus || !options.strict)
+    return fetchPmdbWatchlistUncached(options);
+  options.assertCurrent?.();
+  if (!isAuthenticated()) {
+    if (options.strict) throw new Error("PublicMetaDB is disconnected.");
+    return [];
+  }
+  const guard = capturePmdbListOwner(options.assertCurrent);
+  guard();
+  const key = membershipKey(options.listId);
+  const hit = membershipCache.get(key);
+  if (hit && Date.now() - hit.at < MEMBERSHIP_TTL_MS) {
+    guard();
+    return hit.items.slice();
+  }
+
+  let request = membershipPending.get(key);
+  const generation = membershipGeneration;
+  if (!request) {
+    // Strict validation happens on the first read; subsequent status checks
+    // reuse only that verified result. Each mutation still reads fresh data.
+    request = fetchPmdbWatchlistUncached({
+      listId: options.listId,
+      strict: options.strict,
+    }).then((items) => {
+      if (generation === membershipGeneration &&
+          membershipPending.get(key) === request) {
+        membershipCache.set(key, { at: Date.now(), items });
+        if (membershipCache.size > 64)
+          membershipCache.delete(membershipCache.keys().next().value!);
+      }
+      return items;
+    }).finally(() => {
+      if (membershipPending.get(key) === request) membershipPending.delete(key);
+    });
+    membershipPending.set(key, request);
+  }
+  const items = await request;
+  guard();
+  if (generation !== membershipGeneration)
+    throw new DOMException("PublicMetaDB list changed during status lookup.", "AbortError");
+  return items.slice();
+}
+
+async function fetchPmdbWatchlistUncached(
   options: PmdbListOptions = {},
 ): Promise<PmdbListItem[]> {
   options.assertCurrent?.();

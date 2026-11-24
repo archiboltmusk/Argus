@@ -2,6 +2,7 @@ import { useEffect, useRef } from "react";
 import { invoke, isTauri } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { getCurrentWindow } from "@tauri-apps/api/window";
+import { useInstallFeatures } from "@/lib/features/install";
 import { useProfiles } from "@/lib/profiles";
 import { useT } from "@/lib/i18n";
 import { osClass } from "@/lib/platform";
@@ -11,10 +12,11 @@ import { watchDownloadCompletions, type DownloadCompletionRecord } from "./downl
 /** Lives beside the other app runners, including while Games is parked or minimized. */
 export function GameDownloadNotificationsRunner() {
   const { activeId } = useProfiles(), profile = activeId ?? "default", t = useT();
+  const gamesEnabled = useInstallFeatures().games;
   const currentProfile = useRef(profile), translate = useRef(t);
   currentProfile.current = profile; translate.current = t;
   useEffect(() => {
-    if (!isTauri() || !["windows", "linux", "macos"].includes(osClass()) || getCurrentWindow().label !== "main") return;
+    if (!gamesEnabled || !isTauri() || !["windows", "linux", "macos"].includes(osClass()) || getCurrentWindow().label !== "main") return;
     let current = true;
     let storage: Storage | null = null;
     try { storage = localStorage; } catch { /* Session-only deduplication still works. */ }
@@ -31,6 +33,6 @@ export function GameDownloadNotificationsRunner() {
       await sendDesktopNotification(translate.current("games.download.notice.title"), translate.current("games.download.notice.body", { name }));
     });
     return () => { current = false; stop(); };
-  }, [profile]);
+  }, [gamesEnabled, profile]);
   return null;
 }

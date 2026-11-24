@@ -168,6 +168,7 @@ import { useTvdbCastFallback } from "./detail/use-tvdb-cast-fallback";
 import { HeroRatings } from "./detail/hero-ratings";
 import { TrailerOverlay } from "./detail/trailer-overlay";
 import { DetailHeroTrailer } from "./detail/detail-hero-trailer";
+import { discardIdleTrailerVideo } from "@/lib/trailer-video";
 import { useScrollUpTrailer } from "./detail/use-scroll-up-trailer";
 import { SeriesEpisodes } from "./detail/series-episodes";
 import { CinemetaEpisodes } from "./detail/cinemeta-episodes";
@@ -349,11 +350,17 @@ export function DetailView({
     setNavStack,
     openPicker,
     openPlayer,
+    player,
     openFilter,
     promoteMetaToRoot,
     openMeta,
     openManga,
   } = useView();
+  const playerOpen = !!player;
+
+  useEffect(() => {
+    if (playerOpen) discardIdleTrailerVideo();
+  }, [playerOpen]);
   useTvdbCastFallback(meta, detail, detectedKitsu, setDetail);
   const { snapshot: roomSnapshot, claimHost } = useTogether();
   const { isConnected: traktConnected } = useTrakt();

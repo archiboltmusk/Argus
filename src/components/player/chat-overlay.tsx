@@ -1,6 +1,7 @@
-import { Bookmark, MessageCircle, Send } from "lucide-react";
+import { Bookmark, History, MessageCircle, Send } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { nameColor } from "@/lib/together/colors";
+import { groupOverlayMessages, overlayMessages } from "@/lib/together/chat-overlay-messages";
 import type { PanelCorner } from "@/lib/player-chrome";
 import type { ChatMessage } from "@/lib/together/provider";
 import type { Participant } from "@/lib/together/protocol";
@@ -11,9 +12,7 @@ import { getPlaybackPosition } from "@/lib/player/playback-clock";
 import { ChatBody } from "./chat-body";
 import { FloatingReactions } from "./floating-reactions";
 
-const RECENT_WINDOW_MS = 7000;
 const COMPOSE_TIMEOUT_MS = 4500;
-const GROUP_GAP_MS = 90_000;
 
 const CORNER_POSITION: Record<PanelCorner, string> = {
   "top-left": "top-20 left-6 items-start",
@@ -47,9 +46,11 @@ export function ChatOverlay({
   const selfIdentity = useSelfIdentity();
   const [composing, setComposing] = useState(false);
   const [draft, setDraft] = useState("");
+  const [historyOpen, setHistoryOpen] = useState(false);
   const [tickNow, setTickNow] = useState(() => Date.now());
   const inputRef = useRef<HTMLInputElement>(null);
   const composeTimer = useRef<number | null>(null);
+  const listRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const id = window.setInterval(() => setTickNow(Date.now()), 1000);
@@ -63,14 +64,23 @@ export function ChatOverlay({
         setComposing(true);
         setTimeout(() => inputRef.current?.focus(), 30);
       }
-      if (e.key === "Escape" && composing) {
-        setComposing(false);
-        setDraft("");
+      if (e.key === "Escape") {
+        if (composing) {
+          setComposing(false);
+          setDraft("");
+        } else if (historyOpen) {
+          setHistoryOpen(false);
+        }
       }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [composing]);
+  }, [composing, historyOpen]);
+
+  useEffect(() => {
+    if (!historyOpen || !listRef.current) return;
+    listRef.current.scrollTop = listRef.current.scrollHeight;
+  }, [historyOpen, messages.length]);
 
   useEffect(() => {
     if (!composing) return;
@@ -86,21 +96,13 @@ export function ChatOverlay({
     };
   }, [composing, draft]);
 
-  const recent = useMemo(
-    () => messages.filter((m) => tickNow - m.at < RECENT_WINDOW_MS).slice(-6),
-    [messages, tickNow],
+  const visible = useMemo(
+    () => overlayMessages(messages, tickNow, historyOpen),
+    [messages, tickNow, historyOpen],
   );
-  const grouped = useMemo(
-    () =>
-      recent.map((m, i) => {
-        const prev = recent[i - 1];
-        const isContinuation =
-          !!prev && prev.from === m.from && m.at - prev.at < GROUP_GAP_MS;
-        return { message: m, isContinuation };
-      }),
-    [recent],
-  );
-  const showStream = recent.length > 0 || forceVisible || composing;
+  const grouped = useMemo(() => groupOverlayMessages(visible), [visible]);
+  const showStream = visible.length > 0 || forceVisible || composing || historyOpen;
+  const align = corner.endsWith("right") ? "items-end" : "items-start";
 
   const submit = () => {
     const txt = draft.trim();
@@ -119,23 +121,32 @@ export function ChatOverlay({
           showStream ? "opacity-100" : "opacity-0"
         }`}
       >
-      {grouped.map(({ message, isContinuation }) => {
-        const isSelf = message.from === selfId;
-        const ident = isSelf ? selfIdentity : participants.find((p) => p.id === message.from);
-        return (
-          <Bubble
-            key={`${message.from}-${message.at}`}
-            message={message}
-            isSelf={isSelf}
-            isContinuation={isContinuation}
-            avatar={ident?.avatar ?? null}
-            color={ident?.color ?? null}
-            extras={extras}
-            onSeekTo={onSeekTo}
-          />
-        );
-      })}
-      {composing && extras && (
+        <div
+          ref={listRef}
+          className={`flex max-w-full flex-col ${align} ${
+            historyOpen
+              ? "pointer-events-auto max-h-[45vh] overflow-y-scroll overscroll-contain pe-1"
+              : ""
+          }`}
+        >
+          {grouped.map(({ message, isContinuation }) => {
+            const isSelf = message.from === selfId;
+            const ident = isSelf ? selfIdentity : participants.find((p) => p.id === message.from);
+            return (
+              <Bubble
+                key={`${message.from}-${message.at}`}
+                message={message}
+                isSelf={isSelf}
+                isContinuation={isContinuation}
+                avatar={ident?.avatar ?? null}
+                color={ident?.color ?? null}
+                extras={extras}
+                onSeekTo={onSeekTo}
+              />
+            );
+          })}
+        </div>
+        {composing && extras && (
         <div className="pointer-events-auto mt-2 flex gap-1.5">
           {QUICK_REACTIONS.map((emoji) => (
             <button
@@ -190,16 +201,31 @@ export function ChatOverlay({
           </button>
         </form>
       ) : (
-        <button
-          onClick={() => {
-            setComposing(true);
-            setTimeout(() => inputRef.current?.focus(), 30);
-          }}
-          className="pointer-events-auto mt-3 inline-flex w-fit items-center gap-1.5 rounded-full border border-white/12 bg-black/45 px-3 py-1.5 text-[11.5px] font-semibold uppercase tracking-[0.18em] text-white/65 backdrop-blur-md transition-colors hover:bg-black/65 hover:text-white"
-        >
-          <MessageCircle size={11} strokeWidth={2.4} />
-          {t("Press T")}
-        </button>
+        <div className="pointer-events-auto mt-3 flex items-center gap-1.5">
+          <button
+            onClick={() => {
+              setComposing(true);
+              setTimeout(() => inputRef.current?.focus(), 30);
+            }}
+            className="inline-flex w-fit items-center gap-1.5 rounded-full border border-white/12 bg-black/45 px-3 py-1.5 text-[11.5px] font-semibold uppercase tracking-[0.18em] text-white/65 backdrop-blur-md transition-colors hover:bg-black/65 hover:text-white"
+          >
+            <MessageCircle size={11} strokeWidth={2.4} />
+            {t("Press T")}
+          </button>
+          {messages.length > 0 && (
+            <button
+              onClick={() => setHistoryOpen((open) => !open)}
+              aria-pressed={historyOpen}
+              aria-label={t("History")}
+              title={t("History")}
+              className={`flex h-[30px] w-[30px] items-center justify-center rounded-full border border-white/12 backdrop-blur-md transition-colors hover:bg-black/65 hover:text-white ${
+                historyOpen ? "bg-white/20 text-white" : "bg-black/45 text-white/65"
+              }`}
+            >
+              <History size={12} strokeWidth={2.4} />
+            </button>
+          )}
+        </div>
       )}
     </div>
     </>

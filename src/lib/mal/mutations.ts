@@ -1,5 +1,25 @@
 import { malRequest } from "./client";
+import { activeProfileId } from "@/lib/active-profile-id";
+import { getSession, subscribeSession } from "./session";
 import type { MalListStatus } from "./types";
+
+// Share list-status reads across the details button, overflow menu and
+// episode-progress hooks. Failed reads are never cached.
+const STATUS_CACHE_TTL_MS = 15_000;
+const statusCache = new Map<string, { at: number; info: ListEntryInfo }>();
+const statusPending = new Map<string, Promise<ListEntryInfo>>();
+let statusGeneration = 0;
+
+function invalidateStatusCache(): void {
+  statusGeneration++;
+  statusCache.clear();
+  statusPending.clear();
+}
+subscribeSession(invalidateStatusCache);
+
+function statusKey(malId: number): string {
+  return [activeProfileId(), getSession()?.userName ?? "anonymous", malId].join(":");
+}
 
 export type SavedEntry = {
   status: MalListStatus;
@@ -63,7 +83,7 @@ export async function resolveMalMediaId(argusId: string): Promise<number | null>
   return null;
 }
 
-export async function fetchListEntry(malId: number, strict = false): Promise<ListEntryInfo> {
+async function fetchListEntryUncached(malId: number, strict = false): Promise<ListEntryInfo> {
   const data = await malRequest<{
     id: number;
     num_episodes: number | null;
@@ -95,6 +115,30 @@ export async function fetchListEntry(malId: number, strict = false): Promise<Lis
   };
 }
 
+export function fetchListEntry(malId: number, strict = false): Promise<ListEntryInfo> {
+  // Strict verification always reaches MAL; it must not accept cached state.
+  if (strict) return fetchListEntryUncached(malId, true);
+  const key = statusKey(malId);
+  const hit = statusCache.get(key);
+  if (hit && Date.now() - hit.at < STATUS_CACHE_TTL_MS)
+    return Promise.resolve(hit.info);
+  const inflight = statusPending.get(key);
+  if (inflight) return inflight;
+
+  const generation = statusGeneration;
+  const request = fetchListEntryUncached(malId).then((info) => {
+    if (generation === statusGeneration && statusPending.get(key) === request) {
+      statusCache.set(key, { at: Date.now(), info });
+      if (statusCache.size > 128) statusCache.delete(statusCache.keys().next().value!);
+    }
+    return info;
+  }).finally(() => {
+    if (statusPending.get(key) === request) statusPending.delete(key);
+  });
+  statusPending.set(key, request);
+  return request;
+}
+
 export async function saveListEntry(input: {
   malId: number;
   status?: MalListStatus;
@@ -108,6 +152,7 @@ export async function saveListEntry(input: {
     method: "PATCH",
     body: params,
   });
+  invalidateStatusCache();
   return {
     status: data.status as MalListStatus,
     numEpisodesWatched: data.num_episodes_watched,
@@ -117,6 +162,7 @@ export async function saveListEntry(input: {
 export async function deleteListEntry(malId: number): Promise<boolean> {
   try {
     await malRequest(`/anime/${malId}/my_list_status`, { method: "DELETE" });
+    invalidateStatusCache();
     return true;
   } catch {
     return false;
