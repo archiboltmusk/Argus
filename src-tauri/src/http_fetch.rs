@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::future::Future;
 use std::net::{IpAddr, SocketAddr};
 use std::sync::OnceLock;
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 use crate::http_redirect::same_origin;
 use base64::Engine;
@@ -287,6 +287,60 @@ fn is_public_network_ip(ip: IpAddr) -> bool {
     }
 }
 
+struct DnsCacheEntry {
+    ips: Vec<IpAddr>,
+    expires_at: Instant,
+}
+
+struct DnsCache {
+    entries: HashMap<String, DnsCacheEntry>,
+}
+
+fn dns_cache() -> &'static Mutex<DnsCache> {
+    static CACHE: OnceLock<Mutex<DnsCache>> = OnceLock::new();
+    CACHE.get_or_init(|| Mutex::new(DnsCache { entries: HashMap::new() }))
+}
+
+async fn cached_resolve_ips(host: &str, port: u16) -> Vec<IpAddr> {
+    let now = Instant::now();
+    {
+        let mut cache = dns_cache().lock().await;
+        if cache.entries.len() > 256 {
+            cache.entries.retain(|_, entry| entry.expires_at > now);
+        }
+        if let Some(entry) = cache.entries.get(host) {
+            if entry.expires_at > now {
+                return entry.ips.clone();
+            }
+        }
+    }
+
+    let lookup = (host.to_string(), port);
+    let resolved = tokio::task::spawn_blocking(move || {
+        use std::net::ToSocketAddrs;
+        lookup
+            .to_socket_addrs()
+            .map(|it| it.map(|a| a.ip()).collect::<Vec<_>>())
+    })
+    .await;
+
+    if let Ok(Ok(ips)) = resolved {
+        if !ips.is_empty() {
+            let mut cache = dns_cache().lock().await;
+            cache.entries.insert(
+                host.to_string(),
+                DnsCacheEntry {
+                    ips: ips.clone(),
+                    expires_at: now + Duration::from_secs(60),
+                },
+            );
+        }
+        ips
+    } else {
+        Vec::new()
+    }
+}
+
 async fn resolve_public_target(url: &reqwest::Url) -> Result<Vec<SocketAddr>, String> {
     if url.scheme() != "http" && url.scheme() != "https" {
         return Err(format!("public target bad scheme: {}", url.scheme()));
@@ -311,20 +365,14 @@ async fn resolve_public_target(url: &reqwest::Url) -> Result<Vec<SocketAddr>, St
         return Ok(vec![SocketAddr::new(ip, port)]);
     }
 
-    let lookup = (host.clone(), port);
-    let mut addresses = tokio::task::spawn_blocking(move || {
-        use std::net::ToSocketAddrs;
-        lookup
-            .to_socket_addrs()
-            .map(|items| items.collect::<Vec<_>>())
-    })
-    .await
-    .map_err(|_| format!("public target DNS failed: {host}"))?
-    .map_err(|_| format!("public target DNS failed: {host}"))?;
-    if addresses.is_empty()
-        || addresses
-            .iter()
-            .any(|address| !is_public_network_ip(address.ip()))
+    let ips = cached_resolve_ips(&host, port).await;
+    if ips.is_empty() {
+        return Err(format!("public target DNS failed: {host}"));
+    }
+    let mut addresses: Vec<SocketAddr> = ips.into_iter().map(|ip| SocketAddr::new(ip, port)).collect();
+    if addresses
+        .iter()
+        .any(|address| !is_public_network_ip(address.ip()))
     {
         return Err(format!("blocked non-public target: {host}"));
     }
@@ -366,18 +414,9 @@ pub(crate) async fn validate_target(url: &reqwest::Url, allow_local: bool) -> Re
         return Ok(());
     }
     let port = url.port_or_known_default().unwrap_or(80);
-    let lookup = (host.clone(), port);
-    let resolved = tokio::task::spawn_blocking(move || {
-        use std::net::ToSocketAddrs;
-        lookup
-            .to_socket_addrs()
-            .map(|it| it.map(|a| a.ip()).collect::<Vec<_>>())
-    })
-    .await;
-    if let Ok(Ok(ips)) = resolved {
-        if ips.into_iter().any(is_blocked_ip) {
-            return Err(format!("blocked internal target: {}", host));
-        }
+    let ips = cached_resolve_ips(&host, port).await;
+    if ips.into_iter().any(is_blocked_ip) {
+        return Err(format!("blocked internal target: {}", host));
     }
     Ok(())
 }
@@ -486,7 +525,7 @@ pub(crate) fn http_client_builder() -> reqwest::ClientBuilder {
         .timeout(Duration::from_secs(30))
         .connect_timeout(Duration::from_secs(10))
         .pool_idle_timeout(Duration::from_secs(30))
-        .pool_max_idle_per_host(8)
+        .pool_max_idle_per_host(32)
 }
 
 fn http_client() -> Result<&'static reqwest::Client, String> {
