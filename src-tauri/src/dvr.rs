@@ -293,11 +293,14 @@ async fn finalize(
 pub(crate) fn shutdown(app: &AppHandle) {
     use tauri::Manager;
     let inner = app.state::<DvrState>().inner.clone();
-    tauri::async_runtime::block_on(async move {
-        for (_, mut rec) in inner.lock().await.drain() {
-            let _ = rec.child.start_kill();
-        }
-    });
+    let _ = tauri::async_runtime::block_on(tokio::time::timeout(
+        std::time::Duration::from_millis(250),
+        async move {
+            for (_, mut rec) in inner.lock().await.drain() {
+                let _ = rec.child.start_kill();
+            }
+        },
+    ));
 }
 
 #[tauri::command]

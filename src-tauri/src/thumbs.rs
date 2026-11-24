@@ -664,7 +664,10 @@ pub(crate) fn shutdown(app: &tauri::AppHandle) {
     use tauri::Manager;
 
     let state = app.state::<ThumbsState>();
-    tauri::async_runtime::block_on(state.stop());
+    let _ = tauri::async_runtime::block_on(tokio::time::timeout(
+        std::time::Duration::from_millis(400),
+        state.stop(),
+    ));
 }
 
 fn thumb_filter(hdr: bool) -> String {
