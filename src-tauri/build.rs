@@ -77,7 +77,7 @@ fn main() {
                 );
             }
             println!("cargo:rustc-link-search=native={}", dir.display());
-        } else if std::env::var("PROFILE").map_or(false, |profile| profile == "release") {
+        } else if std::env::var("PROFILE").is_ok_and(|profile| profile == "release") {
             panic!(
                 "macOS release builds must link the staged libmpv closure. Run `python3 \
                  scripts/macos-bundle-libmpv.py prepare --frameworks <dir> --config <file> \

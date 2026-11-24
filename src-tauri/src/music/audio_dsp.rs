@@ -27,7 +27,7 @@ impl Default for PeqFilter {
             r#type: FilterType::Peak,
             frequency: 1000.0,
             gain: 0.0,
-            q: 0.7071,
+            q: std::f64::consts::FRAC_1_SQRT_2,
             enabled: true,
         }
     }
@@ -45,7 +45,7 @@ impl PeqFilter {
     pub fn normalize(&mut self) {
         self.frequency = bounded(self.frequency, 20.0, 20000.0, 1000.0);
         self.gain = bounded(self.gain, -18.0, 18.0, 0.0);
-        self.q = bounded(self.q, 0.1, 12.0, 0.7071);
+        self.q = bounded(self.q, 0.1, 12.0, std::f64::consts::FRAC_1_SQRT_2);
     }
     pub fn command(&self, strength: f64) -> String {
         let name = match self.r#type {

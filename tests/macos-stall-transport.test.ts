@@ -80,6 +80,15 @@ test("a plain transport error still falls back and demotes", () => {
   assert.equal(verdict.demote, true);
 });
 
+test("direct hosts include high-volume CORS-enabled APIs", () => {
+  resetDirectHostPolicy();
+  assert.equal(directHostFor("https://api.strem.io/addon/community/all.json"), "api.strem.io");
+  assert.equal(directHostFor("https://harborcommunity.site/rank/manifest.json"), "harborcommunity.site");
+  assert.equal(directHostFor("https://publicmetadb.com/api/v1/movie/123"), "publicmetadb.com");
+  assert.equal(directHostFor("https://aiometadata.elfhosted.com/manifest.json"), "aiometadata.elfhosted.com");
+  assert.equal(directHostFor("https://api.simkl.com/sync/all-items"), "api.simkl.com");
+});
+
 test("two failures demote a direct host for the decay window and one success clears it", () => {
   resetDirectHostPolicy();
   const start = 1_000_000;

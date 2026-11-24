@@ -5,6 +5,11 @@ const DIRECT_FAIL_DECAY_MS = 60000;
 
 const DIRECT_HOSTS = new Set([
   "v3-cinemeta.strem.io",
+  "api.strem.io",
+  "harborcommunity.site",
+  "publicmetadb.com",
+  "aiometadata.elfhosted.com",
+  "api.simkl.com",
   "api.ani.zip",
   "anime-kitsu.strem.fun",
   "kitsu.io",

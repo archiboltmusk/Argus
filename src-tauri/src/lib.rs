@@ -286,13 +286,22 @@ async fn deeplink_set_stremio(app: tauri::AppHandle, enabled: bool) -> Result<()
     if cfg!(feature = "context-review") {
         return Ok(());
     }
-    use tauri_plugin_deep_link::DeepLinkExt;
-    if enabled {
-        app.deep_link()
-            .register("stremio")
-            .map_err(|e| format!("register stremio: {}", e))?;
-    } else {
-        let _ = app.deep_link().unregister("stremio");
+    #[cfg(any(target_os = "windows", target_os = "linux"))]
+    {
+        use tauri_plugin_deep_link::DeepLinkExt;
+        if enabled {
+            app.deep_link()
+                .register("stremio")
+                .map_err(|e| format!("register stremio: {}", e))?;
+        } else {
+            let _ = app.deep_link().unregister("stremio");
+        }
+    }
+    #[cfg(target_os = "macos")]
+    {
+        // On macOS, URL schemes are declared statically in Info.plist (CFBundleURLTypes)
+        // at package time. Dynamic runtime registration is not supported by LaunchServices.
+        let _ = (app, enabled);
     }
     Ok(())
 }
@@ -303,10 +312,19 @@ async fn deeplink_is_stremio_registered(app: tauri::AppHandle) -> Result<bool, S
     if cfg!(feature = "context-review") {
         return Ok(false);
     }
-    use tauri_plugin_deep_link::DeepLinkExt;
-    app.deep_link()
-        .is_registered("stremio")
-        .map_err(|e| e.to_string())
+    #[cfg(any(target_os = "windows", target_os = "linux"))]
+    {
+        use tauri_plugin_deep_link::DeepLinkExt;
+        app.deep_link()
+            .is_registered("stremio")
+            .map_err(|e| e.to_string())
+    }
+    #[cfg(target_os = "macos")]
+    {
+        let _ = app;
+        // Schemes declared in tauri.conf.json are always active via CFBundleURLTypes on macOS
+        Ok(true)
+    }
 }
 
 #[tauri::command]
