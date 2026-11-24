@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import type { RemoteProfile } from "@/lib/remote/protocol";
 import { useT } from "@/lib/i18n";
 import { useMobileRemote } from "./mobile-remote";
+import { safeMediaUrl } from "@/lib/security/url";
 
 type TileState = "idle" | "chosen" | "dimmed";
 
@@ -170,9 +171,9 @@ function ProfileTile({
           }`}
           style={{ background: profile.avatar ? undefined : profile.color }}
         >
-          {profile.avatar ? (
+          {safeMediaUrl(profile.avatar) ? (
             <img
-              src={profile.avatar}
+              src={safeMediaUrl(profile.avatar)!}
               alt=""
               draggable={false}
               className="h-full w-full object-cover"

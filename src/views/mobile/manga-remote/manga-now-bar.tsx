@@ -1,6 +1,7 @@
 import { BookOpen } from "lucide-react";
 import { useT } from "@/lib/i18n";
 import type { RemoteMangaState } from "@/lib/remote/protocol";
+import { safeMediaUrl } from "@/lib/security/url";
 
 const MANGA_NOWBAR_CSS = `
 .argus-manga-nowbar-in { animation: argus-manga-nowbar-in 420ms var(--ease-out) both; }
@@ -43,7 +44,9 @@ export function MangaNowBar({
           className="pointer-events-auto flex w-full items-center gap-3 rounded-2xl border border-edge-soft/60 bg-elevated/80 p-2 pe-4 text-start shadow-[0_10px_30px_-10px_rgba(0,0,0,0.6)] backdrop-blur-2xl transition-transform active:scale-[0.99]"
         >
           <span className="h-11 w-11 shrink-0 overflow-hidden rounded-xl bg-surface">
-            {m.cover && <img src={m.cover} alt="" className="h-full w-full object-cover" />}
+            {safeMediaUrl(m.cover) && (
+              <img src={safeMediaUrl(m.cover)!} alt="" className="h-full w-full object-cover" />
+            )}
           </span>
           <span className="flex min-w-0 flex-1 flex-col">
             <span className="truncate text-[13.5px] font-semibold text-ink">

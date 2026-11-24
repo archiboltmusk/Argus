@@ -27,6 +27,7 @@ import {
 import { CastIcon } from "@/components/player/cast-icon";
 import { ArgusLoader } from "@/components/argus-loader";
 import { ArgusMark } from "@/components/icons/argus-mark";
+import { safeMediaUrl } from "@/lib/security/url";
 import type { CastDeviceInfo } from "@/lib/cast";
 import { useKeyboardNavigation } from "@/lib/keyboard-navigation";
 import { useRemoteClient } from "@/lib/remote/use-remote-client";
@@ -635,9 +636,9 @@ function RemoteBody({
       >
         {!browsing ? (
           <>
-            {view.posterUrl ? (
+            {safeMediaUrl(view.posterUrl) ? (
               <img
-                src={view.posterUrl}
+                src={safeMediaUrl(view.posterUrl)!}
                 alt=""
                 draggable={false}
                 className="pointer-events-none h-full w-full object-cover"

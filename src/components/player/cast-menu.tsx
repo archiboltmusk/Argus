@@ -166,20 +166,20 @@ export function CastMenu({
         </>
       )}
       {loading ? (
-        <div className="flex items-center gap-2 px-1 py-3 text-[12.5px] text-ink-muted">
+        <div className="flex items-center gap-2 px-1 py-3 text-[12.5px] text-white/75">
           <Loader2 size={13} strokeWidth={2.2} className="animate-spin" />
           {t("Scanning your network…")}
         </div>
       ) : devices.length === 0 ? (
         <div className="flex flex-col gap-2 px-1 py-3">
-          <p className="text-[12.5px] text-ink-muted">
+          <p className="text-[12.5px] leading-relaxed text-white/75">
             {t(
               "No Chromecast, DLNA, or Roku devices found. Make sure your TV is on, woken up, and on the same Wi-Fi.",
             )}
           </p>
           <button
             onClick={() => setScanCount((c) => c + 1)}
-            className="self-start rounded-md border border-edge-soft px-2 py-1 text-[11.5px] font-semibold text-ink-muted transition-colors hover:border-edge hover:text-ink"
+            className="self-start rounded-xl border border-white/14 bg-white/10 px-3 py-1.5 text-[12px] font-semibold text-white transition-all hover:bg-white/20 hover:border-white/25 active:scale-95"
           >
             {t("Scan again")}
           </button>
@@ -191,21 +191,21 @@ export function CastMenu({
               key={d.id}
               data-cast-device
               onClick={() => onPick(d)}
-              className="flex items-center gap-3 rounded-lg px-2.5 py-2 text-start transition-colors hover:bg-canvas/65"
+              className="flex items-center gap-3 rounded-xl px-2.5 py-2 text-start transition-colors hover:bg-white/10"
             >
-              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-canvas/55 p-1">
+              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-white/10 p-1 text-white">
                 <CastIcon device={d} size={28} />
               </span>
               <div className="flex min-w-0 flex-1 flex-col">
-                <span className="flex items-center gap-1.5 truncate text-[13px] font-medium text-ink">
+                <span className="flex items-center gap-1.5 truncate text-[13px] font-semibold text-white">
                   <span className="truncate">{d.name}</span>
                   {d.audio_only && (
-                    <span className="shrink-0 rounded-md bg-accent/20 px-1.5 py-0.5 text-[9.5px] font-bold uppercase tracking-[0.12em] text-accent">
+                    <span className="shrink-0 rounded-md bg-white/20 px-1.5 py-0.5 text-[9.5px] font-bold uppercase tracking-[0.12em] text-white">
                       {t("Audio")}
                     </span>
                   )}
                 </span>
-                <span className="truncate text-[11px] text-ink-subtle">
+                <span className="truncate text-[11px] text-white/65">
                   {d.audio_only
                     ? t("video.cast.localPicture")
                     : d.kind === "dlna"
@@ -217,7 +217,7 @@ export function CastMenu({
           ))}
           <button
             onClick={() => setScanCount((c) => c + 1)}
-            className="mt-1 self-start rounded-md px-2 py-1 text-[11px] font-medium text-ink-subtle transition-colors hover:bg-raised hover:text-ink"
+            className="mt-1 self-start rounded-xl border border-white/10 bg-white/5 px-2.5 py-1 text-[11px] font-semibold text-white/70 transition-colors hover:bg-white/15 hover:text-white"
           >
             {t("Rescan")}
           </button>

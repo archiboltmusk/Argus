@@ -280,10 +280,10 @@ function AudioEnhancementSection({ engine }: { engine: "html5" | "mpv" }) {
           <button
             type="button"
             onClick={() => setEqOpen(!eqOpen)}
-            className={`flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-semibold transition-all ${
+            className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] font-semibold transition-all ${
               eqOpen || settings.audioEqualizerEnabled
-                ? "bg-white/25 text-white ring-1 ring-white/30 shadow-xs"
-                : "bg-white/8 text-white/70 hover:bg-white/16 hover:text-white border border-white/8"
+                ? "bg-white text-black shadow-xs font-bold"
+                : "bg-white/10 text-white/80 hover:bg-white/18 hover:text-white border border-white/12"
             }`}
           >
             <Sliders className="h-3 w-3" />
@@ -292,10 +292,10 @@ function AudioEnhancementSection({ engine }: { engine: "html5" | "mpv" }) {
           <button
             type="button"
             onClick={() => update({ audioNormalize: !settings.audioNormalize })}
-            className={`rounded-full px-2.5 py-1 text-[11px] font-semibold transition-all ${
+            className={`rounded-full px-3 py-1.5 text-[11px] font-semibold transition-all ${
               settings.audioNormalize
-                ? "bg-white/25 text-white ring-1 ring-white/30 shadow-xs"
-                : "bg-white/8 text-white/70 hover:bg-white/16 hover:text-white border border-white/8"
+                ? "bg-white text-black shadow-xs font-bold"
+                : "bg-white/10 text-white/80 hover:bg-white/18 hover:text-white border border-white/12"
             }`}
           >
             {settings.audioNormalize ? t("Normalized") : t("Normalize")}
@@ -312,8 +312,8 @@ function AudioEnhancementSection({ engine }: { engine: "html5" | "mpv" }) {
               onClick={() => update({ audioProfile: p.id })}
               className={`flex items-center justify-center rounded-xl px-2.5 py-2 text-[11.5px] transition-all ${
                 isSel
-                  ? "bg-white text-black font-bold shadow-[0_2px_8px_rgba(0,0,0,0.3)] ring-1 ring-white/40"
-                  : "bg-white/8 text-white/80 font-medium hover:bg-white/16 hover:text-white border border-white/8"
+                  ? "bg-white text-black font-semibold shadow-xs ring-1 ring-white/50"
+                  : "bg-white/10 text-white/85 font-medium hover:bg-white/18 hover:text-white border border-white/10"
               }`}
             >
               {p.label}
@@ -494,19 +494,19 @@ function DelayRow({
         </div>
       </div>
       
-      <div className="flex items-stretch overflow-hidden rounded-lg bg-white/10 border border-white/10">
+      <div className="flex items-stretch overflow-hidden rounded-xl bg-white/10 border border-white/12">
         <button
           disabled={disabled}
           onClick={() => onDelay(round(delay - 0.1))}
-          className="flex-1 px-2 py-1.5 text-[12px] font-semibold tabular-nums text-white/85 transition-colors hover:bg-white/15 hover:text-white active:scale-95 disabled:cursor-not-allowed"
+          className="flex-1 px-2 py-2 text-[12px] font-semibold tabular-nums text-white/90 transition-colors hover:bg-white/15 hover:text-white active:scale-95 disabled:cursor-not-allowed"
         >
           −0.1s
         </button>
-        <div className="w-px bg-white/10" />
+        <div className="w-px bg-white/12" />
         <button
           disabled={disabled}
           onClick={() => onDelay(round(delay + 0.1))}
-          className="flex-1 px-2 py-1.5 text-[12px] font-semibold tabular-nums text-white/85 transition-colors hover:bg-white/15 hover:text-white active:scale-95 disabled:cursor-not-allowed"
+          className="flex-1 px-2 py-2 text-[12px] font-semibold tabular-nums text-white/90 transition-colors hover:bg-white/15 hover:text-white active:scale-95 disabled:cursor-not-allowed"
         >
           +0.1s
         </button>

@@ -1,5 +1,6 @@
 import { useRef, useState, type CSSProperties } from "react";
 import { proxied } from "./local-reader-types";
+import { safeMediaUrl } from "@/lib/security/url";
 
 export function ProxiedImg({
   url,
@@ -24,7 +25,7 @@ export function ProxiedImg({
 
   return (
     <img
-      src={src}
+      src={safeMediaUrl(src) ?? ""}
       alt=""
       loading="lazy"
       decoding="async"

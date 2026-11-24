@@ -72,12 +72,12 @@ export function TweakSlider({
   if (compact) {
     return (
       <div className="flex flex-col px-1 py-1">
-        <div className="flex h-11 items-center gap-2.5">
-          <span className="min-w-0 flex-1 truncate text-[15.5px] font-medium leading-[22px] text-ink">
+        <div className="flex h-9 items-center gap-2">
+          <span className="min-w-0 flex-1 truncate text-[13.5px] font-semibold leading-snug text-white">
             {label}
           </span>
           <span
-            className={`shrink-0 text-end text-[15.5px] leading-[22px] tabular-nums ${active ? "text-ink" : "text-ink-subtle"}`}
+            className={`shrink-0 text-end text-[13px] font-mono tabular-nums ${active ? "font-bold text-white" : "text-white/60"}`}
           >
             {fmt ? fmt(value) : value}
           </span>
@@ -85,7 +85,7 @@ export function TweakSlider({
             <button
               type="button"
               onClick={() => setTweak(mpvKey, null)}
-              className="h-11 shrink-0 rounded-[8px] px-2 text-[15.5px] font-semibold text-ink-subtle transition-colors hover:text-ink"
+              className="h-7 shrink-0 rounded-md px-1.5 text-[12px] font-semibold text-white/70 transition-colors hover:text-white"
             >
               {t("Reset")}
             </button>
@@ -100,7 +100,7 @@ export function TweakSlider({
           onChange={onSlide}
           aria-label={label}
           className="argus-slider w-full"
-          style={{ ...fill, blockSize: "44px" }}
+          style={{ ...fill, blockSize: "28px" }}
         />
       </div>
     );
