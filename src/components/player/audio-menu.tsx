@@ -235,11 +235,14 @@ function AudioEnhancementSection({ engine }: { engine: "html5" | "mpv" }) {
 
   const profiles: Array<{ id: typeof settings.audioProfile; label: string }> = [
     { id: "off", label: t("Flat") },
+    { id: "speech-clarity", label: t("Speech Clarity") },
+    { id: "voice_clarity", label: t("Neural Voice Clarity") },
+    { id: "dialogue-isolation", label: t("Dialogue Isolation") },
+    { id: "night", label: t("Night Mode") },
     { id: "spatial-3d", label: t("3D Spatial Audio") },
+    { id: "studio_podcast", label: t("Studio Broadcast") },
     { id: "whisper", label: t("Whisper Vocal Isolate") },
     { id: "dialogue-ducking", label: t("Dialogue Auto-Ducking") },
-    { id: "speech-clarity", label: t("Speech Clarity") },
-    { id: "night", label: t("Night Mode") },
     { id: "bass", label: t("Bass Boost") },
   ];
 

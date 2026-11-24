@@ -19,6 +19,7 @@ import { parseStream } from "./parser";
 import { applyTrust, type Rejection, type TrustOptions } from "./trust";
 import { computeCorpusStats, rankAndPick, scoreStream, type ScoreOptions } from "./scoring";
 import type { ParsedStream, RankedPicker, Stream } from "./types";
+import { streamMirrorManager } from "./stream-mirror-failover";
 
 const PREFER_AAC = typeof window !== "undefined" && !("__TAURI_INTERNALS__" in window);
 
@@ -498,7 +499,59 @@ async function runCorePipeline(
   }
 }
 
-function mergeAndDedupe(
+function cleanReleaseTitle(raw: string): string {
+  return raw
+    .replace(/^\[[^\]]+\]\s*/, "") // remove leading bracket tags like [RD+], [Torrentio]
+    .replace(/\s*\[[^\]]+\]$/, "") // remove trailing bracket tags like [RD+]
+    .replace(/^[\u26A1\u{1F4BE}\u{2B07}\uFE0F\u200D\s]+/u, "") // leading emoji badges
+    .toLowerCase()
+    .replace(/[\._\-+]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+export function streamKey(s: Stream): string {
+  // 1. Direct video content hash (OpenSubtitles / cryptographic videoHash)
+  if (s.behaviorHints?.videoHash) {
+    return `vhash:${s.behaviorHints.videoHash.toLowerCase()}`;
+  }
+
+  // 2. Torrent infoHash (normalized lowercase, standardizing missing or 0 fileIdx)
+  if (s.infoHash) {
+    const fileIdxStr = s.fileIdx == null || s.fileIdx === 0 ? "0" : String(s.fileIdx);
+    return `hash:${s.infoHash.toLowerCase()}:${fileIdxStr}`;
+  }
+
+  // 3. Normalized release name + file size bucket
+  const filename = s.behaviorHints?.filename ?? s.behaviorHints?.fileName;
+  const rawTitle = filename ?? s.title;
+  if (rawTitle) {
+    const clean = cleanReleaseTitle(rawTitle);
+    if (clean.length > 8) {
+      const hasReleaseMarkers =
+        /(2160p|1080p|720p|480p|remux|bluray|web.?dl|hdtv|x264|x265|hevc|av1|mkv|mp4)/i.test(
+          clean,
+        );
+      if (hasReleaseMarkers || clean.length >= 25) {
+        return `rel:${clean}`;
+      }
+      const sizeBytes = s.behaviorHints?.videoSize;
+      const sizeBucket =
+        typeof sizeBytes === "number" && sizeBytes > 0
+          ? `:${Math.round(sizeBytes / (1024 * 1024 * 250))}`
+          : "";
+      return `rel:${clean}${sizeBucket}`;
+    }
+  }
+
+  // 4. URL fallback
+  if (s.url) return `url:${s.url}`;
+
+  // 5. Raw name & title
+  return `n:${s.name ?? ""}:${s.title ?? ""}`;
+}
+
+export function mergeAndDedupe(
   library: Stream[],
   addons: Stream[],
   preferredAddonId?: string | null,
@@ -520,6 +573,25 @@ function mergeAndDedupe(
     if (!prior) {
       seen.set(key, { ...s, contributors: [{ id: s.addonId, name: s.addonName }] });
       continue;
+    }
+    // Register alternate mirrors for failover if multiple URLs exist
+    if (s.url && prior.url && s.url !== prior.url) {
+      streamMirrorManager.registerMirrors(key, [
+        {
+          id: prior.addonId,
+          url: prior.url,
+          provider: prior.addonName,
+          priority: prior.addonPriority ?? 50,
+          healthScore: 100,
+        },
+        {
+          id: s.addonId,
+          url: s.url,
+          provider: s.addonName,
+          priority: s.addonPriority ?? 60,
+          healthScore: 100,
+        },
+      ]);
     }
     // The user's remembered addon may be a duplicate of a faster addon's copy.
     // Keep the union of contributors but let the remembered addon own the URL and
@@ -556,10 +628,4 @@ function mergeAndDedupe(
     if (!prior.url && s.url) prior.url = s.url;
   }
   return [...seen.values()];
-}
-
-function streamKey(s: Stream): string {
-  if (s.infoHash) return `hash:${s.infoHash.toLowerCase()}:${s.fileIdx ?? ""}`;
-  if (s.url) return `url:${s.url}`;
-  return `n:${s.name ?? ""}:${s.title ?? ""}`;
 }

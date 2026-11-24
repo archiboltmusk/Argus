@@ -1794,7 +1794,8 @@ function NativePlayerView({ src }: { src: PlayerSrc }) {
     syncToast,
     onSyncPlayPause: playPauseToggle,
   };
-  const prefetchAddonId = liveStreamRef?.addonId ?? src.streamRef?.addonId ?? null;
+  const prefetchAddonId =
+    liveStreamRef?.addonId ?? src.streamRef?.addonId ?? (src as any).addonId ?? null;
   const prefetchNextEpisode =
     settings.keepSourceNextEpisode &&
     settings.autoPlayNextEpisode &&

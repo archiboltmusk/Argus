@@ -86,7 +86,7 @@ function SimklBadge() {
 }
 
 type BoolKey = {
-  [K in keyof Settings]: Settings[K] extends boolean ? K : never;
+  [K in keyof Settings]: NonNullable<Settings[K]> extends boolean ? K : never;
 }[keyof Settings];
 
 type Source = {
@@ -192,7 +192,7 @@ export function RatingsMatrix({
 
   const setCard = (src: Source, next: boolean) => {
     if (src.id === "simkl") update({ showSimklBadge: next, simklShowCommunityRatings: next });
-    else update({ [src.cardKey]: next } as Partial<Settings>);
+    else update({ [src.cardKey as keyof Settings]: next } as Partial<Settings>);
   };
 
   return (
@@ -226,8 +226,8 @@ export function RatingsMatrix({
 
       {sources.map((src) => {
         const lock = lockReason(src.lockKey);
-        const cardVal = settings[src.cardKey] === true;
-        const detailVal = src.detailKey ? settings[src.detailKey] === true : false;
+        const cardVal = settings[src.cardKey as keyof Settings] === true;
+        const detailVal = src.detailKey ? settings[src.detailKey as keyof Settings] === true : false;
         return (
           <SettingRow
             key={src.id}

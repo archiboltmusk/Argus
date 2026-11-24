@@ -409,6 +409,8 @@ export type Settings = {
   playerAnime4kFolder: string;
   playerAnime4kOverride: string;
   playerShaders: Record<string, { enabled: boolean; variant?: string; dir?: string }>;
+  videoDeband?: boolean;
+  videoSharpen?: boolean;
   preferredSubLangs: string[];
   preferredAudioLangs: string[];
   subFontSize: number;
@@ -633,6 +635,10 @@ export type Settings = {
     | "bass"
     | "voice"
     | "speech-clarity"
+    | "voice_clarity"
+    | "dialogue-isolation"
+    | "studio_podcast"
+    | "lecture_hall_denoise"
     | "bass-reduce"
     | "night"
     | "spatial-3d"

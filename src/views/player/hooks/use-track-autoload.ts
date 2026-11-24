@@ -833,6 +833,20 @@ export function useTrackAutoload(params: {
     );
     bridgeRef.current?.setAudioNightMode?.(nightOn);
     bridgeRef.current?.setRegionalDialogueEq?.(settings.regionalDialogueEq);
+    const videoProps: Record<string, string> = {};
+    if (settings.videoDeband !== undefined) {
+      videoProps.deband = settings.videoDeband ? "yes" : "no";
+      if (settings.videoDeband) {
+        videoProps["deband-iterations"] = "2";
+        videoProps["deband-threshold"] = "35";
+      }
+    }
+    if (settings.videoSharpen !== undefined) {
+      videoProps.sharpen = settings.videoSharpen ? "0.8" : "0";
+    }
+    if (Object.keys(videoProps).length > 0) {
+      bridgeRef.current?.setShaderProps?.(videoProps);
+    }
     if (settings.vintageCinemaShaders) {
       const props: Record<string, string> = {};
       for (const p of getVintagePresetMpvArgs(settings.vintageCinemaPresetId)) {
@@ -854,6 +868,8 @@ export function useTrackAutoload(params: {
     settings.vintageCinemaPresetId,
     settings.indicDubbingOverlay,
     settings.indicDubbingLanguage,
+    settings.videoDeband,
+    settings.videoSharpen,
     bridgeRef,
   ]);
   useEffect(() => {

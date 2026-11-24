@@ -51,12 +51,26 @@ export function ShaderMenu({
   if (!anime4kAvailable && installed.length === 0) return null;
 
   const a4kActive = mode !== "auto" && mode !== "off";
-  const activeCount = (a4kActive ? 1 : 0) + installed.filter((e) => shaderMap[e.id]?.enabled).length;
+  const debandOn = !!settings.videoDeband;
+  const sharpenOn = !!settings.videoSharpen;
+  const activeCount =
+    (a4kActive ? 1 : 0) +
+    (debandOn ? 1 : 0) +
+    (sharpenOn ? 1 : 0) +
+    installed.filter((e) => shaderMap[e.id]?.enabled).length;
   const accent = open || activeCount > 0;
 
   const toggleShader = (id: string) => {
     const cur = shaderMap[id];
     update({ playerShaders: { ...shaderMap, [id]: { ...cur, enabled: !cur?.enabled } } });
+  };
+
+  const toggleDeband = () => {
+    update({ videoDeband: !debandOn });
+  };
+
+  const toggleSharpen = () => {
+    update({ videoSharpen: !sharpenOn });
   };
 
   return (
@@ -85,6 +99,53 @@ export function ShaderMenu({
           className="fixed end-14 bottom-[150px] max-h-[calc(100vh-174px)] w-[340px] max-w-[calc(100vw-72px)] overflow-y-auto rounded-md bg-elevated shadow-[0_10px_30px_-12px_rgba(0,0,0,0.6)] animate-menu-pop"
         >
           <div className="p-2">
+            <div className="px-3 pt-1 text-[10.5px] font-semibold uppercase tracking-[0.18em] text-ink-subtle">
+              {t("Hardware Enhancement")}
+            </div>
+            <div className="mb-2 flex flex-col gap-0.5">
+              <button
+                type="button"
+                onClick={toggleDeband}
+                className={`flex min-h-9 w-full items-center justify-between gap-3 rounded-lg px-3 py-2 text-start text-[13.5px] transition-colors ${
+                  debandOn ? "bg-elevated text-ink ring-1 ring-edge" : "text-ink-muted hover:bg-canvas/55 hover:text-ink"
+                }`}
+              >
+                <span className="flex min-w-0 flex-col">
+                  <span className={debandOn ? "font-medium" : ""}>{t("Deband Filter")}</span>
+                  <span className="truncate text-[10.5px] text-ink-subtle">
+                    {t("Eliminates color banding in gradients & sky")}
+                  </span>
+                </span>
+                <span
+                  className={`flex h-5 w-9 shrink-0 items-center rounded-full px-0.5 transition-colors ${
+                    debandOn ? "justify-end bg-accent" : "justify-start bg-canvas/70"
+                  }`}
+                >
+                  <span className="h-4 w-4 rounded-full bg-white" />
+                </span>
+              </button>
+              <button
+                type="button"
+                onClick={toggleSharpen}
+                className={`flex min-h-9 w-full items-center justify-between gap-3 rounded-lg px-3 py-2 text-start text-[13.5px] transition-colors ${
+                  sharpenOn ? "bg-elevated text-ink ring-1 ring-edge" : "text-ink-muted hover:bg-canvas/55 hover:text-ink"
+                }`}
+              >
+                <span className="flex min-w-0 flex-col">
+                  <span className={sharpenOn ? "font-medium" : ""}>{t("Adaptive Sharpening")}</span>
+                  <span className="truncate text-[10.5px] text-ink-subtle">
+                    {t("AMD CAS contrast-adaptive edge clarity")}
+                  </span>
+                </span>
+                <span
+                  className={`flex h-5 w-9 shrink-0 items-center rounded-full px-0.5 transition-colors ${
+                    sharpenOn ? "justify-end bg-accent" : "justify-start bg-canvas/70"
+                  }`}
+                >
+                  <span className="h-4 w-4 rounded-full bg-white" />
+                </span>
+              </button>
+            </div>
             {anime4kAvailable && (
               <>
                 <div className="px-3 pt-1 text-[10.5px] font-semibold uppercase tracking-[0.18em] text-ink-subtle">
