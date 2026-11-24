@@ -18,7 +18,7 @@ path = "src/main.rs"
 # crate is to answer "does Argus's librqbit cross-compile and run on Android",
 # so a looser pin here would answer a different question.
 [dependencies]
-librqbit = { version = "=8.1.1", default-features = false, features = ["rust-tls"] }
+librqbit = { version = "=9.1.0", default-features = false, features = ["rust-tls"] }
 axum = "0.8"
 tokio = { version = "1", features = ["full"] }
 tokio-util = { version = "0.7", features = ["io"] }
