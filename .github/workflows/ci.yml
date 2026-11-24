@@ -87,10 +87,10 @@ jobs:
         working-directory: argus-core
     steps:
       - uses: actions/checkout@v6
-      - uses: dtolnay/rust-toolchain@stable
+      - uses: dtolnay/rust-toolchain@39008827e6b4319a349e9a42dfc90579dd25f1ca # stable
         with:
           components: rustfmt, clippy
-      - uses: Swatinem/rust-cache@v2
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.7.7
         with:
           workspaces: argus-core
       - run: cargo fmt --check
@@ -103,7 +103,7 @@ jobs:
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v6
-      - uses: pnpm/action-setup@v5
+      - uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v5.0.0
       - uses: actions/setup-node@v7
         with:
           node-version: 24
@@ -144,18 +144,18 @@ jobs:
       CXXFLAGS: "-DWHISPER_NO_I8MM=1"
     steps:
       - uses: actions/checkout@v6
-      - uses: dtolnay/rust-toolchain@stable
+      - uses: dtolnay/rust-toolchain@39008827e6b4319a349e9a42dfc90579dd25f1ca # stable
         with:
           targets: ${{ matrix.target }}
           components: clippy
-      - uses: Swatinem/rust-cache@v2
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.7.7
         with:
           workspaces: src-tauri
           key: ${{ matrix.target }}
           cache-on-failure: true
           # PR caches are not shared across branches; only main feeds the cache.
           save-if: ${{ github.ref == 'refs/heads/main' }}
-      - uses: pnpm/action-setup@v5
+      - uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v5.0.0
       - uses: actions/setup-node@v7
         with:
           node-version: 24
@@ -299,7 +299,7 @@ jobs:
       - name: Validate updater feed before publishing
         run: |
           node scripts/validate-update-manifest.mjs latest.json "$(jq -r .version latest.json)" darwin-aarch64
-      - uses: softprops/action-gh-release@v2
+      - uses: softprops/action-gh-release@3bb12739c298aeb8a4eeaf626c5b8d85266b0e65 # v2.2.2
         with:
           tag_name: ${{ steps.rtag.outputs.tag }}
           name: Argus ${{ steps.rtag.outputs.tag }}
