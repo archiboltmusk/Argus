@@ -18,9 +18,9 @@ export function capabilityAdjust(s: ParsedStream, caps: ScoreCapabilities | unde
   if (!caps || !s.hdrFormat) return null;
   const isDv = s.hdrFormat === "DV" || s.hdrFormat === "DV+HDR10";
   const base = isDv ? 6 : 5;
-  if (caps.engine === "html5" && s.hdrFormat === "DV") {
+  if ((caps.engine === "html5" || caps.isWeb) && s.hdrFormat === "DV") {
     // Profile 5 files have no HDR10 base layer and show purple/green without a DV decoder.
-    return { signal: "dv-unsupported", delta: -(base + 10) };
+    return { signal: "dv-unsupported", delta: -(base + 40) };
   }
   if (!caps.hdrDisplay) {
     return { signal: "sdr-display", delta: -(base + 3) };

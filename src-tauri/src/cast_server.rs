@@ -32,7 +32,8 @@ fn kill_orphan_sidecars() {
 }
 
 pub fn ensure_started_on_setup(_app: &AppHandle) {
-    kill_orphan_sidecars();
+    // Legacy clean-up that nothing in setup waits for: keep taskkill/pkill off the setup thread.
+    std::thread::spawn(kill_orphan_sidecars);
 }
 
 #[tauri::command]

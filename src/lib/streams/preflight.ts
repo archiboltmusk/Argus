@@ -1,6 +1,8 @@
+import { fetch as tauriHttpFetch } from "@tauri-apps/plugin-http";
 import { safeFetch } from "@/lib/safe-fetch";
 
-const probeFetch: typeof fetch = safeFetch;
+const isTauri = typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
+const probeFetch: typeof fetch = isTauri ? (tauriHttpFetch as unknown as typeof fetch) : safeFetch;
 
 const MIN_REAL_SIZE_BYTES = 5 * 1024 * 1024;
 const PREFLIGHT_TIMEOUT_MS = 1200;
@@ -65,7 +67,11 @@ async function probe(url: string, signal?: AbortSignal): Promise<PreflightResult
     if (!rangeRes.ok && rangeRes.status !== 206 && rangeRes.status !== 200) {
       return { ok: false, reason: "http-error", sizeBytes: null, status: rangeRes.status };
     }
-    const isManifestBody = MANIFEST_TYPE_RX.test(rangeRes.headers.get("Content-Type") ?? "");
+    const contentType = rangeRes.headers.get("Content-Type") ?? "";
+    if (/text\/html/i.test(contentType)) {
+      return { ok: false, reason: "stub", sizeBytes: 0, status: rangeRes.status };
+    }
+    const isManifestBody = MANIFEST_TYPE_RX.test(contentType);
     if (isManifestBody) return { ok: true, sizeBytes: null };
     const rangeTotal = parseRangeTotal(rangeRes.headers.get("Content-Range"));
     if (rangeTotal != null && rangeTotal > 0 && rangeTotal < MIN_REAL_SIZE_BYTES) {

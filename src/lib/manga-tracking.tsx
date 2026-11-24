@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { useInstallFeatures } from "@/lib/features/install";
 import {
   listMangaProgress,
   subscribeMangaProgress,
@@ -146,7 +147,9 @@ function run(pid: string): void {
 
 export function MangaTrackingRunner() {
   const { activeId } = useProfiles();
+  const mangaInstalled = useInstallFeatures().manga;
   useEffect(() => {
+    if (!mangaInstalled) return;
     const pid = activeId ?? "default";
     pushed.anilist.clear();
     pushed.mal.clear();
@@ -161,6 +164,6 @@ export function MangaTrackingRunner() {
       offProgress();
       offReading();
     };
-  }, [activeId]);
+  }, [activeId, mangaInstalled]);
   return null;
 }

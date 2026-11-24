@@ -2,6 +2,7 @@ import { matchingReleasesAsync } from './source-matches';
 import { useEffect, useRef } from "react";
 import { isTauri } from "@tauri-apps/api/core";
 import { getCurrentWindow } from "@tauri-apps/api/window";
+import { useInstallFeatures } from "@/lib/features/install";
 import { useProfiles } from "@/lib/profiles";
 import { useT } from "@/lib/i18n";
 import { emitListToast } from "@/components/lists/list-toast";
@@ -13,9 +14,11 @@ import { readSourceCatalogs, readSourceSubscriptions, subscribeSourceStore } fro
 /** App lifetime, not Games-page lifetime. Closed applications cannot poll local sources. */
 export function GameSourceAlertsRunner() {
   const { activeId } = useProfiles(), profile = activeId ?? "default", t = useT();
+  const gamesEnabled = useInstallFeatures().games;
   const owner = useRef(profile), translate = useRef(t);
   owner.current = profile; translate.current = t;
   useEffect(() => {
+    if (!gamesEnabled) return;
     if (isTauri() && getCurrentWindow().label !== "main") return;
     let stopped = false, running = false, again = false, timer: ReturnType<typeof setTimeout> | undefined, signature = "";
     const request = new AbortController(), cursors = new Map<string, number>();
@@ -70,6 +73,6 @@ export function GameSourceAlertsRunner() {
     window.addEventListener("storage", storage); window.addEventListener("online", online);
     schedule(2_000);
     return () => { stopped = true; request.abort(); clearTimeout(timer); stopAlerts(); stopSources(); window.removeEventListener("storage", storage); window.removeEventListener("online", online); };
-  }, [profile]);
+  }, [gamesEnabled, profile]);
   return null;
 }

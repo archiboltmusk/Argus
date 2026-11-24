@@ -1,5 +1,26 @@
 import { anilistRequest } from "./client";
+import { activeProfileId } from "@/lib/active-profile-id";
+import { getSession, subscribeSession } from "./session";
 import type { MediaListStatus } from "./types";
+
+// The detail button, episode progress and overflow menu often request the
+// same entry simultaneously. Share those reads and briefly reuse the result,
+// but never cache strict verification or writes.
+const ENTRY_CACHE_MS = 15_000;
+const entryCache = new Map<string, { at: number; info: ListEntryInfo }>();
+const entryPending = new Map<string, Promise<ListEntryInfo>>();
+let entryGeneration = 0;
+
+function clearEntryCache(): void {
+  entryGeneration++;
+  entryCache.clear();
+  entryPending.clear();
+}
+subscribeSession(clearEntryCache);
+
+function entryKey(mediaId: number): string {
+  return [activeProfileId(), getSession()?.userId ?? "anonymous", mediaId].join(":");
+}
 
 const SAVE_ENTRY = `mutation ($mediaId: Int, $status: MediaListStatus, $progress: Int, $private: Boolean, $customLists: [String]) {
   SaveMediaListEntry(mediaId: $mediaId, status: $status, progress: $progress, private: $private, customLists: $customLists) {
@@ -74,6 +95,7 @@ export async function saveListEntry(input: {
   customLists?: string[];
 }): Promise<SavedEntry> {
   const data = await anilistRequest<{ SaveMediaListEntry: SavedEntry }>(SAVE_ENTRY, input);
+  clearEntryCache();
   return data.SaveMediaListEntry;
 }
 
@@ -81,10 +103,12 @@ export async function deleteListEntry(id: number): Promise<boolean> {
   const data = await anilistRequest<{ DeleteMediaListEntry: { deleted: boolean } }>(DELETE_ENTRY, {
     id,
   });
-  return data.DeleteMediaListEntry?.deleted ?? false;
+  const deleted = data.DeleteMediaListEntry?.deleted ?? false;
+  if (deleted) clearEntryCache();
+  return deleted;
 }
 
-export async function fetchListEntry(mediaId: number, strict = false): Promise<ListEntryInfo> {
+async function fetchListEntryUncached(mediaId: number, strict = false): Promise<ListEntryInfo> {
   const data = await anilistRequest<{
     Media: {
       episodes: number | null;
@@ -127,4 +151,25 @@ export async function fetchListEntry(mediaId: number, strict = false): Promise<L
       : null,
     customLists: parseAnilistListNames(data.Viewer?.mediaListOptions?.animeList?.customLists),
   };
+}
+
+export function fetchListEntry(mediaId: number, strict = false): Promise<ListEntryInfo> {
+  if (strict) return fetchListEntryUncached(mediaId, true);
+  const key = entryKey(mediaId);
+  const cached = entryCache.get(key);
+  if (cached && Date.now() - cached.at < ENTRY_CACHE_MS) return Promise.resolve(cached.info);
+  const pending = entryPending.get(key);
+  if (pending) return pending;
+  const generation = entryGeneration;
+  const request = fetchListEntryUncached(mediaId).then((info) => {
+    if (generation === entryGeneration && entryPending.get(key) === request) {
+      entryCache.set(key, { at: Date.now(), info });
+      if (entryCache.size > 128) entryCache.delete(entryCache.keys().next().value!);
+    }
+    return info;
+  }).finally(() => {
+    if (entryPending.get(key) === request) entryPending.delete(key);
+  });
+  entryPending.set(key, request);
+  return request;
 }

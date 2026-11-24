@@ -5,6 +5,7 @@ import { markPlaybackTrace } from "@/lib/perf/playback-trace";
 import { isMixedContentSource } from "@/lib/player/web-playback";
 import { completedTorrentDownloadFor } from "@/lib/download/downloads-store";
 import { hasUncachedMarker, isP2pStream } from "./cached";
+import { prewarmP2pStream } from "./p2p-prewarm";
 import { streamSubtitles } from "./stream-subtitles";
 import {
   magnetFromHash,
@@ -366,11 +367,16 @@ async function tryLocalEngine(
   if (remoteStreamServerStrict()) return null;
   const addIdx =
     typeof stream.fileIdx === "number" && stream.fileIdx >= 0 ? stream.fileIdx : undefined;
-  const added = await torrentEngineAdd(
-    magnetFromHash(stream.infoHash),
-    trackersFromSources(stream.sources),
-    addIdx,
-  );
+  // A hover/focus/consent prewarm may already be adding this exact magnet. Reuse
+  // that add instead of starting a second concurrent metadata resolution.
+  const prewarmed = prewarmP2pStream(stream);
+  const added = prewarmed
+    ? await prewarmed
+    : await torrentEngineAdd(
+        magnetFromHash(stream.infoHash),
+        trackersFromSources(stream.sources),
+        addIdx,
+      );
   if (!added) return null;
   const releaseAbortCleanup = registerAbortCleanup(added, signal);
   let handedOff = false;
