@@ -9,6 +9,8 @@ mod ytmusic;
 mod binary_lookup;
 mod cast_hls;
 mod cast_subs;
+mod cast_transcode;
+mod process_output;
 #[cfg(desktop)]
 mod context_review;
 mod crash_report;
@@ -1879,6 +1881,10 @@ pub fn run() {
             cast::cast_seek,
             cast::cast_stop,
             cast::cast_status,
+            cast::cast_reload,
+            cast::cast_preview,
+            cast::cast_volume,
+            cast::cast_capabilities,
             cast_server::cast_server_status,
             cast_server::cast_server_restart,
             torrent_engine::torrent_engine_status,

@@ -1,4 +1,6 @@
-use reqwest::{header::HeaderMap, Client, Method, RequestBuilder, Response, Url};
+use base64::{engine::general_purpose::STANDARD as BASE64, Engine as _};
+use reqwest::header::{HeaderMap, HeaderValue, AUTHORIZATION};
+use reqwest::{Client, Method, RequestBuilder, Response, Url};
 
 const MAX_REDIRECTS: usize = 10;
 
@@ -28,17 +30,83 @@ fn strip_cross_origin_headers(headers: &mut HeaderMap) {
     }
 }
 
-fn validate_hop(current: &Url, next: &Url) -> Result<(), &'static str> {
-    if !matches!(next.scheme(), "http" | "https")
-        || !next.username().is_empty()
-        || next.password().is_some()
-    {
+/// A hop is usable when it speaks HTTP(S). Playback additionally accepts the two
+/// things a player accepts: an HTTPS link that hands off to plain HTTP, and a
+/// redirect target that carries basic-auth credentials in its URL (they are
+/// lifted into an `Authorization` header, never sent inside the request line).
+fn validate_hop(current: &Url, next: &Url, playback: bool) -> Result<(), &'static str> {
+    if !matches!(next.scheme(), "http" | "https") {
         return Err("invalid redirect target");
     }
-    if current.scheme() == "https" && next.scheme() != "https" {
+    if !playback && (!next.username().is_empty() || next.password().is_some()) {
+        return Err("invalid redirect target");
+    }
+    if !playback && current.scheme() == "https" && next.scheme() != "https" {
         return Err("HTTPS downgrade is not allowed");
     }
     Ok(())
+}
+
+/// Moves `user:password@` out of a redirect target into an `Authorization`
+/// header, exactly as the initial request URL is handled. The credentials are
+/// percent-decoded first: basic auth is defined over the decoded pair.
+fn apply_url_credentials(headers: &mut HeaderMap, url: &mut Url) -> Result<(), &'static str> {
+    let username = url.username().to_string();
+    let password = url.password().unwrap_or("").to_string();
+    if username.is_empty() && password.is_empty() {
+        return Ok(());
+    }
+    let pair = format!(
+        "{}:{}",
+        percent_decode(&username),
+        percent_decode(&password)
+    );
+    let value = HeaderValue::from_str(&format!("Basic {}", BASE64.encode(pair)))
+        .map_err(|_| "invalid redirect target")?;
+    headers.insert(AUTHORIZATION, value);
+    url.set_username("")
+        .map_err(|_| "invalid redirect target")?;
+    url.set_password(None)
+        .map_err(|_| "invalid redirect target")?;
+    Ok(())
+}
+
+fn percent_decode(value: &str) -> String {
+    let bytes = value.as_bytes();
+    let mut out = Vec::with_capacity(bytes.len());
+    let mut index = 0;
+    while index < bytes.len() {
+        if bytes[index] == b'%' && index + 2 < bytes.len() {
+            if let (Some(high), Some(low)) =
+                (hex_digit(bytes[index + 1]), hex_digit(bytes[index + 2]))
+            {
+                out.push(high * 16 + low);
+                index += 3;
+                continue;
+            }
+        }
+        out.push(bytes[index]);
+        index += 1;
+    }
+    String::from_utf8_lossy(&out).into_owned()
+}
+
+fn hex_digit(byte: u8) -> Option<u8> {
+    match byte {
+        b'0'..=b'9' => Some(byte - b'0'),
+        b'a'..=b'f' => Some(byte - b'a' + 10),
+        b'A'..=b'F' => Some(byte - b'A' + 10),
+        _ => None,
+    }
+}
+
+async fn validate_public(url: &Url, public_only: bool) -> Result<(), &'static str> {
+    if !public_only {
+        return Ok(());
+    }
+    crate::http_fetch::validate_target(url, false)
+        .await
+        .map_err(|_| "blocked internal target")
 }
 
 /// The client must have automatic redirects disabled. Keep origin-bound headers
@@ -48,12 +116,50 @@ pub(crate) async fn send_get(
     builder: RequestBuilder,
     credential_origin: &str,
 ) -> Result<Response, &'static str> {
+    send_get_checked(client, builder, credential_origin, false, false).await
+}
+
+/// Same as `send_get`, but also refuses loopback, link-local and private
+/// targets on every hop. Use it when the URL came from an add-on.
+pub(crate) async fn send_get_public(
+    client: &Client,
+    builder: RequestBuilder,
+    credential_origin: &str,
+) -> Result<Response, &'static str> {
+    send_get_checked(client, builder, credential_origin, true, false).await
+}
+
+/// Follows redirects for a user-selected playback URL the way the player does.
+///
+/// The stream proxy stands in for mpv here, and mpv (libcurl) follows an HTTPS
+/// link that hands off to a plain-HTTP host on the viewer's own network, and
+/// carries the basic-auth credentials a redirect target such as an NzbDAV link
+/// puts in its URL. The stricter [send_get] refuses both, which turns a link
+/// that Stremio, Nuvio and mpv open into an immediate `502` from the local
+/// proxy. Credential isolation at origin changes is unchanged: the add-on's
+/// headers still stop there.
+pub(crate) async fn send_get_playback(
+    client: &Client,
+    builder: RequestBuilder,
+    credential_origin: &str,
+) -> Result<Response, &'static str> {
+    send_get_checked(client, builder, credential_origin, false, true).await
+}
+
+async fn send_get_checked(
+    client: &Client,
+    builder: RequestBuilder,
+    credential_origin: &str,
+    public_only: bool,
+    playback: bool,
+) -> Result<Response, &'static str> {
     let origin = Url::parse(credential_origin).map_err(|_| "invalid request origin")?;
     let mut request = builder.build().map_err(|_| "invalid upstream request")?;
     if request.method() != Method::GET {
         return Err("redirect helper requires GET");
     }
-    validate_hop(&origin, request.url())?;
+    validate_hop(&origin, request.url(), playback)?;
+    validate_public(request.url(), public_only).await?;
     if !same_origin(&origin, request.url()) {
         strip_cross_origin_headers(request.headers_mut());
     }
@@ -73,14 +179,20 @@ pub(crate) async fn send_get(
         if redirects == MAX_REDIRECTS {
             return Err("too many redirects");
         }
-        let next = response
+        let mut next = response
             .url()
             .join(location.to_str().map_err(|_| "invalid redirect")?)
             .map_err(|_| "invalid redirect")?;
-        validate_hop(response.url(), &next)?;
+        validate_hop(response.url(), &next, playback)?;
+        validate_public(&next, public_only).await?;
         request = next_request;
         if !same_origin(response.url(), &next) {
             strip_cross_origin_headers(request.headers_mut());
+        }
+        // After the strip: these arrive with the redirect target itself, so they
+        // are that host's credentials, not the previous origin's.
+        if playback {
+            apply_url_credentials(request.headers_mut(), &mut next)?;
         }
         *request.url_mut() = next;
     }
@@ -273,6 +385,130 @@ mod tests {
         );
     }
 
+    #[tokio::test]
+    async fn playback_still_drops_addon_credentials_at_an_origin_change() {
+        let target = serve(echo()).await;
+        let source = serve(redirect(format!("{}/echo", target.url), 302)).await;
+        let client = client();
+        let headers: HashMap<String, String> = send_get_playback(
+            &client,
+            request(&client, &format!("{}/start", source.url)),
+            &source.url,
+        )
+        .await
+        .unwrap()
+        .json()
+        .await
+        .unwrap();
+        for key in ["x-test-token", "authorization", "cookie", "referer"] {
+            assert!(
+                !headers.contains_key(key),
+                "forwarded {key} across an origin"
+            );
+        }
+        assert_eq!(headers["range"], "bytes=0-100");
+    }
+
+    #[tokio::test]
+    async fn playback_redirect_loops_are_bounded() {
+        let server = serve(redirect("/start".into(), 302)).await;
+        let client = client();
+        assert_eq!(
+            send_get_playback(
+                &client,
+                client.get(format!("{}/start", server.url)),
+                &server.url
+            )
+            .await
+            .unwrap_err(),
+            "too many redirects"
+        );
+    }
+
+    #[tokio::test]
+    async fn playback_applies_credentials_from_a_redirect_target() {
+        // The real chain: AIOStreams' playback route redirects to an NzbDAV link
+        // that carries its webdav user and password in the URL.
+        let target = serve(echo()).await;
+        let secured = target.url.replacen("http://", "http://webdav:p%40ss@", 1);
+        let source = serve(redirect(format!("{secured}/echo"), 302)).await;
+        let client = client();
+        let headers: HashMap<String, String> = send_get_playback(
+            &client,
+            request(&client, &format!("{}/start", source.url)),
+            &source.url,
+        )
+        .await
+        .unwrap()
+        .json()
+        .await
+        .unwrap();
+        // base64("webdav:p@ss")
+        assert_eq!(headers["authorization"], "Basic d2ViZGF2OnBAc3M=");
+        assert_eq!(headers["range"], "bytes=0-100");
+    }
+
+    #[tokio::test]
+    async fn strict_fetch_still_refuses_credentials_in_a_redirect_target() {
+        let target = serve(echo()).await;
+        let secured = target.url.replacen("http://", "http://webdav:secret@", 1);
+        let source = serve(redirect(format!("{secured}/echo"), 302)).await;
+        let client = client();
+        assert_eq!(
+            send_get(
+                &client,
+                client.get(format!("{}/start", source.url)),
+                &source.url
+            )
+            .await
+            .unwrap_err(),
+            "invalid redirect target"
+        );
+    }
+
+    #[test]
+    fn playback_accepts_the_lan_hop_the_strict_policy_refuses() {
+        let secure = Url::parse("https://gateway.example/play").unwrap();
+        // A provider gateway that hands playback to a LAN NzbDAV over plain HTTP.
+        let lan = Url::parse("http://192.168.1.20:3000/content/episode.mkv").unwrap();
+        assert_eq!(
+            validate_hop(&secure, &lan, false),
+            Err("HTTPS downgrade is not allowed")
+        );
+        assert!(validate_hop(&secure, &lan, true).is_ok());
+        assert!(validate_hop(&secure, &Url::parse("ftp://host/file").unwrap(), true).is_err());
+        // Credentials in a redirect target: refused for add-on data, accepted for
+        // playback (they become an Authorization header, not part of the URL).
+        let secured = Url::parse("http://webdav:secret@host/file").unwrap();
+        assert_eq!(
+            validate_hop(&secure, &secured, false),
+            Err("invalid redirect target")
+        );
+        assert!(validate_hop(&secure, &secured, true).is_ok());
+    }
+
+    #[test]
+    fn url_credentials_are_percent_decoded_before_basic_auth() {
+        assert_eq!(percent_decode("p%40ss"), "p@ss");
+        assert_eq!(percent_decode("a%2Bb%20c"), "a+b c");
+        assert_eq!(percent_decode("plain"), "plain");
+        assert_eq!(percent_decode("bad%2"), "bad%2");
+        assert_eq!(percent_decode("bad%zz"), "bad%zz");
+    }
+
+    #[tokio::test]
+    async fn public_fetch_refuses_internal_targets_before_requesting() {
+        let server = serve(echo()).await;
+        let client = client();
+        let result = send_get_public(
+            &client,
+            request(&client, &format!("{}/echo", server.url)),
+            &server.url,
+        )
+        .await;
+        assert!(matches!(result, Err("blocked internal target")));
+    }
+
     #[test]
     fn security_boundaries_include_port_scheme_and_url_credentials() {
         let https = Url::parse("https://example.com/").unwrap();
@@ -292,7 +528,7 @@ mod tests {
             "file:///tmp/test",
             "https://user:pass@example.com/",
         ] {
-            assert!(validate_hop(&https, &Url::parse(target).unwrap()).is_err());
+            assert!(validate_hop(&https, &Url::parse(target).unwrap(), false).is_err());
         }
         for name in [
             "X-Unknown-Secret",

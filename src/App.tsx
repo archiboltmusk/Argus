@@ -183,6 +183,7 @@ import { SpooktoberHome } from "@/views/spooktober/spooktober-home";
 // profiler measured rendering ~18 times a second while the user was on other tabs.
 const MemoSpooktoberHome = memo(SpooktoberHome);
 import { MusicDock } from "@/components/music/music-dock";
+import { QueueBasket } from "@/components/queue-basket/queue-basket";
 import { useInstallFeatures } from "@/lib/features/install";
 import { MusicSurprisePrompt } from "@/components/music/music-surprise-prompt";
 import { ParentalProvider } from "@/lib/parental";
@@ -2471,8 +2472,9 @@ function Shell({ onReady }: { onReady?: () => void }) {
               <div {...layerProps(pickerTop)}>
                 <Suspense fallback={null}>
                   <PlayPicker
-                    key={`picker-${picker.meta.id}-${picker.episode?.season ?? ""}-${picker.episode?.episode ?? ""}-${picker.attempt ?? 0}-${picker.intent ?? "play"}-${picker.seasonEpisodes?.length ?? 0}-${picker.contextRequestId ?? ""}-${picker.continuation?.id ?? ""}`}
+                    key={`picker-${picker.meta.id}-${picker.episode?.season ?? ""}-${picker.episode?.episode ?? ""}-${picker.attempt ?? 0}-${picker.intent ?? "play"}-${picker.seasonEpisodes?.length ?? 0}-${picker.contextRequestId ?? ""}-${picker.continuation?.id ?? ""}-${picker.queueItemId ?? ""}`}
                     meta={picker.meta}
+                    queueItemId={picker.queueItemId}
                     episode={picker.episode}
                     autoPlay={picker.intent === "download" ? false : picker.autoPlay}
                     attempt={picker.attempt}
@@ -2522,6 +2524,7 @@ function Shell({ onReady }: { onReady?: () => void }) {
           </div>
         </div>
         <GameLibraryDock visible={quickLibraryVisible && !gamesTop} />
+        {!playerActive && !pickerTop && !immersive && !chromeHidden && <QueueBasket />}
         {player && (
           <Suspense fallback={null}>
             <PlayerView

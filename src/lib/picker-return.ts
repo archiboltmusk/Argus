@@ -41,6 +41,7 @@ export function samePickerRequest(
     (frame.intent ?? "play") === (options?.intent ?? "play") &&
     Boolean(frame.seasonEpisodes?.length) === Boolean(options?.seasonEpisodes?.length) &&
     frame.contextRequestId === options?.contextRequestId &&
-    frame.continuation?.id === options?.continuation?.id
+    frame.continuation?.id === options?.continuation?.id &&
+    frame.queueItemId === options?.queueItemId
   );
 }

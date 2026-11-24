@@ -93,6 +93,7 @@ export type PlayerSrc = {
   /** Official provider iframe; handled separately from native/media stream playback. */
   officialBroadcast?: import("./sports/esports-streams").EsportsStream;
   continuation?: import("./playback-history").PlaybackContinuation;
+  queueItemId?: string;
   meta: Meta;
   playbackTraceId?: string;
   proxySessionId?: string;
@@ -175,6 +176,7 @@ export type PickerOptions = {
   returnTo?: "previous";
   contextRequestId?: string;
   continuation?: import("./playback-history").PlaybackContinuation;
+  queueItemId?: string;
 };
 
 export type GridSpec = {
@@ -267,6 +269,7 @@ export type Frame =
       returnTo?: "previous";
       contextRequestId?: string;
       continuation?: import("./playback-history").PlaybackContinuation;
+      queueItemId?: string;
     }
   | { kind: "player"; src: PlayerSrc }
   | { kind: "match-detail"; game: SportsGame; eventGames?: SportsGame[] };
@@ -382,6 +385,7 @@ type ViewValue = {
     returnTo?: "previous";
     contextRequestId?: string;
     continuation?: import("./playback-history").PlaybackContinuation;
+    queueItemId?: string;
   } | null;
   openPicker: (meta: Meta, episode?: PlayEpisode, opts?: PickerOptions) => void;
   player: PlayerSrc | null;
@@ -1407,6 +1411,7 @@ export function ViewProvider({ children }: { children: ReactNode }) {
           returnTo: opts?.returnTo,
           contextRequestId: opts?.contextRequestId,
           continuation: opts?.continuation,
+          queueItemId: opts?.queueItemId,
         });
       });
     },
