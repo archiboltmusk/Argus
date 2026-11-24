@@ -16,14 +16,14 @@ const ratings = {
   good: Rating.Good,
   easy: Rating.Easy,
 } as const;
-export const FSRS_ENGINE = "ts-fsrs@5.4.2";
+export const FSRS_ENGINE = "ts-fsrs@6.0.0";
 
 export function fromCard(card: Card): FSRSCardData {
   return {
     due: card.due.getTime(),
     stability: card.stability,
     difficulty: card.difficulty,
-    elapsedDays: card.elapsed_days,
+    elapsedDays: 0,
     scheduledDays: card.scheduled_days,
     learningSteps: card.learning_steps,
     reps: card.reps,
@@ -43,7 +43,6 @@ export function toCard(card: FSRSCardData): Card {
     due: new Date(card.due),
     stability: card.stability,
     difficulty: card.difficulty,
-    elapsed_days: card.elapsedDays,
     scheduled_days: card.scheduledDays,
     learning_steps: card.learningSteps ?? 0,
     reps: card.reps,
