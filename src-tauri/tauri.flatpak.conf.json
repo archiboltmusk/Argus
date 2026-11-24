@@ -1,6 +1,9 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
   "identifier": "app.argus.desktop",
+  "build": {
+    "beforeBuildCommand": "node flatpak-node/pnpm-cli/bin/pnpm.cjs build:desktop"
+  },
   "bundle": {
     "active": false,
     "externalBin": []

@@ -81,8 +81,12 @@ modules:
   - name: argus
     buildsystem: simple
     build-commands:
+      - install -d /app/bin
+      - ln -sf /run/build/argus/flatpak-node/pnpm-cli/bin/pnpm.cjs /app/bin/pnpm
+      - chmod +x flatpak-node/pnpm-cli/bin/pnpm.cjs
       - node flatpak-node/pnpm-cli/bin/pnpm.cjs install --offline --frozen-lockfile --trust-lockfile
-      - node node_modules/@tauri-apps/cli/tauri.js build --config src-tauri/tauri.flatpak.conf.json --no-bundle
+      - node node_modules/@tauri-apps/cli/tauri.js build --config src-tauri/tauri.flatpak.conf.json --no-bundle --ignore-version-mismatches
+      - rm -f /app/bin/pnpm
       - install -Dm755 src-tauri/target/release/argus /app/bin/argus
       - install -Dm644 flatpak/app.argus.desktop.desktop /app/share/applications/app.argus.desktop.desktop
       - install -Dm644 flatpak/app.argus.desktop.metainfo.xml /app/share/metainfo/app.argus.desktop.metainfo.xml
