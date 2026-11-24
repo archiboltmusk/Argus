@@ -190,7 +190,7 @@ export function useEpisodeNavigation(params: {
       const withoutDownload = () => {
         setSwappingEp(true);
         openPicker(targetMeta, carried, { autoPlay: true });
-        window.setTimeout(() => setSwappingEp(false), 2000);
+        setTimeout(() => setSwappingEp(false), 2000);
       };
       if (inRoom || settings.localPlaybackMode === "stream") {
         withoutDownload();
