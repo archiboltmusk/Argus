@@ -130,7 +130,7 @@ async-trait = "0.1"
 md5 = "0.8"
 sha2 = "0.10"
 futures = "0.3"
-lofty = "0.22"
+lofty = "0.25"
 # Spotify Premium playback. Keep librespot component crates in lockstep.
 parking_lot = "0.13"
 librespot-core = "0.8"
