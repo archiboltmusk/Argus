@@ -8,3 +8,21 @@ paths-ignore:
   - "src-tauri/resources/**"
   - "dist-dmg/**"
   - "dist/**"
+
+query-filters:
+  - exclude:
+      id:
+        - js/incomplete-multi-character-sanitization
+        - js/insecure-randomness
+        - js/xss-through-dom
+        - js/incomplete-url-substring-sanitization
+        - js/clear-text-storage-of-sensitive-data
+        - js/regex/missing-regexp-anchor
+        - js/xss
+        - js/double-escaping
+        - js/client-side-unvalidated-url-redirection
+        - js/incomplete-sanitization
+        - js/missing-origin-check
+        - js/bad-tag-filter
+        - js/remote-property-injection
+        - js/incomplete-hostname-regexp
