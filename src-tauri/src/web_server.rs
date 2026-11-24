@@ -366,6 +366,8 @@ pub async fn web_serve_start(app: AppHandle) -> Result<u16, String> {
         .route("/api/remote/command", axum::routing::post(remote_http_command))
         .route("/api/remote/volume", axum::routing::post(remote_http_volume))
         .route("/api/remote/library", get(remote_http_library).post(remote_http_library_post))
+        .route("/api/handoff", axum::routing::post(remote_http_handoff))
+        .route("/api/remote/handoff", axum::routing::post(remote_http_handoff))
         .route("/manga-img", get(manga_img_proxy))
         .fallback(serve_http)
         .with_state(state);
@@ -483,4 +485,18 @@ async fn remote_http_library_post(
         *guard = items;
     }
     axum::http::StatusCode::OK
+}
+
+async fn remote_http_handoff(
+    axum::extract::State(state): axum::extract::State<ServeState>,
+    axum::Json(payload): axum::Json<serde_json::Value>,
+) -> (axum::http::StatusCode, axum::Json<serde_json::Value>) {
+    use tauri::Emitter;
+    let _ = state.app.emit("argus://remote-handoff", &payload);
+    let str_payload = payload.to_string();
+    let _ = state.outbound.send(str_payload);
+    (
+        axum::http::StatusCode::OK,
+        axum::Json(serde_json::json!({ "ok": true })),
+    )
 }

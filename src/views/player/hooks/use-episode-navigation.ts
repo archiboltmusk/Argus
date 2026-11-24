@@ -89,6 +89,7 @@ export function useEpisodeNavigation(params: {
     prev: null,
     next: null,
   });
+  const [swappingEp, setSwappingEp] = useState(false);
   const adjacentRef = useRef(adjacent);
   adjacentRef.current = adjacent;
 
@@ -187,7 +188,9 @@ export function useEpisodeNavigation(params: {
         }
       }
       const withoutDownload = () => {
+        setSwappingEp(true);
         openPicker(targetMeta, carried, { autoPlay: true });
+        window.setTimeout(() => setSwappingEp(false), 2000);
       };
       if (inRoom || settings.localPlaybackMode === "stream") {
         withoutDownload();
@@ -220,5 +223,5 @@ export function useEpisodeNavigation(params: {
     ],
   );
 
-  return { adjacent, swappingEp: false, goToEpisode };
+  return { adjacent, swappingEp, goToEpisode };
 }

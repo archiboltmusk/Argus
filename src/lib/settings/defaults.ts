@@ -330,6 +330,8 @@ export const DEFAULT: Settings = {
   playerAnime4kFolder: "",
   playerAnime4kOverride: "auto",
   playerShaders: {},
+  videoDeband: false,
+  videoSharpen: false,
   preferredSubLangs: ["English"],
   preferredAudioLangs: ["English", "Japanese"],
   subFontSize: 32,

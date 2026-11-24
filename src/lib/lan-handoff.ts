@@ -51,10 +51,16 @@ export async function sendHandoffToDevice(
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), 2500);
 
+    const body = {
+      ...payload,
+      url: payload.streamUrl,
+      mediaId: payload.metaId,
+    };
+
     const res = await fetch(endpoint, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
+      body: JSON.stringify(body),
       signal: controller.signal,
     }).finally(() => clearTimeout(timer));
 

@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
+import { listen } from "@tauri-apps/api/event";
 import { ModalShell } from "@/components/modal-shell";
 import { useView } from "@/lib/view";
 import { useT } from "@/lib/i18n";
@@ -8,19 +9,46 @@ import {
   parsePlaybackHandoff,
   type PlaybackHandoff,
 } from "@/lib/player/household-handoff";
+
+function normalizeRawHandoff(raw: unknown): PlaybackHandoff | null {
+  if (!raw || typeof raw !== "object") return null;
+  const parsed = parsePlaybackHandoff(raw);
+  if (parsed) return parsed;
+  const obj = raw as Record<string, unknown>;
+  const url = (obj.url ?? obj.streamUrl) as string | undefined;
+  if (!url || typeof url !== "string") return null;
+  return {
+    id: (obj.id as string) ?? `handoff-${Date.now()}`,
+    title: (obj.title as string) ?? "Playback Handoff",
+    mediaId: (obj.mediaId ?? obj.metaId ?? "argus:stream") as string,
+    mediaType: obj.season != null ? "series" : "movie",
+    url,
+    positionMs: Number(obj.positionMs) || 0,
+    createdAt: Date.now(),
+    season: typeof obj.season === "number" ? obj.season : undefined,
+    episode: typeof obj.episode === "number" ? obj.episode : undefined,
+    subtitle: (obj.subtitle as any) ?? { off: false },
+  };
+}
+
+const isTauri = typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
+
 export function acknowledgeHandoff(id: string, ok: boolean) {
+  if (!isTauri) return;
   void invoke("remote_ws_broadcast", {
     payload: JSON.stringify({ t: "handoff-result", id, ok }),
   }).catch(() => {});
 }
+
 export function HandoffReceiver() {
   const { openPlayer } = useView();
   const [offer, setOffer] = useState<PlaybackHandoff | null>(null);
   const t = useT();
+
   useEffect(() => {
     let pending = false;
-    const receive = (event: Event) => {
-      const payload = parsePlaybackHandoff((event as CustomEvent).detail);
+    const handlePayload = (raw: unknown) => {
+      const payload = normalizeRawHandoff(raw);
       if (!payload) return;
       if (pending) {
         acknowledgeHandoff(payload.id, false);
@@ -29,14 +57,27 @@ export function HandoffReceiver() {
       pending = true;
       setOffer(payload);
     };
+
+    const receive = (event: Event) => {
+      handlePayload((event as CustomEvent).detail);
+    };
     const clear = () => {
       pending = false;
     };
+
     window.addEventListener(HANDOFF_EVENT, receive);
     window.addEventListener("argus:handoff-dismiss", clear);
+
+    const unlistenPromise = isTauri
+      ? listen<unknown>("argus://remote-handoff", (e) => {
+          handlePayload(e.payload);
+        })
+      : null;
+
     return () => {
       window.removeEventListener(HANDOFF_EVENT, receive);
       window.removeEventListener("argus:handoff-dismiss", clear);
+      unlistenPromise?.then((unlisten) => unlisten()).catch(() => {});
     };
   }, []);
   useEffect(() => {

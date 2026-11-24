@@ -81,6 +81,8 @@ export function AudioTab() {
             options={[
               { value: "off", label: t("Flat") },
               { value: "speech-clarity", label: t("Speech clarity") },
+              { value: "voice_clarity", label: t("Neural voice clarity") },
+              { value: "dialogue-isolation", label: t("Dialogue isolation") },
               { value: "night", label: t("Night mode") },
               { value: "voice", label: t("Vocal clarity") },
               { value: "bass", label: t("Bass boost") },
