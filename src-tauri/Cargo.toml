@@ -55,7 +55,7 @@ tar = "0.4"
 plist = "1.9"
 zip = { version = "9.8.0", default-features = false, features = ["deflate-flate2", "aes-crypto"] }
 zeroize = "1"
-sevenz-rust2 = { version = "=0.24.2", default-features = false, features = [
+sevenz-rust2 = { version = "=0.25.0", default-features = false, features = [
   "aes256",
   "bzip2",
   "ppmd",
@@ -192,7 +192,7 @@ rust-ini = "=0.21.3"
 
 
 [dev-dependencies]
-sevenz-rust2 = { version = "=0.24.2", default-features = false, features = ["compress"] }
+sevenz-rust2 = { version = "=0.25.0", default-features = false, features = ["compress"] }
 crc32fast = "1"
 
 [profile.dev]
