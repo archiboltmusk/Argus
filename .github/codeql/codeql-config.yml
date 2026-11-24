@@ -1,8 +1,10 @@
 name: "Argus CodeQL Configuration"
 
 paths-ignore:
-  - "public/mp-wasm/**"
-  - "public/spooktober/**"
+  - "public/**"
+  - "tests/**"
+  - "scripts/**"
+  - "tools/**"
   - "src-tauri/resources/**"
   - "dist-dmg/**"
   - "dist/**"

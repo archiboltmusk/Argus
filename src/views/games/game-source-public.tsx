@@ -50,7 +50,7 @@ export function SourcePublicFiles({link,downloads,onDone,closing}:{link:SourceLi
    if(requests.length>1)validateDownloadBatch(requests);
    const started=requests.length===1?await downloads.start(requests[0],requests[0].filename):await downloads.startBatch(requests);
    if(started&&alive.current)onDone();
-  }catch(reason){if(alive.current)setError(publicBatchError(reason))}finally{if(operation.current?.session===session)operation.current=null;pending.current=false;if(alive.current)setBusy(false)}
+  }catch(reason){if(alive.current)setError(publicBatchError(reason))}finally{if(operation.current?.session===session)operation.current=null;pending.current=false;if(alive.current)setBusy(false);}
  };
  const visible=result?.files.slice(0,limit)??[];
  // Reveal the provider-selected member, including links pointing past the first page.

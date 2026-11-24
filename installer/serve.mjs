@@ -1,6 +1,6 @@
 import { createServer } from "node:http";
 import { readFile, readdir } from "node:fs/promises";
-import { dirname, extname, join, normalize, sep } from "node:path";
+import { dirname, extname, join, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const HERE = dirname(fileURLToPath(import.meta.url));

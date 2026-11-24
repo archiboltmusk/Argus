@@ -20,7 +20,7 @@ export function SourceCloudTransfer({link,downloads,keys,openSettings,onDone,pro
  const [intent,setIntent]=useState<WebIntent|null>(null),[job,setJob]=useState<CloudWebJob|null>(null),[error,setError]=useState(''),[busy,setBusy]=useState(false),[loaded,setLoaded]=useState(false),[storeKey,setStoreKey]=useState(''),[file,setFile]=useState(''),[limit,setLimit]=useState(50),[scanPage,setScanPage]=useState(0),[scanNext,setScanNext]=useState<number|null>(null),[checked,setChecked]=useState(false),[browse,setBrowse]=useState(false);
  const owner=useRef(identity),alive=useRef(true),pending=useRef(false),revision=useRef(0),body=useRef<HTMLDivElement>(null),focusReturn=useRef<HTMLElement|null>(null);
  const [recent,setRecent]=useState<CloudWebJob[]>([]),[browseFolder,setBrowseFolder]=useState<CloudEntry|null>(null);
- if(owner.current!==identity){owner.current=identity;revision.current++}const currentRevision=revision.current;
+ if(owner.current!==identity){owner.current=identity;revision.current++;}const currentRevision=revision.current;
  const valid=()=>alive.current&&revision.current===currentRevision;
  const args={provider,key,parent:intent?.remoteId??'',page:0,file:''};
  const fail=(reason:unknown)=>setError(String(reason).includes('web_storage')?'games.sources.web.storage':String(reason)==='cloud_container'?'games.sources.pm.container':sourceLinkError(reason));
