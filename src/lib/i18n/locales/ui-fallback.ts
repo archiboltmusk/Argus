@@ -1,5 +1,12 @@
 // Newly introduced UI copy remains usable until each locale provides an override.
 const uiFallback: Record<string, string> = {
+  "Check your filters or choose another source.": "Check your filters or choose another source.",
+  "Connected music catalogs and libraries are unavailable on this build. You can play a direct HTTPS audio stream.": "Connected music catalogs and libraries are unavailable on this build. You can play a direct HTTPS audio stream.",
+  "Could not start this audio stream.": "Could not start this audio stream.",
+  "Use a complete HTTPS audio URL without credentials or a fragment.": "Use a complete HTTPS audio URL without credentials or a fragment.",
+  "HTTPS audio address": "HTTPS audio address",
+  "Audio stream player": "Audio stream player",
+  "The local P2P engine is unavailable in this build. You can connect a streaming server in the Server tab.": "The local P2P engine is unavailable in this build. You can connect a streaming server in the Server tab.",
   "Subscription marked active": "Subscription marked active",
   "Subscription marked inactive (catalog only)": "Subscription marked inactive (catalog only)",
   "Active subscription verified": "Active subscription verified",

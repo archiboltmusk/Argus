@@ -108,12 +108,17 @@ jobs:
         with:
           node-version: 24
           cache: pnpm
-      - run: pnpm install --frozen-lockfile
-      - run: node scripts/auto-heal-i18n.mjs
-      - run: pnpm run typecheck
-      - run: pnpm test
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Auto-heal UI translations
+        run: node scripts/auto-heal-i18n.mjs
+      - name: TypeScript typecheck (tsc)
+        run: pnpm run typecheck
+      - name: Unit and integration tests (pnpm test)
+        run: pnpm test
       # PRs already typecheck; the bundler build runs once the change lands.
-      - if: github.event_name != 'pull_request'
+      - name: Production UI build (vite)
+        if: github.event_name != 'pull_request'
         run: pnpm run build
 
   macos:
