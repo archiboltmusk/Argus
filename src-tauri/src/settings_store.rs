@@ -6,9 +6,8 @@ fn settings_path(app: &tauri::AppHandle) -> Result<std::path::PathBuf, String> {
     Ok(dir.join("settings.json"))
 }
 
-#[tauri::command]
-pub fn settings_read(app: tauri::AppHandle) -> Result<Option<String>, String> {
-    let path = settings_path(&app)?;
+fn settings_read_sync(app: &tauri::AppHandle) -> Result<Option<String>, String> {
+    let path = settings_path(app)?;
     match std::fs::read_to_string(&path) {
         Ok(s) => Ok(Some(s)),
         Err(e) if e.kind() == std::io::ErrorKind::NotFound => Ok(None),
@@ -16,12 +15,25 @@ pub fn settings_read(app: tauri::AppHandle) -> Result<Option<String>, String> {
     }
 }
 
-#[tauri::command]
-pub fn settings_write(app: tauri::AppHandle, content: String) -> Result<(), String> {
-    let path = settings_path(&app)?;
+fn settings_write_sync(app: &tauri::AppHandle, content: &str) -> Result<(), String> {
+    let path = settings_path(app)?;
     let tmp = path.with_extension("json.tmp");
     std::fs::write(&tmp, content.as_bytes()).map_err(|e| e.to_string())?;
     std::fs::rename(&tmp, &path).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub async fn settings_read(app: tauri::AppHandle) -> Result<Option<String>, String> {
+    tokio::task::spawn_blocking(move || settings_read_sync(&app))
+        .await
+        .map_err(|e| e.to_string())?
+}
+
+#[tauri::command]
+pub async fn settings_write(app: tauri::AppHandle, content: String) -> Result<(), String> {
+    tokio::task::spawn_blocking(move || settings_write_sync(&app, &content))
+        .await
+        .map_err(|e| e.to_string())?
 }
 
 fn secrets_path(app: &tauri::AppHandle) -> Result<std::path::PathBuf, String> {
@@ -30,9 +42,8 @@ fn secrets_path(app: &tauri::AppHandle) -> Result<std::path::PathBuf, String> {
     Ok(dir.join("secrets.json"))
 }
 
-#[tauri::command]
-pub fn secrets_read(app: tauri::AppHandle) -> Result<Option<String>, String> {
-    let path = secrets_path(&app)?;
+pub(crate) fn secrets_read_sync(app: &tauri::AppHandle) -> Result<Option<String>, String> {
+    let path = secrets_path(app)?;
     match std::fs::read_to_string(&path) {
         Ok(s) => Ok(Some(s)),
         Err(e) if e.kind() == std::io::ErrorKind::NotFound => Ok(None),
@@ -40,16 +51,29 @@ pub fn secrets_read(app: tauri::AppHandle) -> Result<Option<String>, String> {
     }
 }
 
-#[tauri::command]
-pub fn secrets_write(app: tauri::AppHandle, content: String) -> Result<(), String> {
-    let path = secrets_path(&app)?;
+pub(crate) fn secrets_write_sync(app: &tauri::AppHandle, content: &str) -> Result<(), String> {
+    let path = secrets_path(app)?;
     let tmp = path.with_extension("json.tmp");
     std::fs::write(&tmp, content.as_bytes()).map_err(|e| e.to_string())?;
     std::fs::rename(&tmp, &path).map_err(|e| e.to_string())
 }
 
+#[tauri::command]
+pub async fn secrets_read(app: tauri::AppHandle) -> Result<Option<String>, String> {
+    tokio::task::spawn_blocking(move || secrets_read_sync(&app))
+        .await
+        .map_err(|e| e.to_string())?
+}
+
+#[tauri::command]
+pub async fn secrets_write(app: tauri::AppHandle, content: String) -> Result<(), String> {
+    tokio::task::spawn_blocking(move || secrets_write_sync(&app, &content))
+        .await
+        .map_err(|e| e.to_string())?
+}
+
 pub(crate) fn secret_value(app: &tauri::AppHandle, key: &str) -> Result<Option<String>, String> {
-    let Some(content) = secrets_read(app.clone())? else {
+    let Some(content) = secrets_read_sync(app)? else {
         return Ok(None);
     };
     let value =

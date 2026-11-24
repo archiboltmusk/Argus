@@ -23,6 +23,15 @@
   </screenshots>
   <content_rating type="oars-1.1" />
   <releases>
+    <release version="3.17.20" date="2026-11-25">
+      <description>
+        <p>Argus 3.17.20 release:</p>
+        <ul>
+          <li>Eliminated 18s macOS AppKit main-thread hang by offloading synchronous disk and temp-directory IPC commands to Tokio blocking workers</li>
+          <li>Windows x64 &amp; ARM64, Android, and iOS build fixes</li>
+        </ul>
+      </description>
+    </release>
     <release version="3.17.19" date="2026-11-25">
       <description>
         <p>Argus 3.17.19 release:</p>

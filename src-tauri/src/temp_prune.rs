@@ -128,18 +128,24 @@ fn argus_temp_dirs() -> Vec<PathBuf> {
 }
 
 #[tauri::command]
-pub fn temp_usage_bytes() -> u64 {
-    argus_temp_dirs().iter().map(dir_size).sum()
+pub async fn temp_usage_bytes() -> Result<u64, String> {
+    tokio::task::spawn_blocking(|| argus_temp_dirs().iter().map(dir_size).sum())
+        .await
+        .map_err(|e| e.to_string())
 }
 
 #[tauri::command]
-pub fn temp_clear() -> u64 {
-    let dirs = argus_temp_dirs();
-    let before: u64 = dirs.iter().map(dir_size).sum();
-    for path in dirs {
-        let _ = std::fs::remove_dir_all(path);
-    }
-    before
+pub async fn temp_clear() -> Result<u64, String> {
+    tokio::task::spawn_blocking(|| {
+        let dirs = argus_temp_dirs();
+        let before: u64 = dirs.iter().map(dir_size).sum();
+        for path in dirs {
+            let _ = std::fs::remove_dir_all(path);
+        }
+        before
+    })
+    .await
+    .map_err(|e| e.to_string())
 }
 
 #[cfg(test)]
