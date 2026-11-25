@@ -159,9 +159,9 @@ async fn retarget_render(app: &AppHandle, label: &str) -> Result<(), String> {
     }
 }
 
-async fn ensure_pip_window(app: &AppHandle) -> Result<(), String> {
+async fn ensure_pip_window(app: &AppHandle) -> Result<bool, String> {
     if app.get_webview_window(PIP_LABEL).is_some() {
-        return Ok(());
+        return Ok(false);
     }
     let app_clone = app.clone();
     // WebView2 creation must not run inside the UI event loop: it can deadlock that loop,
@@ -192,7 +192,7 @@ async fn ensure_pip_window(app: &AppHandle) -> Result<(), String> {
     .map_err(|e| format!("pip window worker: {e}"))??;
     #[cfg(windows)]
     crate::webview_helpers::apply_transparency(app, PIP_LABEL);
-    Ok(())
+    Ok(true)
 }
 
 fn place_bottom_right(pip: &tauri::WebviewWindow) -> Result<(), String> {
@@ -241,11 +241,13 @@ pub async fn pip_window_enter(
         found
     };
 
-    ensure_pip_window(&app).await?;
+    let created = ensure_pip_window(&app).await?;
     let pip = app
         .get_webview_window(PIP_LABEL)
         .ok_or_else(|| "pip window missing".to_string())?;
-    place_bottom_right(&pip)?;
+    if created {
+        place_bottom_right(&pip)?;
+    }
     pip.show().map_err(|e| format!("show: {e}"))?;
 
     #[cfg(windows)]

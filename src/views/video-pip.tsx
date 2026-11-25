@@ -186,6 +186,13 @@ export function VideoPipApp() {
     return () => window.removeEventListener("keydown", keys);
   }, [toggle, restore, seek, position, duration, wake, menu, fullscreen, toggleFullscreen, media.volume, media.muted, media.property]);
 
+  const startDrag = useCallback((event: React.MouseEvent<HTMLElement>) => {
+    if (fullscreen || event.button !== 0 || event.detail >= 2) return;
+    if ((event.target as HTMLElement)?.closest("button, input, select, a")) return;
+    event.preventDefault();
+    void getCurrentWindow().startDragging().catch(() => {});
+  }, [fullscreen]);
+
   const pct = duration > 0 ? Math.min(100, (position / duration) * 100) : 0;
 
   return (
@@ -196,9 +203,14 @@ export function VideoPipApp() {
       onFocusCapture={wake}
       onPointerLeave={() => setAwake(false)}
     >
-      <div className="vpip-drag" data-tauri-drag-region onDoubleClick={() => { void toggleFullscreen(); }} />
+      <div
+        className="vpip-drag"
+        data-tauri-drag-region
+        onMouseDown={startDrag}
+        onDoubleClick={() => { void toggleFullscreen(); }}
+      />
       <div className="vpip-chrome">
-        <div className="vpip-top" data-tauri-drag-region>
+        <div className="vpip-top" data-tauri-drag-region onMouseDown={startDrag}>
           <span className="vpip-title" data-tauri-drag-region>{title}</span>
           <div className="vpip-top-actions">
             <button type="button" onClick={restore} aria-label={t("floatingPlayer.restoreVideo")}>

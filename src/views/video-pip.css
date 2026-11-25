@@ -12,7 +12,10 @@
 .vpip-drag {
   position: absolute;
   inset: 0;
-  -webkit-app-region: drag;
+  cursor: grab;
+}
+.vpip-drag:active {
+  cursor: grabbing;
 }
 .vpip-drag * {
   pointer-events: none;

@@ -263,7 +263,7 @@ export function DragClickStage(props: {
       onMouseDown={(e) => {
         if (lastPointerType.current === "touch") return;
         if (e.target !== e.currentTarget) return;
-        if (drawMode || pipMode) return;
+        if (drawMode) return;
         if (e.button !== 0) return;
         const startX = e.clientX;
         const startY = e.clientY;
@@ -271,10 +271,11 @@ export function DragClickStage(props: {
         let dragStarted = false;
         const onMove = (ev: MouseEvent | globalThis.MouseEvent) => {
           if (dragStarted) return;
-          if (Date.now() - startTime < 150) return;
+          if (!pipMode && Date.now() - startTime < 150) return;
+          const threshold = pipMode ? 4 : 8;
           const dx = Math.abs(ev.clientX - startX);
           const dy = Math.abs(ev.clientY - startY);
-          if (dx > 8 || dy > 8) {
+          if (dx > threshold || dy > threshold) {
             dragStarted = true;
             window.removeEventListener("mousemove", onMove);
             window.removeEventListener("mouseup", onUp);
