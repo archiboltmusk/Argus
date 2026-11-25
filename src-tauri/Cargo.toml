@@ -117,7 +117,7 @@ libmpv2-sys = "4"
 ring = "0.17"
 tauri-plugin-single-instance = { version = "2", features = ["deep-link"] }
 tauri-plugin-updater = "~2.14.1"
-minisign-verify = "0.2"
+minisign-verify = "0.3"
 tauri-plugin-process = "~2.4.0"
 tauri-plugin-window-state = "2"
 notify-rust = "4"
