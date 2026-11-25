@@ -288,7 +288,7 @@ fn remember(state: &MusicState, tracks: Vec<MusicTrack>) -> Result<Vec<MusicTrac
 }
 
 #[tauri::command]
-pub fn music_local_collection(
+pub async fn music_local_collection(
     state: tauri::State<'_, MusicState>,
     kind: String,
     query: String,
@@ -296,12 +296,17 @@ pub fn music_local_collection(
     limit: usize,
     artist_key: Option<String>,
 ) -> Result<super::connectors::local::LocalMusicPage, String> {
-    super::connectors::local::collection_page(
-        &state.db,
-        &kind,
-        &query,
-        offset,
-        limit,
-        artist_key.as_deref(),
-    )
+    let db = state.db.clone();
+    tauri::async_runtime::spawn_blocking(move || {
+        super::connectors::local::collection_page(
+            &db,
+            &kind,
+            &query,
+            offset,
+            limit,
+            artist_key.as_deref(),
+        )
+    })
+    .await
+    .map_err(|error| format!("music_local_collection task failed: {error}"))?
 }

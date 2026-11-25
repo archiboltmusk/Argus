@@ -206,11 +206,14 @@ pub async fn music_engine_state(
 }
 
 #[tauri::command]
-pub fn music_import_m3u(
+pub async fn music_import_m3u(
     state: tauri::State<'_, MusicState>,
     path: String,
 ) -> Result<Vec<MusicTrack>, String> {
-    m3u::import(&state.db, &path)
+    let db = state.db.clone();
+    tauri::async_runtime::spawn_blocking(move || m3u::import(&db, &path))
+        .await
+        .map_err(|error| format!("music_import_m3u task failed: {error}"))?
 }
 
 #[tauri::command]

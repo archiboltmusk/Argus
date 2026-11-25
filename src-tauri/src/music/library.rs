@@ -44,13 +44,20 @@ pub fn list_albums(database: &MusicDb) -> Result<Vec<MusicAlbum>, String> {
             .prepare(
                 r#"
 SELECT al.id, al.title, ar.name,
-       COALESCE(NULLIF(al.artwork, ''), MAX(t.artwork), ''),
-       COUNT(t.id)
+       COALESCE(NULLIF(al.artwork, ''), tc.artwork, ''),
+       COALESCE(tc.track_count, 0)
 FROM albums al
 JOIN artists ar ON ar.id = al.artist_id
-LEFT JOIN music_tracks t
-  ON t.album = al.title COLLATE NOCASE AND t.artist = ar.name COLLATE NOCASE
-GROUP BY al.id, al.title, ar.name, al.artwork
+LEFT JOIN (
+  SELECT album COLLATE NOCASE AS album_key,
+         artist COLLATE NOCASE AS artist_key,
+         MAX(artwork) AS artwork,
+         COUNT(*) AS track_count
+  FROM music_tracks
+  WHERE album IS NOT NULL AND album <> ''
+  GROUP BY album COLLATE NOCASE, artist COLLATE NOCASE
+) tc
+  ON tc.album_key = al.title COLLATE NOCASE AND tc.artist_key = ar.name COLLATE NOCASE
 ORDER BY al.title COLLATE NOCASE, ar.name COLLATE NOCASE
 "#,
             )
@@ -76,11 +83,20 @@ pub fn list_artists(database: &MusicDb) -> Result<Vec<MusicArtist>, String> {
         let mut statement = connection
             .prepare(
                 r#"
-SELECT ar.id, ar.name, COUNT(DISTINCT t.id), COUNT(DISTINCT al.id)
+SELECT ar.id, ar.name,
+       COALESCE(tc.track_count, 0),
+       COALESCE(ac.album_count, 0)
 FROM artists ar
-LEFT JOIN music_tracks t ON t.artist = ar.name COLLATE NOCASE
-LEFT JOIN albums al ON al.artist_id = ar.id
-GROUP BY ar.id, ar.name
+LEFT JOIN (
+  SELECT artist COLLATE NOCASE AS artist_key, COUNT(*) AS track_count
+  FROM music_tracks
+  GROUP BY artist COLLATE NOCASE
+) tc ON tc.artist_key = ar.name COLLATE NOCASE
+LEFT JOIN (
+  SELECT artist_id, COUNT(*) AS album_count
+  FROM albums
+  GROUP BY artist_id
+) ac ON ac.artist_id = ar.id
 ORDER BY ar.name COLLATE NOCASE
 "#,
             )

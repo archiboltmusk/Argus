@@ -4,20 +4,21 @@ use super::migrations;
 use super::{duration_label, MusicStream, MusicTrack};
 use rusqlite::{params, Connection, OptionalExtension, Transaction};
 use std::path::Path;
-use std::sync::Mutex;
+use std::sync::{Arc, Mutex};
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use stream_cache::{is_fresh, stream_ttl};
 
+#[derive(Clone)]
 pub struct MusicDb {
-    connection: Mutex<Option<Connection>>,
-    opened: Mutex<Option<std::path::PathBuf>>,
+    connection: Arc<Mutex<Option<Connection>>>,
+    opened: Arc<Mutex<Option<std::path::PathBuf>>>,
 }
 
 impl MusicDb {
     pub fn new() -> Self {
         Self {
-            connection: Mutex::new(None),
-            opened: Mutex::new(None),
+            connection: Arc::new(Mutex::new(None)),
+            opened: Arc::new(Mutex::new(None)),
         }
     }
 
@@ -171,8 +172,8 @@ impl MusicDb {
         let mut connection = Connection::open_in_memory().expect("open in-memory music database");
         Self::configure(&mut connection).expect("configure in-memory music database");
         Self {
-            connection: Mutex::new(Some(connection)),
-            opened: Mutex::new(None),
+            connection: Arc::new(Mutex::new(Some(connection))),
+            opened: Arc::new(Mutex::new(None)),
         }
     }
 }

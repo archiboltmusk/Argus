@@ -149,11 +149,14 @@ pub async fn music_lastfm_complete_auth(
 }
 
 #[tauri::command]
-pub fn music_lastfm_status(
+pub async fn music_lastfm_status(
     app: tauri::AppHandle,
     state: tauri::State<'_, MusicState>,
 ) -> Result<lastfm::LastFmStatus, String> {
-    let result = lastfm::status(&app);
+    let app_for_read = app.clone();
+    let result = tauri::async_runtime::spawn_blocking(move || lastfm::status(&app_for_read))
+        .await
+        .map_err(|error| format!("music_lastfm_status task failed: {error}"))?;
     if let Ok(status) = &result {
         if let Some(connector) = state.registry.get("lastfm") {
             connector.set_health(if status.connected {

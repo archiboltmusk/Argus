@@ -1,6 +1,6 @@
 use rusqlite::Connection;
 
-pub const LATEST_VERSION: i64 = 8;
+pub const LATEST_VERSION: i64 = 9;
 
 const CREATE_SCHEMA: &str = r#"
 CREATE TABLE IF NOT EXISTS music_tracks (
@@ -123,7 +123,13 @@ UPDATE music_tracks SET resolved_url = NULL, resolved_at = NULL, resolved_metada
  WHERE connector = 'direct' AND instr(COALESCE(resolved_url, ''), '?') > 0;
 DROP TABLE legacy_direct_ids;
 "#;
-const STEPS: [(i64, &str); 8] = [
+const LIBRARY_INDEXES: &str = r#"
+CREATE INDEX IF NOT EXISTS music_tracks_artist_nocase_idx ON music_tracks(artist COLLATE NOCASE);
+CREATE INDEX IF NOT EXISTS music_tracks_album_artist_nocase_idx ON music_tracks(album COLLATE NOCASE, artist COLLATE NOCASE);
+CREATE INDEX IF NOT EXISTS albums_artist_id_idx ON albums(artist_id);
+"#;
+
+const STEPS: [(i64, &str); 9] = [
     (1, CREATE_SCHEMA),
     (2, CREATE_CATALOG),
     (3, STREAM_METADATA),
@@ -134,6 +140,7 @@ const STEPS: [(i64, &str); 8] = [
     // Preserve local/direct endpoints, which are user-owned playback sources.
     (7, "UPDATE music_tracks SET resolved_url = NULL, resolved_at = NULL, resolved_metadata = NULL WHERE connector NOT IN ('local', 'direct');"),
     (8, DIRECT_PRIVACY),
+    (9, LIBRARY_INDEXES),
 ];
 
 pub fn run(connection: &mut Connection) -> Result<(), String> {
