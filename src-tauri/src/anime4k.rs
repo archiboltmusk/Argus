@@ -71,18 +71,22 @@ fn shaders_dir(app: &tauri::AppHandle) -> Result<PathBuf, String> {
 }
 
 #[tauri::command]
-pub fn anime4k_dir(app: tauri::AppHandle) -> Result<Option<String>, String> {
-    let dir = shaders_dir(&app)?;
-    let complete = FILES.iter().all(|(_, local)| {
-        std::fs::metadata(dir.join(local))
-            .map(|metadata| metadata.len() > 0)
-            .unwrap_or(false)
-    });
-    if complete {
-        Ok(Some(dir.to_string_lossy().into_owned()))
-    } else {
-        Ok(None)
-    }
+pub async fn anime4k_dir(app: tauri::AppHandle) -> Result<Option<String>, String> {
+    tauri::async_runtime::spawn_blocking(move || {
+        let dir = shaders_dir(&app)?;
+        let complete = FILES.iter().all(|(_, local)| {
+            std::fs::metadata(dir.join(local))
+                .map(|metadata| metadata.len() > 0)
+                .unwrap_or(false)
+        });
+        if complete {
+            Ok(Some(dir.to_string_lossy().into_owned()))
+        } else {
+            Ok(None)
+        }
+    })
+    .await
+    .map_err(|e| format!("anime4k_dir task failed: {e}"))?
 }
 
 #[tauri::command]

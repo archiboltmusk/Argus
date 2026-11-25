@@ -107,53 +107,66 @@ fn safe_ext(ext: &str) -> Option<&str> {
 }
 
 #[tauri::command]
-pub fn install_sub_font(
+pub async fn install_sub_font(
     app: tauri::AppHandle,
     id: String,
     ext: String,
     base64: String,
 ) -> Result<(), String> {
-    use base64::{engine::general_purpose::STANDARD as B64, Engine as _};
-    let id = safe_id(&id).ok_or("bad font id")?;
-    let ext = safe_ext(&ext).ok_or("libass can only read ttf, otf or ttc")?;
-    let bytes = B64.decode(base64.as_bytes()).map_err(|e| e.to_string())?;
-    if bytes.is_empty() || bytes.len() > 32 * 1024 * 1024 {
-        return Err("bad font size".into());
-    }
-    let dir = sub_fonts_dir(&app).ok_or("no writable fonts dir")?;
-    std::fs::write(dir.join(format!("argus-custom-{id}.{ext}")), &bytes).map_err(|e| e.to_string())
+    tauri::async_runtime::spawn_blocking(move || {
+        use base64::{engine::general_purpose::STANDARD as B64, Engine as _};
+        let id = safe_id(&id).ok_or("bad font id")?;
+        let ext = safe_ext(&ext).ok_or("libass can only read ttf, otf or ttc")?;
+        let bytes = B64.decode(base64.as_bytes()).map_err(|e| e.to_string())?;
+        if bytes.is_empty() || bytes.len() > 32 * 1024 * 1024 {
+            return Err("bad font size".into());
+        }
+        let dir = sub_fonts_dir(&app).ok_or("no writable fonts dir")?;
+        std::fs::write(dir.join(format!("argus-custom-{id}.{ext}")), &bytes)
+            .map_err(|e| e.to_string())
+    })
+    .await
+    .map_err(|e| format!("install_sub_font task failed: {e}"))?
 }
 
 #[tauri::command]
-pub fn remove_sub_font(app: tauri::AppHandle, id: String) -> Result<(), String> {
-    let id = safe_id(&id).ok_or("bad font id")?;
-    let Some(dir) = user_fonts_dir(&app) else {
-        return Ok(());
-    };
-    for ext in ["ttf", "otf", "ttc"] {
-        let _ = std::fs::remove_file(dir.join(format!("argus-custom-{id}.{ext}")));
-    }
-    Ok(())
+pub async fn remove_sub_font(app: tauri::AppHandle, id: String) -> Result<(), String> {
+    tauri::async_runtime::spawn_blocking(move || {
+        let id = safe_id(&id).ok_or("bad font id")?;
+        let Some(dir) = user_fonts_dir(&app) else {
+            return Ok(());
+        };
+        for ext in ["ttf", "otf", "ttc"] {
+            let _ = std::fs::remove_file(dir.join(format!("argus-custom-{id}.{ext}")));
+        }
+        Ok(())
+    })
+    .await
+    .map_err(|e| format!("remove_sub_font task failed: {e}"))?
 }
 
 #[tauri::command]
-pub fn list_sub_fonts(app: tauri::AppHandle) -> Vec<String> {
-    let Some(dir) = user_fonts_dir(&app) else {
-        return Vec::new();
-    };
-    let Ok(rd) = std::fs::read_dir(dir) else {
-        return Vec::new();
-    };
-    rd.flatten()
-        .filter_map(|e| {
-            let p = e.path();
-            if !is_font_file(&p) {
-                return None;
-            }
-            p.file_stem()
-                .and_then(|s| s.to_str())
-                .and_then(|s| s.strip_prefix("argus-custom-"))
-                .map(|s| s.to_string())
-        })
-        .collect()
+pub async fn list_sub_fonts(app: tauri::AppHandle) -> Result<Vec<String>, String> {
+    tauri::async_runtime::spawn_blocking(move || {
+        let Some(dir) = user_fonts_dir(&app) else {
+            return Vec::new();
+        };
+        let Ok(rd) = std::fs::read_dir(dir) else {
+            return Vec::new();
+        };
+        rd.flatten()
+            .filter_map(|e| {
+                let p = e.path();
+                if !is_font_file(&p) {
+                    return None;
+                }
+                p.file_stem()
+                    .and_then(|s| s.to_str())
+                    .and_then(|s| s.strip_prefix("argus-custom-"))
+                    .map(|s| s.to_string())
+            })
+            .collect()
+    })
+    .await
+    .map_err(|e| format!("list_sub_fonts task failed: {e}"))
 }

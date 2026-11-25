@@ -133,18 +133,22 @@ fn pack_dir(app: &tauri::AppHandle, id: &str) -> Result<PathBuf, String> {
 }
 
 #[tauri::command]
-pub fn shader_dir(app: tauri::AppHandle, id: String) -> Result<Option<String>, String> {
-    let pack = match find_pack(&id) {
-        Some(p) => p,
-        None => return Ok(None),
-    };
-    let dir = pack_dir(&app, &id)?;
-    let marker = dir.join(pack.files[0].1);
-    if marker.exists() {
-        Ok(Some(dir.to_string_lossy().into_owned()))
-    } else {
-        Ok(None)
-    }
+pub async fn shader_dir(app: tauri::AppHandle, id: String) -> Result<Option<String>, String> {
+    tauri::async_runtime::spawn_blocking(move || {
+        let pack = match find_pack(&id) {
+            Some(p) => p,
+            None => return Ok(None),
+        };
+        let dir = pack_dir(&app, &id)?;
+        let marker = dir.join(pack.files[0].1);
+        if marker.exists() {
+            Ok(Some(dir.to_string_lossy().into_owned()))
+        } else {
+            Ok(None)
+        }
+    })
+    .await
+    .map_err(|e| format!("shader_dir task failed: {e}"))?
 }
 
 #[tauri::command]

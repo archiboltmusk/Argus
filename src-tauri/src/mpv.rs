@@ -1974,22 +1974,26 @@ pub async fn mpv_set_geometry(
 }
 
 #[tauri::command]
-pub fn mpv_export_log(app: AppHandle) -> Result<String, String> {
-    use tauri::Manager;
-    let src = app
-        .path()
-        .app_data_dir()
-        .map_err(|e| e.to_string())?
-        .join("argus-mpv.log");
-    if !src.exists() {
-        return Err("No player log yet. Play something first, then export.".into());
-    }
-    let dl = app.path().download_dir().map_err(|e| e.to_string())?;
-    let dst = dl.join("argus-mpv-log.txt");
-    let raw = std::fs::read(&src).map_err(|e| format!("read: {}", e))?;
-    let scrubbed = crate::log_privacy::scrub(&String::from_utf8_lossy(&raw));
-    std::fs::write(&dst, scrubbed).map_err(|e| format!("write: {}", e))?;
-    Ok(dst.to_string_lossy().into_owned())
+pub async fn mpv_export_log(app: AppHandle) -> Result<String, String> {
+    tauri::async_runtime::spawn_blocking(move || {
+        use tauri::Manager;
+        let src = app
+            .path()
+            .app_data_dir()
+            .map_err(|e| e.to_string())?
+            .join("argus-mpv.log");
+        if !src.exists() {
+            return Err("No player log yet. Play something first, then export.".into());
+        }
+        let dl = app.path().download_dir().map_err(|e| e.to_string())?;
+        let dst = dl.join("argus-mpv-log.txt");
+        let raw = std::fs::read(&src).map_err(|e| format!("read: {}", e))?;
+        let scrubbed = crate::log_privacy::scrub(&String::from_utf8_lossy(&raw));
+        std::fs::write(&dst, scrubbed).map_err(|e| format!("write: {}", e))?;
+        Ok(dst.to_string_lossy().into_owned())
+    })
+    .await
+    .map_err(|e| format!("mpv_export_log task failed: {e}"))?
 }
 
 #[tauri::command]

@@ -136,35 +136,45 @@ pub fn set_active_model_id(app: &tauri::AppHandle, id: &str) -> Result<(), Strin
 }
 
 #[tauri::command]
-pub fn asr_list_models(app: tauri::AppHandle) -> Result<Vec<ModelSpec>, String> {
-    let active = active_model_id(&app);
-    let mut list = Vec::new();
-    for (id, filename, url, name, desc, size_mb) in model_specs() {
-        let downloaded = resolve_model_path(&app, filename).is_some();
-        list.push(ModelSpec {
-            id: id.to_string(),
-            filename: filename.to_string(),
-            url: url.to_string(),
-            name: name.to_string(),
-            description: desc.to_string(),
-            size_mb: *size_mb,
-            downloaded,
-            active: active == *id,
-        });
-    }
-    Ok(list)
+pub async fn asr_list_models(app: tauri::AppHandle) -> Result<Vec<ModelSpec>, String> {
+    tauri::async_runtime::spawn_blocking(move || {
+        let active = active_model_id(&app);
+        let mut list = Vec::new();
+        for (id, filename, url, name, desc, size_mb) in model_specs() {
+            let downloaded = resolve_model_path(&app, filename).is_some();
+            list.push(ModelSpec {
+                id: id.to_string(),
+                filename: filename.to_string(),
+                url: url.to_string(),
+                name: name.to_string(),
+                description: desc.to_string(),
+                size_mb: *size_mb,
+                downloaded,
+                active: active == *id,
+            });
+        }
+        Ok(list)
+    })
+    .await
+    .map_err(|e| format!("asr_list_models task failed: {e}"))?
 }
 
 #[tauri::command]
-pub fn asr_set_active_model(app: tauri::AppHandle, model_id: String) -> Result<(), String> {
-    set_active_model_id(&app, &model_id)
+pub async fn asr_set_active_model(app: tauri::AppHandle, model_id: String) -> Result<(), String> {
+    tauri::async_runtime::spawn_blocking(move || set_active_model_id(&app, &model_id))
+        .await
+        .map_err(|e| format!("asr_set_active_model task failed: {e}"))?
 }
 
 #[tauri::command]
-pub fn asr_model_path(app: tauri::AppHandle) -> Result<Option<String>, String> {
-    let active = active_model_id(&app);
-    let spec = model_specs().iter().find(|(id, ..)| *id == active).unwrap();
-    Ok(resolve_model_path(&app, spec.1).map(|path| path.to_string_lossy().into_owned()))
+pub async fn asr_model_path(app: tauri::AppHandle) -> Result<Option<String>, String> {
+    tauri::async_runtime::spawn_blocking(move || {
+        let active = active_model_id(&app);
+        let spec = model_specs().iter().find(|(id, ..)| *id == active).unwrap();
+        Ok(resolve_model_path(&app, spec.1).map(|path| path.to_string_lossy().into_owned()))
+    })
+    .await
+    .map_err(|e| format!("asr_model_path task failed: {e}"))?
 }
 
 #[tauri::command]

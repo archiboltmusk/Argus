@@ -141,22 +141,26 @@ fn platform_key() -> String {
 }
 
 #[tauri::command]
-pub fn handoff_probe() -> HandoffProbe {
-    let dir = install_dir();
-    let marker = dir.as_deref().and_then(read_install_marker);
-    let payload_version = marker
-        .as_ref()
-        .and_then(|value| value.payload_version)
-        .unwrap_or(0);
-    HandoffProbe {
-        supported: cfg!(target_os = "windows") && dir.is_some(),
-        managed: payload_version > 0,
-        install_dir: dir
-            .map(|d| d.to_string_lossy().to_string())
-            .unwrap_or_default(),
-        payload_version,
-        platform_key: platform_key(),
-    }
+pub async fn handoff_probe() -> Result<HandoffProbe, String> {
+    tauri::async_runtime::spawn_blocking(|| {
+        let dir = install_dir();
+        let marker = dir.as_deref().and_then(read_install_marker);
+        let payload_version = marker
+            .as_ref()
+            .and_then(|value| value.payload_version)
+            .unwrap_or(0);
+        HandoffProbe {
+            supported: cfg!(target_os = "windows") && dir.is_some(),
+            managed: payload_version > 0,
+            install_dir: dir
+                .map(|d| d.to_string_lossy().to_string())
+                .unwrap_or_default(),
+            payload_version,
+            platform_key: platform_key(),
+        }
+    })
+    .await
+    .map_err(|e| format!("handoff_probe task failed: {e}"))
 }
 
 fn updater_pubkey(app: &tauri::AppHandle) -> Result<String, String> {

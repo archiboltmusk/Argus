@@ -177,21 +177,25 @@ pub async fn diagnostics_collect(
 }
 
 #[tauri::command]
-pub fn diagnostics_cleanup(_app: AppHandle, temp_path: String) -> Result<(), String> {
-    let path = PathBuf::from(&temp_path);
-    let name_ok = path
-        .file_name()
-        .and_then(|n| n.to_str())
-        .map(|n| n.starts_with("argus-diag-") && n.ends_with(".zip"))
-        .unwrap_or(false);
-    let in_temp = path.starts_with(std::env::temp_dir());
-    if !name_ok || !in_temp {
-        return Err("refusing to delete path outside diagnostics temp scope".to_string());
-    }
-    if path.exists() {
-        std::fs::remove_file(&path).map_err(|e| e.to_string())?;
-    }
-    Ok(())
+pub async fn diagnostics_cleanup(_app: AppHandle, temp_path: String) -> Result<(), String> {
+    tauri::async_runtime::spawn_blocking(move || {
+        let path = PathBuf::from(&temp_path);
+        let name_ok = path
+            .file_name()
+            .and_then(|n| n.to_str())
+            .map(|n| n.starts_with("argus-diag-") && n.ends_with(".zip"))
+            .unwrap_or(false);
+        let in_temp = path.starts_with(std::env::temp_dir());
+        if !name_ok || !in_temp {
+            return Err("refusing to delete path outside diagnostics temp scope".to_string());
+        }
+        if path.exists() {
+            std::fs::remove_file(&path).map_err(|e| e.to_string())?;
+        }
+        Ok(())
+    })
+    .await
+    .map_err(|e| format!("diagnostics_cleanup task failed: {e}"))?
 }
 
 #[cfg(test)]

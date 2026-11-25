@@ -12,21 +12,25 @@ pub struct DownloadFileInfo {
 }
 
 #[tauri::command]
-pub fn download_file_info(path: String) -> Result<DownloadFileInfo, String> {
-    let path = Path::new(&path);
-    let result = inspect_download_file(path)?;
-    Ok(match result {
-        Some((canonical, is_file)) => DownloadFileInfo {
-            exists: true,
-            is_file,
-            canonical_path: Some(canonical.to_string_lossy().into_owned()),
-        },
-        None => DownloadFileInfo {
-            exists: false,
-            is_file: false,
-            canonical_path: None,
-        },
+pub async fn download_file_info(path: String) -> Result<DownloadFileInfo, String> {
+    tauri::async_runtime::spawn_blocking(move || {
+        let path = Path::new(&path);
+        let result = inspect_download_file(path)?;
+        Ok(match result {
+            Some((canonical, is_file)) => DownloadFileInfo {
+                exists: true,
+                is_file,
+                canonical_path: Some(canonical.to_string_lossy().into_owned()),
+            },
+            None => DownloadFileInfo {
+                exists: false,
+                is_file: false,
+                canonical_path: None,
+            },
+        })
     })
+    .await
+    .map_err(|error| format!("download_file_info task failed: {error}"))?
 }
 
 #[tauri::command]
@@ -67,34 +71,38 @@ pub async fn download_delete_file(
 }
 
 #[tauri::command]
-pub fn argus_download_dir(app: tauri::AppHandle) -> Result<String, String> {
-    use tauri::Manager;
-    let directory = app
-        .path()
-        .download_dir()
-        .or_else(|_| app.path().video_dir())
-        .or_else(|_| app.path().app_data_dir())
-        .map_err(|error| error.to_string())?;
+pub async fn argus_download_dir(app: tauri::AppHandle) -> Result<String, String> {
+    tauri::async_runtime::spawn_blocking(move || {
+        use tauri::Manager;
+        let directory = app
+            .path()
+            .download_dir()
+            .or_else(|_| app.path().video_dir())
+            .or_else(|_| app.path().app_data_dir())
+            .map_err(|error| error.to_string())?;
 
-    // Tauri 2.12 Android migration: check if legacy downloads exist in old cache directory
-    #[cfg(target_os = "android")]
-    {
-        if let Ok(cache_dir) = app.path().app_cache_dir() {
-            let legacy_downloads = cache_dir.join("Argus Downloads");
-            if legacy_downloads.exists() && legacy_downloads.is_dir() {
-                let target_dir = directory.join("Argus Downloads");
-                let _ = std::fs::create_dir_all(&target_dir);
-                if let Ok(entries) = std::fs::read_dir(&legacy_downloads) {
-                    for entry in entries.flatten() {
-                        let target = target_dir.join(entry.file_name());
-                        if !target.exists() {
-                            let _ = std::fs::rename(entry.path(), &target);
+        // Tauri 2.12 Android migration: check if legacy downloads exist in old cache directory
+        #[cfg(target_os = "android")]
+        {
+            if let Ok(cache_dir) = app.path().app_cache_dir() {
+                let legacy_downloads = cache_dir.join("Argus Downloads");
+                if legacy_downloads.exists() && legacy_downloads.is_dir() {
+                    let target_dir = directory.join("Argus Downloads");
+                    let _ = std::fs::create_dir_all(&target_dir);
+                    if let Ok(entries) = std::fs::read_dir(&legacy_downloads) {
+                        for entry in entries.flatten() {
+                            let target = target_dir.join(entry.file_name());
+                            if !target.exists() {
+                                let _ = std::fs::rename(entry.path(), &target);
+                            }
                         }
                     }
                 }
             }
         }
-    }
 
-    Ok(directory.to_string_lossy().into_owned())
+        Ok(directory.to_string_lossy().into_owned())
+    })
+    .await
+    .map_err(|error| format!("argus_download_dir task failed: {error}"))?
 }
