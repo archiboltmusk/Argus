@@ -667,10 +667,9 @@ pub async fn stop_async() {
 }
 
 pub fn stop() {
-    let _ = tauri::async_runtime::block_on(tokio::time::timeout(
-        std::time::Duration::from_millis(400),
-        stop_async(),
-    ));
+    let _ = tauri::async_runtime::block_on(async {
+        tokio::time::timeout(std::time::Duration::from_millis(400), stop_async()).await
+    });
 }
 
 #[tauri::command]

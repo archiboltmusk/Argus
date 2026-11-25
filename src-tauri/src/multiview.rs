@@ -905,13 +905,13 @@ pub async fn multiview_stop_all(
 
 pub(crate) fn shutdown(app: &AppHandle) {
     let state = app.state::<MultiviewState>();
-    let drained: Vec<Slot> = tauri::async_runtime::block_on(tokio::time::timeout(
-        std::time::Duration::from_millis(250),
-        async {
+    let drained: Vec<Slot> = tauri::async_runtime::block_on(async {
+        tokio::time::timeout(std::time::Duration::from_millis(250), async {
             let mut slots = state.slots.lock().await;
             slots.drain().map(|(_, s)| s).collect()
-        },
-    ))
+        })
+        .await
+    })
     .unwrap_or_default();
     for mut s in drained {
         if let Some(pid) = s.pid {
