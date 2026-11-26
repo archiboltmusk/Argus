@@ -1,4 +1,5 @@
-import { describe, expect, it } from "vitest";
+import { describe, it } from "node:test";
+import assert from "node:assert/strict";
 import {
   evaluateDeviceStreamSupport,
   webPlayabilityScore,
@@ -38,8 +39,8 @@ describe("Web playback upgrades", () => {
       audio: { codec: "AC3" },
     } as any;
     const ac3Res = evaluateDeviceStreamSupport(ac3Stream, webCaps, { hasCompanion: false });
-    expect(ac3Res.supported).toBe(false);
-    expect(ac3Res.badgeLabel).toBe("Unsupported audio");
+    assert.equal(ac3Res.supported, false);
+    assert.equal(ac3Res.badgeLabel, "Unsupported audio");
 
     const p2pStream = {
       infoHash: "0123456789abcdef0123456789abcdef01234567",
@@ -49,8 +50,8 @@ describe("Web playback upgrades", () => {
       hasCompanion: false,
       hasDebrid: false,
     });
-    expect(p2pRes.supported).toBe(false);
-    expect(p2pRes.badgeLabel).toBe("Needs Debrid / Desktop");
+    assert.equal(p2pRes.supported, false);
+    assert.equal(p2pRes.badgeLabel, "Needs Debrid / Desktop");
   });
 
   it("allows MKV, HEVC, and AC3 on Web when a Companion Server is connected", () => {
@@ -60,7 +61,7 @@ describe("Web playback upgrades", () => {
       audio: { codec: "AC3" },
     } as any;
     const res = evaluateDeviceStreamSupport(mkvHevcAc3, webCaps, { hasCompanion: true });
-    expect(res.supported).toBe(true);
+    assert.equal(res.supported, true);
   });
 
   it("ranks HLS/MP4 H.264/AAC cached streams above raw torrents on Web", () => {
@@ -75,8 +76,8 @@ describe("Web playback upgrades", () => {
       behaviorHints: { notWebReady: true },
     } as any;
 
-    expect(webPlayabilityScore(hlsStream, webCaps)).toBeGreaterThan(
-      webPlayabilityScore(rawTorrent, webCaps),
+    assert.ok(
+      webPlayabilityScore(hlsStream, webCaps) > webPlayabilityScore(rawTorrent, webCaps),
     );
   });
 
@@ -85,9 +86,9 @@ describe("Web playback upgrades", () => {
       Referer: "https://host.example.com/",
     });
     const parsed = new URL(url);
-    expect(parsed.origin).toBe("https://relay.example.com");
-    expect(parsed.pathname).toBe("/proxy");
-    expect(parsed.searchParams.get("url")).toBe("https://host.example.com/video.m3u8");
-    expect(parsed.searchParams.get("headers")).toBeTruthy();
+    assert.equal(parsed.origin, "https://relay.example.com");
+    assert.equal(parsed.pathname, "/proxy");
+    assert.equal(parsed.searchParams.get("url"), "https://host.example.com/video.m3u8");
+    assert.ok(parsed.searchParams.get("headers"));
   });
 });
