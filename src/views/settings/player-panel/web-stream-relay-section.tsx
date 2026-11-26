@@ -23,7 +23,20 @@ export function WebStreamRelaySection() {
   const [relayProbe, setRelayProbe] = useState<ProbeResult>("idle");
   const [companionProbe, setCompanionProbe] = useState<ProbeResult>("idle");
 
-  if (!isWeb()) return null;
+  if (!isWeb()) {
+    return (
+      <div className="flex flex-col gap-2 rounded-[12px] border border-edge-soft bg-elevated/50 p-4">
+        <h3 className="text-[16px] font-semibold tracking-tight text-ink">
+          {t("Desktop companion bridge")}
+        </h3>
+        <p className="text-[13.5px] text-ink-muted">
+          {t(
+            "Argus Desktop exposes a CORS-enabled /api/proxy/register bridge on its local stream proxy so Argus Web can transcode MKV, AC3/EAC3, and DTS streams.",
+          )}
+        </p>
+      </div>
+    );
+  }
 
   const probeEndpoint = async (
     baseUrl: string,

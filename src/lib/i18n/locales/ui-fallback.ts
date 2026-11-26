@@ -1,5 +1,7 @@
 // Newly introduced UI copy remains usable until each locale provides an override.
 const uiFallback: Record<string, string> = {
+  "Desktop companion bridge": "Desktop companion bridge",
+  "Argus Desktop exposes a CORS-enabled /api/proxy/register bridge on its local stream proxy so Argus Web can transcode MKV, AC3/EAC3, and DTS streams.": "Argus Desktop exposes a CORS-enabled /api/proxy/register bridge on its local stream proxy so Argus Web can transcode MKV, AC3/EAC3, and DTS streams.",
   "Export installed add-ons as JSON and copy to clipboard": "Export installed add-ons as JSON and copy to clipboard",
   "Paste Argus/Stremio add-on bundle JSON or manifest URLs (one per line):": "Paste Argus/Stremio add-on bundle JSON or manifest URLs (one per line):",
   "Import add-ons from JSON bundle or manifest URLs": "Import add-ons from JSON bundle or manifest URLs",

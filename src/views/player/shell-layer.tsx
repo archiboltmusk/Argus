@@ -1,4 +1,5 @@
 import { memo, type RefObject } from "react";
+import { isWebCastSupported, promptWebCast } from "@/lib/cast";
 import type { Meta } from "@/lib/cinemeta";
 import type { PlayerBridge, PlayerSnapshot } from "@/lib/player/bridge";
 import { getPlayerShell, type PlayerShellProps } from "@/lib/player-shells/registry";
@@ -200,6 +201,10 @@ export const ShellLayer = memo(function ShellLayer({
       onPiP={onPiP}
       onFullscreen={onFullscreen}
       onCast={() => {
+        if (isWebCastSupported()) {
+          void promptWebCast();
+          return;
+        }
         const btn = document.querySelector('[aria-label="Cast"]') as HTMLElement | null;
         if (btn) {
           const r = btn.getBoundingClientRect();

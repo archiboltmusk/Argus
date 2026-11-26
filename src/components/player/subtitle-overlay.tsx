@@ -2,12 +2,14 @@ import { memo, useEffect, useMemo, useRef, useState } from "react";
 import { useSubtitleLiftCover } from "@/lib/player/controls-inset";
 import { useActiveKid } from "@/lib/profiles";
 import { useSettings } from "@/lib/settings";
+import type { AssCueStyle } from "@/lib/subtitles/ass-styles";
 
 const LIFT_GAP_PX = 12;
 
 type Props = {
   text: string;
   startSec: number;
+  assStyle?: AssCueStyle | null;
   scale?: number;
   secondaryText?: string;
   elevateForHud?: boolean;
@@ -18,6 +20,7 @@ type Props = {
 export const SubtitleOverlay = memo(function SubtitleOverlay({
   text,
   startSec,
+  assStyle = null,
   scale = 1,
   secondaryText = "",
   videoWidth,
@@ -192,6 +195,19 @@ export const SubtitleOverlay = memo(function SubtitleOverlay({
     </div>
   ) : null;
 
+  const primaryTextStyle: React.CSSProperties = useMemo(
+    () => ({
+      ...baseTextStyle,
+      ...(assStyle?.color ? { color: assStyle.color } : {}),
+      ...(assStyle?.bold !== undefined ? { fontWeight: assStyle.bold ? 700 : 400 } : {}),
+      ...(assStyle?.italic ? { fontStyle: "italic" as const } : {}),
+      ...(assStyle?.fontSize ? { fontSize: `${Math.round(assStyle.fontSize * responsive)}px` } : {}),
+    }),
+    [baseTextStyle, assStyle, responsive],
+  );
+  const assTop = assStyle?.alignment !== undefined && assStyle.alignment >= 7;
+  const assMiddle = assStyle?.alignment !== undefined && assStyle.alignment >= 4 && assStyle.alignment <= 6;
+
   if (!text && !secondaryText) return null;
 
   return (
@@ -209,17 +225,23 @@ export const SubtitleOverlay = memo(function SubtitleOverlay({
         ref={wrapRef}
         className={`pointer-events-none absolute inset-x-0 z-10 flex flex-col gap-1.5 ${alignItems} px-[6%] transition-transform duration-300 ease-out motion-reduce:transition-none`}
         style={{
-          bottom: `${effectiveMarginY}%`,
+          ...(assTop
+            ? { top: `${effectiveMarginY}%` }
+            : assMiddle
+              ? { top: "50%", transform: "translateY(-50%)" }
+              : {
+                  bottom: `${effectiveMarginY}%`,
+                  transform: isLetterboxed
+                    ? `translateY(calc(50% - ${lift}px))`
+                    : `translateY(${-lift}px)`,
+                }),
           opacity,
-          transform: isLetterboxed
-            ? `translateY(calc(50% - ${lift}px))`
-            : `translateY(${-lift}px)`,
         }}
       >
         {secondBlock && !secondTop && secondBlock}
         {text && (
           <div className="max-w-[80%]" style={boxStyle}>
-            <div style={baseTextStyle}>
+            <div style={primaryTextStyle}>
               {lines.map((line, i) => (
                 <div key={i}>{line}</div>
               ))}

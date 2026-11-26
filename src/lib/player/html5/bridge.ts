@@ -218,6 +218,7 @@ export function createHtml5Bridge(): PlayerBridge {
       if (snap.subText !== "") {
         snap.subText = "";
         snap.subStartSec = 0;
+        snap.subStyle = null;
         changed = true;
       }
     } else {
@@ -228,6 +229,7 @@ export function createHtml5Bridge(): PlayerBridge {
         const raw = cue?.text ?? "";
         snap.subText = hideSdh ? stripSdhText(raw) : raw;
         snap.subStartSec = cue?.start ?? 0;
+        snap.subStyle = cue?.assStyle ?? null;
         changed = true;
       }
     }

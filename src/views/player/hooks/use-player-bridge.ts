@@ -40,6 +40,7 @@ function snapChangedIgnoringClock(a: PlayerSnapshot, b: PlayerSnapshot): boolean
     a.subDelaySec !== b.subDelaySec ||
     a.audioDelaySec !== b.audioDelaySec ||
     a.subText !== b.subText ||
+    a.subStyle !== b.subStyle ||
     a.subStartSec !== b.subStartSec ||
     a.secondarySubText !== b.secondarySubText ||
     a.noAudio !== b.noAudio ||

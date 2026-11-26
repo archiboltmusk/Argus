@@ -320,6 +320,10 @@ jobs:
           ARGUS_SIMKL_CLIENT_ID: ${{ secrets.ARGUS_SIMKL_CLIENT_ID }}
         run: |
           set -euo pipefail
+          # Point Windows bundle resource at the fetched ARM64 mpv sidecar
+          if [ -f "src-tauri/binaries/mpv-aarch64-pc-windows-msvc.exe" ]; then
+            node -e 'const fs=require("fs"),p="src-tauri/tauri.windows.conf.json";fs.writeFileSync(p,fs.readFileSync(p,"utf8").replace("mpv-x86_64-pc-windows-msvc.exe","mpv-aarch64-pc-windows-msvc.exe"));'
+          fi
           # Ensure MSVC link.exe precedes Git Bash's /usr/bin/link.exe in PATH
           if [ -n "${VCToolsInstallDir:-}" ]; then
             MSVC_VC_POSIX=$(cygpath -u "$VCToolsInstallDir")

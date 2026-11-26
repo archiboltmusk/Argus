@@ -1,0 +1,50 @@
+name: Update Package Managers
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release tag (for example v3.17.23)"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  sync:
+    name: Update Homebrew Cask & winget manifests
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+      - name: Update Casks/argus.rb and winget manifests
+        env:
+          TAG: ${{ inputs.tag || github.event.release.tag_name }}
+        run: |
+          set -euo pipefail
+          node scripts/update-homebrew-cask.mjs "$TAG"
+          node scripts/update-winget.mjs "$TAG"
+          ruby -c Casks/argus.rb
+      - name: Push updated Cask to archiboltmusk/homebrew-argus
+        if: ${{ secrets.HOMEBREW_TAP_TOKEN != '' }}
+        env:
+          TAG: ${{ inputs.tag || github.event.release.tag_name }}
+          GH_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+        run: |
+          set -euo pipefail
+          git clone --depth 1 "https://x-access-token:${GH_TOKEN}@github.com/archiboltmusk/homebrew-argus.git" tap
+          cp Casks/argus.rb tap/Casks/argus.rb
+          cd tap
+          if [ -n "$(git status --porcelain)" ]; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add Casks/argus.rb
+            git commit -s -m "chore: bump argus cask to ${TAG}"
+            git push origin main
+          fi

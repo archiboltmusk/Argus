@@ -1,4 +1,5 @@
 import { readPlayerVolume } from "@/lib/player-volume";
+import type { AssCueStyle } from "@/lib/subtitles/ass-styles";
 import type { SubCue } from "@/lib/subtitles/parser";
 import type { SubtitleLoadMetadata } from "@/lib/subtitles/types";
 import type { SubtitleMatchConfidence } from "@/lib/subtitles/release-match";
@@ -79,6 +80,7 @@ export type PlayerSnapshot = {
   audioDelaySec: number;
   subText: string;
   subStartSec: number;
+  subStyle?: AssCueStyle | null;
   secondarySubText: string;
   audioNormalize: boolean;
   videoWidth: number;

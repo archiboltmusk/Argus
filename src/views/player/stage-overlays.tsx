@@ -78,6 +78,7 @@ export const StageOverlays = memo(function StageOverlays({
           <SubtitleOverlay
             text={primarySubtitleVisible ? snap.subText : ""}
             startSec={primarySubtitleVisible ? snap.subStartSec : 0}
+            assStyle={primarySubtitleVisible ? snap.subStyle : null}
             scale={pipMode ? 0.45 : 1}
             secondaryText={snap.secondarySubText}
             elevateForHud={chromeVisible}
