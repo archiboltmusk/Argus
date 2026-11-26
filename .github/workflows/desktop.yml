@@ -320,6 +320,18 @@ jobs:
           ARGUS_SIMKL_CLIENT_ID: ${{ secrets.ARGUS_SIMKL_CLIENT_ID }}
         run: |
           set -euo pipefail
+          # Ensure MSVC link.exe precedes Git Bash's /usr/bin/link.exe in PATH
+          if [ -n "${VCToolsInstallDir:-}" ]; then
+            MSVC_VC_POSIX=$(cygpath -u "$VCToolsInstallDir")
+            for cand in "${MSVC_VC_POSIX}bin/Hostarm64/arm64" "${MSVC_VC_POSIX}bin/Hostx64/arm64"; do
+              if [ -x "$cand/link.exe" ]; then
+                export PATH="$cand:$PATH"
+                export CARGO_TARGET_AARCH64_PC_WINDOWS_MSVC_LINKER="$(cygpath -w "$cand/link.exe")"
+                echo "Using MSVC linker: $CARGO_TARGET_AARCH64_PC_WINDOWS_MSVC_LINKER"
+                break
+              fi
+            done
+          fi
           (
             while sleep 60; do
               echo "::group::Build resources $(date -u '+%Y-%m-%dT%H:%M:%SZ')"
