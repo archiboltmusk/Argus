@@ -23,6 +23,17 @@
   </screenshots>
   <content_rating type="oars-1.1" />
   <releases>
+    <release version="3.17.22" date="2026-11-26">
+      <description>
+        <p>Argus 3.17.22 release:</p>
+        <ul>
+          <li>Fixed Tokio reactor NativePanic on app exit across thumbs, stream proxy, multiview, DVR, and torrent engine shutdown hooks</li>
+          <li>Eliminated 12.7s macOS main-thread freeze when opening the Music view by offloading SQLite IPC commands and indexing album/artist library queries (migration 9)</li>
+          <li>Offloaded remaining synchronous disk-I/O IPC commands (downloads, subtitle fonts, ASR models, log exports, shaders, diagnostics) off the main thread</li>
+          <li>Made the Picture-in-Picture window draggable and preserved its last position</li>
+        </ul>
+      </description>
+    </release>
     <release version="3.17.21" date="2026-11-25">
       <description>
         <p>Argus 3.17.21 release:</p>
