@@ -1899,6 +1899,7 @@ export type ThemeSettings = {
   fontPair: FontPairId;
   customFontId?: string | null;
   customColors: CustomColors | null;
+  customCss?: string | null;
 };
 
 export const DEFAULT_CUSTOM_COLORS: CustomColors = {
@@ -2056,6 +2057,19 @@ export function applyTheme(theme: ThemeSettings): void {
   root.dataset.themeCard = cardStyle;
   root.dataset.themeButton = buttonStyle;
   root.dataset.themeBokeh = preset?.bokeh ? "on" : "off";
+
+  if (typeof document !== "undefined" && document.head) {
+    const existing = document.getElementById("argus-custom-css");
+    const css = (theme.customCss ?? "").trim();
+    if (css) {
+      const styleEl = existing ?? document.createElement("style");
+      styleEl.id = "argus-custom-css";
+      styleEl.textContent = css;
+      if (!existing) document.head.appendChild(styleEl);
+    } else if (existing) {
+      existing.remove();
+    }
+  }
 }
 
 export function activeLayout(theme: ThemeSettings): ThemeLayout {

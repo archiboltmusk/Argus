@@ -148,6 +148,16 @@ function ThemeTab() {
         />
       </Section>
 
+      <Section
+        title={t("Custom CSS")}
+        subtitle={t("Override CSS variables or fine-tune layout rules live across the app.")}
+      >
+        <CustomCssEditor
+          value={theme.customCss ?? ""}
+          onSave={(css) => setTheme({ customCss: css || null })}
+        />
+      </Section>
+
     </>
   );
 }
@@ -374,5 +384,50 @@ function DragAnywhereRow() {
       onChange={(dragAnywhere) => update({ dragAnywhere })}
       leading={<Move size={18} strokeWidth={2} />}
     />
+  );
+}
+
+function CustomCssEditor({
+  value,
+  onSave,
+}: {
+  value: string;
+  onSave: (css: string) => void;
+}) {
+  const t = useT();
+  const [draft, setDraft] = useState(value);
+  return (
+    <div className="flex flex-col gap-2.5">
+      <textarea
+        value={draft}
+        onChange={(e) => setDraft(e.target.value)}
+        rows={5}
+        spellCheck={false}
+        placeholder=":root { --radius-card: 16px; }"
+        aria-label={t("Custom CSS")}
+        className="w-full rounded-[10px] border border-edge-soft bg-elevated p-3 font-mono text-[13px] text-ink outline-none placeholder:text-ink-subtle/50 focus-visible:border-edge focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+      />
+      <div className="flex flex-wrap items-center gap-2">
+        <button
+          type="button"
+          onClick={() => onSave(draft)}
+          className="h-9 rounded-full bg-accent px-4 text-[13px] font-semibold text-accent-contrast transition-opacity hover:opacity-90"
+        >
+          {t("Apply CSS")}
+        </button>
+        {(draft || value) && (
+          <button
+            type="button"
+            onClick={() => {
+              setDraft("");
+              onSave("");
+            }}
+            className="h-9 rounded-full border border-edge-soft px-4 text-[13px] font-medium text-ink-muted transition-colors hover:border-edge hover:text-ink"
+          >
+            {t("Clear")}
+          </button>
+        )}
+      </div>
+    </div>
   );
 }

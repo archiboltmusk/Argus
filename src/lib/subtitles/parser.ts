@@ -1,10 +1,12 @@
 import { safeFetch as fetch } from "@/lib/safe-fetch";
 import { decodeSubtitleBytes } from "./encoding";
+import { extractAssDialogueStyle, parseAssStyles, type AssCueStyle } from "./ass-styles";
 
 export type SubCue = {
   start: number;
   end: number;
   text: string;
+  assStyle?: AssCueStyle;
 };
 
 export type SubFormat = "srt" | "vtt" | "ass" | "ssa" | "sub";
@@ -95,6 +97,7 @@ function parseVtt(text: string): SubCue[] {
 
 function parseAss(text: string): SubCue[] {
   const cues: SubCue[] = [];
+  const styles = parseAssStyles(text);
   const eventsIdx = text.search(/\[Events\]/i);
   if (eventsIdx === -1) return cues;
   const eventsBlock = text.slice(eventsIdx);
@@ -112,6 +115,7 @@ function parseAss(text: string): SubCue[] {
     if (!format) continue;
     const startIdx = format.indexOf("start");
     const endIdx = format.indexOf("end");
+    const styleIdx = format.indexOf("style");
     const textIdx = format.indexOf("text");
     if (startIdx === -1 || endIdx === -1 || textIdx === -1) continue;
     const parts = splitAssDialogue(line.slice(9), format.length);
@@ -119,9 +123,15 @@ function parseAss(text: string): SubCue[] {
     const start = parseAssTime(parts[startIdx]);
     const end = parseAssTime(parts[endIdx]);
     if (Number.isNaN(start) || Number.isNaN(end)) continue;
-    const body = stripSubtitleAds(stripAssTags(parts[textIdx]));
+    const rawDialogue = parts[textIdx];
+    const body = stripSubtitleAds(stripAssTags(rawDialogue));
     if (body.length === 0) continue;
-    cues.push({ start, end, text: body });
+    const styleName = styleIdx >= 0 ? parts[styleIdx]?.trim() : undefined;
+    const assStyle = extractAssDialogueStyle(
+      rawDialogue,
+      styleName ? styles.get(styleName) : undefined,
+    );
+    cues.push(assStyle ? { start, end, text: body, assStyle } : { start, end, text: body });
   }
   return cues.sort((a, b) => a.start - b.start);
 }

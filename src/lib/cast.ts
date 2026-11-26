@@ -156,3 +156,39 @@ function mimeFromExt(s: string): string | undefined {
 export function guessContentType(url: string, fallbackName?: string): string {
   return mimeFromExt(url) ?? (fallbackName ? mimeFromExt(fallbackName) : undefined) ?? "video/mp4";
 }
+
+type WebCastVideoElement = HTMLVideoElement & {
+  webkitShowPlaybackTargetPicker?: () => void;
+  remote?: { prompt?: () => Promise<void> };
+};
+
+/**
+ * Returns true when browser-native AirPlay or W3C RemotePlayback casting is available.
+ */
+export function isWebCastSupported(videoEl?: HTMLVideoElement | null): boolean {
+  if (isTauri || typeof window === "undefined") return false;
+  const target = (videoEl ?? document.querySelector("video")) as WebCastVideoElement | null;
+  if (!target) return false;
+  return (
+    typeof target.webkitShowPlaybackTargetPicker === "function" ||
+    typeof target.remote?.prompt === "function"
+  );
+}
+
+/**
+ * Prompts the browser's native AirPlay or RemotePlayback cast picker for an HTML5 video.
+ */
+export async function promptWebCast(videoEl?: HTMLVideoElement | null): Promise<boolean> {
+  if (typeof window === "undefined") return false;
+  const target = (videoEl ?? document.querySelector("video")) as WebCastVideoElement | null;
+  if (!target) return false;
+  if (typeof target.webkitShowPlaybackTargetPicker === "function") {
+    target.webkitShowPlaybackTargetPicker();
+    return true;
+  }
+  if (typeof target.remote?.prompt === "function") {
+    await target.remote.prompt();
+    return true;
+  }
+  return false;
+}

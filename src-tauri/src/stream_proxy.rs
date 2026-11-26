@@ -4,8 +4,8 @@ use axum::extract::{Path, State};
 use axum::http::{header, Method};
 use axum::http::{HeaderMap, HeaderName, HeaderValue, StatusCode};
 use axum::response::{IntoResponse, Redirect, Response};
-use axum::routing::get;
-use axum::Router;
+use axum::routing::{get, post};
+use axum::{Json, Router};
 use futures_util::StreamExt;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -180,7 +180,15 @@ impl ProxyState {
                 "/p/{id}/{*path}",
                 get(handle_playlist).head(handle_playlist),
             )
-            .route("/health", get(handle_health))
+            .route("/health", get(handle_health).options(handle_cors_preflight))
+            .route(
+                "/api/proxy/register",
+                post(handle_api_proxy_register).options(handle_cors_preflight),
+            )
+            .route(
+                "/api/proxy/unregister",
+                post(handle_api_proxy_unregister).options(handle_cors_preflight),
+            )
             .with_state(state.clone());
         let app = proxy_routes.merge(crate::cast_hls::router(hls)).merge(state.audio.clone().router());
         #[cfg(target_os = "linux")]
@@ -528,8 +536,74 @@ pub(crate) fn reachable_ip_for(target_host: &str) -> Option<String> {
     Some(ip.to_string())
 }
 
-async fn handle_health() -> &'static str {
-    "ok"
+async fn handle_health() -> impl IntoResponse {
+    (
+        StatusCode::OK,
+        [(
+            HeaderName::from_static("access-control-allow-origin"),
+            HeaderValue::from_static("*"),
+        )],
+        "ok",
+    )
+}
+
+async fn handle_cors_preflight() -> impl IntoResponse {
+    (
+        StatusCode::NO_CONTENT,
+        [
+            (
+                HeaderName::from_static("access-control-allow-origin"),
+                HeaderValue::from_static("*"),
+            ),
+            (
+                HeaderName::from_static("access-control-allow-methods"),
+                HeaderValue::from_static("GET, HEAD, POST, OPTIONS"),
+            ),
+            (
+                HeaderName::from_static("access-control-allow-headers"),
+                HeaderValue::from_static("Content-Type, Range, If-Range"),
+            ),
+        ],
+    )
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct UnregisterArgs {
+    session_id: String,
+}
+
+async fn handle_api_proxy_register(
+    State(state): State<ProxyState>,
+    Json(args): Json<RegisterArgs>,
+) -> impl IntoResponse {
+    let result = state.register(args).await;
+    (
+        StatusCode::OK,
+        [(
+            HeaderName::from_static("access-control-allow-origin"),
+            HeaderValue::from_static("*"),
+        )],
+        Json(serde_json::json!({
+            "sessionId": result.session_id,
+            "url": result.url,
+        })),
+    )
+}
+
+async fn handle_api_proxy_unregister(
+    State(state): State<ProxyState>,
+    Json(args): Json<UnregisterArgs>,
+) -> impl IntoResponse {
+    state.unregister(&args.session_id).await;
+    (
+        StatusCode::OK,
+        [(
+            HeaderName::from_static("access-control-allow-origin"),
+            HeaderValue::from_static("*"),
+        )],
+        Json(serde_json::json!({ "ok": true })),
+    )
 }
 
 #[cfg(target_os = "linux")]

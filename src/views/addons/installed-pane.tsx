@@ -1,4 +1,4 @@
-import { ArrowUpDown, Columns2, FlaskConical, RefreshCw, Rows3, Settings2, Wand2 } from "lucide-react";
+import { ArrowUpDown, Columns2, Download, FlaskConical, RefreshCw, Rows3, Settings2, Upload, Wand2 } from "lucide-react";
 import { useState } from "react";
 import { testReasonLabel } from "@/lib/addon-health/test-addon";
 import {
@@ -11,7 +11,8 @@ import {
 import { useSettings } from "@/lib/settings";
 import { AddonLogo, resolveAddonLogo } from "@/components/addon-logo";
 import { HoverTooltip } from "@/components/hover-tooltip";
-import { isAddonEnabled, setAddonEnabled } from "@/lib/addon-store";
+import { installAddon, isAddonEnabled, setAddonEnabled } from "@/lib/addon-store";
+import { exportAddonBundle, importAddonBundle } from "@/lib/addons/bundle";
 import type { ResolvedAddon } from "@/lib/addons-store/store";
 import { useT } from "@/lib/i18n";
 import { addonKey, idOf, nameOf, resourceLabels, subtitleFromManifest } from "./addons-utils";
@@ -124,6 +125,37 @@ export function InstalledPane({
             {tests.running ? t("Testing") : t("Test all addons")}
           </button>
         )}
+        <button
+          onClick={() => {
+            const json = exportAddonBundle(installed);
+            void navigator.clipboard?.writeText(json).catch(() => {});
+            const blob = new Blob([json], { type: "application/json" });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = "argus-addons.json";
+            a.click();
+            URL.revokeObjectURL(url);
+          }}
+          title={t("Export installed add-ons as JSON and copy to clipboard")}
+          className="flex h-9 shrink-0 items-center gap-1.5 rounded-full border border-edge-soft px-3 text-[11.5px] font-semibold uppercase tracking-[0.14em] text-ink-subtle transition-colors hover:border-edge hover:text-ink-muted"
+        >
+          <Download size={13} strokeWidth={2.4} />
+          <span>{t("Export")}</span>
+        </button>
+        <button
+          onClick={() => {
+            const raw = window.prompt(t("Paste Argus/Stremio add-on bundle JSON or manifest URLs (one per line):"));
+            if (!raw) return;
+            const existing = new Set(installed.map((r) => r.transportUrl));
+            void importAddonBundle(raw, existing, installAddon);
+          }}
+          title={t("Import add-ons from JSON bundle or manifest URLs")}
+          className="flex h-9 shrink-0 items-center gap-1.5 rounded-full border border-edge-soft px-3 text-[11.5px] font-semibold uppercase tracking-[0.14em] text-ink-subtle transition-colors hover:border-edge hover:text-ink-muted"
+        >
+          <Upload size={13} strokeWidth={2.4} />
+          <span>{t("Import")}</span>
+        </button>
         <button
           onClick={() => setOptimizerOpen(true)}
           title={t("Analyze add-on health, remove redundancies, and optimize configuration")}

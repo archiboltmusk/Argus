@@ -1,5 +1,10 @@
 // Newly introduced UI copy remains usable until each locale provides an override.
 const uiFallback: Record<string, string> = {
+  "Export installed add-ons as JSON and copy to clipboard": "Export installed add-ons as JSON and copy to clipboard",
+  "Paste Argus/Stremio add-on bundle JSON or manifest URLs (one per line):": "Paste Argus/Stremio add-on bundle JSON or manifest URLs (one per line):",
+  "Import add-ons from JSON bundle or manifest URLs": "Import add-ons from JSON bundle or manifest URLs",
+  "Override CSS variables or fine-tune layout rules live across the app.": "Override CSS variables or fine-tune layout rules live across the app.",
+  "Apply CSS": "Apply CSS",
   "Auto-detect": "Auto-detect",
   "Web stream relay & transcode": "Web stream relay & transcode",
   "Configure an edge CORS relay or companion FFmpeg server to play MKV, AC3/DTS, and header-gated streams in a web browser.": "Configure an edge CORS relay or companion FFmpeg server to play MKV, AC3/DTS, and header-gated streams in a web browser.",
