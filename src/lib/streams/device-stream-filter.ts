@@ -70,8 +70,9 @@ export function getDevicePlaybackCapabilities(engine?: "mpv" | "html5"): DeviceP
 
   const isDesktopMpv =
     currentEngine === "mpv" &&
-    !web &&
-    (platform === "macos" || platform === "windows" || platform === "linux");
+    (engine === "mpv" ||
+      (!web &&
+        (platform === "macos" || platform === "windows" || platform === "linux")));
 
   if (isDesktopMpv) {
     // Desktop libmpv has universal demuxers and decoders for all standard media

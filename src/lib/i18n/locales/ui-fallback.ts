@@ -1,5 +1,12 @@
 // Newly introduced UI copy remains usable until each locale provides an override.
 const uiFallback: Record<string, string> = {
+  "Web stream relay & transcode": "Web stream relay & transcode",
+  "Configure an edge CORS relay or companion FFmpeg server to play MKV, AC3/DTS, and header-gated streams in a web browser.": "Configure an edge CORS relay or companion FFmpeg server to play MKV, AC3/DTS, and header-gated streams in a web browser.",
+  "Web CORS & HLS relay URL": "Web CORS & HLS relay URL",
+  "Cloudflare Worker or HTTP proxy URL (workers/stream-relay) for bypassing browser CORS and forwarding stream headers.": "Cloudflare Worker or HTTP proxy URL (workers/stream-relay) for bypassing browser CORS and forwarding stream headers.",
+  "Save & test": "Save & test",
+  "Web companion transcode server": "Web companion transcode server",
+  "Self-hosted Argus Companion server URL (companion/server.mjs) for real-time H.264/AAC remuxing and transcoding.": "Self-hosted Argus Companion server URL (companion/server.mjs) for real-time H.264/AAC remuxing and transcoding.",
   "Neural Voice Clarity": "Neural Voice Clarity",
   "Dialogue Isolation": "Dialogue Isolation",
   "Studio Broadcast": "Studio Broadcast",
