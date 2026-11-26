@@ -1,0 +1,30 @@
+name: Deploy Web Stream Relay
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "workers/stream-relay/**"
+      - ".github/workflows/relay-worker.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    name: Deploy Cloudflare Worker
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v6
+      - name: Deploy worker via Wrangler
+        if: ${{ secrets.CLOUDFLARE_API_TOKEN != '' }}
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          workingDirectory: workers/stream-relay
+      - name: Skip notice when Cloudflare secrets are not configured
+        if: ${{ secrets.CLOUDFLARE_API_TOKEN == '' }}
+        run: echo "CLOUDFLARE_API_TOKEN is not set; skipping Worker deployment."

@@ -1,20 +1,24 @@
 #!/usr/bin/env node
 /**
  * Updates Casks/argus.rb with the target release version and Argus-aarch64.dmg SHA-256.
+ * Optionally syncs the updated Cask to archiboltmusk/homebrew-argus with --push-tap.
  *
  * Usage:
  *   node scripts/update-homebrew-cask.mjs v3.17.23
  *   node scripts/update-homebrew-cask.mjs 3.17.23 --sha256 <64-hex>
  *   node scripts/update-homebrew-cask.mjs 3.17.23 --file ./Argus-aarch64.dmg
+ *   node scripts/update-homebrew-cask.mjs v3.17.23 --push-tap
  */
 import { createHash } from "node:crypto";
-import { readFileSync, writeFileSync } from "node:fs";
-import { resolve } from "node:path";
+import { execFileSync } from "node:child_process";
+import { copyFileSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join, resolve } from "node:path";
 
 const args = process.argv.slice(2);
 const versionArg = args.find((a) => !a.startsWith("--"));
 if (!versionArg) {
-  console.error("Usage: node scripts/update-homebrew-cask.mjs <version|vTag> [--sha256 <hex> | --file <dmg>]");
+  console.error("Usage: node scripts/update-homebrew-cask.mjs <version|vTag> [--sha256 <hex> | --file <dmg>] [--push-tap]");
   process.exit(1);
 }
 
@@ -31,6 +35,7 @@ function getArgValue(flag) {
 
 let sha256 = getArgValue("--sha256");
 const dmgPath = getArgValue("--file");
+const pushTap = args.includes("--push-tap");
 
 if (!sha256 && dmgPath) {
   const bytes = readFileSync(resolve(process.cwd(), dmgPath));
@@ -70,4 +75,26 @@ if (updated === original) {
 } else {
   writeFileSync(caskPath, updated, "utf8");
   console.log(`Updated Casks/argus.rb -> v${cleanVersion} (sha256: ${sha256.toLowerCase()})`);
+}
+
+if (pushTap) {
+  const dir = mkdtempSync(join(tmpdir(), "argus-tap-"));
+  try {
+    execFileSync("git", ["clone", "--depth", "1", "https://github.com/archiboltmusk/homebrew-argus.git", dir], {
+      stdio: "inherit",
+    });
+    copyFileSync(caskPath, join(dir, "Casks/argus.rb"));
+    const status = execFileSync("git", ["-C", dir, "status", "--porcelain"], { encoding: "utf8" }).trim();
+    if (status) {
+      execFileSync("git", ["-C", dir, "add", "Casks/argus.rb"], { stdio: "inherit" });
+      execFileSync("git", ["-C", dir, "commit", "-s", "-m", `chore: bump argus cask to v${cleanVersion}`], {
+        stdio: "inherit",
+      });
+      execFileSync("git", ["-C", dir, "push", "origin", "main"], { stdio: "inherit" });
+    } else {
+      console.log("archiboltmusk/homebrew-argus is already up to date.");
+    }
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
 }

@@ -4,6 +4,7 @@ import { SettingRow, ROW_ACTION, ROW_ACTION_PRIMARY } from "../kit";
 import {
   getWebCompanionUrl,
   getWebRelayUrl,
+  probeLocalWebCompanion,
   setWebCompanionUrl,
   setWebRelayUrl,
 } from "@/lib/stream-proxy";
@@ -132,6 +133,24 @@ export function WebStreamRelaySection() {
             {companionProbe === "ok" && <Check size={15} />}
             {companionProbe === "error" && <X size={15} />}
             {t("Save & test")}
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setCompanionProbe("checking");
+              void probeLocalWebCompanion().then((found) => {
+                if (found) {
+                  setCompanionDraft(found);
+                  setWebCompanionUrl(found);
+                  setCompanionProbe("ok");
+                } else {
+                  setCompanionProbe("error");
+                }
+              });
+            }}
+            className={ROW_ACTION}
+          >
+            {t("Auto-detect")}
           </button>
           {companionDraft && (
             <button

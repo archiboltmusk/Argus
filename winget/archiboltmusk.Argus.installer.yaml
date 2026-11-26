@@ -1,0 +1,17 @@
+# yaml-language-server: $schema=https://aka.ms/winget-manifest.installer.1.6.0.schema.json
+
+PackageIdentifier: archiboltmusk.Argus
+PackageVersion: 3.17.23
+InstallerType: nullsoft
+Scope: user
+InstallModes:
+  - interactive
+  - silent
+  - silentWithProgress
+UpgradeBehavior: install
+Installers:
+  - Architecture: x64
+    InstallerUrl: https://github.com/archiboltmusk/Argus/releases/download/v3.17.23/Argus-windows-x64-setup.exe
+    InstallerSha256: 9520FF87C1D0B9BBF1712D61C973E63142A245F6FF89E89EDF20B9E19D16E73A
+ManifestType: installer
+ManifestVersion: 1.6.0

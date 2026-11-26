@@ -61,6 +61,27 @@ writeFileSync(
 );
 if (startup !== null && startup > Number(process.env.ARGUS_STARTUP_BUDGET_MS ?? 1500))
   errors.push(`Startup budget exceeded: ${Math.round(startup)} ms`);
+if (rendered) {
+  await page.evaluate(() => {
+    localStorage.setItem("argus.webStreamRelayUrl", "https://relay.example.workers.dev");
+    localStorage.setItem("argus.webCompanionUrl", "http://127.0.0.1:8787");
+  });
+  await page.reload({ waitUntil: "load" });
+  const persisted = await page.evaluate(() => ({
+    relay: localStorage.getItem("argus.webStreamRelayUrl"),
+    companion: localStorage.getItem("argus.webCompanionUrl"),
+  }));
+  if (
+    persisted.relay !== "https://relay.example.workers.dev" ||
+    persisted.companion !== "http://127.0.0.1:8787"
+  ) {
+    errors.push("Web relay/companion settings did not persist across reload");
+  }
+  await page.evaluate(() => {
+    localStorage.removeItem("argus.webStreamRelayUrl");
+    localStorage.removeItem("argus.webCompanionUrl");
+  });
+}
 await page.screenshot({ path: "web-smoke.png" });
 // Closing Chromium aborts speculative imports; these are not application failures.
 collecting = false;

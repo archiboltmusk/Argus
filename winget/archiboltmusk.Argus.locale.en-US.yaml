@@ -1,0 +1,22 @@
+# yaml-language-server: $schema=https://aka.ms/winget-manifest.defaultLocale.1.6.0.schema.json
+
+PackageIdentifier: archiboltmusk.Argus
+PackageVersion: 3.17.23
+PackageLocale: en-US
+Publisher: archiboltmusk
+PublisherUrl: https://github.com/archiboltmusk/Argus
+PublisherSupportUrl: https://github.com/archiboltmusk/Argus/issues
+PackageName: Argus
+PackageUrl: https://github.com/archiboltmusk/Argus
+License: MIT
+LicenseUrl: https://github.com/archiboltmusk/Argus/blob/main/LICENSE
+ShortDescription: Open-source media player and library for streams, local files, and add-ons.
+Tags:
+  - media-player
+  - streaming
+  - mpv
+  - iptv
+  - plex
+  - jellyfin
+ManifestType: defaultLocale
+ManifestVersion: 1.6.0

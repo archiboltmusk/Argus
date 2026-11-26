@@ -81,6 +81,38 @@ export function hasWebCompanionServer(): boolean {
   return !isTauriRuntime() && Boolean(getWebCompanionUrl());
 }
 
+const LOCAL_COMPANION_CANDIDATES = [
+  "http://127.0.0.1:8787",
+  "http://localhost:8787",
+  "http://127.0.0.1:11470",
+  "http://localhost:11470",
+];
+
+/**
+ * Probes standard local Argus Companion / Desktop bridge ports and returns the first healthy URL.
+ */
+export async function probeLocalWebCompanion(
+  candidates: readonly string[] = LOCAL_COMPANION_CANDIDATES,
+  timeoutMs = 900,
+): Promise<string | null> {
+  if (typeof fetch !== "function") return null;
+  for (const raw of candidates) {
+    const base = normalizeHttpBase(raw);
+    if (!base) continue;
+    try {
+      const signal =
+        typeof AbortSignal !== "undefined" && typeof AbortSignal.timeout === "function"
+          ? AbortSignal.timeout(timeoutMs)
+          : undefined;
+      const res = await fetch(`${base}/health`, { signal });
+      if (res.ok) return base;
+    } catch {
+      /* try next candidate */
+    }
+  }
+  return null;
+}
+
 function encodeBase64UrlUtf8(input: string): string {
   const bytes = new TextEncoder().encode(input);
   let binary = "";

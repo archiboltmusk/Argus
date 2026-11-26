@@ -15,8 +15,7 @@ Argus is an open-source media player and library for the sources you already use
 1. Open the [latest stable release](https://github.com/archiboltmusk/Argus/releases/latest) and download an installer listed for your platform. Use the [download matrix](#platform-build-targets--download-matrix) to identify the right asset. Apple Silicon Mac users should look for `Argus-aarch64.dmg`.
    * **Homebrew (macOS Apple Silicon)**:
      ```bash
-     brew tap archiboltmusk/argus https://github.com/archiboltmusk/Argus
-     brew install --cask --no-quarantine argus
+     brew install --cask --no-quarantine archiboltmusk/argus/argus
      ```
    * **macOS Turnkey Command** (automatically downloads, installs to `/Applications`, strips quarantine attributes, and resolves Gatekeeper warnings):
      ```bash

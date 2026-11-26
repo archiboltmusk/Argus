@@ -1,5 +1,6 @@
 // Newly introduced UI copy remains usable until each locale provides an override.
 const uiFallback: Record<string, string> = {
+  "Auto-detect": "Auto-detect",
   "Web stream relay & transcode": "Web stream relay & transcode",
   "Configure an edge CORS relay or companion FFmpeg server to play MKV, AC3/DTS, and header-gated streams in a web browser.": "Configure an edge CORS relay or companion FFmpeg server to play MKV, AC3/DTS, and header-gated streams in a web browser.",
   "Web CORS & HLS relay URL": "Web CORS & HLS relay URL",
