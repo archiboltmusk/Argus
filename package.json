@@ -60,8 +60,8 @@
   "dependencies": {
     "@mediapipe/tasks-vision": "1.2.3",
     "@noble/hashes": "2.4.0",
-    "@rive-app/canvas": "^2.54.0",
-    "@tanstack/react-virtual": "^3.14.26",
+    "@rive-app/canvas": "^2.55.0",
+    "@tanstack/react-virtual": "^3.14.28",
     "@tauri-apps/api": "^2.12.5",
     "@tauri-apps/plugin-clipboard-manager": "^2.5.0",
     "@tauri-apps/plugin-deep-link": "^2.6.3",
@@ -80,7 +80,7 @@
     "hls.js": "^1.7.4",
     "html-to-pdfmake": "2.6.0",
     "lottie-web": "^5.13.0",
-    "lucide-react": "^1.77.0",
+    "lucide-react": "^1.78.0",
     "mpegts.js": "^1.8.2",
     "onnxruntime-web": "1.31.1",
     "parse-torrent-title": "^3.0.1",
@@ -94,7 +94,7 @@
     "skinview3d": "^3.4.2",
     "tailwindcss": "^4.3.5",
     "tldts": "7.5.5",
-    "ts-fsrs": "6.0.0"
+    "ts-fsrs": "6.0.1"
   },
   "devDependencies": {
     "@resvg/resvg-js": "^2.6.2",
