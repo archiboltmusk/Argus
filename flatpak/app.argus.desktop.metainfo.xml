@@ -23,6 +23,16 @@
   </screenshots>
   <content_rating type="oars-1.1" />
   <releases>
+    <release version="3.17.23" date="2026-11-27">
+      <description>
+        <p>Argus 3.17.23 release:</p>
+        <ul>
+          <li>Upgraded Web movie playback with CORS &amp; HLS stream relay, companion transcode support, and browser-reliability stream ranking</li>
+          <li>Added Windows ARM64 sidecar support, PiP geometry persistence, async SVP IPC, and Web relay settings</li>
+          <li>Updated npm and Cargo dependencies and synchronized Flatpak offline sources</li>
+        </ul>
+      </description>
+    </release>
     <release version="3.17.22" date="2026-11-26">
       <description>
         <p>Argus 3.17.22 release:</p>
