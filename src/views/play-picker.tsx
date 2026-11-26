@@ -61,7 +61,12 @@ import { CinematicLoader } from "./play-picker/cinematic-loader";
 import { DebridDownModal } from "./play-picker/debrid-down-modal";
 import { P2pConfirmModal } from "./play-picker/p2p-confirm-modal";
 import { CachedFilterPill, DeviceFilterPill, LanguageFilterPill } from "./play-picker/filter-pills";
-import { evaluateDeviceStreamSupport, filterDeviceSupportedStreams } from "@/lib/streams/device-stream-filter";
+import {
+  evaluateDeviceStreamSupport,
+  filterDeviceSupportedStreams,
+  webPlayabilityScore,
+} from "@/lib/streams/device-stream-filter";
+import { isWeb } from "@/lib/platform";
 import { PickerEmptyLadder } from "./play-picker/picker-empty-ladder";
 import { NoSourcesConfiguredModal } from "./play-picker/no-sources-modal";
 import {
@@ -393,6 +398,7 @@ export function PlayPicker({
       const supported = filterDeviceSupportedStreams(all, undefined, {
         isDownload,
         keepBestIfAllIncompatible: false,
+        hasDebrid: debrids.length > 0,
       });
       if (supported.length > 0) all = supported;
     }
@@ -409,7 +415,14 @@ export function PlayPicker({
       allRaw = candidatePool;
       fellBack = true;
     }
-    const cachedFirst = all.slice().sort((a, b) => (isCached(b) ? 1 : 0) - (isCached(a) ? 1 : 0));
+    const cachedFirst = all.slice().sort((a, b) => {
+      const cachedDiff = (isCached(b) ? 1 : 0) - (isCached(a) ? 1 : 0);
+      if (cachedDiff !== 0) return cachedDiff;
+      if (isWeb()) {
+        return webPlayabilityScore(b) - webPlayabilityScore(a);
+      }
+      return 0;
+    });
     const ranked = hostMatch
       ? cachedFirst.slice().sort((a, b) => (hostMatch.get(b) ?? 0) - (hostMatch.get(a) ?? 0))
       : cachedFirst;

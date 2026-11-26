@@ -7,6 +7,7 @@ import {
   type ExtendedPlatform,
 } from "@/lib/platform";
 import type { ParsedStream, Stream } from "./types";
+import { hasWebCompanionServer } from "@/lib/stream-proxy";
 
 export interface DevicePlaybackCapabilities {
   platform: ExtendedPlatform;
@@ -69,7 +70,8 @@ export function getDevicePlaybackCapabilities(engine?: "mpv" | "html5"): DeviceP
 
   const isDesktopMpv =
     currentEngine === "mpv" &&
-    (!web || platform === "web" || platform === "macos" || platform === "windows" || platform === "linux");
+    !web &&
+    (platform === "macos" || platform === "windows" || platform === "linux");
 
   if (isDesktopMpv) {
     // Desktop libmpv has universal demuxers and decoders for all standard media
@@ -172,7 +174,7 @@ const MKV_URL_RX = /\.(?:mkv|avi|wmv|ts|m2ts)(?:[?#]|$)/i;
 export function evaluateDeviceStreamSupport(
   stream: Stream | ParsedStream,
   capabilities?: DevicePlaybackCapabilities,
-  options?: { isDownload?: boolean },
+  options?: { isDownload?: boolean; hasCompanion?: boolean; hasDebrid?: boolean },
 ): DeviceStreamCompatibility {
   if (options?.isDownload) {
     return { supported: true, severity: "supported" };
@@ -185,6 +187,11 @@ export function evaluateDeviceStreamSupport(
     return { supported: true, severity: "supported" };
   }
 
+  const hasCompanion = options?.hasCompanion ?? (caps.isWeb && hasWebCompanionServer());
+  if (caps.isWeb && hasCompanion) {
+    return { supported: true, severity: "supported" };
+  }
+
   const streamAny = stream as any;
   const filename =
     stream.behaviorHints?.filename ??
@@ -194,6 +201,15 @@ export function evaluateDeviceStreamSupport(
     streamAny.rawTitle ??
     "";
   const url = stream.url ?? "";
+  const hasHttpUrl = /^https?:\/\//i.test(url);
+  if (caps.isWeb && !hasHttpUrl && streamAny.infoHash && options?.hasDebrid === false) {
+    return {
+      supported: false,
+      severity: "unsupported",
+      reason: "Torrent P2P streams require a Debrid provider or the desktop app in a web browser",
+      badgeLabel: "Needs Debrid / Desktop",
+    };
+  }
   const container = streamAny.container ?? (MKV_URL_RX.test(url) || MKV_URL_RX.test(filename) ? "mkv" : null);
   const videoCodec = (streamAny.video?.codec ?? streamAny.codec ?? "").toUpperCase();
   const audioCodec = (streamAny.audio?.codec ?? "").toUpperCase();
@@ -279,6 +295,32 @@ export function evaluateDeviceStreamSupport(
         supported: false,
         severity: "unsupported",
         reason: "DTS / TrueHD lossless audio cannot be decoded by web browsers",
+        badgeLabel: "Unsupported audio",
+      };
+    }
+
+    if (
+      caps.isWeb &&
+      !caps.canPlayAc3 &&
+      (audioCodec === "AC3" || audioCodec === "DOLBY DIGITAL" || audioCodec === "DD")
+    ) {
+      return {
+        supported: false,
+        severity: "unsupported",
+        reason: "Dolby Digital (AC3) audio is not supported by this browser",
+        badgeLabel: "Unsupported audio",
+      };
+    }
+
+    if (
+      caps.isWeb &&
+      !caps.canPlayEac3 &&
+      (audioCodec === "EAC3" || audioCodec === "DD+" || audioCodec === "DDP")
+    ) {
+      return {
+        supported: false,
+        severity: "unsupported",
+        reason: "Dolby Digital Plus (EAC3) audio is not supported by this browser",
         badgeLabel: "Unsupported audio",
       };
     }
@@ -372,7 +414,41 @@ export function filterDeviceSupportedStreams<T extends Stream | ParsedStream>(
     isDownload?: boolean;
     keepBestIfAllIncompatible?: boolean;
     allowFallbackIfAllFiltered?: boolean;
+    hasCompanion?: boolean;
+    hasDebrid?: boolean;
   },
 ): T[] {
   return partitionDeviceStreams(streams, capabilities, options).supported;
+}
+
+/**
+ * Scores a stream for browser playback reliability so Web prefers HLS/MP4/H.264/AAC
+ * and cached Debrid links over raw torrents or incompatible containers.
+ */
+export function webPlayabilityScore(
+  stream: Stream | ParsedStream,
+  capabilities?: DevicePlaybackCapabilities,
+): number {
+  const caps = capabilities ?? getDevicePlaybackCapabilities();
+  const compat = evaluateDeviceStreamSupport(stream, caps);
+  let score = compat.supported ? 100 : -100;
+  const s = stream as any;
+  const url = (stream.url ?? "").toLowerCase();
+  const name = `${stream.behaviorHints?.filename ?? ""} ${stream.title ?? ""} ${stream.name ?? ""}`.toLowerCase();
+  const videoCodec = (s.video?.codec ?? s.codec ?? "").toUpperCase();
+  const audioCodec = (s.audio?.codec ?? "").toUpperCase();
+
+  if (/\.m3u8(?:[?#]|$)/i.test(url)) score += 45;
+  else if (/\.mp4(?:[?#]|$)/i.test(url) || /\.webm(?:[?#]|$)/i.test(url)) score += 35;
+  else if (/^https?:\/\//i.test(url)) score += 15;
+
+  if (s.cached || s.isCached || (Array.isArray(s.cachedSlugs) && s.cachedSlugs.length > 0)) {
+    score += 25;
+  }
+  if (!url && s.infoHash) score -= 50;
+  if (stream.behaviorHints?.notWebReady) score -= 35;
+  if (videoCodec === "H264" || videoCodec === "AVC" || /\b(x264|h\.?264|avc)\b/i.test(name)) score += 20;
+  if (audioCodec === "AAC" || audioCodec === "OPUS" || audioCodec === "MP3" || /\b(aac|opus)\b/i.test(name)) score += 15;
+
+  return score;
 }

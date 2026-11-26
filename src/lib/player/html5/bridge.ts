@@ -38,6 +38,7 @@ import {
 import { PreparedSubtitleSeedBatch } from "@/lib/subtitles/seed-batch";
 import { isSafeProviderSubtitleUrl } from "@/lib/subtitles/provider-url";
 import { getProjectorHlsOptions } from "@/lib/player/projector-mode";
+import { buildWebRelayUrl, getWebRelayUrl } from "@/lib/stream-proxy";
 import { isSmartProjector, isAndroidProjector, isAndroidTv } from "@/lib/platform";
 
 let DOCUMENT_PIP_KNOWN_BROKEN = false;
@@ -295,7 +296,12 @@ export function createHtml5Bridge(): PlayerBridge {
     loadingPromise = (async () => {
       try {
         if (/^https?:/i.test(track.url)) {
-          const prepared = await prepareSubtitle({
+          const requestHeaders = subtitleTrackDownloadHeaders(
+            track.metadata?.downloadAuth,
+            track.url,
+            track.metadata?.providerDerived ?? Boolean(track.metadata?.provider),
+          );
+          const subtitleParams = {
             url: track.url,
             format: track.metadata?.format,
             encoding: track.metadata?.encoding,
@@ -304,12 +310,22 @@ export function createHtml5Bridge(): PlayerBridge {
             filename: track.metadata?.rawFilename,
             allowLocalNetwork: track.metadata?.localTrusted === true,
             translation: track.metadata?.translation === true,
-            requestHeaders: subtitleTrackDownloadHeaders(
-              track.metadata?.downloadAuth,
-              track.url,
-              track.metadata?.providerDerived ?? Boolean(track.metadata?.provider),
-            ),
-          });
+            requestHeaders,
+          };
+          let prepared;
+          try {
+            prepared = await prepareSubtitle(subtitleParams);
+          } catch (directError) {
+            const relay = !("__TAURI_INTERNALS__" in window) ? getWebRelayUrl() : "";
+            if (!relay || (directError instanceof SubtitlePreparationError && directError.reason === "translation-pending")) {
+              throw directError;
+            }
+            prepared = await prepareSubtitle({
+              ...subtitleParams,
+              url: buildWebRelayUrl(relay, track.url, requestHeaders),
+              requestHeaders: undefined,
+            });
+          }
           if (requestMediaRevision !== mediaRevision || !subTracks.includes(track)) {
             prepared.cleanup();
             return false;

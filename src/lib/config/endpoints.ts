@@ -52,6 +52,9 @@ export const ARGUS_RELAY_BASE = resolveBase(
   ARGUS_API_BASE,
 );
 
+export const ARGUS_STREAM_RELAY_URL = (import.meta.env.VITE_ARGUS_STREAM_RELAY_URL ?? "").trim().replace(/\/+$/, "");
+export const ARGUS_COMPANION_URL = (import.meta.env.VITE_ARGUS_COMPANION_URL ?? "").trim().replace(/\/+$/, "");
+
 export const ARGUS_DISCORD_INVITE = resolveBase(
   import.meta.env.VITE_ARGUS_DISCORD_INVITE,
   "https://discord.gg/argus",

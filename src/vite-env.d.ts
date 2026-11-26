@@ -10,6 +10,8 @@ interface ImportMetaEnv {
   readonly VITE_ARGUS_BUGS_BASE?: string;
   readonly VITE_ARGUS_SYNC_BASE?: string;
   readonly VITE_ARGUS_RELAY_BASE?: string;
+  readonly VITE_ARGUS_STREAM_RELAY_URL?: string;
+  readonly VITE_ARGUS_COMPANION_URL?: string;
   readonly VITE_ARGUS_TRAKT_BASE?: string;
   readonly VITE_ARGUS_MAL_BASE?: string;
   readonly VITE_ARGUS_TVDB_BASE?: string;
