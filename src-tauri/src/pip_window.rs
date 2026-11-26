@@ -195,11 +195,82 @@ async fn ensure_pip_window(app: &AppHandle) -> Result<bool, String> {
     Ok(true)
 }
 
-fn place_bottom_right(pip: &tauri::WebviewWindow) -> Result<(), String> {
+#[derive(serde::Serialize, serde::Deserialize, Clone, Copy)]
+struct SavedPipGeometry {
+    x: f64,
+    y: f64,
+    width: f64,
+    height: f64,
+}
+
+fn pip_geometry_path(app: &AppHandle) -> Option<std::path::PathBuf> {
+    app.path()
+        .app_data_dir()
+        .ok()
+        .map(|d| d.join("pip-geometry.json"))
+}
+
+async fn load_pip_geometry(app: &AppHandle) -> Option<SavedPipGeometry> {
+    let path = pip_geometry_path(app)?;
+    tokio::task::spawn_blocking(move || {
+        let raw = std::fs::read_to_string(&path).ok()?;
+        let g: SavedPipGeometry = serde_json::from_str(&raw).ok()?;
+        if g.x.is_finite()
+            && g.y.is_finite()
+            && g.width.is_finite()
+            && g.height.is_finite()
+            && g.width >= 240.0
+            && g.height >= 135.0
+        {
+            Some(g)
+        } else {
+            None
+        }
+    })
+    .await
+    .ok()
+    .flatten()
+}
+
+fn save_pip_geometry(app: &AppHandle, pip: &tauri::WebviewWindow) {
+    let Some(path) = pip_geometry_path(app) else {
+        return;
+    };
+    let scale = pip.scale_factor().unwrap_or(1.0);
+    let Ok(pos) = pip.outer_position() else {
+        return;
+    };
+    let Ok(size) = pip.inner_size() else {
+        return;
+    };
+    let lp = pos.to_logical::<f64>(scale);
+    let ls = size.to_logical::<f64>(scale);
+    if !lp.x.is_finite() || !lp.y.is_finite() || ls.width < 240.0 || ls.height < 135.0 {
+        return;
+    }
+    let geom = SavedPipGeometry {
+        x: lp.x,
+        y: lp.y,
+        width: ls.width,
+        height: ls.height,
+    };
+    tokio::task::spawn_blocking(move || {
+        if let Some(parent) = path.parent() {
+            let _ = std::fs::create_dir_all(parent);
+        }
+        if let Ok(json) = serde_json::to_string(&geom) {
+            let _ = std::fs::write(&path, json);
+        }
+    });
+}
+
+fn place_initial_or_saved(
+    pip: &tauri::WebviewWindow,
+    saved: Option<SavedPipGeometry>,
+) -> Result<(), String> {
     use tauri::{LogicalPosition, LogicalSize};
 
     let scale = pip.scale_factor().unwrap_or(1.0);
-    let size = LogicalSize::new(480.0_f64, 270.0_f64);
     let (mon_x, mon_y, mon_w, mon_h) = match pip.current_monitor().ok().flatten() {
         Some(m) => {
             let p = m.position().to_logical::<f64>(scale);
@@ -208,8 +279,23 @@ fn place_bottom_right(pip: &tauri::WebviewWindow) -> Result<(), String> {
         }
         None => (0.0, 0.0, 1920.0, 1080.0),
     };
-    let x = (mon_x + mon_w - size.width - 24.0).clamp(mon_x, mon_x + mon_w);
-    let y = (mon_y + mon_h - size.height - 56.0).clamp(mon_y, mon_y + mon_h);
+    let (size, raw_x, raw_y) = match saved {
+        Some(g) => (
+            LogicalSize::new(
+                g.width.clamp(240.0, mon_w.max(240.0)),
+                g.height.clamp(135.0, mon_h.max(135.0)),
+            ),
+            g.x,
+            g.y,
+        ),
+        None => (
+            LogicalSize::new(480.0_f64, 270.0_f64),
+            mon_x + mon_w - 480.0 - 24.0,
+            mon_y + mon_h - 270.0 - 56.0,
+        ),
+    };
+    let x = raw_x.clamp(mon_x, (mon_x + mon_w - size.width).max(mon_x));
+    let y = raw_y.clamp(mon_y, (mon_y + mon_h - size.height).max(mon_y));
     pip.set_size(size).map_err(|e| format!("set_size: {e}"))?;
     pip.set_position(LogicalPosition::new(x, y))
         .map_err(|e| format!("set_position: {e}"))?;
@@ -246,7 +332,8 @@ pub async fn pip_window_enter(
         .get_webview_window(PIP_LABEL)
         .ok_or_else(|| "pip window missing".to_string())?;
     if created {
-        place_bottom_right(&pip)?;
+        let saved = load_pip_geometry(&app).await;
+        place_initial_or_saved(&pip, saved)?;
     }
     pip.show().map_err(|e| format!("show: {e}"))?;
 
@@ -302,6 +389,7 @@ pub async fn pip_window_exit(
     }
 
     if let Some(pip) = app.get_webview_window(PIP_LABEL) {
+        save_pip_geometry(&app, &pip);
         let _ = pip.hide();
     }
     let _ = app.emit_to("main", "pip://detached-exited", ());

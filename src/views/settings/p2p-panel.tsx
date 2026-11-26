@@ -8,6 +8,7 @@ import {
   RemoteServerSection,
   ServerAddressSection,
 } from "./player-panel";
+import { WebStreamRelaySection } from "./player-panel/web-stream-relay-section";
 
 type Tab = "engine" | "server";
 
@@ -36,6 +37,7 @@ export function P2PPanel() {
         ))}
       {tab === "server" && (
         <>
+          <WebStreamRelaySection />
           <ServerAddressSection />
           <RemoteServerSection />
         </>

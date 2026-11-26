@@ -415,7 +415,13 @@ fn mpv_supports_vapoursynth() -> bool {
 }
 
 #[tauri::command]
-pub fn svp_status() -> SvpStatus {
+pub async fn svp_status() -> Result<SvpStatus, String> {
+    tokio::task::spawn_blocking(svp_status_sync)
+        .await
+        .map_err(|e| e.to_string())
+}
+
+fn svp_status_sync() -> SvpStatus {
     let reason = unsupported_reason();
     if reason.is_some() {
         return SvpStatus {
@@ -544,7 +550,13 @@ fn launch_svp_manager() -> Result<(), String> {
 }
 
 #[tauri::command]
-pub fn svp_launch() -> Result<(), String> {
+pub async fn svp_launch() -> Result<(), String> {
+    tokio::task::spawn_blocking(svp_launch_sync)
+        .await
+        .map_err(|e| e.to_string())?
+}
+
+fn svp_launch_sync() -> Result<(), String> {
     if let Some(reason) = unsupported_reason() {
         return Err(reason);
     }
@@ -552,7 +564,13 @@ pub fn svp_launch() -> Result<(), String> {
 }
 
 #[tauri::command]
-pub fn svp_ensure_running() -> Result<bool, String> {
+pub async fn svp_ensure_running() -> Result<bool, String> {
+    tokio::task::spawn_blocking(svp_ensure_running_sync)
+        .await
+        .map_err(|e| e.to_string())?
+}
+
+fn svp_ensure_running_sync() -> Result<bool, String> {
     if let Some(reason) = unsupported_reason() {
         return Err(reason);
     }
@@ -631,7 +649,13 @@ fn make_script(flow1: &Path, flow2: &Path, target_fps: &str) -> Result<String, S
 }
 
 #[tauri::command]
-pub fn svp_apply(app: tauri::AppHandle, target_fps: String) -> Result<String, String> {
+pub async fn svp_apply(app: tauri::AppHandle, target_fps: String) -> Result<String, String> {
+    tokio::task::spawn_blocking(move || svp_apply_sync(app, target_fps))
+        .await
+        .map_err(|e| e.to_string())?
+}
+
+fn svp_apply_sync(app: tauri::AppHandle, target_fps: String) -> Result<String, String> {
     if let Some(reason) = unsupported_reason() {
         return Err(reason);
     }

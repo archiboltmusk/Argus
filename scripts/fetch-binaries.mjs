@@ -62,6 +62,7 @@ const SOURCES = {
     "x86_64-apple-darwin": { kind: "raw", url: `${YTDLP}/yt-dlp_macos` },
     "aarch64-apple-darwin": { kind: "raw", url: `${YTDLP}/yt-dlp_macos` },
     "x86_64-pc-windows-msvc": { kind: "raw", url: `${YTDLP}/yt-dlp.exe` },
+    "aarch64-pc-windows-msvc": { kind: "raw", url: `${YTDLP}/yt-dlp.exe` },
   },
   ffmpeg: {
     "x86_64-unknown-linux-gnu": { kind: "tar.xz", url: `${BTBN}/ffmpeg-master-latest-linux64-gpl.tar.xz`, member: "ffmpeg" },
@@ -76,6 +77,10 @@ const SOURCES = {
       kind: "zip", url: BTBN_WINDOWS, member: "ffmpeg.exe",
       fallback: { kind: "zip", url: GYAN, member: "ffmpeg.exe" },
     },
+    "aarch64-pc-windows-msvc": {
+      kind: "zip", url: BTBN_WINDOWS, member: "ffmpeg.exe",
+      fallback: { kind: "zip", url: GYAN, member: "ffmpeg.exe" },
+    },
   },
   ffprobe: {
     "x86_64-unknown-linux-gnu": { kind: "tar.xz", url: `${BTBN}/ffmpeg-master-latest-linux64-gpl.tar.xz`, member: "ffprobe" },
@@ -87,6 +92,10 @@ const SOURCES = {
       fallback: { kind: "zip", url: "https://www.osxexperts.net/ffprobe71arm.zip", member: "ffprobe" },
     },
     "x86_64-pc-windows-msvc": {
+      kind: "zip", url: BTBN_WINDOWS, member: "ffprobe.exe",
+      fallback: { kind: "zip", url: GYAN, member: "ffprobe.exe" },
+    },
+    "aarch64-pc-windows-msvc": {
       kind: "zip", url: BTBN_WINDOWS, member: "ffprobe.exe",
       fallback: { kind: "zip", url: GYAN, member: "ffprobe.exe" },
     },
