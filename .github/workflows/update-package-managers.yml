@@ -32,12 +32,15 @@ jobs:
           node scripts/update-winget.mjs "$TAG"
           ruby -c Casks/argus.rb
       - name: Push updated Cask to archiboltmusk/homebrew-argus
-        if: ${{ secrets.HOMEBREW_TAP_TOKEN != '' }}
         env:
           TAG: ${{ inputs.tag || github.event.release.tag_name }}
           GH_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
         run: |
           set -euo pipefail
+          if [ -z "${GH_TOKEN:-}" ]; then
+            echo "HOMEBREW_TAP_TOKEN is not set; skipping homebrew-argus push."
+            exit 0
+          fi
           git clone --depth 1 "https://x-access-token:${GH_TOKEN}@github.com/archiboltmusk/homebrew-argus.git" tap
           cp Casks/argus.rb tap/Casks/argus.rb
           cd tap
