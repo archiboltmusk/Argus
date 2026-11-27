@@ -60,7 +60,7 @@
   "dependencies": {
     "@mediapipe/tasks-vision": "1.2.3",
     "@noble/hashes": "2.4.0",
-    "@rive-app/canvas": "^2.55.0",
+    "@rive-app/canvas": "^2.55.1",
     "@tanstack/react-virtual": "^3.14.28",
     "@tauri-apps/api": "^2.12.5",
     "@tauri-apps/plugin-clipboard-manager": "^2.5.0",
