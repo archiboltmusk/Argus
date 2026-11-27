@@ -25,8 +25,8 @@ importers:
         specifier: 2.4.0
         version: 2.4.0
       '@rive-app/canvas':
-        specifier: ^2.55.0
-        version: 2.55.0
+        specifier: ^2.55.1
+        version: 2.55.1
       '@tanstack/react-virtual':
         specifier: ^3.14.28
         version: 3.14.28(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
@@ -788,8 +788,8 @@ packages:
     resolution: {integrity: sha512-xBaJish5OeGmniDj9cW5PRa/PtmuVU3ziqrbr5xJj901ZDN4TosrVaNZpEiLZAxdfnhAe7uQ7QFWfjPe9d9K2Q==}
     engines: {node: '>= 10'}
 
-  '@rive-app/canvas@2.55.0':
-    resolution: {integrity: sha512-iadVU3Ch/oGivBGD1aylkPe6QgjPEeT3X0HsYOT/tF8PCsvrEeM4ABBwNyzu40R//xpWq5sqG3Y6CLGclFavrw==}
+  '@rive-app/canvas@2.55.1':
+    resolution: {integrity: sha512-COPV4JYoE41v0t5sYh5b03LqseIFfbqVtCStBQq20oITZQj76JE0/5C2H00XeSsRLHQmq+bSfWIpPb1J8mcKKQ==}
 
   '@rolldown/binding-android-arm-eabi@1.2.19':
     resolution: {integrity: sha512-e+Ebe0WT+9tbXmNKPIiC8YrWAHYwug3m6i4p3rZGGulfZri1jtI4HslT+OZnFf/OIHowWF71DTlHwXBP2SiA7A==}
@@ -3119,7 +3119,7 @@ snapshots:
       '@resvg/resvg-js-win32-ia32-msvc': 2.6.2
       '@resvg/resvg-js-win32-x64-msvc': 2.6.2
 
-  '@rive-app/canvas@2.55.0': {}
+  '@rive-app/canvas@2.55.1': {}
 
   '@rolldown/binding-android-arm-eabi@1.2.19':
     optional: true
